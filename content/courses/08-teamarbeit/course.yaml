@@ -1,0 +1,32 @@
+title: Arbeiten im Team
+subtitle: Branching-Strategien, Code-Reviews, Pull Requests, Tickets und gute Kommunikation
+description: >
+  Allein Code zu schreiben ist eine Sache – mit fünf, zehn oder fünfzig Menschen am selben Projekt zu
+  arbeiten, eine ganz andere. In diesem Kurs lernst du die Regeln, Werkzeuge und Gewohnheiten, mit denen
+  professionelle Teams ihre Arbeit organisieren: von Branching-Strategien und Commit-Konventionen über
+  Code-Reviews und Pull Requests bis zu Tickets, Daily Standups und dem Umgang mit KI-Assistenten.
+
+
+  Du übst nicht nur Theorie: Im Übungs-Terminal simulierst du ein echtes Team mit zwei Personen, die
+  über ein gemeinsames Remote-Repository zusammenarbeiten, Konflikte lösen und Releases erstellen.
+category: grundlagen
+level: einsteiger
+icon: users
+color: "#ec4899"
+estimated_hours: 5
+workspace_dir: team
+prerequisites: [git, github]
+learning_goals:
+  - Du erklärst GitHub Flow, Git Flow und Trunk-based Development und wählst die passende Strategie für ein Team.
+  - Du benennst Branches und schreibst Commit-Messages nach Team-Konventionen und erzeugst daraus einen Changelog.
+  - Du gibst und empfängst Code-Review-Feedback freundlich, konkret und hilfreich.
+  - Du erstellst kleine, gut beschriebene Pull Requests und löst Merge-Konflikte gemeinsam mit anderen.
+  - Du hältst Coding-Konventionen automatisch ein, statt im Review über Stil zu diskutieren.
+  - Du arbeitest mit Tickets, Sprints, Definition of Ready und Definition of Done.
+  - Du kommunizierst asynchron und synchron, fragst rechtzeitig um Hilfe und nutzt KI-Assistenten nach klaren Teamregeln.
+references:
+  - Conventional Commits mit Ticket-Nummer als Scope und daraus abgeleitete Changelogs
+  - Branch-Namen nach dem Muster typ/TICKET-kurzbeschreibung
+  - Review-Umgebungen, die für jeden Pull Request automatisch bereitgestellt werden
+  - Automatische Code-Formatierung (Pint, Prettier) als Pre-Commit- und CI-Schritt
+  - Gemeinsame Instruktionsdateien für KI-Assistenten im Repository

@@ -1,0 +1,93 @@
+title: Konventionen, Tickets und Kommunikation
+description: Gemeinsame Coding-Konventionen und Formatierung, Arbeit mit Tickets und Schätzungen, gute Kommunikation, Onboarding, Pairing und Teamregeln für KI-Assistenten.
+exercise:
+  id: modul-uebung-konventionen
+  type: terminal
+  title: Ein Projekt auf Team-Konventionen bringen
+  description: |
+    Im Ordner `m4-konventionen` liegt ein kleines PHP-Projekt mit zwei Dateien in `src/`. Es hält sich an
+    keine Regeln. Euer Team hat beschlossen:
+
+    - Jede PHP-Datei beginnt nach `<?php` mit `declare(strict_types=1);`.
+    - Der Code-Stil ist PSR-12 und wird mit Pint durchgesetzt (`pint.json` mit Preset `psr12`).
+    - Eine `.editorconfig` legt `indent_style = space` und `indent_size = 4` fest.
+
+    1. Ergänze `declare(strict_types=1);` in **beiden** Dateien in `src/`.
+    2. Lege `pint.json` und `.editorconfig` an.
+    3. Formatiere mit `pint`, sodass `pint --test` fehlerfrei durchläuft.
+    4. Committe alles mit einer Message vom Typ `style` oder `chore` und dem Ticket-Scope `SHOP-70`,
+       z. B. `chore(SHOP-70): apply team conventions`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: m4-konventionen
+  setup: |
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    mkdir -p src
+    cat > src/Order.php <<'PHP'
+    <?php
+    namespace App;
+    class Order {
+      public function __construct(private array $items){}
+      public function total():int { return array_sum($this->items);}
+    }
+    PHP
+    cat > src/Invoice.php <<'PHP'
+    <?php
+    namespace App;
+    class Invoice
+    {
+        public function __construct(private Order $order){ }
+        public function totalWithTax(int $taxRate=19):int{
+          return (int) round($this->order->total()*(100+$taxRate)/100);
+        }
+    }
+    PHP
+    git add . && git commit -q -m "feat(SHOP-69): add order and invoice"
+  checks:
+    - type: command
+      run: for f in src/Order.php src/Invoice.php; do grep -q "^declare(strict_types=1);" "$f" || { echo "fehlt in $f"; exit 1; }; done
+      message: In mindestens einer Datei in src/ fehlt die Zeile `declare(strict_types=1);`.
+    - type: command
+      run: for f in src/*.php; do php -l "$f" >/dev/null || exit 1; done
+      message: Eine PHP-Datei hat einen Syntaxfehler. Prüfe sie mit `php -l`.
+    - type: command
+      run: jq -r .preset pint.json
+      stdout_equals: psr12
+      message: Es fehlt eine pint.json mit dem Preset psr12.
+    - type: command
+      run: pint --test >/dev/null 2>&1 && echo ok
+      stdout_equals: ok
+      message: "`pint --test` meldet noch Stilfehler. Führe `pint` aus."
+    - type: file_contains
+      path: .editorconfig
+      pattern: "indent_size\\s*=\\s*4"
+      message: Die .editorconfig braucht die Zeile `indent_size = 4`.
+    - type: file_contains
+      path: .editorconfig
+      pattern: "indent_style\\s*=\\s*space"
+      message: Die .editorconfig braucht die Zeile `indent_style = space`.
+    - type: command
+      run: git status --porcelain | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: Es gibt noch nicht committete Änderungen.
+    - type: command
+      run: git log -1 --format=%s
+      stdout_matches: "^(style|chore)\\(SHOP-70\\): \\S"
+      message: "Der letzte Commit soll mit `style(SHOP-70): ` oder `chore(SHOP-70): ` beginnen."
+  hints:
+    - "Mit `sed -i 's/^<?php$/<?php\\n\\ndeclare(strict_types=1);/' src/*.php` ergänzt du die Zeile in beiden Dateien."
+    - "`printf 'root = true\\n\\n[*]\\nindent_style = space\\nindent_size = 4\\n' > .editorconfig`"
+    - "Danach `pint`, `pint --test`, `git add -A` und committen."
+  solution: |
+    ```bash
+    cd m4-konventionen
+    sed -i 's/^<?php$/<?php\n\ndeclare(strict_types=1);/' src/*.php
+    echo '{"preset": "psr12"}' > pint.json
+    printf 'root = true\n\n[*]\ncharset = utf-8\nindent_style = space\nindent_size = 4\ninsert_final_newline = true\n' > .editorconfig
+    pint
+    pint --test
+    git add -A
+    git commit -m "chore(SHOP-70): apply team conventions"
+    ```

@@ -1,0 +1,101 @@
+title: Code-Reviews
+description: Warum Teams Code gegenseitig prüfen, wie du hilfreiches Feedback gibst und annimmst und wie du deinen Code selbst vorab prüfst.
+exercise:
+  id: modul-uebung-review
+  type: terminal
+  title: Review-Anmerkungen einarbeiten
+  description: |
+    Im Ordner `m2-review-runde` liegt ein Repository. Du stehst auf deinem Branch
+    `feat/SHOP-42-newsletter`. Ben hat deinen Pull Request reviewt; seine drei Anmerkungen stehen in
+    `REVIEW.md`.
+
+    1. Lies `REVIEW.md` und `newsletter.php`.
+    2. Arbeite **jede** Anmerkung in einem **eigenen** Commit ein. Jede Message beginnt mit
+       `fix(SHOP-42): ` (z. B. `fix(SHOP-42): rename newsletter function`).
+    3. Beantworte jede Anmerkung, indem du unter dem jeweiligen Punkt in `REVIEW.md` eine Zeile ergänzt,
+       die mit `Antwort:` beginnt. Committe das als `docs(SHOP-42): reply to review`.
+
+    Am Ende hat dein Branch also vier neue Commits. Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: m2-review-runde
+  setup: |
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    printf '# Newsletter-Service\n' > README.md
+    git add . && git commit -q -m "chore: initial commit"
+    git switch -q -c feat/SHOP-42-newsletter
+    cat > newsletter.php <<'PHP'
+    <?php
+
+    function nl(array $subscribers, string $email): array
+    {
+        var_dump($email);
+        $subscribers[] = strtolower($email);
+
+        return $subscribers;
+    }
+    PHP
+    git add newsletter.php
+    git commit -q -m "feat(SHOP-42): add newsletter subscription"
+    cat > REVIEW.md <<'MD'
+    # Review von Ben
+
+    ## 1. Name
+    issue: Der Funktionsname `nl` verrät nicht, was passiert. Bitte nenne sie `subscribeToNewsletter`.
+
+    ## 2. Debug-Ausgabe
+    issue: `var_dump($email)` gibt E-Mail-Adressen aus. Bitte entfernen.
+
+    ## 3. Validierung
+    issue: Ungültige Adressen landen in der Liste. Bitte mit `filter_var($email, FILTER_VALIDATE_EMAIL)` prüfen und bei einer ungültigen Adresse eine `InvalidArgumentException` werfen.
+    MD
+  checks:
+    - type: command
+      run: git branch --show-current
+      stdout_equals: feat/SHOP-42-newsletter
+      message: Du solltest auf dem Branch feat/SHOP-42-newsletter arbeiten.
+    - type: command
+      run: "git log --format=%s main..HEAD | grep -c \"^fix(SHOP-42): \""
+      stdout_matches: "^\\s*3\\s*$"
+      message: "Es sollten genau drei Commits mit `fix(SHOP-42): ` existieren – einer pro Anmerkung."
+    - type: command
+      run: "git log --format=%s main..HEAD | grep -c \"^docs(SHOP-42): \""
+      stdout_matches: "^\\s*1\\s*$"
+      message: "Es fehlt der Commit `docs(SHOP-42): …` mit deinen Antworten in REVIEW.md."
+    - type: command
+      run: git show HEAD:newsletter.php | grep -c "function subscribeToNewsletter("
+      stdout_matches: "^\\s*1\\s*$"
+      message: In newsletter.php heißt die Funktion noch nicht subscribeToNewsletter (oder es ist nicht committet).
+    - type: command
+      run: git show HEAD:newsletter.php | grep -c "var_dump"
+      expect_exit: 1
+      message: newsletter.php enthält im letzten Commit noch var_dump.
+    - type: command
+      run: git show HEAD:newsletter.php | grep -E "filter_var|InvalidArgumentException" | wc -l
+      stdout_matches: "^\\s*[2-9]\\s*$"
+      message: Die Validierung fehlt – nutze filter_var(…, FILTER_VALIDATE_EMAIL) und wirf eine InvalidArgumentException.
+    - type: command
+      run: d=$(mktemp -d "$PWD/.pruefung-XXXXXX") && git show HEAD:newsletter.php > "$d/n.php" && php -l "$d/n.php" >/dev/null; r=$?; rm -rf "$d"; exit $r
+      message: newsletter.php hat einen Syntaxfehler. Prüfe die Datei mit `php -l newsletter.php`.
+    - type: command
+      run: git show HEAD:REVIEW.md | grep -c "^Antwort:"
+      stdout_matches: "^\\s*[3-9]\\s*$"
+      message: In REVIEW.md fehlen Antworten. Ergänze unter jedem der drei Punkte eine Zeile, die mit `Antwort:` beginnt.
+  hints:
+    - "Nach jeder einzelnen Änderung: `git add newsletter.php` und `git commit -m \"fix(SHOP-42): …\"`."
+    - "Für die Validierung: `if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) { throw new InvalidArgumentException('Invalid email'); }`."
+    - "Antworten kannst du mit nano ergänzen. Am Schluss: `git add REVIEW.md` und `git commit -m \"docs(SHOP-42): reply to review\"`."
+  solution: |
+    ```bash
+    cd m2-review-runde
+    sed -i 's/function nl(/function subscribeToNewsletter(/' newsletter.php
+    git commit -am "fix(SHOP-42): rename newsletter function"
+    sed -i '/var_dump/d' newsletter.php
+    git commit -am "fix(SHOP-42): remove debug output"
+    sed -i 's/^    \$subscribers\[\] = strtolower(\$email);/    if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {\n        throw new InvalidArgumentException("Invalid email");\n    }\n    $subscribers[] = strtolower($email);/' newsletter.php
+    php -l newsletter.php
+    git commit -am "fix(SHOP-42): validate email addresses"
+    sed -i 's/^issue: Der Funktionsname.*/&\nAntwort: Umbenannt, danke!/; s/^issue: `var_dump.*/&\nAntwort: Entfernt./; s/^issue: Ungültige.*/&\nAntwort: Validierung ergänzt./' REVIEW.md
+    git add REVIEW.md
+    git commit -m "docs(SHOP-42): reply to review"
+    ```

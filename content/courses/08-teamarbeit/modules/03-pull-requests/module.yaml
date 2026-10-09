@@ -1,0 +1,87 @@
+title: Pull Requests im Team
+description: Gute Pull Requests schreiben, große Aufgaben in kleine schneiden, automatische Checks und Review-Umgebungen nutzen und Konflikte gemeinsam lösen.
+exercise:
+  id: modul-uebung-pull-request
+  type: terminal
+  title: Ein Feature-Branch trifft auf einen veränderten main
+  description: |
+    Im Ordner `m3-feature-merge` arbeitet ein Team: `origin.git` ist das Remote, `anna` und `ben` sind die
+    Klone. Ben hat auf `feat/SHOP-30-versandfrei` ergänzt, dass der Versand ab 50 Euro gratis ist
+    (committet, noch nicht gepusht). Inzwischen hat Anna in `main` den Versandpreis auf 5,49 Euro erhöht
+    und gepusht – in derselben Zeile.
+
+    Du bist Ben:
+
+    1. Wechsle in `ben`, hole mit `git fetch` den neuen Stand und bringe deinen Branch auf den Stand von
+       `origin/main` (Merge oder Rebase – beides ist erlaubt).
+    2. Löse den Konflikt so, dass die Zeile `Versand: 5,49 Euro (gratis ab 50 Euro)` lautet.
+    3. Pushe deinen Branch `feat/SHOP-30-versandfrei` nach `origin` (der „Pull Request“).
+    4. Nach der Freigabe: Merge den Branch mit `git merge --no-ff` in `main` und pushe `main`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: m3-feature-merge
+  setup: |
+    git init -q --bare -b main origin.git
+    git clone -q origin.git anna 2>/dev/null
+    cd anna
+    git config user.name "Anna"
+    git config user.email "anna@example.com"
+    printf 'Preise\nVersand: 4,99 Euro\n' > preise.txt
+    git add . && git commit -q -m "docs: add price list"
+    git push -q origin main
+    cd ..
+    git clone -q origin.git ben
+    cd ben
+    git config user.name "Ben"
+    git config user.email "ben@example.com"
+    git config pull.rebase false
+    git switch -q -c feat/SHOP-30-versandfrei
+    printf 'Preise\nVersand: 4,99 Euro (gratis ab 50 Euro)\n' > preise.txt
+    git commit -q -am "feat(SHOP-30): free shipping from 50 euros"
+    cd ../anna
+    printf 'Preise\nVersand: 5,49 Euro\n' > preise.txt
+    git commit -q -am "fix(SHOP-31): raise shipping costs"
+    git push -q origin main
+  checks:
+    - type: command
+      run: git -C origin.git rev-parse --verify -q refs/heads/feat/SHOP-30-versandfrei
+      message: Der Branch feat/SHOP-30-versandfrei ist noch nicht im Remote. Pushe ihn mit `git push -u origin feat/SHOP-30-versandfrei`.
+    - type: command
+      run: git -C origin.git merge-base --is-ancestor refs/heads/feat/SHOP-30-versandfrei main && echo ok
+      stdout_equals: ok
+      message: Der gepushte Feature-Branch ist noch nicht in main gemergt (oder main ist nicht gepusht).
+    - type: command
+      run: git -C origin.git show main:preise.txt
+      stdout_matches: "^Versand: 5,49 Euro \\(gratis ab 50 Euro\\)$"
+      message: "In main soll die Zeile `Versand: 5,49 Euro (gratis ab 50 Euro)` stehen."
+    - type: command
+      run: git -C origin.git show main:preise.txt | grep -cE "^(<<<<<<<|=======|>>>>>>>)"
+      expect_exit: 1
+      message: In preise.txt stehen noch Konfliktmarker.
+    - type: command
+      run: git -C origin.git rev-list --parents -n 1 main | wc -w
+      stdout_matches: "^\\s*3\\s*$"
+      message: Der letzte Commit in main soll ein Merge-Commit sein. Nutze `git merge --no-ff feat/SHOP-30-versandfrei`.
+    - type: command
+      run: git -C origin.git log --format=%s main | grep -cE "^(feat|fix)\(SHOP-3[01]\)"
+      stdout_matches: "^\\s*2\\s*$"
+      message: In main müssen Annas Commit (SHOP-31) und Bens Commit (SHOP-30) enthalten sein.
+  hints:
+    - "Variante Merge: `git fetch` und dann auf deinem Branch `git merge origin/main`."
+    - "Nach dem Lösen: `git add preise.txt`, `git commit --no-edit`, `git push -u origin feat/SHOP-30-versandfrei`."
+    - "Zum Schluss: `git switch main`, `git pull`, `git merge --no-ff feat/SHOP-30-versandfrei`, `git push`."
+  solution: |
+    ```bash
+    cd m3-feature-merge
+    cd ben
+    git fetch
+    git merge origin/main
+    printf 'Preise\nVersand: 5,49 Euro (gratis ab 50 Euro)\n' > preise.txt
+    git add preise.txt
+    git commit --no-edit
+    git push -u origin feat/SHOP-30-versandfrei
+    git switch main
+    git pull
+    git merge --no-ff feat/SHOP-30-versandfrei -m "Merge branch 'feat/SHOP-30-versandfrei'"
+    git push
+    ```

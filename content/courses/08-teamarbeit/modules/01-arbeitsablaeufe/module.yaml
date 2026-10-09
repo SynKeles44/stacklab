@@ -1,0 +1,92 @@
+title: Branching-Strategien und Git-Konventionen
+description: Wie Teams Branches organisieren, Releases vorbereiten und Branches sowie Commits einheitlich benennen.
+exercise:
+  id: modul-uebung-changelog
+  type: code
+  language: php
+  title: Einen Changelog aus Commits erzeugen
+  description: |
+    Schreibe die Funktion `buildChangelog(array $subjects): string`. Sie bekommt die ersten Zeilen von
+    Commit-Messages (neueste zuerst) und erzeugt daraus einen Markdown-Changelog:
+
+    - Commits mit `!` vor dem Doppelpunkt kommen in den Abschnitt `### BREAKING CHANGES` (zuerst).
+    - Übrige `feat`-Commits kommen in `### Features`, übrige `fix`-Commits in `### Bugfixes`.
+    - Alle anderen Typen und ungültige Messages werden ignoriert.
+    - Jede Zeile lautet `- **SCOPE:** beschreibung` bzw. ohne Scope `- beschreibung`.
+    - Abschnitte ohne Einträge fehlen. Zwischen Abschnitten steht eine Leerzeile, jede Zeile endet mit `\n`.
+    - Ohne passende Commits ist das Ergebnis ein leerer String.
+
+    Beispiel für `['feat(SHOP-1): add wishlist', 'chore: update deps', 'fix: round prices']`:
+
+    ```text
+    ### Features
+    - **SHOP-1:** add wishlist
+
+    ### Bugfixes
+    - round prices
+    ```
+  starter: |
+    <?php
+
+    function buildChangelog(array $subjects): string
+    {
+        $sections = ['BREAKING CHANGES' => [], 'Features' => [], 'Bugfixes' => []];
+
+        // 1. Jede Message mit preg_match zerlegen
+        // 2. In den passenden Abschnitt einsortieren
+        // 3. Nicht-leere Abschnitte zusammensetzen
+
+        return '';
+    }
+  tests:
+    - name: Features und Bugfixes
+      code: |
+        $expected = "### Features\n- **SHOP-1:** add wishlist\n\n### Bugfixes\n- round prices\n";
+        assert_same($expected, buildChangelog(['feat(SHOP-1): add wishlist', 'chore: update deps', 'fix: round prices']));
+    - name: Leere Liste ergibt leeren String
+      code: |
+        assert_same('', buildChangelog([]));
+    - name: Ungültige Messages und andere Typen werden ignoriert
+      code: |
+        assert_same('', buildChangelog(['fixed stuff', 'docs: readme', 'test(SHOP-2): add cases']));
+    - name: Breaking Changes stehen zuerst
+      code: |
+        $expected = "### BREAKING CHANGES\n- **API-4:** drop v1 endpoints\n\n### Bugfixes\n- **SHOP-9:** handle empty cart\n";
+        assert_same($expected, buildChangelog(['fix(SHOP-9): handle empty cart', 'feat(API-4)!: drop v1 endpoints']));
+  hints:
+    - "Mit `preg_match('/^(\\w+)(?:\\(([^)]+)\\))?(!)?: (.+)$/', $subject, $m)` zerlegst du eine Message."
+    - "Ist `$m[3] === '!'`, gehört der Eintrag zu BREAKING CHANGES – egal welcher Typ."
+    - "Baue jeden Abschnitt als `\"### {$titel}\\n\" . implode('', $zeilen)` und verbinde die Abschnitte mit `\"\\n\"`."
+  solution: |
+    <?php
+
+    function buildChangelog(array $subjects): string
+    {
+        $sections = ['BREAKING CHANGES' => [], 'Features' => [], 'Bugfixes' => []];
+
+        foreach ($subjects as $subject) {
+            if (preg_match('/^(\w+)(?:\(([^)]+)\))?(!)?: (.+)$/', $subject, $m) !== 1) {
+                continue;
+            }
+
+            [, $type, $scope, $breaking, $description] = $m;
+            $line = $scope !== '' ? "- **{$scope}:** {$description}\n" : "- {$description}\n";
+
+            if ($breaking === '!') {
+                $sections['BREAKING CHANGES'][] = $line;
+            } elseif ($type === 'feat') {
+                $sections['Features'][] = $line;
+            } elseif ($type === 'fix') {
+                $sections['Bugfixes'][] = $line;
+            }
+        }
+
+        $blocks = [];
+        foreach ($sections as $title => $lines) {
+            if ($lines !== []) {
+                $blocks[] = "### {$title}\n" . implode('', $lines);
+            }
+        }
+
+        return implode("\n", $blocks);
+    }

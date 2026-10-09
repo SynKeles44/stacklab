@@ -1,0 +1,316 @@
+title: Ein Mini-Team-Workflow von Anfang bis Release
+description: |
+  Du spielst ein komplettes Team-Szenario mit zwei Personen durch – Anna und Ben. Beide arbeiten in
+  eigenen Klonen eines gemeinsamen Remote-Repositorys. Du legst Feature-Branches nach Konvention an,
+  schreibst Conventional Commits mit Ticket-Scope, arbeitest eine Review-Anmerkung ein, mergst wie bei
+  einem Pull Request, löst einen echten Konflikt zwischen beiden Personen und erstellst am Ende von Hand
+  einen Changelog, einen Release-Branch und einen Tag.
+
+  Alles passiert im Ordner `projekt` in deinem Workspace. Die Ordner `anna` und `ben` sind die Rechner
+  der beiden Personen, `origin.git` ist das gemeinsame Remote (wie ein Repository auf GitHub).
+goal: |
+  Ein Bare-Repository `origin.git` mit einem sauberen main-Branch, gemergten Feature- und Fix-Commits nach
+  Conventional Commits, einem gelösten Konflikt, einer handgeschriebenen `CHANGELOG.md`, dem Branch
+  `release/1.0` und dem annotierten Tag `v1.0.0`.
+workdir: projekt
+steps:
+  - id: remote-anlegen
+    title: Das gemeinsame Remote und Annas Klon anlegen
+    description: |
+      Lege das gemeinsame Remote und Annas Arbeitskopie an.
+
+      1. Erstelle im Ordner `projekt` ein Bare-Repository: `git init --bare -b main origin.git`.
+      2. Klone es als `anna`: `git clone origin.git anna`.
+      3. Setze in `anna` **lokal** `user.name` auf `Anna` und `user.email` auf `anna@example.com`.
+      4. Lege eine `README.md` mit einer Überschrift an, committe sie als `chore: initial commit` und pushe
+         nach `origin`.
+    checklist:
+      - origin.git ist ein Bare-Repository mit Branch main
+      - Annas Klon hat eine eigene Git-Identität
+      - Der erste Commit liegt im Remote
+    hints:
+      - "`git init --bare -b main origin.git` legt ein Remote ohne Arbeitsverzeichnis an."
+      - "Die Warnung „You appear to have cloned an empty repository“ ist beim ersten Klon normal."
+      - "`git config user.name \"Anna\"` (ohne --global) gilt nur für dieses Repository."
+    checks:
+      - type: command
+        run: git -C origin.git rev-parse --is-bare-repository
+        stdout_equals: "true"
+        message: origin.git fehlt oder ist kein Bare-Repository (git init --bare -b main origin.git).
+      - type: command
+        run: git -C anna config user.email
+        stdout_equals: anna@example.com
+        message: In anna ist user.email nicht auf anna@example.com gesetzt.
+      - type: command
+        run: git -C origin.git log --format=%s main
+        stdout_matches: "^chore: initial commit$"
+        message: "Im Remote fehlt der Commit `chore: initial commit` auf main. Hast du gepusht?"
+    solution: |
+      ```bash
+      cd projekt
+      git init --bare -b main origin.git
+      git clone origin.git anna
+      cd anna
+      git config user.name "Anna"
+      git config user.email "anna@example.com"
+      echo "# Pflanzenshop" > README.md
+      git add README.md
+      git commit -m "chore: initial commit"
+      git push origin main
+      ```
+  - id: zweiter-klon
+    title: Ben kommt ins Team
+    description: |
+      Ben bekommt seine eigene Arbeitskopie.
+
+      1. Klone im Ordner `projekt` das Remote als `ben`.
+      2. Setze in `ben` lokal `user.name` auf `Ben` und `user.email` auf `ben@example.com`.
+      3. Setze in `ben` außerdem `git config pull.rebase false`, damit `git pull` bei Bedarf einen
+         Merge-Commit erzeugt.
+    checklist:
+      - Ben hat einen eigenen Klon mit dem ersten Commit
+      - Bens Identität und pull-Verhalten sind lokal eingestellt
+    hints:
+      - "Achte darauf, dass du im Ordner `projekt` stehst, bevor du klonst (`cd ..` aus anna)."
+    checks:
+      - type: command
+        run: git -C ben log --format=%s
+        stdout_matches: "^chore: initial commit$"
+        message: Der Klon ben fehlt oder enthält den ersten Commit nicht.
+      - type: command
+        run: git -C ben config user.email
+        stdout_equals: ben@example.com
+        message: In ben ist user.email nicht auf ben@example.com gesetzt.
+      - type: command
+        run: git -C ben config pull.rebase
+        stdout_equals: "false"
+        message: In ben fehlt `git config pull.rebase false`.
+    solution: |
+      ```bash
+      cd projekt
+      git clone origin.git ben
+      cd ben
+      git config user.name "Ben"
+      git config user.email "ben@example.com"
+      git config pull.rebase false
+      ```
+  - id: feature-branch
+    title: Anna arbeitet auf einem Feature-Branch
+    description: |
+      Anna setzt Ticket TEAM-1 um: eine Begrüßung für die Startseite.
+
+      1. Lege in `anna` den Branch `feat/TEAM-1-begruessung` an.
+      2. Erstelle `begruessung.txt` mit der Zeile `Willkommen im Shop!` und committe als
+         `feat(TEAM-1): add greeting`.
+      3. Ergänze die zweite Zeile `Schön, dass du da bist.` und committe als
+         `feat(TEAM-1): add second greeting line`.
+      4. Pushe den Branch nach `origin` – das wäre jetzt der Moment, einen Pull Request zu öffnen.
+    checklist:
+      - Branch-Name nach dem Muster typ/TICKET-slug
+      - Zwei kleine Commits nach Conventional Commits mit Ticket-Scope
+      - Branch liegt im Remote
+    hints:
+      - "`git switch -c feat/TEAM-1-begruessung`"
+      - "`git push -u origin feat/TEAM-1-begruessung` richtet gleich den Upstream ein."
+    checks:
+      - type: command
+        run: git -C origin.git log --format=%s main..feat/TEAM-1-begruessung
+        stdout_matches: "^feat\\(TEAM-1\\): add second greeting line\\n?feat\\(TEAM-1\\): add greeting$"
+        message: Im Remote fehlt der Branch feat/TEAM-1-begruessung mit den beiden feat(TEAM-1)-Commits (neuester zuerst).
+      - type: command
+        run: git -C origin.git show feat/TEAM-1-begruessung:begruessung.txt
+        stdout_matches: "^Schön, dass du da bist\\.$"
+        message: begruessung.txt im Branch enthält die zweite Zeile noch nicht.
+    solution: |
+      ```bash
+      cd projekt
+      cd anna
+      git switch -c feat/TEAM-1-begruessung
+      echo "Willkommen im Shop!" > begruessung.txt
+      git add begruessung.txt
+      git commit -m "feat(TEAM-1): add greeting"
+      echo "Schön, dass du da bist." >> begruessung.txt
+      git commit -am "feat(TEAM-1): add second greeting line"
+      git push -u origin feat/TEAM-1-begruessung
+      ```
+  - id: review-einarbeiten
+    title: Ben reviewt, Anna arbeitet die Anmerkung ein
+    description: |
+      Ben schaut sich Annas Branch an, bevor er gemergt wird.
+
+      1. In `ben`: Hole den Branch mit `git fetch` und lies den Diff mit
+         `git diff main...origin/feat/TEAM-1-begruessung`.
+      2. Bens Anmerkung (`suggestion:`): „Lass uns überall ‚unser Shop‘ schreiben, so wie im Rest der Seite.“
+      3. In `anna`: Ändere die erste Zeile zu `Willkommen in unserem Shop!`, committe als
+         `fix(TEAM-1): use consistent shop wording` und pushe den Branch erneut.
+    checklist:
+      - Diff des Branches gegen main gelesen
+      - Anmerkung in einem eigenen Fix-Commit eingearbeitet
+      - Branch erneut gepusht
+    hints:
+      - "Drei Punkte in `main...origin/feat/…` zeigen genau, was der Pull Request ändert."
+      - "In anna: `sed -i '1s/.*/Willkommen in unserem Shop!/' begruessung.txt`"
+    checks:
+      - type: command
+        run: git -C origin.git log -1 --format=%s feat/TEAM-1-begruessung
+        stdout_equals: "fix(TEAM-1): use consistent shop wording"
+        message: "Der neueste Commit auf feat/TEAM-1-begruessung im Remote soll `fix(TEAM-1): use consistent shop wording` sein."
+      - type: command
+        run: git -C origin.git show feat/TEAM-1-begruessung:begruessung.txt | head -1
+        stdout_equals: Willkommen in unserem Shop!
+        message: Die erste Zeile von begruessung.txt lautet noch nicht `Willkommen in unserem Shop!`.
+    solution: |
+      ```bash
+      cd projekt
+      (cd ben && git fetch && git diff main...origin/feat/TEAM-1-begruessung)
+      cd anna
+      sed -i '1s/.*/Willkommen in unserem Shop!/' begruessung.txt
+      git commit -am "fix(TEAM-1): use consistent shop wording"
+      git push
+      ```
+  - id: mergen
+    title: Nach der Freigabe mergen
+    description: |
+      Ben hat freigegeben. Anna mergt – so wie es GitHub beim Klick auf „Merge pull request“ täte.
+
+      1. In `anna`: Wechsle auf `main` und hole den neuesten Stand.
+      2. Merge mit `git merge --no-ff feat/TEAM-1-begruessung`, damit ein Merge-Commit entsteht.
+      3. Pushe `main` und lösche den Feature-Branch lokal **und** im Remote.
+    checklist:
+      - Merge-Commit in main
+      - main ist gepusht
+      - Feature-Branch lokal und im Remote gelöscht
+    hints:
+      - "`git push origin --delete feat/TEAM-1-begruessung` löscht den Branch im Remote."
+    checks:
+      - type: command
+        run: git -C origin.git show main:begruessung.txt | head -1
+        stdout_equals: Willkommen in unserem Shop!
+        message: main im Remote enthält die Begrüßung noch nicht. Hast du gemergt und gepusht?
+      - type: command
+        run: git -C origin.git rev-list --merges --count main
+        stdout_matches: "^\\s*[1-9]\\s*$"
+        message: In main fehlt ein Merge-Commit. Nutze `git merge --no-ff`.
+      - type: command
+        run: git -C origin.git branch --list 'feat/TEAM-1-begruessung' | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: Der Feature-Branch existiert im Remote noch. Lösche ihn mit `git push origin --delete feat/TEAM-1-begruessung`.
+    solution: |
+      ```bash
+      cd projekt
+      cd anna
+      git switch main
+      git pull
+      git merge --no-ff feat/TEAM-1-begruessung -m "Merge branch 'feat/TEAM-1-begruessung'"
+      git push origin main
+      git branch -d feat/TEAM-1-begruessung
+      git push origin --delete feat/TEAM-1-begruessung
+      ```
+  - id: konflikt-loesen
+    title: Ein Konflikt zwischen Anna und Ben
+    description: |
+      Jetzt arbeiten beide gleichzeitig an derselben Zeile.
+
+      1. In `ben`: `git pull`, dann die erste Zeile von `begruessung.txt` in
+         `Herzlich willkommen in unserem Shop!` ändern und als `fix(TEAM-2): use a warmer greeting`
+         committen (noch **nicht** pushen).
+      2. In `anna`: die erste Zeile in `Willkommen in unserem Pflanzenshop!` ändern, als
+         `feat(TEAM-3): mention plants in greeting` committen und pushen.
+      3. In `ben`: `git pull` – es entsteht ein Konflikt. Löse ihn so, dass **beide** Absichten erhalten
+         bleiben: `Herzlich willkommen in unserem Pflanzenshop!`. Committe und pushe.
+
+      Im echten Team würdest du Anna jetzt kurz schreiben, bevor du ihre Änderung anfasst.
+    checklist:
+      - Beide Commits (TEAM-2 und TEAM-3) sind in main
+      - Keine Konfliktmarker mehr
+      - Die Lösung kombiniert beide Änderungen
+    hints:
+      - "`git status` zeigt dir in ben die Datei im Konflikt."
+      - "Nach dem Bearbeiten: `git add begruessung.txt`, `git commit --no-edit`, `git push`."
+    checks:
+      - type: command
+        run: git -C origin.git show main:begruessung.txt | head -1
+        stdout_equals: Herzlich willkommen in unserem Pflanzenshop!
+        message: Die erste Zeile in main soll `Herzlich willkommen in unserem Pflanzenshop!` lauten.
+      - type: command
+        run: git -C origin.git show main:begruessung.txt | grep -cE "^(<<<<<<<|=======|>>>>>>>)"
+        expect_exit: 1
+        message: In begruessung.txt stehen noch Konfliktmarker.
+      - type: command
+        run: "git -C origin.git log --format=%s main | grep -cE \"^(fix\\(TEAM-2\\)|feat\\(TEAM-3\\)): \""
+        stdout_matches: "^\\s*2\\s*$"
+        message: In main fehlen die Commits fix(TEAM-2) und feat(TEAM-3).
+    solution: |
+      ```bash
+      cd projekt
+      cd ben
+      git pull
+      sed -i '1s/.*/Herzlich willkommen in unserem Shop!/' begruessung.txt
+      git commit -am "fix(TEAM-2): use a warmer greeting"
+      cd ../anna
+      sed -i '1s/.*/Willkommen in unserem Pflanzenshop!/' begruessung.txt
+      git commit -am "feat(TEAM-3): mention plants in greeting"
+      git push
+      cd ../ben
+      git pull || true
+      printf 'Herzlich willkommen in unserem Pflanzenshop!\nSchön, dass du da bist.\n' > begruessung.txt
+      git add begruessung.txt
+      git commit --no-edit
+      git push
+      ```
+  - id: changelog-und-release
+    title: Changelog von Hand und Release 1.0.0
+    description: |
+      Zeit für das erste Release. Anna schreibt den Changelog aus den Commits zusammen.
+
+      1. In `anna`: `git pull`, dann mit `git log --oneline` die Commits ansehen.
+      2. Lege `CHANGELOG.md` an mit der Überschrift `## [1.0.0]`, einem Abschnitt `### Features` (Einträge
+         zu TEAM-1 und TEAM-3) und einem Abschnitt `### Bugfixes` (Eintrag zu TEAM-2). Jede Zeile beginnt
+         mit `- **TEAM-x:**`.
+      3. Committe als `docs: add changelog for 1.0.0` und pushe `main`.
+      4. Lege den Branch `release/1.0` an, setze darauf den annotierten Tag `v1.0.0` und pushe Branch und Tag.
+    checklist:
+      - CHANGELOG.md mit Features und Bugfixes
+      - Release-Branch release/1.0 im Remote
+      - Annotierter Tag v1.0.0 im Remote
+    hints:
+      - "Nur `feat` und `fix` gehören in den Changelog – `chore` und Merge-Commits nicht."
+      - "`git tag -a v1.0.0 -m \"Release 1.0.0\"` und `git push origin release/1.0 v1.0.0`."
+    checks:
+      - type: command
+        run: git -C origin.git show main:CHANGELOG.md
+        stdout_matches: "^## \\[1\\.0\\.0\\]"
+        message: In main fehlt CHANGELOG.md mit der Überschrift `## [1.0.0]`.
+      - type: command
+        run: git -C origin.git show main:CHANGELOG.md | awk '/^### Features/{s="f"} /^### Bugfixes/{s="b"} /^- \*\*TEAM-[13]:\*\*/{if(s=="f")f++} /^- \*\*TEAM-2:\*\*/{if(s=="b")b++} END{print f+0, b+0}'
+        stdout_matches: "^[2-9] [1-9]$"
+        message: Der Changelog braucht unter `### Features` Einträge zu TEAM-1 und TEAM-3 und unter `### Bugfixes` einen zu TEAM-2 (Format `- **TEAM-x:** …`).
+      - type: command
+        run: git -C origin.git log -1 --format=%s main
+        stdout_matches: "^docs(\\([^)]+\\))?: \\S"
+        message: Der Changelog-Commit soll eine `docs:`-Message haben und der neueste Commit auf main sein.
+      - type: command
+        run: git -C origin.git rev-parse --verify -q refs/heads/release/1.0
+        message: Der Branch release/1.0 fehlt im Remote.
+      - type: command
+        run: git -C origin.git cat-file -t v1.0.0
+        stdout_equals: tag
+        message: Der annotierte Tag v1.0.0 fehlt im Remote.
+      - type: command
+        run: test "$(git -C origin.git rev-parse 'v1.0.0^{commit}')" = "$(git -C origin.git rev-parse release/1.0)" && echo ok
+        stdout_equals: ok
+        message: v1.0.0 soll auf die Spitze von release/1.0 zeigen.
+    solution: |
+      ```bash
+      cd projekt
+      cd anna
+      git pull
+      git log --oneline
+      printf '# Changelog\n\n## [1.0.0]\n\n### Features\n- **TEAM-1:** add greeting\n- **TEAM-3:** mention plants in greeting\n\n### Bugfixes\n- **TEAM-1:** use consistent shop wording\n- **TEAM-2:** use a warmer greeting\n' > CHANGELOG.md
+      git add CHANGELOG.md
+      git commit -m "docs: add changelog for 1.0.0"
+      git push origin main
+      git switch -c release/1.0
+      git tag -a v1.0.0 -m "Release 1.0.0"
+      git push origin release/1.0 v1.0.0
+      ```

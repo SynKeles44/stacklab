@@ -1,0 +1,632 @@
+- slug: branching-strategie
+  term: Branching-Strategie
+  short: Eine Teamvereinbarung darüber, welche Branches es gibt und wie Arbeit zusammenfließt.
+  explanation: >
+    Eine Branching-Strategie legt fest, welche Branches dauerhaft existieren, wovon neue Arbeit abzweigt,
+    wie sie zurückfließt und was ausgeliefert wird. Bekannte Strategien sind GitHub Flow, Git Flow und
+    Trunk-based Development.
+  example: Ein Team im GitHub Flow zweigt jede Aufgabe von main ab und mergt sie per Pull Request zurück.
+  category: teamarbeit
+  aliases: [Branching-Strategien, Branching-Modell, Branch-Strategie]
+  related: [github-flow, git-flow, trunk-based-development]
+  lesson: teamarbeit/branching-strategien
+- slug: langlebiger-branch
+  term: Langlebiger Branch
+  short: Ein Branch, der dauerhaft existiert, zum Beispiel main oder develop.
+  explanation: >
+    Langlebige Branches bleiben über die gesamte Lebenszeit eines Projekts bestehen. Sie bilden einen
+    gemeinsamen Stand, in den kurzlebige Feature-Branches zurückfließen.
+  example: "`main` ist in fast jedem Projekt ein langlebiger Branch."
+  category: teamarbeit
+  aliases: [langlebige Branches, Long-lived Branch]
+  related: [feature-branch, branching-strategie]
+  lesson: teamarbeit/branching-strategien
+- slug: feature-branch
+  term: Feature-Branch
+  short: Ein kurzlebiger Branch für genau eine Aufgabe, der nach dem Merge gelöscht wird.
+  explanation: >
+    Für jede Aufgabe zweigst du einen eigenen Branch ab. So bleiben Änderungen getrennt, bis sie reviewt und
+    gemergt sind. Je kürzer ein Feature-Branch lebt, desto kleiner sind spätere Merge-Konflikte.
+  example: "`git switch -c feat/SHOP-123-warenkorb-rabatt`"
+  category: teamarbeit
+  aliases: [Feature-Branches, Themen-Branch]
+  related: [branch, langlebiger-branch, pull-request]
+  lesson: teamarbeit/branching-strategien
+- slug: github-flow
+  term: GitHub Flow
+  short: Eine einfache Branching-Strategie mit nur main und kurzen Feature-Branches.
+  explanation: >
+    Im GitHub Flow ist main immer auslieferbar. Jede Änderung entsteht in einem Feature-Branch, wird per
+    Pull Request reviewt und dann in main gemergt. Die Strategie passt gut zu häufig ausgelieferten Web-Apps.
+  example: Branch von main abzweigen, committen, Pull Request öffnen, nach Freigabe mergen, ausliefern.
+  category: teamarbeit
+  aliases: [GitHub-Flow]
+  related: [git-flow, trunk-based-development, branching-strategie]
+  lesson: teamarbeit/branching-strategien
+- slug: git-flow
+  term: Git Flow
+  short: Eine Branching-Strategie mit main, develop sowie Feature-, Release- und Hotfix-Branches.
+  explanation: >
+    Git Flow trennt ausgelieferte Versionen (main) vom Entwicklungsstand (develop). Releases werden auf
+    eigenen Release-Branches vorbereitet, dringende Korrekturen auf Hotfix-Branches. Sinnvoll ist das bei
+    festen Versionen und mehreren gepflegten Releases.
+  example: "`feature/suche` zweigt von develop ab, `release/2.0` bereitet die Version 2.0 vor."
+  category: teamarbeit
+  aliases: [Gitflow, Git-Flow]
+  related: [github-flow, release-branch, hotfix]
+  lesson: teamarbeit/branching-strategien
+- slug: trunk-based-development
+  term: Trunk-based Development
+  short: Eine Arbeitsweise, bei der alle mindestens täglich in main integrieren.
+  explanation: >
+    Beim Trunk-based Development gibt es keine langen Feature-Branches. Änderungen kommen in kleinen
+    Schritten nach main, Unfertiges bleibt hinter Feature-Flags verborgen. Das erfordert sehr gute
+    automatische Tests und Continuous Integration.
+  example: Ein Team mergt mehrmals täglich kleine Änderungen in main und schaltet neue Funktionen per Flag frei.
+  category: teamarbeit
+  aliases: [Trunk-based, Trunk-basierte Entwicklung]
+  related: [feature-flag, continuous-integration, github-flow]
+  lesson: teamarbeit/branching-strategien
+- slug: release-branch
+  term: Release-Branch
+  short: Ein Branch, der den Stand einer kommenden Version einfriert; dort landen nur noch Fehlerbehebungen.
+  explanation: >
+    Ein Release-Branch zweigt zu einem festen Zeitpunkt ab, etwa `release/1.4`. Neue Features gehen weiter
+    nach main, auf dem Release-Branch wird nur noch stabilisiert. Jede ausgelieferte Version bekommt einen Tag.
+  example: "`git switch -c release/1.4` und später `git tag -a v1.4.0 -m \"Release 1.4.0\"`."
+  category: teamarbeit
+  aliases: [Release-Branches]
+  related: [hotfix, tag, git-flow]
+  lesson: teamarbeit/branching-strategien
+- slug: hotfix
+  term: Hotfix
+  short: Eine dringende Korrektur für eine bereits ausgelieferte Version.
+  explanation: >
+    Ein Hotfix behebt einen Fehler, der nicht bis zum nächsten regulären Release warten kann. Die Korrektur
+    muss in die ausgelieferte Version und zusätzlich in main, damit der Fehler nicht zurückkehrt.
+  example: Version 1.4.0 hat einen Fehler in der Kasse – der Hotfix erscheint als 1.4.1.
+  category: teamarbeit
+  aliases: [Hotfixes]
+  related: [release-branch, cherry-pick]
+  lesson: teamarbeit/branching-strategien
+- slug: cherry-pick
+  term: Cherry-Pick
+  short: Einen einzelnen Commit aus einem anderen Branch in den aktuellen Branch übernehmen.
+  explanation: >
+    `git cherry-pick` kopiert die Änderung eines bestimmten Commits als neuen Commit in deinen aktuellen
+    Branch. So überträgt man etwa einen Fix aus main in einen Release-Branch, ohne alles andere mitzunehmen.
+  example: "`git cherry-pick a1b2c3d`"
+  category: teamarbeit
+  aliases: [cherry-picken, git cherry-pick]
+  related: [hotfix, release-branch, commit]
+  lesson: teamarbeit/branching-strategien
+- slug: feature-flag
+  term: Feature-Flag
+  short: Ein Schalter im Code, der eine Funktion zur Laufzeit ein- oder ausschaltet.
+  explanation: >
+    Mit Feature-Flags kann unfertiger Code ausgeliefert werden, ohne sichtbar zu sein. Funktionen lassen
+    sich schrittweise freischalten und bei Problemen sofort abschalten. Alte Flags müssen wieder entfernt
+    werden, sonst werden sie zu Altlasten.
+  example: "`if (flags.isEnabled('neue-suche', user)) { … }`"
+  category: teamarbeit
+  aliases: [Feature-Flags, Feature-Toggle, Feature Flag]
+  related: [trunk-based-development]
+  lesson: teamarbeit/branching-strategien
+- slug: branch-namenskonvention
+  term: Branch-Namenskonvention
+  short: Eine Teamregel, nach welchem Muster Branches benannt werden.
+  explanation: >
+    Ein verbreitetes Muster ist `<typ>/<ticket>-<kurzer-slug>`. Es zeigt auf einen Blick die Art der
+    Änderung, das zugehörige Ticket und das Thema. Teams prüfen die Regel oft automatisch per Hook oder CI.
+  example: "`feat/SHOP-123-warenkorb-rabatt`"
+  category: teamarbeit
+  aliases: [Branch-Konvention, Branch-Namen]
+  related: [ticket-id, slug, feature-branch]
+  lesson: teamarbeit/branch-und-commit-konventionen
+- slug: ticket-id
+  term: Ticket-ID
+  short: Die eindeutige Kennung eines Tickets, zum Beispiel SHOP-123.
+  explanation: >
+    Eine Ticket-ID besteht meist aus einem Projektkürzel und einer Nummer. Steht sie im Branch-Namen, in
+    Commits oder im Pull Request, verknüpfen Werkzeuge wie Jira oder Linear alles automatisch mit dem Ticket.
+  example: "`fix(SHOP-124): round shipping costs`"
+  category: teamarbeit
+  aliases: [Ticket-Nummer, Ticket-Schlüssel, Issue-Key]
+  related: [ticket, branch-namenskonvention, commit-scope]
+  lesson: teamarbeit/branch-und-commit-konventionen
+- slug: slug
+  term: Slug
+  short: Eine kurze, maschinenfreundliche Beschreibung aus Kleinbuchstaben, Ziffern und Bindestrichen.
+  explanation: >
+    Ein Slug fasst ein Thema in wenigen Wörtern zusammen, ohne Leerzeichen, Umlaute oder Sonderzeichen.
+    Slugs stecken in Branch-Namen, Dateinamen und URLs.
+  example: "`warenkorb-rabatt` ist der Slug in `feat/SHOP-123-warenkorb-rabatt`."
+  category: teamarbeit
+  aliases: [Slugs]
+  related: [branch-namenskonvention]
+  lesson: teamarbeit/branch-und-commit-konventionen
+- slug: commit-typ
+  term: Commit-Typ
+  short: Der erste Teil einer Conventional-Commit-Message, der die Art der Änderung angibt.
+  explanation: >
+    Typen wie `feat`, `fix`, `docs`, `refactor`, `test` oder `chore` sagen, welche Art Änderung ein Commit
+    enthält. Werkzeuge leiten daraus Changelog-Abschnitte und die nächste Versionsnummer ab.
+  example: "`feat` in `feat(SHOP-123): add wishlist button`"
+  category: teamarbeit
+  aliases: [Commit-Typen, Typ]
+  related: [conventional-commits, commit-scope]
+  lesson: teamarbeit/branch-und-commit-konventionen
+- slug: commit-scope
+  term: Commit-Scope
+  short: Die Angabe in Klammern nach dem Commit-Typ, worauf sich eine Änderung bezieht.
+  explanation: >
+    Der Scope ist optional und steht in Klammern, etwa ein Modulname oder die Ticket-ID. Viele Teams nutzen
+    die Ticket-ID, damit sich alle Commits einer Aufgabe leicht finden lassen.
+  example: "`SHOP-123` in `feat(SHOP-123): add wishlist button`"
+  category: teamarbeit
+  aliases: [Scope]
+  related: [commit-typ, ticket-id, conventional-commits]
+  lesson: teamarbeit/branch-und-commit-konventionen
+- slug: reviewer
+  term: Reviewer
+  short: Die Person, die im Code-Review die Änderungen einer anderen Person prüft.
+  explanation: >
+    Reviewer:innen lesen einen Pull Request, stellen Fragen, weisen auf Probleme hin und geben die Änderung
+    frei oder fordern Anpassungen an. Sie prüfen den Code, nicht den Menschen.
+  example: Im Pull Request trägst du Ben unter „Reviewers“ ein.
+  category: teamarbeit
+  aliases: [Reviewerin, Reviewer:innen, Reviewende]
+  related: [code-review, approval]
+  lesson: teamarbeit/warum-code-reviews
+- slug: vier-augen-prinzip
+  term: Vier-Augen-Prinzip
+  short: Die Regel, dass eine zweite Person jede wichtige Änderung prüft.
+  explanation: >
+    Beim Vier-Augen-Prinzip geht keine Änderung allein durch die Hände ihrer Autorin. In der
+    Softwareentwicklung setzt man es mit Code-Reviews und Branch-Schutzregeln um.
+  example: Ohne Freigabe einer zweiten Person darf nichts nach main.
+  category: teamarbeit
+  aliases: [Vier-Augen]
+  related: [code-review, approval]
+  lesson: teamarbeit/warum-code-reviews
+- slug: approval
+  term: Approval
+  short: Die Freigabe eines Pull Requests durch eine Reviewerin.
+  explanation: >
+    Mit einem Approval bestätigt eine Reviewerin, dass die Änderung gemergt werden darf. Viele Teams
+    verlangen per Branch-Schutzregel mindestens ein Approval vor dem Merge.
+  example: GitHub zeigt nach dem Approve einen grünen Haken im Pull Request.
+  category: teamarbeit
+  aliases: [Freigabe, Approve, Approvals]
+  related: [reviewer, code-review, geschuetzter-branch]
+  lesson: teamarbeit/warum-code-reviews
+- slug: technische-schulden
+  term: Technische Schulden
+  short: Nachteile im Code, die durch Abkürzungen entstehen und spätere Änderungen verteuern.
+  explanation: >
+    Wer schnelle, unsaubere Lösungen dauerhaft im Code lässt, „leiht“ sich Zeit. Die „Zinsen“ zahlt das
+    Team später, weil jede Änderung langsamer und riskanter wird.
+  example: Kopierte Logik an fünf Stellen muss bei jeder Änderung fünfmal angepasst werden.
+  category: teamarbeit
+  aliases: [Technical Debt, technische Schuld]
+  related: [code-review]
+  lesson: teamarbeit/warum-code-reviews
+- slug: review-kommentar
+  term: Review-Kommentar
+  short: Eine Anmerkung im Code-Review zu einer bestimmten Stelle des Codes.
+  explanation: >
+    Ein guter Review-Kommentar ist konkret, begründet und freundlich. Er zeigt auf eine Stelle, erklärt das
+    Problem und schlägt eine Lösung vor.
+  example: "`issue: Bei einem leeren Warenkorb wird hier durch 0 geteilt.`"
+  category: teamarbeit
+  aliases: [Review-Kommentare, Kommentar im Review]
+  related: [conventional-comments, nitpick]
+  lesson: teamarbeit/feedback-geben-und-annehmen
+- slug: nitpick
+  term: Nitpick
+  short: Eine kleine Anmerkung im Review, die den Merge nicht blockiert.
+  explanation: >
+    Nitpicks („nits“) betreffen Kleinigkeiten wie Tippfehler oder Formulierungen. Mit dem Präfix `nit:` ist
+    sofort klar, dass die Anmerkung optional ist.
+  example: "`nit: Tippfehler in der Fehlermeldung`"
+  category: teamarbeit
+  aliases: [nit, Nitpicks]
+  related: [review-kommentar, conventional-comments]
+  lesson: teamarbeit/feedback-geben-und-annehmen
+- slug: conventional-comments
+  term: Conventional Comments
+  short: Eine Konvention, Review-Kommentare mit Präfixen wie nit, issue oder praise zu kennzeichnen.
+  explanation: >
+    Das Präfix zeigt die Art und Wichtigkeit eines Kommentars. Zusätze wie `(blocking)` oder
+    `(non-blocking)` sagen, ob er den Merge aufhält.
+  example: "`suggestion (non-blocking): Die Preislogik könnte in eine eigene Funktion.`"
+  category: teamarbeit
+  aliases: []
+  related: [review-kommentar, nitpick, conventional-commits]
+  lesson: teamarbeit/feedback-geben-und-annehmen
+- slug: review-checkliste
+  term: Review-Checkliste
+  short: Eine Liste von Punkten, die bei jedem Code-Review geprüft werden.
+  explanation: >
+    Eine Review-Checkliste sorgt dafür, dass Sonderfälle, Sicherheit, Tests und Dokumentation nicht
+    vergessen werden. Viele Teams legen sie ins Pull-Request-Template.
+  example: "`- [ ] Keine Passwörter oder Tokens im Code`"
+  category: teamarbeit
+  aliases: [Review-Checklisten]
+  related: [code-review, selbst-review]
+  lesson: teamarbeit/checklisten-und-selbst-review
+- slug: selbst-review
+  term: Selbst-Review
+  short: Das Durchsehen des eigenen Diffs, bevor man andere um ein Review bittet.
+  explanation: >
+    Beim Selbst-Review liest du deine Änderungen so, wie das Team sie sehen wird, und entfernt
+    Debug-Ausgaben, alten Code und Geheimnisse. Das spart allen Zeit.
+  example: "`git diff main...HEAD` vor dem Öffnen des Pull Requests"
+  category: teamarbeit
+  aliases: [Self-Review, Selbstreview]
+  related: [review-checkliste, diff]
+  lesson: teamarbeit/checklisten-und-selbst-review
+- slug: pr-beschreibung
+  term: PR-Beschreibung
+  short: Der Text eines Pull Requests, der erklärt, was sich ändert, warum und wie man es testet.
+  explanation: >
+    Eine gute PR-Beschreibung enthält Ziel, Hintergrund, Testanleitung, offene Punkte, einen Ticket-Link
+    und bei UI-Änderungen Screenshots. Sie erklärt das Warum, das im Diff nicht steht.
+  example: "„Was: Wunschliste. Warum: SHOP-123. Wie testen: Produkt öffnen, Herz anklicken.“"
+  category: teamarbeit
+  aliases: [Pull-Request-Beschreibung, PR-Text]
+  related: [pull-request, pull-request-template]
+  lesson: teamarbeit/gute-pull-requests
+- slug: stacked-prs
+  term: Gestapelte Pull Requests
+  short: Pull Requests, die aufeinander aufbauen, weil jeder Branch vom vorherigen abzweigt.
+  explanation: >
+    Bei gestapelten Pull Requests zeigt PR 2 als Basis auf den Branch von PR 1. So bleiben beide klein und
+    einzeln reviewbar. Nach dem Merge von PR 1 wird die Basis von PR 2 auf main umgestellt.
+  example: "`feat/SHOP-7-ui` baut auf `feat/SHOP-7-api` auf."
+  category: teamarbeit
+  aliases: [Stacked PRs, Stacked Pull Requests, gestapelte PRs]
+  related: [pull-request, rebase]
+  lesson: teamarbeit/gute-pull-requests
+- slug: review-umgebung
+  term: Review-Umgebung
+  short: Eine kurzlebige Installation der Anwendung mit dem Stand eines einzelnen Pull Requests.
+  explanation: >
+    Für jeden Pull Request baut die Pipeline eine eigene Umgebung mit eigener Adresse. Das Team kann die
+    Änderung dort ausprobieren. Nach dem Merge wird sie automatisch abgebaut. Echte Kundendaten haben dort
+    nichts zu suchen.
+  example: "`https://pr-42.preview.example.com`"
+  category: teamarbeit
+  aliases: [Preview-Umgebung, Deploy Preview, Review-Umgebungen]
+  related: [deployment, ci-pipeline, pull-request]
+  lesson: teamarbeit/review-umgebungen
+- slug: deployment
+  term: Deployment
+  short: Das Ausliefern einer Softwareversion in eine Umgebung, in der sie läuft.
+  explanation: >
+    Beim Deployment wird ein gebauter Stand auf Server oder in Container gebracht und gestartet. Moderne
+    Teams automatisieren das in ihrer Pipeline – für Review-Umgebungen ebenso wie für die Produktion.
+  example: Nach jedem Push in einen Pull Request wird automatisch in dessen Review-Umgebung deployt.
+  category: teamarbeit
+  aliases: [Deployments, deployen, Auslieferung]
+  related: [review-umgebung, ci-pipeline]
+  lesson: teamarbeit/review-umgebungen
+- slug: styleguide
+  term: Styleguide
+  short: Ein Regelwerk, wie Code in einem Projekt aussehen und benannt werden soll.
+  explanation: >
+    Ein Styleguide legt Einrückung, Klammersetzung, Namen und weitere Konventionen fest. Ziel ist Code, der
+    wirkt, als hätte ihn eine einzige Person geschrieben. Werkzeuge setzen die Regeln automatisch durch.
+  example: PSR-12 ist ein verbreiteter Styleguide für PHP.
+  category: teamarbeit
+  aliases: [Style Guide, Coding-Konventionen, Coding-Standard]
+  related: [psr-12, formatter, namenskonvention]
+  lesson: teamarbeit/konventionen-und-formatierung
+- slug: psr-12
+  term: PSR-12
+  short: Ein Standard der PHP-FIG, der einen einheitlichen Code-Stil für PHP beschreibt.
+  explanation: >
+    PSR-12 regelt etwa Einrückung mit vier Leerzeichen, Klammersetzung und Leerzeilen. Der Nachfolger PER
+    Coding Style erweitert ihn um neuere Sprachmerkmale.
+  example: "In Pint wählst du ihn mit `{\"preset\": \"psr12\"}`."
+  category: teamarbeit
+  aliases: [PSR12]
+  related: [per-coding-style, styleguide, pint]
+  lesson: teamarbeit/konventionen-und-formatierung
+- slug: per-coding-style
+  term: PER Coding Style
+  short: Der Nachfolger von PSR-12, ein fortlaufend gepflegter Code-Stil der PHP-FIG.
+  explanation: >
+    PER Coding Style („PHP Evolving Recommendation“) baut auf PSR-12 auf und ergänzt Regeln für neuere
+    PHP-Sprachmerkmale. Er wird im Gegensatz zu PSRs weiterentwickelt.
+  example: "In Pint gibt es dafür das Preset `per`."
+  category: teamarbeit
+  aliases: [PER-CS, PER]
+  related: [psr-12, styleguide]
+  lesson: teamarbeit/konventionen-und-formatierung
+- slug: strict-types
+  term: strict_types
+  short: Eine PHP-Deklaration, die automatische Typumwandlungen bei Funktionsaufrufen verbietet.
+  explanation: >
+    Mit `declare(strict_types=1);` als erster Anweisung einer Datei wirft PHP einen TypeError, wenn ein
+    falscher Typ übergeben wird, statt den Wert still umzuwandeln. Die Deklaration gilt nur für ihre Datei.
+  example: "`declare(strict_types=1);`"
+  category: teamarbeit
+  aliases: [strikte Typprüfung, Strict Types]
+  related: [psr-12]
+  lesson: teamarbeit/konventionen-und-formatierung
+- slug: namenskonvention
+  term: Namenskonvention
+  short: Eine Regel, wie Klassen, Methoden, Variablen und Konstanten geschrieben werden.
+  explanation: >
+    In PHP sind Klassen meist in PascalCase, Methoden und Variablen in camelCase und Konstanten in
+    UPPER_SNAKE_CASE. Dazu kommen Teamregeln wie englische, sprechende Namen.
+  example: "`InvoiceRepository`, `findOpenOrders()`, `MAX_RETRY_COUNT`"
+  category: teamarbeit
+  aliases: [Namenskonventionen, Benennungsregeln]
+  related: [camelcase, styleguide]
+  lesson: teamarbeit/konventionen-und-formatierung
+- slug: pint
+  term: Laravel Pint
+  short: Ein Formatter für PHP, der Code automatisch in einen vereinbarten Stil bringt.
+  explanation: >
+    Pint baut auf PHP-CS-Fixer auf und nutzt ohne Konfiguration das Preset laravel. Über eine `pint.json`
+    wählst du andere Presets wie psr12 oder per. `pint --test` prüft nur und eignet sich für Hooks und CI.
+  example: "`pint --test`"
+  category: teamarbeit
+  aliases: [Pint]
+  related: [formatter, psr-12, linter]
+  lesson: teamarbeit/konventionen-und-formatierung
+- slug: backlog
+  term: Backlog
+  short: Die priorisierte Liste aller Aufgaben, die ein Team noch erledigen will.
+  explanation: >
+    Im Backlog sammeln sich Tickets für Features, Fehler und Verbesserungen. Das Wichtigste steht oben.
+    Aus dem Backlog wählt das Team die Arbeit für den nächsten Sprint oder zieht sie im Kanban-Fluss.
+  example: SHOP-123 steht ganz oben im Backlog und kommt in den nächsten Sprint.
+  category: teamarbeit
+  aliases: [Product Backlog]
+  related: [ticket, sprint, kanban]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: sprint
+  term: Sprint
+  short: Ein fester Zeitraum, meist ein bis vier Wochen, in dem ein Team geplante Aufgaben umsetzt.
+  explanation: >
+    Zu Beginn eines Sprints plant das Team, was es erreichen will. Am Ende zeigt es die Ergebnisse und
+    reflektiert seine Zusammenarbeit in der Retrospektive.
+  example: Sprint 14 läuft zwei Wochen und hat das Ziel „Gutscheine im Warenkorb“.
+  category: teamarbeit
+  aliases: [Sprints]
+  related: [scrum, backlog, retrospektive]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: scrum
+  term: Scrum
+  short: Ein Rahmenwerk für agile Teamarbeit in Sprints mit festen Rollen und Terminen.
+  explanation: >
+    Scrum organisiert Arbeit in Sprints mit Sprint Planning, Daily Standup, Sprint Review und Retrospektive.
+    Die Rollen sind Product Owner, Scrum Master und Entwicklerteam.
+  example: Das Team arbeitet nach Scrum in zweiwöchigen Sprints.
+  category: teamarbeit
+  aliases: []
+  related: [sprint, kanban, daily-standup]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: kanban
+  term: Kanban
+  short: Eine Arbeitsweise mit kontinuierlichem Fluss und begrenzter paralleler Arbeit.
+  explanation: >
+    Bei Kanban zieht das Team neue Aufgaben, sobald Kapazität frei ist, statt in festen Sprints zu planen.
+    WIP-Limits begrenzen, wie viele Tickets gleichzeitig in Arbeit sein dürfen.
+  example: In der Spalte „In Progress“ dürfen höchstens drei Tickets stehen.
+  category: teamarbeit
+  aliases: [Kanban-Board]
+  related: [scrum, backlog]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: user-story
+  term: User Story
+  short: Eine Anforderung aus Sicht der Nutzer:innen nach dem Muster „Als … möchte ich …, damit …“.
+  explanation: >
+    Eine User Story beschreibt, wer etwas will, was und warum – nicht, wie es technisch gelöst wird.
+    Akzeptanzkriterien machen sie überprüfbar.
+  example: "„Als Kundin möchte ich einen Gutschein eingeben, damit ich den Rabatt sofort sehe.“"
+  category: teamarbeit
+  aliases: [User Stories, Story]
+  related: [akzeptanzkriterien, epic, ticket]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: akzeptanzkriterien
+  term: Akzeptanzkriterien
+  short: Überprüfbare Bedingungen, die erfüllt sein müssen, damit eine Aufgabe als erledigt gilt.
+  explanation: >
+    Akzeptanzkriterien beschreiben konkret, woran man erkennt, dass eine Story funktioniert. Sie sind die
+    Grundlage für Tests und für das Review.
+  example: "„Ein abgelaufener Gutschein zeigt die Meldung ‚Gutschein abgelaufen‘.“"
+  category: teamarbeit
+  aliases: [Akzeptanzkriterium, Acceptance Criteria]
+  related: [user-story, definition-of-done]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: definition-of-ready
+  term: Definition of Ready
+  short: Die Teamvereinbarung, wann ein Ticket bereit ist, bearbeitet zu werden.
+  explanation: >
+    Die Definition of Ready (DoR) listet Bedingungen wie „Akzeptanzkriterien formuliert“, „Fragen geklärt“
+    und „geschätzt“. Tickets, die sie nicht erfüllen, werden erst nachgeschärft.
+  example: Ohne Akzeptanzkriterien ist SHOP-130 noch nicht „ready“.
+  category: teamarbeit
+  aliases: [DoR]
+  related: [definition-of-done, akzeptanzkriterien]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: definition-of-done
+  term: Definition of Done
+  short: Die Teamvereinbarung, wann eine Aufgabe wirklich fertig ist.
+  explanation: >
+    Die Definition of Done (DoD) legt fest, was zu „fertig“ gehört, etwa Review, grüne Tests, Merge,
+    aktualisierte Dokumentation und Auslieferung. Erst dann wandert ein Ticket auf „Done“.
+  example: „Code reviewt, Tests grün, Changelog ergänzt, gemergt.“
+  category: teamarbeit
+  aliases: [DoD]
+  related: [definition-of-ready, akzeptanzkriterien]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: story-points
+  term: Story Points
+  short: Eine relative Einheit, mit der Teams den Aufwand von Aufgaben schätzen.
+  explanation: >
+    Story Points vergleichen Aufgaben nach Aufwand, Komplexität und Unsicherheit, oft auf einer
+    Fibonacci-Skala (1, 2, 3, 5, 8, 13). Sie sind kein Stundenversprechen und keine Leistungsbewertung.
+  example: Der Gutschein-Fehler ist eine 2, die Wunschliste eine 8.
+  category: teamarbeit
+  aliases: [Story Point, Punkte]
+  related: [epic, user-story]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: epic
+  term: Epic
+  short: Ein großes Vorhaben, das in mehrere Stories aufgeteilt wird.
+  explanation: >
+    Ein Epic fasst zusammengehörige Stories über mehrere Sprints zusammen. Es wird schrittweise in kleine,
+    möglichst vertikale Stories zerlegt.
+  example: Epic SHOP-200 „Bewertungen“ mit den Stories SHOP-201 bis SHOP-203.
+  category: teamarbeit
+  aliases: [Epics]
+  related: [user-story, vertikaler-schnitt]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: vertikaler-schnitt
+  term: Vertikaler Schnitt
+  short: Eine Aufteilung, bei der jedes Teilstück durch alle Schichten geht und schon Nutzen liefert.
+  explanation: >
+    Statt erst die ganze Datenbank, dann die ganze API und zuletzt die Oberfläche zu bauen, liefert jede
+    vertikale Story einen kleinen, vollständigen Teil der Funktion. Probleme im Zusammenspiel fallen früh auf.
+  example: "„Sterne vergeben und anzeigen“ vor „Kommentare“ und „Moderation“."
+  category: teamarbeit
+  aliases: [vertikale Schnitte, Vertical Slice]
+  related: [epic, user-story]
+  lesson: teamarbeit/tickets-und-schaetzen
+- slug: asynchrone-kommunikation
+  term: Asynchrone Kommunikation
+  short: Kommunikation, bei der die andere Person antwortet, wann es ihr passt.
+  explanation: >
+    Chat-Threads, Ticket- und Pull-Request-Kommentare sind asynchron. Sie unterbrechen niemanden und bleiben
+    nachlesbar, Antworten brauchen aber Zeit.
+  example: Eine Rückfrage zu einer Code-Zeile als Kommentar im Pull Request.
+  category: teamarbeit
+  aliases: [asynchron, async]
+  related: [synchrone-kommunikation]
+  lesson: teamarbeit/kommunikation-im-team
+- slug: synchrone-kommunikation
+  term: Synchrone Kommunikation
+  short: Kommunikation, bei der alle gleichzeitig anwesend sind, etwa in einem Call.
+  explanation: >
+    Gespräche, Calls und Pairing sind synchron. Sie klären Dringendes und festgefahrene Diskussionen
+    schnell, unterbrechen aber konzentriertes Arbeiten. Ergebnisse sollten danach schriftlich festgehalten werden.
+  example: Ein kurzer Call, nachdem eine Review-Diskussion sich im Kreis dreht.
+  category: teamarbeit
+  aliases: [synchron, sync]
+  related: [asynchrone-kommunikation]
+  lesson: teamarbeit/kommunikation-im-team
+- slug: timeboxing
+  term: Timeboxing
+  short: Eine feste Zeitgrenze für eine Tätigkeit, nach der man bewusst entscheidet, wie es weitergeht.
+  explanation: >
+    Beim Timeboxing legst du vorher fest, wie lange du ein Problem allein untersuchst, zum Beispiel 45
+    Minuten. Danach fragst du um Hilfe. So vermeidest du sowohl zu frühe als auch zu späte Fragen.
+  example: „Ich versuche es bis 11 Uhr allein, dann frage ich im Team-Kanal.“
+  category: teamarbeit
+  aliases: [Timebox]
+  related: [asynchrone-kommunikation, blocker]
+  lesson: teamarbeit/kommunikation-im-team
+- slug: daily-standup
+  term: Daily Standup
+  short: Ein kurzes tägliches Treffen, in dem sich ein Team abstimmt und Blocker sichtbar macht.
+  explanation: >
+    Im Daily Standup (höchstens 15 Minuten) sagt jede Person, woran sie gearbeitet hat, was als Nächstes
+    kommt und was sie blockiert. Details werden danach mit den Beteiligten geklärt.
+  example: „Gestern SHOP-88, heute die Tests dazu, blockiert durch ein fehlendes Review.“
+  category: teamarbeit
+  aliases: [Standup, Daily, Daily Scrum]
+  related: [blocker, scrum]
+  lesson: teamarbeit/kommunikation-im-team
+- slug: blocker
+  term: Blocker
+  short: Etwas, das dich an der Weiterarbeit hindert und das du nicht allein lösen kannst.
+  explanation: >
+    Typische Blocker sind ein fehlendes Review, eine unklare Anforderung oder ein fehlender Zugang. Sie
+    sollten früh, etwa im Standup, genannt werden.
+  example: Der Pull Request wartet seit zwei Tagen auf ein Review.
+  category: teamarbeit
+  aliases: [Blocker-Punkt, Impediment]
+  related: [daily-standup]
+  lesson: teamarbeit/kommunikation-im-team
+- slug: retrospektive
+  term: Retrospektive
+  short: Ein regelmäßiges Treffen, in dem ein Team seine Zusammenarbeit reflektiert und verbessert.
+  explanation: >
+    In der Retrospektive sammelt das Team, was gut und schlecht lief, sucht Ursachen und beschließt konkrete
+    Maßnahmen. Es geht um Abläufe, nie um Schuldige.
+  example: Format Start / Stop / Continue am Ende jedes Sprints.
+  category: teamarbeit
+  aliases: [Retro, Retrospektiven]
+  related: [sprint, daily-standup]
+  lesson: teamarbeit/kommunikation-im-team
+- slug: pair-programming
+  term: Pair Programming
+  short: Zwei Personen entwickeln gemeinsam an einer Aufgabe, eine tippt, eine denkt voraus.
+  explanation: >
+    Der Driver tippt und konzentriert sich auf den nächsten Schritt, der Navigator behält das Ziel im Blick.
+    Die Rollen wechseln regelmäßig. Pairing eignet sich für schwierige Probleme und zum Einarbeiten.
+  example: Anna navigiert, Ben tippt, nach 20 Minuten wird getauscht.
+  category: teamarbeit
+  aliases: [Pairing, Paarprogrammierung]
+  related: [mob-programming, commit-trailer]
+  lesson: teamarbeit/onboarding-pairing-und-ki
+- slug: mob-programming
+  term: Mob Programming
+  short: Das ganze Team arbeitet gleichzeitig an einer Aufgabe an einem Bildschirm.
+  explanation: >
+    Beim Mob Programming (auch Ensemble Programming) tippt eine Person, alle anderen denken mit, und der
+    Driver wechselt nach wenigen Minuten. Das verteilt Wissen schnell im ganzen Team.
+  example: Das Team löst eine knifflige Architekturfrage gemeinsam am großen Bildschirm.
+  category: teamarbeit
+  aliases: [Ensemble Programming, Mobbing]
+  related: [pair-programming]
+  lesson: teamarbeit/onboarding-pairing-und-ki
+- slug: commit-trailer
+  term: Commit-Trailer
+  short: Eine Schlüssel-Wert-Zeile am Ende einer Commit-Message, etwa Co-authored-by.
+  explanation: >
+    Trailer stehen nach einer Leerzeile am Ende der Message im Format `Schlüssel: Wert`. Mit
+    `Co-authored-by` zeigt GitHub mehrere Autor:innen eines Commits an.
+  example: "`Co-authored-by: Ben <ben@example.com>`"
+  category: teamarbeit
+  aliases: [Trailer, Co-authored-by]
+  related: [commit-message, pair-programming]
+  lesson: teamarbeit/onboarding-pairing-und-ki
+- slug: ki-assistent
+  term: KI-Assistent
+  short: Ein Werkzeug, das mit einem Sprachmodell Code vorschlägt, erklärt oder ändert.
+  explanation: >
+    KI-Assistenten helfen beim Schreiben, Erklären und Testen von Code. Im Team gelten klare Regeln: Ein
+    Mensch versteht und verantwortet jede Änderung, und Geheimnisse oder Kundendaten gehören nicht in Prompts.
+  example: Ein Assistent entwirft einen Test, den du liest, anpasst und erst dann committest.
+  category: teamarbeit
+  aliases: [KI-Assistenten, AI-Assistent, Coding-Assistent]
+  related: [halluzination, agents-md]
+  lesson: teamarbeit/onboarding-pairing-und-ki
+- slug: halluzination
+  term: Halluzination
+  short: Eine überzeugend klingende, aber erfundene Antwort eines KI-Modells.
+  explanation: >
+    KI-Modelle erfinden manchmal Funktionen, Optionen oder Quellen, die es nicht gibt. Deshalb prüfst du
+    Vorschläge gegen die offizielle Dokumentation und mit Tests.
+  example: Der Assistent schlägt eine Git-Option vor, die in der Doku nicht existiert.
+  category: teamarbeit
+  aliases: [Halluzinationen]
+  related: [ki-assistent]
+  lesson: teamarbeit/onboarding-pairing-und-ki
+- slug: agents-md
+  term: AGENTS.md
+  short: Eine Datei im Repository mit Projekt-Anweisungen für KI-Assistenten.
+  explanation: >
+    In einer AGENTS.md beschreibt ein Team Befehle, Konventionen und Regeln, die KI-Assistenten beachten
+    sollen. Weil sie versioniert ist, gilt für alle im Team derselbe Kontext.
+  example: "„Commit-Messages nach Conventional Commits mit Ticket-Scope.“"
+  category: teamarbeit
+  aliases: [Agents-Datei]
+  related: [ki-assistent, contributing]
+  lesson: teamarbeit/onboarding-pairing-und-ki

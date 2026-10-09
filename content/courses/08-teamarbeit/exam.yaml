@@ -1,0 +1,273 @@
+title: Abschlussprüfung Arbeiten im Team
+description: |
+  Die Prüfung deckt alle vier Module ab: Branching-Strategien und Konventionen, Code-Reviews, Pull Requests
+  sowie Konventionen, Tickets und Kommunikation. Zum Schluss gibt es eine Code-Aufgabe und eine praktische
+  Team-Aufgabe im Übungs-Terminal. Du brauchst 70 % zum Bestehen.
+time_limit_minutes: 40
+pass_percent: 70
+questions:
+  - module: arbeitsablaeufe
+    type: single
+    question: Ein Team liefert eine Web-App nach jedem gemergten Pull Request aus und pflegt nur eine Version. Welche Strategie passt am besten?
+    options:
+      - GitHub Flow
+      - Git Flow
+      - Eine eigene Branch pro Kundin
+    answer: 0
+    explanation: Mit nur einer ausgelieferten Version und häufigen Releases reicht main plus kurze Feature-Branches.
+  - module: arbeitsablaeufe
+    type: match
+    question: Ordne jedem Begriff seine Bedeutung zu.
+    pairs:
+      - { left: "Release-Branch", right: "Friert einen Stand ein, nur noch Fehlerbehebungen" }
+      - { left: "Hotfix", right: "Dringende Korrektur einer ausgelieferten Version" }
+      - { left: "Feature-Flag", right: "Schaltet Code zur Laufzeit ein oder aus" }
+    explanation: Release-Branch, Hotfix und Feature-Flag sind Werkzeuge für kontrollierte Releases.
+  - module: arbeitsablaeufe
+    type: cloze
+    text: Tags werden nicht automatisch übertragen. Mit `git push origin ___` lädst du den Tag v2.1.0 hoch.
+    blanks:
+      - [v2.1.0, --tags]
+    explanation: Tags pushst du einzeln oder mit --tags. Andere holen sie mit git fetch --tags.
+  - module: arbeitsablaeufe
+    type: find-bug
+    question: "Welche Zeile verstößt gegen die Team-Konvention `typ(TICKET): beschreibung`?"
+    language: text
+    code: |
+      feat(SHOP-31): add product filter
+      fix(SHOP-32): handle empty search
+      Update stuff
+      docs(SHOP-33): describe filters
+    bug_line: 3
+    explanation: Zeile 3 hat weder Typ noch Scope noch eine aussagekräftige Beschreibung.
+  - module: arbeitsablaeufe
+    type: single
+    question: Welcher Branch-Name folgt der Konvention `<typ>/<ticket>-<kurzer-slug>`?
+    options:
+      - fix/SHOP-77-leerer-warenkorb
+      - Fix_Leerer_Warenkorb
+      - ben/test
+    answer: 0
+    explanation: Typ, Ticket-ID und ein Slug aus Kleinbuchstaben mit Bindestrichen.
+  - module: code-reviews
+    type: multiple
+    question: Worauf achtest du in einem Code-Review? (mehrere Antworten)
+    options:
+      - Korrektheit und Sonderfälle
+      - Sicherheit, etwa fehlende Berechtigungsprüfungen
+      - Ob es Tests für Normal- und Fehlerfall gibt
+      - Ob die Einrückung exakt 4 Leerzeichen hat
+    answers: [0, 1, 2]
+    explanation: Stilfragen wie Einrückung erledigt ein Formatter. Menschen prüfen Logik, Sicherheit, Tests und Verständlichkeit.
+  - module: code-reviews
+    type: single
+    question: Welcher Review-Kommentar ist am hilfreichsten?
+    options:
+      - "Das ist so nicht gut."
+      - "issue: Ohne Login kann hier jede Person fremde Rechnungen laden. Magst du die Berechtigung prüfen?"
+      - "Warum hast du das überhaupt so gebaut?"
+    answer: 1
+    explanation: Konkret, begründet, mit Lösungsvorschlag und klarer Wichtigkeit durch das Präfix.
+  - module: code-reviews
+    type: match
+    question: Ordne jedem Präfix seine Bedeutung zu.
+    pairs:
+      - { left: "nit:", right: "Kleinigkeit, blockiert nicht" }
+      - { left: "question:", right: "Verständnisfrage" }
+      - { left: "issue:", right: "Echtes Problem, das gelöst werden muss" }
+    explanation: Präfixe nach Conventional Comments zeigen die Wichtigkeit eines Kommentars.
+  - module: code-reviews
+    type: single
+    question: Du hast eine `.env` mit einem Schlüssel committet, aber noch nicht gepusht. Was ist richtig?
+    options:
+      - Mit `git rm --cached .env` herausnehmen, in .gitignore eintragen und den Commit mit `--amend` korrigieren
+      - In einem neuen Commit löschen – das reicht
+      - Pushen und später darum kümmern
+    answer: 0
+    explanation: Nur so steht der Schlüssel nie in der Historie. Ein gepushter Schlüssel müsste gesperrt und neu erzeugt werden.
+  - module: pull-requests
+    type: multiple
+    question: Was gehört in eine gute Pull-Request-Beschreibung? (mehrere Antworten)
+    options:
+      - Was sich ändert und warum
+      - Wie man es testet
+      - Ticket-Link oder Closes #12
+      - Der Hinweis „bitte schnell mergen“
+    answers: [0, 1, 2]
+    explanation: Die Beschreibung erklärt Ziel, Hintergrund und Test – das Warum steht nirgendwo sonst.
+  - module: pull-requests
+    type: single
+    question: PR 2 baut auf dem noch offenen PR 1 auf. Wohin zeigt PR 2 als Basis?
+    options:
+      - Auf den Branch von PR 1
+      - Auf main
+      - Auf develop
+    answer: 0
+    explanation: So zeigt PR 2 nur seine eigenen Änderungen. Nach dem Merge von PR 1 wird die Basis auf main umgestellt.
+  - module: pull-requests
+    type: multiple
+    question: Was gilt für Review-Umgebungen pro Pull Request? (mehrere Antworten)
+    options:
+      - Sie werden automatisch gebaut und nach dem Merge abgebaut
+      - Sie enthalten nur Testdaten
+      - Sie nutzen die echte Kundendatenbank
+      - Ihr Link erscheint im Pull Request
+    answers: [0, 1, 3]
+    explanation: Review-Umgebungen sind kurzlebig, weniger geschützt und bekommen deshalb keine echten Kundendaten.
+  - module: pull-requests
+    type: cloze
+    text: Musst du deinen eigenen, bereits gepushten Branch nach einem Rebase überschreiben, nutzt du `git push ___`.
+    blanks:
+      - [--force-with-lease]
+    explanation: Es bricht ab, wenn inzwischen jemand anderes gepusht hat – so überschreibst du keine fremde Arbeit.
+  - module: zusammenarbeit
+    type: single
+    question: Was bewirkt `pint --test`?
+    options:
+      - Es prüft den Stil und endet mit Fehlercode, ohne Dateien zu ändern
+      - Es führt alle PHPUnit-Tests aus
+      - Es formatiert und committet alle Dateien
+    answer: 0
+    explanation: Der Testmodus eignet sich für Pre-Commit-Hooks und CI-Checks.
+  - module: zusammenarbeit
+    type: match
+    question: Ordne jedem Begriff seine Bedeutung zu.
+    pairs:
+      - { left: "Definition of Ready", right: "Wann ein Ticket bearbeitet werden darf" }
+      - { left: "Definition of Done", right: "Wann ein Ticket wirklich fertig ist" }
+      - { left: "Story Points", right: "Relativer Aufwand inklusive Unsicherheit" }
+    explanation: DoR und DoD sichern Qualität vor und nach der Arbeit, Story Points dienen der Planung.
+  - module: zusammenarbeit
+    type: single
+    question: Du kommst seit einer Stunde nicht weiter, eure Timebox liegt bei 45 Minuten. Was tust du?
+    options:
+      - Eine vollständige Frage mit Ziel, Fehlermeldung als Text, Versuchen und Vermutung in den Team-Kanal schreiben
+      - „Hallo, hast du kurz Zeit?“ schreiben und warten
+      - Bis morgen weiter allein suchen
+    answer: 0
+    explanation: Nach der Timebox fragst du – und zwar so, dass niemand zurückfragen muss.
+  - module: zusammenarbeit
+    type: multiple
+    question: Welche Teamregeln für KI-Assistenten sind sinnvoll? (mehrere Antworten)
+    options:
+      - Ein Mensch versteht und verantwortet jede committete Änderung
+      - Keine Geheimnisse oder Kundendaten in Prompts
+      - KI-Code braucht keine Tests
+      - Gemeinsame Projekt-Anweisungen liegen versioniert im Repository
+    answers: [0, 1, 3]
+    explanation: KI-Code wird reviewt und getestet wie jeder andere Code; die Verantwortung bleibt beim Menschen.
+tasks:
+  - module: arbeitsablaeufe
+    id: pruefung-changelog-zeile
+    type: code
+    language: js
+    title: Changelog-Zeile aus einer Commit-Message
+    description: |
+      Schreibe `toChangelogLine(subject)`. Die Funktion bekommt die erste Zeile einer Conventional-Commit-
+      Message und liefert eine Zeile für den Changelog:
+
+      - `feat(SHOP-1): add wishlist` → `- **SHOP-1:** add wishlist`
+      - ohne Scope: `fix: round prices` → `- round prices`
+      - Nur `feat` und `fix` erzeugen eine Zeile (auch mit `!`). Alle anderen Typen und ungültige Messages
+        ergeben `null`.
+    starter: |
+      function toChangelogLine(subject) {
+        // dein Code
+      }
+    tests:
+      - name: Feature mit Scope
+        code: |
+          assertEqual(toChangelogLine('feat(SHOP-1): add wishlist'), '- **SHOP-1:** add wishlist')
+      - name: Fix ohne Scope
+        code: |
+          assertEqual(toChangelogLine('fix: round prices'), '- round prices')
+      - name: Andere Typen und ungültige Messages
+        code: |
+          assertEqual(toChangelogLine('chore: update deps'), null)
+          assertEqual(toChangelogLine('fixed stuff'), null)
+          assertEqual(toChangelogLine(''), null)
+      - name: Breaking Change
+        code: |
+          assertEqual(toChangelogLine('feat(API-4)!: drop v1'), '- **API-4:** drop v1')
+    hints:
+      - "Regulärer Ausdruck: `^(\\w+)(?:\\(([^)]+)\\))?!?: (.+)$`"
+    solution: |
+      function toChangelogLine(subject) {
+        const match = /^(\w+)(?:\(([^)]+)\))?!?: (.+)$/.exec(subject)
+        if (!match || !['feat', 'fix'].includes(match[1])) return null
+        return match[2] ? `- **${match[2]}:** ${match[3]}` : `- ${match[3]}`
+      }
+  - module: pull-requests
+    id: pruefung-team-release
+    type: terminal
+    title: Konflikt lösen und Release taggen
+    description: |
+      Im Ordner `pruefung-release` gibt es das Remote `origin.git` und die Klone `anna` und `ben`.
+      Anna hat in `main` den Preis in `preise.txt` geändert und gepusht. Ben hat in seinem `main` dieselbe
+      Zeile anders geändert und committet, aber nicht gepusht.
+
+      1. In `ben`: Hole Annas Stand, löse den Konflikt so, dass die Zeile `Pflanze: 12,99 Euro (inkl. Topf)`
+         lautet, committe und pushe.
+      2. Lege in `ben` von `main` den Branch `release/2.0` an, setze den annotierten Tag `v2.0.0` und pushe
+         Branch und Tag.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-release
+    setup: |
+      git init -q --bare -b main origin.git
+      git clone -q origin.git anna 2>/dev/null
+      cd anna
+      git config user.name "Anna"
+      git config user.email "anna@example.com"
+      printf 'Preisliste\nPflanze: 9,99 Euro\n' > preise.txt
+      git add . && git commit -q -m "docs: add price list"
+      git push -q origin main
+      cd ..
+      git clone -q origin.git ben
+      cd ben
+      git config user.name "Ben"
+      git config user.email "ben@example.com"
+      git config pull.rebase false
+      printf 'Preisliste\nPflanze: 9,99 Euro (inkl. Topf)\n' > preise.txt
+      git commit -q -am "docs(SHOP-51): mention pot in price"
+      cd ../anna
+      printf 'Preisliste\nPflanze: 12,99 Euro\n' > preise.txt
+      git commit -q -am "fix(SHOP-50): update plant price"
+      git push -q origin main
+    checks:
+      - type: command
+        run: git -C origin.git show main:preise.txt
+        stdout_matches: "^Pflanze: 12,99 Euro \\(inkl\\. Topf\\)$"
+        message: "In main soll die Zeile `Pflanze: 12,99 Euro (inkl. Topf)` stehen – gelöst und gepusht."
+      - type: command
+        run: git -C origin.git show main:preise.txt | grep -cE "^(<<<<<<<|=======|>>>>>>>)"
+        expect_exit: 1
+        message: In preise.txt stehen noch Konfliktmarker.
+      - type: command
+        run: "git -C origin.git log --format=%s main | grep -cE \"^(fix\\(SHOP-50\\)|docs\\(SHOP-51\\)): \""
+        stdout_matches: "^\\s*2\\s*$"
+        message: In main müssen Annas und Bens Commits enthalten sein.
+      - type: command
+        run: git -C origin.git cat-file -t v2.0.0
+        stdout_equals: tag
+        message: Der annotierte Tag v2.0.0 fehlt im Remote.
+      - type: command
+        run: test "$(git -C origin.git rev-parse 'v2.0.0^{commit}')" = "$(git -C origin.git rev-parse release/2.0)" && test "$(git -C origin.git rev-parse release/2.0)" = "$(git -C origin.git rev-parse main)" && echo ok
+        stdout_equals: ok
+        message: release/2.0 soll im Remote existieren, vom aktuellen main abzweigen und den Tag v2.0.0 tragen.
+    hints:
+      - "`git pull` in ben erzeugt den Konflikt; danach Datei bearbeiten, `git add`, `git commit --no-edit`, `git push`."
+      - "`git switch -c release/2.0`, `git tag -a v2.0.0 -m \"Release 2.0.0\"`, `git push origin release/2.0 v2.0.0`."
+    solution: |
+      ```bash
+      cd pruefung-release
+      cd ben
+      git pull || true
+      printf 'Preisliste\nPflanze: 12,99 Euro (inkl. Topf)\n' > preise.txt
+      git add preise.txt
+      git commit --no-edit
+      git push
+      git switch -c release/2.0
+      git tag -a v2.0.0 -m "Release 2.0.0"
+      git push origin release/2.0 v2.0.0
+      ```

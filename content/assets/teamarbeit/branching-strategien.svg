@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="450" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Drei Branching-Strategien im Vergleich</text>
+
+  <!-- GitHub Flow -->
+  <text x="30" y="80" font-size="17" font-weight="700" fill="#1e1b3a">GitHub Flow</text>
+  <text x="30" y="100" font-size="13" fill="#1e1b3a">ein langlebiger Branch, kurze Feature-Branches, Merge per Pull Request</text>
+  <line x1="150" y1="140" x2="860" y2="140" stroke="#22d3ee" stroke-width="5"/>
+  <text x="30" y="145" font-size="14" font-weight="600" fill="#1e1b3a">main</text>
+  <path d="M210 140 Q240 180 270 180 L360 180 Q390 180 420 140" fill="none" stroke="#a78bfa" stroke-width="4"/>
+  <path d="M480 140 Q510 180 540 180 L640 180 Q670 180 700 140" fill="none" stroke="#a78bfa" stroke-width="4"/>
+  <text x="315" y="202" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">feat/login</text>
+  <text x="590" y="202" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">fix/warenkorb</text>
+  <g fill="#ffffff" stroke="#1e1b3a" stroke-width="2">
+    <circle cx="170" cy="140" r="8"/><circle cx="420" cy="140" r="8"/><circle cx="700" cy="140" r="8"/><circle cx="820" cy="140" r="8"/>
+    <circle cx="290" cy="180" r="7"/><circle cx="340" cy="180" r="7"/><circle cx="570" cy="180" r="7"/><circle cx="620" cy="180" r="7"/>
+  </g>
+
+  <!-- Git Flow -->
+  <text x="30" y="250" font-size="17" font-weight="700" fill="#1e1b3a">Git Flow</text>
+  <text x="30" y="270" font-size="13" fill="#1e1b3a">zwei langlebige Branches (main und develop) plus Feature-, Release- und Hotfix-Branches</text>
+  <line x1="150" y1="300" x2="860" y2="300" stroke="#22d3ee" stroke-width="5"/>
+  <text x="30" y="305" font-size="14" font-weight="600" fill="#1e1b3a">main</text>
+  <line x1="150" y1="380" x2="860" y2="380" stroke="#34d399" stroke-width="5"/>
+  <text x="30" y="385" font-size="14" font-weight="600" fill="#1e1b3a">develop</text>
+  <path d="M230 380 Q255 420 280 420 L360 420 Q385 420 410 380" fill="none" stroke="#a78bfa" stroke-width="4"/>
+  <text x="320" y="442" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">feature/suche</text>
+  <path d="M470 380 Q490 345 510 345 L590 345 Q615 345 630 300" fill="none" stroke="#f59e0b" stroke-width="4"/>
+  <path d="M590 345 Q610 360 625 380" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6 4"/>
+  <text x="545" y="336" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">release/2.0</text>
+  <path d="M700 300 Q720 330 740 330 L770 330 Q790 330 800 300" fill="none" stroke="#f87171" stroke-width="4"/>
+  <path d="M770 330 Q790 355 805 380" fill="none" stroke="#f87171" stroke-width="3" stroke-dasharray="6 4"/>
+  <text x="760" y="352" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">hotfix</text>
+  <g fill="#ffffff" stroke="#1e1b3a" stroke-width="2">
+    <circle cx="170" cy="300" r="8"/><circle cx="630" cy="300" r="8"/><circle cx="800" cy="300" r="8"/>
+    <circle cx="190" cy="380" r="8"/><circle cx="410" cy="380" r="8"/><circle cx="625" cy="380" r="8"/><circle cx="805" cy="380" r="8"/>
+    <circle cx="300" cy="420" r="7"/><circle cx="340" cy="420" r="7"/><circle cx="550" cy="345" r="7"/>
+  </g>
+  <rect x="610" y="262" width="44" height="22" rx="5" fill="#f59e0b"/>
+  <text x="632" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#1e1b3a">v2.0</text>
+  <rect x="778" y="262" width="48" height="22" rx="5" fill="#f87171"/>
+  <text x="802" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#1e1b3a">v2.0.1</text>
+
+  <!-- Trunk-based -->
+  <text x="30" y="490" font-size="17" font-weight="700" fill="#1e1b3a">Trunk-based Development</text>
+  <text x="30" y="510" font-size="13" fill="#1e1b3a">alle integrieren mindestens täglich in main, Unfertiges bleibt hinter Feature-Flags verborgen</text>
+  <line x1="150" y1="550" x2="860" y2="550" stroke="#22d3ee" stroke-width="5"/>
+  <text x="30" y="555" font-size="14" font-weight="600" fill="#1e1b3a">main</text>
+  <path d="M260 550 Q275 575 290 575 Q305 575 320 550" fill="none" stroke="#a78bfa" stroke-width="3"/>
+  <path d="M520 550 Q535 575 550 575 Q565 575 580 550" fill="none" stroke="#a78bfa" stroke-width="3"/>
+  <g fill="#ffffff" stroke="#1e1b3a" stroke-width="2">
+    <circle cx="180" cy="550" r="7"/><circle cx="230" cy="550" r="7"/><circle cx="320" cy="550" r="7"/><circle cx="380" cy="550" r="7"/>
+    <circle cx="440" cy="550" r="7"/><circle cx="490" cy="550" r="7"/><circle cx="580" cy="550" r="7"/><circle cx="640" cy="550" r="7"/>
+    <circle cx="700" cy="550" r="7"/><circle cx="760" cy="550" r="7"/><circle cx="820" cy="550" r="7"/>
+  </g>
+  <rect x="660" y="572" width="140" height="22" rx="5" fill="#34d399"/>
+  <text x="730" y="588" text-anchor="middle" font-size="12" font-weight="600" fill="#1e1b3a">Flag „neueSuche“: aus</text>
+</svg>
