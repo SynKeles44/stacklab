@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  content:
+    name: Content validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, pdo_sqlite
+      - run: composer install --no-interaction --no-progress --prefer-dist
+        working-directory: backend
+      - run: php artisan stacklab:validate --path=../content --warnings
+        working-directory: backend
+
+  backend:
+    name: Backend (Pest, Larastan, Pint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, pdo_sqlite
+          coverage: none
+      - run: composer install --no-interaction --no-progress --prefer-dist
+        working-directory: backend
+      - run: vendor/bin/pint --test
+        working-directory: backend
+      - run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+        working-directory: backend
+      - run: vendor/bin/pest
+        working-directory: backend
+
+  frontend:
+    name: Frontend (typecheck, tests, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+        working-directory: frontend
+      - run: bun run typecheck
+        working-directory: frontend
+      - run: bun run test
+        working-directory: frontend
+      - run: bun run build
+        working-directory: frontend
+
+  sandbox:
+    name: Sandbox gateway tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm ci
+        working-directory: sandbox/server
+      - run: node --test src/sandbox.test.ts
+        working-directory: sandbox/server
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker compose config --quiet
+      - run: docker compose build php proxy sandbox
