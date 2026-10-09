@@ -1,0 +1,128 @@
+title: OpenAPI verstehen
+description: Warum API-Dokumentation automatisiert werden sollte, wie eine OpenAPI-Datei aufgebaut ist und wie du Parameter, Bodies und Antworten beschreibst.
+exercise:
+  id: modul-uebung-notizen
+  type: terminal
+  title: Eine Notizen-API vollständig beschreiben
+  description: |
+    Ein Team plant eine kleine Notizen-API und möchte **design-first** arbeiten. Du schreibst die
+    Spezifikation, bevor eine Zeile Code existiert.
+
+    Im Ordner `notizen-api` sind Redocly CLI und eine `redocly.yaml` vorbereitet. Klicke zuerst auf
+    **Aufgabe vorbereiten**. Schreibe dann `openapi.yaml` (OpenAPI 3.1, Titel `Notizen-API`,
+    Version `1.0.0`, Server `https://api.example.com/v1`) mit diesen vier Operationen:
+
+    1. `GET /notes` – `operationId: listNotes`, optionaler Query-Parameter `tag` (string), Antwort `"200"`.
+    2. `POST /notes` – `operationId: createNote`, Pflicht-Body als `application/json` mit einem Objekt,
+       das das Pflichtfeld `title` (string) und das optionale Feld `text` (string) hat. Antworten `"201"` und `"422"`.
+    3. `GET /notes/{id}` – `operationId: getNote`, Pfadparameter `id` (integer), Antworten `"200"` und `"404"`.
+    4. `DELETE /notes/{id}` – `operationId: deleteNote`, Pfadparameter `id`, Antworten `"204"` und `"404"`.
+
+    Prüfe zum Schluss mit `npx redocly lint openapi.yaml` – es dürfen keine Fehler übrig bleiben.
+  workdir: notizen-api
+  setup: |
+    npm init -y >/dev/null
+    timeout 170 npm install --no-audit --no-fund --silent @redocly/cli@2.62.1
+    cat > redocly.yaml <<'EOF'
+    extends:
+      - recommended
+    rules:
+      security-defined: off
+      no-server-example.com: off
+    EOF
+  checks:
+    - type: file_exists
+      path: openapi.yaml
+      message: Es gibt noch keine openapi.yaml im Ordner notizen-api.
+    - type: command
+      run: npx redocly lint openapi.yaml >/dev/null 2>&1
+      message: "`npx redocly lint openapi.yaml` meldet noch Fehler."
+    - type: command
+      run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); npx redocly bundle openapi.yaml --ext json -o \"$d/s.json\" >/dev/null 2>&1; jq -r '[.info.title, .servers[0].url] | join(\"|\")' \"$d/s.json\"; rm -rf \"$d\""
+      stdout_equals: "Notizen-API|https://api.example.com/v1"
+      message: Titel Notizen-API oder der Server https://api.example.com/v1 fehlen.
+    - type: command
+      run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); npx redocly bundle openapi.yaml --ext json -o \"$d/s.json\" >/dev/null 2>&1; jq -r '[.paths[][]?.operationId?] | map(select(. != null)) | sort | join(\",\")' \"$d/s.json\"; rm -rf \"$d\""
+      stdout_equals: "createNote,deleteNote,getNote,listNotes"
+      message: Es sollen genau die vier Operationen listNotes, createNote, getNote und deleteNote existieren.
+    - type: command
+      run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); npx redocly bundle openapi.yaml --ext json -o \"$d/s.json\" >/dev/null 2>&1; jq -r '.paths[\"/notes\"].get.parameters[]? | select(.name==\"tag\") | .in' \"$d/s.json\"; rm -rf \"$d\""
+      stdout_equals: query
+      message: "listNotes braucht den Query-Parameter tag (in: query)."
+    - type: command
+      run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); npx redocly bundle openapi.yaml --ext json -o \"$d/s.json\" >/dev/null 2>&1; jq -r '.paths[\"/notes\"].post | [(.requestBody.required|tostring), (.requestBody.content[\"application/json\"].schema.required // [] | join(\"+\")), (.responses|keys|join(\",\"))] | join(\"|\")' \"$d/s.json\"; rm -rf \"$d\""
+      stdout_equals: "true|title|201,422"
+      message: "createNote braucht einen Pflicht-Body (required: true) als application/json, in dem nur title Pflichtfeld ist, und die Antworten 201 und 422."
+    - type: command
+      run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); npx redocly bundle openapi.yaml --ext json -o \"$d/s.json\" >/dev/null 2>&1; jq -r '.paths[\"/notes/{id}\"] | [(.get.responses|keys|join(\",\")), (.delete.responses|keys|join(\",\"))] | join(\"|\")' \"$d/s.json\"; rm -rf \"$d\""
+      stdout_equals: "200,404|204,404"
+      message: getNote braucht die Antworten 200 und 404, deleteNote die Antworten 204 und 404.
+  hints:
+    - Fang mit `openapi`, `info`, `servers` und einem einzigen Pfad an, lint, und erweitere dann Schritt für Schritt.
+    - Den Pfadparameter `id` kannst du einmal direkt unter `/notes/{id}` (auf Höhe von `get` und `delete`) als `parameters` angeben – dann gilt er für beide Operationen.
+    - "Das Pflichtfeld im Body steht im Schema: `required: [title]` neben `properties`."
+  solution: |
+    ```yaml title="openapi.yaml"
+    openapi: 3.1.0
+    info:
+      title: Notizen-API
+      version: 1.0.0
+    servers:
+      - url: https://api.example.com/v1
+    paths:
+      /notes:
+        get:
+          operationId: listNotes
+          summary: Notizen auflisten
+          parameters:
+            - name: tag
+              in: query
+              schema:
+                type: string
+          responses:
+            "200":
+              description: Liste der Notizen
+        post:
+          operationId: createNote
+          summary: Notiz anlegen
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required: [title]
+                  properties:
+                    title:
+                      type: string
+                    text:
+                      type: string
+          responses:
+            "201":
+              description: Notiz angelegt
+            "422":
+              description: Ungültige Eingaben
+      /notes/{id}:
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: integer
+        get:
+          operationId: getNote
+          summary: Notiz laden
+          responses:
+            "200":
+              description: Die Notiz
+            "404":
+              description: Notiz nicht gefunden
+        delete:
+          operationId: deleteNote
+          summary: Notiz löschen
+          responses:
+            "204":
+              description: Notiz gelöscht
+            "404":
+              description: Notiz nicht gefunden
+    ```

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="400" y="26" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Die oberste Ebene einer OpenAPI-Datei</text>
+  <rect x="40" y="40" width="220" height="44" rx="8" fill="#f8fafc" stroke="#a78bfa" stroke-width="2.5"/>
+  <text x="150" y="68" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="18" font-weight="700" fill="#1e1b3a">openapi:</text>
+  <line x1="262" y1="62" x2="296" y2="62" stroke="#1e1b3a" stroke-width="1.5"/>
+  <polygon points="296,57 304,62 296,67" fill="#1e1b3a"/>
+  <rect x="308" y="40" width="452" height="44" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="324" y="67" font-size="15" fill="#1e1b3a">Version des Standards, z. B. 3.1.0</text>
+  <rect x="40" y="100" width="220" height="44" rx="8" fill="#f8fafc" stroke="#22d3ee" stroke-width="2.5"/>
+  <text x="150" y="128" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="18" font-weight="700" fill="#1e1b3a">info:</text>
+  <line x1="262" y1="122" x2="296" y2="122" stroke="#1e1b3a" stroke-width="1.5"/>
+  <polygon points="296,117 304,122 296,127" fill="#1e1b3a"/>
+  <rect x="308" y="100" width="452" height="44" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="324" y="127" font-size="15" fill="#1e1b3a">Titel, Version und Beschreibung der API</text>
+  <rect x="40" y="160" width="220" height="44" rx="8" fill="#f8fafc" stroke="#22d3ee" stroke-width="2.5"/>
+  <text x="150" y="188" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="18" font-weight="700" fill="#1e1b3a">servers:</text>
+  <line x1="262" y1="182" x2="296" y2="182" stroke="#1e1b3a" stroke-width="1.5"/>
+  <polygon points="296,177 304,182 296,187" fill="#1e1b3a"/>
+  <rect x="308" y="160" width="452" height="44" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="324" y="187" font-size="15" fill="#1e1b3a">Basis-Adressen, z. B. https://api.example.com/v1</text>
+  <rect x="40" y="220" width="220" height="44" rx="8" fill="#f8fafc" stroke="#34d399" stroke-width="2.5"/>
+  <text x="150" y="248" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="18" font-weight="700" fill="#1e1b3a">paths:</text>
+  <line x1="262" y1="242" x2="296" y2="242" stroke="#1e1b3a" stroke-width="1.5"/>
+  <polygon points="296,237 304,242 296,247" fill="#1e1b3a"/>
+  <rect x="308" y="220" width="452" height="44" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="324" y="247" font-size="15" fill="#1e1b3a">Endpunkte und ihre Operationen (get, post …)</text>
+  <rect x="40" y="280" width="220" height="44" rx="8" fill="#f8fafc" stroke="#f59e0b" stroke-width="2.5"/>
+  <text x="150" y="308" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="18" font-weight="700" fill="#1e1b3a">components:</text>
+  <line x1="262" y1="302" x2="296" y2="302" stroke="#1e1b3a" stroke-width="1.5"/>
+  <polygon points="296,297 304,302 296,307" fill="#1e1b3a"/>
+  <rect x="308" y="280" width="452" height="44" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="324" y="307" font-size="15" fill="#1e1b3a">Wiederverwendbare Bausteine: schemas, securitySchemes</text>
+  <rect x="40" y="340" width="220" height="44" rx="8" fill="#f8fafc" stroke="#f87171" stroke-width="2.5"/>
+  <text x="150" y="368" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="18" font-weight="700" fill="#1e1b3a">security:</text>
+  <line x1="262" y1="362" x2="296" y2="362" stroke="#1e1b3a" stroke-width="1.5"/>
+  <polygon points="296,357 304,362 296,367" fill="#1e1b3a"/>
+  <rect x="308" y="340" width="452" height="44" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="324" y="367" font-size="15" fill="#1e1b3a">Welche Anmeldung standardmäßig gilt</text>
+  <rect x="40" y="400" width="220" height="44" rx="8" fill="#f8fafc" stroke="#a78bfa" stroke-width="2.5"/>
+  <text x="150" y="428" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="18" font-weight="700" fill="#1e1b3a">tags:</text>
+  <line x1="262" y1="422" x2="296" y2="422" stroke="#1e1b3a" stroke-width="1.5"/>
+  <polygon points="296,417 304,422 296,427" fill="#1e1b3a"/>
+  <rect x="308" y="400" width="452" height="44" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="324" y="427" font-size="15" fill="#1e1b3a">Gruppen, nach denen Operationen sortiert werden</text>
+  <text x="40" y="470" font-size="12" fill="#475569">Pflicht sind openapi und info sowie mindestens eins von paths, components oder webhooks.</text>
+</svg>

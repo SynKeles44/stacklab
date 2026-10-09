@@ -1,0 +1,353 @@
+- slug: openapi
+  term: OpenAPI
+  short: Ein offener Standard, um HTTP-APIs maschinenlesbar in YAML oder JSON zu beschreiben.
+  explanation: >
+    Eine OpenAPI-Datei beschreibt Endpunkte, Parameter, Bodies, Antworten, Datenstrukturen und Anmeldung
+    einer API. Weil sie maschinenlesbar ist, erzeugen Werkzeuge daraus Doku-Seiten, Clients und Prüfungen.
+    Aktuell verbreitet ist Version 3.1; bis Version 2.0 hieß der Standard Swagger.
+  example: "`openapi: 3.1.0` in der ersten Zeile kennzeichnet eine OpenAPI-3.1-Datei."
+  category: web
+  aliases: [OpenAPI-Spezifikation, OAS, OpenAPI 3.1]
+  related: [api-spezifikation, swagger, json-schema]
+  lesson: api-dokumentation/warum-api-dokumentation
+- slug: swagger
+  term: Swagger
+  short: Der frühere Name des OpenAPI-Standards und heute ein Name für Werkzeuge rund um OpenAPI.
+  explanation: >
+    Bis Version 2.0 hieß die Spezifikation Swagger, danach wurde sie als OpenAPI weitergeführt. Den Namen
+    findest du heute noch in Werkzeugen wie Swagger UI oder im PHP-Paket swagger-php. Alte Dateien beginnen
+    mit `swagger: "2.0"` statt `openapi:`.
+  example: "Eine Datei mit `swagger: \"2.0\"` ganz oben ist eine alte Swagger-2.0-Spezifikation."
+  category: web
+  aliases: [Swagger 2.0]
+  related: [openapi, swagger-ui]
+  lesson: api-dokumentation/warum-api-dokumentation
+- slug: api-spezifikation
+  term: API-Spezifikation
+  short: Eine Datei, die eine API vollständig und maschinenlesbar beschreibt – kurz „Spec“.
+  explanation: >
+    Die Spezifikation ist der Vertrag einer API: Sie legt fest, welche Endpunkte es gibt und was sie
+    erwarten und liefern. Bei HTTP-APIs ist das meist eine OpenAPI-Datei. Sie kann von Hand geschrieben
+    oder aus dem Code erzeugt werden.
+  example: "`docs/v1/openapi.yaml` ist die Spezifikation der Version 1 einer API."
+  category: web
+  aliases: [Spezifikation, Spec, API-Spec]
+  related: [openapi, api-dokumentation]
+  lesson: api-dokumentation/warum-api-dokumentation
+- slug: dokumentations-drift
+  term: Dokumentations-Drift
+  short: Das schleichende Auseinanderlaufen von Code und Dokumentation.
+  explanation: >
+    Drift entsteht, wenn der Code geändert, die Doku aber nicht mitgepflegt wird. Weil Tests weiter grün
+    sind, fällt sie oft erst auf, wenn sich jemand auf die falsche Doku verlässt. Erzeugte Doku und eine
+    Prüfung in der CI verhindern Drift.
+  example: "Das Feld `price` heißt im Code seit Wochen `total`, die Wiki-Seite nennt noch `price`."
+  category: web
+  aliases: [Doku-Drift, Drift]
+  related: [api-dokumentation, code-first]
+  lesson: api-dokumentation/warum-api-dokumentation
+- slug: design-first
+  term: Design-first
+  short: Ein Vorgehen, bei dem zuerst die API-Spezifikation geschrieben und danach der Code gebaut wird.
+  explanation: >
+    Frontend und Backend einigen sich vorab auf einen Vertrag in Form einer OpenAPI-Datei. Daraus lassen
+    sich schon vor der Implementierung Mock-Server und Clients erzeugen. Die YAML-Datei ist die Quelle der
+    Wahrheit.
+  example: "Das Team schreibt `openapi.yaml` für die neue Notizen-API, bevor eine Zeile PHP existiert."
+  category: web
+  aliases: [API-first, Spec-first]
+  related: [code-first, api-spezifikation]
+  lesson: api-dokumentation/warum-api-dokumentation
+- slug: code-first
+  term: Code-first
+  short: Ein Vorgehen, bei dem die API-Spezifikation automatisch aus dem Code erzeugt wird.
+  explanation: >
+    Die Beschreibung steht direkt am Code, etwa als PHP-Attribute, oder wird aus dem Code abgeleitet.
+    Ein Werkzeug erzeugt daraus die OpenAPI-Datei. Weil Code und Beschreibung nebeneinanderliegen, kann
+    die Doku kaum veralten.
+  example: "`./vendor/bin/openapi src -o openapi.yaml` erzeugt die Spezifikation aus den Attributen im Code."
+  category: web
+  aliases: [Code-first-Ansatz]
+  related: [design-first, swagger-php, scramble]
+  lesson: api-dokumentation/warum-api-dokumentation
+- slug: openapi-operation
+  term: Operation (OpenAPI)
+  short: Die Kombination aus einem Pfad und einer HTTP-Methode in einer OpenAPI-Datei.
+  explanation: >
+    Unter `paths` steht pro Pfad die Methode in Kleinbuchstaben – das ist eine Operation. Sie beschreibt
+    Parameter, Request-Body und Antworten. Jede Operation braucht mindestens eine Antwort.
+  example: "`paths: /books: get:` beschreibt die Operation `GET /books`."
+  category: web
+  aliases: [Operation, Operationen]
+  related: [operation-id, endpunkt, openapi]
+  lesson: api-dokumentation/aufbau-einer-openapi-datei
+- slug: operation-id
+  term: operationId
+  short: Der eindeutige Name einer Operation in einer OpenAPI-Datei.
+  explanation: >
+    Die operationId identifiziert eine Operation unabhängig von Pfad und Methode. Code-Generatoren machen
+    daraus Funktionsnamen, Doku-Werkzeuge Anker-Links. Sie muss in der ganzen Datei eindeutig sein.
+  example: "`operationId: getBook` wird im generierten Client zur Funktion `getBook()`."
+  category: web
+  aliases: [Operation-ID]
+  related: [openapi-operation, api-client]
+  lesson: api-dokumentation/aufbau-einer-openapi-datei
+- slug: openapi-tag
+  term: Tag (OpenAPI)
+  short: Eine Gruppe, der Operationen in einer OpenAPI-Datei zugeordnet werden.
+  explanation: >
+    Tags sortieren Operationen in der Doku-Ansicht, z. B. alles rund um Bücher unter „Books“. Eine
+    Operation kann mehrere Tags haben. Unter `tags` auf oberster Ebene kannst du jedem Tag eine
+    Beschreibung geben.
+  example: "`tags: [Books]` an einer Operation zeigt sie in der Doku im Abschnitt Books."
+  category: web
+  aliases: [Tags]
+  related: [openapi-operation]
+  lesson: api-dokumentation/aufbau-einer-openapi-datei
+- slug: redocly-cli
+  term: Redocly CLI
+  short: Ein Kommandozeilenwerkzeug, das OpenAPI-Dateien prüft, bündelt und als Doku-Seite baut.
+  explanation: >
+    Redocly CLI wird per npm installiert und meist mit npx aufgerufen. `lint` prüft eine Spezifikation
+    gegen Regeln, `bundle` fügt Dateien zusammen oder wandelt YAML in JSON um, `build-docs` erzeugt eine
+    statische HTML-Doku. Die Regeln stehen in `redocly.yaml`.
+  example: "`npx redocly lint openapi.yaml` meldet Fehler und Warnungen in der Spezifikation."
+  category: werkzeuge
+  aliases: [Redocly, "@redocly/cli"]
+  related: [redocly-yaml, lint-regel, redoc]
+  lesson: api-dokumentation/linten-mit-redocly
+- slug: redocly-yaml
+  term: redocly.yaml
+  short: Die Konfigurationsdatei von Redocly CLI mit Regelsatz, Regeln und API-Liste.
+  explanation: >
+    Mit `extends` wählst du einen fertigen Regelsatz wie `recommended`, unter `rules` setzt du einzelne
+    Regeln auf error, warn oder off. Unter `apis` kannst du mehrere Spezifikationen mit Namen eintragen,
+    die dann gemeinsam geprüft werden.
+  example: "`rules: { info-license: off }` schaltet die Lizenz-Prüfung ab."
+  category: werkzeuge
+  aliases: [Redocly-Konfiguration]
+  related: [redocly-cli, lint-regel]
+  lesson: api-dokumentation/linten-mit-redocly
+- slug: lint-regel
+  term: Lint-Regel
+  short: Eine einzelne Prüfung, die ein Linter auf eine Datei anwendet.
+  explanation: >
+    Jede Regel prüft genau eine Sache, z. B. ob jede Operation eine summary hat. Ihre Schwere ist error,
+    warn oder off. Fehler lassen den Linter mit einem Exit-Code ungleich 0 enden, Warnungen nicht.
+  example: "Die Regel `no-unresolved-refs` meldet einen `$ref`, der ins Leere zeigt."
+  category: werkzeuge
+  aliases: [Regel, Lint-Regeln, Regelsatz]
+  related: [linter, redocly-yaml]
+  lesson: api-dokumentation/linten-mit-redocly
+- slug: openapi-components
+  term: components (OpenAPI)
+  short: Der Bereich einer OpenAPI-Datei für wiederverwendbare Bausteine.
+  explanation: >
+    Unter `components` liegen benannte Schemas, Parameter, Antworten, Request-Bodies und Security Schemes.
+    An anderen Stellen verweist du mit `$ref` darauf, statt sie zu kopieren. So steht jede Datenstruktur
+    nur einmal in der Datei.
+  example: "`components: schemas: Book:` legt das Schema Book einmal für die ganze Datei an."
+  category: web
+  aliases: [components, Komponenten]
+  related: [ref-verweis, json-schema]
+  lesson: api-dokumentation/schemas-und-ref
+- slug: ref-verweis
+  term: $ref
+  short: Ein Verweis in einer OpenAPI- oder JSON-Schema-Datei auf eine Beschreibung an anderer Stelle.
+  explanation: >
+    `$ref` ersetzt das Objekt, an dem er steht, durch das Ziel. `#` bedeutet „diese Datei“, danach folgt
+    der Pfad durch die Schlüssel. Ein `$ref` kann auch auf eine andere Datei zeigen. In YAML schreibst du
+    den Wert in Anführungszeichen, weil `#` sonst einen Kommentar beginnt.
+  example: "`$ref: '#/components/schemas/Book'` verweist auf das Schema Book."
+  category: web
+  aliases: [ref, Referenz, Verweis]
+  related: [openapi-components, json-schema]
+  lesson: api-dokumentation/schemas-und-ref
+- slug: security-scheme
+  term: Security Scheme
+  short: Die Beschreibung eines Anmeldeverfahrens in einer OpenAPI-Datei.
+  explanation: >
+    Security Schemes stehen unter `components.securitySchemes` und haben einen Namen und einen Typ wie
+    http (bearer, basic), apiKey, oauth2 oder openIdConnect. Mit `security` legst du fest, welches
+    Verfahren für welche Operation gilt.
+  example: "`bearerAuth: { type: http, scheme: bearer }` beschreibt die Anmeldung mit Bearer-Token."
+  category: sicherheit
+  aliases: [securitySchemes, Sicherheitsschema]
+  related: [bearer-token, api-key, oauth2]
+  lesson: api-dokumentation/authentifizierung-beschreiben
+- slug: oauth2
+  term: OAuth 2.0
+  short: Ein Standard, mit dem Programme über einen Autorisierungsserver eingeschränkten Zugriff erhalten.
+  explanation: >
+    Statt eines Passworts bekommt ein Client von einem Autorisierungsserver ein Token. Scopes legen fest,
+    was der Client damit darf, z. B. nur lesen. In OpenAPI beschreibst du OAuth2 mit `type: oauth2` und
+    den nötigen URLs und Scopes.
+  example: "Eine Operation mit `security: [{ oauth: [books:write] }]` braucht den Scope books:write."
+  category: sicherheit
+  aliases: [OAuth, OAuth2, Scope, Scopes]
+  related: [security-scheme, bearer-token]
+  lesson: api-dokumentation/authentifizierung-beschreiben
+- slug: swagger-ui
+  term: Swagger UI
+  short: Eine Weboberfläche, die eine OpenAPI-Datei als interaktive Doku mit „Try it out“ anzeigt.
+  explanation: >
+    Swagger UI liest eine Spezifikation und zeigt jede Operation als aufklappbaren Block. Über „Try it out“
+    schickst du echte Anfragen, über „Authorize“ trägst du ein Token ein. Es lässt sich per npm oder CDN
+    einbinden.
+  example: "`SwaggerUIBundle({ url: 'openapi.yaml', dom_id: '#swagger-ui' })` startet die Oberfläche."
+  category: werkzeuge
+  aliases: [SwaggerUI]
+  related: [redoc, scalar, openapi]
+  lesson: api-dokumentation/doku-anzeigen
+- slug: redoc
+  term: Redoc
+  short: Ein Werkzeug, das eine OpenAPI-Datei als gut lesbare, dreispaltige Doku-Seite darstellt.
+  explanation: >
+    Redoc zeigt Navigation, Beschreibung und Beispiele nebeneinander. Mit Redocly CLI entsteht daraus eine
+    einzelne statische HTML-Datei, die du überall ablegen kannst – etwa auf GitHub Pages.
+  example: "`npx redocly build-docs openapi.yaml -o docs/index.html` erzeugt eine Redoc-Seite."
+  category: werkzeuge
+  aliases: [Redoc-Seite]
+  related: [redocly-cli, swagger-ui, scalar]
+  lesson: api-dokumentation/doku-anzeigen
+- slug: scalar
+  term: Scalar
+  short: Ein modernes Werkzeug, das OpenAPI-Dateien als Doku mit eingebautem API-Client anzeigt.
+  explanation: >
+    Scalar zeigt eine Spezifikation mit Code-Beispielen für viele Sprachen und lässt dich Anfragen direkt
+    ausprobieren. Per CDN reicht ein Script-Tag und der Aufruf `Scalar.createApiReference`.
+  example: "`Scalar.createApiReference('#app', { url: 'openapi.yaml' })` zeigt die Doku im Element #app."
+  category: werkzeuge
+  aliases: [Scalar API Reference]
+  related: [swagger-ui, redoc]
+  lesson: api-dokumentation/doku-anzeigen
+- slug: php-attribut
+  term: PHP-Attribut
+  short: Strukturierte Metadaten in `#[...]`, die du an Klassen, Methoden oder Eigenschaften hängst.
+  explanation: >
+    Attribute gibt es seit PHP 8. PHP führt sie nicht selbst aus, aber Programme lesen sie per Reflection
+    aus. Frameworks und Werkzeuge wie swagger-php nutzen sie, um Routen, Validierung oder Doku zu beschreiben.
+  example: "`#[OA\\Get(path: '/books')]` über einer Methode beschreibt die Operation GET /books."
+  category: programmierung
+  aliases: [Attribute, PHP-Attribute, Attribut (PHP)]
+  related: [swagger-php, reflection]
+  lesson: api-dokumentation/swagger-php-attribute
+- slug: reflection
+  term: Reflection
+  short: Die Fähigkeit eines Programms, zur Laufzeit seinen eigenen Code zu untersuchen.
+  explanation: >
+    Mit Reflection fragt ein Programm etwa, welche Methoden eine Klasse hat, welche Typen ihre Eigenschaften
+    haben oder welche Attribute daran hängen. PHP bietet dafür Klassen wie `ReflectionClass`. Werkzeuge wie
+    swagger-php bauen so aus dem Code eine Spezifikation.
+  example: "`(new ReflectionClass(Book::class))->getAttributes()` liefert die Attribute der Klasse Book."
+  category: programmierung
+  aliases: [Reflexion, ReflectionClass]
+  related: [php-attribut, swagger-php]
+  lesson: api-dokumentation/swagger-php-attribute
+- slug: swagger-php
+  term: swagger-php
+  short: Ein PHP-Paket, das aus Attributen im Code eine OpenAPI-Datei erzeugt.
+  explanation: >
+    swagger-php (Paket `zircote/swagger-php`) liest OA-Attribute an Klassen und Methoden und schreibt daraus
+    eine Spezifikation in YAML oder JSON. Typen und null liest es aus den PHP-Typen. Die Klassen müssen per
+    Composer-Autoloading ladbar sein.
+  example: "`./vendor/bin/openapi src -o openapi.yaml` erzeugt die Spezifikation aus dem Ordner src."
+  category: werkzeuge
+  aliases: [zircote/swagger-php, OA-Attribute]
+  related: [php-attribut, code-first, openapi]
+  lesson: api-dokumentation/swagger-php-attribute
+- slug: backed-enum
+  term: Backed Enum
+  short: Ein PHP-Enum, dessen Fälle einen festen string- oder int-Wert haben.
+  explanation: >
+    Bei `enum Status: string` hat jeder Fall einen Wert, z. B. `case Draft = 'draft'`. Dieser Wert wird
+    gespeichert oder per JSON verschickt, und mit `Status::from('draft')` wird daraus wieder der Fall. In
+    OpenAPI wird ein Backed Enum ein Schema mit `enum`-Werten.
+  example: "`enum Priority: string { case High = 'high'; }` – über die API geht der Wert high."
+  category: programmierung
+  aliases: [Enum, Enums, Backed Enums]
+  related: [json-schema, swagger-php]
+  lesson: api-dokumentation/schemas-aus-php-klassen
+- slug: form-request
+  term: FormRequest
+  short: Eine Laravel-Klasse, die die Validierungsregeln einer Anfrage bündelt.
+  explanation: >
+    Ein FormRequest enthält in `rules()` die Regeln für die Eingaben, z. B. `required|string|max:120`.
+    Laravel prüft sie automatisch, bevor der Controller läuft. Werkzeuge wie Scramble leiten aus diesen
+    Regeln den Request-Body der Doku ab.
+  example: "`StoreProductRequest` verlangt in `rules()` ein Pflichtfeld `name` vom Typ string."
+  category: laravel
+  aliases: [Form Request, Form Requests, FormRequests]
+  related: [api-resource, scramble]
+  lesson: api-dokumentation/laravel-scramble-scribe
+- slug: scramble
+  term: Scramble
+  short: Ein Laravel-Paket, das die OpenAPI-Datei per Code-Analyse fast ohne Annotationen erzeugt.
+  explanation: >
+    Scramble (Paket `dedoc/scramble`) analysiert Routen, FormRequests, Resources und Rückgabetypen.
+    Die Doku liegt standardmäßig unter `/docs/api`, die Spezifikation unter `/docs/api.json`. Mit
+    `php artisan scramble:export` schreibst du sie in eine Datei.
+  example: "`php artisan scramble:export --path=docs/v1/openapi.json` exportiert die Spezifikation."
+  category: werkzeuge
+  aliases: [dedoc/scramble]
+  related: [scribe, form-request, code-first]
+  lesson: api-dokumentation/laravel-scramble-scribe
+- slug: scribe
+  term: Scribe
+  short: Ein Laravel-Paket, das API-Doku aus Code, Docblocks und echten Beispielaufrufen erzeugt.
+  explanation: >
+    Scribe (Paket `knuckleswtf/scribe`) liest Routen und FormRequests und ergänzt Beschreibungen aus
+    Docblocks oder Attributen. Es kann die API für Beispielantworten wirklich aufrufen. Neben einer
+    HTML-Doku erzeugt es eine Postman-Collection und eine OpenAPI-Datei.
+  example: "`php artisan scribe:generate` baut die Doku neu."
+  category: werkzeuge
+  aliases: [knuckleswtf/scribe]
+  related: [scramble, postman]
+  lesson: api-dokumentation/laravel-scramble-scribe
+- slug: api-client
+  term: API-Client
+  short: Code, der die Aufrufe einer API in gut benutzbare Funktionen verpackt.
+  explanation: >
+    Statt jede URL von Hand zu bauen, rufst du Funktionen wie `getBook({ path: { id: 42 } })` auf. Ein
+    generierter API-Client kennt die Typen aller Parameter und Antworten aus der Spezifikation. Ändert sich
+    die API, zeigt der Compiler nach dem Neu-Erzeugen die betroffenen Stellen.
+  example: "`npx @hey-api/openapi-ts -i openapi.yaml -o src/client` erzeugt einen TypeScript-Client."
+  category: web
+  aliases: [Client-Bibliothek, SDK, generierter Client]
+  related: [code-generierung, operation-id, http-client]
+  lesson: api-dokumentation/clients-und-collections
+- slug: code-generierung
+  term: Code-Generierung
+  short: Das automatische Erzeugen von Quellcode aus einer Beschreibung, z. B. einer OpenAPI-Datei.
+  explanation: >
+    Ein Generator liest eine Vorlage oder Spezifikation und schreibt daraus Code – etwa Typen und
+    Funktionen für einen API-Client. Generierter Code wird nie von Hand geändert, sondern immer neu erzeugt.
+  example: "OpenAPI Generator erzeugt mit `-g typescript-fetch` einen Client in TypeScript."
+  category: programmierung
+  aliases: [Codegenerierung, Generator, generierter Code]
+  related: [api-client, openapi]
+  lesson: api-dokumentation/clients-und-collections
+- slug: api-collection
+  term: Collection (API)
+  short: Eine gespeicherte Sammlung von API-Anfragen in Werkzeugen wie Postman oder Bruno.
+  explanation: >
+    Eine Collection enthält Anfragen mit Methode, URL, Headern und Body, geordnet in Ordnern. Sie lässt
+    sich teilen und aus einer OpenAPI-Datei erzeugen. Bruno speichert Collections als Textdateien, die ins
+    Repository passen.
+  example: "`bru import openapi -s openapi.yaml -o api-collection` erzeugt eine Bruno-Collection."
+  category: werkzeuge
+  aliases: [Collection, Collections, Postman-Collection]
+  related: [postman, bruno]
+  lesson: api-dokumentation/clients-und-collections
+- slug: tanstack-query
+  term: TanStack Query
+  short: Eine Bibliothek, die im Frontend Server-Daten lädt, zwischenspeichert und aktualisiert.
+  explanation: >
+    TanStack Query kümmert sich um Laden, Caching, erneutes Abrufen und Fehlerzustände von Server-Daten.
+    Jede Abfrage hat einen Query-Key. Generatoren wie Hey API können fertige Query-Optionen aus einer
+    OpenAPI-Datei erzeugen.
+  example: "`useQuery({ ...getBookOptions({ path: { id: 42 } }) })` lädt ein Buch."
+  category: frontend
+  aliases: [React Query, useQuery]
+  related: [api-client]
+  lesson: api-dokumentation/clients-und-collections

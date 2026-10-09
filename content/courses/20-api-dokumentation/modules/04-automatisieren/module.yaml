@@ -1,0 +1,138 @@
+title: Automatisieren und nutzen
+description: Spezifikationen pro API-Version erzeugen, in der CI gegen Drift prüfen und daraus Collections und typisierte Clients bauen.
+exercise:
+  id: modul-uebung-pipeline
+  type: terminal
+  title: Ein Doku-Kommando für das ganze Team
+  description: |
+    Im Ordner `doku-pipeline` liegt eine Buch-API mit `src/V1` und `src/V2`. swagger-php und Redocly CLI
+    sind installiert. Bisher tippt jeder die Befehle anders ab. Du sorgst dafür, dass ein einziger
+    Befehl alles erledigt. Klicke zuerst auf **Aufgabe vorbereiten**.
+
+    1. Ergänze in `composer.json` einen Abschnitt `scripts` mit:
+       - `docs:v1` – erzeugt `docs/v1/openapi.yaml` aus `src/V1`
+       - `docs:v2` – erzeugt `docs/v2/openapi.yaml` aus `src/V2`
+       - `docs` – ruft beide auf (`["@docs:v1", "@docs:v2"]`)
+    2. Trage in `redocly.yaml` unter `apis` die beiden Spezifikationen als `v1` und `v2` ein.
+    3. Führe `composer docs` aus und prüfe beide mit **einem** Aufruf: `npx redocly lint`.
+    4. Baue für beide Versionen eine Doku-Seite: `public/v1/index.html` und `public/v2/index.html`.
+  workdir: doku-pipeline
+  setup: |
+    mkdir -p src/V1 src/V2
+    cat > composer.json <<'EOF'
+    {
+        "name": "stacklab/buch-api",
+        "type": "project",
+        "autoload": {
+            "psr-4": {
+                "App\\": "src/"
+            }
+        }
+    }
+    EOF
+    timeout 170 composer require -q --no-interaction zircote/swagger-php:^6.12
+    npm init -y >/dev/null
+    timeout 170 npm install --no-audit --no-fund --silent @redocly/cli@2.62.1
+    cat > redocly.yaml <<'EOF'
+    extends:
+      - recommended
+    rules:
+      no-server-example.com: off
+      security-defined: off
+      info-license: off
+    EOF
+    for v in 1 2; do
+    cat > src/V$v/OpenApiV$v.php <<EOF
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App\V$v;
+
+    use OpenApi\Attributes as OA;
+
+    #[OA\OpenApi(openapi: "3.1.0")]
+    #[OA\Info(version: "$v.0.0", title: "Buch-API v$v")]
+    #[OA\Server(url: "https://api.example.com/v$v")]
+    final class OpenApiV$v
+    {
+    }
+    EOF
+    cat > src/V$v/BookController.php <<EOF
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App\V$v;
+
+    use OpenApi\Attributes as OA;
+
+    final class BookController
+    {
+        #[OA\Get(path: "/books", operationId: "listBooks", summary: "Alle Bücher (v$v)")]
+        #[OA\Response(response: 200, description: "Liste der Bücher")]
+        #[OA\Response(response: 401, description: "Nicht angemeldet")]
+        public function index(): array
+        {
+            return [];
+        }
+    }
+    EOF
+    done
+  checks:
+    - type: command
+      run: "jq -r '.scripts | [has(\"docs:v1\"), has(\"docs:v2\"), has(\"docs\")] | map(tostring) | join(\",\")' composer.json"
+      stdout_equals: "true,true,true"
+      message: In composer.json fehlen unter scripts noch docs:v1, docs:v2 oder docs.
+    - type: command
+      run: "rm -rf docs && composer docs -q >/dev/null 2>&1; grep -h 'title:' docs/v1/openapi.yaml docs/v2/openapi.yaml | tr -d \" '\" | paste -sd'|'"
+      stdout_equals: "title:Buch-APIv1|title:Buch-APIv2"
+      message: composer docs erzeugt nicht docs/v1/openapi.yaml (aus src/V1) und docs/v2/openapi.yaml (aus src/V2).
+    - type: file_contains
+      path: redocly.yaml
+      pattern: "^apis:"
+      message: In redocly.yaml fehlt der Abschnitt apis.
+    - type: command
+      run: "npx redocly lint 2>&1 | grep -c 'validating docs/v[12]/openapi.yaml'"
+      stdout_equals: "2"
+      message: "`npx redocly lint` ohne Dateiname prüft noch nicht beide Spezifikationen. Trage sie unter apis mit root ein."
+    - type: command
+      run: npx redocly lint >/dev/null 2>&1
+      message: "`npx redocly lint` meldet Fehler."
+    - type: command
+      run: "grep -o '<title>[^<]*</title>' public/v1/index.html public/v2/index.html | sed 's/.*<title>//; s/<.title>//' | paste -sd'|'"
+      stdout_equals: "Buch-API v1|Buch-API v2"
+      message: public/v1/index.html und public/v2/index.html fehlen oder zeigen die falsche Version. Nutze npx redocly build-docs.
+  hints:
+    - "In Composer-Skripten ist `vendor/bin` automatisch im Pfad: `\"docs:v1\": \"openapi src/V1 -o docs/v1/openapi.yaml\"` reicht."
+    - "Unter `apis` bekommt jede Spezifikation einen Namen und ein `root`, z. B. `v1:` und darunter `root: docs/v1/openapi.yaml`."
+    - "Mit dem Namen aus `apis` geht auch `npx redocly build-docs v1 -o public/v1/index.html`."
+  solution: |
+    ```json title="composer.json (Ausschnitt)"
+    "scripts": {
+        "docs:v1": "openapi src/V1 -o docs/v1/openapi.yaml",
+        "docs:v2": "openapi src/V2 -o docs/v2/openapi.yaml",
+        "docs": ["@docs:v1", "@docs:v2"]
+    }
+    ```
+
+    ```yaml title="redocly.yaml"
+    extends:
+      - recommended
+    rules:
+      no-server-example.com: off
+      security-defined: off
+      info-license: off
+    apis:
+      v1:
+        root: docs/v1/openapi.yaml
+      v2:
+        root: docs/v2/openapi.yaml
+    ```
+
+    ```bash
+    composer docs
+    npx redocly lint
+    npx redocly build-docs v1 -o public/v1/index.html
+    npx redocly build-docs v2 -o public/v2/index.html
+    ```

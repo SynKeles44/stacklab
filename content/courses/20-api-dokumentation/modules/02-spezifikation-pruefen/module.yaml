@@ -1,0 +1,218 @@
+title: Spezifikation schreiben und prüfen
+description: Datenstrukturen mit Schemas und $ref beschreiben, Authentifizierung dokumentieren, Spezifikationen mit Redocly CLI linten und als Doku-Seite anzeigen.
+exercise:
+  id: modul-uebung-events
+  type: terminal
+  title: Eine Event-API streng prüfen lassen
+  description: |
+    Das Team der Event-API möchte ab sofort den strengen Regelsatz `recommended-strict` nutzen, bei
+    dem auch Warnungen als Fehler zählen. Die bisherige Spezifikation hält dem nicht stand.
+
+    Im Ordner `event-api` liegen `openapi.yaml`, `redocly.yaml` und Redocly CLI. Klicke zuerst auf
+    **Aufgabe vorbereiten**.
+
+    1. Stelle in `redocly.yaml` `extends` auf `recommended-strict` um (die Regel
+       `no-server-example.com` bleibt `off`).
+    2. Das Event-Objekt ist zweimal kopiert. Lege es als `components.schemas.Event` an und verweise
+       an beiden Stellen mit `$ref` darauf.
+    3. Alle Endpunkte brauchen ein Bearer-Token (`bearerAuth`) – außer `GET /health`, der öffentlich ist.
+    4. Behebe alle übrigen Meldungen, bis `npx redocly lint openapi.yaml` keine Fehler mehr zeigt.
+       Tipp: Es fehlen eine Lizenz und Fehlerantworten (4XX).
+    5. Baue die Doku: `npx redocly build-docs openapi.yaml -o docs/index.html`.
+  workdir: event-api
+  setup: |
+    npm init -y >/dev/null
+    timeout 170 npm install --no-audit --no-fund --silent @redocly/cli@2.62.1
+    cat > redocly.yaml <<'EOF'
+    extends:
+      - recommended
+    rules:
+      no-server-example.com: off
+    EOF
+    cat > openapi.yaml <<'EOF'
+    openapi: 3.1.0
+    info:
+      title: Event-API
+      version: 1.0.0
+    servers:
+      - url: https://api.example.com/v1
+    paths:
+      /health:
+        get:
+          operationId: getHealth
+          summary: Erreichbarkeit prüfen
+          responses:
+            "200":
+              description: Die API läuft
+      /events:
+        get:
+          operationId: listEvents
+          summary: Events auflisten
+          responses:
+            "200":
+              description: Liste der Events
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, name, starts_at]
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        starts_at:
+                          type: string
+                          format: date-time
+      /events/{id}:
+        get:
+          operationId: getEvent
+          summary: Ein Event laden
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+          responses:
+            "200":
+              description: Das Event
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    required: [id, name, starts_at]
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      starts_at:
+                        type: string
+                        format: date-time
+    EOF
+  checks:
+    - type: file_contains
+      path: redocly.yaml
+      pattern: "recommended-strict"
+      message: redocly.yaml nutzt noch nicht den Regelsatz recommended-strict.
+    - type: command
+      run: npx redocly lint openapi.yaml >/dev/null 2>&1
+      message: "`npx redocly lint openapi.yaml` meldet mit recommended-strict noch Fehler."
+    - type: command
+      run: "grep -v 'no-server-example.com' redocly.yaml | grep -Eq ':\\s*off\\s*(#.*)?$'"
+      expect_exit: 1
+      message: Du hast eine weitere Regel abgeschaltet. Behebe stattdessen die Ursache in openapi.yaml.
+    - type: command
+      run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); npx redocly bundle openapi.yaml --ext json -o \"$d/s.json\" >/dev/null 2>&1; jq '[(.components.schemas.Event.properties | keys | length), ([.paths | .. | objects | select(.[\"$ref\"] == \"#/components/schemas/Event\")] | length), ([.paths | .. | objects | select(has(\"properties\"))] | length)]' -c \"$d/s.json\"; rm -rf \"$d\""
+      stdout_matches: "^\\[3,[2-9],0\\]$"
+      message: Lege components.schemas.Event (id, name, starts_at) an und ersetze beide Kopien unter paths durch $ref auf Event.
+    - type: command
+      run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); npx redocly bundle openapi.yaml --ext json -o \"$d/s.json\" >/dev/null 2>&1; jq -c '[.components.securitySchemes.bearerAuth.scheme, (.security[0] | keys[0]), .paths[\"/health\"].get.security]' \"$d/s.json\"; rm -rf \"$d\""
+      stdout_equals: '["bearer","bearerAuth",[]]'
+      message: "Es fehlen bearerAuth unter securitySchemes, die globale security-Angabe oder security: [] bei GET /health."
+    - type: file_contains
+      path: docs/index.html
+      pattern: "<title>Event-API</title>"
+      message: docs/index.html fehlt. Baue sie mit npx redocly build-docs openapi.yaml -o docs/index.html.
+  hints:
+    - Lint nach jedem Schritt. Mit `--format stylish` siehst du alle Meldungen auf einen Blick.
+    - "Die Lizenz gehört unter info: `license:` mit `name: MIT` und `identifier: MIT`."
+    - Fehlerantworten wie `"401"` oder `"404"` kannst du einmal unter `components.responses` anlegen und mit `$ref` einbinden.
+  solution: |
+    ```yaml title="redocly.yaml"
+    extends:
+      - recommended-strict
+    rules:
+      no-server-example.com: off
+    ```
+
+    ```yaml title="openapi.yaml"
+    openapi: 3.1.0
+    info:
+      title: Event-API
+      version: 1.0.0
+      license:
+        name: MIT
+        identifier: MIT
+    servers:
+      - url: https://api.example.com/v1
+    security:
+      - bearerAuth: []
+    paths:
+      /health:
+        get:
+          operationId: getHealth
+          summary: Erreichbarkeit prüfen
+          security: []
+          responses:
+            "200":
+              description: Die API läuft
+            "503":
+              description: Die API ist gerade nicht verfügbar
+            "429":
+              description: Zu viele Anfragen
+      /events:
+        get:
+          operationId: listEvents
+          summary: Events auflisten
+          responses:
+            "200":
+              description: Liste der Events
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+            "401":
+              $ref: '#/components/responses/Unauthorized'
+      /events/{id}:
+        get:
+          operationId: getEvent
+          summary: Ein Event laden
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+          responses:
+            "200":
+              description: Das Event
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/Event'
+            "401":
+              $ref: '#/components/responses/Unauthorized'
+            "404":
+              description: Event nicht gefunden
+    components:
+      securitySchemes:
+        bearerAuth:
+          type: http
+          scheme: bearer
+      responses:
+        Unauthorized:
+          description: Nicht angemeldet
+      schemas:
+        Event:
+          type: object
+          required: [id, name, starts_at]
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            starts_at:
+              type: string
+              format: date-time
+    ```
+
+    ```bash
+    npx redocly lint openapi.yaml
+    npx redocly build-docs openapi.yaml -o docs/index.html
+    ```

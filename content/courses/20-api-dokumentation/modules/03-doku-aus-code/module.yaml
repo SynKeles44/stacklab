@@ -1,0 +1,180 @@
+title: Doku aus Code erzeugen
+description: Die Spezifikation direkt aus PHP-Code erzeugen – mit swagger-php-Attributen an Controllern und Klassen, und mit Scramble oder Scribe in Laravel.
+exercise:
+  id: modul-uebung-shop
+  type: terminal
+  title: Die Shop-API vervollständigen und linten
+  description: |
+    Die Shop-API im Ordner `shop-komplett` kann Produkte auflisten und laden. Jetzt kommen Anlegen
+    und Löschen dazu – und die Anmeldung soll dokumentiert werden. swagger-php und Redocly CLI sind
+    installiert. Klicke zuerst auf **Aufgabe vorbereiten** (Composer und npm laden dabei Pakete).
+
+    1. Beschreibe in `src/OpenApi.php` ein Security Scheme `bearerAuth` (HTTP, Bearer) mit
+       `#[OA\SecurityScheme(...)]` und setze es global über `#[OA\OpenApi(openapi: "3.1.0", security: [["bearerAuth" => []]])]`.
+    2. Ergänze im `ProductController` an `store()`: `POST /products`, `operationId: "createProduct"`,
+       Pflicht-Body mit dem Schema `Product`, Antworten `201` (mit `Product`) und `422`.
+    3. Ergänze an `destroy()`: `DELETE /products/{id}`, `operationId: "deleteProduct"`, Pfadparameter
+       `id`, Antworten `204` und `404`.
+    4. Erzeuge `openapi.yaml` mit `./vendor/bin/openapi src -o openapi.yaml`.
+    5. Prüfe sie mit `npx redocly lint openapi.yaml` – es dürfen keine Fehler bleiben.
+  workdir: shop-komplett
+  setup: |
+    mkdir -p src/Controller src/Model
+    cat > composer.json <<'EOF'
+    {
+        "name": "stacklab/shop-api",
+        "type": "project",
+        "autoload": {
+            "psr-4": {
+                "App\\": "src/"
+            }
+        }
+    }
+    EOF
+    timeout 170 composer require -q --no-interaction zircote/swagger-php:^6.12
+    npm init -y >/dev/null
+    timeout 170 npm install --no-audit --no-fund --silent @redocly/cli@2.62.1
+    cat > redocly.yaml <<'EOF'
+    extends:
+      - recommended
+    rules:
+      no-server-example.com: off
+    EOF
+    cat > src/OpenApi.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App;
+
+    use OpenApi\Attributes as OA;
+
+    #[OA\OpenApi(openapi: "3.1.0")]
+    #[OA\Info(version: "1.0.0", title: "Shop-API", license: new OA\License(name: "MIT", identifier: "MIT"))]
+    #[OA\Server(url: "https://api.example.com/v1")]
+    final class OpenApi
+    {
+    }
+    EOF
+    cat > src/Model/Product.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App\Model;
+
+    use OpenApi\Attributes as OA;
+
+    #[OA\Schema(required: ["id", "name", "price"])]
+    final class Product
+    {
+        public function __construct(
+            #[OA\Property(example: 7)]
+            public int $id,
+            #[OA\Property(maxLength: 120)]
+            public string $name,
+            #[OA\Property(minimum: 0)]
+            public float $price,
+        ) {
+        }
+    }
+    EOF
+    cat > src/Controller/ProductController.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App\Controller;
+
+    use App\Model\Product;
+    use OpenApi\Attributes as OA;
+
+    final class ProductController
+    {
+        #[OA\Get(path: "/products", operationId: "listProducts", summary: "Alle Produkte", tags: ["Products"])]
+        #[OA\Response(response: 200, description: "Liste der Produkte", content: new OA\JsonContent(type: "array", items: new OA\Items(ref: Product::class)))]
+        #[OA\Response(response: 401, description: "Nicht angemeldet")]
+        public function index(): array
+        {
+            return [];
+        }
+
+        #[OA\Get(path: "/products/{id}", operationId: "getProduct", summary: "Ein Produkt", tags: ["Products"])]
+        #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+        #[OA\Response(response: 200, description: "Das Produkt", content: new OA\JsonContent(ref: Product::class))]
+        #[OA\Response(response: 404, description: "Produkt nicht gefunden")]
+        public function show(int $id): ?Product
+        {
+            return null;
+        }
+
+        public function store(): Product
+        {
+            return new Product(1, 'Tasse', 9.5);
+        }
+
+        public function destroy(int $id): void
+        {
+        }
+    }
+    EOF
+  checks:
+    - type: file_exists
+      path: openapi.yaml
+      message: openapi.yaml fehlt. Erzeuge sie mit ./vendor/bin/openapi src -o openapi.yaml.
+    - type: command
+      run: npx redocly lint openapi.yaml >/dev/null 2>&1
+      message: "`npx redocly lint openapi.yaml` meldet noch Fehler. Fehlt vielleicht die Security-Angabe oder eine description?"
+    - type: command
+      run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -c '[.components.securitySchemes.bearerAuth.type, .components.securitySchemes.bearerAuth.scheme, (.security[0] | keys[0])]'"
+      stdout_equals: '["http","bearer","bearerAuth"]'
+      message: "In src/OpenApi.php fehlen das SecurityScheme bearerAuth (type http, scheme bearer) oder die globale security-Angabe."
+    - type: command
+      run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -r '.paths[\"/products\"].post | [.operationId, (.requestBody.required|tostring), .requestBody.content[\"application/json\"].schema[\"$ref\"], (.responses|keys|join(\",\")), .responses[\"201\"].content[\"application/json\"].schema[\"$ref\"]] | join(\"|\")'"
+      stdout_equals: "createProduct|true|#/components/schemas/Product|201,422|#/components/schemas/Product"
+      message: POST /products braucht operationId createProduct, einen Pflicht-Body mit Product, die Antwort 201 mit Product und die Antwort 422.
+    - type: command
+      run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -r '.paths[\"/products/{id}\"].delete | [.operationId, (.parameters[0].in), (.responses|keys|join(\",\"))] | join(\"|\")'"
+      stdout_equals: "deleteProduct|path|204,404"
+      message: DELETE /products/{id} braucht operationId deleteProduct, den Pfadparameter id und die Antworten 204 und 404.
+    - type: command
+      run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); ./vendor/bin/openapi src -o \"$d/neu.yaml\" >/dev/null 2>&1; cmp -s \"$d/neu.yaml\" openapi.yaml; e=$?; rm -rf \"$d\"; exit $e"
+      message: openapi.yaml passt nicht zum aktuellen Code. Erzeuge sie nach deinen Änderungen erneut.
+  hints:
+    - 'Das Security Scheme: `#[OA\SecurityScheme(securityScheme: "bearerAuth", type: "http", scheme: "bearer")]` über der Klasse OpenApi.'
+    - 'Der Body: `#[OA\RequestBody(required: true, content: new OA\JsonContent(ref: Product::class))]`'
+    - Erst erzeugen, dann linten – und nach jeder Code-Änderung wieder erzeugen.
+  solution: |
+    ```php title="src/OpenApi.php"
+    #[OA\OpenApi(openapi: "3.1.0", security: [["bearerAuth" => []]])]
+    #[OA\Info(version: "1.0.0", title: "Shop-API", license: new OA\License(name: "MIT", identifier: "MIT"))]
+    #[OA\Server(url: "https://api.example.com/v1")]
+    #[OA\SecurityScheme(securityScheme: "bearerAuth", type: "http", scheme: "bearer")]
+    final class OpenApi
+    {
+    }
+    ```
+
+    ```php title="src/Controller/ProductController.php (store und destroy)"
+    #[OA\Post(path: "/products", operationId: "createProduct", summary: "Produkt anlegen", tags: ["Products"])]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(ref: Product::class))]
+    #[OA\Response(response: 201, description: "Angelegt", content: new OA\JsonContent(ref: Product::class))]
+    #[OA\Response(response: 422, description: "Ungültige Daten")]
+    public function store(): Product
+    {
+        return new Product(1, 'Tasse', 9.5);
+    }
+
+    #[OA\Delete(path: "/products/{id}", operationId: "deleteProduct", summary: "Produkt löschen", tags: ["Products"])]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 204, description: "Gelöscht")]
+    #[OA\Response(response: 404, description: "Produkt nicht gefunden")]
+    public function destroy(int $id): void
+    {
+    }
+    ```
+
+    ```bash
+    ./vendor/bin/openapi src -o openapi.yaml
+    npx redocly lint openapi.yaml
+    ```

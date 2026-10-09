@@ -1,0 +1,34 @@
+title: API-Dokumentation automatisieren
+subtitle: OpenAPI verstehen, aus PHP-Code erzeugen, mit Redocly prüfen und in der CI aktuell halten
+description: >
+  Eine API ohne Dokumentation ist wie ein Gerät ohne Anleitung: Wer sie benutzen will, muss raten.
+  Und eine Dokumentation, die von Hand gepflegt wird, veraltet still und leise – irgendwann stimmt sie
+  nicht mehr mit dem Code überein. Genau dieses Problem löst automatisierte API-Dokumentation.
+
+
+  In diesem Kurs lernst du den Standard **OpenAPI 3.1** von Grund auf: Du liest und schreibst
+  Spezifikationen in YAML und JSON, beschreibst Endpunkte, Parameter, Bodies, Antworten, Schemas und
+  Authentifizierung. Danach prüfst du deine Dateien mit **Redocly CLI**, erzeugst daraus lesbare
+  Dokumentation und generierst die Spezifikation direkt aus PHP-Attributen mit **swagger-php**.
+  Du lernst die Laravel-Werkzeuge **Scramble** und **Scribe** kennen, trennst Spezifikationen pro
+  API-Version und baust eine Prüfung, die in der CI fehlschlägt, sobald Code und Doku auseinanderlaufen.
+  Im Projekt dokumentierst du eine kleine PHP-API vollständig – im echten Übungs-Terminal.
+category: web
+level: fortgeschritten
+icon: file-text
+color: "#65a30d"
+estimated_hours: 5
+workspace_dir: api-doku
+prerequisites: [apis-endpunkte]
+learning_goals:
+  - Du erklärst, warum API-Dokumentation automatisiert werden sollte und was Dokumentations-Drift ist.
+  - Du liest und schreibst OpenAPI-3.1-Dateien mit info, servers, paths, Parametern, Bodies, Antworten und Schemas.
+  - Du nutzt $ref und components, um Wiederholungen zu vermeiden, und beschreibst Authentifizierung mit securitySchemes.
+  - Du prüfst Spezifikationen mit Redocly CLI, verstehst Regeln und passt sie mit redocly.yaml an.
+  - Du erzeugst eine OpenAPI-Datei aus PHP-Attributen mit swagger-php und kennst Scramble und Scribe für Laravel.
+  - Du trennst Spezifikationen pro API-Version und baust eine CI-Prüfung gegen veraltete Doku.
+  - Du weißt, wie aus einer Spezifikation Doku-Seiten, Postman- oder Bruno-Collections und API-Clients entstehen.
+references:
+  - In größeren PHP-Projekten wird die OpenAPI-Spezifikation aus PHP-Attributen erzeugt (zircote/swagger-php).
+  - Getrennte Spezifikationsdateien pro API-Version (v1, v2), die in der CI erzeugt und mit Redocly CLI gelintet werden.
+  - Frontend-Clients, die aus der Spezifikation generiert werden, statt Typen von Hand nachzupflegen.

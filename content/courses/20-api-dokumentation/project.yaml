@@ -1,0 +1,505 @@
+title: Eine Aufgaben-API vollständig dokumentieren
+description: |
+  Ein kleines Team hat eine Aufgaben-API in purem PHP gebaut – ohne jede Dokumentation. Das Frontend-Team
+  wartet. Du dokumentierst die API **code-first**: mit swagger-php-Attributen direkt am Code, erzeugst
+  daraus die Spezifikation für Version 1, lintest sie mit Redocly CLI ohne Fehler und baust eine
+  Doku-Seite.
+
+  Die API liegt nach dem Vorbereiten im Ordner `projekt`:
+
+  ```text
+  projekt/
+  ├── composer.json            ← Autoloading App\ → src/
+  ├── public/index.php         ← ein winziger Router
+  └── src/
+      ├── Controller/
+      │   ├── HealthController.php
+      │   └── TaskController.php
+      └── Model/
+          ├── Priority.php      ← Backed Enum: low, normal, high
+          └── Task.php
+  ```
+
+  Den Code der Endpunkte musst du nicht ändern – nur beschreiben.
+goal: |
+  Am Ende liegen `docs/v1/openapi.yaml` (OpenAPI 3.1, aus dem Code erzeugt, ohne Lint-Fehler) und
+  `public/docs/index.html` in deinem Projekt, und `composer docs` erzeugt die Spezifikation jederzeit neu.
+workdir: projekt
+setup: |
+  mkdir -p src/Controller src/Model public
+  cat > composer.json <<'EOF'
+  {
+      "name": "stacklab/aufgaben-api",
+      "type": "project",
+      "require": {
+          "php": ">=8.5"
+      },
+      "autoload": {
+          "psr-4": {
+              "App\\": "src/"
+          }
+      }
+  }
+  EOF
+  cat > src/Model/Priority.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  namespace App\Model;
+
+  enum Priority: string
+  {
+      case Low = 'low';
+      case Normal = 'normal';
+      case High = 'high';
+  }
+  EOF
+  cat > src/Model/Task.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  namespace App\Model;
+
+  final class Task
+  {
+      public function __construct(
+          public int $id,
+          public string $title,
+          public bool $done,
+          public Priority $priority,
+          public ?string $due_date = null,
+      ) {
+      }
+  }
+  EOF
+  cat > src/Controller/HealthController.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  namespace App\Controller;
+
+  final class HealthController
+  {
+      public function show(): array
+      {
+          return ['status' => 'ok'];
+      }
+  }
+  EOF
+  cat > src/Controller/TaskController.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  namespace App\Controller;
+
+  use App\Model\Priority;
+  use App\Model\Task;
+
+  final class TaskController
+  {
+      /** @return list<Task> */
+      public function index(?bool $done = null): array
+      {
+          $tasks = [
+              new Task(1, 'Doku schreiben', false, Priority::High, '2026-11-01'),
+              new Task(2, 'Tests ergänzen', true, Priority::Normal),
+          ];
+
+          return $done === null ? $tasks : array_values(array_filter($tasks, fn (Task $t) => $t->done === $done));
+      }
+
+      public function show(int $id): ?Task
+      {
+          foreach ($this->index() as $task) {
+              if ($task->id === $id) {
+                  return $task;
+              }
+          }
+
+          return null;
+      }
+
+      public function store(array $input): Task
+      {
+          return new Task(3, (string) ($input['title'] ?? ''), false, Priority::from($input['priority'] ?? 'normal'));
+      }
+
+      public function destroy(int $id): void
+      {
+      }
+  }
+  EOF
+  cat > public/index.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  require __DIR__ . '/../vendor/autoload.php';
+
+  use App\Controller\HealthController;
+  use App\Controller\TaskController;
+
+  header('Content-Type: application/json');
+  $method = $_SERVER['REQUEST_METHOD'];
+  $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+  $tasks = new TaskController();
+
+  $result = match (true) {
+      $method === 'GET' && $path === '/v1/health' => (new HealthController())->show(),
+      $method === 'GET' && $path === '/v1/tasks' => $tasks->index(),
+      $method === 'GET' && preg_match('#^/v1/tasks/(\d+)$#', $path, $m) === 1 => $tasks->show((int) $m[1]),
+      default => null,
+  };
+
+  if ($result === null) {
+      http_response_code(404);
+      $result = ['message' => 'Not found'];
+  }
+
+  echo json_encode($result);
+  EOF
+steps:
+  - id: werkzeuge
+    title: Werkzeuge installieren
+    description: |
+      Klicke zuerst auf **Aufgabe vorbereiten**, damit die API angelegt wird. Schau dich mit `tree src`
+      und `cat src/Controller/TaskController.php` um.
+
+      Installiere dann im Ordner `projekt`:
+
+      1. swagger-php mit Composer: `composer require zircote/swagger-php:^6.12`
+      2. Redocly CLI als Entwicklungsabhängigkeit mit npm: zuerst `npm init -y`, dann
+         `npm install --save-dev @redocly/cli@2.62.1`
+    checklist:
+      - swagger-php ist in composer.json eingetragen
+      - Redocly CLI liegt in node_modules
+    hints:
+      - Beide Befehle führst du im Ordner `projekt` aus.
+      - Wenn `npm install` meckert, dass package.json fehlt, hast du `npm init -y` vergessen.
+    checks:
+      - type: command
+        run: "jq -r '.require[\"zircote/swagger-php\"] // empty' composer.json"
+        stdout_matches: "\\S"
+        message: swagger-php steht noch nicht unter require in composer.json.
+      - type: dir_exists
+        path: vendor/zircote/swagger-php
+        message: vendor/zircote/swagger-php fehlt – führe composer require aus.
+      - type: dir_exists
+        path: node_modules/@redocly/cli
+        message: Redocly CLI ist noch nicht installiert (node_modules/@redocly/cli fehlt).
+    solution: |
+      ```bash
+      cd projekt
+      composer require zircote/swagger-php:^6.12
+      npm init -y
+      npm install --save-dev @redocly/cli@2.62.1
+      ```
+  - id: api-beschreiben
+    title: Die API als Ganzes beschreiben
+    description: |
+      Lege `src/OpenApi.php` an – eine leere Klasse `App\OpenApi` mit diesen Attributen:
+
+      - `OA\OpenApi` mit `openapi: "3.1.0"` und globaler Security `bearerAuth`
+      - `OA\Info` mit Titel `Aufgaben-API`, Version `1.0.0`, einer Beschreibung und der Lizenz MIT
+      - `OA\Server` mit `https://api.example.com/v1`
+      - `OA\SecurityScheme` `bearerAuth` (HTTP, Bearer, `bearerFormat: "JWT"`)
+    checklist:
+      - src/OpenApi.php existiert mit Namespace App
+      - Info, Server und SecurityScheme sind beschrieben
+      - Die Security gilt global
+    hints:
+      - Orientiere dich an der Lektion „OpenAPI aus PHP-Attributen mit swagger-php“ und an der Übung zu Modul 3.
+      - 'Die Lizenz: `license: new OA\License(name: "MIT", identifier: "MIT")` innerhalb von `OA\Info(...)`.'
+    checks:
+      - type: file_exists
+        path: src/OpenApi.php
+        message: src/OpenApi.php fehlt.
+      - type: command
+        run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -r '[.openapi, .info.title, .info.version, .info.license.name, .servers[0].url, .components.securitySchemes.bearerAuth.scheme, (.security[0] | keys[0])] | join(\"|\")'"
+        stdout_equals: "3.1.0|Aufgaben-API|1.0.0|MIT|https://api.example.com/v1|bearer|bearerAuth"
+        message: "Prüfe openapi 3.1.0, Titel Aufgaben-API, Version 1.0.0, Lizenz MIT, den Server, das SecurityScheme bearerAuth und die globale security-Angabe."
+    solution: |
+      ```php title="src/OpenApi.php"
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      use OpenApi\Attributes as OA;
+
+      #[OA\OpenApi(openapi: "3.1.0", security: [["bearerAuth" => []]])]
+      #[OA\Info(
+          version: "1.0.0",
+          title: "Aufgaben-API",
+          description: "Aufgaben anlegen, auflisten und erledigen.",
+          license: new OA\License(name: "MIT", identifier: "MIT"),
+      )]
+      #[OA\Server(url: "https://api.example.com/v1")]
+      #[OA\SecurityScheme(securityScheme: "bearerAuth", type: "http", scheme: "bearer", bearerFormat: "JWT")]
+      final class OpenApi
+      {
+      }
+      ```
+  - id: schemas
+    title: Task und Priority als Schemas
+    description: |
+      Mach aus den Modellen Schemas:
+
+      1. `Priority` wird ein Schema mit den Werten `low`, `normal`, `high`.
+      2. `Task` wird ein Schema mit `required: ["id", "title", "done", "priority"]`. Jede Eigenschaft
+         bekommt `#[OA\Property]`. Gib bei `due_date` zusätzlich `format: "date"` an.
+    checklist:
+      - Priority hat die Werte low, normal und high
+      - Task hat fünf Eigenschaften und vier Pflichtfelder
+      - due_date ist nullable und hat format date
+    hints:
+      - Denk an `type` beim Enum – sonst landen die Namen der Cases im Schema.
+      - "`?string` wird automatisch zu `type: [string, \"null\"]`."
+    checks:
+      - type: command
+        run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -c '.components.schemas.Priority.enum'"
+        stdout_equals: '["low","normal","high"]'
+        message: "Das Schema Priority fehlt oder enthält nicht die Werte low, normal, high. Nutze #[OA\\Schema(type: \"string\")]."
+      - type: command
+        run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -r '.components.schemas.Task | [(.required|sort|join(\",\")), (.properties|keys|sort|join(\",\")), .properties.done.type, .properties.due_date.format, (.properties.due_date.type|tostring), .properties.priority[\"$ref\"]] | join(\"|\")'"
+        stdout_equals: 'done,id,priority,title|done,due_date,id,priority,title|boolean|date|["string","null"]|#/components/schemas/Priority'
+        message: Das Schema Task ist noch unvollständig – prüfe required, alle fünf Properties und format date bei due_date.
+    solution: |
+      ```php title="src/Model/Priority.php"
+      use OpenApi\Attributes as OA;
+
+      #[OA\Schema(type: "string")]
+      enum Priority: string
+      {
+          case Low = 'low';
+          case Normal = 'normal';
+          case High = 'high';
+      }
+      ```
+
+      ```php title="src/Model/Task.php"
+      use OpenApi\Attributes as OA;
+
+      #[OA\Schema(required: ["id", "title", "done", "priority"])]
+      final class Task
+      {
+          public function __construct(
+              #[OA\Property(example: 1)]
+              public int $id,
+              #[OA\Property(example: "Doku schreiben")]
+              public string $title,
+              #[OA\Property]
+              public bool $done,
+              #[OA\Property]
+              public Priority $priority,
+              #[OA\Property(format: "date")]
+              public ?string $due_date = null,
+          ) {
+          }
+      }
+      ```
+  - id: lesen
+    title: Lesende Endpunkte beschreiben
+    description: |
+      Beschreibe im `TaskController` und `HealthController`:
+
+      1. `GET /health` – `operationId: "getHealth"`, **öffentlich** (`security: []`), Antwort `200`.
+      2. `GET /tasks` – `operationId: "listTasks"`, optionaler Query-Parameter `done` (boolean),
+         Antwort `200` mit einer Liste von `Task` und `401`.
+      3. `GET /tasks/{id}` – `operationId: "getTask"`, Pfadparameter `id` (integer), Antworten `200`
+         (mit `Task`), `401` und `404`.
+
+      Gib allen Operationen eine `summary` und das Tag `Tasks` bzw. `System`.
+    checklist:
+      - getHealth ist öffentlich
+      - listTasks hat den Query-Parameter done
+      - getTask liefert 200, 401 und 404
+    hints:
+      - "Eine Operation öffentlich machen: `security: []` direkt im `OA\\Get(...)`."
+      - 'Liste von Tasks: `content: new OA\JsonContent(type: "array", items: new OA\Items(ref: Task::class))`'
+      - Denk an `use OpenApi\Attributes as OA;` in beiden Controllern.
+    checks:
+      - type: command
+        run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -c '[.paths[\"/health\"].get.operationId, .paths[\"/health\"].get.security]'"
+        stdout_equals: '["getHealth",[]]'
+        message: "GET /health braucht operationId getHealth und security: [] (öffentlich)."
+      - type: command
+        run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -r '.paths[\"/tasks\"].get | [.operationId, (.parameters[]? | select(.name==\"done\") | .in + \":\" + .schema.type), .responses[\"200\"].content[\"application/json\"].schema.items[\"$ref\"], (.responses|keys|join(\",\"))] | join(\"|\")'"
+        stdout_equals: "listTasks|query:boolean|#/components/schemas/Task|200,401"
+        message: GET /tasks braucht operationId listTasks, den Query-Parameter done (boolean), eine 200-Antwort mit einer Liste von Task und die Antwort 401.
+      - type: command
+        run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -r '.paths[\"/tasks/{id}\"].get | [.operationId, .responses[\"200\"].content[\"application/json\"].schema[\"$ref\"], (.responses|keys|join(\",\"))] | join(\"|\")'"
+        stdout_equals: "getTask|#/components/schemas/Task|200,401,404"
+        message: GET /tasks/{id} braucht operationId getTask, eine 200-Antwort mit Task sowie 401 und 404.
+    solution: |
+      ```php title="src/Controller/HealthController.php"
+      #[OA\Get(path: "/health", operationId: "getHealth", summary: "Erreichbarkeit prüfen", tags: ["System"], security: [])]
+      #[OA\Response(response: 200, description: "Die API läuft")]
+      public function show(): array
+      ```
+
+      ```php title="src/Controller/TaskController.php (index und show)"
+      #[OA\Get(path: "/tasks", operationId: "listTasks", summary: "Aufgaben auflisten", tags: ["Tasks"])]
+      #[OA\Parameter(name: "done", in: "query", required: false, schema: new OA\Schema(type: "boolean"))]
+      #[OA\Response(response: 200, description: "Liste der Aufgaben", content: new OA\JsonContent(type: "array", items: new OA\Items(ref: Task::class)))]
+      #[OA\Response(response: 401, description: "Nicht angemeldet")]
+      public function index(?bool $done = null): array
+
+      #[OA\Get(path: "/tasks/{id}", operationId: "getTask", summary: "Eine Aufgabe laden", tags: ["Tasks"])]
+      #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+      #[OA\Response(response: 200, description: "Die Aufgabe", content: new OA\JsonContent(ref: Task::class))]
+      #[OA\Response(response: 401, description: "Nicht angemeldet")]
+      #[OA\Response(response: 404, description: "Aufgabe nicht gefunden")]
+      public function show(int $id): ?Task
+      ```
+  - id: schreiben
+    title: Schreibende Endpunkte beschreiben
+    description: |
+      Beschreibe die übrigen Methoden im `TaskController`:
+
+      1. `POST /tasks` – `operationId: "createTask"`, Pflicht-Body als JSON-Objekt mit dem Pflichtfeld
+         `title` (string) und dem optionalen Feld `priority` (Verweis auf `Priority`). Antworten
+         `201` (mit `Task`), `401` und `422`.
+      2. `DELETE /tasks/{id}` – `operationId: "deleteTask"`, Pfadparameter `id`, Antworten `204`, `401` und `404`.
+    checklist:
+      - createTask hat einen Pflicht-Body mit title
+      - createTask liefert 201, 401 und 422
+      - deleteTask liefert 204, 401 und 404
+    hints:
+      - "Ein Body ohne eigene Klasse: `new OA\\JsonContent(required: [\"title\"], properties: [new OA\\Property(property: \"title\", type: \"string\"), …])`"
+      - 'Der Verweis auf das Enum: `new OA\Property(property: "priority", ref: Priority::class)` – denk an `use App\Model\Priority;`.'
+    checks:
+      - type: command
+        run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -r '.paths[\"/tasks\"].post | [.operationId, (.requestBody.required|tostring), (.requestBody.content[\"application/json\"].schema.required // [] | join(\",\")), .requestBody.content[\"application/json\"].schema.properties.title.type, .requestBody.content[\"application/json\"].schema.properties.priority[\"$ref\"], .responses[\"201\"].content[\"application/json\"].schema[\"$ref\"], (.responses|keys|join(\",\"))] | join(\"|\")'"
+        stdout_equals: "createTask|true|title|string|#/components/schemas/Priority|#/components/schemas/Task|201,401,422"
+        message: POST /tasks braucht operationId createTask, einen Pflicht-Body (title Pflicht, priority als Verweis auf Priority), 201 mit Task sowie 401 und 422.
+      - type: command
+        run: "./vendor/bin/openapi src --format json 2>/dev/null | jq -r '.paths[\"/tasks/{id}\"].delete | [.operationId, (.responses|keys|join(\",\"))] | join(\"|\")'"
+        stdout_equals: "deleteTask|204,401,404"
+        message: DELETE /tasks/{id} braucht operationId deleteTask und die Antworten 204, 401 und 404.
+    solution: |
+      ```php title="src/Controller/TaskController.php (store und destroy)"
+      #[OA\Post(path: "/tasks", operationId: "createTask", summary: "Aufgabe anlegen", tags: ["Tasks"])]
+      #[OA\RequestBody(
+          required: true,
+          content: new OA\JsonContent(
+              required: ["title"],
+              properties: [
+                  new OA\Property(property: "title", type: "string", example: "Doku schreiben"),
+                  new OA\Property(property: "priority", ref: Priority::class),
+              ],
+          ),
+      )]
+      #[OA\Response(response: 201, description: "Angelegt", content: new OA\JsonContent(ref: Task::class))]
+      #[OA\Response(response: 401, description: "Nicht angemeldet")]
+      #[OA\Response(response: 422, description: "Ungültige Eingaben")]
+      public function store(array $input): Task
+
+      #[OA\Delete(path: "/tasks/{id}", operationId: "deleteTask", summary: "Aufgabe löschen", tags: ["Tasks"])]
+      #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+      #[OA\Response(response: 204, description: "Gelöscht")]
+      #[OA\Response(response: 401, description: "Nicht angemeldet")]
+      #[OA\Response(response: 404, description: "Aufgabe nicht gefunden")]
+      public function destroy(int $id): void
+      ```
+  - id: erzeugen
+    title: Die v1-Spezifikation per Composer-Skript erzeugen
+    description: |
+      Damit jeder im Team denselben Befehl nutzt, ergänze in `composer.json` das Skript
+      `"docs": "openapi src -o docs/v1/openapi.yaml"` unter `scripts` und führe `composer docs` aus.
+    checklist:
+      - composer.json enthält das Skript docs
+      - docs/v1/openapi.yaml existiert und ist aktuell
+    hints:
+      - "`scripts` steht auf oberster Ebene in composer.json, neben `autoload`. Achte auf Kommas im JSON."
+      - Prüfe die Datei mit `jq . composer.json` – meldet jq einen Fehler, ist das JSON kaputt.
+    checks:
+      - type: command
+        run: "jq -r '.scripts.docs // empty | if type == \"array\" then join(\" \") else . end' composer.json"
+        stdout_matches: "openapi\\s+src\\s.*docs/v1/openapi\\.yaml"
+        message: In composer.json fehlt das Skript docs, das openapi src -o docs/v1/openapi.yaml aufruft.
+      - type: file_contains
+        path: docs/v1/openapi.yaml
+        pattern: "^openapi: 3\\.1\\.0"
+        message: docs/v1/openapi.yaml fehlt. Führe composer docs aus.
+      - type: command
+        run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); ./vendor/bin/openapi src -o \"$d/neu.yaml\" >/dev/null 2>&1; cmp -s \"$d/neu.yaml\" docs/v1/openapi.yaml; e=$?; rm -rf \"$d\"; exit $e"
+        message: docs/v1/openapi.yaml passt nicht zum aktuellen Code. Führe composer docs erneut aus.
+    solution: |
+      ```json title="composer.json (Ausschnitt)"
+      "scripts": {
+          "docs": "openapi src -o docs/v1/openapi.yaml"
+      }
+      ```
+
+      ```bash
+      composer docs
+      ```
+  - id: linten
+    title: Ohne Fehler linten
+    description: |
+      Lege `redocly.yaml` an, die den Regelsatz `recommended` erweitert. Weil wir Platzhalter-Adressen
+      verwenden, darf `no-server-example.com` auf `off` stehen – sonst schaltest du **keine** Regel ab.
+
+      Führe `npx redocly lint docs/v1/openapi.yaml` aus und behebe alle Fehler im **PHP-Code**
+      (danach `composer docs` nicht vergessen).
+    checklist:
+      - redocly.yaml erweitert recommended
+      - Keine weitere Regel ist abgeschaltet
+      - Lint meldet keine Fehler
+    hints:
+      - Fehler in der YAML-Datei behebst du nie direkt dort – sie wird beim nächsten `composer docs` überschrieben.
+      - "Häufige Ursachen: eine Antwort ohne description, ein fehlender Pfadparameter oder eine fehlende 4XX-Antwort bei getHealth (das ist nur eine Warnung)."
+    checks:
+      - type: file_contains
+        path: redocly.yaml
+        pattern: "recommended"
+        message: redocly.yaml fehlt oder erweitert nicht den Regelsatz recommended.
+      - type: command
+        run: "grep -v 'no-server-example.com' redocly.yaml | grep -Eq ':\\s*off\\s*(#.*)?$'"
+        expect_exit: 1
+        message: In redocly.yaml ist außer no-server-example.com noch eine Regel abgeschaltet. Behebe die Ursache im Code.
+      - type: command
+        run: npx redocly lint docs/v1/openapi.yaml >/dev/null 2>&1
+        message: "`npx redocly lint docs/v1/openapi.yaml` meldet noch Fehler."
+    solution: |
+      ```yaml title="redocly.yaml"
+      extends:
+        - recommended
+      rules:
+        no-server-example.com: off
+      ```
+
+      ```bash
+      npx redocly lint docs/v1/openapi.yaml
+      ```
+  - id: doku-seite
+    title: Die Doku-Seite bauen
+    description: |
+      Baue aus der Spezifikation eine statische Doku-Seite `public/docs/index.html`. Starte zum Abschluss
+      den kleinen Server mit `php -S 127.0.0.1:8080 -t public > server.log 2>&1 &` und prüfe mit
+      `curl -s 127.0.0.1:8080/v1/tasks/1 | jq`, dass die echte API genau das liefert, was deine Doku
+      verspricht. Beende den Server danach mit `kill %1`.
+    checklist:
+      - public/docs/index.html existiert
+      - Die Antwort von GET /v1/tasks/1 passt zum Schema Task
+    hints:
+      - "`npx redocly build-docs docs/v1/openapi.yaml -o public/docs/index.html`"
+    checks:
+      - type: file_contains
+        path: public/docs/index.html
+        pattern: "<title>Aufgaben-API</title>"
+        message: public/docs/index.html fehlt oder wurde nicht aus deiner Spezifikation gebaut.
+    solution: |
+      ```bash
+      npx redocly build-docs docs/v1/openapi.yaml -o public/docs/index.html
+      php -S 127.0.0.1:8080 -t public > server.log 2>&1 &
+      sleep 1
+      curl -s 127.0.0.1:8080/v1/tasks/1 | jq
+      kill %1
+      ```

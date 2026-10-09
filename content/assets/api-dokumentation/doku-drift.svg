@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="400" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Handgepflegte Doku driftet – erzeugte Doku bleibt synchron</text>
+
+  <text x="40" y="70" font-size="15" font-weight="700" fill="#1e1b3a">Von Hand gepflegt</text>
+  <line x1="40" y1="180" x2="760" y2="180" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="760" y="200" text-anchor="end" font-size="12" fill="#475569">Zeit →</text>
+  <g font-size="13" fill="#1e1b3a">
+    <rect x="60" y="90" width="150" height="34" rx="6" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+    <text x="135" y="112" text-anchor="middle">Code: price</text>
+    <rect x="60" y="134" width="150" height="34" rx="6" fill="#ffffff" stroke="#34d399" stroke-width="2"/>
+    <text x="135" y="156" text-anchor="middle">Doku: price ✓</text>
+
+    <rect x="320" y="90" width="150" height="34" rx="6" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+    <text x="395" y="112" text-anchor="middle">Code: total</text>
+    <rect x="320" y="134" width="150" height="34" rx="6" fill="#ffffff" stroke="#f87171" stroke-width="2"/>
+    <text x="395" y="156" text-anchor="middle">Doku: price ✗</text>
+
+    <rect x="580" y="90" width="160" height="34" rx="6" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+    <text x="660" y="112" text-anchor="middle">Code: total, currency</text>
+    <rect x="580" y="134" width="160" height="34" rx="6" fill="#ffffff" stroke="#f87171" stroke-width="2"/>
+    <text x="660" y="156" text-anchor="middle">Doku: price ✗</text>
+  </g>
+  <line x1="214" y1="107" x2="314" y2="107" stroke="#1e1b3a" stroke-width="1.5" marker-end="url(#pfeil)"/>
+  <line x1="474" y1="107" x2="574" y2="107" stroke="#1e1b3a" stroke-width="1.5" marker-end="url(#pfeil)"/>
+
+  <text x="40" y="250" font-size="15" font-weight="700" fill="#1e1b3a">Aus dem Code erzeugt und in der CI geprüft</text>
+  <g font-size="13" fill="#1e1b3a">
+    <rect x="60" y="275" width="170" height="44" rx="8" fill="#f8fafc" stroke="#a78bfa" stroke-width="2.5"/>
+    <text x="145" y="295" text-anchor="middle" font-weight="700">Code</text>
+    <text x="145" y="311" text-anchor="middle" font-size="11">mit Attributen</text>
+
+    <rect x="320" y="275" width="170" height="44" rx="8" fill="#f8fafc" stroke="#a78bfa" stroke-width="2.5"/>
+    <text x="405" y="295" text-anchor="middle" font-weight="700">openapi.yaml</text>
+    <text x="405" y="311" text-anchor="middle" font-size="11">wird erzeugt</text>
+
+    <rect x="580" y="275" width="170" height="44" rx="8" fill="#f8fafc" stroke="#f59e0b" stroke-width="2.5"/>
+    <text x="665" y="295" text-anchor="middle" font-weight="700">CI-Prüfung</text>
+    <text x="665" y="311" text-anchor="middle" font-size="11">lint + diff</text>
+  </g>
+  <line x1="234" y1="297" x2="314" y2="297" stroke="#1e1b3a" stroke-width="1.5" marker-end="url(#pfeil)"/>
+  <line x1="494" y1="297" x2="574" y2="297" stroke="#1e1b3a" stroke-width="1.5" marker-end="url(#pfeil)"/>
+  <text x="274" y="288" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#475569">erzeugen</text>
+  <text x="534" y="288" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#475569">prüfen</text>
+  <path d="M665,322 C665,380 145,380 145,325" fill="none" stroke="#f87171" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#pfeil)"/>
+  <text x="405" y="372" text-anchor="middle" font-size="12" fill="#1e1b3a">Abweichung? → Build rot, Doku neu erzeugen und committen</text>
+  <text x="405" y="400" text-anchor="middle" font-size="12" fill="#475569">Code und Doku können nicht unbemerkt auseinanderlaufen.</text>
+</svg>
