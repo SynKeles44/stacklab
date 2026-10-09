@@ -8,7 +8,8 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 - **Zuletzt erledigt (2026-10-10):** Fundament komplett und getestet; Lektionen seitenweise (Blättern); zwei UI-Varianten (Standard + Apple, wählbar unter Einstellungen → Darstellung, gespeichert in users.ui_variant); Kursdauer wird aus Lektionsdauern berechnet; Kurs-Größenregel 10–12 Lektionen / 4–6 h (Laravel bis 10 h) in docs/AUTHORING.md.
 - **Kursstand:** siehe Abschnitt „Abbruchstand 2026-10-10“.
 - **Als Nächstes:** nach Abschluss der laufenden Autoren `make validate` + Import; restliche Kurse 13–52 mit der Größenregel schreiben (Brief: docs/AUTHORING.md + content/README.md); Lexikon-Dubletten prüfen; Testkonten test@example.com und ui-test@example.com löschen; MISSING_SCREENSHOTS.md (PhpStorm-Kurs); GitHub-Repo SynKeles44/stacklab anlegen und pushen (Commits als SynKeles44, Signierung nur in diesem Repo aus); Abschlusszusammenfassung.
-- **Hinweise für Autoren:** Sandbox /tmp ist noexec; kein man/sudo/zsh/python3/rsync; `nvm install` höchstens einmal mit `timeout 300` (Prozesslimit 512).
+- **2026-10-10 (Nachtrag):** Tests leerten die Entwicklungs-DB (Docker-Env überschrieb phpunit.xml) – behoben, danach Neu-Import nötig (Konten waren weg). Neu: „Für mich erledigen“ bei Projektschritten (`solve:`-Skripte, Prüfwerkzeug `stacklab:solve-check --require-all`), Fortschritt zurücksetzen (Einstellungen), `make workspace` (Ordner-Dialog), Suche repariert, Module starten eingeklappt.
+- **Hinweise für Autoren:** Jeder Projektschritt braucht ein `solve`-Skript, `stacklab:solve-check <kurs> --require-all` muss grün sein. Sandbox /tmp ist noexec; kein man/sudo/zsh/python3/rsync; `nvm install` höchstens einmal mit `timeout 300` (Prozesslimit 512).
 
 ## Abbruchstand 2026-10-10 (alle Autoren-Agenten gestoppt) – HIER WEITERMACHEN
 
@@ -68,6 +69,7 @@ Unfertige Kurse liegen **unversioniert** im Arbeitsverzeichnis (`git status`), d
 | D17 | Keine JetBrains-Screenshots, stattdessen SVG-Nachbau + Links + MISSING_SCREENSHOTS.md | Keine Lizenz gefunden, die Weiterverwendung erlaubt |
 | D18 | Zwei UI-Varianten (Standard/Apple) per data-ui-Attribut und Design-Tokens, Wahl pro Nutzer | Nutzerwunsch; Basis: emilkowalski/skills (MIT) |
 | D19 | Lektionen seitenweise, Kurse 10–12 Lektionen | Nutzerfeedback: zu viel Text, zu lange Kurse |
+| D20 | „Für mich erledigen“ nur mit explizitem `solve`-Skript, nie aus dem Lösungstext abgeleitet | Lösungstexte enthalten Editor-Schritte und Platzhalter; abgeleitete Skripte scheiterten bei 18 von 41 Schritten |
 | D16 | Commits als SynKeles44, Signierung nur in diesem Repo aus | Globaler Signaturschlüssel gehört zum Arbeitskonto |
 | D12 | Simulierter Terminal-Modus (SSH, AWS, DNS) als Szenario-Engine im Frontend, gleiche Terminal-Komponente | Nicht lokal echt ausführbare Themen trotzdem tippbar |
 
@@ -168,6 +170,12 @@ Stichproben-Review.
 
 ## Phase 6b – Plattform-Nacharbeiten aus den Kursen
 - [x] project.yaml: optionales `setup` + Button „Projekt zurücksetzen“ (Fremden-Code-Kurs legt das Projekt aktuell über eine Modulübung an)
+- [x] Projektschritte: `solve`-Skript + Button „Für mich erledigen“ + `stacklab:solve-check` (D20)
+- [x] Git-Projekt: alle 7 `solve`-Skripte grün
+- [~] `solve`-Skripte für die übrigen committeten Projekte (01–05, 07–22) – 5 Agenten laufen
+- [ ] `solve`-Skripte für die Kurse 23 ff. (Teil des Autoren-Briefs)
+- [x] Fortschritt zurücksetzen (Einstellungen), `make workspace` mit nativem Ordner-Dialog
+- [x] Tests dürfen die Entwicklungs-DB nicht mehr leeren (`<server force>` in phpunit.xml)
 
 ## Phase 7 – Tests & Qualität
 - [ ] Backend-Tests (Pest)
