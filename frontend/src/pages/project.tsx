@@ -7,6 +7,7 @@ import { CourseIcon } from '@/components/common/course-icon'
 import { SmallMarkdown } from '@/components/tasks/task-card'
 import { CheckResults } from '@/components/tasks/check-results'
 import { RealTerminal } from '@/components/code/lazy'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -27,7 +28,27 @@ export function ProjectPage() {
   const [completed, setCompleted] = useState<string[]>(data.completed_steps)
   const [terminalOpen, setTerminalOpen] = useState(false)
   const activeIndex = project.steps.findIndex((step) => !completed.includes(step.id))
-  const workdir = project.steps[0]?.workdir ?? 'projekt'
+  const workdir = project.workdir ?? project.steps[0]?.workdir ?? 'projekt'
+  const [resetting, setResetting] = useState(false)
+  const [terminalKey, setTerminalKey] = useState(0)
+
+  const resetProject = async () => {
+    setResetting(true)
+    try {
+      const result = await Api.resetProject(project.id)
+      if (result.ok) {
+        toast.success('Projekt vorbereitet', { description: `Ordner workspace/${project.course.workspace_dir}/${workdir} ist bereit.` })
+        setTerminalOpen(true)
+        setTerminalKey((key) => key + 1)
+      } else {
+        toast.error('Vorbereitung fehlgeschlagen', { description: result.output.slice(0, 300) })
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Fehler')
+    } finally {
+      setResetting(false)
+    }
+  }
 
   useEffect(() => {
     document.title = `${project.title} · Projekt · Stacklab`
@@ -71,12 +92,31 @@ export function ProjectPage() {
           <FolderOpen className="mt-0.5 size-4 shrink-0 text-brand" />
           <p>Projektordner: <code className="font-mono text-xs">workspace/{project.course.workspace_dir}/{workdir}</code> – öffne ihn gern parallel in deinem Editor.</p>
         </div>
+        {user && project.has_setup && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" disabled={resetting}>{resetting ? <Spinner /> : <RotateCcw />} Projekt vorbereiten / zurücksetzen</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Projekt vorbereiten?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Der Ordner workspace/{project.course.workspace_dir}/{workdir} wird neu angelegt. Was du darin bisher gebaut hast, wird gelöscht.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction onClick={resetProject}>Vorbereiten</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
         {user && (
           <div>
             {!terminalOpen ? (
               <Button variant="secondary" onClick={() => setTerminalOpen(true)}><Play /> Übungs-Terminal öffnen</Button>
             ) : (
-              <RealTerminal courseSlug={project.course.slug} startDir={workdir} label={`${project.course.workspace_dir}/${workdir}`} />
+              <RealTerminal key={terminalKey} courseSlug={project.course.slug} startDir={workdir} label={`${project.course.workspace_dir}/${workdir}`} />
             )}
           </div>
         )}

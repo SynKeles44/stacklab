@@ -296,6 +296,8 @@ title: Dein Portfolio-Repository
 description: …
 goal: Was am Ende auf deiner Festplatte liegt.
 workdir: projekt             # relativ zu workspace/<workspace_dir>/
+setup: |                     # optional: Bash, legt die Ausgangslage an (Button „Projekt vorbereiten“)
+  git init -q
 steps:
   - id: anlegen
     title: Repository anlegen

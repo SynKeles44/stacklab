@@ -129,6 +129,8 @@ const projectSchema = z.object({
     title: z.string(),
     description: z.string(),
     goal: nullableString,
+    workdir: z.string().optional(),
+    has_setup: z.boolean().optional(),
     steps: z.array(
       z.object({
         id: z.string(),
@@ -308,6 +310,7 @@ export const Api = {
 
   project: (course: string, signal?: AbortSignal) => api(`/courses/${course}/project`, projectSchema, { signal }),
   verifyProjectStep: (project: number, step: string) => api(`/projects/${project}/steps/${step}/verify`, checkResultSchema, { method: 'POST' }),
+  resetProject: (project: number) => api(`/projects/${project}/reset`, z.object({ ok: z.boolean(), output: z.string() }), { method: 'POST' }),
   reopenProjectStep: (project: number, step: string) => api(`/projects/${project}/steps/${step}`, ok, { method: 'DELETE' }),
 
   exam: (course: string, signal?: AbortSignal) => api(`/courses/${course}/exam`, examInfoSchema, { signal }),
