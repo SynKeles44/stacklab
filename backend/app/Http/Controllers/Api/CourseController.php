@@ -22,6 +22,7 @@ final class CourseController extends Controller
 
         $courses = Course::query()
             ->withCount(['lessons', 'modules'])
+            ->withSum('lessons', 'duration_minutes')
             ->orderBy('position')
             ->get()
             ->map(fn (Course $course): array => [
@@ -82,6 +83,13 @@ final class CourseController extends Controller
         ]);
     }
 
+    private function hours(Course $course): int
+    {
+        $minutes = (int) ($course->lessons_sum_duration_minutes ?? $course->lessons()->sum('duration_minutes'));
+
+        return $minutes > 0 ? max(1, (int) round($minutes / 60)) : $course->estimated_hours;
+    }
+
     /** @return array<string, mixed> */
     private function summary(Course $course): array
     {
@@ -96,7 +104,7 @@ final class CourseController extends Controller
             'position' => $course->position,
             'icon' => $course->icon,
             'color' => $course->color,
-            'estimated_hours' => $course->estimated_hours,
+            'estimated_hours' => $this->hours($course),
             'workspace_dir' => $course->workspace_dir,
             'lessons_count' => $course->lessons_count ?? $course->lessons()->count(),
             'modules_count' => $course->modules_count ?? $course->modules()->count(),

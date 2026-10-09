@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $workspace_dir
  * @property int|null $lessons_count
  * @property int|null $modules_count
+ * @property int|string|null $lessons_sum_duration_minutes
  * @property Collection<int, CourseModule> $modules
  * @property Project|null $project
  * @property Exam|null $exam

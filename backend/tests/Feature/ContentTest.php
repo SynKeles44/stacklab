@@ -78,3 +78,7 @@ it('skips broken courses when importing with --force', function (): void {
 
     expect(Course::query()->pluck('slug')->all())->toBe(['demo']);
 });
+
+it('computes the course duration from lesson durations', function (): void {
+    $this->getJson('/api/courses')->assertJsonPath('courses.0.estimated_hours', 1);
+});
