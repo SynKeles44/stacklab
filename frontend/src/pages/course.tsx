@@ -174,32 +174,32 @@ function ModuleItem({ course, module, index }: { course: CourseDetail; module: C
 
   return (
     <AccordionItem value={module.slug} className="overflow-hidden rounded-xl border-0 bg-card px-0 shadow-card">
-      <div className="flex items-center gap-2 pr-3">
-        <AccordionTrigger className="flex-1 px-5 py-4 hover:no-underline">
-          <div className="flex items-center gap-4 text-left">
+      <div className="flex items-center pr-2">
+        <AccordionTrigger className="items-center gap-3 rounded-none py-4 pr-2 pl-5">
+          <div className="flex min-w-0 flex-1 items-center gap-4 text-left">
             <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium tabular-nums', allDone && 'bg-success text-white')}>
               {allDone ? <CheckCircle2 className="size-5" /> : index + 1}
             </span>
-            <div>
-              <p className="font-semibold">{module.title}</p>
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{module.title}</p>
               <p className="text-sm font-normal text-muted-foreground">{done} / {module.lessons.length} Lektionen{module.exercise ? ' · mit Modul-Übung' : ''}</p>
             </div>
           </div>
         </AccordionTrigger>
         <BookmarkButton type="module" refKey={`${course.slug}/${module.slug}`} label={`${course.title}: ${module.title}`} url={`/kurse/${course.slug}`} size="icon-sm" />
       </div>
-      <AccordionContent className="px-3 pb-3">
-        {module.description && <p className="px-2 pb-3 text-sm text-muted-foreground">{module.description}</p>}
-        <ol className="space-y-1">
+      <AccordionContent className="pb-2">
+        {module.description && <p className="px-5 pb-3 text-sm text-muted-foreground">{module.description}</p>}
+        <ol className="border-t">
           {module.lessons.map((lesson) => (
             <li key={lesson.id}>
-              <Link to={`/kurse/${course.slug}/${lesson.slug}`} className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted">
-                {lesson.completed ? <CheckCircle2 className="size-5 shrink-0 text-success" /> : <Circle className="size-5 shrink-0 text-muted-foreground/50" />}
+              <Link to={`/kurse/${course.slug}/${lesson.slug}`} className="group flex items-center gap-4 border-b px-5 py-3 transition-colors hover:bg-muted/60">
+                {lesson.completed ? <CheckCircle2 className="size-5 shrink-0 text-success" /> : <Circle className="size-5 shrink-0 text-muted-foreground/40" />}
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium group-hover:text-brand">{lesson.title}</p>
+                  <p className="font-medium">{lesson.title}</p>
                   {lesson.summary && <p className="line-clamp-1 text-sm text-muted-foreground">{lesson.summary}</p>}
                 </div>
-                <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{lesson.duration_minutes} Min.</span>
+                <span className="hidden shrink-0 text-xs text-muted-foreground tabular-nums sm:inline">{lesson.duration_minutes} Min.</span>
               </Link>
             </li>
           ))}
@@ -208,7 +208,7 @@ function ModuleItem({ course, module, index }: { course: CourseDetail; module: C
           <button
             type="button"
             onClick={() => setExerciseOpen(true)}
-            className={cn('mt-2 flex w-full items-center gap-3 rounded-xl border border-dashed px-3 py-3 text-left transition-colors hover:border-brand', module.exercise_done && 'border-success/50 bg-success/5')}
+            className={cn('flex w-full items-center gap-4 px-5 py-3 text-left transition-colors hover:bg-muted/60', module.exercise_done && 'bg-success/5')}
           >
             <Dumbbell className={cn('size-5 shrink-0', module.exercise_done ? 'text-success' : 'text-brand')} />
             <div className="flex-1">

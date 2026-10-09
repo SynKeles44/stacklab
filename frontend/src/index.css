@@ -211,6 +211,7 @@
   html {
     @apply font-sans;
     scroll-padding-top: 5rem;
+    scrollbar-gutter: stable;
   }
   h1, h2, h3 {
     text-wrap: balance;

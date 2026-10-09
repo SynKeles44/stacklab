@@ -109,9 +109,8 @@ export function AppShell() {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground',
-                    isActive && 'font-medium text-foreground',
-                    isActive && apple && 'text-primary',
+                    'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
+                    isActive && (apple ? 'text-primary' : 'text-foreground'),
                   )
                 }
               >
@@ -206,7 +205,7 @@ function initials(name: string): string {
 
 function MobileLink({ to, label, icon: Icon, end }: { to: string; label: string; icon: typeof Home; end: boolean }) {
   return (
-    <NavLink to={to} end={end} className={({ isActive }) => cn('flex items-center gap-3 rounded-md px-3 py-2.5 text-sm hover:bg-muted', isActive && 'bg-muted font-medium')}>
+    <NavLink to={to} end={end} className={({ isActive }) => cn('flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-muted', isActive && 'bg-muted')}>
       <Icon className="size-4 text-muted-foreground" /> {label}
     </NavLink>
   )
