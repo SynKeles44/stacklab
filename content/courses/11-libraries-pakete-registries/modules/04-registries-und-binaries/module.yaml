@@ -1,0 +1,68 @@
+title: Registries und Binaries
+description: Wie Registries Pakete verteilen, wie Versionen aufgelöst und in Lockfiles festgehalten werden, wie du private Registries und Audits nutzt – und was Binaries, npx, PATH und native Module sind.
+exercise:
+  id: modul-uebung-registries
+  type: terminal
+  title: Ein sicherer Build mit Projekt-Werkzeugen
+  description: |
+    Im Ordner `sicher-bauen` liegt ein kleines Frontend-Projekt: `src/app.js` nutzt `lodash`, das in einer
+    **alten Version mit Sicherheitslücke** installiert ist.
+
+    1. Interne Pakete der Firma heißen `@intern/…`. Lege eine `.npmrc` an, die diesen Scope von
+       `https://registry.example.com/npm/` lädt. Das Token kommt aus der Umgebungsvariable `INTERN_TOKEN`.
+    2. Schließe die Sicherheitslücke, sodass `npm audit` nichts mehr meldet.
+    3. Installiere `esbuild` als Dev-Abhängigkeit und lege ein npm-Skript `build` an, das
+       `esbuild src/app.js --bundle --platform=node --outfile=dist/app.js` ausführt – **ohne** Pfad vor
+       `esbuild`, denn npm-Skripte finden Befehle in `node_modules/.bin` selbst.
+    4. Baue mit `npm run build` und teste mit `node dist/app.js` (Ausgabe: `[[1,2],[3,4]]`).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: sicher-bauen
+  setup: |
+    npm init -y > /dev/null
+    npm install lodash@4.17.20 > /dev/null 2>&1
+    mkdir -p src
+    cat > src/app.js <<'EOF'
+    const chunk = require("lodash/chunk");
+
+    console.log(JSON.stringify(chunk([1, 2, 3, 4], 2)));
+    EOF
+  checks:
+    - type: file_contains
+      path: .npmrc
+      pattern: "^@intern:registry\\s*=\\s*https://registry\\.example\\.com/npm/\\s*$"
+      message: In der .npmrc fehlt @intern:registry=https://registry.example.com/npm/.
+    - type: file_contains
+      path: .npmrc
+      pattern: "^//registry\\.example\\.com/npm/:_authToken=\\$\\{INTERN_TOKEN\\}\\s*$"
+      message: "Das Token soll als //registry.example.com/npm/:_authToken=${INTERN_TOKEN} eingetragen sein."
+    - type: command
+      run: npm audit --json 2>/dev/null | jq -r '.metadata.vulnerabilities.total'
+      stdout_equals: "0"
+      message: npm audit meldet noch Lücken – aktualisiere lodash (npm audit fix).
+    - type: command
+      run: jq -r '.devDependencies.esbuild // empty' package.json
+      stdout_matches: "\\d"
+      message: esbuild fehlt in den devDependencies.
+    - type: command
+      run: jq -r '.scripts.build // empty' package.json
+      stdout_matches: "^esbuild\\s+src/app\\.js"
+      message: Das Skript build soll mit "esbuild src/app.js …" beginnen – ohne Pfad vor esbuild.
+    - type: command
+      run: node dist/app.js
+      stdout_equals: "[[1,2],[3,4]]"
+      message: dist/app.js fehlt oder gibt nicht [[1,2],[3,4]] aus. Führe npm run build aus.
+  hints:
+    - "Für die .npmrc: `printf '%s\\n' '@intern:registry=https://registry.example.com/npm/' '//registry.example.com/npm/:_authToken=${INTERN_TOKEN}' > .npmrc`"
+    - "`npm audit fix` hebt lodash auf eine sichere, kompatible Version."
+    - "Das Skript legst du mit `npm pkg set scripts.build=\"esbuild src/app.js --bundle --platform=node --outfile=dist/app.js\"` an."
+  solution: |
+    ```bash
+    cd sicher-bauen
+    printf '%s\n' '@intern:registry=https://registry.example.com/npm/' '//registry.example.com/npm/:_authToken=${INTERN_TOKEN}' > .npmrc
+    npm audit fix
+    npm install -D esbuild
+    npm pkg set scripts.build="esbuild src/app.js --bundle --platform=node --outfile=dist/app.js"
+    npm run build
+    node dist/app.js
+    ```

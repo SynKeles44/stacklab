@@ -1,0 +1,114 @@
+title: Pakete im Backend (PHP)
+description: Composer mit composer.json, composer.lock und vendor/, PSR-4-Autoloading, eigene Pakete per Path-Repository und wie Laravel Pakete über Service Provider, Package Discovery und Facades einbindet.
+exercise:
+  id: modul-uebung-backend
+  type: terminal
+  title: Ein Rechner-Paket für deine App
+  description: |
+    Im Ordner `rechner-projekt` liegen ein halb fertiges Paket `rechner` und eine leere App `app`.
+
+    Das Paket `stacklab/rechner` enthält schon die Klasse `Stacklab\Rechner\Brutto` in `src/Brutto.php`.
+    Sie benutzt eine Hilfsklasse `Stacklab\Rechner\Support\Runden`, die es noch **nicht** gibt.
+
+    1. Lege die Klasse `Runden` an der Stelle an, an der PSR-4 sie erwartet. Sie braucht eine statische
+       Methode `kaufmaennisch(float $wert): string`, die den Wert auf zwei Nachkommastellen mit Komma
+       formatiert – `number_format($wert, 2, ',', '.')` erledigt das.
+    2. Ergänze in `rechner/composer.json` das PSR-4-Autoloading `Stacklab\Rechner\` → `src/`.
+    3. Binde das Paket in `app` per Path-Repository ein.
+    4. Installiere in `app` zusätzlich `laravel/pint` als **Dev-Abhängigkeit**.
+    5. Schreibe `app/index.php`, das `(new Brutto(19))->von(100)` ausgibt – erwartet ist `119,00`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: rechner-projekt
+  setup: |
+    mkdir -p rechner/src app
+    cat > rechner/composer.json <<'EOF'
+    {
+        "name": "stacklab/rechner",
+        "type": "library",
+        "license": "MIT",
+        "require": {
+            "php": ">=8.3"
+        }
+    }
+    EOF
+    cat > rechner/src/Brutto.php <<'EOF'
+    <?php
+
+    namespace Stacklab\Rechner;
+
+    use Stacklab\Rechner\Support\Runden;
+
+    final class Brutto
+    {
+        public function __construct(private float $steuersatz)
+        {
+        }
+
+        public function von(float $netto): string
+        {
+            return Runden::kaufmaennisch($netto * (1 + $this->steuersatz / 100));
+        }
+    }
+    EOF
+    cd app && composer init -n -q --name=stacklab/rechner-app
+  checks:
+    - type: file_exists
+      path: rechner/src/Support/Runden.php
+      message: Die Datei für Stacklab\Rechner\Support\Runden fehlt – nach PSR-4 liegt sie in rechner/src/Support/Runden.php.
+    - type: file_contains
+      path: rechner/src/Support/Runden.php
+      pattern: "namespace\\s+Stacklab\\\\Rechner\\\\Support\\s*;"
+      message: Runden.php braucht den Namespace Stacklab\Rechner\Support.
+    - type: command
+      run: jq -r '.autoload["psr-4"]["Stacklab\\Rechner\\"] // empty' rechner/composer.json
+      stdout_matches: "^src/?$"
+      message: rechner/composer.json braucht autoload.psr-4 für Stacklab\Rechner\ → src/.
+    - type: command
+      run: jq -r '.packages[].name' app/composer.lock
+      stdout_matches: "stacklab/rechner"
+      message: stacklab/rechner ist in der App noch nicht installiert (Path-Repository + composer require).
+    - type: command
+      run: jq -r '."packages-dev"[]?.name' app/composer.lock
+      stdout_matches: "laravel/pint"
+      message: laravel/pint soll als Dev-Abhängigkeit installiert sein (composer require --dev laravel/pint).
+    - type: command
+      run: cd app && php index.php
+      stdout_matches: "119,00"
+      message: app/index.php soll (new Brutto(19))->von(100) ausgeben – also 119,00.
+  hints:
+    - "Klasse `Stacklab\\Rechner\\Support\\Runden` → Datei `src/Support/Runden.php`, Namespace `Stacklab\\Rechner\\Support`."
+    - "Autoloading per jq: `jq '.autoload[\"psr-4\"][\"Stacklab\\\\Rechner\\\\\"] = \"src/\"' composer.json > neu.json && mv neu.json composer.json`"
+    - "In app: `composer config repositories.rechner path ../rechner`, dann `composer require stacklab/rechner:@dev` und `composer require --dev laravel/pint`."
+  solution: |
+    ```bash
+    cd rechner-projekt/rechner
+    mkdir -p src/Support
+    cat > src/Support/Runden.php <<'EOF'
+    <?php
+
+    namespace Stacklab\Rechner\Support;
+
+    final class Runden
+    {
+        public static function kaufmaennisch(float $wert): string
+        {
+            return number_format($wert, 2, ',', '.');
+        }
+    }
+    EOF
+    jq '.autoload["psr-4"]["Stacklab\\Rechner\\"] = "src/"' composer.json > neu.json && mv neu.json composer.json
+    cd ../app
+    composer config repositories.rechner path ../rechner
+    composer require stacklab/rechner:@dev
+    composer require --dev laravel/pint
+    cat > index.php <<'EOF'
+    <?php
+    require __DIR__ . '/vendor/autoload.php';
+
+    use Stacklab\Rechner\Brutto;
+
+    echo (new Brutto(19))->von(100), PHP_EOL;
+    EOF
+    php index.php
+    ```

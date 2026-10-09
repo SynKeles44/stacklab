@@ -1,0 +1,298 @@
+title: Eine Library für zwei Welten
+description: |
+  In diesem Projekt baust du deine eigene kleine Library **zweimal**: einmal als npm-Paket für
+  JavaScript (mit `exports`-Feld und Typen) und einmal als Composer-Paket für PHP (mit PSR-4-Autoloading).
+  Beide machen dasselbe: Sie formatieren Byte-Zahlen lesbar, z. B. `1536` → `1.5 KB`.
+
+  Danach nutzt eine App beide Libraries – genau so, wie Teams interne Pakete neben ihren Anwendungen
+  entwickeln. Zum Schluss prüfst du den Code mit projektlokalen Werkzeugen und einem Audit.
+
+  Alles passiert im Ordner `projekt` in deinem Libraries-Workspace. Lege ihn mit `mkdir -p projekt`
+  an und wechsle mit `cd projekt` hinein. Die Schritte bauen aufeinander auf – lösche nichts, was ein
+  früherer Schritt angelegt hat.
+
+  **Die Regel für beide Libraries:** Unter 1024 Bytes wird die Zahl mit ` B` ausgegeben (`500 B`).
+  Unter 1024 × 1024 Bytes in KB mit einer Nachkommastelle (`1.5 KB`), darüber in MB mit einer
+  Nachkommastelle (`1.0 MB`). Als Dezimaltrennzeichen dient der Punkt.
+goal: >
+  Ein Ordner `projekt` mit der npm-Library `js-lib` (Paket `@stacklab/einheiten` mit exports-Feld und
+  Typen), der Composer-Library `php-lib` (Paket `stacklab/einheiten` mit PSR-4) und einer App `app`, die
+  beide lokal einbindet, mit Pint formatiert ist und kein Audit-Problem hat.
+workdir: projekt
+steps:
+  - id: js-manifest
+    title: Das Manifest der JavaScript-Library
+    description: |
+      Jede Library beginnt mit ihrem Steckbrief.
+
+      1. Lege den Ordner `js-lib` an und darin eine `package.json` (z. B. mit `npm init -y`).
+      2. Setze den Namen auf `@stacklab/einheiten` (ein Scope wie bei internen Firmenpaketen),
+         die Version auf `0.1.0`, `type` auf `module` und die Lizenz auf `MIT`.
+    checklist:
+      - Ordner js-lib mit package.json
+      - Name mit Scope, Version 0.1.0
+      - type module und Lizenz MIT
+    hints:
+      - "`npm pkg set name=@stacklab/einheiten version=0.1.0 type=module license=MIT` setzt alles auf einmal."
+    checks:
+      - type: command
+        run: jq -r '"\(.name)@\(.version)"' js-lib/package.json
+        stdout_equals: "@stacklab/einheiten@0.1.0"
+        message: js-lib/package.json soll den Namen @stacklab/einheiten und die Version 0.1.0 haben.
+      - type: command
+        run: jq -r '"\(.type) \(.license)"' js-lib/package.json
+        stdout_equals: module MIT
+        message: Setze type auf module und license auf MIT.
+    solution: |
+      ```bash
+      mkdir -p projekt/js-lib && cd projekt/js-lib
+      npm init -y
+      npm pkg set name=@stacklab/einheiten version=0.1.0 type=module license=MIT
+      ```
+  - id: js-code
+    title: Die Funktion formatBytes
+    description: |
+      Schreibe in `js-lib/src/index.js` die Funktion `formatBytes(bytes)` nach der Regel aus der
+      Projektbeschreibung und exportiere sie als **benannten Export**.
+
+      Teste sie direkt aus dem Ordner `js-lib`:
+      `node --input-type=module -e 'import { formatBytes } from "./src/index.js"; console.log(formatBytes(1536))'`
+    checklist:
+      - src/index.js exportiert formatBytes
+      - 500 → "500 B", 1536 → "1.5 KB", 1048576 → "1.0 MB"
+    hints:
+      - "`(bytes / 1024).toFixed(1)` liefert eine Nachkommastelle als String."
+      - "`1024 ** 2` ist 1024 × 1024."
+    checks:
+      - type: file_contains
+        path: js-lib/src/index.js
+        pattern: "export\\s+(function\\s+formatBytes|const\\s+formatBytes)"
+        message: js-lib/src/index.js soll formatBytes als benannten Export anbieten.
+      - type: command
+        run: node --input-type=module -e 'import { formatBytes } from "./js-lib/src/index.js"; console.log([500, 1536, 1048576].map(formatBytes).join("|"))'
+        stdout_equals: "500 B|1.5 KB|1.0 MB"
+        message: formatBytes soll 500 → "500 B", 1536 → "1.5 KB" und 1048576 → "1.0 MB" liefern.
+    solution: |
+      ```bash
+      cd projekt/js-lib
+      mkdir -p src
+      cat > src/index.js <<'EOF'
+      export function formatBytes(bytes) {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+      }
+      EOF
+      ```
+  - id: js-exports
+    title: Öffentliche API und Typen festlegen
+    description: |
+      Jetzt bekommt die Library eine klare Tür nach außen.
+
+      1. Lege `js-lib/src/index.d.ts` mit der Typdeklaration
+         `export declare function formatBytes(bytes: number): string;` an.
+      2. Ergänze in `js-lib/package.json` ein `exports`-Feld für `"."` mit den Bedingungen `types` und
+         `default` (in dieser Reihenfolge).
+      3. Begrenze mit dem Feld `files` den Paketinhalt auf den Ordner `src`.
+      4. Prüfe mit `npm pack --dry-run`, welche Dateien im Paket landen würden.
+    checklist:
+      - index.d.ts angelegt
+      - exports mit types vor default
+      - files enthält src
+    hints:
+      - "`npm pkg set 'exports[.].types=./src/index.d.ts' 'exports[.].default=./src/index.js'`"
+      - "`npm pkg set 'files[]=src'` legt ein Array mit einem Eintrag an."
+    checks:
+      - type: file_contains
+        path: js-lib/src/index.d.ts
+        pattern: "formatBytes\\s*\\(\\s*bytes\\s*:\\s*number\\s*\\)\\s*:\\s*string"
+        message: "js-lib/src/index.d.ts soll formatBytes(bytes: number): string deklarieren."
+      - type: command
+        run: jq -r '.exports["."] | keys_unsorted | join(",")' js-lib/package.json
+        stdout_equals: types,default
+        message: 'exports["."] braucht die Bedingungen types und default – types zuerst.'
+      - type: command
+        run: cd js-lib && npm pack --dry-run --json 2>/dev/null | jq -r '.[0].files[].path' | sort | tr '\n' ' '
+        stdout_matches: "^package\\.json src/index\\.d\\.ts src/index\\.js\\s*$"
+        message: Das Paket soll genau package.json, src/index.js und src/index.d.ts enthalten – nutze das Feld files.
+    solution: |
+      ```bash
+      cd projekt/js-lib
+      printf 'export declare function formatBytes(bytes: number): string;\n' > src/index.d.ts
+      npm pkg set 'exports[.].types=./src/index.d.ts' 'exports[.].default=./src/index.js'
+      npm pkg set 'files[]=src'
+      npm pack --dry-run
+      ```
+  - id: php-lib
+    title: Die PHP-Library mit PSR-4
+    description: |
+      Dieselbe Funktion bekommt die PHP-Welt als Composer-Paket.
+
+      1. Lege `php-lib/composer.json` an: Name `stacklab/einheiten`, Typ `library`, Lizenz `MIT`,
+         PSR-4-Autoloading `Stacklab\Einheiten\` → `src/`.
+      2. Schreibe die Klasse `Stacklab\Einheiten\Bytes` mit der statischen Methode
+         `format(int $bytes): string` nach derselben Regel – an der Stelle, an der PSR-4 sie erwartet.
+    checklist:
+      - composer.json mit Name, Typ, Lizenz und autoload
+      - Klasse Bytes in src/Bytes.php mit passendem Namespace
+    hints:
+      - "`composer init -n --name=stacklab/einheiten --type=library --license=MIT --autoload=src/` legt die composer.json samt PSR-4 an – der Namespace wird aus dem Paketnamen abgeleitet."
+      - "`number_format($bytes / 1024, 1, '.', '')` liefert eine Nachkommastelle mit Punkt."
+    checks:
+      - type: command
+        run: jq -r '"\(.name) \(.type) \(.license)"' php-lib/composer.json
+        stdout_equals: stacklab/einheiten library MIT
+        message: php-lib/composer.json braucht name stacklab/einheiten, type library und license MIT.
+      - type: command
+        run: jq -r '.autoload["psr-4"]["Stacklab\\Einheiten\\"] // empty' php-lib/composer.json
+        stdout_matches: "^src/?$"
+        message: Das PSR-4-Autoloading Stacklab\Einheiten\ → src/ fehlt noch.
+      - type: file_contains
+        path: php-lib/src/Bytes.php
+        pattern: "namespace\\s+Stacklab\\\\Einheiten\\s*;"
+        message: php-lib/src/Bytes.php fehlt oder hat nicht den Namespace Stacklab\Einheiten.
+    solution: |
+      ```bash
+      mkdir -p projekt/php-lib/src && cd projekt/php-lib
+      composer init -n --name=stacklab/einheiten --type=library --license=MIT --autoload=src/
+      cat > src/Bytes.php <<'EOF'
+      <?php
+
+      namespace Stacklab\Einheiten;
+
+      final class Bytes
+      {
+          public static function format(int $bytes): string
+          {
+              if ($bytes < 1024) {
+                  return $bytes.' B';
+              }
+
+              if ($bytes < 1024 ** 2) {
+                  return number_format($bytes / 1024, 1, '.', '').' KB';
+              }
+
+              return number_format($bytes / 1024 ** 2, 1, '.', '').' MB';
+          }
+      }
+      EOF
+      ```
+  - id: app-js
+    title: Die App nutzt die JavaScript-Library
+    description: |
+      1. Lege den Ordner `app` mit einer `package.json` an (`type` = `module`).
+      2. Binde `../js-lib` als lokale Abhängigkeit ein.
+      3. Schreibe `app/main.mjs`, das `formatBytes(1536)` aus `@stacklab/einheiten` ausgibt.
+    checklist:
+      - app/package.json mit file:-Abhängigkeit
+      - main.mjs gibt 1.5 KB aus
+    hints:
+      - "`npm install ../js-lib` im Ordner app erzeugt den Eintrag `\"@stacklab/einheiten\": \"file:../js-lib\"`."
+    checks:
+      - type: command
+        run: jq -r '.dependencies["@stacklab/einheiten"] // empty' app/package.json
+        stdout_matches: "^file:"
+        message: Die App hat @stacklab/einheiten noch nicht als lokale Abhängigkeit (npm install ../js-lib).
+      - type: command
+        run: cd app && node main.mjs
+        stdout_equals: 1.5 KB
+        message: app/main.mjs soll formatBytes(1536) ausgeben – also 1.5 KB.
+      - type: command
+        run: cd app && node -e 'import("@stacklab/einheiten/package.json").then(() => console.log("offen"), (e) => console.log(e.code))'
+        stdout_equals: ERR_PACKAGE_PATH_NOT_EXPORTED
+        message: Über das exports-Feld soll nur "." erreichbar sein – andere Pfade müssen gesperrt bleiben.
+    solution: |
+      ```bash
+      mkdir -p projekt/app && cd projekt/app
+      npm init -y
+      npm pkg set type=module
+      npm install ../js-lib
+      printf 'import { formatBytes } from "@stacklab/einheiten";\nconsole.log(formatBytes(1536));\n' > main.mjs
+      node main.mjs
+      ```
+  - id: app-php
+    title: Die App nutzt die PHP-Library
+    description: |
+      1. Lege in `app` eine `composer.json` an (z. B. `composer init -n --name=stacklab/einheiten-app`).
+      2. Registriere `../php-lib` als Path-Repository und installiere `stacklab/einheiten:@dev`.
+      3. Schreibe `app/index.php`, das `Bytes::format(1048576)` ausgibt.
+    checklist:
+      - Path-Repository eingetragen
+      - stacklab/einheiten installiert
+      - index.php gibt 1.0 MB aus
+    hints:
+      - "`composer config repositories.einheiten path ../php-lib`"
+      - "index.php braucht `require __DIR__ . '/vendor/autoload.php';` und `use Stacklab\\Einheiten\\Bytes;`."
+    checks:
+      - type: command
+        run: jq -r '[.repositories[]? | select(.type == "path") | .url] | join(",")' app/composer.json
+        stdout_matches: "php-lib"
+        message: In app/composer.json fehlt das Path-Repository auf ../php-lib.
+      - type: dir_exists
+        path: app/vendor/stacklab/einheiten
+        message: stacklab/einheiten ist in der App noch nicht installiert.
+      - type: command
+        run: cd app && php index.php
+        stdout_equals: 1.0 MB
+        message: app/index.php soll Bytes::format(1048576) ausgeben – also 1.0 MB.
+    solution: |
+      ```bash
+      cd projekt/app
+      composer init -n --name=stacklab/einheiten-app
+      composer config repositories.einheiten path ../php-lib
+      composer require stacklab/einheiten:@dev
+      cat > index.php <<'EOF'
+      <?php
+      require __DIR__ . '/vendor/autoload.php';
+
+      use Stacklab\Einheiten\Bytes;
+
+      echo Bytes::format(1048576), PHP_EOL;
+      EOF
+      php index.php
+      ```
+  - id: qualitaet
+    title: Formatieren und prüfen mit Projekt-Werkzeugen
+    description: |
+      Zum Schluss sicherst du die Qualität – mit Werkzeugen, die zum Projekt gehören, nicht global.
+
+      1. Installiere in `app` den Formatter `laravel/pint` als Dev-Abhängigkeit.
+      2. Formatiere damit den Code deiner PHP-Library: `vendor/bin/pint ../php-lib/src`.
+         Danach muss `vendor/bin/pint --test ../php-lib/src` ohne Fehler durchlaufen.
+      3. Prüfe die npm-Abhängigkeiten der App mit `npm audit` – es dürfen keine Lücken gemeldet werden.
+      4. Schreibe mit `jq` die Namen aller Pakete aus `app/composer.lock` (Bereiche `packages` und
+         `packages-dev`, ein Name pro Zeile, alphabetisch sortiert) in die Datei `app/pakete.txt`.
+    checklist:
+      - Pint als Dev-Abhängigkeit
+      - PHP-Library ist Pint-konform
+      - npm audit ohne Befund
+      - pakete.txt aus dem Lockfile erzeugt
+    hints:
+      - "`composer require --dev laravel/pint`"
+      - "`jq -r '(.packages + .\"packages-dev\")[].name' composer.lock | sort > pakete.txt`"
+    checks:
+      - type: command
+        run: jq -r '."require-dev"["laravel/pint"] // empty' app/composer.json
+        stdout_matches: "\\d"
+        message: laravel/pint fehlt unter require-dev in app/composer.json.
+      - type: command
+        run: cd app && ./vendor/bin/pint --test ../php-lib/src > /dev/null 2>&1 && echo sauber
+        stdout_equals: sauber
+        message: Pint findet noch Stilprobleme in php-lib/src. Führe vendor/bin/pint ../php-lib/src aus.
+      - type: command
+        run: cd app && npm audit --json 2>/dev/null | jq -r '.metadata.vulnerabilities.total'
+        stdout_equals: "0"
+        message: npm audit meldet Lücken in den Abhängigkeiten der App.
+      - type: command
+        run: cd app && [ "$(cat pakete.txt 2>/dev/null)" = "$(jq -r '(.packages + ."packages-dev")[].name' composer.lock | sort)" ] && echo stimmt
+        stdout_equals: stimmt
+        message: app/pakete.txt soll alle Paketnamen aus composer.lock (packages und packages-dev) sortiert enthalten.
+    solution: |
+      ```bash
+      cd projekt/app
+      composer require --dev laravel/pint
+      vendor/bin/pint ../php-lib/src
+      vendor/bin/pint --test ../php-lib/src
+      npm audit
+      jq -r '(.packages + ."packages-dev")[].name' composer.lock | sort > pakete.txt
+      ```

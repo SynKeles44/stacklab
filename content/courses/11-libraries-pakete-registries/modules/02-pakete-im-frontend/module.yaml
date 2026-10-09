@@ -1,0 +1,105 @@
+title: Pakete im Frontend
+description: Pakete mit npm und Bun installieren, mit ES-Modulen und CommonJS importieren, Tree Shaking, Peer Dependencies und Typen verstehen – und eine eigene Library mit exports-Feld bauen.
+exercise:
+  id: modul-uebung-frontend
+  type: terminal
+  title: Eine Zeit-Library mit zwei Türen
+  description: |
+    Im Ordner `zeit-projekt` liegen eine Library `zeitlib` und eine leere App `app`. Die Library nutzt
+    selbst das Paket `ms` und hat drei Dateien:
+
+    - `src/index.js` – exportiert `dauer(text)` (z. B. `dauer("2h")` → `7200000`)
+    - `src/format.js` – exportiert `minuten(ms)` (z. B. `minuten(5400000)` → `"90 min"`)
+    - `src/intern.js` – interne Helfer, die privat bleiben sollen
+
+    Zu `index.js` und `format.js` gibt es passende `.d.ts`-Dateien.
+
+    1. Installiere im Ordner `zeitlib` die Abhängigkeiten der Library (`npm install`).
+    2. Ergänze in `zeitlib/package.json` ein `exports`-Feld mit **zwei** öffentlichen Pfaden:
+       `"."` (→ `index.js`) und `"./format"` (→ `format.js`) – jeweils mit den Bedingungen `types`
+       und `default`.
+    3. Binde die Library in `app` als lokale Abhängigkeit ein.
+    4. Schreibe `app/main.js`, das `dauer` aus `zeitlib` und `minuten` aus `zeitlib/format` importiert
+       und `minuten(dauer("90m"))` ausgibt – erwartet ist `90 min`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: zeit-projekt
+  setup: |
+    mkdir -p zeitlib/src app
+    cat > zeitlib/package.json <<'EOF'
+    {
+      "name": "zeitlib",
+      "version": "0.1.0",
+      "type": "module",
+      "license": "MIT",
+      "dependencies": {
+        "ms": "^2.1.3"
+      }
+    }
+    EOF
+    cat > zeitlib/src/index.js <<'EOF'
+    import ms from "ms";
+    import { pruefe } from "./intern.js";
+
+    export function dauer(text) {
+      return pruefe(ms(text));
+    }
+    EOF
+    cat > zeitlib/src/format.js <<'EOF'
+    export function minuten(millis) {
+      return `${Math.round(millis / 60000)} min`;
+    }
+    EOF
+    cat > zeitlib/src/intern.js <<'EOF'
+    export function pruefe(wert) {
+      if (typeof wert !== "number") throw new Error("Unbekanntes Zeitformat");
+      return wert;
+    }
+    EOF
+    printf 'export declare function dauer(text: string): number;\n' > zeitlib/src/index.d.ts
+    printf 'export declare function minuten(millis: number): string;\n' > zeitlib/src/format.d.ts
+    cd app && npm init -y > /dev/null && npm pkg set type=module
+  checks:
+    - type: dir_exists
+      path: zeitlib/node_modules/ms
+      message: Die Library hat ihre eigene Abhängigkeit ms noch nicht installiert (cd zeitlib && npm install).
+    - type: command
+      run: jq -r '.exports | keys | join(",")' zeitlib/package.json
+      stdout_equals: ".,./format"
+      message: 'Das exports-Feld soll genau die Pfade "." und "./format" enthalten.'
+    - type: command
+      run: jq -r '[.exports["."], .exports["./format"]] | map(keys_unsorted | join(",")) | join(" ")' zeitlib/package.json
+      stdout_equals: "types,default types,default"
+      message: Beide Pfade brauchen die Bedingungen types und default – types jeweils zuerst.
+    - type: command
+      run: jq -r '.dependencies.zeitlib // empty' app/package.json
+      stdout_matches: "^file:"
+      message: Die App hat zeitlib noch nicht als lokale Abhängigkeit (npm install ../zeitlib).
+    - type: command
+      run: cd app && node main.js
+      stdout_matches: "^90 min$"
+      message: app/main.js soll minuten(dauer("90m")) ausgeben – also "90 min".
+    - type: command
+      run: cd app && node -e 'import("zeitlib/src/intern.js").then(() => console.log("offen"), (e) => console.log(e.code))'
+      stdout_equals: ERR_PACKAGE_PATH_NOT_EXPORTED
+      message: src/intern.js ist noch von außen erreichbar. Nenne im exports-Feld nur "." und "./format".
+  hints:
+    - "Ein Eintrag sieht so aus: `\"./format\": { \"types\": \"./src/format.d.ts\", \"default\": \"./src/format.js\" }`"
+    - "Mit `npm pkg set` geht es ohne Editor: `npm pkg set 'exports[./format].types=./src/format.d.ts'`"
+    - "In main.js: `import { dauer } from \"zeitlib\";` und `import { minuten } from \"zeitlib/format\";`"
+  solution: |
+    ```bash
+    cd zeit-projekt/zeitlib
+    npm install
+    npm pkg set 'exports[.].types=./src/index.d.ts' 'exports[.].default=./src/index.js'
+    npm pkg set 'exports[./format].types=./src/format.d.ts' 'exports[./format].default=./src/format.js'
+    cd ../app
+    npm install ../zeitlib
+    cat > main.js <<'EOF'
+    import { dauer } from "zeitlib";
+    import { minuten } from "zeitlib/format";
+
+    console.log(minuten(dauer("90m")));
+    EOF
+    node main.js
+    ```

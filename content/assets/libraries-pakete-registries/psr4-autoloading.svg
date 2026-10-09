@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="800" height="320" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">PSR-4: vom Klassennamen zur Datei</text>
+<rect x="30" y="60" width="740" height="56" rx="12" fill="#f59e0b" fill-opacity=".10" stroke="#f59e0b" stroke-width="2"/>
+<text x="400" y="94" text-anchor="middle" font-size="15" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">"autoload": { "psr-4": { "Acme\\Greeter\\": "src/" } }</text>
+<rect x="60" y="150" width="250" height="50" rx="10" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="185" y="181" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Acme\Greeter\</text>
+<rect x="320" y="150" width="270" height="50" rx="10" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="455" y="181" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Format\Upper</text>
+<rect x="60" y="240" width="250" height="50" rx="10" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="185" y="271" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">src/</text>
+<rect x="320" y="240" width="270" height="50" rx="10" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="455" y="271" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Format/Upper</text>
+<rect x="600" y="240" width="90" height="50" rx="10" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="645" y="271" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">.php</text>
+<path d="M185 202 V 236" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M455 202 V 236" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="700" y="181" font-size="13" fill="#475569">Klassenname</text>
+<text x="200" y="224" font-size="12" fill="#475569">Präfix → Basisordner</text>
+<text x="470" y="224" font-size="12" fill="#475569">\ wird zu /</text>
+<text x="700" y="271" font-size="13" fill="#475569">Datei</text>
+</svg>

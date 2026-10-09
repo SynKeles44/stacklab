@@ -1,0 +1,40 @@
+title: Libraries, Pakete & Registries
+subtitle: Fremden Code sicher nutzen, eigene Pakete bauen – mit npm, Bun und Composer
+description: >
+  Kein modernes Projekt schreibt alles selbst. Datumsformatierung, Farben im Terminal, ein
+  Code-Formatter, ein ganzes Web-Framework: Fast alles kommt als **Paket** aus einer **Registry**.
+  Wer versteht, wie diese Pakete gebaut, gefunden, installiert und gestartet werden, löst
+  Installationsfehler in Minuten statt in Stunden – und erkennt gefährliche Abhängigkeiten, bevor sie
+  Schaden anrichten.
+
+
+  In diesem Kurs lernst du den Unterschied zwischen Library, Framework und Modul, nutzt Pakete im
+  Frontend (npm und Bun, ESM, Typen, das `exports`-Feld) und im Backend (Composer, PSR-4,
+  Laravel-Pakete). Du verstehst Registries wie npmjs.com, Packagist, Docker Hub und GitHub Packages,
+  arbeitest mit privaten Registries und schützt dich vor Supply-Chain-Angriffen. Zum Schluss klärst du,
+  was **Binaries** sind und warum `npm install` manchmal einen Compiler startet.
+
+
+  Alles passiert im echten Übungs-Terminal: Am Ende baust du deine eigene kleine Library – einmal als
+  npm-Paket mit Typen und einmal als Composer-Paket – und nutzt beide in einer App.
+category: grundlagen
+level: einsteiger
+icon: library
+color: "#a855f7"
+estimated_hours: 14
+workspace_dir: libraries
+prerequisites: [node-runtimes-paketmanager, terminal-shell]
+learning_goals:
+  - Du unterscheidest Library, Framework und Modul und wägst Nutzen und Risiken einer Abhängigkeit ab.
+  - Du installierst und importierst npm-Pakete, verstehst ESM und CommonJS, Tree Shaking, Peer Dependencies und Typdefinitionen.
+  - Du schreibst ein eigenes npm-Paket mit `exports`-Feld und Typen und bindest es lokal ein.
+  - Du nutzt Composer mit composer.json, composer.lock, vendor/ und PSR-4-Autoloading.
+  - Du erklärst, wie Laravel Pakete per Service Provider und Package Discovery einbindet und was Facades sind.
+  - Du arbeitest mit öffentlichen und privaten Registries und liest Lockfiles mit jq.
+  - Du prüfst Abhängigkeiten mit npm audit und composer audit und erkennst Typosquatting und Supply-Chain-Angriffe.
+  - Du verstehst Binaries, node_modules/.bin, vendor/bin, npx, bunx, PATH und native Module.
+references:
+  - Interne Pakete in privaten Registries mit Scope und .npmrc, wie sie in größeren Teams üblich sind
+  - Laravel-Pakete mit eigenem Service Provider und automatischer Package Discovery
+  - Audit-Schritte (npm audit, composer audit) als Teil der CI-Pipeline
+  - Projekt-lokale Werkzeuge über vendor/bin und node_modules/.bin statt globaler Installationen

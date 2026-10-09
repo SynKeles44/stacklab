@@ -1,0 +1,351 @@
+title: Abschlussprüfung Libraries, Pakete & Registries
+description: |
+  Diese Prüfung deckt alle vier Module ab: Libraries verstehen, Pakete im Frontend, Pakete im Backend
+  sowie Registries und Binaries. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben –
+  zwei im echten Übungs-Terminal und eine als Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast,
+  und kannst gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  # --- Libraries verstehen ---
+  - module: grundlagen
+    type: single
+    question: Welcher Satz beschreibt den Unterschied zwischen Library und Framework am besten?
+    options:
+      - Eine Library ist kostenlos, ein Framework kostet Geld.
+      - Deinen Code ruft das Framework auf – eine Library rufst du selbst auf.
+      - Frameworks gibt es nur im Backend, Libraries nur im Frontend.
+      - Eine Library hat keine Abhängigkeiten, ein Framework schon.
+    answer: 1
+    explanation: Das ist Inversion of Control. Bei einer Library behältst du die Kontrolle über den Ablauf, ein Framework gibt ihn vor.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen über transitive Abhängigkeiten stimmen?
+    options:
+      - Sie stehen nicht in deiner package.json bzw. composer.json.
+      - Sie werden trotzdem installiert und landen im Lockfile.
+      - Sicherheitslücken in ihnen betreffen dein Projekt nicht.
+      - "`npm explain <paket>` zeigt, über welches Paket sie hereinkommen."
+    answers: [0, 1, 3]
+    explanation: Transitive Abhängigkeiten sind genauso Teil deiner App wie direkte – inklusive ihrer Sicherheitslücken.
+  - module: grundlagen
+    type: match
+    question: Ordne jedem Risiko das passende Beispiel zu.
+    pairs:
+      - { left: "Verwaistes Paket", right: "Letztes Release vor fünf Jahren, Issues bleiben unbeantwortet" }
+      - { left: "Dependency Hell", right: "Zwei Pakete verlangen ms@2 und ms@3" }
+      - { left: "Copyleft-Lizenz", right: "GPL-Paket in verkaufter Software verpflichtet ggf. zur Offenlegung" }
+      - { left: "left-pad-Effekt", right: "Ein winziges Paket verschwindet und tausende Builds scheitern" }
+    explanation: Jedes Risiko hat eine eigene Gegenmaßnahme – gepflegte Alternativen, Updates, Lizenzprüfung und keine Mini-Pakete für Dinge, die die Sprache kann.
+  - module: grundlagen
+    type: cloze
+    text: Die Lizenzen MIT und Apache-2.0 nennt man ___, GPL ist eine ___-Lizenz.
+    blanks:
+      - [freizügig, permissiv, freizuegig]
+      - [Copyleft]
+    explanation: Freizügige Lizenzen verlangen im Wesentlichen den Copyright-Hinweis. Copyleft-Lizenzen können verlangen, dass abgeleitete Software unter derselben Lizenz steht.
+  # --- Pakete im Frontend ---
+  - module: pakete-im-frontend
+    type: find-bug
+    question: Diese Datei soll als ES-Modul laufen, Node meldet aber einen Fehler. Welche Zeile passt nicht zu ESM?
+    language: js
+    code: |
+      // app.mjs
+      import pc from "picocolors";
+      const ms = require("ms");
+      console.log(pc.green(ms("1h")));
+    bug_line: 3
+    explanation: In ES-Modulen gibt es kein require. Richtig ist `import ms from "ms";`.
+  - module: pakete-im-frontend
+    type: single
+    question: Eine React-Komponenten-Library braucht React. Wohin gehört React in ihrer package.json?
+    options: [dependencies, devDependencies, peerDependencies, optionalDependencies]
+    answer: 2
+    explanation: Die App bringt React mit. Die Library sagt nur, welche Version sie erwartet – so gibt es nur eine React-Kopie.
+  - module: pakete-im-frontend
+    type: single
+    question: TypeScript meldet „Could not find a declaration file for module 'ms'“. Was ist der übliche nächste Schritt?
+    options:
+      - "`npm install -D @types/ms`"
+      - "`npm install --force ms`"
+      - Die Datei in .js umbenennen
+      - TypeScript deinstallieren
+    answer: 0
+    explanation: Bringt ein Paket keine Typen mit, liefert DefinitelyTyped sie meist als @types/<name> – als Dev-Abhängigkeit.
+  - module: pakete-im-frontend
+    type: multiple
+    question: Welche Aussagen über das exports-Feld stimmen?
+    options:
+      - Nicht genannte Dateien sind von außen nicht importierbar.
+      - Mit "./format" bietest du einen zusätzlichen Einstiegspunkt an.
+      - Bei bedingten Exporten steht types am besten zuerst.
+      - Es ersetzt das Lockfile.
+    answers: [0, 1, 2]
+    explanation: exports definiert die öffentliche API. Mit dem Lockfile hat es nichts zu tun.
+  - module: pakete-im-frontend
+    type: single
+    question: Warum klappt Tree Shaking mit ES-Modulen zuverlässiger als mit CommonJS?
+    options:
+      - Weil ES-Module schneller laden.
+      - Weil import und export statisch sind und schon beim Bauen feststehen.
+      - Weil CommonJS keine Funktionen exportieren kann.
+      - Weil Tree Shaking nur im Browser funktioniert.
+    answer: 1
+    explanation: Der Bundler sieht vor dem Ausführen, welche Exporte genutzt werden, und lässt den Rest weg.
+  # --- Pakete im Backend ---
+  - module: pakete-im-backend
+    type: match
+    question: Ordne jedem Composer-Befehl seine Wirkung zu.
+    pairs:
+      - { left: "composer require vendor/paket", right: "Paket hinzufügen, installieren und Lockfile aktualisieren" }
+      - { left: "composer install", right: "Exakt die Versionen aus composer.lock installieren" }
+      - { left: "composer update", right: "Neue passende Versionen suchen und ein neues Lockfile schreiben" }
+      - { left: "composer dump-autoload", right: "Den Autoloader neu erzeugen" }
+    explanation: Auf Servern und in CI läuft composer install – update ist eine bewusste Entscheidung im Entwicklungsalltag.
+  - module: pakete-im-backend
+    type: single
+    question: 'Die composer.json enthält `"psr-4": { "Acme\\Blog\\": "src/" }`. Wo liegt `Acme\Blog\Http\PostController`?'
+    options:
+      - src/Acme/Blog/Http/PostController.php
+      - src/Http/PostController.php
+      - src/PostController.php
+      - vendor/acme/blog/PostController.php
+    answer: 1
+    explanation: Präfix Acme\Blog\ → src/, Rest Http\PostController → Http/PostController.php.
+  - module: pakete-im-backend
+    type: multiple
+    question: Welche Aussagen über Laravel-Pakete stimmen?
+    options:
+      - Ein Service Provider klinkt das Paket in Laravel ein.
+      - Package Discovery liest extra.laravel.providers aus der composer.json des Pakets.
+      - Eine Facade leitet statisch aussehende Aufrufe an ein Objekt im Service Container weiter.
+      - Ohne Facade kann ein Paket nicht installiert werden.
+    answers: [0, 1, 2]
+    explanation: Facades sind optional. Provider und Discovery sind der Mechanismus, mit dem Pakete sich anmelden.
+  - module: pakete-im-backend
+    type: cloze
+    text: Ein lokaler Paketordner wird mit einem Repository vom Typ `___` eingebunden. Composer legt dann in vendor/ einen ___ auf den Ordner an.
+    blanks:
+      - [path]
+      - [Symlink, symbolischen Link, Link]
+    explanation: Path-Repositories sind ideal, um ein eigenes Paket neben der App zu entwickeln.
+  # --- Registries und Binaries ---
+  - module: registries-und-binaries
+    type: single
+    question: Was speichert Packagist – im Gegensatz zu npmjs.com – in der Regel nicht selbst?
+    options:
+      - Paketnamen
+      - Versionsnummern
+      - Die Archive mit dem Code
+      - Beschreibungen
+    answer: 2
+    explanation: Packagist liefert Metadaten. Composer lädt die Dateien meist direkt von GitHub oder GitLab.
+  - module: registries-und-binaries
+    type: find-bug
+    question: Welche Zeile dieser .npmrc ist ein Sicherheitsproblem, wenn die Datei committet wird?
+    language: ini
+    code: |
+      @firma:registry=https://npm.example.com/
+      //npm.example.com/:_authToken=<dein-token>
+      engine-strict=true
+    bug_line: 2
+    explanation: "Ein echtes Token gehört nie ins Repository. Nutze `//npm.example.com/:_authToken=${NPM_TOKEN}`."
+  - module: registries-und-binaries
+    type: multiple
+    question: Welche Angriffe zählen zu Supply-Chain-Angriffen?
+    options:
+      - Ein Paket namens "lodahs" imitiert "lodash".
+      - Ein gekapertes Maintainer-Konto veröffentlicht eine Version mit Schadcode.
+      - Ein postinstall-Skript liest Tokens aus Umgebungsvariablen aus.
+      - Ein Nutzer vergisst sein Passwort.
+    answers: [0, 1, 2]
+    explanation: Alle drei greifen über die Lieferkette der Pakete an – nicht direkt deine App.
+  - module: registries-und-binaries
+    type: match
+    question: Ordne zu, wie du ein Werkzeug aus dem Projekt startest.
+    pairs:
+      - { left: "PHP-Formatter Pint", right: "vendor/bin/pint" }
+      - { left: "JS-Werkzeug ohne Pfad", right: "npx esbuild" }
+      - { left: "Mit Bun", right: "bunx esbuild" }
+      - { left: "Über ein npm-Skript", right: "npm run build" }
+    explanation: Alle Wege nutzen die Version aus dem Projekt statt einer globalen Installation.
+  - module: registries-und-binaries
+    type: single
+    question: Warum installiert npm beim Paket esbuild zusätzlich ein Paket wie @esbuild/linux-x64?
+    options:
+      - Weil esbuild ein vorkompiliertes Programm ist, das für jede Plattform eine eigene Binärdatei braucht.
+      - Weil npm immer Linux-Pakete mitinstalliert.
+      - Weil esbuild ein Framework ist.
+      - Weil das Lockfile kaputt ist.
+    answer: 0
+    explanation: Kompilierter Code läuft nur auf einer Plattform. Über optionalDependencies wird nur das passende Plattform-Paket installiert.
+  - module: registries-und-binaries
+    type: cloze
+    text: Die Shell sucht Befehle ohne Pfad in den Ordnern der Variable ___. Native C++-Module werden beim Installieren mit ___ kompiliert.
+    blanks:
+      - [PATH]
+      - [node-gyp]
+    explanation: PATH wird von links nach rechts durchsucht. node-gyp braucht Python, make und einen C++-Compiler.
+tasks:
+  - module: pakete-im-frontend
+    id: pruefung-exports
+    type: terminal
+    title: Eine Library mit öffentlicher API einbinden
+    description: |
+      Im Ordner `pruefung-npm` liegen die Library `farbkit` (mit `src/index.js`, `src/index.d.ts` und
+      `src/intern.js`) und eine leere App `app`.
+
+      1. Gib `farbkit` ein `exports`-Feld für `"."` mit den Bedingungen `types` (→ `./src/index.d.ts`)
+         und `default` (→ `./src/index.js`).
+      2. Binde `farbkit` in `app` als lokale Abhängigkeit ein.
+      3. Schreibe `app/main.js`, das `hex("rot")` aus `farbkit` ausgibt (erwartet: `#ff0000`).
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-npm
+    setup: |
+      mkdir -p farbkit/src app
+      printf '{\n  "name": "farbkit",\n  "version": "1.0.0",\n  "type": "module"\n}\n' > farbkit/package.json
+      printf 'import { tabelle } from "./intern.js";\n\nexport function hex(name) {\n  return tabelle[name] ?? "#000000";\n}\n' > farbkit/src/index.js
+      printf 'export const tabelle = { rot: "#ff0000", gruen: "#00ff00", blau: "#0000ff" };\n' > farbkit/src/intern.js
+      printf 'export declare function hex(name: string): string;\n' > farbkit/src/index.d.ts
+      cd app && npm init -y > /dev/null && npm pkg set type=module
+    checks:
+      - type: command
+        run: jq -r '.exports["."] | keys_unsorted | join(",")' farbkit/package.json
+        stdout_equals: types,default
+        message: farbkit braucht exports["."] mit types und default – types zuerst.
+      - type: command
+        run: jq -r '.dependencies.farbkit // empty' app/package.json
+        stdout_matches: "^file:"
+        message: Die App hat farbkit noch nicht als lokale Abhängigkeit.
+      - type: command
+        run: cd app && node main.js
+        stdout_equals: "#ff0000"
+        message: app/main.js soll hex("rot") ausgeben.
+      - type: command
+        run: cd app && node -e 'import("farbkit/src/intern.js").then(() => console.log("offen"), (e) => console.log(e.code))'
+        stdout_equals: ERR_PACKAGE_PATH_NOT_EXPORTED
+        message: src/intern.js darf von außen nicht importierbar sein.
+    hints:
+      - "`npm pkg set 'exports[.].types=./src/index.d.ts' 'exports[.].default=./src/index.js'` im Ordner farbkit."
+      - "Im Ordner app: `npm install ../farbkit`."
+    solution: |
+      ```bash
+      cd pruefung-npm/farbkit
+      npm pkg set 'exports[.].types=./src/index.d.ts' 'exports[.].default=./src/index.js'
+      cd ../app
+      npm install ../farbkit
+      printf 'import { hex } from "farbkit";\nconsole.log(hex("rot"));\n' > main.js
+      node main.js
+      ```
+  - module: pakete-im-backend
+    id: pruefung-composer
+    type: terminal
+    title: Ein Composer-Paket per PSR-4 nutzen
+    description: |
+      Im Ordner `pruefung-composer` liegen das Paket `temperatur` mit der Klasse
+      `Stacklab\Temperatur\Umrechner` (`src/Umrechner.php`) und eine leere App `app` mit composer.json.
+
+      1. Ergänze in `temperatur/composer.json` das PSR-4-Autoloading `Stacklab\Temperatur\` → `src/`.
+      2. Binde das Paket in `app` per Path-Repository ein (`stacklab/temperatur:@dev`).
+      3. Schreibe `app/index.php`, das `Umrechner::nachFahrenheit(100)` ausgibt (erwartet: `212`).
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-composer
+    setup: |
+      mkdir -p temperatur/src app
+      printf '{\n    "name": "stacklab/temperatur",\n    "type": "library",\n    "license": "MIT"\n}\n' > temperatur/composer.json
+      printf '<?php\n\nnamespace Stacklab\\Temperatur;\n\nfinal class Umrechner\n{\n    public static function nachFahrenheit(float $celsius): float\n    {\n        return $celsius * 9 / 5 + 32;\n    }\n}\n' > temperatur/src/Umrechner.php
+      cd app && composer init -n -q --name=stacklab/temperatur-app
+    checks:
+      - type: command
+        run: jq -r '.autoload["psr-4"]["Stacklab\\Temperatur\\"] // empty' temperatur/composer.json
+        stdout_matches: "^src/?$"
+        message: temperatur/composer.json braucht autoload.psr-4 für Stacklab\Temperatur\ → src/.
+      - type: dir_exists
+        path: app/vendor/stacklab/temperatur
+        message: Das Paket ist in der App noch nicht installiert (Path-Repository + composer require).
+      - type: command
+        run: cd app && php index.php
+        stdout_matches: "^212(\\.0+)?\\s*$"
+        message: app/index.php soll Umrechner::nachFahrenheit(100) ausgeben – also 212.
+    hints:
+      - "`jq '.autoload[\"psr-4\"][\"Stacklab\\\\Temperatur\\\\\"] = \"src/\"' composer.json > neu.json && mv neu.json composer.json`"
+      - "`composer config repositories.temperatur path ../temperatur` und `composer require stacklab/temperatur:@dev` im Ordner app."
+    solution: |
+      ```bash
+      cd pruefung-composer/temperatur
+      jq '.autoload["psr-4"]["Stacklab\\Temperatur\\"] = "src/"' composer.json > neu.json && mv neu.json composer.json
+      cd ../app
+      composer config repositories.temperatur path ../temperatur
+      composer require stacklab/temperatur:@dev
+      cat > index.php <<'EOF'
+      <?php
+      require __DIR__ . '/vendor/autoload.php';
+
+      use Stacklab\Temperatur\Umrechner;
+
+      echo Umrechner::nachFahrenheit(100), PHP_EOL;
+      EOF
+      php index.php
+      ```
+  - module: registries-und-binaries
+    id: pruefung-versionsaufloesung
+    type: code
+    language: js
+    title: Versionsauflösung für das Caret
+    description: |
+      Schreibe die Funktion `resolveCaret(versions, range)`. Sie bekommt eine Liste von Versionen aus der
+      Registry (z. B. `["1.2.0", "1.4.1", "2.0.0"]`) und einen Bereich wie `"^1.2.0"` und gibt die
+      **höchste passende** Version zurück – oder `null`, wenn keine passt.
+
+      Regel für `^X.Y.Z` (bei X ≥ 1): erlaubt ist alles ab X.Y.Z und unter (X+1).0.0. Vorabversionen
+      (mit `-`) kommen in der Liste nicht vor.
+    starter: |
+      function parse(version) {
+        return version.split(".").map(Number);
+      }
+
+      function compare(a, b) {
+        // negativ, wenn a < b; 0 bei Gleichheit; positiv, wenn a > b
+      }
+
+      function resolveCaret(versions, range) {
+        const min = parse(range.slice(1));
+        // passende Versionen filtern, die höchste zurückgeben
+      }
+    tests:
+      - name: Nimmt die höchste passende Version
+        code: assertEqual(resolveCaret(["2.0.0", "2.1.0", "2.1.3", "3.0.0"], "^2.1.0"), "2.1.3")
+      - name: Ignoriert ältere Minor-Versionen
+        code: assertEqual(resolveCaret(["1.2.0", "1.4.1", "1.10.0"], "^1.4.0"), "1.10.0")
+      - name: Gibt null zurück, wenn nichts passt
+        code: assertEqual(resolveCaret(["1.0.0", "3.0.0"], "^2.0.0"), null)
+      - name: Leere Liste
+        code: assertEqual(resolveCaret([], "^1.0.0"), null)
+    solution: |
+      function parse(version) {
+        return version.split(".").map(Number);
+      }
+
+      function compare(a, b) {
+        for (let i = 0; i < 3; i++) {
+          if (a[i] !== b[i]) return a[i] - b[i];
+        }
+        return 0;
+      }
+
+      function resolveCaret(versions, range) {
+        const min = parse(range.slice(1));
+        const max = [min[0] + 1, 0, 0];
+        const passend = versions
+          .map(parse)
+          .filter((v) => compare(v, min) >= 0 && compare(v, max) < 0)
+          .sort(compare);
+        return passend.length ? passend[passend.length - 1].join(".") : null;
+      }
+    hints:
+      - Vergleiche die drei Zahlen nacheinander – Major, dann Minor, dann Patch. Als Text wäre "1.10.0" kleiner als "1.4.0".
+      - "Die Obergrenze bei ^X.Y.Z ist [X + 1, 0, 0]."

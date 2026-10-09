@@ -1,0 +1,502 @@
+# Begriffe aus dem Kurs "Libraries, Pakete & Registries".
+- slug: library
+  term: Library
+  short: Eine Sammlung von fertigem, wiederverwendbarem Code, den du in deinem Programm aufrufst.
+  explanation: >
+    Eine Library (deutsch: Programmbibliothek) löst eine klar umrissene Aufgabe, etwa Zeitangaben umrechnen
+    oder Text einfärben. Du entscheidest, wann und wie du ihre Funktionen aufrufst – den Ablauf deines
+    Programms bestimmst weiterhin du. Verteilt werden Libraries meist als Pakete.
+  example: "`import ms from \"ms\"; ms(\"2h\")` nutzt die Library ms, um zwei Stunden in Millisekunden umzurechnen."
+  category: pakete
+  aliases: [Libraries, Bibliothek, Programmbibliothek]
+  related: [framework, paket, abhaengigkeit]
+  lesson: libraries-pakete-registries/was-ist-eine-library
+- slug: inversion-of-control
+  term: Inversion of Control
+  short: Das Prinzip, dass ein Framework deinen Code aufruft – nicht umgekehrt.
+  explanation: >
+    Bei einer Library rufst du fremden Code auf. Bei einem Framework ist es andersherum: Es steuert den
+    Ablauf und ruft deinen Code an festgelegten Stellen auf. Scherzhaft heißt das auch Hollywood-Prinzip:
+    „Ruf uns nicht an, wir rufen dich an.“
+  example: Laravel nimmt einen HTTP-Request entgegen und ruft dann deinen Controller auf.
+  category: pakete
+  aliases: [IoC, Hollywood-Prinzip, Umkehr der Kontrolle]
+  related: [framework, library]
+  lesson: libraries-pakete-registries/was-ist-eine-library
+- slug: manifest
+  term: Manifest
+  short: Die Datei, die ein Paket oder Projekt beschreibt – Name, Version, Einstiegspunkt und Abhängigkeiten.
+  explanation: >
+    Jeder Paketmanager liest eine Manifest-Datei, um zu wissen, was ein Paket ist und was es braucht. Bei
+    npm und Bun ist das die package.json, bei Composer die composer.json. Das Manifest beschreibt Wünsche,
+    die exakten installierten Versionen stehen im Lockfile.
+  example: "`{ \"name\": \"ms\", \"version\": \"2.1.3\", \"main\": \"index.js\" }` ist ein minimales npm-Manifest."
+  category: pakete
+  aliases: [Manifest-Datei, Manifeste]
+  related: [package-json, composer-json, lockfile]
+  lesson: libraries-pakete-registries/was-ist-eine-library
+- slug: maintainer
+  term: Maintainer
+  short: Eine Person, die ein Open-Source-Paket pflegt, Fehler behebt und neue Versionen veröffentlicht.
+  explanation: >
+    Maintainer prüfen Fehlermeldungen und Pull Requests und entscheiden, was in ein Paket kommt. Viele Pakete
+    haben nur eine einzige Maintainerin, die in ihrer Freizeit arbeitet. Wie aktiv die Maintainer sind, ist
+    ein wichtiges Kriterium bei der Auswahl eines Pakets.
+  example: Auf npmjs.com stehen die Maintainer eines Pakets in der rechten Spalte der Paketseite.
+  category: pakete
+  aliases: [Maintainerin, Maintainerinnen, Betreuer]
+  related: [open-source, verwaistes-paket]
+  lesson: libraries-pakete-registries/nutzen-und-risiken
+- slug: dependency-hell
+  term: Dependency Hell
+  short: Eine Lage, in der sich Abhängigkeiten gegenseitig blockieren, etwa weil sie unvereinbare Versionen verlangen.
+  explanation: >
+    Paket A braucht ein Hilfspaket in Version 2, Paket B dasselbe in Version 3. npm löst das, indem es beide
+    Versionen nebeneinander installiert. Composer erlaubt nur eine Version pro Paket und bricht mit einer
+    Fehlermeldung ab, die beide Wünsche nennt.
+  example: "„Your requirements could not be resolved to an installable set of packages.“ ist Composers Meldung für einen solchen Konflikt."
+  category: pakete
+  aliases: [Abhängigkeitshölle, Versionskonflikt]
+  related: [abhaengigkeit, transitive-abhaengigkeit]
+  lesson: libraries-pakete-registries/nutzen-und-risiken
+- slug: verwaistes-paket
+  term: Verwaistes Paket
+  short: Ein Paket, das niemand mehr pflegt – Fehler und Sicherheitslücken bleiben offen.
+  explanation: >
+    Hört die einzige Maintainerin auf, bekommt ein Paket keine Updates mehr. Das ist gefährlich, wenn
+    später eine Sicherheitslücke bekannt wird. Composer kann Pakete als „abandoned“ markieren und schlägt
+    dann einen Ersatz vor.
+  example: Das letzte Release liegt fünf Jahre zurück, und 80 Issues sind unbeantwortet – ein typisches Zeichen.
+  category: pakete
+  aliases: [Verwaiste Pakete, abandoned package]
+  related: [maintainer, abhaengigkeit]
+  lesson: libraries-pakete-registries/nutzen-und-risiken
+- slug: copyleft
+  term: Copyleft
+  short: Eine Lizenzart, die verlangt, dass weitergegebene, abgeleitete Software unter derselben Lizenz steht.
+  explanation: >
+    Copyleft-Lizenzen wie GPL-3.0 oder AGPL-3.0 schützen die Freiheit des Codes: Wer ihn in eigener Software
+    weitergibt, muss deren Quellcode unter denselben Bedingungen öffnen. Für kommerzielle Produkte muss man
+    das vor dem Einbau klären.
+  example: "`\"license\": \"GPL-3.0-only\"` in einer package.json kennzeichnet eine Copyleft-Lizenz."
+  category: pakete
+  aliases: [Copyleft-Lizenz, GPL]
+  related: [lizenz, permissive-lizenz, open-source]
+  lesson: libraries-pakete-registries/nutzen-und-risiken
+- slug: permissive-lizenz
+  term: Freizügige Lizenz
+  short: Eine Open-Source-Lizenz mit wenigen Pflichten, meist nur dem Erhalt des Copyright-Hinweises.
+  explanation: >
+    Freizügige (permissive) Lizenzen wie MIT, BSD oder Apache-2.0 erlauben fast jede Nutzung, auch in
+    kommerzieller, geschlossener Software. Du musst lediglich Lizenztext und Copyright-Hinweis beibehalten.
+    Die meisten npm- und Composer-Pakete stehen unter solchen Lizenzen.
+  example: "`jq -r .license node_modules/debug/package.json` gibt `MIT` aus – eine freizügige Lizenz."
+  category: pakete
+  aliases: [Permissive Lizenz, MIT-Lizenz, freizügige Lizenzen]
+  related: [lizenz, copyleft]
+  lesson: libraries-pakete-registries/nutzen-und-risiken
+- slug: benannter-export
+  term: Benannter Export
+  short: Ein Export, der unter seinem Namen importiert wird – mit geschweiften Klammern.
+  explanation: >
+    Ein Modul kann beliebig viele benannte Exporte haben. Beim Importieren musst du genau diesen Namen in
+    geschweiften Klammern angeben. Benannte Exporte lassen sich gut per Tree Shaking optimieren.
+  example: "`export function add() {}` wird mit `import { add } from \"./mathe.js\"` geholt."
+  category: pakete
+  aliases: [Named Export, benannte Exporte]
+  related: [standard-export, es-module, modul]
+  lesson: libraries-pakete-registries/installieren-und-importieren
+- slug: standard-export
+  term: Standard-Export
+  short: Der eine Hauptexport eines Moduls, den du beim Importieren beliebig benennen kannst.
+  explanation: >
+    Mit `export default` legt ein Modul seinen Standard-Export fest – höchstens einen pro Datei. Beim
+    Importieren gibst du ihm ohne geschweifte Klammern einen eigenen Namen. Importierst du ein CommonJS-Paket
+    in ESM, liefert der Standard-Import dessen `module.exports`.
+  example: "`import pc from \"picocolors\"` holt den Standard-Export und nennt ihn pc."
+  category: pakete
+  aliases: [Default Export, export default]
+  related: [benannter-export, es-module, commonjs]
+  lesson: libraries-pakete-registries/installieren-und-importieren
+- slug: tree-shaking
+  term: Tree Shaking
+  short: Ein Bundler entfernt beim Bauen alle Exporte, die nirgends benutzt werden.
+  explanation: >
+    Der Bundler „schüttelt“ den Baum der Importe, und ungenutzter Code fällt heraus. Das klappt zuverlässig
+    nur mit ES-Modulen, weil deren Importe statisch feststehen, und nur bei Code ohne Seiteneffekte beim
+    Laden. Pakete melden das mit `"sideEffects": false`.
+  example: Importierst du aus einer großen Hilfs-Library nur `debounce`, landet auch nur `debounce` im Bundle.
+  category: pakete
+  aliases: [Dead Code Elimination]
+  related: [bundler, es-module, seiteneffekt]
+  lesson: libraries-pakete-registries/tree-shaking-peers-und-typen
+- slug: typdeklaration
+  term: Typdeklaration
+  short: Eine Datei mit der Endung .d.ts, die TypeScript die Typen eines JavaScript-Pakets beschreibt.
+  explanation: >
+    Typdeklarationen enthalten nur Typen, keinen ausführbaren Code. Pakete liefern sie selbst mit (Feld
+    `types` in der package.json) oder sie kommen als separates Paket `@types/<name>`. Ohne sie behandelt
+    TypeScript das Paket als `any` oder meldet einen Fehler.
+  example: "`export declare function slugify(text: string): string;` in `index.d.ts`."
+  category: pakete
+  aliases: [Typdeklarationen, .d.ts, Declaration File, Typdefinition]
+  related: [definitelytyped, typescript, exports-feld]
+  lesson: libraries-pakete-registries/tree-shaking-peers-und-typen
+- slug: definitelytyped
+  term: DefinitelyTyped
+  short: Ein Community-Projekt, das Typdeklarationen für Pakete ohne eigene Typen als @types-Pakete veröffentlicht.
+  explanation: >
+    Bringt ein npm-Paket keine eigenen Typen mit, hat die Community sie oft in DefinitelyTyped beigesteuert.
+    Diese Typen erscheinen in der Registry unter dem Scope @types. Sie gehören in die devDependencies, weil
+    sie nur beim Entwickeln gebraucht werden.
+  example: "`npm install -D @types/ms` installiert die Typen für das Paket ms."
+  category: pakete
+  aliases: ["@types"]
+  related: [typdeklaration, typescript]
+  lesson: libraries-pakete-registries/tree-shaking-peers-und-typen
+- slug: exports-feld
+  term: exports-Feld
+  short: Das Feld in der package.json, das alle öffentlichen Einstiegspunkte eines Pakets festlegt.
+  explanation: >
+    Sobald ein Paket ein exports-Feld hat, sind nur die dort genannten Pfade importierbar – alles andere
+    bleibt privat. So kann die Library intern umgebaut werden, ohne Apps zu brechen. Das Feld unterstützt
+    zusätzliche Pfade und Bedingungen wie types, import und require.
+  example: "`\"exports\": { \".\": \"./src/index.js\" }` – ein Import von `paket/src/intern.js` scheitert dann mit ERR_PACKAGE_PATH_NOT_EXPORTED."
+  category: pakete
+  aliases: [exports, Package Exports]
+  related: [subpath-export, bedingte-exporte, package-json]
+  lesson: libraries-pakete-registries/das-exports-feld
+- slug: subpath-export
+  term: Subpath Export
+  short: Ein zusätzlicher öffentlicher Einstiegspunkt eines Pakets unterhalb des Paketnamens.
+  explanation: >
+    Neben `"."` kann das exports-Feld weitere Pfade wie `"./format"` nennen. Apps importieren dann gezielt
+    `paket/format`. Die tatsächliche Datei dahinter darf sich ändern, solange der öffentliche Pfad gleich bleibt.
+  example: "`\"./format\": \"./src/format.js\"` erlaubt `import { minuten } from \"zeitlib/format\"`."
+  category: pakete
+  aliases: [Subpath Exports, Unterpfad-Export]
+  related: [exports-feld, bedingte-exporte]
+  lesson: libraries-pakete-registries/das-exports-feld
+- slug: bedingte-exporte
+  term: Bedingte Exporte
+  short: Einträge im exports-Feld, die je nach Umgebung eine andere Datei liefern.
+  explanation: >
+    Mit Bedingungen wie types, import, require und default bekommt TypeScript die Typen, `import` die
+    ESM-Fassung und `require` die CommonJS-Fassung. Die Bedingungen werden von oben nach unten geprüft,
+    die erste passende gewinnt – deshalb steht types zuerst und default zuletzt.
+  example: "`\".\": { \"types\": \"./dist/index.d.ts\", \"default\": \"./dist/index.js\" }`"
+  category: pakete
+  aliases: [Conditional Exports, Bedingung]
+  related: [exports-feld, typdeklaration]
+  lesson: libraries-pakete-registries/das-exports-feld
+- slug: composer-lock
+  term: composer.lock
+  short: Das Lockfile von Composer mit den exakten Versionen aller installierten PHP-Pakete.
+  explanation: >
+    Composer schreibt die composer.lock bei require und update. `composer install` liest sie und
+    installiert genau diese Versionen – auf jedem Rechner gleich. Die Datei gehört ins Repository.
+  example: "`jq -r '.packages[].name' composer.lock` listet alle installierten Pakete."
+  category: pakete
+  aliases: [Composer-Lockfile]
+  related: [lockfile, composer-json, composer]
+  lesson: libraries-pakete-registries/composer-require
+- slug: vendor-ordner
+  term: vendor-Ordner
+  short: Der Ordner, in den Composer den Code aller installierten PHP-Pakete legt.
+  explanation: >
+    vendor/ entspricht node_modules bei npm. Er enthält die Pakete, den Autoloader (vendor/autoload.php) und
+    die Befehle in vendor/bin. Weil er sich jederzeit aus der composer.lock wiederherstellen lässt, steht er
+    in der .gitignore.
+  example: "`require __DIR__ . '/vendor/autoload.php';` bindet den Autoloader aus dem vendor-Ordner ein."
+  category: pakete
+  aliases: [vendor, vendor/]
+  related: [composer, autoloading, vendor-bin]
+  lesson: libraries-pakete-registries/composer-require
+- slug: packagist
+  term: Packagist
+  short: Die zentrale Registry für PHP-Pakete, aus der Composer standardmäßig liest.
+  explanation: >
+    Auf packagist.org sind zehntausende PHP-Pakete mit allen Versionen verzeichnet. Packagist speichert
+    vor allem Metadaten; die Dateien lädt Composer meist direkt als Archiv von GitHub oder GitLab. Neue
+    Versionen entstehen aus Git-Tags des Paket-Repositorys.
+  example: "`composer require laravel/pint` findet das Paket über Packagist."
+  category: pakete
+  aliases: [packagist.org]
+  related: [registry, composer]
+  lesson: libraries-pakete-registries/composer-require
+- slug: namespace
+  term: Namespace
+  short: Der vollständige „Nachname“ einer PHP-Klasse, der Namenskonflikte zwischen Paketen verhindert.
+  explanation: >
+    Ein Namespace gruppiert Klassen unter einem Präfix wie `Stacklab\Greeter`. Zwei Pakete können so beide
+    eine Klasse `Greeter` haben. Mit `use` kürzt du lange Namen in einer Datei ab; bei PSR-4 entspricht der
+    Namespace der Ordnerstruktur.
+  example: "`namespace Stacklab\\Greeter\\Format;` steht am Anfang von `src/Format/Shout.php`."
+  category: pakete
+  aliases: [Namespaces, Namensraum]
+  related: [psr-4, autoloading, klasse]
+  lesson: libraries-pakete-registries/psr4-und-eigene-pakete
+- slug: psr-4
+  term: PSR-4
+  short: Ein PHP-Standard, der festlegt, wie ein Klassenname auf einen Dateipfad abgebildet wird.
+  explanation: >
+    PSR-4 stammt von der PHP-FIG. Das Namespace-Präfix zeigt auf einen Basisordner, der Rest des
+    Klassennamens wird zu Unterordnern und Dateinamen mit .php. Composer setzt die Regel über den Abschnitt
+    autoload in der composer.json um.
+  example: "Mit `\"Acme\\\\Shop\\\\\": \"src/\"` liegt `Acme\\Shop\\Cart\\Item` in `src/Cart/Item.php`."
+  category: pakete
+  aliases: [PSR-4-Autoloading, PSR]
+  related: [autoloading, namespace, composer-json]
+  lesson: libraries-pakete-registries/psr4-und-eigene-pakete
+- slug: path-repository
+  term: Path-Repository
+  short: Eine Composer-Paketquelle, die auf einen lokalen Ordner statt auf Packagist zeigt.
+  explanation: >
+    Mit einem Path-Repository bindest du ein eigenes Paket ein, das neben deiner App liegt. Composer legt in
+    vendor/ einen Symlink auf den Ordner an, sodass Änderungen sofort wirken. Ideal, um Pakete zu entwickeln,
+    bevor sie veröffentlicht werden.
+  example: "`composer config repositories.greeter path ../greeter` und danach `composer require stacklab/greeter:@dev`."
+  category: pakete
+  aliases: [Path Repository, path-Repository]
+  related: [composer-json, symlink, composer]
+  lesson: libraries-pakete-registries/psr4-und-eigene-pakete
+- slug: service-provider
+  term: Service Provider
+  short: Eine Laravel-Klasse, über die ein Paket oder die App Dienste registriert und Routen, Views oder Befehle lädt.
+  explanation: >
+    Ein Service Provider hat zwei Methoden: In register() meldet er Dienste im Service Container an, in boot()
+    lädt er Routen, Views, Konfiguration und Befehle. Er ist die Verbindungsstelle zwischen einem Paket und
+    dem Laravel-Framework.
+  example: "`$this->app->singleton('hello', fn () => new HelloService());` in register()."
+  category: pakete
+  aliases: [Service Providers, ServiceProvider]
+  related: [service-container, package-discovery, laravel]
+  lesson: libraries-pakete-registries/laravel-pakete
+- slug: service-container
+  term: Service Container
+  short: Das zentrale Verzeichnis einer Laravel-App, das weiß, wie Objekte erzeugt werden, und sie auf Anfrage liefert.
+  explanation: >
+    Im Service Container werden Dienste unter einem Namen oder einer Klasse registriert. Wer einen Dienst
+    braucht, bekommt ihn vom Container – samt dessen eigenen Abhängigkeiten. In Tests lassen sich Dienste im
+    Container austauschen.
+  example: "`app('hello')` holt den unter 'hello' registrierten Dienst aus dem Container."
+  category: pakete
+  aliases: [Container, IoC-Container, DI-Container]
+  related: [service-provider, facade]
+  lesson: libraries-pakete-registries/laravel-pakete
+- slug: package-discovery
+  term: Package Discovery
+  short: Laravels Mechanismus, Service Provider und Facades installierter Pakete automatisch zu finden.
+  explanation: >
+    Pakete nennen ihre Provider und Aliasse im Abschnitt extra.laravel ihrer composer.json. Nach jedem
+    composer install führt Composer `php artisan package:discover` aus und Laravel merkt sich diese Einträge.
+    Mit dont-discover schließt eine App einzelne Pakete aus.
+  example: "`\"extra\": { \"laravel\": { \"providers\": [\"Stacklab\\\\Hello\\\\HelloServiceProvider\"] } }`"
+  category: pakete
+  aliases: [package:discover, Paket-Erkennung]
+  related: [service-provider, facade, composer-json]
+  lesson: libraries-pakete-registries/laravel-pakete
+- slug: facade
+  term: Facade
+  short: Eine Laravel-Klasse, die statisch aussieht, Aufrufe aber an ein Objekt im Service Container weiterleitet.
+  explanation: >
+    Bei `Cache::get('x')` gibt es keine statische Methode get. Die Facade fängt den Aufruf mit __callStatic
+    ab, holt das Objekt mit ihrem Schlüssel aus dem Service Container und ruft dort die Methode auf. Weil das
+    Objekt austauschbar ist, bleibt Code mit Facades testbar.
+  example: "`Mail::fake()` ersetzt das Objekt hinter der Mail-Facade in Tests durch eine Attrappe."
+  category: pakete
+  aliases: [Facades, Fassade]
+  related: [service-container, service-provider]
+  lesson: libraries-pakete-registries/laravel-pakete
+- slug: registry
+  term: Registry
+  short: Ein zentrales Verzeichnis, das zu jedem Paketnamen alle Versionen und ihre Downloads bereithält.
+  explanation: >
+    Paketmanager fragen eine Registry, welche Versionen es gibt, und laden von dort Archive oder Metadaten.
+    Bekannte Registries sind npmjs.com für JavaScript, Packagist für PHP, Docker Hub für Container-Images
+    und GitHub Packages. Firmen betreiben oft eigene, private Registries.
+  example: "`npm view ms versions` fragt die npm-Registry nach allen Versionen von ms."
+  category: pakete
+  aliases: [Registries, Paket-Registry]
+  related: [npm-registry, packagist, docker-hub, private-registry]
+  lesson: libraries-pakete-registries/registries-und-lockfiles
+- slug: docker-hub
+  term: Docker Hub
+  short: Die bekannteste öffentliche Registry für Container-Images.
+  explanation: >
+    Docker Hub speichert Images wie nginx, postgres oder php mit verschiedenen Tags. `docker pull` und
+    Dockerfiles laden Images standardmäßig von dort. Offizielle Images werden gepflegt und geprüft, eigene
+    Images liegen unter deinem Benutzernamen.
+  example: "`FROM php:8.5-fpm` in einem Dockerfile lädt das Image von Docker Hub."
+  category: pakete
+  aliases: [hub.docker.com]
+  related: [registry, docker-image]
+  lesson: libraries-pakete-registries/registries-und-lockfiles
+- slug: github-packages
+  term: GitHub Packages
+  short: Ein Dienst von GitHub, der Pakete und Container-Images direkt neben einem Repository bereitstellt.
+  explanation: >
+    GitHub Packages unterstützt unter anderem npm-Pakete, Container-Images (ghcr.io) und Maven. Zugriffsrechte
+    folgen dem Repository, darum wird es gern für interne Pakete genutzt. npm-Pakete brauchen dort einen
+    Scope, der dem Besitzer des Repositorys entspricht.
+  example: "`@firma:registry=https://npm.pkg.github.com` in der .npmrc leitet den Scope @firma zu GitHub Packages."
+  category: pakete
+  aliases: [ghcr.io, GitHub Container Registry]
+  related: [registry, private-registry, scope]
+  lesson: libraries-pakete-registries/registries-und-lockfiles
+- slug: versionsaufloesung
+  term: Versionsauflösung
+  short: Der Vorgang, in dem ein Paketmanager aus Versionsbereichen exakte Versionen für alle Pakete bestimmt.
+  explanation: >
+    Der Paketmanager holt alle Versionen eines Pakets, filtert die zum Bereich passenden und nimmt die
+    höchste – für jede direkte und transitive Abhängigkeit. Das Ergebnis schreibt er ins Lockfile, damit es
+    sich nicht mit jeder neuen Version ändert.
+  example: Bei `^2.1.0` und den Versionen 2.1.3, 2.4.1 und 3.0.0 wird 2.4.1 gewählt.
+  category: pakete
+  aliases: [Dependency Resolution, Auflösung]
+  related: [semantic-versioning, lockfile, transitive-abhaengigkeit]
+  lesson: libraries-pakete-registries/registries-und-lockfiles
+- slug: pruefsumme
+  term: Prüfsumme
+  short: Ein aus dem Dateiinhalt berechneter Wert, mit dem sich prüfen lässt, ob eine Datei unverändert ist.
+  explanation: >
+    Lockfiles speichern zu jedem Paketarchiv eine Prüfsumme (bei npm im Feld integrity). Stimmt der Wert
+    beim erneuten Herunterladen nicht, bricht die Installation ab – das Archiv wurde verändert oder
+    beschädigt. Prüfsummen werden mit Hash-Verfahren wie SHA-512 berechnet.
+  example: "`\"integrity\": \"sha512-…\"` in der package-lock.json ist die Prüfsumme des Archivs."
+  category: pakete
+  aliases: [Checksumme, Checksum, integrity]
+  related: [hash, lockfile]
+  lesson: libraries-pakete-registries/registries-und-lockfiles
+- slug: jq
+  term: jq
+  short: Ein Kommandozeilen-Werkzeug, mit dem du JSON-Daten filterst, durchsuchst und umbaust.
+  explanation: >
+    jq liest JSON und wendet einen Filterausdruck darauf an, etwa `.dependencies` oder `.packages[].name`.
+    Mit `-r` gibt es Texte ohne Anführungszeichen aus. Damit liest du package.json, Lockfiles oder die
+    JSON-Ausgabe von npm audit gezielt aus.
+  example: "`jq -r '.packages[\"node_modules/ms\"].version' package-lock.json` gibt die installierte Version von ms aus."
+  category: werkzeuge
+  aliases: [jq-Filter]
+  related: [json, lockfile]
+  lesson: libraries-pakete-registries/registries-und-lockfiles
+- slug: scope
+  term: Scope
+  short: Ein Namensraum für npm-Pakete in der Form @name/paket.
+  explanation: >
+    Scopes gruppieren Pakete einer Person, Firma oder Organisation, zum Beispiel @firma/ui oder @types/ms.
+    Jeder Scope kann über die .npmrc oder bunfig.toml auf eine eigene Registry zeigen. So kommen interne
+    Pakete aus der privaten Registry und alle anderen weiter von npmjs.com.
+  example: "`@firma:registry=https://npm.example.com/` leitet alle @firma-Pakete an eine private Registry."
+  category: pakete
+  aliases: [Scopes, scoped package, npm-Scope]
+  related: [private-registry, npm-registry]
+  lesson: libraries-pakete-registries/private-registries-und-sicherheit
+- slug: private-registry
+  term: Private Registry
+  short: Eine Registry, auf die nur berechtigte Personen zugreifen – etwa für interne Firmenpakete.
+  explanation: >
+    Firmen veröffentlichen interne Libraries in einer privaten Registry, damit sie nicht öffentlich werden.
+    Der Zugriff erfolgt mit einem Token, das aus einer Umgebungsvariable kommt. Für PHP gibt es dafür
+    eigene Composer-Repositories, für JavaScript eigene npm-Registries oder GitHub Packages.
+  example: "`//npm.example.com/:_authToken=${NPM_TOKEN}` meldet npm bei der privaten Registry an."
+  category: pakete
+  aliases: [Private Registries, interne Registry]
+  related: [registry, scope, umgebungsvariable]
+  lesson: libraries-pakete-registries/private-registries-und-sicherheit
+- slug: cve
+  term: CVE
+  short: Eine weltweit eindeutige Kennung für eine öffentlich bekannte Sicherheitslücke.
+  explanation: >
+    CVE steht für Common Vulnerabilities and Exposures. Jede gemeldete Lücke bekommt eine Nummer wie
+    CVE-2021-23337. Audit-Werkzeuge wie npm audit und composer audit nennen diese Kennungen, damit du Details
+    und Lösungen nachlesen kannst.
+  example: "Der Bericht von `npm audit` verweist bei einer Lücke auf eine CVE-Nummer und ein Advisory."
+  category: pakete
+  aliases: [CVE-Nummer, CVEs]
+  related: [supply-chain-angriff]
+  lesson: libraries-pakete-registries/private-registries-und-sicherheit
+- slug: supply-chain-angriff
+  term: Supply-Chain-Angriff
+  short: Ein Angriff, der nicht die App selbst, sondern ein Glied ihrer Lieferkette trifft, etwa ein Paket.
+  explanation: >
+    Angreifer kapern zum Beispiel ein Maintainer-Konto und veröffentlichen eine Version mit Schadcode, oder sie
+    verstecken Schadcode in einem Install-Skript. Alle, die das Paket installieren, sind betroffen.
+    Lockfiles, Audits, freigegebene Install-Skripte und Provenance senken das Risiko.
+  example: Eine neue Patch-Version eines beliebten Pakets liest beim Installieren Tokens aus Umgebungsvariablen aus.
+  category: pakete
+  aliases: [Supply-Chain-Angriffe, Lieferkettenangriff]
+  related: [typosquatting, provenance, cve]
+  lesson: libraries-pakete-registries/private-registries-und-sicherheit
+- slug: typosquatting
+  term: Typosquatting
+  short: Ein Angriff mit Paketnamen, die einem beliebten Paket zum Verwechseln ähnlich sind.
+  explanation: >
+    Wer sich bei `npm install` vertippt, installiert womöglich ein Schadpaket mit einem Namen wie lodahs statt
+    lodash. Prüfe Paketnamen deshalb genau, am besten direkt auf der Seite der Registry, und achte auf
+    Download-Zahlen und Maintainer.
+  example: "`npm install expres` statt `express` könnte ein Typosquatting-Paket installieren."
+  category: pakete
+  aliases: [Typo-Squatting]
+  related: [supply-chain-angriff]
+  lesson: libraries-pakete-registries/private-registries-und-sicherheit
+- slug: provenance
+  term: Provenance
+  short: Ein signierter Nachweis, aus welchem Repository und welchem Build eine Paketversion stammt.
+  explanation: >
+    Wird ein Paket in einer CI-Pipeline mit `npm publish --provenance` veröffentlicht, erzeugt npm eine
+    signierte Herkunftsangabe. npmjs.com zeigt sie auf der Paketseite an, und `npm audit signatures` prüft die
+    Signaturen installierter Pakete. So fällt auf, wenn eine Version nicht aus dem echten Repository kommt.
+  example: "`npm publish --provenance` in einem CI-Workflow."
+  category: pakete
+  aliases: [Herkunftsnachweis, npm provenance]
+  related: [supply-chain-angriff, npm-registry]
+  lesson: libraries-pakete-registries/private-registries-und-sicherheit
+- slug: node-modules-bin
+  term: node_modules/.bin
+  short: Der Ordner, in dem npm Links auf die Befehle aller installierten Pakete anlegt.
+  explanation: >
+    Jedes Paket nennt seine Befehle im Feld bin der package.json, npm verlinkt sie nach node_modules/.bin.
+    npm-Skripte und npx finden Befehle dort automatisch. Direkt im Terminal startest du sie mit Pfad, zum
+    Beispiel `./node_modules/.bin/esbuild`.
+  example: "`ls node_modules/.bin` zeigt alle Befehle, die deine npm-Pakete mitbringen."
+  category: pakete
+  aliases: [.bin, bin-Ordner]
+  related: [npx, vendor-bin, path-variable]
+  lesson: libraries-pakete-registries/binaries
+- slug: vendor-bin
+  term: vendor/bin
+  short: Der Ordner, in dem Composer die Startskripte der Befehle aller installierten PHP-Pakete ablegt.
+  explanation: >
+    Pakete wie laravel/pint, phpstan oder pest nennen ihre Befehle im Feld bin der composer.json. Composer
+    legt dafür kleine Startskripte in vendor/bin an. Composer-Skripte finden sie automatisch, im Terminal
+    startest du sie mit Pfad.
+  example: "`vendor/bin/pint --version` startet die Pint-Version des Projekts."
+  category: pakete
+  aliases: [Vendor-Binaries]
+  related: [vendor-ordner, node-modules-bin, path-variable]
+  lesson: libraries-pakete-registries/binaries
+- slug: native-addon
+  term: Native Addon
+  short: Ein Node.js-Modul, das in C oder C++ geschrieben und für die jeweilige Plattform kompiliert ist.
+  explanation: >
+    Native Addons nutzen Funktionen, die schneller oder näher am Betriebssystem sein müssen als JavaScript.
+    Weil sie Maschinencode enthalten, laufen sie nur auf dem Betriebssystem und der CPU-Architektur, für die
+    sie gebaut wurden. Sie werden vorgebaut geliefert oder beim Installieren mit node-gyp kompiliert.
+  example: Datenbank-Treiber oder Bildbearbeitungs-Pakete enthalten oft native Addons.
+  category: pakete
+  aliases: [Native Addons, natives Modul, native Module]
+  related: [node-gyp, maschinencode, compiler]
+  lesson: libraries-pakete-registries/binaries
+- slug: node-gyp
+  term: node-gyp
+  short: Ein Werkzeug, das native C/C++-Module für Node.js beim Installieren kompiliert.
+  explanation: >
+    Gibt es für deine Plattform kein vorgebautes Binary, ruft npm node-gyp auf. Dafür braucht der Rechner
+    Python, make und einen C++-Compiler. Fehlt etwas davon, bricht `npm install` mit langen Fehlermeldungen
+    ab, die node-gyp und gyp ERR! enthalten.
+  example: "`gyp ERR! find Python` heißt: node-gyp findet kein Python auf dem Rechner."
+  category: pakete
+  aliases: [gyp]
+  related: [native-addon, compiler]
+  lesson: libraries-pakete-registries/binaries

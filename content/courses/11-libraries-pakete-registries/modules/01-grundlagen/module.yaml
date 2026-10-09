@@ -1,0 +1,57 @@
+title: Libraries verstehen
+description: Was Libraries, Frameworks, Module und Pakete sind, was sie dir bringen und welche Risiken du dir mit jeder Abhängigkeit ins Haus holst.
+exercise:
+  id: modul-uebung-grundlagen
+  type: terminal
+  title: Ein Lizenz-Steckbrief für dein Projekt
+  description: |
+    Bevor ein Team neue Pakete aufnimmt, prüft es Herkunft und Lizenz. Das übst du jetzt.
+
+    Im Ordner `steckbrief` liegt ein leeres Node-Projekt.
+
+    1. Installiere die Pakete `debug` und `picocolors` als normale Abhängigkeiten.
+    2. Lege eine Datei `lizenzen.txt` an. Sie enthält für **jede direkte Abhängigkeit** eine Zeile im
+       Format `name: lizenz`, also z. B. `debug: MIT`. Lies die Lizenzen mit `jq` aus den
+       `package.json`-Dateien in `node_modules` – nicht raten!
+    3. Lege eine Datei `transitiv.txt` an, in der alle Pakete stehen, die **nur transitiv**
+       installiert wurden (ein Name pro Zeile).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: steckbrief
+  setup: |
+    npm init -y > /dev/null
+  checks:
+    - type: command
+      run: jq -r '.dependencies | keys | join(",")' package.json
+      stdout_equals: debug,picocolors
+      message: In den dependencies sollen genau debug und picocolors stehen.
+    - type: file_contains
+      path: lizenzen.txt
+      pattern: "debug:\\s*MIT"
+      message: "In lizenzen.txt fehlt die Zeile für debug (Format name: lizenz)."
+    - type: file_contains
+      path: lizenzen.txt
+      pattern: "picocolors:\\s*ISC"
+      message: In lizenzen.txt fehlt die Zeile für picocolors – schau ins Feld license seiner package.json.
+    - type: file_contains
+      path: transitiv.txt
+      pattern: "^\\s*ms\\s*$"
+      message: In transitiv.txt fehlt das Paket, das nur über debug mitkommt.
+    - type: command
+      run: grep -cE '^\s*(debug|picocolors)\s*$' transitiv.txt || true
+      stdout_equals: "0"
+      message: debug und picocolors sind direkte Abhängigkeiten und gehören nicht in transitiv.txt.
+  hints:
+    - "`jq -r .license node_modules/picocolors/package.json` liefert die Lizenz eines Pakets."
+    - "Mit einer Schleife geht es in einem Rutsch: `for p in debug picocolors; do echo \"$p: $(jq -r .license node_modules/$p/package.json)\"; done > lizenzen.txt`"
+    - "`npm ls --all` zeigt, welche Pakete eingerückt unter einer direkten Abhängigkeit hängen."
+  solution: |
+    ```bash
+    cd steckbrief
+    npm install debug picocolors
+    for p in debug picocolors; do
+      echo "$p: $(jq -r .license node_modules/$p/package.json)"
+    done > lizenzen.txt
+    npm ls --all          # zeigt ms unter debug
+    echo ms > transitiv.txt
+    ```
