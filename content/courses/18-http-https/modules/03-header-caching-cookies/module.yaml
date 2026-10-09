@@ -1,0 +1,162 @@
+title: Header, Caching und Cookies
+description: Formate aushandeln, Anmeldung, CORS, Caching mit ETag und 304 sowie Cookies und Sessions – die Header, die im Alltag den Unterschied machen.
+exercise:
+  id: modul-uebung-news-api
+  type: terminal
+  title: Header richtig setzen – eine kleine News-API
+  description: |
+    Im Ordner `news-api` baust du zwei Endpunkte, die ein Frontend auf `https://app.example.com` nutzen
+    soll. Es geht nur um **Header und Statuscodes** – die Daten sind fest im Code.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. In `router.php` stehen die Daten und ein Gerüst.
+
+    **1. `GET /api/news`** – öffentlich und gut cachebar:
+    - `Content-Type: application/json`
+    - `Cache-Control: public, max-age=60`
+    - `ETag`: MD5 des JSON-Bodys in Anführungszeichen
+    - `304` ohne Body, wenn `If-None-Match` den ETag enthält
+    - `Access-Control-Allow-Origin: https://app.example.com`
+
+    **2. `GET /api/profil`** – nur mit Anmeldung:
+    - Ohne `Authorization: Bearer demo-token` (oder mit anderem Token): `401` plus `WWW-Authenticate: Bearer`
+    - Mit gültigem Token: `200`, JSON `{"name": "Ada"}` und `Cache-Control: private, no-store`
+    - `Access-Control-Allow-Origin: https://app.example.com` in beiden Fällen
+
+    **3. `OPTIONS /api/profil`** – der Preflight des Browsers:
+    - `204` mit `Access-Control-Allow-Origin: https://app.example.com`,
+      `Access-Control-Allow-Methods: GET` und `Access-Control-Allow-Headers: Authorization`
+
+    Teste mit `php -S 127.0.0.1:8080 router.php > server.log 2>&1 &` und curl, z. B.
+    `curl -i -H 'Authorization: Bearer demo-token' http://127.0.0.1:8080/api/profil`.
+  workdir: news-api
+  setup: |
+    cat > router.php <<'PHP'
+    <?php
+    $news = [
+        ['id' => 1, 'titel' => 'HTTP/3 erklärt'],
+        ['id' => 2, 'titel' => 'Caching ohne Kopfschmerzen'],
+    ];
+    $token = 'demo-token';
+    $frontend = 'https://app.example.com';
+
+    $methode = $_SERVER['REQUEST_METHOD'];
+    $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $header = array_change_key_case(getallheaders(), CASE_LOWER);
+
+    // TODO: /api/news, /api/profil und den Preflight beantworten
+
+    http_response_code(404);
+    PHP
+  checks:
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18601 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        curl -s -o /dev/null -D - http://127.0.0.1:18601/api/news | tr -d '\r' | grep -iE '^(access-control-allow-origin|cache-control|content-type|etag):' | tr 'A-Z' 'a-z' | sed 's/; */;/g' | sort
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^access-control-allow-origin: https://app\\.example\\.com\\ncache-control: public, ?max-age=60\\ncontent-type: application/json[^\\n]*\\netag: \"[0-9a-f]{32}\"$"
+      message: "GET /api/news braucht Content-Type: application/json, Cache-Control: public, max-age=60, einen ETag (MD5 in Anführungszeichen) und Access-Control-Allow-Origin: https://app.example.com."
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18602 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        E=$(curl -s -o /dev/null -D - http://127.0.0.1:18602/api/news | tr -d '\r' | grep -i '^etag:' | cut -d' ' -f2)
+        B=$(curl -s http://127.0.0.1:18602/api/news)
+        [ "$E" = "\"$(printf '%s' "$B" | md5sum | cut -d' ' -f1)\"" ] && echo etag-passt || echo etag-falsch
+        curl -s -o /dev/null -w '%{http_code} %{size_download}' -H "If-None-Match: $E" http://127.0.0.1:18602/api/news
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^etag-passt\\n304 0$"
+      message: Der ETag soll die MD5-Summe genau des ausgelieferten Bodys sein, und mit passendem If-None-Match muss 304 ohne Body kommen.
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18603 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        U=http://127.0.0.1:18603/api/profil
+        curl -s -o /dev/null -w '%{http_code} ' $U
+        curl -s -o /dev/null -w '%{http_code} ' -H 'Authorization: Bearer falsch' $U
+        curl -s -o /dev/null -D - $U | tr -d '\r' | grep -i '^www-authenticate:' | tr 'A-Z' 'a-z'
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^401 401 www-authenticate: bearer"
+      message: "Ohne gültigen Token soll /api/profil 401 mit dem Header WWW-Authenticate: Bearer liefern – auch bei falschem Token."
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18604 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        U=http://127.0.0.1:18604/api/profil
+        curl -s -H 'Authorization: Bearer demo-token' $U | jq -r '.name'
+        curl -s -o /dev/null -D - -H 'Authorization: Bearer demo-token' $U | tr -d '\r' | grep -iE '^(cache-control|access-control-allow-origin):' | tr 'A-Z' 'a-z' | sort
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^Ada\\naccess-control-allow-origin: https://app\\.example\\.com\\ncache-control: private, ?no-store$"
+      message: "Mit gültigem Token soll /api/profil {\"name\": \"Ada\"} liefern – mit Cache-Control: private, no-store und Access-Control-Allow-Origin."
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18605 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        curl -s -o /dev/null -D - -X OPTIONS -H 'Origin: https://app.example.com' -H 'Access-Control-Request-Method: GET' -H 'Access-Control-Request-Headers: authorization' http://127.0.0.1:18605/api/profil | tr -d '\r' | grep -iE '^(HTTP/|access-control-)' | tr 'A-Z' 'a-z' | sort
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^access-control-allow-headers: authorization\\naccess-control-allow-methods: get\\naccess-control-allow-origin: https://app\\.example\\.com\\nhttp/1\\.1 204"
+      message: "Der Preflight OPTIONS /api/profil soll 204 mit Access-Control-Allow-Origin, Access-Control-Allow-Methods: GET und Access-Control-Allow-Headers: Authorization liefern."
+  hints:
+    - "Berechne den Body zuerst als String: `$body = json_encode($news);` – der ETag ist dann `'\"' . md5($body) . '\"'`."
+    - "Den Token liest du aus `$header['authorization'] ?? ''` und vergleichst mit `'Bearer ' . $token`."
+    - "Für OPTIONS: `http_response_code(204);` plus die drei Access-Control-Header, dann `exit;`."
+  solution: |
+    ```bash
+    cd news-api
+    cat > router.php <<'PHP'
+    <?php
+    $news = [
+        ['id' => 1, 'titel' => 'HTTP/3 erklärt'],
+        ['id' => 2, 'titel' => 'Caching ohne Kopfschmerzen'],
+    ];
+    $token = 'demo-token';
+    $frontend = 'https://app.example.com';
+
+    $methode = $_SERVER['REQUEST_METHOD'];
+    $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $header = array_change_key_case(getallheaders(), CASE_LOWER);
+
+    if ($pfad === '/api/news' && $methode === 'GET') {
+        $body = json_encode($news, JSON_UNESCAPED_UNICODE);
+        $etag = '"' . md5($body) . '"';
+        header('Access-Control-Allow-Origin: ' . $frontend);
+        header('Cache-Control: public, max-age=60');
+        header('ETag: ' . $etag);
+        if (($header['if-none-match'] ?? '') === $etag) {
+            http_response_code(304);
+            exit;
+        }
+        header('Content-Type: application/json');
+        echo $body;
+        exit;
+    }
+
+    if ($pfad === '/api/profil') {
+        header('Access-Control-Allow-Origin: ' . $frontend);
+        if ($methode === 'OPTIONS') {
+            http_response_code(204);
+            header('Access-Control-Allow-Methods: GET');
+            header('Access-Control-Allow-Headers: Authorization');
+            exit;
+        }
+        if (($header['authorization'] ?? '') !== 'Bearer ' . $token) {
+            http_response_code(401);
+            header('WWW-Authenticate: Bearer');
+            exit;
+        }
+        header('Cache-Control: private, no-store');
+        header('Content-Type: application/json');
+        echo json_encode(['name' => 'Ada']);
+        exit;
+    }
+
+    http_response_code(404);
+    PHP
+    php -S 127.0.0.1:8080 router.php > server.log 2>&1 &
+    sleep 1
+    curl -i http://127.0.0.1:8080/api/news
+    curl -i http://127.0.0.1:8080/api/profil
+    curl -i -H 'Authorization: Bearer demo-token' http://127.0.0.1:8080/api/profil
+    curl -i -X OPTIONS http://127.0.0.1:8080/api/profil
+    kill %1
+    ```

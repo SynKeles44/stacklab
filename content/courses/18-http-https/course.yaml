@@ -1,0 +1,33 @@
+title: HTTP & HTTPS
+subtitle: Die Sprache des Webs Zeile für Zeile verstehen – mit curl und eigenen kleinen Servern
+description: >
+  Jede Website, jede App und jede API spricht HTTP. Wer versteht, was in einer HTTP-Nachricht steht,
+  findet Fehler in Minuten statt in Stunden: Warum kommt ein 401 statt der Daten? Warum zeigt der
+  Browser eine alte Version? Warum geht das Login-Cookie verloren?
+
+
+  In diesem Kurs zerlegst du HTTP in seine Bestandteile: Anfragezeile, Statuszeile, Header und Body,
+  Methoden mit ihren Garantien, Statuscodes, Weiterleitungen, Caching mit ETag, Cookies und Sessions.
+  Du arbeitest dabei fast immer im echten Übungs-Terminal: Du schickst Anfragen mit `curl`, schreibst
+  mit `php -S` eigene kleine Server, die korrekt antworten, und baust eine echte HTTPS-Verbindung mit
+  eigener Zertifizierungsstelle. Zum Schluss lernst du, was HTTP/2 und HTTP/3 anders machen – und baust
+  im Projekt eine kleine API, die Methoden, Statuscodes, Header und Caching richtig einsetzt.
+category: web
+level: einsteiger
+icon: arrow-left-right
+color: "#0284c7"
+estimated_hours: 5
+workspace_dir: http
+prerequisites: [wie-das-internet-funktioniert]
+learning_goals:
+  - Du liest und schreibst HTTP-Anfragen und -Antworten Zeile für Zeile und erkennst jeden Bestandteil.
+  - Du wählst die passende Methode und erklärst, was „sicher“ und „idempotent“ bedeuten.
+  - Du setzt die wichtigsten Statuscodes richtig ein und unterscheidest z. B. 401 von 403 und 502 von 504.
+  - Du nutzt Header gezielt – für Formate, Anmeldung, Weiterleitungen, Caching, Cookies und CORS.
+  - Du bedienst curl sicher (-i, -v, -X, -H, -d, --json, -L, -c/-b) und liest den Netzwerk-Tab im Browser.
+  - Du erklärst, wie HTTPS mit Zertifikaten, Zertifikatskette und TLS-Handshake Vertrauen herstellt.
+  - Du kennst die Unterschiede zwischen HTTP/1.1, HTTP/2 und HTTP/3.
+references:
+  - Fehlersuche an REST-APIs in Teamprojekten mit curl und dem Netzwerk-Tab der Browser-Entwicklerwerkzeuge
+  - Caching-Strategien mit Cache-Control und ETag für statische Dateien und API-Antworten
+  - Automatisch erneuerte Let's-Encrypt-Zertifikate hinter einem Reverse Proxy

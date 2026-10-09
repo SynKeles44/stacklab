@@ -1,0 +1,638 @@
+- slug: http-nachricht
+  term: HTTP-Nachricht
+  short: "Eine Anfrage oder Antwort in HTTP, bestehend aus Startzeile, Headern, Leerzeile und optionalem Body."
+  explanation: >
+    Jede HTTP-Unterhaltung besteht aus zwei Nachrichten: der Anfrage des Clients und der Antwort des
+    Servers. Beide folgen demselben Bauplan. Bei HTTP/1.1 ist die Nachricht lesbarer Text, jede Zeile endet mit CRLF.
+  example: "`GET /notizen HTTP/1.1`, darunter `Host: api.example.com`, dann eine Leerzeile."
+  category: web
+  aliases: [HTTP-Nachrichten, HTTP-Message]
+  related: [request-zeile, statuszeile, http-header, http-body]
+  lesson: http-https/anatomie-einer-nachricht
+- slug: request-zeile
+  term: Anfragezeile
+  short: "Die erste Zeile einer HTTP-Anfrage mit Methode, Ziel und Protokollversion."
+  explanation: >
+    Die Anfragezeile hat drei Teile, getrennt durch Leerzeichen: die Methode (z. B. GET), das Ziel
+    (Pfad plus Query-String) und die Version. Schema und Host stehen nicht darin – der Host kommt in den Host-Header.
+  example: "`GET /produkte?seite=2 HTTP/1.1`"
+  category: web
+  aliases: [Request-Zeile, Request Line, Anfragezeilen]
+  related: [http-nachricht, http-methode, host-header]
+  lesson: http-https/anatomie-einer-nachricht
+- slug: statuszeile
+  term: Statuszeile
+  short: "Die erste Zeile einer HTTP-Antwort mit Version, Statuscode und kurzem Begründungstext."
+  explanation: >
+    An der Statuszeile erkennst du sofort, ob eine Anfrage geklappt hat. Programme werten nur die
+    dreistellige Zahl aus; der Text danach ist für Menschen und fällt ab HTTP/2 ganz weg.
+  example: "`HTTP/1.1 404 Not Found`"
+  category: web
+  aliases: [Status-Zeile, Status Line]
+  related: [statuscode, http-nachricht]
+  lesson: http-https/anatomie-einer-nachricht
+- slug: host-header
+  term: Host-Header
+  short: "Der Header, der den Hostnamen der gewünschten Website nennt – in HTTP/1.1 Pflicht."
+  explanation: >
+    Viele Websites teilen sich eine IP-Adresse. Erst der Host-Header verrät dem Webserver, welche
+    davon gemeint ist. Fehlt er in einer HTTP/1.1-Anfrage, antwortet der Server mit 400.
+  example: "`Host: api.example.com`"
+  category: web
+  aliases: [Host]
+  related: [http-header, virtual-host, request-zeile]
+  lesson: http-https/anatomie-einer-nachricht
+- slug: mime-typ
+  term: MIME-Typ
+  short: "Eine standardisierte Bezeichnung für ein Datenformat, z. B. application/json oder text/html."
+  explanation: >
+    MIME-Typen (auch Medientypen) bestehen aus Typ und Untertyp, getrennt durch einen Schrägstrich.
+    HTTP nutzt sie in Content-Type und Accept, damit beide Seiten wissen, wie ein Body zu lesen ist.
+  example: "`text/html; charset=UTF-8`, `application/json`, `image/png`"
+  category: web
+  aliases: [Medientyp, Media Type, MIME-Type, MIME-Typen]
+  related: [content-type, accept-header]
+  lesson: http-https/anatomie-einer-nachricht
+- slug: user-agent
+  term: User-Agent
+  short: "Der Header, in dem der Client nennt, welches Programm die Anfrage stellt."
+  explanation: >
+    Browser schicken eine lange Kennung mit Name und Version, Werkzeuge wie curl eine kurze. Server
+    nutzen den Wert für Statistiken oder Fehlersuche – verlassen sollte man sich nicht darauf, denn jeder Client kann ihn frei setzen.
+  example: "`User-Agent: curl/8.14.1`"
+  category: web
+  aliases: [User Agent]
+  related: [http-header, browser, curl]
+  lesson: http-https/anatomie-einer-nachricht
+- slug: netzwerk-tab
+  term: Netzwerk-Tab
+  short: "Der Bereich der Browser-Entwicklerwerkzeuge, der jede HTTP-Anfrage einer Seite auflistet."
+  explanation: >
+    Im Netzwerk-Tab siehst du zu jeder Anfrage Methode, Status, Typ, Größe und Dauer. Ein Klick zeigt
+    Header, gesendeten Body und Antwort. Mit „Copy as cURL“ wird eine Anfrage zum curl-Befehl.
+  example: "F12 → Netzwerk → Seite neu laden → Anfrage `GET /api/notizen` mit Status 401 anklicken."
+  category: web
+  aliases: [Network-Tab, Netzwerkanalyse, Network Panel]
+  related: [devtools, curl, http-request]
+  lesson: http-https/curl-und-devtools
+- slug: router-skript
+  term: Router-Skript
+  short: "Ein PHP-Skript, das der PHP-Entwicklungsserver für jede Anfrage aufruft, egal welcher Pfad."
+  explanation: >
+    Startest du `php -S` mit einem Skriptnamen dahinter, beantwortet dieses Skript alle Anfragen. Es
+    entscheidet anhand von Methode und Pfad, was es antwortet. Gibt es `false` zurück, liefert der Server die passende Datei aus.
+  example: "`php -S 127.0.0.1:8080 router.php`"
+  category: web
+  aliases: [router.php, Router-Skripte]
+  related: [php-entwicklungsserver, http-router]
+  lesson: http-https/curl-und-devtools
+- slug: http-get
+  term: GET
+  short: "Die HTTP-Methode zum Lesen einer Ressource – sicher und idempotent."
+  explanation: >
+    GET fragt eine Ressource ab, ohne etwas zu ändern. Deshalb dürfen Browser, Crawler und Caches
+    GET-Anfragen frei wiederholen und zwischenspeichern. Eine GET-Anfrage hat normalerweise keinen Body.
+  example: "`GET /notizen/7 HTTP/1.1`"
+  category: web
+  aliases: [GET-Methode, GET-Anfrage]
+  related: [http-methode, sichere-methode, idempotenz]
+  lesson: http-https/http-methoden
+- slug: http-head
+  term: HEAD
+  short: "Die HTTP-Methode, die wie GET antwortet, aber nur die Header ohne Body liefert."
+  explanation: >
+    Mit HEAD prüfst du Größe, Typ oder Änderungsdatum einer Ressource, ohne sie herunterzuladen.
+    `curl -I` schickt genau diese Methode.
+  example: "`curl -I https://example.com/video.mp4` zeigt Content-Length, ohne das Video zu laden."
+  category: web
+  aliases: [HEAD-Methode]
+  related: [http-get, http-methode]
+  lesson: http-https/http-methoden
+- slug: http-post
+  term: POST
+  short: "Die HTTP-Methode, die Daten zur Verarbeitung schickt – meist, um etwas Neues anzulegen."
+  explanation: >
+    POST ist weder sicher noch idempotent: Zweimal senden legt oft zwei Datensätze an. Erfolgreiches
+    Anlegen beantwortet der Server typischerweise mit 201 und einem Location-Header.
+  example: "`POST /notizen` mit dem Body `{\"titel\": \"Einkaufen\"}`"
+  category: web
+  aliases: [POST-Methode, POST-Anfrage]
+  related: [http-methode, crud, location-header]
+  lesson: http-https/http-methoden
+- slug: http-put
+  term: PUT
+  short: "Die HTTP-Methode, die eine Ressource komplett durch die mitgeschickte Fassung ersetzt."
+  explanation: >
+    PUT ist idempotent: Dieselbe Anfrage mehrfach zu senden, ergibt immer denselben Zustand. Felder,
+    die im Body fehlen, gelten danach als nicht vorhanden – für Teiländerungen nimmt man PATCH.
+  example: "`PUT /nutzer/5` mit allen Feldern des Nutzers"
+  category: web
+  aliases: [PUT-Methode]
+  related: [http-patch, idempotenz, http-methode]
+  lesson: http-https/http-methoden
+- slug: http-patch
+  term: PATCH
+  short: "Die HTTP-Methode, die nur die mitgeschickten Felder einer Ressource ändert."
+  explanation: >
+    PATCH eignet sich für Teiländerungen, etwa nur die E-Mail-Adresse. Der Standard garantiert nicht,
+    dass PATCH idempotent ist – das hängt davon ab, wie die API es umsetzt.
+  example: "`PATCH /nutzer/5` mit `{\"email\": \"ada@example.com\"}`"
+  category: web
+  aliases: [PATCH-Methode]
+  related: [http-put, http-methode]
+  lesson: http-https/http-methoden
+- slug: http-delete
+  term: DELETE
+  short: "Die HTTP-Methode zum Löschen einer Ressource – idempotent."
+  explanation: >
+    Nach dem ersten DELETE ist die Ressource weg, weitere DELETEs ändern daran nichts. Erfolgreiches
+    Löschen beantwortet der Server oft mit 204 No Content, eine unbekannte Ressource mit 404.
+  example: "`curl -X DELETE http://127.0.0.1:8080/notizen/3`"
+  category: web
+  aliases: [DELETE-Methode]
+  related: [http-methode, idempotenz]
+  lesson: http-https/http-methoden
+- slug: http-options
+  term: OPTIONS
+  short: "Die HTTP-Methode, mit der ein Client fragt, welche Methoden eine Ressource erlaubt."
+  explanation: >
+    Der Server antwortet mit dem Header Allow. Browser nutzen OPTIONS außerdem automatisch als
+    Preflight-Request, bevor sie bestimmte Anfragen an einen fremden Origin schicken.
+  example: "Antwort auf `OPTIONS /notizen`: `Allow: GET, POST, OPTIONS`"
+  category: web
+  aliases: [OPTIONS-Methode]
+  related: [preflight-request, cors, http-methode]
+  lesson: http-https/http-methoden
+- slug: reverse-proxy
+  term: Reverse Proxy
+  short: "Ein Server, der Anfragen von außen annimmt und an einen oder mehrere Anwendungsserver dahinter weiterreicht."
+  explanation: >
+    Reverse Proxys wie nginx übernehmen TLS, Caching und Lastverteilung. Bekommen sie vom
+    Anwendungsserver keine gültige Antwort, melden sie 502; wartet er zu lange, 504.
+  example: "nginx nimmt `https://example.com` an und reicht an eine App auf `127.0.0.1:9000` weiter."
+  category: web
+  aliases: [Reverse-Proxy, Reverse Proxys]
+  related: [nginx, load-balancer, statuscode]
+  lesson: http-https/statuscodes
+- slug: weiterleitung
+  term: Weiterleitung
+  short: "Eine 3xx-Antwort, die den Client per Location-Header zu einer anderen URL schickt."
+  explanation: >
+    Weiterleitungen (Redirects) gibt es dauerhaft (301, 308) und vorübergehend (302, 307) sowie als
+    303 nach Formularen. 307 und 308 behalten Methode und Body bei, die anderen dürfen POST zu GET machen.
+  example: "`HTTP/1.1 301 Moved Permanently` mit `Location: https://example.com/artikel`"
+  category: web
+  aliases: [Redirect, Umleitung, Weiterleitungen, Redirects]
+  related: [location-header, statuscode]
+  lesson: http-https/weiterleitungen
+- slug: accept-header
+  term: Accept
+  short: "Der Anfrage-Header, mit dem der Client sagt, in welchem Format er die Antwort haben möchte."
+  explanation: >
+    Accept listet MIME-Typen, optional mit Gewichten `q=0.5`. Der Server wählt das beste Format, das er
+    liefern kann, und antwortet sonst mit 406 Not Acceptable.
+  example: "`Accept: application/json, text/html;q=0.5`"
+  category: web
+  aliases: [Accept-Header]
+  related: [content-type, content-negotiation, mime-typ]
+  lesson: http-https/wichtige-header
+- slug: content-negotiation
+  term: Content Negotiation
+  short: "Das Aushandeln des Antwortformats, der Sprache oder Kodierung anhand der Accept-Header."
+  explanation: >
+    Der Client nennt seine Wünsche (Accept, Accept-Language), der Server wählt die passende Variante.
+    Liefert er je nach Wunsch Unterschiedliches, setzt er `Vary`, damit Caches die Varianten trennen.
+  example: "Bei `Accept-Language: de` liefert der Server die deutsche Seite und `Vary: Accept-Language`."
+  category: web
+  aliases: [Inhaltsaushandlung]
+  related: [accept-header, content-type]
+  lesson: http-https/wichtige-header
+- slug: authorization-header
+  term: Authorization
+  short: "Der Anfrage-Header, der die Anmeldedaten des Clients trägt, z. B. einen Bearer-Token."
+  explanation: >
+    Weil HTTP zustandslos ist, muss der Client die Anmeldung bei jeder Anfrage mitschicken. Der Wert
+    beginnt mit dem Verfahren (Basic, Bearer …). Fehlt er oder ist er ungültig, antwortet der Server mit 401.
+  example: "`Authorization: Bearer <dein-token>`"
+  category: web
+  aliases: [Authorization-Header]
+  related: [bearer-token, basic-auth, authentifizierung]
+  lesson: http-https/wichtige-header
+- slug: basic-auth
+  term: Basic Authentication
+  short: "Ein einfaches Anmeldeverfahren, bei dem Benutzername und Passwort Base64-kodiert im Authorization-Header stehen."
+  explanation: >
+    Base64 ist keine Verschlüsselung – jeder kann den Wert zurückverwandeln. Basic Auth ist deshalb nur
+    über HTTPS vertretbar und wird heute vor allem für interne Werkzeuge genutzt.
+  example: "`Authorization: Basic YWRhOmdlaGVpbQ==` steht für `ada:geheim`."
+  category: web
+  aliases: [Basic Auth, Basic-Auth]
+  related: [authorization-header, base64]
+  lesson: http-https/wichtige-header
+- slug: base64
+  term: Base64
+  short: "Eine Kodierung, die beliebige Bytes in eine Folge druckbarer Zeichen umwandelt."
+  explanation: >
+    Base64 macht Binärdaten textfähig, etwa für Header oder E-Mails. Es ist umkehrbar und bietet keinerlei
+    Schutz – wer den Wert sieht, kann ihn sofort dekodieren.
+  example: "`echo YWRhOmdlaGVpbQ== | base64 -d` gibt `ada:geheim` aus."
+  category: web
+  aliases: [Base-64]
+  related: [basic-auth]
+  lesson: http-https/wichtige-header
+- slug: web-origin
+  term: Origin (Web)
+  short: "Die Kombination aus Schema, Host und Port einer URL, z. B. https://app.example.com:443."
+  explanation: >
+    Browser nutzen den Origin als Sicherheitsgrenze. Zwei URLs haben denselben Origin nur, wenn alle drei
+    Teile übereinstimmen; der Pfad spielt keine Rolle. Bei fremden Anfragen schickt der Browser den Header `Origin` mit.
+  example: "`https://app.example.com/a` und `https://app.example.com/b` haben denselben Origin, `https://api.example.com` nicht."
+  category: web
+  aliases: [Herkunft, Web-Origin]
+  related: [same-origin-policy, cors]
+  lesson: http-https/wichtige-header
+- slug: same-origin-policy
+  term: Same-Origin-Policy
+  short: "Die Browser-Regel, dass JavaScript einer Seite nur Antworten vom selben Origin lesen darf."
+  explanation: >
+    Ohne diese Regel könnte jede Website im Hintergrund deine eingeloggten Konten auslesen. Ausnahmen
+    erlaubt der Server ausdrücklich mit CORS-Headern.
+  example: "Ein Skript auf `https://evil.example` darf die Antwort von `https://bank.example.com` nicht lesen."
+  category: sicherheit
+  aliases: [Same Origin Policy, SOP]
+  related: [web-origin, cors]
+  lesson: http-https/wichtige-header
+- slug: cors
+  term: CORS
+  short: "Cross-Origin Resource Sharing – Header, mit denen ein Server fremden Origins den Zugriff im Browser erlaubt."
+  explanation: >
+    Der wichtigste CORS-Header ist Access-Control-Allow-Origin. Fehlt er oder passt er nicht, blockiert
+    der Browser den Zugriff auf die Antwort. CORS schützt Nutzer:innen im Browser und ersetzt keine Zugangskontrolle der API.
+  example: "`Access-Control-Allow-Origin: https://app.example.com`"
+  category: sicherheit
+  aliases: [Cross-Origin Resource Sharing]
+  related: [same-origin-policy, preflight-request, web-origin]
+  lesson: http-https/wichtige-header
+- slug: preflight-request
+  term: Preflight-Request
+  short: "Eine automatische OPTIONS-Anfrage, mit der der Browser vor einer fremden Anfrage um Erlaubnis fragt."
+  explanation: >
+    Der Browser schickt den Preflight z. B. vor PUT, DELETE, eigenen Headern oder JSON-Bodys an einen
+    fremden Origin. Erst wenn die Antwort mit passenden Access-Control-Headern kommt, folgt die eigentliche Anfrage.
+  example: "`OPTIONS /notizen/7` mit `Access-Control-Request-Method: DELETE`"
+  category: web
+  aliases: [Preflight, Preflight-Anfrage]
+  related: [cors, http-options]
+  lesson: http-https/wichtige-header
+- slug: bedingte-anfrage
+  term: Bedingte Anfrage
+  short: "Eine Anfrage, die nur dann den vollen Inhalt bekommt, wenn sich die Ressource geändert hat."
+  explanation: >
+    Der Client schickt den ETag (If-None-Match) oder das Änderungsdatum (If-Modified-Since) seiner Kopie
+    mit. Hat sich nichts geändert, antwortet der Server mit 304 Not Modified ohne Body.
+  example: "`If-None-Match: \"v1\"` → `304 Not Modified`"
+  category: web
+  aliases: [Conditional Request, bedingte Anfragen]
+  related: [etag, last-modified, cache]
+  lesson: http-https/caching
+- slug: last-modified
+  term: Last-Modified
+  short: "Ein Antwort-Header mit dem Zeitpunkt der letzten Änderung einer Ressource."
+  explanation: >
+    Mit If-Modified-Since fragt der Client später nach, ob sich seit diesem Zeitpunkt etwas geändert hat.
+    Last-Modified ist nur sekundengenau, deshalb werden ETags bevorzugt.
+  example: "`Last-Modified: Fri, 09 Oct 2026 10:00:00 GMT`"
+  category: web
+  aliases: [If-Modified-Since]
+  related: [etag, bedingte-anfrage]
+  lesson: http-https/caching
+- slug: set-cookie
+  term: Set-Cookie
+  short: "Der Antwort-Header, mit dem ein Server im Browser ein Cookie anlegt oder ändert."
+  explanation: >
+    Pro Cookie gibt es eine eigene Set-Cookie-Zeile mit Name, Wert und Attributen wie Max-Age, Path,
+    Secure, HttpOnly und SameSite. Der Browser schickt das Cookie danach im Header `Cookie` zurück.
+  example: "`Set-Cookie: sitzung=k3Jx9QpL2v; Path=/; HttpOnly; Secure; SameSite=Lax`"
+  category: web
+  aliases: [Set-Cookie-Header]
+  related: [cookie, httponly, samesite, secure-attribut]
+  lesson: http-https/cookies-und-sessions
+- slug: session-id
+  term: Session-ID
+  short: "Eine lange, zufällige Kennung, über die der Server eine Session einem Browser zuordnet."
+  explanation: >
+    Die Session-ID steht meist in einem Cookie, die eigentlichen Daten liegen auf dem Server. Wer die ID
+    kennt, gilt als angemeldet – sie muss also geheim bleiben und schwer zu erraten sein.
+  example: "`Cookie: PHPSESSID=9f2c1e7a4b…`"
+  category: web
+  aliases: [Sitzungs-ID, Session ID]
+  related: [session, cookie]
+  lesson: http-https/cookies-und-sessions
+- slug: httponly
+  term: HttpOnly
+  short: "Ein Cookie-Attribut, das das Cookie für JavaScript unsichtbar macht."
+  explanation: >
+    Gelingt Angreifern, Skripte in eine Seite einzuschleusen (XSS), können sie ein HttpOnly-Cookie trotzdem
+    nicht auslesen. Session-Cookies sollten dieses Attribut immer haben.
+  example: "`Set-Cookie: sitzung=abc; HttpOnly`"
+  category: sicherheit
+  aliases: [HttpOnly-Attribut]
+  related: [set-cookie, xss]
+  lesson: http-https/cookies-und-sessions
+- slug: secure-attribut
+  term: Secure (Cookie)
+  short: "Ein Cookie-Attribut, das dafür sorgt, dass das Cookie nur über HTTPS mitgeschickt wird."
+  explanation: >
+    Ohne Secure könnte ein Cookie über eine unverschlüsselte http-Verbindung reisen und mitgelesen werden.
+    Cookies mit SameSite=None müssen zusätzlich Secure tragen.
+  example: "`Set-Cookie: sitzung=abc; Secure`"
+  category: sicherheit
+  aliases: [Secure-Flag, Secure]
+  related: [set-cookie, https]
+  lesson: http-https/cookies-und-sessions
+- slug: samesite
+  term: SameSite
+  short: "Ein Cookie-Attribut, das steuert, ob ein Cookie bei Anfragen von fremden Websites mitgeschickt wird."
+  explanation: >
+    `Strict` schickt es nie bei fremden Anfragen, `Lax` nur bei einfachen Link-Klicks, `None` immer (nur mit
+    Secure). Damit bremst SameSite CSRF-Angriffe.
+  example: "`Set-Cookie: sitzung=abc; SameSite=Lax`"
+  category: sicherheit
+  aliases: [SameSite-Attribut]
+  related: [csrf, set-cookie]
+  lesson: http-https/cookies-und-sessions
+- slug: cookie-jar
+  term: Cookie-Jar
+  short: "Eine Datei, in der curl empfangene Cookies speichert und später wieder mitschickt."
+  explanation: >
+    Mit `-c datei` schreibt curl Cookies in die Datei, mit `-b datei` liest es sie für die nächste
+    Anfrage. So bleibt man mit curl über mehrere Aufrufe eingeloggt.
+  example: "`curl -c jar.txt -d benutzer=ada …/login` und danach `curl -b jar.txt …/profil`"
+  category: werkzeuge
+  aliases: [Cookie Jar, Keksdose]
+  related: [cookie, curl]
+  lesson: http-https/cookies-und-sessions
+- slug: xss
+  term: XSS
+  short: "Cross-Site Scripting – ein Angriff, bei dem fremdes JavaScript in eine Website eingeschleust wird."
+  explanation: >
+    Das eingeschleuste Skript läuft mit den Rechten der echten Seite und kann z. B. Daten abgreifen.
+    HttpOnly-Cookies begrenzen den Schaden, die eigentliche Abwehr ist sauberes Escaping aller Ausgaben.
+  example: "Ein Kommentar mit `<script>…</script>` wird ungefiltert auf der Seite ausgegeben."
+  category: sicherheit
+  aliases: [Cross-Site Scripting]
+  related: [httponly, csrf]
+  lesson: http-https/cookies-und-sessions
+- slug: csrf
+  term: CSRF
+  short: "Cross-Site Request Forgery – eine fremde Seite löst Anfragen in deinem Namen aus, weil dein Browser Cookies mitschickt."
+  explanation: >
+    Eine böse Seite schickt z. B. heimlich ein Formular an deine Bank. Ohne Schutz trägt der Browser das
+    Session-Cookie mit. SameSite-Cookies und CSRF-Tokens verhindern das.
+  example: "Ein verstecktes Formular auf `evil.example` postet an `https://bank.example.com/ueberweisen`."
+  category: sicherheit
+  aliases: [Cross-Site Request Forgery, XSRF]
+  related: [samesite, xss]
+  lesson: http-https/cookies-und-sessions
+- slug: subject-alternative-name
+  term: Subject Alternative Name
+  short: "Das Feld eines Zertifikats, das alle Hostnamen aufzählt, für die es gilt."
+  explanation: >
+    Browser prüfen den Hostnamen nur noch im SAN, nicht im Common Name. Fehlt der aufgerufene Name dort,
+    meldet der Browser einen Namensfehler – ein Klassiker, wenn `www.` vergessen wurde.
+  example: "`DNS:shop.example.com, DNS:www.shop.example.com`"
+  category: sicherheit
+  aliases: [SAN, subjectAltName]
+  related: [zertifikat, tls]
+  lesson: http-https/tls-und-zertifikate
+- slug: zertifikatskette
+  term: Zertifikatskette
+  short: "Die Folge von Zertifikaten vom Server-Zertifikat über Zwischenzertifikate bis zu einem vertrauten Root-Zertifikat."
+  explanation: >
+    Jedes Glied ist vom nächsthöheren signiert. Der Client prüft die Kette von unten nach oben und
+    vertraut ihr nur, wenn sie bei einer Root in seinem Vertrauensspeicher endet.
+  example: "`www.example.com` → `Beispiel TLS CA 1` → `Beispiel Root CA`"
+  category: sicherheit
+  aliases: [Chain of Trust, Vertrauenskette, Zertifikatsketten]
+  related: [root-zertifikat, zwischenzertifikat, zertifizierungsstelle]
+  lesson: http-https/tls-und-zertifikate
+- slug: root-zertifikat
+  term: Root-Zertifikat
+  short: "Das selbst signierte Zertifikat einer Zertifizierungsstelle, das als Anker allen Vertrauens dient."
+  explanation: >
+    Root-Zertifikate sind in Betriebssystemen und Browsern vorinstalliert. Ihre privaten Schlüssel werden
+    offline aufbewahrt; im Alltag signieren Zwischenzertifikate.
+  example: "Die Lern-CA im Kurs ist ein selbst erstelltes Root-Zertifikat, dem nur dein curl per `--cacert` vertraut."
+  category: sicherheit
+  aliases: [Stammzertifikat, Root-CA, Wurzelzertifikat]
+  related: [zertifikatskette, vertrauensspeicher]
+  lesson: http-https/tls-und-zertifikate
+- slug: zwischenzertifikat
+  term: Zwischenzertifikat
+  short: "Ein von einer Root-CA signiertes CA-Zertifikat, mit dem im Alltag Server-Zertifikate ausgestellt werden."
+  explanation: >
+    Der Server muss Zwischenzertifikate im Handshake mitschicken. Fehlen sie, scheitern viele Clients mit
+    „unable to get local issuer certificate“.
+  example: "Bei Let's Encrypt steckt es zusammen mit dem Server-Zertifikat in `fullchain.pem`."
+  category: sicherheit
+  aliases: [Intermediate-Zertifikat, Intermediate CA, Zwischenzertifikate]
+  related: [zertifikatskette, root-zertifikat]
+  lesson: http-https/tls-und-zertifikate
+- slug: vertrauensspeicher
+  term: Vertrauensspeicher
+  short: "Die Liste der Root-Zertifikate, denen ein Betriebssystem oder Browser vertraut."
+  explanation: >
+    Nur Ketten, die bei einer dieser Roots enden, gelten als vertrauenswürdig. Unternehmen fügen manchmal
+    eigene Roots hinzu, etwa für interne Dienste.
+  example: "curl nutzt standardmäßig den Speicher des Systems, mit `--cacert ca.pem` nur deine Datei."
+  category: sicherheit
+  aliases: [Trust Store, Truststore, Zertifikatsspeicher]
+  related: [root-zertifikat, zertifikatskette]
+  lesson: http-https/tls-und-zertifikate
+- slug: sni
+  term: SNI
+  short: "Server Name Indication – der Hostname, den der Client schon im TLS-ClientHello mitschickt."
+  explanation: >
+    Viele HTTPS-Websites teilen sich eine IP-Adresse. Per SNI weiß der Server, welches Zertifikat er
+    vorzeigen muss, bevor er den Host-Header überhaupt sehen kann.
+  example: "`openssl s_client -connect shop.example.com:443 -servername shop.example.com`"
+  category: sicherheit
+  aliases: [Server Name Indication]
+  related: [tls, handshake, host-header]
+  lesson: http-https/tls-und-zertifikate
+- slug: cipher-suite
+  term: Cipher Suite
+  short: "Eine Kombination kryptografischer Verfahren, auf die sich Client und Server im TLS-Handshake einigen."
+  explanation: >
+    Bei TLS 1.3 legt die Cipher Suite die symmetrische Verschlüsselung und die Hashfunktion fest. TLS 1.3
+    erlaubt nur noch wenige, als sicher geltende Suites.
+  example: "`TLS_AES_256_GCM_SHA384`"
+  category: sicherheit
+  aliases: [Cipher-Suite, Cipher Suites]
+  related: [tls, symmetrische-verschluesselung]
+  lesson: http-https/tls-und-zertifikate
+- slug: schluesselaustausch
+  term: Schlüsselaustausch
+  short: "Das Verfahren, mit dem Client und Server über ein offenes Netz einen gemeinsamen geheimen Schlüssel erzeugen."
+  explanation: >
+    TLS nutzt dafür Verfahren auf Basis von Diffie-Hellman: Beide schicken öffentliche Werte, und nur sie
+    können daraus denselben Schlüssel berechnen. Wer mitliest, erfährt ihn nicht.
+  example: "Im ClientHello schickt der Client seinen `key_share`, der Server antwortet im ServerHello mit seinem."
+  category: sicherheit
+  aliases: [Key Exchange, Schlüsselaushandlung]
+  related: [asymmetrische-kryptografie, tls, handshake]
+  lesson: http-https/tls-und-zertifikate
+- slug: openssl
+  term: OpenSSL
+  short: "Eine verbreitete Kryptografie-Bibliothek mit Kommandozeilenwerkzeug für Schlüssel, Zertifikate und TLS-Tests."
+  explanation: >
+    Mit `openssl` erzeugst du Schlüssel und Zertifikate, liest sie aus (`x509`), prüfst Ketten (`verify`)
+    und baust Testverbindungen auf (`s_client`, `s_server`).
+  example: "`openssl x509 -in server.pem -noout -subject -issuer -dates`"
+  category: werkzeuge
+  aliases: [openssl]
+  related: [zertifikat, tls]
+  lesson: http-https/tls-und-zertifikate
+- slug: hsts
+  term: HSTS
+  short: "HTTP Strict Transport Security – ein Header, der den Browser anweist, eine Domain nur noch per HTTPS anzusprechen."
+  explanation: >
+    Nach dem ersten HTTPS-Besuch schreibt der Browser jedes http:// für die Domain selbst in https:// um.
+    Das verhindert SSL-Stripping-Angriffe auf die erste Klartext-Anfrage.
+  example: "`Strict-Transport-Security: max-age=31536000; includeSubDomains`"
+  category: sicherheit
+  aliases: [Strict-Transport-Security, HTTP Strict Transport Security]
+  related: [https, weiterleitung]
+  lesson: http-https/https-in-der-praxis
+- slug: lets-encrypt
+  term: Let's Encrypt
+  short: "Eine gemeinnützige Zertifizierungsstelle, die kostenlose TLS-Zertifikate automatisch per ACME ausstellt."
+  explanation: >
+    Let's Encrypt prüft nur, ob du eine Domain kontrollierst. Die Zertifikate gelten derzeit 90 Tage und
+    sollen bis 2028 auf 45 Tage schrumpfen – die Erneuerung muss deshalb automatisch laufen.
+  example: "`certbot certonly --webroot -w /var/www/html -d shop.example.com`"
+  category: sicherheit
+  aliases: [LetsEncrypt, Lets Encrypt]
+  related: [acme, certbot, zertifizierungsstelle]
+  lesson: http-https/https-in-der-praxis
+- slug: acme
+  term: ACME
+  short: "Ein Protokoll, mit dem Programme Zertifikate automatisch beantragen, bestätigen und erneuern."
+  explanation: >
+    Ein ACME-Client beweist der Zertifizierungsstelle per Challenge die Kontrolle über eine Domain, etwa mit
+    einer Datei unter `/.well-known/acme-challenge/` (HTTP-01) oder einem DNS-TXT-Eintrag (DNS-01).
+  example: "HTTP-01: Let's Encrypt ruft `http://shop.example.com/.well-known/acme-challenge/<token>` ab."
+  category: sicherheit
+  aliases: [Automatic Certificate Management Environment]
+  related: [lets-encrypt, certbot]
+  lesson: http-https/https-in-der-praxis
+- slug: certbot
+  term: Certbot
+  short: "Ein verbreiteter ACME-Client, der Let's-Encrypt-Zertifikate beantragt und automatisch erneuert."
+  explanation: >
+    Certbot legt die Challenge-Dateien an, speichert `fullchain.pem` und `privkey.pem` und richtet meist
+    einen Timer für `certbot renew` ein.
+  example: "`sudo certbot renew --dry-run` testet die Erneuerung, ohne etwas zu ändern."
+  category: werkzeuge
+  aliases: []
+  related: [acme, lets-encrypt]
+  lesson: http-https/https-in-der-praxis
+- slug: mixed-content
+  term: Mixed Content
+  short: "Inhalte, die eine HTTPS-Seite unsicher über http:// nachlädt."
+  explanation: >
+    Browser blockieren gemischte Skripte und Stylesheets ganz und versuchen Bilder automatisch per HTTPS zu
+    laden. Abhilfe: alle Adressen auf https:// oder relative Pfade umstellen.
+  example: "Eine Seite auf `https://example.com` bindet `<img src=\"http://example.com/logo.png\">` ein."
+  category: sicherheit
+  aliases: [gemischte Inhalte]
+  related: [https, hsts]
+  lesson: http-https/https-in-der-praxis
+- slug: persistente-verbindung
+  term: Persistente Verbindung
+  short: "Eine TCP-Verbindung, die nach einer Antwort offen bleibt und für weitere HTTP-Anfragen genutzt wird."
+  explanation: >
+    Seit HTTP/1.1 ist das der Normalfall und spart den erneuten TCP- und TLS-Aufbau. Mit
+    `Connection: close` bittet eine Seite darum, die Verbindung nach der Antwort zu schließen.
+  example: "curl meldet bei mehreren URLs `Re-using existing connection`."
+  category: web
+  aliases: [Keep-Alive-Verbindung, Persistent Connection]
+  related: [tcp, http-2]
+  lesson: http-https/http2-und-http3
+- slug: head-of-line-blocking
+  term: Head-of-Line-Blocking
+  short: "Eine Warteschlange, in der eine langsame oder verlorene Nachricht alle nachfolgenden aufhält."
+  explanation: >
+    Bei HTTP/1.1 blockiert eine langsame Antwort die Verbindung. HTTP/2 löst das auf HTTP-Ebene, doch bei
+    TCP-Paketverlust warten weiterhin alle Streams. Erst HTTP/3 mit QUIC trennt die Streams auch im Transport.
+  example: "Ein verlorenes TCP-Paket lässt bei HTTP/2 alle Bilder einer Seite warten."
+  category: web
+  aliases: [HOL-Blocking, Head-of-line blocking]
+  related: [multiplexing, quic]
+  lesson: http-https/http2-und-http3
+- slug: http-2
+  term: HTTP/2
+  short: "Die HTTP-Version mit binären Frames, Multiplexing und Header-Komprimierung über eine TCP-Verbindung."
+  explanation: >
+    HTTP/2 ändert den Transport, nicht die Bedeutung: Methoden, Header und Statuscodes bleiben gleich.
+    Browser nutzen es nur über HTTPS; die Version wird per ALPN als `h2` ausgehandelt.
+  example: "curl zeigt die Statuszeile als `HTTP/2 200`."
+  category: web
+  aliases: [h2, HTTP2]
+  related: [multiplexing, hpack, http-3]
+  lesson: http-https/http2-und-http3
+- slug: http-3
+  term: HTTP/3
+  short: "Die HTTP-Version, die über QUIC und UDP statt über TCP läuft."
+  explanation: >
+    HTTP/3 ist immer verschlüsselt, baut Verbindungen schneller auf und lässt verlorene Pakete nur ihren
+    eigenen Stream aufhalten. Server laden mit dem Header Alt-Svc dazu ein.
+  example: "`alt-svc: h3=\":443\"; ma=86400`"
+  category: web
+  aliases: [h3, HTTP3]
+  related: [quic, http-2, udp]
+  lesson: http-https/http2-und-http3
+- slug: quic
+  term: QUIC
+  short: "Ein Transportprotokoll auf Basis von UDP mit eingebautem TLS 1.3 und unabhängigen Streams."
+  explanation: >
+    QUIC übernimmt, was sonst TCP und TLS leisten, und fasst Verbindungs- und Verschlüsselungsaufbau
+    zusammen. Dank Verbindungs-IDs überlebt eine Verbindung sogar den Wechsel ins Mobilfunknetz.
+  example: "HTTP/3 läuft über QUIC auf UDP-Port 443."
+  category: netzwerk
+  aliases: []
+  related: [http-3, udp, tls]
+  lesson: http-https/http2-und-http3
+- slug: multiplexing
+  term: Multiplexing
+  short: "Das gleichzeitige Übertragen mehrerer Datenströme verschachtelt über eine einzige Verbindung."
+  explanation: >
+    HTTP/2 teilt jede Anfrage und Antwort in Frames und gibt ihr einen eigenen Stream. So laufen viele
+    Anfragen parallel über eine TCP-Verbindung, statt in einer Warteschlange.
+  example: "Ein Browser lädt 40 Bilder gleichzeitig über eine HTTP/2-Verbindung."
+  category: web
+  aliases: [Multiplex]
+  related: [http-2, head-of-line-blocking]
+  lesson: http-https/http2-und-http3
+- slug: hpack
+  term: HPACK
+  short: "Das Verfahren zur Header-Komprimierung in HTTP/2."
+  explanation: >
+    HPACK merkt sich bereits gesendete Header in einer Tabelle und überträgt bei Wiederholungen nur noch
+    einen kurzen Verweis. HTTP/3 nutzt das ähnliche Verfahren QPACK.
+  example: "Ein langer `User-Agent` wird nur bei der ersten Anfrage einer Verbindung vollständig gesendet."
+  category: web
+  aliases: [QPACK]
+  related: [http-2, http-header]
+  lesson: http-https/http2-und-http3
+- slug: alpn
+  term: ALPN
+  short: "Application-Layer Protocol Negotiation – die TLS-Erweiterung, mit der Client und Server das Anwendungsprotokoll aushandeln."
+  explanation: >
+    Der Client bietet im Handshake z. B. `h2` und `http/1.1` an, der Server wählt eins. So steht schon vor
+    der ersten HTTP-Nachricht fest, welche Version gesprochen wird.
+  example: "`* ALPN: server accepted h2` in der Ausgabe von `curl -v`"
+  category: web
+  aliases: [Application-Layer Protocol Negotiation]
+  related: [tls, http-2]
+  lesson: http-https/http2-und-http3

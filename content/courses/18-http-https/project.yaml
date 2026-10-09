@@ -1,0 +1,539 @@
+title: Deine eigene Notizen-API
+description: |
+  Du baust Schritt für Schritt eine kleine, aber korrekte HTTP-API für Notizen – nur mit PHP und
+  `php -S`, ohne Framework. Der Fokus liegt nicht auf viel Code, sondern darauf, dass jede Antwort
+  **HTTP-gerecht** ist: die richtige Methode, der passende Statuscode, sinnvolle Header und Caching mit
+  ETag. Jeden Schritt prüfst du selbst mit curl, und Stacklab startet deinen Server für die Prüfungen
+  automatisch in einem eigenen Testordner.
+
+  Alles liegt im Ordner `notizen-api`. Starte deinen Server zum Ausprobieren mit
+  `php -S 127.0.0.1:8080 router.php > server.log 2>&1 &` und stoppe ihn mit `kill %1`. Nach jeder
+  Änderung an `router.php` musst du den Server **nicht** neu starten – PHP liest das Skript bei jeder
+  Anfrage neu.
+goal: >
+  Eine Datei `router.php`, die eine Notizen-API mit GET, POST, PATCH und DELETE, korrekten Statuscodes
+  (200, 201, 204, 304, 400, 404, 405, 422), Location- und Allow-Headern und ETag-Caching bereitstellt –
+  dazu ein Protokoll deiner Tests mit curl.
+workdir: notizen-api
+steps:
+  - id: grundgeruest
+    title: Das Grundgerüst mit JSON-Antworten
+    description: |
+      Lege im Ordner `notizen-api` die Datei `router.php` an. Sie soll vorerst zwei Dinge können:
+
+      - `GET /status` antwortet mit `200` und dem JSON `{"status": "ok"}`.
+      - **Jeder andere Pfad** antwortet mit `404` und einem JSON wie `{"fehler": "Unbekannter Pfad"}`.
+
+      Alle JSON-Antworten tragen den Header `Content-Type: application/json`. Schreib dir dafür am besten
+      gleich eine Hilfsfunktion `antworte(int $status, mixed $daten = null, array $kopf = [])`, die Status,
+      zusätzliche Header und JSON-Body setzt und danach mit `exit` aufhört – du brauchst sie in jedem Schritt.
+    checklist:
+      - router.php existiert im Ordner notizen-api
+      - GET /status liefert 200 und {"status":"ok"}
+      - Unbekannte Pfade liefern 404 mit einem JSON-Feld fehler
+      - Content-Type ist application/json
+    hints:
+      - "Den Pfad ohne Query-String liefert `parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)`."
+      - "In `antworte()`: `http_response_code($status);`, dann die Header, dann `echo json_encode($daten);` und `exit;`."
+      - "Der Rückgabetyp `never` sagt PHP, dass die Funktion nie zurückkehrt."
+    checks:
+      - type: file_exists
+        path: router.php
+        message: Es gibt noch keine router.php im Ordner notizen-api.
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18701 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18701
+          curl -s -w ' %{http_code} %{content_type}\n' $U/status | sed 's/; *charset=[^ ]*//'
+          curl -s $U/gibts-nicht | jq -r 'has("fehler")'
+          curl -s -o /dev/null -w '%{http_code}' $U/gibts-nicht
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^\\{\"status\": ?\"ok\"\\}\\s+200 application/json\\ntrue\\n404$"
+        message: "GET /status soll 200 mit {\"status\":\"ok\"} und Content-Type application/json liefern, ein unbekannter Pfad 404 mit einem JSON-Feld fehler."
+    solution: |
+      ```php
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+      function antworte(int $status, mixed $daten = null, array $kopf = []): never
+      {
+          http_response_code($status);
+          foreach ($kopf as $name => $wert) {
+              header("$name: $wert");
+          }
+          if ($daten !== null) {
+              header('Content-Type: application/json');
+              echo json_encode($daten, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+          }
+          exit;
+      }
+
+      if ($pfad === '/status') {
+          antworte(200, ['status' => 'ok']);
+      }
+
+      antworte(404, ['fehler' => 'Unbekannter Pfad']);
+      ```
+  - id: notizen-lesen
+    title: Notizen speichern und auflisten
+    description: |
+      Die Notizen liegen als JSON-Liste in `daten/notizen.json` – relativ zu `router.php`, also
+      `__DIR__ . '/daten/notizen.json'`.
+
+      1. Schreibe eine Funktion `laden()`, die die Liste liest. **Fehlt die Datei, ist die Liste leer** (`[]`).
+      2. Schreibe eine Funktion `speichern()`, die die Liste zurückschreibt und den Ordner `daten` bei Bedarf
+         mit `mkdir()` anlegt.
+      3. `GET /notizen` antwortet mit `200` und der Liste als JSON-Array.
+
+      Wichtig: Die Prüfung startet deinen Server in einem leeren Testordner ohne `daten/` – dein Code muss
+      damit klarkommen.
+    checklist:
+      - laden() liefert [] wenn die Datei fehlt
+      - speichern() legt daten/ bei Bedarf an
+      - GET /notizen liefert 200 und ein JSON-Array
+    hints:
+      - "`is_file($speicher) ? json_decode(file_get_contents($speicher), true) : []`"
+      - "Mit `array_values()` vor `json_encode()` stellst du sicher, dass ein Array und kein Objekt herauskommt."
+    checks:
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18702 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          curl -s -w ' %{http_code}' http://127.0.0.1:18702/notizen
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^\\[\\]\\s+200$"
+        message: GET /notizen soll bei fehlender Datei 200 und eine leere JSON-Liste [] liefern.
+    solution: |
+      ```php
+      $speicher = __DIR__ . '/daten/notizen.json';
+
+      function laden(string $speicher): array
+      {
+          return is_file($speicher) ? json_decode(file_get_contents($speicher), true) : [];
+      }
+
+      function speichern(string $speicher, array $notizen): void
+      {
+          if (!is_dir(dirname($speicher))) {
+              mkdir(dirname($speicher), 0777, true);
+          }
+          file_put_contents($speicher, json_encode(array_values($notizen), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      $notizen = laden($speicher);
+
+      if ($pfad === '/notizen' && $methode === 'GET') {
+          antworte(200, array_values($notizen));
+      }
+      ```
+  - id: notiz-anlegen
+    title: Notizen anlegen mit POST, 201 und Location
+    description: |
+      `POST /notizen` legt eine Notiz an. Der Body ist JSON, z. B. `{"titel": "Milch kaufen"}`.
+
+      | Fall | Antwort |
+      |---|---|
+      | Body ist kein gültiges JSON-Objekt | `400` mit `{"fehler": …}` |
+      | `titel` fehlt oder ist nach `trim()` leer | `422` mit `{"fehler": …}` |
+      | alles gut | `201`, Header `Location: /notizen/{id}`, Body `{"id": …, "titel": …, "erledigt": false}` |
+
+      Die erste Notiz bekommt die ID `1`, jede weitere die höchste vorhandene ID plus 1. Speichere die
+      Liste nach dem Anlegen mit `speichern()`.
+
+      Probiere es aus: `curl -i --json '{"titel":"Milch kaufen"}' http://127.0.0.1:8080/notizen`
+    checklist:
+      - Kaputtes JSON → 400
+      - Fehlender oder leerer titel → 422
+      - Gültige Notiz → 201 mit Location-Header und der neuen Notiz im Body
+      - Die Notiz taucht danach in GET /notizen auf
+    hints:
+      - "`$daten = json_decode(file_get_contents('php://input'), true);` – ist `$daten` kein Array, war das JSON kaputt."
+      - "Neue ID: `$notizen === [] ? 1 : max(array_column($notizen, 'id')) + 1`"
+      - "`antworte(201, $neu, ['Location' => '/notizen/' . $id]);`"
+    checks:
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18703 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18703/notizen
+          c() { curl -s -o /dev/null -w '%{http_code} ' "$@"; }
+          c -H 'Content-Type: application/json' -d '{kaputt' $U; c --json '{}' $U; c --json '{"titel":"   "}' $U
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^400 422 422$"
+        message: "POST /notizen prüft den Body noch nicht richtig: kaputtes JSON → 400, fehlender oder leerer titel → 422."
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18704 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18704/notizen
+          curl -s -D kopf.txt --json '{"titel":"Milch kaufen"}' $U | jq -c '{id, titel, erledigt}'
+          tr -d '\r' < kopf.txt | grep -iE '^(HTTP/|location:)'
+          curl -s --json '{"titel":"Brot holen"}' $U | jq -r '.id'
+          curl -s $U | jq -r 'length'
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^\\{\"id\":1,\"titel\":\"Milch kaufen\",\"erledigt\":false\\}\\nHTTP/1\\.1 201[^\\n]*\\n[Ll]ocation: /notizen/1\\n2\\n2$"
+        message: Ein gültiger POST soll 201 mit Location /notizen/1 und {"id":1,"titel":…,"erledigt":false} liefern, die nächste Notiz die id 2 bekommen und beide in GET /notizen erscheinen.
+    solution: |
+      ```php
+      function jsonBody(): array
+      {
+          $daten = json_decode(file_get_contents('php://input'), true);
+          if (!is_array($daten)) {
+              antworte(400, ['fehler' => 'Body ist kein gültiges JSON']);
+          }
+          return $daten;
+      }
+
+      if ($pfad === '/notizen' && $methode === 'POST') {
+          $daten = jsonBody();
+          $titel = trim((string) ($daten['titel'] ?? ''));
+          if ($titel === '') {
+              antworte(422, ['fehler' => 'titel ist ein Pflichtfeld']);
+          }
+          $id = $notizen === [] ? 1 : max(array_column($notizen, 'id')) + 1;
+          $neu = ['id' => $id, 'titel' => $titel, 'erledigt' => false];
+          $notizen[] = $neu;
+          speichern($speicher, $notizen);
+          antworte(201, $neu, ['Location' => '/notizen/' . $id]);
+      }
+      ```
+  - id: einzelne-notiz
+    title: Eine Notiz lesen und mit PATCH ändern
+    description: |
+      Jetzt kommt die Einzel-Ressource `/notizen/{id}` dazu.
+
+      - `GET /notizen/{id}` → `200` mit der Notiz, bei unbekannter ID `404` mit `{"fehler": …}`
+      - `PATCH /notizen/{id}` ändert **nur die mitgeschickten Felder** `titel` und/oder `erledigt`:
+        - Antwort `200` mit der geänderten Notiz
+        - Ein mitgeschickter, aber leerer `titel` → `422`
+        - Unbekannte ID → `404`
+
+      Denk daran, die Liste nach einer Änderung zu speichern.
+    checklist:
+      - GET /notizen/1 liefert die Notiz, GET /notizen/99 liefert 404
+      - PATCH mit {"erledigt":true} lässt den Titel unverändert
+      - PATCH mit leerem titel liefert 422
+    hints:
+      - "`preg_match('#^/notizen/(\\d+)$#', $pfad, $treffer)` – die ID steht in `$treffer[1]`."
+      - "`array_search($id, array_column($notizen, 'id'), true)` liefert die Position in der Liste oder `false`."
+      - "Mit `array_key_exists('titel', $daten)` erkennst du, ob ein Feld mitgeschickt wurde – auch wenn es leer ist."
+    checks:
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18705 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18705/notizen
+          curl -s -o /dev/null --json '{"titel":"Milch kaufen"}' $U
+          curl -s $U/1 | jq -r '.titel'
+          curl -s -o /dev/null -w '%{http_code}\n' $U/99
+          curl -s -X PATCH --json '{"erledigt":true}' $U/1 | jq -c '{titel, erledigt}'
+          curl -s $U/1 | jq -r '.erledigt'
+          curl -s -o /dev/null -w '%{http_code} ' -X PATCH --json '{"titel":""}' $U/1
+          curl -s -o /dev/null -w '%{http_code}' -X PATCH --json '{"erledigt":true}' $U/99
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^Milch kaufen\\n404\\n\\{\"titel\":\"Milch kaufen\",\"erledigt\":true\\}\\ntrue\\n422 404$"
+        message: "Prüfe /notizen/{id}: GET liefert die Notiz (unbekannt → 404), PATCH {\"erledigt\":true} ändert nur erledigt und wird gespeichert, ein leerer titel → 422, unbekannte ID → 404."
+    solution: |
+      ```php
+      if (preg_match('#^/notizen/(\d+)$#', $pfad, $treffer)) {
+          $id = (int) $treffer[1];
+          $index = array_search($id, array_column($notizen, 'id'), true);
+          if ($index === false) {
+              antworte(404, ['fehler' => "Notiz $id gibt es nicht"]);
+          }
+          if ($methode === 'GET') {
+              antworte(200, $notizen[$index]);
+          }
+          if ($methode === 'PATCH') {
+              $daten = jsonBody();
+              if (array_key_exists('titel', $daten)) {
+                  $titel = trim((string) $daten['titel']);
+                  if ($titel === '') {
+                      antworte(422, ['fehler' => 'titel darf nicht leer sein']);
+                  }
+                  $notizen[$index]['titel'] = $titel;
+              }
+              if (array_key_exists('erledigt', $daten)) {
+                  $notizen[$index]['erledigt'] = (bool) $daten['erledigt'];
+              }
+              speichern($speicher, $notizen);
+              antworte(200, $notizen[$index]);
+          }
+      }
+      ```
+  - id: loeschen-und-405
+    title: Löschen mit 204 und 405 für alles andere
+    description: |
+      Zwei Dinge fehlen noch, damit die API vollständig und ehrlich antwortet:
+
+      1. `DELETE /notizen/{id}` löscht die Notiz und antwortet mit `204` **ohne Body**. Eine unbekannte ID
+         gibt `404` – auch beim zweiten Löschen derselben Notiz.
+      2. Jede andere Methode antwortet mit `405` und dem Header `Allow`:
+         - auf `/notizen`: `Allow: GET, POST`
+         - auf `/notizen/{id}`: `Allow: GET, PATCH, DELETE`
+
+      Prüfe die 405-Fälle mit `curl -i -X PUT http://127.0.0.1:8080/notizen`.
+    checklist:
+      - DELETE liefert 204 ohne Body, danach 404
+      - PUT auf /notizen liefert 405 mit Allow GET, POST
+      - PUT auf /notizen/1 liefert 405 mit Allow GET, PATCH, DELETE
+    hints:
+      - "Entfernen aus der Liste: `array_splice($notizen, $index, 1);` und danach speichern."
+      - "Prüfe die erlaubten Methoden für `/notizen/{id}` gleich am Anfang mit `in_array($methode, ['GET', 'PATCH', 'DELETE'], true)`."
+    checks:
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18706 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18706/notizen
+          curl -s -o /dev/null --json '{"titel":"Milch kaufen"}' $U
+          curl -s -o /dev/null -w '%{http_code} %{size_download} ' -X DELETE $U/1
+          curl -s -o /dev/null -w '%{http_code} ' -X DELETE $U/1
+          curl -s $U | jq -r 'length'
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^204 0 404 0$"
+        message: DELETE /notizen/1 soll 204 ohne Body liefern und die Notiz wirklich entfernen; ein zweites DELETE liefert 404.
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18707 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18707/notizen
+          curl -s -o /dev/null --json '{"titel":"Milch kaufen"}' $U
+          curl -s -o /dev/null -D - -X PUT $U | tr -d '\r' | grep -iE '^(HTTP/|allow:)'
+          curl -s -o /dev/null -D - -X PUT --json '{"titel":"x"}' $U/1 | tr -d '\r' | grep -iE '^(HTTP/|allow:)'
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^HTTP/1\\.1 405[^\\n]*\\n[Aa]llow: GET, ?POST\\nHTTP/1\\.1 405[^\\n]*\\n[Aa]llow: GET, ?PATCH, ?DELETE$"
+        message: "Nicht erlaubte Methoden sollen 405 liefern – mit Allow: GET, POST auf /notizen und Allow: GET, PATCH, DELETE auf /notizen/{id}."
+    solution: |
+      ```php
+      // am Ende des Blocks für /notizen:
+      antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, POST']);
+
+      // am Anfang des Blocks für /notizen/{id}:
+      if (!in_array($methode, ['GET', 'PATCH', 'DELETE'], true)) {
+          antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, PATCH, DELETE']);
+      }
+
+      // im Block für /notizen/{id}, nach der 404-Prüfung:
+      if ($methode === 'DELETE') {
+          array_splice($notizen, $index, 1);
+          speichern($speicher, $notizen);
+          antworte(204);
+      }
+      ```
+  - id: etag-caching
+    title: Caching mit ETag und 304
+    description: |
+      Ein Frontend fragt die Liste ständig ab. Spare Bandbreite mit bedingten Anfragen:
+
+      - `GET /notizen` setzt `ETag` (MD5 des JSON-Bodys in Anführungszeichen) und `Cache-Control: no-cache`.
+      - Schickt der Client `If-None-Match` mit genau diesem ETag, antwortet der Server mit `304` ohne Body.
+      - Ändert sich die Liste (POST, PATCH, DELETE), ändert sich automatisch der ETag – dann gibt es wieder `200`.
+
+      Ausprobieren:
+
+      ```bash
+      curl -i http://127.0.0.1:8080/notizen
+      curl -i -H 'If-None-Match: "<etag aus der ersten Antwort>"' http://127.0.0.1:8080/notizen
+      ```
+    checklist:
+      - GET /notizen hat ETag und Cache-Control no-cache
+      - Passendes If-None-Match → 304 ohne Body
+      - Nach einer Änderung passt der alte ETag nicht mehr → 200
+    hints:
+      - "Erzeuge den Body zuerst als String: `$body = json_encode(array_values($notizen), …);`, dann `$etag = '\"' . md5($body) . '\"';`."
+      - "Header lesen: `$header = array_change_key_case(getallheaders(), CASE_LOWER);` und dann `$header['if-none-match'] ?? ''`."
+      - "Setze ETag und Cache-Control vor der 304-Prüfung, damit auch die 304-Antwort sie trägt."
+    checks:
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18708 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18708/notizen
+          curl -s -o /dev/null --json '{"titel":"Milch kaufen"}' $U
+          curl -s -o /dev/null -D - $U | tr -d '\r' | grep -iE '^(etag|cache-control):' | tr 'A-Z' 'a-z' | sort | sed 's/"[0-9a-f]\{32\}"/"MD5"/'
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^cache-control: no-cache\\netag: \"MD5\"$"
+        message: "GET /notizen braucht die Header ETag (MD5 des Bodys in Anführungszeichen) und Cache-Control: no-cache."
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18709 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18709/notizen
+          curl -s -o /dev/null --json '{"titel":"Milch kaufen"}' $U
+          E=$(curl -s -o /dev/null -D - $U | tr -d '\r' | grep -i '^etag:' | cut -d' ' -f2)
+          curl -s -o /dev/null -w '%{http_code} %{size_download} ' -H "If-None-Match: $E" $U
+          curl -s -o /dev/null --json '{"titel":"Brot holen"}' $U
+          curl -s -o /dev/null -w '%{http_code}' -H "If-None-Match: $E" $U
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^304 0 200$"
+        message: Mit passendem If-None-Match soll 304 ohne Body kommen – und nach einer neuen Notiz wieder 200, weil sich der ETag geändert hat.
+    solution: |
+      Die vollständige `router.php` nach allen Schritten:
+
+      ```bash
+      cat > router.php <<'PHP'
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $header = array_change_key_case(getallheaders(), CASE_LOWER);
+      $speicher = __DIR__ . '/daten/notizen.json';
+
+      function antworte(int $status, mixed $daten = null, array $kopf = []): never
+      {
+          http_response_code($status);
+          foreach ($kopf as $name => $wert) {
+              header("$name: $wert");
+          }
+          if ($daten !== null) {
+              header('Content-Type: application/json');
+              echo json_encode($daten, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+          }
+          exit;
+      }
+
+      function laden(string $speicher): array
+      {
+          return is_file($speicher) ? json_decode(file_get_contents($speicher), true) : [];
+      }
+
+      function speichern(string $speicher, array $notizen): void
+      {
+          if (!is_dir(dirname($speicher))) {
+              mkdir(dirname($speicher), 0777, true);
+          }
+          file_put_contents($speicher, json_encode(array_values($notizen), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      function jsonBody(): array
+      {
+          $daten = json_decode(file_get_contents('php://input'), true);
+          if (!is_array($daten)) {
+              antworte(400, ['fehler' => 'Body ist kein gültiges JSON']);
+          }
+          return $daten;
+      }
+
+      if ($pfad === '/status') {
+          antworte(200, ['status' => 'ok']);
+      }
+
+      $notizen = laden($speicher);
+
+      if ($pfad === '/notizen') {
+          if ($methode === 'GET') {
+              $body = json_encode(array_values($notizen), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+              $etag = '"' . md5($body) . '"';
+              header('ETag: ' . $etag);
+              header('Cache-Control: no-cache');
+              if (($header['if-none-match'] ?? '') === $etag) {
+                  antworte(304);
+              }
+              header('Content-Type: application/json');
+              echo $body;
+              exit;
+          }
+          if ($methode === 'POST') {
+              $daten = jsonBody();
+              $titel = trim((string) ($daten['titel'] ?? ''));
+              if ($titel === '') {
+                  antworte(422, ['fehler' => 'titel ist ein Pflichtfeld']);
+              }
+              $id = $notizen === [] ? 1 : max(array_column($notizen, 'id')) + 1;
+              $neu = ['id' => $id, 'titel' => $titel, 'erledigt' => false];
+              $notizen[] = $neu;
+              speichern($speicher, $notizen);
+              antworte(201, $neu, ['Location' => '/notizen/' . $id]);
+          }
+          antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, POST']);
+      }
+
+      if (preg_match('#^/notizen/(\d+)$#', $pfad, $treffer)) {
+          if (!in_array($methode, ['GET', 'PATCH', 'DELETE'], true)) {
+              antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, PATCH, DELETE']);
+          }
+          $id = (int) $treffer[1];
+          $index = array_search($id, array_column($notizen, 'id'), true);
+          if ($index === false) {
+              antworte(404, ['fehler' => "Notiz $id gibt es nicht"]);
+          }
+          if ($methode === 'GET') {
+              antworte(200, $notizen[$index]);
+          }
+          if ($methode === 'DELETE') {
+              array_splice($notizen, $index, 1);
+              speichern($speicher, $notizen);
+              antworte(204);
+          }
+          $daten = jsonBody();
+          if (array_key_exists('titel', $daten)) {
+              $titel = trim((string) $daten['titel']);
+              if ($titel === '') {
+                  antworte(422, ['fehler' => 'titel darf nicht leer sein']);
+              }
+              $notizen[$index]['titel'] = $titel;
+          }
+          if (array_key_exists('erledigt', $daten)) {
+              $notizen[$index]['erledigt'] = (bool) $daten['erledigt'];
+          }
+          speichern($speicher, $notizen);
+          antworte(200, $notizen[$index]);
+      }
+
+      antworte(404, ['fehler' => 'Unbekannter Pfad']);
+      PHP
+      ```
+  - id: protokoll
+    title: Dein Testprotokoll mit curl
+    description: |
+      Zum Abschluss dokumentierst du, dass deine API funktioniert – so, wie du es in einem Pull Request
+      tun würdest. Starte den Server auf Port 8080 und schreibe die Ausgaben von `curl -i` in die Datei
+      `protokoll.txt`:
+
+      1. eine Notiz anlegen (`POST` mit `--json`),
+      2. die Liste abrufen (`GET /notizen`),
+      3. die neue Notiz als erledigt markieren (`PATCH`),
+      4. eine unbekannte Notiz abrufen (`404`).
+
+      Mit `>>` hängst du jede Ausgabe an die Datei an. Beende den Server danach mit `kill %1` und lies dir
+      das Protokoll in Ruhe durch: Erkennst du jede Statuszeile und jeden Header wieder?
+    checklist:
+      - protokoll.txt enthält die 201-Antwort mit Location
+      - protokoll.txt enthält eine 200-Antwort mit ETag
+      - protokoll.txt enthält eine 404-Antwort
+    hints:
+      - "`curl -i --json '{\"titel\":\"Projekt abschließen\"}' http://127.0.0.1:8080/notizen >> protokoll.txt`"
+      - "Zwischen den Aufrufen kannst du mit `echo >> protokoll.txt` eine Leerzeile einfügen."
+    checks:
+      - type: file_contains
+        path: protokoll.txt
+        pattern: "^HTTP/1\\.1 201 Created"
+        message: In protokoll.txt fehlt die Antwort auf das Anlegen (HTTP/1.1 201 Created). Nutze curl -i und >>.
+      - type: file_contains
+        path: protokoll.txt
+        pattern: "^[Ll]ocation: /notizen/\\d+"
+        message: In protokoll.txt fehlt der Location-Header der neuen Notiz.
+      - type: file_contains
+        path: protokoll.txt
+        pattern: "^[Ee][Tt]ag: \"[0-9a-f]{32}\""
+        message: In protokoll.txt fehlt die Listen-Antwort mit ETag (GET /notizen mit curl -i).
+      - type: file_contains
+        path: protokoll.txt
+        pattern: "^HTTP/1\\.1 404 Not Found"
+        message: In protokoll.txt fehlt eine 404-Antwort für eine unbekannte Notiz.
+    solution: |
+      ```bash
+      php -S 127.0.0.1:8080 router.php > server.log 2>&1 &
+      sleep 1
+      curl -i --json '{"titel":"Projekt abschließen"}' http://127.0.0.1:8080/notizen >> protokoll.txt
+      echo >> protokoll.txt
+      curl -i http://127.0.0.1:8080/notizen >> protokoll.txt
+      echo >> protokoll.txt
+      curl -i -X PATCH --json '{"erledigt":true}' http://127.0.0.1:8080/notizen/1 >> protokoll.txt
+      echo >> protokoll.txt
+      curl -i http://127.0.0.1:8080/notizen/999 >> protokoll.txt
+      kill %1
+      cat protokoll.txt
+      ```

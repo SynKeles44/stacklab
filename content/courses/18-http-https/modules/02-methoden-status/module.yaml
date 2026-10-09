@@ -1,0 +1,188 @@
+title: Methoden, Statuscodes und Weiterleitungen
+description: Welche Methode was verspricht, welcher Statuscode wann passt und wie Weiterleitungen Clients umlenken.
+exercise:
+  id: modul-uebung-buecher-api
+  type: terminal
+  title: Eine Bücher-API, die korrekt antwortet
+  description: |
+    Im Ordner `buecher-api` liegt das Gerüst einer kleinen API. Die Bücher stehen der Einfachheit halber
+    fest im Code – gespeichert wird nichts. Deine Aufgabe ist, dass jede Anfrage die **richtige Methode
+    akzeptiert und den richtigen Statuscode** liefert. Alle Antworten mit Body sind JSON.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Die Hilfsfunktion `antworte($status, $daten, $header)`
+    ist schon fertig.
+
+    | Anfrage | Antwort |
+    |---|---|
+    | `GET /buecher` | `200`, Liste aller Bücher |
+    | `GET /buecher/1` | `200`, das Buch – bei unbekannter ID `404` mit `{"fehler": "…"}` |
+    | `POST /buecher` mit ungültigem JSON | `400` |
+    | `POST /buecher` mit JSON ohne (oder mit leerem) `titel` | `422` |
+    | `POST /buecher` mit `{"titel": "…"}` | `201`, Header `Location: /buecher/3`, Body: das neue Buch mit `id` 3 |
+    | `DELETE /buecher/1` | `204` ohne Body – bei unbekannter ID `404` |
+    | andere Methode auf `/buecher` | `405` mit Header `Allow: GET, POST` |
+    | andere Methode auf `/buecher/{id}` | `405` mit Header `Allow: GET, DELETE` |
+    | jeder andere Pfad | `404` |
+
+    Teste mit `php -S 127.0.0.1:8080 router.php > server.log 2>&1 &` und curl, z. B.
+    `curl -i --json '{"titel":"Momo"}' http://127.0.0.1:8080/buecher`.
+  workdir: buecher-api
+  setup: |
+    cat > router.php <<'PHP'
+    <?php
+    $buecher = [
+        1 => ['id' => 1, 'titel' => 'Der kleine Prinz'],
+        2 => ['id' => 2, 'titel' => 'Die unendliche Geschichte'],
+    ];
+
+    function antworte(int $status, mixed $daten = null, array $header = []): never
+    {
+        http_response_code($status);
+        foreach ($header as $name => $wert) {
+            header("$name: $wert");
+        }
+        if ($daten !== null) {
+            header('Content-Type: application/json');
+            echo json_encode($daten, JSON_UNESCAPED_UNICODE) . "\n";
+        }
+        exit;
+    }
+
+    $methode = $_SERVER['REQUEST_METHOD'];
+    $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+    // TODO: /buecher und /buecher/{id} beantworten
+
+    antworte(404, ['fehler' => 'Unbekannter Pfad']);
+    PHP
+  checks:
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18401 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        U=http://127.0.0.1:18401
+        c() { curl -s -o /dev/null -w '%{http_code} ' "$@"; }
+        c $U/buecher; c $U/buecher/1; c $U/buecher/99; c $U/gibts-nicht
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^200 200 404 404$"
+      message: "Die Lese-Anfragen stimmen nicht. Erwartet: GET /buecher → 200, /buecher/1 → 200, /buecher/99 → 404, /gibts-nicht → 404."
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18402 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        curl -s http://127.0.0.1:18402/buecher | jq -r 'length'
+        curl -s http://127.0.0.1:18402/buecher/2 | jq -r '.titel'
+        curl -s -o /dev/null -w '%{content_type}' http://127.0.0.1:18402/buecher
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^2\\nDie unendliche Geschichte\\napplication/json"
+      message: GET /buecher soll eine JSON-Liste mit beiden Büchern liefern und GET /buecher/2 das passende Buch – mit Content-Type application/json.
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18403 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        U=http://127.0.0.1:18403/buecher
+        c() { curl -s -o /dev/null -w '%{http_code} ' "$@"; }
+        c -H 'Content-Type: application/json' -d '{kaputt' $U; c --json '{"autor":"Ende"}' $U; c --json '{"titel":""}' $U; c --json '{"titel":"Momo"}' $U
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^400 422 422 201$"
+      message: "POST /buecher prüft noch nicht richtig. Erwartet: kaputtes JSON → 400, ohne titel → 422, leerer titel → 422, gültig → 201."
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18404 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        curl -s -D kopf.txt --json '{"titel":"Momo"}' http://127.0.0.1:18404/buecher | jq -c '{id, titel}'
+        tr -d '\r' < kopf.txt | grep -i '^location:'
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^\\{\"id\":3,\"titel\":\"Momo\"\\}\\n[Ll]ocation: /buecher/3$"
+      message: Nach einem gültigen POST soll der Body das neue Buch mit id 3 enthalten und der Header Location auf /buecher/3 zeigen.
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18405 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        curl -s -o /dev/null -w '%{http_code} %{size_download} ' -X DELETE http://127.0.0.1:18405/buecher/1
+        curl -s -o /dev/null -w '%{http_code}' -X DELETE http://127.0.0.1:18405/buecher/99
+        kill $P; cd ..; rm -rf "$T"
+      stdout_equals: "204 0 404"
+      message: DELETE /buecher/1 soll 204 ohne Body liefern, DELETE /buecher/99 soll 404 liefern.
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18406 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        curl -s -o /dev/null -D - -X PUT http://127.0.0.1:18406/buecher | tr -d '\r' | grep -iE '^(HTTP/|allow:)'
+        curl -s -o /dev/null -D - -X PATCH http://127.0.0.1:18406/buecher/1 | tr -d '\r' | grep -iE '^(HTTP/|allow:)'
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^HTTP/1\\.1 405[^\\n]*\\n[Aa]llow: GET, ?POST\\nHTTP/1\\.1 405[^\\n]*\\n[Aa]llow: GET, ?DELETE$"
+      message: "Nicht erlaubte Methoden sollen 405 liefern – mit Allow: GET, POST auf /buecher und Allow: GET, DELETE auf /buecher/{id}."
+  hints:
+    - "Zerlege den Pfad mit einem regulären Ausdruck: `preg_match('#^/buecher/(\\d+)$#', $pfad, $m)` – die ID steht dann in `$m[1]`."
+    - "Ungültiges JSON erkennst du so: `$daten = json_decode(file_get_contents('php://input'), true);` ergibt dann `null` bzw. kein Array."
+    - "Für 405: `antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, POST']);`"
+  solution: |
+    ```bash
+    cd buecher-api
+    cat > router.php <<'PHP'
+    <?php
+    $buecher = [
+        1 => ['id' => 1, 'titel' => 'Der kleine Prinz'],
+        2 => ['id' => 2, 'titel' => 'Die unendliche Geschichte'],
+    ];
+
+    function antworte(int $status, mixed $daten = null, array $header = []): never
+    {
+        http_response_code($status);
+        foreach ($header as $name => $wert) {
+            header("$name: $wert");
+        }
+        if ($daten !== null) {
+            header('Content-Type: application/json');
+            echo json_encode($daten, JSON_UNESCAPED_UNICODE) . "\n";
+        }
+        exit;
+    }
+
+    $methode = $_SERVER['REQUEST_METHOD'];
+    $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+    if ($pfad === '/buecher') {
+        if ($methode === 'GET') {
+            antworte(200, array_values($buecher));
+        }
+        if ($methode === 'POST') {
+            $daten = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($daten)) {
+                antworte(400, ['fehler' => 'Body ist kein gültiges JSON']);
+            }
+            $titel = trim((string) ($daten['titel'] ?? ''));
+            if ($titel === '') {
+                antworte(422, ['fehler' => 'titel ist ein Pflichtfeld']);
+            }
+            $neu = ['id' => max(array_keys($buecher)) + 1, 'titel' => $titel];
+            antworte(201, $neu, ['Location' => '/buecher/' . $neu['id']]);
+        }
+        antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, POST']);
+    }
+
+    if (preg_match('#^/buecher/(\d+)$#', $pfad, $m)) {
+        $id = (int) $m[1];
+        if (!in_array($methode, ['GET', 'DELETE'], true)) {
+            antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, DELETE']);
+        }
+        if (!isset($buecher[$id])) {
+            antworte(404, ['fehler' => "Buch $id gibt es nicht"]);
+        }
+        if ($methode === 'GET') {
+            antworte(200, $buecher[$id]);
+        }
+        antworte(204);
+    }
+
+    antworte(404, ['fehler' => 'Unbekannter Pfad']);
+    PHP
+    php -S 127.0.0.1:8080 router.php > server.log 2>&1 &
+    sleep 1
+    curl -i http://127.0.0.1:8080/buecher
+    curl -i --json '{"titel":"Momo"}' http://127.0.0.1:8080/buecher
+    curl -i -X DELETE http://127.0.0.1:8080/buecher/1
+    curl -i -X PUT http://127.0.0.1:8080/buecher
+    kill %1
+    ```

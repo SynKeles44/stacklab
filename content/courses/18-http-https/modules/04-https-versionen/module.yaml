@@ -1,0 +1,75 @@
+title: HTTPS und HTTP-Versionen
+description: Wie Zertifikate, die Vertrauenskette und der TLS-Handshake HTTPS absichern, wie du HTTPS im Betrieb dicht machst und was HTTP/2 und HTTP/3 anders transportieren.
+exercise:
+  id: modul-uebung-eigenes-https
+  type: terminal
+  title: Echtes HTTPS mit eigener Zertifizierungsstelle
+  description: |
+    Du spielst einmal komplett durch, was Let's Encrypt und dein Browser im Großen tun: Du gründest eine
+    eigene kleine Zertifizierungsstelle, stellst ein Server-Zertifikat für `localhost` aus, startest einen
+    HTTPS-Server und lässt curl die Kette prüfen.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** (es legt nur eine Notiz an). Arbeite im Ordner `eigenes-https`.
+
+    1. Erzeuge die CA – Schlüssel `ca.key` und selbst signiertes Zertifikat `ca.pem` mit dem CN `Stacklab Lern-CA`:
+       `openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -out ca.pem -days 30 -subj "/CN=Stacklab Lern-CA"`
+    2. Erzeuge für den Server einen Schlüssel `server.key` und eine Zertifikatsanfrage `server.csr` mit dem CN `localhost`.
+    3. Lass die CA das Zertifikat `server.pem` ausstellen – mit dem Subject Alternative Name `DNS:localhost`
+       (Tipp: `printf 'subjectAltName=DNS:localhost\n' > san.ext` und `-extfile san.ext`).
+    4. Starte einen HTTPS-Server im Hintergrund:
+       `openssl s_server -key server.key -cert server.pem -accept 8443 -www > s_server.log 2>&1 &`
+    5. Rufe ihn mit curl auf, vertraue dabei **nur** deiner CA, und speichere das Protokoll:
+       `curl -v --cacert ca.pem -o /dev/null https://localhost:8443/ 2> tls-verlauf.txt`
+    6. Vergleiche: Was sagt curl ohne `--cacert`? Beende danach den Server mit `kill %1`.
+  workdir: eigenes-https
+  setup: |
+    printf 'Hier entstehen ca.pem, server.key und server.pem.\n' > NOTIZ.txt
+  checks:
+    - type: command
+      run: openssl verify -CAfile ca.pem server.pem 2>&1
+      stdout_equals: "server.pem: OK"
+      message: server.pem lässt sich nicht mit ca.pem prüfen. Stelle server.pem mit `openssl x509 -req … -CA ca.pem -CAkey ca.key` aus.
+    - type: command
+      run: openssl x509 -in server.pem -noout -ext subjectAltName 2>/dev/null | grep -o 'DNS:localhost' | head -n 1
+      stdout_equals: "DNS:localhost"
+      message: server.pem hat keinen Subject Alternative Name DNS:localhost. Gib ihn mit -extfile beim Ausstellen an.
+    - type: command
+      run: |
+        S=$(openssl x509 -in server.pem -noout -subject -nameopt RFC2253 2>/dev/null | sed 's/^subject=//')
+        I=$(openssl x509 -in server.pem -noout -issuer -nameopt RFC2253 2>/dev/null | sed 's/^issuer=//')
+        echo "$I"; [ "$S" != "$I" ] && echo verschieden
+      stdout_matches: "CN=Stacklab Lern-CA\\nverschieden$"
+      message: server.pem soll von deiner CA „Stacklab Lern-CA“ ausgestellt sein – nicht selbst signiert.
+    - type: command
+      run: |
+        openssl s_server -key server.key -cert server.pem -accept 18443 -www >/dev/null 2>&1 & P=$!; sleep 1
+        curl -s -o /dev/null -w '%{http_code}' --cacert ca.pem https://localhost:18443/
+        kill $P
+      stdout_equals: "200"
+      message: Mit server.key und server.pem kommt keine geprüfte HTTPS-Verbindung zustande. Passen Schlüssel und Zertifikat zusammen?
+    - type: file_contains
+      path: tls-verlauf.txt
+      pattern: "SSL certificate verify ok"
+      message: In tls-verlauf.txt fehlt „SSL certificate verify ok“. Nutze `curl -v --cacert ca.pem … 2> tls-verlauf.txt`, während der Server läuft.
+    - type: file_contains
+      path: tls-verlauf.txt
+      pattern: "TLSv1\\.3"
+      message: In tls-verlauf.txt fehlen die Zeilen zum TLS-1.3-Handshake. Hast du -v benutzt?
+  hints:
+    - "Server-Schlüssel und Anfrage: `openssl req -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj \"/CN=localhost\"`"
+    - "Ausstellen: `openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out server.pem -days 30 -extfile san.ext`"
+    - "Ohne `--cacert` bricht curl mit Exit-Code 60 ab – die Lern-CA steht ja in keinem Vertrauensspeicher."
+  solution: |
+    ```bash
+    cd eigenes-https
+    openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -out ca.pem -days 30 -subj "/CN=Stacklab Lern-CA"
+    openssl req -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj "/CN=localhost"
+    printf 'subjectAltName=DNS:localhost\n' > san.ext
+    openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out server.pem -days 30 -extfile san.ext
+    openssl verify -CAfile ca.pem server.pem
+    openssl s_server -key server.key -cert server.pem -accept 8443 -www > s_server.log 2>&1 &
+    sleep 1
+    curl -v --cacert ca.pem -o /dev/null https://localhost:8443/ 2> tls-verlauf.txt
+    curl https://localhost:8443/ ; echo "Exit-Code: $?"
+    kill %1
+    ```

@@ -1,0 +1,354 @@
+title: Abschlussprüfung HTTP & HTTPS
+description: >
+  Teste dein Wissen über HTTP-Nachrichten, Methoden, Statuscodes, Header, Caching, Cookies, HTTPS und die
+  HTTP-Versionen. Die Praxisaufgaben löst du im Übungs-Terminal bzw. im Code-Editor. Zum Bestehen brauchst
+  du 70 Prozent.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  - module: nachrichten
+    type: single
+    question: Was trennt in einer HTTP/1.1-Nachricht die Header vom Body?
+    options: [Ein Semikolon, Eine leere Zeile, Der Header Content-Length, Ein Doppelpunkt]
+    answer: 1
+    explanation: Nach dem letzten Header folgt eine Leerzeile (nur CRLF), danach beginnt der Body.
+  - module: nachrichten
+    type: find-bug
+    question: Ein Server lehnt diese HTTP/1.1-Anfrage mit 400 ab. Welche Zeile ist falsch?
+    language: http
+    code: |
+      GET /produkte HTTP/1.1
+      Hots: shop.example.com
+      Accept: application/json
+    bug_line: 2
+    explanation: "Der Header heißt `Host`. Ein vertippter Name zählt als unbekannter Header – der Pflicht-Header Host fehlt damit."
+  - module: nachrichten
+    type: match
+    question: Ordne jeder curl-Option ihre Wirkung zu.
+    pairs:
+      - { left: "-I", right: "HEAD senden, nur Header anzeigen" }
+      - { left: "-v", right: "Gesendete und empfangene Zeilen zeigen" }
+      - { left: "--json", right: "JSON-Body mit passenden Headern senden" }
+      - { left: "-b jar.txt", right: "Gespeicherte Cookies mitschicken" }
+    explanation: Diese Optionen brauchst du bei fast jeder Fehlersuche.
+  - module: nachrichten
+    type: multiple
+    question: Welche Aussagen über HTTP stimmen?
+    options:
+      - HTTP ist zustandslos – jede Anfrage muss alles Nötige mitbringen.
+      - Der Server kann jederzeit von sich aus eine HTTP-Antwort schicken.
+      - HTTPS ist HTTP in einem TLS-Tunnel.
+      - Header-Namen sind unabhängig von Groß- und Kleinschreibung.
+    answers: [0, 2, 3]
+    explanation: HTTP folgt strikt dem Muster Anfrage → Antwort; der Client beginnt immer.
+  - module: methoden-status
+    type: single
+    question: Welche Methode ist idempotent, aber nicht sicher?
+    options: [GET, POST, DELETE, OPTIONS]
+    answer: 2
+    explanation: DELETE ändert etwas (nicht sicher), aber mehrfaches Löschen ergibt denselben Zustand (idempotent).
+  - module: methoden-status
+    type: match
+    question: Ordne jeder Situation den passenden Statuscode zu.
+    pairs:
+      - { left: "Nicht angemeldet", right: "401" }
+      - { left: "Angemeldet, aber keine Berechtigung", right: "403" }
+      - { left: "Methode hier nicht erlaubt", right: "405" }
+      - { left: "Pflichtfeld leer", right: "422" }
+      - { left: "Zu viele Anfragen", right: "429" }
+    explanation: Der Unterschied zwischen 401 und 403 ist Wer bist du? gegen Du darfst das nicht.
+  - module: methoden-status
+    type: cloze
+    text: "Ein erfolgreiches POST, das etwas anlegt, beantwortet der Server mit ___ und nennt die neue Adresse im Header ___."
+    blanks:
+      - ["201", "201 Created"]
+      - [Location]
+    explanation: "Beispiel: `201 Created` mit `Location: /notizen/7`."
+  - module: methoden-status
+    type: single
+    question: Eine API-Route zieht dauerhaft um. POST-Anfragen sollen dabei POST bleiben. Welcher Code passt?
+    options: ["301", "302", "303", "308"]
+    answer: 3
+    explanation: 308 ist dauerhaft und behält Methode und Body. Bei 301 darf aus POST ein GET werden.
+  - module: methoden-status
+    type: multiple
+    question: Welche Statuscodes meldet typischerweise ein Reverse Proxy, wenn der App-Server Probleme hat?
+    options: ["502", "504", "404", "422"]
+    answers: [0, 1]
+    explanation: 502 = keine gültige Antwort vom App-Server, 504 = er antwortet zu langsam.
+  - module: header-caching-cookies
+    type: single
+    question: "Was bedeutet `Cache-Control: no-cache`?"
+    options:
+      - Die Antwort darf nirgends gespeichert werden.
+      - Die Antwort darf gespeichert werden, muss aber vor jeder Nutzung beim Server bestätigt werden.
+      - Die Antwort ist eine Stunde frisch.
+      - Nur geteilte Caches dürfen speichern.
+    answer: 1
+    explanation: Gar nicht speichern heißt no-store. no-cache heißt immer nachfragen.
+  - module: header-caching-cookies
+    type: cloze
+    text: "Schickt der Browser `If-None-Match` mit dem aktuellen ETag, antwortet der Server mit ___ – und zwar ohne ___."
+    blanks:
+      - ["304", "304 Not Modified"]
+      - [Body, Inhalt, Nachrichtenrumpf]
+    explanation: 304 spart die erneute Übertragung des Inhalts.
+  - module: header-caching-cookies
+    type: multiple
+    question: Welche Attribute gehören an ein Session-Cookie in Produktion?
+    options: [HttpOnly, Secure, "SameSite=Lax", "Max-Age=315360000", "Domain=.com"]
+    answers: [0, 1, 2]
+    explanation: HttpOnly gegen XSS-Diebstahl, Secure gegen Mitlesen, SameSite gegen CSRF. Zehn Jahre Lebensdauer und eine viel zu breite Domain sind gefährlich.
+  - module: header-caching-cookies
+    type: single
+    question: Mit curl funktioniert der API-Aufruf, im Browser-Frontend auf einer anderen Domain kommt nichts an. Was ist die wahrscheinlichste Ursache?
+    options:
+      - Der Server spricht kein HTTP/2.
+      - Fehlende oder falsche CORS-Header – der Browser blockiert die Antwort.
+      - curl ignoriert Statuscodes.
+      - Der Browser unterstützt kein JSON.
+    answer: 1
+    explanation: curl prüft keine CORS-Header, Browser schon. Access-Control-Allow-Origin muss den Origin des Frontends erlauben.
+  - module: header-caching-cookies
+    type: match
+    question: "Welcher Header gehört zu welcher Aufgabe?"
+    pairs:
+      - { left: "Content-Type", right: "Format des eigenen Bodys" }
+      - { left: "Accept", right: "Gewünschtes Format der Antwort" }
+      - { left: "Authorization", right: "Anmeldedaten des Clients" }
+      - { left: "Set-Cookie", right: "Cookie im Browser anlegen" }
+    explanation: Content-Type und Accept werden oft verwechselt – der eine beschreibt, der andere wünscht.
+  - module: https-versionen
+    type: single
+    question: Was schickt der Server im TLS-Handshake mit, damit der Client die Kette prüfen kann?
+    options:
+      - Nur das Root-Zertifikat
+      - Sein Server-Zertifikat und die Zwischenzertifikate
+      - Seinen privaten Schlüssel
+      - Nichts, der Client lädt alles selbst herunter
+    answer: 1
+    explanation: Die Root hat der Client schon im Vertrauensspeicher. Der private Schlüssel verlässt den Server nie.
+  - module: https-versionen
+    type: multiple
+    question: Welche Maßnahmen sorgen dafür, dass eine Website zuverlässig nur per HTTPS erreichbar ist?
+    options:
+      - Umleitung von Port 80 auf https:// mit 301 oder 308
+      - Der Header Strict-Transport-Security
+      - Automatische Erneuerung der Zertifikate
+      - Ein Cookie mit dem Namen https
+    answers: [0, 1, 2]
+    explanation: Umleitung holt Besucher ab, HSTS verhindert weitere Klartext-Anfragen, und ein abgelaufenes Zertifikat würde HTTPS unbrauchbar machen.
+  - module: https-versionen
+    type: match
+    question: Ordne jedes Merkmal der passenden HTTP-Version zu.
+    pairs:
+      - { left: "Text-Nachrichten, eine Anfrage pro Verbindung gleichzeitig", right: "HTTP/1.1" }
+      - { left: "Multiplexing über eine TCP-Verbindung", right: "HTTP/2" }
+      - { left: "QUIC über UDP", right: "HTTP/3" }
+    explanation: Die Bedeutung von Methoden, Headern und Statuscodes ist in allen drei gleich.
+  - module: https-versionen
+    type: cloze
+    text: "Den Hostnamen, für den ein Zertifikat gilt, prüft der Browser im Feld ___. Den gewünschten Hostnamen nennt der Client im ClientHello per ___."
+    blanks:
+      - [Subject Alternative Name, SAN, subjectAltName]
+      - [SNI, Server Name Indication]
+    explanation: SAN steht im Zertifikat, SNI im ClientHello – beide sorgen dafür, dass Name und Zertifikat zusammenpassen.
+tasks:
+  - module: methoden-status
+    id: pruefung-artikel-api
+    type: terminal
+    title: Eine Artikel-API mit korrekten Antworten
+    description: |
+      Im Ordner `pruefung-artikel` liegt ein leeres Gerüst `router.php`. Klicke zuerst auf
+      **Aufgabe vorbereiten**. Ergänze es so, dass es diese Anfragen korrekt beantwortet:
+
+      | Anfrage | Antwort |
+      |---|---|
+      | `GET /artikel` | `200`, `Content-Type: application/json`, Body: eine JSON-Liste (darf leer sein) |
+      | `POST /artikel` mit JSON `{"titel": "…"}` | `201`, Header `Location: /artikel/42` |
+      | `POST /artikel` ohne `titel` | `422` |
+      | jede andere Methode auf `/artikel` | `405` mit `Allow: GET, POST` |
+      | `/alt-artikel` (jede Methode) | `308` mit `Location: /artikel` |
+      | alles andere | `404` |
+    workdir: pruefung-artikel
+    setup: |
+      cat > router.php <<'PHP'
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+      // TODO
+
+      http_response_code(404);
+      PHP
+    checks:
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18801 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18801
+          c() { curl -s -o /dev/null -w '%{http_code} ' "$@"; }
+          c $U/artikel; c --json '{"titel":"Neu"}' $U/artikel; c --json '{"text":"ohne"}' $U/artikel; c -X DELETE $U/artikel; c $U/alt-artikel; c $U/sonstwas
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^200 201 422 405 308 404$"
+        message: "Die Statuscodes stimmen noch nicht. Erwartet: GET 200, POST 201, POST ohne titel 422, DELETE 405, /alt-artikel 308, Rest 404."
+      - type: command
+        run: |
+          T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+          php -S 127.0.0.1:18802 router.php >/dev/null 2>&1 & P=$!; sleep 1
+          U=http://127.0.0.1:18802
+          curl -s $U/artikel | jq -r 'type'
+          curl -s -o /dev/null -w '%{content_type}\n' $U/artikel | cut -d';' -f1
+          curl -s -o /dev/null -D - --json '{"titel":"Neu"}' $U/artikel | tr -d '\r' | grep -i '^location:'
+          curl -s -o /dev/null -D - -X DELETE $U/artikel | tr -d '\r' | grep -i '^allow:'
+          curl -s -o /dev/null -D - $U/alt-artikel | tr -d '\r' | grep -i '^location:'
+          kill $P; cd ..; rm -rf "$T"
+        stdout_matches: "^array\\napplication/json\\n[Ll]ocation: /artikel/42\\n[Aa]llow: GET, ?POST\\n[Ll]ocation: /artikel$"
+        message: "Die Header stimmen noch nicht: GET /artikel braucht eine JSON-Liste mit Content-Type application/json, POST Location /artikel/42, 405 Allow: GET, POST, /alt-artikel Location /artikel."
+    hints:
+      - "Prüfe zuerst den Pfad, dann die Methode – so kannst du für unbekannte Methoden 405 senden."
+      - "`json_decode(file_get_contents('php://input'), true)` liefert den Body als Array."
+    solution: |
+      ```bash
+      cd pruefung-artikel
+      cat > router.php <<'PHP'
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+      if ($pfad === '/alt-artikel') {
+          http_response_code(308);
+          header('Location: /artikel');
+          exit;
+      }
+
+      if ($pfad === '/artikel') {
+          if ($methode === 'GET') {
+              header('Content-Type: application/json');
+              echo json_encode([]);
+              exit;
+          }
+          if ($methode === 'POST') {
+              $daten = json_decode(file_get_contents('php://input'), true);
+              if (!is_array($daten) || trim((string) ($daten['titel'] ?? '')) === '') {
+                  http_response_code(422);
+                  exit;
+              }
+              http_response_code(201);
+              header('Location: /artikel/42');
+              exit;
+          }
+          http_response_code(405);
+          header('Allow: GET, POST');
+          exit;
+      }
+
+      http_response_code(404);
+      PHP
+      ```
+  - module: header-caching-cookies
+    id: pruefung-cache-entscheidung
+    type: code
+    language: php
+    title: Aus dem Cache oder nachfragen?
+    description: |
+      Schreibe `cacheEntscheidung(string $cacheControl, int $alter): string`. `$cacheControl` ist der Wert
+      des Headers `Cache-Control` (kann leer sein), `$alter` das Alter der gespeicherten Kopie in Sekunden.
+
+      Gib zurück:
+      - `'nicht-speichern'`, wenn `no-store` vorkommt,
+      - `'nachfragen'`, wenn `no-cache` vorkommt, kein `max-age` angegeben ist oder `$alter >= max-age`,
+      - sonst `'aus-dem-cache'`.
+
+      Anweisungen sind durch Kommas getrennt, Leerzeichen und Groß-/Kleinschreibung spielen keine Rolle.
+    starter: |
+      <?php
+      function cacheEntscheidung(string $cacheControl, int $alter): string
+      {
+          return 'nachfragen';
+      }
+    tests:
+      - name: Frische Kopie
+        code: assert_same('aus-dem-cache', cacheEntscheidung('public, max-age=600', 300));
+      - name: Abgelaufene Kopie
+        code: assert_same('nachfragen', cacheEntscheidung('max-age=600', 600));
+      - name: no-store hat Vorrang
+        code: assert_same('nicht-speichern', cacheEntscheidung('no-store, max-age=600', 0));
+      - name: no-cache erzwingt Nachfrage
+        code: assert_same('nachfragen', cacheEntscheidung('no-cache', 1));
+      - name: Leerer Header
+        code: assert_same('nachfragen', cacheEntscheidung('', 0));
+      - name: Groß- und Kleinschreibung
+        code: assert_same('aus-dem-cache', cacheEntscheidung('Private, MAX-AGE=60', 59));
+    hints:
+      - "Zerlege mit `array_map('trim', explode(',', strtolower($cacheControl)))`."
+      - "`max-age` erkennst du mit `str_starts_with($teil, 'max-age=')` und liest die Zahl mit `(int) substr($teil, 8)`."
+    solution: |
+      <?php
+      function cacheEntscheidung(string $cacheControl, int $alter): string
+      {
+          $teile = array_map('trim', explode(',', strtolower($cacheControl)));
+          if (in_array('no-store', $teile, true)) {
+              return 'nicht-speichern';
+          }
+          $maxAge = null;
+          foreach ($teile as $teil) {
+              if (str_starts_with($teil, 'max-age=')) {
+                  $maxAge = (int) substr($teil, 8);
+              }
+          }
+          if (in_array('no-cache', $teile, true) || $maxAge === null || $alter >= $maxAge) {
+              return 'nachfragen';
+          }
+          return 'aus-dem-cache';
+      }
+  - module: nachrichten
+    id: pruefung-curl
+    type: terminal
+    title: Anfragen gezielt bauen
+    description: |
+      Im Ordner `pruefung-curl` liegt ein Echo-Server (`router.php`), der jede Anfrage in `anfragen.log`
+      protokolliert. Klicke zuerst auf **Aufgabe vorbereiten** und starte ihn mit
+      `php -S 127.0.0.1:8080 router.php > server.log 2>&1 &`.
+
+      Schicke mit curl:
+
+      1. ein **PUT** an `/profil` mit dem JSON-Body `{"name":"Ada"}` und dem Header `Content-Type: application/json`,
+      2. ein **GET** an `/start` mit dem Cookie `sprache=de` und dem Header `Accept: text/html`.
+
+      Beende den Server danach mit `kill %1`.
+    workdir: pruefung-curl
+    setup: |
+      cat > router.php <<'PHP'
+      <?php
+      $eintrag = [
+          'methode' => $_SERVER['REQUEST_METHOD'],
+          'pfad' => $_SERVER['REQUEST_URI'],
+          'header' => array_change_key_case(getallheaders(), CASE_LOWER),
+          'body' => file_get_contents('php://input'),
+      ];
+      file_put_contents(__DIR__ . '/anfragen.log', json_encode($eintrag, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
+      header('Content-Type: application/json');
+      echo json_encode($eintrag, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+      PHP
+    checks:
+      - type: command
+        run: jq -r 'select(.methode == "PUT" and .pfad == "/profil" and (.header["content-type"] // "" | startswith("application/json"))) | .body | fromjson | .name' anfragen.log | head -n 1
+        stdout_equals: Ada
+        message: Im Log fehlt ein PUT an /profil mit Content-Type application/json und dem Body {"name":"Ada"}.
+      - type: command
+        run: jq -r 'select(.methode == "GET" and .pfad == "/start") | "\(.header.cookie // "") | \(.header.accept // "")"' anfragen.log | head -n 1
+        stdout_matches: "sprache=de \\| text/html"
+        message: Im Log fehlt ein GET an /start mit dem Cookie sprache=de und dem Header Accept text/html.
+    hints:
+      - "`curl -X PUT --json '{\"name\":\"Ada\"}' http://127.0.0.1:8080/profil` – `-X PUT` überschreibt das POST von `--json`."
+      - "Ein Cookie schickst du direkt mit `-b 'sprache=de'`, einen Header mit `-H 'Accept: text/html'`."
+    solution: |
+      ```bash
+      cd pruefung-curl
+      php -S 127.0.0.1:8080 router.php > server.log 2>&1 &
+      sleep 1
+      curl -X PUT --json '{"name":"Ada"}' http://127.0.0.1:8080/profil
+      curl -b 'sprache=de' -H 'Accept: text/html' http://127.0.0.1:8080/start
+      kill %1
+      ```

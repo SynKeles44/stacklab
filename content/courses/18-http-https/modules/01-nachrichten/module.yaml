@@ -1,0 +1,85 @@
+title: HTTP-Nachrichten verstehen
+description: Was HTTP ist, wie Anfrage und Antwort aufgebaut sind und wie du sie mit curl und dem Netzwerk-Tab sichtbar machst.
+exercise:
+  id: modul-uebung-erster-router
+  type: terminal
+  title: Dein erster eigener HTTP-Server
+  description: |
+    Bisher hast du fremde Server befragt – jetzt antwortest du selbst. Im Ordner `erster-router` schreibst
+    du ein Router-Skript für `php -S`, das zwei Fälle korrekt beantwortet.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** (es legt nur eine kurze Notiz an).
+
+    1. Lege `router.php` an. Für `GET /hallo` soll es antworten mit:
+       - Status `200`
+       - Header `Content-Type: text/plain; charset=UTF-8`
+       - Header `X-Kurs: http-https`
+       - Body `Hallo HTTP!`
+    2. Für **jeden anderen** Pfad antwortet es mit Status `404` und dem Body `Nicht gefunden`.
+    3. Starte den Server auf Port 8080, hole `/hallo` mit `curl -i` und speichere die Ausgabe in `hallo.txt`.
+    4. Prüfe mit `curl -i http://127.0.0.1:8080/gibts-nicht`, dass 404 kommt, und beende den Server.
+
+    Den Pfad ohne Query-String bekommst du mit `parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)`, den
+    Status setzt du mit `http_response_code(404)`, Header mit `header('Name: Wert')`.
+  workdir: erster-router
+  setup: |
+    printf 'Starte den Server mit: php -S 127.0.0.1:8080 router.php\n' > NOTIZ.txt
+  checks:
+    - type: file_exists
+      path: router.php
+      message: Es gibt noch keine router.php im Ordner erster-router.
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18101 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        H=$(curl -s -o /dev/null -D - http://127.0.0.1:18101/hallo | tr -d '\r'); echo "$H" | grep '^HTTP/'; echo "$H" | grep -i '^content-type:'; echo "$H" | grep -i '^x-kurs:'
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^HTTP/1\\.1 200 OK\\n[Cc]ontent-[Tt]ype: text/plain; ?charset=[Uu][Tt][Ff]-8\\n[Xx]-[Kk]urs: http-https$"
+      message: "GET /hallo liefert nicht Status 200 mit den Headern Content-Type: text/plain; charset=UTF-8 und X-Kurs: http-https."
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18102 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        curl -s http://127.0.0.1:18102/hallo
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^Hallo HTTP!$"
+      message: Der Body von GET /hallo soll genau „Hallo HTTP!“ sein.
+    - type: command
+      run: |
+        T=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp router.php "$T"/; cd "$T"
+        php -S 127.0.0.1:18103 router.php >/dev/null 2>&1 & P=$!; sleep 1
+        curl -s -w ' %{http_code}' http://127.0.0.1:18103/irgendwas
+        kill $P; cd ..; rm -rf "$T"
+      stdout_matches: "^Nicht gefunden\\s*404$"
+      message: Ein unbekannter Pfad wie /irgendwas soll Status 404 mit dem Body „Nicht gefunden“ liefern.
+    - type: file_contains
+      path: hallo.txt
+      pattern: "^[Xx]-[Kk]urs: http-https"
+      message: hallo.txt fehlt oder enthält die Header nicht. Speichere die Ausgabe von `curl -i http://127.0.0.1:8080/hallo` darin.
+  hints:
+    - "Beginne mit `$pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);` und einem `if ($pfad === '/hallo') { … }`."
+    - "Header müssen **vor** dem ersten `echo` gesetzt werden – danach ist die Header-Phase vorbei."
+    - "Im else-Zweig: `http_response_code(404); echo 'Nicht gefunden';`"
+  solution: |
+    ```bash
+    cd erster-router
+    cat > router.php <<'PHP'
+    <?php
+    $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+    if ($_SERVER['REQUEST_METHOD'] === 'GET' && $pfad === '/hallo') {
+        header('Content-Type: text/plain; charset=UTF-8');
+        header('X-Kurs: http-https');
+        echo 'Hallo HTTP!';
+    } else {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'Nicht gefunden';
+    }
+    PHP
+    php -S 127.0.0.1:8080 router.php > server.log 2>&1 &
+    sleep 1
+    curl -i http://127.0.0.1:8080/hallo > hallo.txt
+    curl -i http://127.0.0.1:8080/gibts-nicht
+    kill %1
+    ```
