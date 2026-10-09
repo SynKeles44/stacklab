@@ -65,6 +65,12 @@ final class AuthController extends Controller
     /** @return array<string, mixed> */
     private function userPayload(User $user): array
     {
-        return ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'created_at' => $user->created_at?->toIso8601String()];
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'ui_variant' => $user->ui_variant ?? 'standard',
+            'created_at' => $user->created_at?->toIso8601String(),
+        ];
     }
 }

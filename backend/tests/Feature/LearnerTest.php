@@ -131,3 +131,12 @@ it('prevents reading other users exam attempts', function (): void {
     $this->getJson("/api/exam-attempts/{$attemptId}")->assertForbidden();
     $this->postJson("/api/exam-attempts/{$attemptId}/submit", ['answers' => [], 'tasks' => []])->assertForbidden();
 });
+
+it('stores the preferred ui variant', function (): void {
+    Sanctum::actingAs(User::factory()->create());
+
+    $this->getJson('/api/me')->assertJsonPath('user.ui_variant', 'standard');
+    $this->patchJson('/api/me', ['ui_variant' => 'apple'])->assertOk()->assertJsonPath('user.ui_variant', 'apple');
+    $this->patchJson('/api/me', ['ui_variant' => 'windows'])->assertUnprocessable();
+    $this->getJson('/api/me')->assertJsonPath('user.ui_variant', 'apple');
+});
