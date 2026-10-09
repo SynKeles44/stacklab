@@ -1,0 +1,110 @@
+title: Logging und typische Fehlerklassen
+description: Logdateien lesen und selbst gute Logs schreiben – und die vier Fehlerklassen, die dir im Alltag am häufigsten begegnen.
+exercise:
+  id: modul-uebung-bericht
+  type: terminal
+  title: Ein Bericht, der immer 0 meldet
+  description: |
+    Im Ordner `bericht-async` zählt `bericht.js` die Zeilen aller Logdateien in `logs/` und meldet die Summe.
+    Dabei hilft der kleine Logger in `logger.js`. Gewünscht ist:
+
+    - Auf der **Standardausgabe** steht genau eine Zeile: `Zeilen gesamt: 12`.
+    - Für jede Datei schreibt der Logger mit dem Level `info` eine Zeile wie `[info] logs/montag.log: 3 Zeilen`
+      auf die **Standardfehlerausgabe** (stderr).
+    - Die Umgebungsvariable `LOG_LEVEL` ist die Schwelle: Meldungen mit diesem Level **und wichtigere** werden
+      geschrieben. Ohne `LOG_LEVEL` gilt `info`. Bei `LOG_LEVEL=warn` erscheinen also keine info-Zeilen.
+
+    Im Moment meldet das Skript `Zeilen gesamt: 0`, und die info-Zeilen fehlen ganz. Es gibt drei Fehler –
+    einen aus der Klasse „Race Condition“, einen Off-by-one-Fehler und einen beim Ausgabekanal.
+
+    1. Führe `node bericht.js` und `LOG_LEVEL=debug node bericht.js` aus und vergleiche mit der Anforderung.
+    2. Prüfe getrennt, was auf stdout und was auf stderr landet: `node bericht.js 2>/dev/null`.
+    3. Behebe die drei Fehler in `bericht.js` und `logger.js`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Dateien angelegt werden.
+  workdir: bericht-async
+  setup: |
+    mkdir -p logs
+    printf 'a\nb\nc\n' > logs/montag.log
+    printf 'a\nb\nc\nd\n' > logs/dienstag.log
+    printf 'a\nb\nc\nd\ne\n' > logs/mittwoch.log
+    cat > logger.js <<'EOF'
+    const LEVELS = ['debug', 'info', 'warn', 'error'];
+
+    function log(level, nachricht) {
+      const minimum = process.env.LOG_LEVEL ?? 'info';
+      if (LEVELS.indexOf(level) > LEVELS.indexOf(minimum)) {
+        console.log(`[${level}] ${nachricht}`);
+      }
+    }
+
+    module.exports = { log };
+    EOF
+    cat > bericht.js <<'EOF'
+    const fs = require('node:fs/promises');
+    const { log } = require('./logger');
+
+    async function zaehleZeilen(datei) {
+      const inhalt = await fs.readFile(datei, 'utf8');
+      return inhalt.trim().split('\n').length;
+    }
+
+    async function main() {
+      const dateien = ['logs/montag.log', 'logs/dienstag.log', 'logs/mittwoch.log'];
+      let gesamt = 0;
+
+      dateien.forEach(async (datei) => {
+        const anzahl = await zaehleZeilen(datei);
+        log('info', `${datei}: ${anzahl} Zeilen`);
+        gesamt += anzahl;
+      });
+
+      console.log(`Zeilen gesamt: ${gesamt}`);
+    }
+
+    main();
+    EOF
+  checks:
+    - type: command
+      run: node bericht.js 2>/dev/null
+      stdout_equals: "Zeilen gesamt: 12"
+      message: "Auf stdout soll genau `Zeilen gesamt: 12` stehen. Wartet main() wirklich auf alle Dateien? Und landen Log-Zeilen noch auf stdout?"
+    - type: command
+      run: LOG_LEVEL=info node bericht.js 2>&1 >/dev/null | grep -c '^\[info\]' || true
+      stdout_equals: "3"
+      message: Mit LOG_LEVEL=info sollen drei `[info]`-Zeilen auf stderr erscheinen. Prüfe den Vergleich im Logger und nutze console.error.
+    - type: command
+      run: node bericht.js 2>&1 >/dev/null | grep -c '^\[info\]' || true
+      stdout_equals: "3"
+      message: Ohne LOG_LEVEL soll info als Schwelle gelten – dann erscheinen die drei info-Zeilen auf stderr.
+    - type: command
+      run: LOG_LEVEL=warn node bericht.js 2>&1 | grep -c '^\[info\]' || true
+      stdout_equals: "0"
+      message: Mit LOG_LEVEL=warn dürfen keine info-Zeilen erscheinen.
+  hints:
+    - "`forEach` wartet nicht auf async-Callbacks. Ersetze die Schleife durch `for (const datei of dateien) { … }` – `await` funktioniert darin, weil main async ist."
+    - "Im Logger: Ein Level soll geschrieben werden, wenn es **gleich oder wichtiger** ist als die Schwelle – also `>=` statt `>`."
+    - "Log-Zeilen gehören auf stderr: `console.error` statt `console.log` im Logger."
+  solution: |
+    `bericht.js` – Schleife ersetzen:
+
+    ```js
+    for (const datei of dateien) {
+      const anzahl = await zaehleZeilen(datei);
+      log('info', `${datei}: ${anzahl} Zeilen`);
+      gesamt += anzahl;
+    }
+    ```
+
+    `logger.js` – Vergleich und Ausgabekanal:
+
+    ```js
+    if (LEVELS.indexOf(level) >= LEVELS.indexOf(minimum)) {
+      console.error(`[${level}] ${nachricht}`);
+    }
+    ```
+
+    ```bash
+    node bericht.js 2>/dev/null                 # Zeilen gesamt: 12
+    LOG_LEVEL=warn node bericht.js              # nur noch die Summe
+    ```

@@ -1,0 +1,138 @@
+title: Debugging in Node.js und PHP
+description: Gezielte Ausgaben mit console und var_dump, PHP-Fehler sichtbar machen und Schritt-für-Schritt-Debugging mit dem Node-Inspector und Xdebug.
+exercise:
+  id: modul-uebung-bestellung
+  type: terminal
+  title: Drei Fehler in der Bestelllogik
+  description: |
+    Im Ordner `php-bestellung` liegen `bestellung.php` mit drei Funktionen und `tests.php`, das sie prüft.
+    `tests.php` wandelt jede PHP-Warnung in eine Exception um – so wie es viele Test-Frameworks tun. Im Moment
+    schlagen vier Prüfungen fehl.
+
+    1. Führe `php tests.php` aus und lies, welche Prüfungen fehlschlagen und mit welcher Meldung.
+    2. Untersuche jede Funktion mit `var_dump`, mit `php -d xdebug.mode=develop tests.php` oder – wenn du
+       möchtest – mit Step-Debugging in deiner IDE.
+    3. Behebe die drei Fehler in `bestellung.php`. **`tests.php` darfst du nicht ändern.**
+    4. Entferne deine Debug-Ausgaben wieder.
+
+    Am Ende meldet `php tests.php` die Zeile `Alle Tests bestanden`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Dateien angelegt werden.
+  workdir: php-bestellung
+  setup: |
+    cat > bestellung.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    function gesamtpreis(array $positionen): float
+    {
+        $summe = 0.0;
+        for ($i = 1; $i < count($positionen); $i++) {
+            $summe += $positionen[$i]['preis'] * $positionen[$i]['menge'];
+        }
+
+        return round($summe, 2);
+    }
+
+    function rabattProzent(string $code): int
+    {
+        $codes = ['SPAR10' => 10, 'SPAR20' => 20];
+
+        return $codes[$code];
+    }
+
+    function versandkosten(float $warenwert): float
+    {
+        if ($warenwert > 50.0) {
+            return 0.0;
+        }
+
+        return 4.95;
+    }
+    EOF
+    cat > tests.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    set_error_handler(function (int $level, string $message, string $file, int $line): bool {
+        throw new ErrorException($message, 0, $level, $file, $line);
+    });
+
+    require __DIR__ . '/bestellung.php';
+
+    $fehler = 0;
+
+    function pruefe(string $name, mixed $erwartet, callable $aufruf): void
+    {
+        global $fehler;
+        try {
+            $ist = $aufruf();
+        } catch (Throwable $e) {
+            $ist = get_class($e) . ': ' . $e->getMessage();
+        }
+        if ($ist === $erwartet) {
+            echo "OK      {$name}\n";
+            return;
+        }
+        $fehler++;
+        echo "FEHLER  {$name}: erwartet " . var_export($erwartet, true) . ', bekommen ' . var_export($ist, true) . "\n";
+    }
+
+    $korb = [
+        ['name' => 'Tasse', 'preis' => 8.5, 'menge' => 2],
+        ['name' => 'Kanne', 'preis' => 24.0, 'menge' => 1],
+        ['name' => 'Löffel', 'preis' => 1.25, 'menge' => 4],
+    ];
+
+    pruefe('gesamtpreis eines Korbs', 46.0, fn () => gesamtpreis($korb));
+    pruefe('gesamtpreis eines leeren Korbs', 0.0, fn () => gesamtpreis([]));
+    pruefe('rabatt SPAR10', 10, fn () => rabattProzent('SPAR10'));
+    pruefe('rabatt ohne Code', 0, fn () => rabattProzent(''));
+    pruefe('rabatt mit unbekanntem Code', 0, fn () => rabattProzent('GIBTSNICHT'));
+    pruefe('versand unter 50 Euro', 4.95, fn () => versandkosten(49.99));
+    pruefe('versand ab genau 50 Euro frei', 0.0, fn () => versandkosten(50.0));
+
+    if ($fehler > 0) {
+        echo "{$fehler} Test(s) fehlgeschlagen\n";
+        exit(1);
+    }
+
+    echo "Alle Tests bestanden\n";
+    EOF
+    md5sum tests.php > .tests.md5
+  checks:
+    - type: command
+      run: md5sum -c --quiet .tests.md5
+      message: tests.php wurde verändert. Setze die Aufgabe zurück oder stelle die Datei wieder her – repariert wird nur bestellung.php.
+    - type: command
+      run: php tests.php
+      stdout_matches: "Alle Tests bestanden"
+      message: "`php tests.php` meldet noch Fehler. Lies die FEHLER-Zeilen: erwarteter und tatsächlicher Wert zeigen dir die Richtung."
+    - type: command
+      run: "! grep -Eq 'var_dump|print_r|\\bdd\\(|\\bdump\\(' bestellung.php"
+      message: In bestellung.php steckt noch eine Debug-Ausgabe (var_dump, print_r, dump oder dd). Entferne sie.
+  hints:
+    - "Der Korb kostet 17 + 24 + 5 = 46. Herausgekommen ist 29 – welcher Posten fehlt? Schau dir den Startwert der Schleife an."
+    - "`Undefined array key \"\"` heißt: Der Schlüssel existiert nicht im Array. Mit `?? 0` gibst du einen Ersatzwert zurück."
+    - "Genau 50,00 € soll versandkostenfrei sein – der Vergleich braucht `>=` statt `>`."
+  solution: |
+    ```bash
+    cd php-bestellung
+    php tests.php
+    ```
+
+    In `bestellung.php` drei Stellen ändern:
+
+    ```php
+    for ($i = 0; $i < count($positionen); $i++) {   // statt $i = 1
+
+    return $codes[$code] ?? 0;                      // statt $codes[$code]
+
+    if ($warenwert >= 50.0) {                       // statt >
+    ```
+
+    ```bash
+    php tests.php     # Alle Tests bestanden
+    ```

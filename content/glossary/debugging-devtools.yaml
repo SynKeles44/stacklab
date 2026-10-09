@@ -1,0 +1,422 @@
+- slug: reproduktion
+  term: Reproduktion
+  short: Eine Anleitung aus Schritten, Daten und Umgebung, mit der ein Fehler jedes Mal auftritt.
+  explanation: >
+    Einen Fehler zu reproduzieren heißt, ihn gezielt auslösen zu können. Erst dann kannst du nach der Ursache
+    suchen und später prüfen, ob deine Korrektur wirkt. Zur Reproduktion gehören die genauen Schritte, die
+    Eingabedaten, die Umgebung und das erwartete sowie das tatsächliche Ergebnis.
+  example: "„Warenkorb mit genau 50,00 € anlegen, zur Kasse gehen – Versand kostet 4,95 € statt 0 €.“"
+  category: debugging
+  aliases: [Reproduzieren, reproduzieren, Fehler reproduzieren, reproduzierbar]
+  related: [minimales-beispiel, debugging, hypothese]
+  lesson: debugging-devtools/systematisch-vorgehen
+
+- slug: hypothese
+  term: Hypothese
+  short: Eine konkrete, prüfbare Vermutung über die Ursache eines Fehlers.
+  explanation: >
+    Beim Debuggen formulierst du eine Hypothese, bevor du etwas änderst. Eine gute Hypothese nennt eine
+    bestimmte Ursache und sagt ein Ergebnis voraus, das du mit einem kleinen Experiment bestätigen oder
+    widerlegen kannst. Auch eine widerlegte Hypothese bringt dich weiter, weil sie eine Möglichkeit ausschließt.
+  example: "„Die Schleife beginnt bei 1 – mit der Liste [5] müsste die Summe 0 sein.“"
+  category: debugging
+  aliases: [Hypothesen, Vermutung]
+  related: [reproduktion, debugging]
+  lesson: debugging-devtools/systematisch-vorgehen
+
+- slug: minimales-beispiel
+  term: Minimale Reproduktion
+  short: Das kleinstmögliche Programm oder die kleinsten Daten, bei denen ein Fehler noch auftritt.
+  explanation: >
+    Du entfernst schrittweise alles, was für den Fehler nicht nötig ist – Code, Datenzeilen, Abhängigkeiten –,
+    bis nur noch der Kern übrig bleibt. Oft erkennst du die Ursache schon beim Verkleinern. Eine minimale
+    Reproduktion ist außerdem das perfekte Material für einen Test oder eine Frage an andere.
+  example: Eine CSV-Datei mit nur der Kopfzeile und der einen Kundenzeile, die den Import abstürzen lässt.
+  category: debugging
+  aliases: [Minimales Beispiel, minimale Reproduktion, Minimal Reproducible Example, MRE]
+  related: [reproduktion, binaere-suche]
+  lesson: debugging-devtools/systematisch-vorgehen
+
+- slug: automatisierter-test
+  term: Automatisierter Test
+  short: Ein Stück Code, das prüft, ob anderer Code das erwartete Ergebnis liefert.
+  explanation: >
+    Ein automatisierter Test ruft deinen Code mit festen Eingaben auf und vergleicht das Ergebnis mit dem
+    erwarteten Wert. Er läuft per Befehl in Sekunden und beliebig oft. Nach einer Fehlerkorrektur hält ein Test
+    den Fall fest, damit der Fehler nicht unbemerkt zurückkehrt.
+  example: "`node --test` führt alle Dateien wie `summe.test.js` aus und meldet, welche Prüfungen fehlschlagen."
+  category: debugging
+  aliases: [Test, Tests, Unit-Test, automatisierte Tests, automatisierten Test]
+  related: [regression, assertion]
+  lesson: debugging-devtools/systematisch-vorgehen
+
+- slug: assertion
+  term: Assertion
+  short: Eine Prüfung im Code, die meldet, wenn ein Wert nicht dem erwarteten entspricht.
+  explanation: >
+    Assertions sind die Bausteine von Tests: „Erwartet 46, bekommen 29“. Schlägt eine Assertion fehl, bricht der
+    Test ab und zeigt beide Werte. In Node.js liefert das Modul `node:assert` solche Prüfungen, in PHP-Tests
+    heißen sie zum Beispiel `assertSame`.
+  example: "`assert.equal(summe([1, 2]), 3);`"
+  category: debugging
+  aliases: [Assertions, Zusicherung, assert]
+  related: [automatisierter-test]
+  lesson: debugging-devtools/systematisch-vorgehen
+
+- slug: regression
+  term: Regression
+  short: Ein Fehler, der nach einer späteren Änderung wieder auftritt, obwohl er schon behoben war.
+  explanation: >
+    Regressionen entstehen, wenn eine Änderung an einer Stelle unbemerkt etwas an einer anderen kaputt macht –
+    oder eine alte Korrektur rückgängig macht. Gegen Regressionen hilft ein automatisierter Test, der genau den
+    behobenen Fall prüft. Mit `git bisect` findest du den Commit, der eine Regression eingeführt hat.
+  example: Der Versand ab 50 € war repariert, nach einem Refactoring kostet er bei genau 50 € wieder 4,95 €.
+  category: debugging
+  aliases: [Regressionen, Regressionsfehler]
+  related: [automatisierter-test, git-bisect]
+  lesson: debugging-devtools/systematisch-vorgehen
+
+- slug: typeerror
+  term: TypeError
+  short: Ein Fehler, der auftritt, wenn ein Wert nicht den Typ hat, den eine Operation braucht.
+  explanation: >
+    In JavaScript entsteht ein TypeError zum Beispiel, wenn du auf eine Eigenschaft von `undefined` zugreifst
+    oder etwas aufrufst, das keine Funktion ist. In PHP wirft ein TypeError, wenn ein Argument nicht zur
+    Typangabe einer Funktion passt. Die Nachricht nennt meist den betroffenen Wert.
+  example: "`TypeError: Cannot read properties of undefined (reading 'preis')`"
+  category: debugging
+  aliases: [TypeErrors, Typfehler]
+  related: [fehlermeldung, undefined, exception]
+  lesson: debugging-devtools/fehlermeldungen-lesen
+
+- slug: fatal-error
+  term: Fatal error
+  short: Eine PHP-Fehlermeldung, nach der das Skript sofort abbricht.
+  explanation: >
+    Einen Fatal error meldet PHP zum Beispiel bei einer nicht abgefangenen Exception oder beim Aufruf einer
+    unbekannten Funktion. Anders als bei einer Warning läuft danach kein Code mehr. Die Meldung enthält Typ,
+    Nachricht, Datei, Zeile und einen Stack Trace.
+  example: "`PHP Fatal error:  Uncaught DivisionByZeroError: Division by zero in /app/rechner.php:2`"
+  category: debugging
+  aliases: [Fatal Error, fataler Fehler, Fatal errors]
+  related: [exception, stack-trace, error-reporting]
+  lesson: debugging-devtools/fehlermeldungen-lesen
+
+- slug: binaere-suche
+  term: Binäre Suche
+  short: Eine Suchstrategie, die den Suchbereich in jedem Schritt halbiert.
+  explanation: >
+    Du prüfst die Mitte eines Bereichs und behältst nur die Hälfte, in der das Gesuchte liegen muss. So reichen
+    für 1000 Möglichkeiten etwa 10 Schritte. Beim Debuggen halbierst du Code, Daten oder Commits, bis die
+    Fehlerstelle übrig bleibt.
+  example: Eine Importdatei mit 10 000 Zeilen wird so lange halbiert, bis die eine kaputte Zeile gefunden ist.
+  category: debugging
+  aliases: [binären Suche, Binärsuche, Halbieren, binary search]
+  related: [git-bisect, minimales-beispiel]
+  lesson: debugging-devtools/fehler-eingrenzen
+
+- slug: git-bisect
+  term: git bisect
+  short: Ein Git-Befehl, der per binärer Suche den Commit findet, der einen Fehler eingeführt hat.
+  explanation: >
+    Du nennst Git einen schlechten und einen guten Commit. Git checkt nacheinander Commits in der Mitte aus, und
+    du – oder mit `git bisect run` ein Testbefehl – sagst, ob sie gut oder schlecht sind. Am Ende meldet Git den
+    ersten schlechten Commit; `git bisect reset` beendet die Suche.
+  example: "`git bisect start && git bisect bad && git bisect good v1.0.0 && git bisect run npm test`"
+  category: git
+  aliases: [bisect, Bisect, git bisect run]
+  related: [binaere-suche, commit, regression]
+  lesson: debugging-devtools/fehler-eingrenzen
+
+- slug: devtools
+  term: DevTools
+  short: Die im Browser eingebauten Entwicklerwerkzeuge, mit denen du eine Webseite von innen untersuchst.
+  explanation: >
+    Die DevTools bestehen aus Bereichen wie Elements, Console, Sources, Network und Application. Du öffnest sie
+    mit F12 oder Strg+Umschalt+I (Mac: Cmd+Option+I). Änderungen darin gelten nur für die geladene Seite in
+    deinem Browser.
+  example: Rechtsklick auf einen Button → „Untersuchen“ öffnet die DevTools mit dem Button im Elements-Panel.
+  category: werkzeuge
+  aliases: [Entwicklertools, Developer Tools, Browser-DevTools, Chrome DevTools, Entwicklerwerkzeuge]
+  related: [browser, dom, debugger]
+  lesson: debugging-devtools/elements-und-console
+
+- slug: cookie
+  term: Cookie
+  short: Ein kleiner Datensatz, den der Browser für eine Website speichert und bei jedem Request mitschickt.
+  explanation: >
+    Server setzen Cookies mit dem Header `Set-Cookie`, der Browser sendet sie danach automatisch mit. Typisch ist
+    eine Sitzungs-ID für den Login. Cookies haben ein Ablaufdatum und Flags wie HttpOnly (für JavaScript
+    unsichtbar) und Secure (nur über HTTPS).
+  example: "`session=a1b2c3; HttpOnly; Secure` – im Application-Panel unter „Cookies“ sichtbar."
+  category: web
+  aliases: [Cookies]
+  related: [web-storage, http-header]
+  lesson: debugging-devtools/elements-und-console
+
+- slug: web-storage
+  term: Web Storage
+  short: Schlüssel-Wert-Speicher im Browser, bestehend aus Local Storage und Session Storage.
+  explanation: >
+    Mit `localStorage` speichert eine Website Daten dauerhaft im Browser, mit `sessionStorage` nur, bis der Tab
+    geschlossen wird. Anders als Cookies werden diese Daten nicht automatisch an den Server geschickt. Im
+    Application-Panel der DevTools kannst du sie ansehen und löschen.
+  example: "`localStorage.setItem('theme', 'dark')` merkt sich das dunkle Farbschema."
+  category: web
+  aliases: [Local Storage, localStorage, Session Storage, sessionStorage]
+  related: [cookie, devtools]
+  lesson: debugging-devtools/sources-und-application
+
+- slug: watch-ausdruck
+  term: Watch-Ausdruck
+  short: Ein Ausdruck, den der Debugger bei jedem Halt neu berechnet und anzeigt.
+  explanation: >
+    Im Watch-Bereich trägst du Variablen oder ganze Ausdrücke ein, etwa `liste.length` oder `summe + versand`.
+    Nach jedem Schritt siehst du den aktuellen Wert. So beobachtest du, wann ein Wert falsch wird.
+  example: "Watch `summe` zeigt nach jedem Step over den neuen Zwischenstand der Schleife."
+  category: debugging
+  aliases: [Watch, Watches, Watch-Ausdrücke, Überwachungsausdruck]
+  related: [breakpoint, debugger]
+  lesson: debugging-devtools/sources-und-application
+
+- slug: logpoint
+  term: Logpoint
+  short: Ein Breakpoint, der nicht anhält, sondern nur eine Nachricht in die Console schreibt.
+  explanation: >
+    Logpoints setzt du in den DevTools per Rechtsklick auf eine Zeilennummer. Sie wirken wie ein `console.log`,
+    ohne dass du den Quellcode ändern musst. Ideal für Code, der oft durchlaufen wird.
+  example: "Logpoint mit dem Text `'Artikel', artikel.id` gibt bei jedem Durchlauf die ID aus."
+  category: debugging
+  aliases: [Logpoints]
+  related: [breakpoint, console-log]
+  lesson: debugging-devtools/sources-und-application
+
+- slug: bedingter-breakpoint
+  term: Bedingter Breakpoint
+  short: Ein Breakpoint, der nur anhält, wenn eine angegebene Bedingung wahr ist.
+  explanation: >
+    In Schleifen über viele Datensätze willst du oft nur einen bestimmten Durchlauf sehen. Ein bedingter
+    Breakpoint prüft bei jedem Erreichen einen Ausdruck und hält nur an, wenn er wahr ist. Browser-DevTools,
+    Node-Debugger und Xdebug in der IDE unterstützen ihn.
+  example: "Bedingung `artikel.id === 4711` – der Debugger hält nur beim Artikel 4711 an."
+  category: debugging
+  aliases: [bedingten Breakpoint, bedingte Breakpoints, Conditional Breakpoint]
+  related: [breakpoint, debugger]
+  lesson: debugging-devtools/sources-und-application
+
+- slug: step-debugging
+  term: Step-Debugging
+  short: Ein Programm an einem Breakpoint anhalten und Zeile für Zeile weiter ausführen.
+  explanation: >
+    Beim Step-Debugging steuerst du die Ausführung mit Resume, Step over, Step into und Step out. Zwischen den
+    Schritten siehst du alle Variablen und den Call Stack. So verfolgst du genau, wo ein Wert falsch wird.
+  example: "Step into springt in die Funktion `berechneRabatt()`, Step out kehrt zum Aufrufer zurück."
+  category: debugging
+  aliases: [Step Debugging, Schrittweises Debuggen, Step over, Step into, Step out]
+  related: [breakpoint, debugger, xdebug]
+  lesson: debugging-devtools/sources-und-application
+
+- slug: inspector
+  term: Node-Inspector
+  short: Die Debug-Schnittstelle von Node.js, mit der sich ein Debugger mit einem laufenden Programm verbindet.
+  explanation: >
+    Mit `node --inspect app.js` öffnet Node eine Debug-Schnittstelle, standardmäßig auf 127.0.0.1:9229. Chrome
+    (über chrome://inspect), VS Code, WebStorm oder `node inspect` können sich verbinden. `--inspect-brk` hält
+    zusätzlich vor der ersten Zeile an.
+  example: "`node --inspect-brk server.js`, dann in Chrome `chrome://inspect` → inspect."
+  category: debugging
+  aliases: [Inspector, node --inspect, --inspect, inspect-brk]
+  related: [debugger, nodejs, breakpoint]
+  lesson: debugging-devtools/node-debuggen
+
+- slug: var-dump
+  term: var_dump
+  short: Eine PHP-Funktion, die Typ und Wert einer Variable ausgibt.
+  explanation: >
+    `var_dump` zeigt nicht nur den Wert, sondern auch den Datentyp und bei Strings die Länge. Dadurch erkennst du
+    `null`, `false` und Zahlen in Anführungszeichen sofort. Debug-Ausgaben entfernst du vor dem Commit wieder.
+  example: "`var_dump('4.95');` gibt `string(4) \"4.95\"` aus."
+  category: debugging
+  aliases: [var_dump(), print_r, var_export]
+  related: [dump-and-die, php]
+  lesson: debugging-devtools/php-fehler-sichtbar-machen
+
+- slug: dump-and-die
+  term: dd() und dump()
+  short: Debug-Helfer in Laravel und Symfony, die Werte formatiert ausgeben – dd() beendet danach das Skript.
+  explanation: >
+    `dump($x)` gibt einen Wert übersichtlich aus und lässt das Programm weiterlaufen. `dd($x)` steht für „dump
+    and die“: ausgeben und sofort beenden. Beide gehören nur in die Entwicklung, nie in Produktionscode.
+  example: "`dd($request->all());` zeigt alle Formularfelder und stoppt die Anfrage."
+  category: debugging
+  aliases: [dd, dd(), dump, dump(), dump and die]
+  related: [var-dump]
+  lesson: debugging-devtools/php-fehler-sichtbar-machen
+
+- slug: error-reporting
+  term: error_reporting
+  short: Die PHP-Einstellung, die festlegt, welche Fehlerarten gemeldet werden.
+  explanation: >
+    `error_reporting` ist eine Bitmaske aus Fehlerstufen wie `E_WARNING` oder `E_DEPRECATED`. Seit PHP 8 ist
+    `E_ALL` der Standard. Mit `error_reporting(0)` im Code werden alle Meldungen unterdrückt – beim Debuggen ein
+    Warnsignal.
+  example: "`php -d error_reporting=-1 skript.php` meldet für diesen Aufruf wirklich alles."
+  category: debugging
+  aliases: [error_reporting(), E_ALL, Fehlerstufe]
+  related: [display-errors, php-ini, fatal-error]
+  lesson: debugging-devtools/php-fehler-sichtbar-machen
+
+- slug: display-errors
+  term: display_errors
+  short: Die PHP-Einstellung, die bestimmt, ob Fehlermeldungen in der Ausgabe angezeigt werden.
+  explanation: >
+    In der Entwicklung steht `display_errors` auf On, damit du jede Meldung siehst. In Produktion steht es auf
+    Off, weil Fehlermeldungen Besuchern interne Details verraten würden; dort werden Fehler mit `log_errors`
+    protokolliert.
+  example: "`ini_set('display_errors', '1');` schaltet die Anzeige zur Laufzeit ein."
+  category: debugging
+  aliases: [log_errors, error_log]
+  related: [error-reporting, php-ini]
+  lesson: debugging-devtools/php-fehler-sichtbar-machen
+
+- slug: php-ini
+  term: php.ini
+  short: Die Konfigurationsdatei von PHP, in der Einstellungen wie Fehleranzeige und Erweiterungen stehen.
+  explanation: >
+    PHP liest beim Start eine php.ini und zusätzliche ini-Dateien, etwa aus einem `conf.d`-Ordner. Welche
+    geladen sind, zeigt `php --ini`. Einzelne Werte überschreibst du für einen Aufruf mit `php -d name=wert`
+    oder im Code mit `ini_set()`.
+  example: "`php -i | grep display_errors` zeigt den aktuell gültigen Wert."
+  category: debugging
+  aliases: [php.ini-Datei, conf.d, ini_set]
+  related: [error-reporting, display-errors]
+  lesson: debugging-devtools/php-fehler-sichtbar-machen
+
+- slug: xdebug
+  term: Xdebug
+  short: Eine PHP-Erweiterung für bessere Fehlermeldungen, Step-Debugging, Profiling und Testabdeckung.
+  explanation: >
+    Xdebug hat Modi, die du mit `xdebug.mode` wählst: `develop` verbessert Fehlermeldungen, `debug` verbindet
+    PHP mit deiner IDE für Breakpoints, `coverage` misst Testabdeckung. Beim Step-Debugging meldet sich PHP bei
+    der IDE, die auf Port 9003 lauscht. In Produktion ist Xdebug ausgeschaltet, weil es PHP verlangsamt.
+  example: "`php -d xdebug.mode=develop skript.php` zeigt zu jeder Warnung einen Call Stack mit Argumenten."
+  category: debugging
+  aliases: [xdebug.mode, XDEBUG_TRIGGER, Xdebug 3]
+  related: [step-debugging, breakpoint, php]
+  lesson: debugging-devtools/xdebug-step-debugging
+
+- slug: log-level
+  term: Log-Level
+  short: Die Dringlichkeitsstufe einer Logmeldung, etwa debug, info, warning oder error.
+  explanation: >
+    Log-Level sortieren Meldungen nach Wichtigkeit. Nach dem PHP-Standard PSR-3 gibt es acht Stufen von debug bis
+    emergency. Eine eingestellte Schwelle legt fest, ab welcher Stufe Meldungen geschrieben werden – alles
+    darunter wird verworfen.
+  example: "Mit `LOG_LEVEL=warning` werden info- und debug-Meldungen nicht geschrieben."
+  category: debugging
+  aliases: [Loglevel, Log Level, Logstufe]
+  related: [logdatei, strukturiertes-logging]
+  lesson: debugging-devtools/logs-lesen-und-schreiben
+
+- slug: request-id
+  term: Request-ID
+  short: Eine eindeutige Kennung, die jede eingehende Anfrage bekommt und die in allen ihren Logzeilen steht.
+  explanation: >
+    Laufen viele Anfragen gleichzeitig, mischen sich ihre Logzeilen. Mit einer Request-ID (auch Correlation-ID)
+    filterst du alle Zeilen einer einzigen Anfrage heraus. Oft wird sie auch als HTTP-Header an andere Dienste
+    weitergereicht.
+  example: "`grep 'req-1042' app.log` zeigt die komplette Geschichte von Anfrage req-1042."
+  category: debugging
+  aliases: [Request-IDs, Correlation-ID, Korrelations-ID]
+  related: [logdatei, log-level]
+  lesson: debugging-devtools/logs-lesen-und-schreiben
+
+- slug: strukturiertes-logging
+  term: Strukturiertes Logging
+  short: Logs, bei denen jede Zeile ein maschinenlesbares Objekt mit festen Feldern ist, meist JSON.
+  explanation: >
+    Statt freien Text schreibt das Programm pro Ereignis ein JSON-Objekt mit Feldern wie Zeit, Level, Nachricht
+    und IDs. Solche Logs kannst du mit `jq` oder Log-Plattformen gezielt filtern und auswerten.
+  example: "`{\"level\":\"error\",\"request_id\":\"req-1042\",\"nachricht\":\"Zahlung fehlgeschlagen\"}`"
+  category: debugging
+  aliases: [strukturierte Logs, strukturierten Logging, JSON-Logs, JSON Lines]
+  related: [log-level, json, request-id]
+  lesson: debugging-devtools/logs-lesen-und-schreiben
+
+- slug: log-channel
+  term: Log-Kanal
+  short: In Laravel ein konfiguriertes Ziel, wohin Logmeldungen geschrieben werden.
+  explanation: >
+    Log-Kanäle stehen in `config/logging.php`. Beispiele sind `single` (eine Datei), `daily` (eine Datei pro
+    Tag), `stderr` (für Container) und `stack` (mehrere Kanäle gleichzeitig). Welcher Kanal gilt, bestimmt meist
+    die Umgebungsvariable `LOG_CHANNEL`.
+  example: "`Log::channel('daily')->info('Export fertig');`"
+  category: debugging
+  aliases: [Log-Kanäle, Log Channel, Log Channels, LOG_CHANNEL]
+  related: [logdatei, log-level]
+  lesson: debugging-devtools/logs-lesen-und-schreiben
+
+- slug: tail
+  term: tail
+  short: Ein Terminal-Befehl, der die letzten Zeilen einer Datei anzeigt – mit -f auch live.
+  explanation: >
+    `tail -n 50 datei` zeigt die letzten 50 Zeilen. Mit `tail -f datei` bleibt der Befehl offen und zeigt jede
+    neue Zeile, sobald sie geschrieben wird; Strg+C beendet ihn. Damit verfolgst du Logdateien während du
+    testest.
+  example: "`tail -f storage/logs/laravel.log | grep --line-buffered ERROR`"
+  category: terminal
+  aliases: [tail -f, tail -n, head]
+  related: [logdatei, grep, pipe]
+  lesson: debugging-devtools/logs-lesen-und-schreiben
+
+- slug: race-condition
+  term: Race Condition
+  short: Ein Fehler, bei dem das Ergebnis davon abhängt, welcher von mehreren gleichzeitigen Vorgängen zuerst fertig wird.
+  explanation: >
+    Race Conditions entstehen bei asynchronem oder parallelem Code, etwa wenn eine Promise nicht abgewartet wird
+    oder zwei Antworten in unerwarteter Reihenfolge eintreffen. Sie treten oft nur manchmal auf und sind deshalb
+    schwer zu reproduzieren. Langsame Verbindungen oder künstliche Verzögerungen machen sie sichtbar.
+  example: "`forEach(async …)` – `console.log(gesamt)` läuft, bevor eine einzige Datei gezählt ist."
+  category: debugging
+  aliases: [Race Conditions, Wettlaufsituation, Timing-Fehler]
+  related: [promise, async-await]
+  lesson: debugging-devtools/typische-fehlerklassen
+
+- slug: type-juggling
+  term: Type Juggling
+  short: Die automatische Typumwandlung von PHP und JavaScript, etwa beim Vergleich mit == oder beim Rechnen.
+  explanation: >
+    Treffen Werte unterschiedlicher Typen aufeinander, wandelt die Sprache sie still um – ein String wird zur Zahl
+    oder umgekehrt. Das erzeugt Fehler ohne Meldung, etwa `'5' + 1 === '51'` in JavaScript. Mit expliziter
+    Umwandlung und strikten Vergleichen (`===`) vermeidest du sie.
+  example: "In PHP 8 ist `'1' == '01'` wahr, `'1' === '01'` falsch."
+  category: debugging
+  aliases: [Typ-Jonglage, Typjonglage, implizite Typumwandlung]
+  related: [typumwandlung, strikte-gleichheit]
+  lesson: debugging-devtools/typische-fehlerklassen
+
+- slug: minifizierung
+  term: Minifizierung
+  short: Das automatische Verkleinern von Code, indem Leerzeichen, Zeilenumbrüche und lange Namen entfernt werden.
+  explanation: >
+    Für Websites wird JavaScript und CSS vor dem Ausliefern minifiziert, damit die Dateien kleiner sind und
+    schneller laden. Der Code funktioniert gleich, ist aber kaum noch lesbar. In den DevTools macht „Pretty print“
+    ihn wieder lesbar, Source Maps verweisen auf die Original-Dateien.
+  example: "`function summe(liste){…}` wird zu `function s(l){…}` in einer einzigen Zeile."
+  category: web
+  aliases: [minifiziert, minifizieren, Minify, minified]
+  related: [source-map]
+  lesson: debugging-devtools/sources-und-application
+
+- slug: source-map
+  term: Source Map
+  short: Eine Zuordnungsdatei, die minifizierten oder übersetzten Code auf die Original-Quelldateien zurückführt.
+  explanation: >
+    Build-Werkzeuge wie Vite erzeugen neben dem ausgelieferten Code eine `.map`-Datei. Die DevTools lesen sie und
+    zeigen dir im Sources-Panel und in Stack Traces deine Original-Dateien mit den echten Zeilennummern – auch
+    bei TypeScript.
+  example: "`app.4f2a.js` verweist mit `//# sourceMappingURL=app.4f2a.js.map` auf seine Source Map."
+  category: web
+  aliases: [Source Maps, Sourcemap, Sourcemaps]
+  related: [minifizierung, devtools]
+  lesson: debugging-devtools/sources-und-application

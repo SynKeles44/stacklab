@@ -1,0 +1,97 @@
+title: Die Debugging-Denkweise
+description: Wie du Fehler systematisch statt zufällig findest, Fehlermeldungen und Stack Traces liest und den Suchraum mit minimalen Beispielen und git bisect halbierst.
+exercise:
+  id: modul-uebung-import
+  type: terminal
+  title: Erste Hilfe für einen abstürzenden Import
+  description: |
+    Im Ordner `erste-hilfe` liegt `import.js`. Es liest `kunden.csv` (20 Kundinnen und Kunden mit Name und
+    E-Mail) und soll melden, wie viele importiert wurden. Laut Anforderung gilt: **Zeilen ohne E-Mail oder mit
+    leerer E-Mail werden übersprungen und gezählt.** Im Moment stürzt das Skript aber ab.
+
+    Wende den Debugging-Kreislauf an:
+
+    1. **Reproduzieren:** Starte `node import.js` und lies Meldung und Stack Trace.
+    2. **Eingrenzen:** Finde die Zeile in `kunden.csv`, die den Absturz auslöst. Lege eine minimale
+       Reproduktion `repro.csv` an: höchstens zwei Zeilen (Kopfzeile erlaubt), darunter genau die
+       auslösende Kundenzeile. Mit `node import.js repro.csv` muss der Absturz auftreten.
+    3. **Hypothese und Prüfen:** Überlege, welcher Wert in dieser Zeile fehlt, und repariere `import.js`
+       so, dass die Anforderung erfüllt ist.
+    4. Achtung: In `kunden.csv` steckt noch ein zweiter Sonderfall, der **nicht** abstürzt, aber trotzdem
+       falsch behandelt wird. Lies die Anforderung genau.
+
+    Am Ende gibt `node import.js` auf der Standardausgabe `18 Kunden importiert, 2 übersprungen` aus.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Dateien angelegt werden.
+  workdir: erste-hilfe
+  setup: |
+    cat > import.js <<'EOF'
+    const fs = require('node:fs');
+
+    const datei = process.argv[2] ?? 'kunden.csv';
+    const zeilen = fs.readFileSync(datei, 'utf8').trim().split('\n').slice(1);
+
+    let importiert = 0;
+    let uebersprungen = 0;
+
+    for (const zeile of zeilen) {
+      const [name, email] = zeile.split(';');
+      const adresse = email.trim().toLowerCase();
+      console.error(`importiere ${name} <${adresse}>`);
+      importiert++;
+    }
+
+    console.log(`${importiert} Kunden importiert, ${uebersprungen} übersprungen`);
+    EOF
+    {
+      echo 'name;email'
+      for i in $(seq 1 20); do
+        if [ "$i" = "13" ]; then
+          echo "Kunde $i"
+        elif [ "$i" = "7" ]; then
+          echo "Kunde $i;"
+        else
+          echo "Kunde $i;KUNDE$i@Example.com"
+        fi
+      done
+    } > kunden.csv
+  checks:
+    - type: file_exists
+      path: repro.csv
+      message: Lege die minimale Reproduktion repro.csv an.
+    - type: command
+      run: test "$(wc -l < repro.csv)" -le 2 && test "$(grep -cE '^[^;]+$' repro.csv)" -ge 1
+      message: repro.csv soll höchstens zwei Zeilen haben und die Kundenzeile enthalten, in der das Semikolon samt E-Mail fehlt.
+    - type: command
+      run: node import.js 2>/dev/null
+      stdout_equals: "18 Kunden importiert, 2 übersprungen"
+      message: "`node import.js` soll `18 Kunden importiert, 2 übersprungen` ausgeben. Überspringe Zeilen ohne E-Mail **und** Zeilen mit leerer E-Mail."
+    - type: command
+      run: node import.js repro.csv 2>/dev/null
+      stdout_equals: "0 Kunden importiert, 1 übersprungen"
+      message: Mit repro.csv soll das reparierte Skript `0 Kunden importiert, 1 übersprungen` ausgeben – ohne Absturz.
+  hints:
+    - "Der Stack Trace zeigt Zeile 11: `email` ist `undefined`. Welche CSV-Zeile hat gar kein Semikolon? `grep -vn ';' kunden.csv` hilft."
+    - "`printf 'name;email\\nKunde 13\\n' > repro.csv` ist eine minimale Reproduktion. Prüfe sie mit `node import.js repro.csv`."
+    - "Vor der Zeile mit `email.trim()`: `if (!email || email.trim() === '') { uebersprungen++; continue; }`"
+  solution: |
+    ```bash
+    cd erste-hilfe
+    node import.js                       # TypeError: Cannot read properties of undefined (reading 'trim')
+    grep -vn ';' kunden.csv              # 14:Kunde 13  -> keine E-Mail-Spalte
+    printf 'name;email\nKunde 13\n' > repro.csv
+    node import.js repro.csv             # gleicher Absturz -> reproduziert
+    ```
+
+    In `import.js` vor der Zeile `const adresse = …` ergänzen:
+
+    ```js
+    if (!email || email.trim() === '') {
+      uebersprungen++;
+      continue;
+    }
+    ```
+
+    ```bash
+    node import.js 2>/dev/null           # 18 Kunden importiert, 2 übersprungen
+    ```

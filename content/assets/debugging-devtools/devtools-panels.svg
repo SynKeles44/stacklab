@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="900" height="520" fill="#ffffff"/>
+<text x="450" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Die wichtigsten Bereiche der Browser-DevTools</text>
+<g>
+<rect x="20" y="60" width="270" height="210" rx="12" fill="#22d3ee" fill-opacity=".10" stroke="#22d3ee" stroke-width="2"/>
+<rect x="20" y="60" width="270" height="44" rx="12" fill="#22d3ee" fill-opacity=".25"/>
+<text x="155" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Elements</text>
+<g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">
+<text x="36" y="132">&lt;body&gt;</text>
+<text x="52" y="154">&lt;header class="top"&gt;</text>
+<rect x="44" y="164" width="230" height="22" fill="#a78bfa" fill-opacity=".25"/>
+<text x="52" y="180">&lt;button id="kaufen"&gt;</text>
+<text x="52" y="202">&lt;footer&gt;…&lt;/footer&gt;</text>
+<text x="36" y="246" fill="#475569">color: #1e1b3a;</text>
+</g>
+</g>
+<g>
+<rect x="315" y="60" width="270" height="210" rx="12" fill="#a78bfa" fill-opacity=".10" stroke="#a78bfa" stroke-width="2"/>
+<rect x="315" y="60" width="270" height="44" rx="12" fill="#a78bfa" fill-opacity=".25"/>
+<text x="450" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Console</text>
+<g font-family="ui-monospace, Menlo, monospace" font-size="13">
+<text x="331" y="132" fill="#1e1b3a">&gt; warenkorb.length</text>
+<text x="331" y="154" fill="#475569">&lt; 3</text>
+<rect x="323" y="166" width="254" height="40" fill="#f87171" fill-opacity=".18"/>
+<text x="331" y="184" fill="#b91c1c">✖ Uncaught TypeError:</text>
+<text x="331" y="200" fill="#b91c1c">  x is undefined  app.js:14</text>
+<text x="331" y="236" fill="#1e1b3a">&gt; _</text>
+</g>
+</g>
+<g>
+<rect x="610" y="60" width="270" height="210" rx="12" fill="#34d399" fill-opacity=".10" stroke="#34d399" stroke-width="2"/>
+<rect x="610" y="60" width="270" height="44" rx="12" fill="#34d399" fill-opacity=".25"/>
+<text x="745" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Sources</text>
+<g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">
+<text x="626" y="132" fill="#475569">12</text><text x="656" y="132">let summe = 0;</text>
+<text x="626" y="154" fill="#475569">13</text><text x="656" y="154">for (const p of liste) {</text>
+<circle cx="618" cy="172" r="6" fill="#2563eb"/>
+<rect x="648" y="162" width="226" height="20" fill="#2563eb" fill-opacity=".15"/>
+<text x="626" y="176" fill="#475569">14</text><text x="656" y="176">  summe += p.preis;</text>
+<text x="626" y="198" fill="#475569">15</text><text x="656" y="198">}</text>
+<text x="626" y="240" fill="#475569">Watch: summe = 7.5</text>
+</g>
+</g>
+<g>
+<rect x="20" y="290" width="270" height="210" rx="12" fill="#f59e0b" fill-opacity=".10" stroke="#f59e0b" stroke-width="2"/>
+<rect x="20" y="290" width="270" height="44" rx="12" fill="#f59e0b" fill-opacity=".25"/>
+<text x="155" y="318" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Network</text>
+<g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">
+<text x="36" y="362">GET  /api/produkte  200</text>
+<rect x="210" y="368" width="50" height="8" fill="#22d3ee"/>
+<text x="36" y="394">POST /api/korb      500</text>
+<rect x="190" y="400" width="80" height="8" fill="#f87171"/>
+<text x="36" y="426">GET  /logo.svg      304</text>
+<rect x="230" y="432" width="20" height="8" fill="#34d399"/>
+<text x="36" y="476" fill="#475569">3 requests · 18 kB</text>
+</g>
+</g>
+<g>
+<rect x="315" y="290" width="270" height="210" rx="12" fill="#f87171" fill-opacity=".10" stroke="#f87171" stroke-width="2"/>
+<rect x="315" y="290" width="270" height="44" rx="12" fill="#f87171" fill-opacity=".25"/>
+<text x="450" y="318" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Application</text>
+<g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">
+<text x="331" y="362" font-weight="700">Local Storage</text>
+<text x="331" y="386">theme      dark</text>
+<text x="331" y="408">warenkorb  [3,7,9]</text>
+<text x="331" y="440" font-weight="700">Cookies</text>
+<text x="331" y="464">session    a1b2…</text>
+</g>
+</g>
+<g>
+<rect x="610" y="290" width="270" height="210" rx="12" fill="#64748b" fill-opacity=".08" stroke="#64748b" stroke-width="2"/>
+<rect x="610" y="290" width="270" height="44" rx="12" fill="#64748b" fill-opacity=".18"/>
+<text x="745" y="318" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Lighthouse</text>
+<circle cx="670" cy="410" r="36" fill="none" stroke="#34d399" stroke-width="8"/>
+<text x="670" y="416" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">92</text>
+<text x="728" y="396" font-size="13" fill="#475569">Performance</text>
+<text x="728" y="418" font-size="13" fill="#475569">Barrierefreiheit</text>
+<text x="728" y="440" font-size="13" fill="#475569">Best Practices</text>
+<text x="728" y="462" font-size="13" fill="#475569">SEO</text>
+</g>
+</svg>

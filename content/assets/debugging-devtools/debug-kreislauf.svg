@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="800" height="460" fill="#ffffff"/>
+<text x="400" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Der Debugging-Kreislauf</text>
+<rect x="290" y="56" width="220" height="72" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="400" y="86" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">1. Reproduzieren</text>
+<text x="400" y="110" text-anchor="middle" font-size="13" fill="#475569">Fehler zuverlässig auslösen</text>
+<rect x="540" y="180" width="220" height="72" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="650" y="210" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">2. Eingrenzen</text>
+<text x="650" y="234" text-anchor="middle" font-size="13" fill="#475569">Wo genau? Suchraum halbieren</text>
+<rect x="290" y="304" width="220" height="72" rx="14" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="3"/>
+<text x="400" y="334" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">3. Hypothese</text>
+<text x="400" y="358" text-anchor="middle" font-size="13" fill="#475569">„Ich vermute, dass …“</text>
+<rect x="40" y="180" width="220" height="72" rx="14" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="150" y="210" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">4. Prüfen</text>
+<text x="150" y="234" text-anchor="middle" font-size="13" fill="#475569">Experiment mit klarem Ergebnis</text>
+<path d="M512 100 C 600 110, 640 140, 648 176" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M648 256 C 640 300, 600 330, 514 340" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M288 340 C 200 330, 160 300, 152 256" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M152 176 C 160 140, 200 110, 286 100" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#a)"/>
+<text x="168" y="128" text-anchor="middle" font-size="13" fill="#475569">widerlegt:</text>
+<text x="168" y="146" text-anchor="middle" font-size="13" fill="#475569">neue Hypothese</text>
+<path d="M150 254 L 150 410 L 284 410" fill="none" stroke="#34d399" stroke-width="3" marker-end="url(#a)"/>
+<rect x="290" y="390" width="420" height="44" rx="12" fill="#34d399" fill-opacity=".22" stroke="#34d399" stroke-width="2"/>
+<text x="500" y="418" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a">bestätigt → beheben, Test schreiben, erneut prüfen</text>
+</svg>

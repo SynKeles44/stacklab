@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 380" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="860" height="380" fill="#ffffff"/>
+<text x="430" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">So verbindet sich Xdebug mit deiner IDE</text>
+<rect x="20" y="90" width="220" height="150" rx="16" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="130" y="128" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Browser oder CLI</text>
+<text x="130" y="176" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">?XDEBUG_TRIGGER=1</text>
+<text x="130" y="198" text-anchor="middle" font-size="12" fill="#475569">startet die Anfrage</text>
+<rect x="320" y="90" width="220" height="150" rx="16" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="430" y="128" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">PHP mit Xdebug</text>
+<text x="430" y="176" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">xdebug.mode=debug</text>
+<text x="430" y="198" text-anchor="middle" font-size="12" fill="#475569">baut die Verbindung auf</text>
+<rect x="620" y="90" width="220" height="150" rx="16" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="730" y="128" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">IDE (lauscht)</text>
+<text x="730" y="176" text-anchor="middle" font-size="12" fill="#475569">Breakpoints, Variablen,</text>
+<text x="730" y="198" text-anchor="middle" font-size="12" fill="#475569">Step Over / Into / Out</text>
+<path d="M242 165 H 316" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M542 150 H 616" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M616 185 H 546" stroke="#64748b" stroke-width="3" stroke-dasharray="7 5" marker-end="url(#a)"/>
+<rect x="520" y="258" width="120" height="34" rx="8" fill="#f59e0b" fill-opacity=".18" stroke="#f59e0b" stroke-width="2"/>
+<text x="580" y="281" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Port 9003</text>
+<path d="M580 256 V 190" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 4"/>
+<text x="430" y="330" text-anchor="middle" font-size="14" fill="#475569">Achtung: Nicht die IDE ruft PHP an – PHP (Xdebug) meldet sich bei der IDE.</text>
+<text x="430" y="352" text-anchor="middle" font-size="14" fill="#475569">Lauscht die IDE nicht, läuft das Skript einfach normal weiter.</text>
+</svg>

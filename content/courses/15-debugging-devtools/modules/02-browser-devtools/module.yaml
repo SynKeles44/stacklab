@@ -1,0 +1,59 @@
+title: Browser-DevTools
+description: Elements, Console, Network, Sources und Application – die eingebauten Werkzeuge deines Browsers, mit denen du Webseiten von innen ansiehst.
+exercise:
+  id: modul-uebung-login
+  type: steps
+  title: Fallstudie – „Der Login geht nicht“
+  description: >
+    Ein Support-Ticket meldet: „Ich klicke auf Anmelden und nichts passiert.“ Du hast nur deinen Browser und die
+    DevTools. Untersuche den Fall Panel für Panel und entscheide bei jedem Schritt, was du als Nächstes tust.
+  steps:
+    - situation: Du kannst den Fehler mit den Testzugangsdaten nachstellen. Nach dem Klick passiert sichtbar nichts – keine Meldung, keine Weiterleitung.
+      question: Welches Panel öffnest du zuerst?
+      options:
+        - Lighthouse, um die Performance zu messen.
+        - Die Console, um zu sehen, ob JavaScript einen Fehler gemeldet hat.
+        - Application, um alle Daten zu löschen.
+      answer: 1
+      explanation: >
+        „Nichts passiert“ ist oft ein JavaScript-Fehler, der den Rest des Ablaufs abbricht. Die Console zeigt ihn mit
+        Datei und Zeile.
+    - situation: Die Console ist leer. Du aktivierst **Preserve log**, klickst erneut – immer noch keine Meldung.
+      question: Was prüfst du als Nächstes?
+      options:
+        - Im Network-Tab, ob beim Klick überhaupt ein Request an den Server geht.
+        - Ob die Schriftart richtig geladen ist.
+        - Den Quelltext der Seite nach dem Wort „Login“ durchsuchen.
+      answer: 0
+      explanation: Ohne Fehler im JavaScript liegt das Problem oft in der Kommunikation. Der Network-Tab zeigt, ob und was gesendet wird.
+    - situation: "Im Network-Tab (Filter **Fetch/XHR**) erscheint `POST /api/login` mit Status `401`. Unter **Response** steht `{\"message\": \"Ungültige Zugangsdaten\"}`."
+      question: Was ist eine gute nächste Frage?
+      options:
+        - Ist der Server abgestürzt?
+        - Schickt das Frontend die Zugangsdaten richtig? Das zeigt der Reiter **Payload**.
+        - Ist das CSS des Buttons korrekt?
+      answer: 1
+      explanation: 401 heißt „nicht angemeldet“. Bevor du am Server zweifelst, prüfst du, was wirklich gesendet wurde.
+    - situation: "Unter **Payload** steht `{\"email\": \"ada@example.com \", \"password\": \"…\"}` – mit einem Leerzeichen am Ende der E-Mail."
+      question: Welche Hypothese formulierst du?
+      options:
+        - Das Formular übernimmt ein Leerzeichen aus dem Eingabefeld, der Server findet die E-Mail deshalb nicht.
+        - Der Benutzer existiert nicht.
+        - Der Browser ist veraltet.
+      answer: 0
+      explanation: Eine konkrete, prüfbare Hypothese. Prüfen kannst du sie, indem du ohne Leerzeichen anmeldest – das klappt.
+    - situation: Du findest im Sources-Panel die Funktion, die das Formular abschickt, und setzt einen Breakpoint auf die Zeile mit `fetch('/api/login', …)`.
+      question: Wie prüfst du am schnellsten, ob ein `trim()` das Problem löst?
+      options:
+        - Im angehaltenen Zustand in der Console `email.trim()` eingeben und das Ergebnis ansehen.
+        - Den ganzen Login neu programmieren.
+        - Den Breakpoint löschen und hoffen.
+      answer: 0
+      explanation: Die Console arbeitet im aktuellen Scope. So testest du die Korrektur, bevor du den Code änderst.
+    - situation: Die Korrektur `email.trim()` ist eingebaut und getestet. Der Fehler trat nur bei Personen auf, die ihre E-Mail aus einer Signatur kopiert hatten.
+      question: Was gehört noch zum Abschluss?
+      options:
+        - Nichts, das Ticket schließen.
+        - Einen Test für E-Mails mit Leerzeichen schreiben und im Ticket Ursache und Lösung kurz notieren.
+      answer: 1
+      explanation: Ein Test schützt vor einer Regression, die Notiz hilft beim nächsten ähnlichen Ticket.

@@ -1,0 +1,33 @@
+title: Debugging & Entwicklertools
+subtitle: Fehler systematisch finden statt raten – mit Stack Traces, DevTools, Debugger und Logs
+description: >
+  Jedes Programm hat Fehler. Gute Entwickler:innen unterscheiden sich nicht dadurch, dass sie keine
+  Bugs schreiben, sondern dadurch, wie schnell und ruhig sie sie finden. In diesem Kurs lernst du
+  ein **Vorgehen**, das bei jedem Fehler funktioniert: reproduzieren, eingrenzen, Hypothese aufstellen,
+  prüfen.
+
+
+  Danach lernst du die Werkzeuge, die dieses Vorgehen beschleunigen: Fehlermeldungen und Stack Traces
+  in JavaScript und PHP lesen, die Browser-DevTools (Elements, Console, Network, Sources, Application),
+  den Node.js-Debugger, Xdebug für PHP, Logdateien und `git bisect`. Zum Schluss lernst du die typischen
+  Fehlerklassen kennen – Off-by-one, `null`/`undefined`, Race Conditions und Type Juggling –, damit du sie
+  beim nächsten Mal schon beim Lesen erkennst. Fast jede Lektion hat echte, kaputte Programme im
+  Übungs-Terminal, die du reparierst.
+category: grundlagen
+level: einsteiger
+icon: bug
+color: "#ef4444"
+estimated_hours: 4.5
+workspace_dir: debugging
+prerequisites: [programmieren-grundlagen, terminal-shell]
+learning_goals:
+  - Du gehst bei jedem Fehler systematisch vor – reproduzieren, eingrenzen, Hypothese, prüfen – statt zu raten.
+  - Du liest Fehlermeldungen und Stack Traces in JavaScript und PHP und findest die Zeile, auf die es ankommt.
+  - Du grenzt Fehler mit minimalen Beispielen und `git bisect` ein.
+  - Du nutzt die Browser-DevTools sicher – vor allem Console, Network-Tab und Breakpoints im Sources-Panel.
+  - Du debuggst Node.js mit gezielten console-Ausgaben und dem Inspector und PHP mit var_dump, Fehleranzeige und Xdebug.
+  - Du liest und durchsuchst Logdateien und schreibst selbst sinnvolle Logs mit Log-Leveln.
+  - Du erkennst Off-by-one-Fehler, null/undefined-Fehler, Race Conditions und Type Juggling auf den ersten Blick.
+references:
+  - Fehlersuche in großen Laravel-Projekten mit Log-Kanälen, Request-IDs und Xdebug im Docker-Container
+  - Fehleranalyse im Browser über den Network-Tab bei API-Problemen zwischen Frontend und Backend

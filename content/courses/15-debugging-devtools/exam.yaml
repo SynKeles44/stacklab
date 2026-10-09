@@ -1,0 +1,363 @@
+title: Abschlussprüfung Debugging & Entwicklertools
+description: |
+  Diese Prüfung deckt alle vier Module ab: die Debugging-Denkweise, die Browser-DevTools, das Debuggen in
+  Node.js und PHP sowie Logging und typische Fehlerklassen. Zuerst beantwortest du Fragen, danach löst du drei
+  Praxis-Aufgaben – zwei Programmieraufgaben und eine im echten Übungs-Terminal.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast, und kannst
+  gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  # --- Denkweise ---
+  - module: denkweise
+    type: single
+    question: Ein Fehler tritt laut Ticket „manchmal“ beim Export auf. Was ist der beste erste Schritt?
+    options:
+      - Den Export-Code vorsorglich neu schreiben.
+      - Herausfinden, mit welchen Daten und Schritten der Fehler zuverlässig auftritt.
+      - Überall Debug-Ausgaben einbauen und die Anwendung ausliefern.
+      - Das Ticket schließen, weil es bei dir funktioniert.
+    answer: 1
+    explanation: >
+      Ohne Reproduktion kannst du weder gezielt suchen noch prüfen, ob eine Korrektur wirkt. „Manchmal“ heißt:
+      Bestimmte Daten oder Umstände sind anders – die musst du finden.
+  - module: denkweise
+    type: multiple
+    question: Welche Aussagen über den Debugging-Kreislauf stimmen?
+    options:
+      - Eine gute Hypothese sagt ein Ergebnis voraus, das du prüfen kannst.
+      - Pro Experiment änderst du möglichst nur eine Sache.
+      - Eine widerlegte Hypothese ist verschwendete Zeit.
+      - Nach der Korrektur prüfst du erneut, am besten mit einem automatisierten Test.
+    answers: [0, 1, 3]
+    explanation: >
+      Auch eine widerlegte Hypothese bringt dich weiter – sie schließt eine Ursache aus. Der Test nach der
+      Korrektur schützt vor Regressionen.
+  - module: denkweise
+    type: find-bug
+    question: "Node meldet `TypeError: Cannot read properties of undefined (reading 'toUpperCase')` in Zeile 2. In welcher Zeile **entsteht** der Fehler?"
+    language: js
+    code: |
+      function kuerzel(name) {
+        return name.toUpperCase().slice(0, 3);
+      }
+      const namen = ['ada', 'linus'];
+      console.log(kuerzel(namen[2]));
+    bug_line: 5
+    explanation: >
+      `namen[2]` gibt es nicht – das Array hat nur die Indizes 0 und 1. Es knallt in Zeile 2, die Ursache ist der
+      Aufruf in Zeile 5. Genau deshalb liest du im Stack Trace auch die Aufrufer.
+  - module: denkweise
+    type: cloze
+    text: Mit `git bisect ___` lässt du Git jeden Kandidaten automatisch testen. Ein Exit-Code von ___ bedeutet dabei „dieser Commit ist gut“.
+    blanks:
+      - [run]
+      - ["0"]
+    explanation: >
+      `git bisect run <befehl>` wertet den Exit-Code aus: 0 heißt gut, 1 bis 127 (außer 125) heißt schlecht,
+      125 heißt überspringen.
+  - module: denkweise
+    type: match
+    question: Ordne jedem Teil eines PHP-Fehlers seine Bedeutung zu.
+    pairs:
+      - { left: "Warning", right: "Skript läuft weiter, Ergebnis ist oft falsch" }
+      - { left: "Fatal error", right: "Skript bricht ab" }
+      - { left: "#0 im Stack trace", right: "Der innerste Aufruf" }
+      - { left: "{main}", right: "Der Start des Skripts" }
+    explanation: >
+      PHP nummeriert den Stack Trace von innen (#0) nach außen ({main}). Warnings sind leise, aber oft die Ursache
+      falscher Ergebnisse.
+  # --- Browser-DevTools ---
+  - module: browser-devtools
+    type: single
+    question: "Ein Formular schickt `POST /api/kontakt` und bekommt `422`. Wo findest du am schnellsten heraus, welches Feld ungültig ist?"
+    options:
+      - Im Elements-Panel unter Styles.
+      - Im Network-Tab in der Antwort (Preview oder Response) dieses Requests.
+      - Im Lighthouse-Bericht.
+      - Im Local Storage.
+    answer: 1
+    explanation: >
+      Der Statuscode sagt nur „ungültige Daten“. Welches Feld betroffen ist, steht fast immer in der Antwort des
+      Servers.
+  - module: browser-devtools
+    type: match
+    question: Ordne jedem Statuscode zu, wo du die Ursache zuerst suchst.
+    pairs:
+      - { left: "404", right: "Stimmt die angefragte Adresse?" }
+      - { left: "401", right: "Ist man angemeldet, wird ein Token mitgeschickt?" }
+      - { left: "500", right: "Server-Code und Server-Logs" }
+      - { left: "200 mit leerer Liste", right: "Stimmen die gesendeten Parameter?" }
+    explanation: >
+      4xx deutet auf die Anfrage, 5xx auf den Server. Status 200 heißt nur „technisch geklappt“ – ein leeres
+      Ergebnis ist ein logischer Fehler.
+  - module: browser-devtools
+    type: multiple
+    question: Welche Aussagen über Breakpoints in den DevTools stimmen?
+    options:
+      - Der Code hält **vor** der markierten Zeile an.
+      - Ein bedingter Breakpoint hält nur an, wenn seine Bedingung wahr ist.
+      - Ein Logpoint gibt eine Nachricht aus, ohne anzuhalten.
+      - Ein Breakpoint ändert dauerhaft die Datei auf dem Server.
+    answers: [0, 1, 2]
+    explanation: >
+      Breakpoints leben nur in deinem Browser. Sie ändern weder deinen Quellcode noch den Server.
+  - module: browser-devtools
+    type: cloze
+    text: "Damit die Request-Liste beim Neuladen nicht geleert wird, aktivierst du im Network-Tab ___ log. Den Wert eines Ausdrucks bei jedem Halt beobachtest du im Bereich ___."
+    blanks:
+      - [Preserve]
+      - [Watch]
+    explanation: >
+      „Preserve log“ behält die Einträge über Neuladen und Weiterleitungen hinweg. Watch-Ausdrücke werden nach
+      jedem Schritt neu berechnet.
+  # --- Node und PHP ---
+  - module: node-und-php
+    type: single
+    question: Ein kurzes Node-Skript ist schon fertig, bevor du dich mit dem Debugger verbinden kannst. Welche Option hilft?
+    options:
+      - "`node --inspect-brk skript.js`"
+      - "`node --watch skript.js`"
+      - "`node --trace-uncaught skript.js`"
+      - "`node --version`"
+    answer: 0
+    explanation: >
+      `--inspect-brk` hält vor der ersten Zeile an und wartet, bis ein Debugger verbunden ist.
+  - module: node-und-php
+    type: match
+    question: Ordne jedem Werkzeug seinen Zweck zu.
+    pairs:
+      - { left: "var_dump($x)", right: "Typ und Wert einer PHP-Variable ausgeben" }
+      - { left: "php -d xdebug.mode=develop", right: "Fehlermeldungen mit Call Stack und Argumenten" }
+      - { left: "console.table(liste)", right: "Array von Objekten als Tabelle in Node" }
+      - { left: "chrome://inspect", right: "Chrome-DevTools mit einem Node-Prozess verbinden" }
+    explanation: >
+      Für schnelle Fragen reichen Ausgaben, für knifflige Fälle verbindest du einen Debugger.
+  - module: node-und-php
+    type: single
+    question: "Xdebug meldet `Could not connect to debugging client. Tried: localhost:9003`. PHP läuft in Docker, die IDE auf deinem Laptop und lauscht. Was ist die wahrscheinlichste Ursache?"
+    options:
+      - Xdebug ist nicht installiert.
+      - "`localhost` zeigt im Container auf den Container selbst – `xdebug.client_host` sollte z. B. `host.docker.internal` sein."
+      - Die PHP-Version ist zu neu.
+      - Port 9003 ist der falsche Standard-Port.
+    answer: 1
+    explanation: >
+      Xdebug verbindet sich zur IDE. Im Container erreicht `localhost` nicht deinen Laptop.
+  - module: node-und-php
+    type: multiple
+    question: Ein PHP-Skript liefert still ein falsches Ergebnis. Welche Schritte machen versteckte Probleme sichtbar?
+    options:
+      - "`error_reporting(0)` und `@` vor Funktionsaufrufen entfernen"
+      - "`php -d display_errors=1 -d error_reporting=-1 skript.php` ausführen"
+      - Mit `var_dump` Zwischenwerte samt Typ ausgeben
+      - "`print_r(false)` nutzen, um Wahrheitswerte zu prüfen"
+    answers: [0, 1, 2]
+    explanation: >
+      `print_r(false)` gibt einen leeren String aus – ungeeignet, um `false` zu erkennen. Die anderen drei Schritte
+      machen Warnungen und Werte sichtbar.
+  # --- Logging und Fehlerklassen ---
+  - module: logging-und-fehlerklassen
+    type: single
+    question: Mit welchem Befehl verfolgst du eine Logdatei live, während du die Anwendung testest?
+    options:
+      - "`cat app.log`"
+      - "`tail -f app.log`"
+      - "`head -n 20 app.log`"
+      - "`grep -c ERROR app.log`"
+    answer: 1
+    explanation: >
+      `tail -f` bleibt offen und zeigt jede neue Zeile. Mit `| grep --line-buffered ERROR` filterst du dabei.
+  - module: logging-und-fehlerklassen
+    type: multiple
+    question: Was macht eine Logzeile beim Debuggen wirklich nützlich?
+    options:
+      - Ein passendes Log-Level
+      - Eine Request-ID, die alle Zeilen einer Anfrage verbindet
+      - Das Passwort der Nutzerin, damit man den Login nachstellen kann
+      - Konkrete IDs und Messwerte wie `bestellung_id=7 dauer_ms=812`
+    answers: [0, 1, 3]
+    explanation: >
+      Passwörter und Tokens gehören nie in Logs. Kontext wie IDs, Messwerte und eine Request-ID machen eine Zeile
+      wertvoll.
+  - module: logging-und-fehlerklassen
+    type: find-bug
+    question: Der Code soll alle drei Bestellungen speichern und dann „fertig“ melden. „fertig“ erscheint aber, bevor gespeichert wurde. In welcher Zeile steckt der Fehler?
+    language: js
+    code: |
+      async function speichereAlle(bestellungen) {
+        bestellungen.forEach(async (b) => {
+          await speichere(b);
+        });
+        console.log('fertig');
+      }
+    bug_line: 2
+    explanation: >
+      `forEach` wartet nicht auf async-Callbacks – eine Race Condition. Mit `for (const b of bestellungen) { await
+      speichere(b); }` oder `await Promise.all(bestellungen.map(speichere))` wird richtig gewartet.
+  - module: logging-und-fehlerklassen
+    type: match
+    question: Ordne jedem Symptom die wahrscheinlichste Fehlerklasse zu.
+    pairs:
+      - { left: "Letzter Eintrag ist undefined", right: "Off-by-one" }
+      - { left: "Cannot read properties of null", right: "null/undefined" }
+      - { left: "Ergebnis ist manchmal richtig, manchmal falsch", right: "Race Condition" }
+      - { left: "'5' + 1 ergibt '51'", right: "Type Juggling" }
+    explanation: >
+      Wer die Klassen kennt, springt bei einem Symptom direkt zur passenden Hypothese.
+  - module: logging-und-fehlerklassen
+    type: single
+    question: "Was ergibt in PHP 8 der Vergleich `'10' == '1e1'`?"
+    options:
+      - "true – beide Strings sehen wie Zahlen aus und werden numerisch verglichen"
+      - "false – die Strings sind verschieden"
+      - Einen TypeError
+    answer: 0
+    explanation: >
+      `1e1` ist 10 in wissenschaftlicher Schreibweise. `==` vergleicht numerische Strings als Zahlen. Mit `===`
+      wäre das Ergebnis `false`.
+tasks:
+  - module: logging-und-fehlerklassen
+    id: pruefung-durchschnitt-js
+    type: code
+    language: js
+    title: Durchschnittspreis ohne Überraschungen
+    description: |
+      `durchschnitt(produkte)` soll den Durchschnittspreis berechnen. Die Preise kommen aus einem CSV-Import und
+      sind deshalb **Strings** wie `'4.50'`. Im Moment stimmen die Ergebnisse nicht. Behebe alle Fehler:
+
+      - Alle Produkte zählen, auch das erste.
+      - Preise als Zahlen addieren.
+      - Produkte **ohne** Preis (Feld fehlt oder ist `null`) werden ignoriert und nicht mitgezählt.
+      - Gibt es kein Produkt mit Preis, ist das Ergebnis `0`.
+      - Das Ergebnis wird auf zwei Nachkommastellen gerundet (`Math.round(wert * 100) / 100`).
+    starter: |
+      function durchschnitt(produkte) {
+        let summe = 0;
+        for (let i = 1; i < produkte.length; i++) {
+          summe += produkte[i].preis;
+        }
+        return Math.round((summe / produkte.length) * 100) / 100;
+      }
+    tests:
+      - name: Durchschnitt über alle Produkte
+        code: "assertEqual(durchschnitt([{ preis: '4.50' }, { preis: '5.50' }, { preis: '2.00' }]), 4)"
+      - name: Produkte ohne Preis werden ignoriert
+        code: "assertEqual(durchschnitt([{ preis: '3.00' }, { name: 'ohne' }, { preis: null }, { preis: '1.00' }]), 2)"
+      - name: Leere Liste ergibt 0
+        code: assertEqual(durchschnitt([]), 0)
+      - name: Rundung auf zwei Stellen
+        code: "assertEqual(durchschnitt([{ preis: '1' }, { preis: '1' }, { preis: '2' }]), 1.33)"
+    hints:
+      - "Drei Fehler: Startindex, String-Addition und die fehlende Prüfung auf fehlende Preise."
+      - "Zähle mit einer eigenen Variable, wie viele Produkte einen Preis hatten, und nutze `Number(p.preis)`."
+    solution: |
+      function durchschnitt(produkte) {
+        let summe = 0;
+        let anzahl = 0;
+        for (const produkt of produkte) {
+          if (produkt.preis === undefined || produkt.preis === null) {
+            continue;
+          }
+          summe += Number(produkt.preis);
+          anzahl++;
+        }
+        if (anzahl === 0) {
+          return 0;
+        }
+        return Math.round((summe / anzahl) * 100) / 100;
+      }
+  - module: node-und-php
+    id: pruefung-gutschein-php
+    type: code
+    language: php
+    title: Gutscheinprüfung ohne Type Juggling
+    description: |
+      `gutscheinGueltig()` prüft, ob ein eingegebener Gutscheincode in der Liste gültiger Codes steht, und
+      `restwert()` liefert den Restwert eines Gutscheins. Beide Funktionen haben Fehler:
+
+      - Codes sind Strings wie `'0042'`. Der Code `'42'` darf **nicht** als gültig gelten, nur weil er
+        numerisch gleich ist. Groß- und Kleinschreibung spielt keine Rolle, Leerzeichen am Rand werden ignoriert.
+      - `restwert()` bekommt ein Array mit `wert` und optional `eingeloest`. Fehlt `eingeloest`, gilt `0`.
+        Der Restwert ist nie negativ.
+    starter: |
+      <?php
+      function gutscheinGueltig(string $eingabe, array $gueltigeCodes): bool
+      {
+          return in_array($eingabe, $gueltigeCodes);
+      }
+
+      function restwert(array $gutschein): float
+      {
+          return $gutschein['wert'] - $gutschein['eingeloest'];
+      }
+    tests:
+      - name: gültiger Code wird erkannt
+        code: assert_true(gutscheinGueltig('SOMMER10', ['SOMMER10', 'WINTER5']));
+      - name: Groß-/Kleinschreibung und Leerzeichen
+        code: assert_true(gutscheinGueltig('  sommer10 ', ['SOMMER10']));
+      - name: numerisch gleicher Code ist nicht gültig
+        code: assert_same(false, gutscheinGueltig('42', ['0042']));
+      - name: Restwert mit Einlösung
+        code: assert_same(15.0, restwert(['wert' => 25.0, 'eingeloest' => 10.0]));
+      - name: Restwert ohne eingeloest
+        code: assert_same(25.0, restwert(['wert' => 25.0]));
+      - name: Restwert nie negativ
+        code: assert_same(0.0, restwert(['wert' => 10.0, 'eingeloest' => 12.5]));
+    hints:
+      - "`in_array` vergleicht standardmäßig mit `==`. Der dritte Parameter `true` erzwingt einen strikten Vergleich."
+      - "Normalisiere vorher: `strtoupper(trim($eingabe))`. Für den fehlenden Schlüssel hilft `?? 0.0`, für den Mindestwert `max(0.0, …)`."
+    solution: |
+      <?php
+      function gutscheinGueltig(string $eingabe, array $gueltigeCodes): bool
+      {
+          return in_array(strtoupper(trim($eingabe)), $gueltigeCodes, true);
+      }
+
+      function restwert(array $gutschein): float
+      {
+          return max(0.0, (float) $gutschein['wert'] - (float) ($gutschein['eingeloest'] ?? 0.0));
+      }
+  - module: logging-und-fehlerklassen
+    id: pruefung-json-logs
+    type: terminal
+    title: Strukturierte Logs auswerten
+    description: |
+      Im Ordner `pruefung-logs` liegt `app.jsonl`: 40 Logzeilen im JSON-Format, eine pro Anfrage, mit den
+      Feldern `zeit`, `level`, `request_id`, `pfad` und `dauer_ms`.
+
+      1. Zähle die Einträge mit `level` gleich `error` und schreibe **nur die Zahl** in `fehler.txt`.
+      2. Finde die Anfrage mit der größten `dauer_ms` und schreibe **nur ihre** `request_id` (z. B. `req-2001`)
+         in `langsamste.txt`.
+      3. Schreibe alle Einträge mit dem Level `warning` – unverändert, eine Zeile pro Eintrag – in `warnungen.jsonl`.
+
+      Nutze dafür `jq` oder `grep`. Klicke zuerst auf **Aufgabe vorbereiten**, damit die Logdatei angelegt wird.
+    workdir: pruefung-logs
+    setup: |
+      for i in $(seq 1 40); do
+        if [ $((i % 9)) -eq 0 ]; then level=error; elif [ $((i % 5)) -eq 0 ]; then level=warning; else level=info; fi
+        dauer=$(( (i * 37) % 500 ))
+        printf '{"zeit":"2026-10-09T09:%02d:00Z","level":"%s","request_id":"req-%d","pfad":"/api/bestellungen","dauer_ms":%d}\n' "$i" "$level" "$((2000 + i))" "$dauer"
+      done > app.jsonl
+    checks:
+      - type: command
+        run: test "$(tr -d '[:space:]' < fehler.txt)" = "$(jq -c 'select(.level == "error")' app.jsonl | wc -l | tr -d '[:space:]')"
+        message: In fehler.txt gehört nur die Anzahl der Einträge mit level error.
+      - type: command
+        run: test "$(tr -d '[:space:]' < langsamste.txt)" = "$(jq -s -r 'max_by(.dauer_ms) | .request_id' app.jsonl)"
+        message: In langsamste.txt gehört die request_id der Anfrage mit der größten dauer_ms.
+      - type: command
+        run: grep '"level":"warning"' app.jsonl | diff -q - warnungen.jsonl
+        message: warnungen.jsonl soll genau die warning-Einträge aus app.jsonl enthalten, unverändert und in derselben Reihenfolge.
+    hints:
+      - "`jq -c 'select(.level == \"error\")' app.jsonl | wc -l` zählt die Fehler."
+      - "`jq -s -r 'max_by(.dauer_ms) | .request_id' app.jsonl` liest alle Zeilen als Array und nimmt die langsamste."
+      - "Für die Warnungen reicht `grep '\"level\":\"warning\"' app.jsonl > warnungen.jsonl`."
+    solution: |
+      ```bash
+      cd pruefung-logs
+      jq -c 'select(.level == "error")' app.jsonl | wc -l > fehler.txt
+      jq -s -r 'max_by(.dauer_ms) | .request_id' app.jsonl > langsamste.txt
+      grep '"level":"warning"' app.jsonl > warnungen.jsonl
+      ```

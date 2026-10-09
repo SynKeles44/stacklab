@@ -1,0 +1,527 @@
+title: Das kaputte Kassenbuch reparieren
+description: |
+  In diesem Projekt übernimmst du ein kleines Kommandozeilen-Programm, das jemand anderes geschrieben hat:
+  `kassenbuch`, ein Haushaltsbuch für die Kommandozeile in Node.js. Es liest Buchungen aus einer CSV-Datei
+  und kann die Summe berechnen, nach Kategorien filtern und einzelne Buchungen anzeigen. Leider steckt es
+  voller Fehler – manche lassen das Programm abstürzen, andere rechnen still falsch.
+
+  Du gehst vor wie im Berufsalltag: Erst reproduzierst du die Fehler und führst ein Fehlerprotokoll, dann
+  behebst du einen Fehler nach dem anderen – jeweils mit Hypothese, Debug-Werkzeug und Test. Zum Schluss
+  baust du ein einfaches Logging mit Log-Level ein. Eine Test-Suite mit `node --test` ist schon vorhanden und
+  zeigt dir, wann du fertig bist.
+
+  Alles passiert im Ordner `projekt` in deinem Debugging-Workspace. Öffne dafür das Übungs-Terminal. Nach
+  jedem Schritt prüft Stacklab den echten Zustand deiner Dateien. Die Schritte bauen aufeinander auf – lösche
+  zwischendurch nichts, was ein früherer Schritt angelegt hat. **Ändere die Testdateien in `test/` nicht.**
+goal: >
+  Ein funktionierendes `kassenbuch` in `projekt`, dessen 12 Tests mit `node --test` grün sind, das
+  unbekannte Buchungen sauber meldet, mit `LOG_LEVEL=debug` Debug-Meldungen auf stderr schreibt – und ein
+  Fehlerprotokoll `BUGS.md`, das jeden gefundenen Fehler mit Symptom und Ursache beschreibt.
+workdir: projekt
+steps:
+  - id: projekt-anlegen
+    title: Projekt anlegen und Tests laufen lassen
+    description: |
+      Kopiere den folgenden Block **komplett** ins Übungs-Terminal und drücke Enter. Er legt den Ordner
+      `projekt` mit allen Dateien an und wechselt hinein.
+
+      ```bash
+      mkdir -p projekt/src projekt/test/fixtures projekt/daten && cd projekt
+      cat > package.json <<'EOF'
+      {
+        "name": "kassenbuch",
+        "version": "1.0.0",
+        "private": true,
+        "scripts": {
+          "test": "node --test"
+        }
+      }
+      EOF
+      cat > daten/buchungen.csv <<'EOF'
+      id;datum;text;betrag;kategorie
+      1;2026-10-01;Gehalt;2450,00;einnahme
+      2;2026-10-02;Miete;-890,00;wohnen
+      3;2026-10-03;Supermarkt;-63,47;lebensmittel
+      4;2026-10-05;Bäcker;-7,80;lebensmittel
+      5;2026-10-07;Strom;-72,00;wohnen
+      6;2026-10-08;Kino;-24,50;freizeit
+      7;2026-10-09;Supermarkt;-48,13;lebensmittel
+      8;2026-10-10;Flohmarkt;35,00;einnahme
+      EOF
+      cat > test/fixtures/mini.csv <<'EOF'
+      id;datum;text;betrag;kategorie
+      1;2026-09-01;Taschengeld;50,00;einnahme
+      2;2026-09-02;Buch;-12,99;freizeit
+      3;2026-09-03;Brötchen;-3,50;lebensmittel
+      EOF
+      cat > src/betrag.js <<'EOF'
+      function parseBetrag(text) {
+        return parseInt(text, 10);
+      }
+      
+      function formatBetrag(zahl) {
+        return zahl.toFixed(2).replace('.', ',');
+      }
+      
+      module.exports = { parseBetrag, formatBetrag };
+      EOF
+      cat > src/buchungen.js <<'EOF'
+      const fs = require('node:fs/promises');
+      const { parseBetrag } = require('./betrag');
+      
+      async function ladeBuchungen(datei) {
+        const inhalt = await fs.readFile(datei, 'utf8');
+        return inhalt.trim().split('\n').slice(1).map((zeile) => {
+          const [id, datum, text, betrag, kategorie] = zeile.split(';');
+          return { id: Number(id), datum, text, betrag: parseBetrag(betrag), kategorie };
+        });
+      }
+      
+      function summe(buchungen) {
+        let ergebnis = 0;
+        for (let i = 1; i < buchungen.length; i++) {
+          ergebnis += buchungen[i].betrag;
+        }
+        return ergebnis;
+      }
+      
+      function findeBuchung(buchungen, id) {
+        return buchungen.find((buchung) => buchung.id === id);
+      }
+      
+      function nachKategorie(buchungen, kategorie) {
+        return buchungen.filter((buchung) => buchung.kategorie === kategorie);
+      }
+      
+      module.exports = { ladeBuchungen, summe, findeBuchung, nachKategorie };
+      EOF
+      cat > kassenbuch.js <<'EOF'
+      const { ladeBuchungen, summe, findeBuchung, nachKategorie } = require('./src/buchungen');
+      const { formatBetrag } = require('./src/betrag');
+      
+      async function main() {
+        const [befehl, argument] = process.argv.slice(2);
+        const datei = process.env.KASSENBUCH_DATEI ?? 'daten/buchungen.csv';
+        const buchungen = ladeBuchungen(datei);
+      
+        if (befehl === 'summe') {
+          console.log(`Summe: ${formatBetrag(summe(buchungen))} €`);
+        } else if (befehl === 'kategorie') {
+          const treffer = nachKategorie(buchungen, argument);
+          console.log(`${argument}: ${formatBetrag(summe(treffer))} € in ${treffer.length} Buchungen`);
+        } else if (befehl === 'zeige') {
+          const buchung = findeBuchung(buchungen, argument);
+          console.log(`#${buchung.id} ${buchung.datum} ${buchung.text}: ${formatBetrag(buchung.betrag)} €`);
+        } else {
+          console.error('Befehle: summe | kategorie <name> | zeige <id>');
+          process.exitCode = 2;
+        }
+      }
+      
+      main();
+      EOF
+      cat > test/betrag.test.js <<'EOF'
+      const test = require('node:test');
+      const assert = require('node:assert/strict');
+      const { parseBetrag, formatBetrag } = require('../src/betrag');
+      
+      test('parseBetrag liest Komma-Beträge', () => {
+        assert.equal(parseBetrag('12,50'), 12.5);
+        assert.equal(parseBetrag('-3,99'), -3.99);
+      });
+      
+      test('parseBetrag liest ganze Zahlen', () => {
+        assert.equal(parseBetrag('7'), 7);
+      });
+      
+      test('formatBetrag nutzt Komma und zwei Nachkommastellen', () => {
+        assert.equal(formatBetrag(1234.5), '1234,50');
+        assert.equal(formatBetrag(-0.1), '-0,10');
+      });
+      EOF
+      cat > test/buchungen.test.js <<'EOF'
+      const test = require('node:test');
+      const assert = require('node:assert/strict');
+      const path = require('node:path');
+      const { ladeBuchungen, summe, findeBuchung, nachKategorie } = require('../src/buchungen');
+      
+      const mini = path.join(__dirname, 'fixtures', 'mini.csv');
+      
+      test('summe addiert alle Buchungen', () => {
+        assert.equal(summe([{ betrag: 10 }, { betrag: -4 }, { betrag: 1.5 }]), 7.5);
+      });
+      
+      test('summe einer leeren Liste ist 0', () => {
+        assert.equal(summe([]), 0);
+      });
+      
+      test('ladeBuchungen liest alle Zeilen mit Kommabeträgen', async () => {
+        const buchungen = await ladeBuchungen(mini);
+        assert.equal(buchungen.length, 3);
+        assert.equal(buchungen[1].betrag, -12.99);
+        assert.equal(Math.round(summe(buchungen) * 100) / 100, 33.51);
+      });
+      
+      test('findeBuchung findet per Zahl und liefert sonst undefined', () => {
+        const liste = [{ id: 1 }, { id: 2 }];
+        assert.deepEqual(findeBuchung(liste, 2), { id: 2 });
+        assert.equal(findeBuchung(liste, 99), undefined);
+      });
+      
+      test('nachKategorie filtert', () => {
+        const liste = [{ kategorie: 'a' }, { kategorie: 'b' }, { kategorie: 'a' }];
+        assert.equal(nachKategorie(liste, 'a').length, 2);
+      });
+      EOF
+      cat > test/cli.test.js <<'EOF'
+      const test = require('node:test');
+      const assert = require('node:assert/strict');
+      const path = require('node:path');
+      const { spawnSync } = require('node:child_process');
+      
+      const root = path.join(__dirname, '..');
+      
+      function kassenbuch(...args) {
+        return spawnSync(process.execPath, ['kassenbuch.js', ...args], {
+          cwd: root,
+          encoding: 'utf8',
+          env: { ...process.env, KASSENBUCH_DATEI: 'test/fixtures/mini.csv', LOG_LEVEL: 'error' },
+        });
+      }
+      
+      test('summe gibt die Summe aus', () => {
+        const ergebnis = kassenbuch('summe');
+        assert.equal(ergebnis.status, 0);
+        assert.equal(ergebnis.stdout.trim(), 'Summe: 33,51 €');
+      });
+      
+      test('kategorie zählt Treffer', () => {
+        const ergebnis = kassenbuch('kategorie', 'freizeit');
+        assert.equal(ergebnis.stdout.trim(), 'freizeit: -12,99 € in 1 Buchungen');
+      });
+      
+      test('zeige gibt eine Buchung aus', () => {
+        const ergebnis = kassenbuch('zeige', '2');
+        assert.equal(ergebnis.status, 0);
+        assert.equal(ergebnis.stdout.trim(), '#2 2026-09-02 Buch: -12,99 €');
+      });
+      
+      test('zeige mit unbekannter ID meldet einen Fehler', () => {
+        const ergebnis = kassenbuch('zeige', '99');
+        assert.equal(ergebnis.status, 1);
+        assert.equal(ergebnis.stdout, '');
+        assert.match(ergebnis.stderr, /Buchung 99 nicht gefunden/);
+      });
+      EOF
+      ```
+
+      Danach siehst du dir an, was du übernommen hast:
+
+      1. `tree -I node_modules` oder `ls -R` zeigt dir den Aufbau.
+      2. Lies `kassenbuch.js` und die beiden Dateien in `src/`.
+      3. Führe die Tests aus: `node --test`. Merke dir, wie viele Tests fehlschlagen.
+    checklist:
+      - Ordner projekt mit kassenbuch.js, src/, test/ und daten/ angelegt
+      - "`node --test` ausgeführt und die Fehlschläge gelesen"
+    hints:
+      - Kopiere den Block bis einschließlich der letzten `EOF`-Zeile. Fehlt etwas, lösche den Ordner mit `rm -rf projekt` und kopiere den Block erneut.
+      - "`node --test` sucht automatisch alle Dateien, die auf `.test.js` enden."
+    checks:
+      - type: file_exists
+        path: kassenbuch.js
+        message: kassenbuch.js fehlt. Kopiere den Block aus der Beschreibung vollständig ins Terminal.
+      - type: file_exists
+        path: daten/buchungen.csv
+        message: daten/buchungen.csv fehlt. Kopiere den Block aus der Beschreibung vollständig ins Terminal.
+      - type: command
+        run: ls test/*.test.js | wc -l
+        stdout_matches: "^\\s*3\\s*$"
+        message: Im Ordner test sollen die drei Testdateien betrag.test.js, buchungen.test.js und cli.test.js liegen.
+    solution: |
+      ```bash
+      # Block aus der Beschreibung einfügen, dann:
+      ls -R
+      node --test        # mehrere Tests schlagen fehl
+      ```
+  - id: fehlerprotokoll
+    title: Fehler reproduzieren und protokollieren
+    description: |
+      Bevor du irgendetwas änderst, sammelst du Beobachtungen. Führe diese drei Befehle aus und vergleiche mit
+      dem, was ein Haushaltsbuch ausgeben sollte:
+
+      ```bash
+      node kassenbuch.js summe
+      node kassenbuch.js kategorie lebensmittel
+      node kassenbuch.js zeige 3
+      ```
+
+      Lege die Datei `BUGS.md` an. Schreibe für **jede** Beobachtung einen Stichpunkt, der mit `- ` beginnt:
+      Befehl, erwartetes und tatsächliches Ergebnis. Die Ursache kennst du noch nicht – die trägst du später
+      nach. Beispiel:
+
+      ```markdown
+      - `node kassenbuch.js summe`: erwartet die Summe aller Buchungen, bekommen `Summe: 0,00 €`
+      ```
+
+      Tipp: Die erwartete Summe kannst du grob im Kopf überschlagen – das Gehalt allein ist 2450 €.
+    checklist:
+      - Alle drei Befehle ausgeführt
+      - BUGS.md mit mindestens drei Stichpunkten (erwartet / bekommen)
+    hints:
+      - "`summe` stürzt nicht ab, liefert aber 0 – ein stiller Fehler. Die anderen beiden brechen mit einem TypeError ab."
+      - "Schreibe jeden Stichpunkt in eine eigene Zeile, die mit `- ` beginnt."
+    checks:
+      - type: file_exists
+        path: BUGS.md
+        message: Lege die Datei BUGS.md an.
+      - type: command
+        run: grep -c '^- ' BUGS.md
+        stdout_matches: "^\\s*([3-9]|[1-9][0-9])\\s*$"
+        message: BUGS.md braucht mindestens drei Stichpunkte, die jeweils mit `- ` beginnen.
+    solution: |
+      ```markdown
+      - `node kassenbuch.js summe`: erwartet etwa 1379 €, bekommen `Summe: 0,00 €`
+      - `node kassenbuch.js kategorie lebensmittel`: erwartet eine Summe, bekommen `TypeError: buchungen.filter is not a function`
+      - `node kassenbuch.js zeige 3`: erwartet die Buchung Supermarkt, bekommen `TypeError: buchungen.find is not a function`
+      ```
+  - id: await-fehlt
+    title: Fehler 1 – die fehlende Promise
+    description: |
+      Zwei Abstürze melden `buchungen.filter is not a function` und `buchungen.find is not a function`. Ein Array
+      hat diese Methoden – also ist `buchungen` offenbar **kein** Array.
+
+      1. Prüfe deine Hypothese mit einer Debug-Ausgabe direkt nach dem Laden in `kassenbuch.js`:
+         `console.error(buchungen);`. Was steht da?
+      2. Schau dir an, wie `ladeBuchungen` in `src/buchungen.js` definiert ist, und behebe den Fehler in
+         `kassenbuch.js`.
+      3. Entferne die Debug-Ausgabe wieder.
+      4. Ergänze in `BUGS.md` bei den betroffenen Stichpunkten die Ursache, z. B. mit `Ursache:`.
+
+      Danach stürzen `kategorie` und `zeige` nicht mehr mit `is not a function` ab – ganz richtig rechnen sie
+      aber noch nicht.
+    checklist:
+      - Hypothese mit console.error geprüft
+      - await an der richtigen Stelle ergänzt
+      - Debug-Ausgabe entfernt
+    hints:
+      - "Die Ausgabe zeigt `Promise { <pending> }`. `ladeBuchungen` ist eine `async`-Funktion."
+      - "Eine Promise musst du abwarten: `const buchungen = await ladeBuchungen(datei);` – `main` ist schon `async`."
+    checks:
+      - type: command
+        run: grep -Eq 'await\s+ladeBuchungen' kassenbuch.js
+        message: In kassenbuch.js wird ladeBuchungen noch nicht mit await abgewartet.
+      - type: command
+        run: node kassenbuch.js kategorie freizeit 2>&1
+        stdout_matches: "^freizeit: "
+        message: "`node kassenbuch.js kategorie freizeit` soll eine Zeile ausgeben, die mit `freizeit:` beginnt – ohne Absturz."
+      - type: command
+        run: "! grep -Eq 'console\\.(log|error)\\(buchungen\\)' kassenbuch.js"
+        message: Entferne die Debug-Ausgabe console.log(buchungen) bzw. console.error(buchungen) wieder.
+    solution: |
+      In `kassenbuch.js`:
+
+      ```js
+      const buchungen = await ladeBuchungen(datei);
+      ```
+  - id: betraege-parsen
+    title: Fehler 2 – Kommabeträge
+    description: |
+      `node kassenbuch.js kategorie lebensmittel` ergibt jetzt `-55,00 €` – richtig wären `-119,40 €`. Auffällig: Es gibt
+      keine Cent-Beträge mehr. Dass die Summe auch sonst zu klein ist, klärst du im nächsten Schritt.
+
+      1. Führe nur die Betrag-Tests aus: `node --test test/betrag.test.js`. Lies die Assertion-Meldung.
+      2. Probiere `parseBetrag` direkt in Node aus:
+         `node -e "console.log(require('./src/betrag').parseBetrag('12,50'))"`.
+      3. Repariere `parseBetrag` in `src/betrag.js`, sodass deutsche Beträge mit Komma korrekt als Zahl gelesen
+         werden – auch negative.
+      4. Trage die Ursache in `BUGS.md` ein.
+    checklist:
+      - "`node --test test/betrag.test.js` ist grün"
+      - Ursache in BUGS.md notiert
+    hints:
+      - "`parseInt('12,50', 10)` liest nur bis zum ersten Zeichen, das nicht zu einer ganzen Zahl gehört – das Komma."
+      - "JavaScript erwartet einen Punkt als Dezimaltrenner: `Number(text.replace(',', '.'))`."
+    checks:
+      - type: command
+        run: node --test test/betrag.test.js
+        message: "`node --test test/betrag.test.js` schlägt noch fehl. parseBetrag('12,50') muss 12.5 ergeben."
+      - type: command
+        run: |
+          node -e "process.exit(require('./src/betrag').parseBetrag('-1234,56') === -1234.56 ? 0 : 1)"
+        message: parseBetrag('-1234,56') soll genau -1234.56 liefern.
+    solution: |
+      ```js
+      function parseBetrag(text) {
+        return Number(text.replace(',', '.'));
+      }
+      ```
+  - id: summe-off-by-one
+    title: Fehler 3 – die Summe
+    description: |
+      `node kassenbuch.js summe` liefert jetzt einen Betrag – aber einen falschen.
+
+      1. Führe `node --test test/buchungen.test.js` aus. Welcher Test schlägt fehl, und um wie viel weicht das
+         Ergebnis ab?
+      2. Formuliere eine Hypothese und prüfe sie – zum Beispiel mit einem Breakpoint: Starte
+         `node --inspect-brk --test test/buchungen.test.js` und verbinde dich, oder nutze `node inspect`
+         bzw. eine gezielte Ausgabe.
+      3. Repariere `summe()` in `src/buchungen.js` und trage die Ursache in `BUGS.md` ein.
+
+      Erwartet: `node kassenbuch.js summe` gibt `Summe: 1379,10 €` aus.
+    checklist:
+      - Abweichung im Test gelesen und Hypothese formuliert
+      - "`summe()` korrigiert"
+      - Ursache in BUGS.md notiert
+    hints:
+      - "Der Test erwartet 7.5 und bekommt -2.5 – es fehlen genau 10. Das ist der Betrag des **ersten** Elements."
+      - "Arrays beginnen bei Index 0: `for (let i = 0; i < buchungen.length; i++)`."
+    checks:
+      - type: command
+        run: node --test test/buchungen.test.js
+        message: "`node --test test/buchungen.test.js` schlägt noch fehl. Prüfe den Startwert der Schleife in summe()."
+      - type: command
+        run: node kassenbuch.js summe
+        stdout_equals: "Summe: 1379,10 €"
+        message: "`node kassenbuch.js summe` soll `Summe: 1379,10 €` ausgeben."
+    solution: |
+      ```js
+      for (let i = 0; i < buchungen.length; i++) {
+      ```
+  - id: zeige-robust
+    title: Fehler 4 – Buchung anzeigen
+    description: |
+      `node kassenbuch.js zeige 3` stürzt immer noch ab, und zwar mit
+      `Cannot read properties of undefined`. Hier stecken zwei Probleme hintereinander:
+
+      1. Finde heraus, warum `findeBuchung` selbst für eine vorhandene ID nichts findet. Tipp: Vergleiche mit
+         `console.error(typeof argument, typeof buchungen[0].id)` die Typen.
+      2. Repariere den Aufruf in `kassenbuch.js`, sodass `zeige 3` die Buchung ausgibt:
+         `#3 2026-10-03 Supermarkt: -63,47 €`.
+      3. Für eine unbekannte ID wie `zeige 99` soll das Programm **nicht** abstürzen, sondern auf der
+         **Standardfehlerausgabe** `Buchung 99 nicht gefunden` melden und mit Exit-Code `1` enden. Auf stdout
+         erscheint dann nichts.
+      4. Trage beide Ursachen in `BUGS.md` ein.
+    checklist:
+      - Typen verglichen – String vs. Zahl
+      - zeige 3 gibt die Buchung aus
+      - zeige 99 meldet den Fehler auf stderr mit Exit-Code 1
+    hints:
+      - "`process.argv` enthält immer Strings. `'3' === 3` ist `false` – eine typische Type-Juggling-Falle."
+      - "Wandle um: `findeBuchung(buchungen, Number(argument))`."
+      - "Prüfe danach `if (buchung === undefined) { console.error(`Buchung ${argument} nicht gefunden`); process.exitCode = 1; return; }`."
+    checks:
+      - type: command
+        run: node kassenbuch.js zeige 3
+        stdout_equals: "#3 2026-10-03 Supermarkt: -63,47 €"
+        message: "`node kassenbuch.js zeige 3` soll genau `#3 2026-10-03 Supermarkt: -63,47 €` ausgeben."
+      - type: command
+        run: node kassenbuch.js zeige 99 2>/dev/null
+        expect_exit: 1
+        stdout_equals: ""
+        message: "`zeige 99` soll mit Exit-Code 1 enden und nichts auf stdout ausgeben."
+      - type: command
+        run: node kassenbuch.js zeige 99 2>&1 >/dev/null
+        expect_exit: 1
+        stdout_matches: "Buchung 99 nicht gefunden"
+        message: "`zeige 99` soll auf stderr `Buchung 99 nicht gefunden` melden – nicht mit einem Stack Trace abstürzen."
+    solution: |
+      ```js
+      } else if (befehl === 'zeige') {
+        const buchung = findeBuchung(buchungen, Number(argument));
+        if (buchung === undefined) {
+          console.error(`Buchung ${argument} nicht gefunden`);
+          process.exitCode = 1;
+          return;
+        }
+        console.log(`#${buchung.id} ${buchung.datum} ${buchung.text}: ${formatBetrag(buchung.betrag)} €`);
+      }
+      ```
+  - id: logging-einbauen
+    title: Logging mit Log-Level einbauen
+    description: |
+      Beim nächsten Fehler willst du nicht wieder `console.error` einbauen müssen. Baue deshalb ein kleines
+      Logging in `kassenbuch.js` ein:
+
+      1. Schreibe eine Funktion `log(level, nachricht)` mit den Leveln `debug`, `info`, `warn` und `error`.
+      2. Die Umgebungsvariable `LOG_LEVEL` legt die Schwelle fest; ohne sie gilt `info`. Geschrieben wird, was
+         gleich wichtig oder wichtiger als die Schwelle ist.
+      3. Log-Zeilen gehen auf **stderr** und haben die Form `[debug] …`.
+      4. Logge direkt nach dem Laden mit dem Level `debug`: `<anzahl> Buchungen geladen aus <datei>`.
+
+      Erwartet: `LOG_LEVEL=debug node kassenbuch.js summe` zeigt auf stderr
+      `[debug] 8 Buchungen geladen aus daten/buchungen.csv`, auf stdout weiterhin nur die Summe. Ohne
+      `LOG_LEVEL` erscheint die debug-Zeile nicht.
+    checklist:
+      - log()-Funktion mit Schwelle aus LOG_LEVEL
+      - debug-Meldung nach dem Laden
+      - Log-Zeilen auf stderr, stdout unverändert
+    hints:
+      - "`const LEVELS = ['debug', 'info', 'warn', 'error'];` – über `LEVELS.indexOf(level)` vergleichst du die Wichtigkeit."
+      - "`if (LEVELS.indexOf(level) >= LEVELS.indexOf(process.env.LOG_LEVEL ?? 'info')) console.error(`[${level}] ${nachricht}`);`"
+    checks:
+      - type: command
+        run: LOG_LEVEL=debug node kassenbuch.js summe 2>&1 >/dev/null
+        stdout_matches: "\\[debug\\] 8 Buchungen geladen aus daten/buchungen\\.csv"
+        message: "Mit LOG_LEVEL=debug soll auf stderr `[debug] 8 Buchungen geladen aus daten/buchungen.csv` erscheinen."
+      - type: command
+        run: LOG_LEVEL=debug node kassenbuch.js summe 2>/dev/null
+        stdout_equals: "Summe: 1379,10 €"
+        message: Auf stdout darf weiterhin nur die Summe stehen – Log-Zeilen gehören auf stderr (console.error).
+      - type: command
+        run: node kassenbuch.js summe 2>&1 | grep -c '^\[debug\]' || true
+        stdout_equals: "0"
+        message: Ohne LOG_LEVEL gilt die Schwelle info – debug-Zeilen dürfen dann nicht erscheinen.
+    solution: |
+      ```js
+      const LEVELS = ['debug', 'info', 'warn', 'error'];
+
+      function log(level, nachricht) {
+        const schwelle = LEVELS.indexOf(process.env.LOG_LEVEL ?? 'info');
+        if (LEVELS.indexOf(level) >= schwelle) {
+          console.error(`[${level}] ${nachricht}`);
+        }
+      }
+
+      // in main() direkt nach dem Laden:
+      log('debug', `${buchungen.length} Buchungen geladen aus ${datei}`);
+      ```
+  - id: abschluss
+    title: Alle Tests grün und Protokoll vollständig
+    description: |
+      Zeit für die Abnahme:
+
+      1. Führe die komplette Test-Suite aus: `node --test`. Alle 12 Tests müssen bestehen.
+      2. Vervollständige `BUGS.md`: Für jeden der **vier** behobenen Fehler steht eine Zeile mit `Ursache:` –
+         was genau war falsch und warum.
+      3. Prüfe mit `grep -rn 'console.log(buchungen\|debugger' kassenbuch.js src/`, dass keine
+         Debug-Reste übrig sind.
+
+      Herzlichen Glückwunsch – du hast ein fremdes Programm systematisch repariert und dokumentiert.
+    checklist:
+      - "`node --test` meldet 12 bestandene Tests"
+      - BUGS.md enthält für alle vier Fehler eine Ursache
+      - Keine Debug-Reste im Code
+    hints:
+      - Schlägt ein Test aus einem früheren Schritt wieder fehl, lies seine Assertion-Meldung – vielleicht hat eine spätere Änderung etwas kaputt gemacht.
+      - "Die vier Ursachen: fehlendes await, parseInt bei Kommabeträgen, Schleife ab 1, String-ID ohne Umwandlung samt fehlender undefined-Prüfung."
+    checks:
+      - type: command
+        run: node --test
+        message: "`node --test` meldet noch Fehlschläge. Lies die Ausgabe – welche Datei und welcher Test?"
+      - type: command
+        run: test "$(grep -c 'Ursache:' BUGS.md)" -ge 4
+        message: In BUGS.md fehlen Ursachen. Ergänze für jeden der vier behobenen Fehler eine Zeile mit `Ursache:`.
+      - type: command
+        run: "! grep -rEq 'debugger;|console\\.(log|error)\\(buchungen\\)' kassenbuch.js src/"
+        message: Im Code stecken noch Debug-Reste (debugger; oder eine Ausgabe von buchungen). Entferne sie.
+    solution: |
+      ```markdown
+      - `summe`: bekommen 0,00 € – Ursache: `ladeBuchungen` wurde ohne `await` aufgerufen, `buchungen` war eine Promise.
+      - Kommabeträge: Ursache: `parseInt` bricht am Komma ab, richtig ist `Number(text.replace(',', '.'))`.
+      - Summe zu klein: Ursache: Die Schleife in `summe()` begann bei Index 1 (Off-by-one).
+      - `zeige 3`: Ursache: Die ID aus `process.argv` war ein String, `===` mit der Zahl schlug fehl; zusätzlich fehlte die Prüfung auf `undefined`.
+      ```
+
+      ```bash
+      node --test     # tests 12, pass 12, fail 0
+      ```
