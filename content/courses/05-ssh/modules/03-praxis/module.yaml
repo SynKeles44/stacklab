@@ -1,0 +1,67 @@
+title: "Praxis: Tunnel, Bastion und Git"
+description: Dateien und Tunnel, Bastion-Hosts, Server-Härtung sowie SSH-Schlüssel für GitHub und signierte Commits.
+exercise:
+  id: modul-uebung-tunnel
+  type: terminal
+  title: Produktionsdatenbank über die Bastion
+  description: |
+    Die Produktionsdatenbank `10.0.1.30` liegt im privaten Netz hinter der Bastion `203.0.113.5`.
+    Schreibe im Ordner `prod-tunnel` eine Datei `config` und ein kleines Skript:
+
+    1. `Host bastion`: HostName `203.0.113.5`, User `deploy`.
+    2. `Host db-prod`: HostName `10.0.1.30`, User `deploy`, ProxyJump `bastion`,
+       ein Tunnel von lokal `15432` zu `localhost:5432` (aus Sicht der Datenbank-Maschine)
+       und `ExitOnForwardFailure yes`.
+    3. `Host intern-proxy`: HostName `203.0.113.5`, User `deploy`, ein SOCKS-Proxy auf lokal `1080`.
+    4. Eine Datei `tunnel.sh`, die den Datenbank-Tunnel im Hintergrund ohne Shell öffnet:
+       `ssh -F ./config -f -N db-prod`. Mach sie ausführbar.
+  workdir: prod-tunnel
+  checks:
+    - type: command
+      run: ssh -G db-prod -F ./config 2>/dev/null | grep -E '^(hostname|user|proxyjump|localforward|exitonforwardfailure) ' | sort | tr '\n' ' '
+      stdout_matches: "^exitonforwardfailure yes hostname 10\\.0\\.1\\.30 localforward 15432 \\[localhost\\]:5432 proxyjump bastion user deploy$"
+      message: "db-prod braucht HostName 10.0.1.30, User deploy, ProxyJump bastion, LocalForward 15432 localhost:5432 und ExitOnForwardFailure yes."
+    - type: command
+      run: ssh -G bastion -F ./config 2>/dev/null | grep -E '^(hostname|user|proxyjump) ' | sort | tr '\n' ' '
+      stdout_matches: "^hostname 203\\.0\\.113\\.5 user deploy$"
+      message: bastion braucht HostName 203.0.113.5 und User deploy.
+    - type: command
+      run: ssh -G intern-proxy -F ./config 2>/dev/null | grep -E '^(hostname|dynamicforward) ' | sort | tr '\n' ' '
+      stdout_matches: "^dynamicforward (\\[?localhost\\]?:)?1080 hostname 203\\.0\\.113\\.5$"
+      message: intern-proxy braucht HostName 203.0.113.5 und DynamicForward 1080.
+    - type: file_contains
+      path: tunnel.sh
+      pattern: "ssh\\s+.*-f.*-N.*db-prod|ssh\\s+.*-N.*-f.*db-prod"
+      message: tunnel.sh soll ssh mit -f und -N für db-prod aufrufen.
+    - type: command
+      run: test -x tunnel.sh
+      message: tunnel.sh ist noch nicht ausführbar (chmod +x tunnel.sh).
+  hints:
+    - "Die Config-Optionen heißen LocalForward, DynamicForward, ProxyJump und ExitOnForwardFailure."
+    - "LocalForward hat zwei Werte: `LocalForward 15432 localhost:5432`."
+    - "Ein Skript beginnt mit `#!/usr/bin/env bash`; ausführbar machst du es mit `chmod +x tunnel.sh`."
+  solution: |
+    ```text title="prod-tunnel/config"
+    Host bastion
+      HostName 203.0.113.5
+      User deploy
+
+    Host db-prod
+      HostName 10.0.1.30
+      User deploy
+      ProxyJump bastion
+      LocalForward 15432 localhost:5432
+      ExitOnForwardFailure yes
+
+    Host intern-proxy
+      HostName 203.0.113.5
+      User deploy
+      DynamicForward 1080
+    ```
+
+    ```bash title="prod-tunnel/tunnel.sh"
+    #!/usr/bin/env bash
+    ssh -F ./config -f -N db-prod
+    ```
+
+    Danach: `chmod +x tunnel.sh`

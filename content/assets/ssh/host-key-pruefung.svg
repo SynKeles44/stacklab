@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 380" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="800" height="380" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Host-Key-Prüfung: Spreche ich mit dem echten Server?</text>
+<rect x="30" y="70" width="210" height="190" rx="16" fill="#22d3ee" fill-opacity=".10" stroke="#22d3ee" stroke-width="3"/>
+<text x="135" y="100" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Dein Laptop</text>
+<rect x="50" y="118" width="170" height="120" rx="10" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+<text x="135" y="140" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">known_hosts</text>
+<text x="62" y="165" font-size="11" fill="#475569" font-family="ui-monospace, Menlo, monospace">203.0.113.10</text>
+<text x="62" y="181" font-size="11" fill="#475569" font-family="ui-monospace, Menlo, monospace">ssh-ed25519 AAAA…</text>
+<text x="62" y="205" font-size="11" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">SHA256:Px8x…qyc</text>
+<text x="62" y="225" font-size="11" fill="#475569">gemerkt beim 1. Besuch</text>
+<rect x="560" y="70" width="210" height="110" rx="16" fill="#34d399" fill-opacity=".12" stroke="#34d399" stroke-width="3"/>
+<text x="665" y="102" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Echter Server</text>
+<text x="665" y="128" text-anchor="middle" font-size="12" fill="#475569">Host-Key (privat)</text>
+<text x="665" y="152" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">SHA256:Px8x…qyc</text>
+<rect x="560" y="220" width="210" height="110" rx="16" fill="#f87171" fill-opacity=".12" stroke="#f87171" stroke-width="3"/>
+<text x="665" y="252" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Angreifer</text>
+<text x="665" y="278" text-anchor="middle" font-size="12" fill="#475569">gibt sich als Server aus</text>
+<text x="665" y="302" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">SHA256:9Zq1…T0w</text>
+<path d="M242 130 H 556" stroke="#34d399" stroke-width="3" marker-end="url(#a)"/>
+<text x="400" y="120" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a">Fingerprint passt → Verbindung</text>
+<path d="M242 220 C 380 220, 420 275, 556 275" fill="none" stroke="#f87171" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#a)"/>
+<text x="400" y="212" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a">Fingerprint anders → Abbruch</text>
+<rect x="160" y="300" width="370" height="58" rx="10" fill="#ffffff" stroke="#f87171" stroke-width="2"/>
+<text x="345" y="324" text-anchor="middle" font-size="12" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">WARNING: REMOTE HOST IDENTIFICATION</text>
+<text x="345" y="344" text-anchor="middle" font-size="12" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">HAS CHANGED!</text>
+</svg>

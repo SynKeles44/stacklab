@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="800" height="400" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Telnet gegen SSH: Wer kann mitlesen?</text>
+<text x="30" y="78" font-size="15" font-weight="700" fill="#1e1b3a">Telnet (Port 23)</text>
+<rect x="30" y="92" width="150" height="80" rx="12" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="105" y="128" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Laptop</text>
+<text x="105" y="150" text-anchor="middle" font-size="12" fill="#475569">Client</text>
+<rect x="620" y="92" width="150" height="80" rx="12" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="695" y="128" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Server</text>
+<text x="695" y="150" text-anchor="middle" font-size="12" fill="#475569">203.0.113.10</text>
+<path d="M182 132 H 616" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="250" y="112" width="300" height="34" rx="8" fill="#ffffff" stroke="#f87171" stroke-width="2"/>
+<text x="400" y="134" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">login: ada  password: geheim123</text>
+<circle cx="400" cy="200" r="20" fill="#f87171" fill-opacity=".2" stroke="#f87171" stroke-width="2"/>
+<text x="400" y="206" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">?</text>
+<path d="M400 178 V 150" stroke="#f87171" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="430" y="206" font-size="13" fill="#475569">Angreifer im WLAN liest alles im Klartext</text>
+<line x1="30" y1="240" x2="770" y2="240" stroke="#e2e8f0" stroke-width="2"/>
+<text x="30" y="276" font-size="15" font-weight="700" fill="#1e1b3a">SSH (Port 22)</text>
+<rect x="30" y="290" width="150" height="80" rx="12" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="105" y="326" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Laptop</text>
+<text x="105" y="348" text-anchor="middle" font-size="12" fill="#475569">ssh (Client)</text>
+<rect x="620" y="290" width="150" height="80" rx="12" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="695" y="326" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Server</text>
+<text x="695" y="348" text-anchor="middle" font-size="12" fill="#475569">sshd (Daemon)</text>
+<rect x="190" y="310" width="420" height="44" rx="22" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="3"/>
+<text x="400" y="330" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a">verschlüsselter Kanal</text>
+<text x="400" y="347" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">8f3a…c91e 02be…7d44 e1f0…</text>
+<text x="400" y="390" text-anchor="middle" font-size="13" fill="#475569">Der Angreifer sieht nur Zeichensalat – Passwörter und Befehle bleiben geheim.</text>
+</svg>

@@ -1,0 +1,460 @@
+# Begriffe aus dem Kurs SSH.
+- slug: verschluesselung
+  term: Verschlüsselung
+  short: Daten so umwandeln, dass nur berechtigte Empfänger sie wieder lesbar machen können.
+  explanation: >
+    Bei der Verschlüsselung wird lesbarer Text mit einem Schlüssel in scheinbaren Zeichensalat verwandelt.
+    Nur wer den passenden Schlüssel hat, kann ihn zurückverwandeln. SSH und HTTPS verschlüsseln den gesamten
+    Datenverkehr, damit niemand unterwegs mitlesen kann.
+  example: Ein mitgeschnittenes SSH-Paket zeigt nur unlesbare Bytes statt deines Passworts.
+  category: sicherheit
+  aliases: [verschlüsselt, verschlüsseln, Encryption]
+  related: [klartext, symmetrische-verschluesselung, asymmetrische-kryptografie]
+  lesson: ssh/was-ist-ssh
+- slug: klartext
+  term: Klartext
+  short: Unverschlüsselte, für jeden lesbare Daten.
+  explanation: >
+    Klartext ist das Gegenteil von verschlüsselten Daten. Wird ein Passwort im Klartext über das Netz
+    geschickt, kann es jeder lesen, der den Verkehr mitschneidet – zum Beispiel im selben WLAN.
+  example: Telnet überträgt Benutzername und Passwort im Klartext.
+  category: sicherheit
+  aliases: [Plaintext]
+  related: [verschluesselung, telnet]
+  lesson: ssh/was-ist-ssh
+- slug: telnet
+  term: Telnet
+  short: Ein altes Protokoll für entfernte Shells, das alles unverschlüsselt überträgt.
+  explanation: >
+    Telnet stammt aus den 1970er-Jahren und erfüllte dieselbe Aufgabe wie heute SSH, allerdings ohne
+    Verschlüsselung und ohne Prüfung des Servers. Es lauscht auf Port 23 und gilt heute als unsicher.
+  example: "`telnet 203.0.113.10` – Passwörter gehen dabei lesbar über das Netz."
+  category: netzwerk
+  related: [ssh, klartext]
+  lesson: ssh/was-ist-ssh
+- slug: port
+  term: Port
+  short: Eine Nummer, mit der ein Rechner eingehende Verbindungen dem richtigen Programm zuordnet.
+  explanation: >
+    Ein Rechner hat eine Adresse, aber viele Dienste. Die Portnummer (0 bis 65535) entscheidet, welches
+    Programm eine Verbindung bekommt. Bekannte Standard-Ports sind 22 für SSH, 80 für HTTP, 443 für HTTPS
+    und 5432 für PostgreSQL. Ports unter 1024 darf normalerweise nur der Administrator öffnen.
+  example: "`ssh -p 2222 deploy@203.0.113.10` verbindet sich mit Port 2222 statt 22."
+  category: netzwerk
+  aliases: [Ports, Portnummer]
+  related: [ip-adresse, sshd]
+  lesson: ssh/was-ist-ssh
+- slug: ip-adresse
+  term: IP-Adresse
+  short: Die Nummer, unter der ein Gerät in einem Netzwerk erreichbar ist.
+  explanation: >
+    Jedes Gerät im Netz hat eine IP-Adresse, ähnlich einer Hausnummer. IPv4-Adressen bestehen aus vier
+    Zahlen wie `203.0.113.10`, IPv6-Adressen sind länger. Adressen wie `10.0.1.20` sind privat und nur
+    innerhalb eines internen Netzes erreichbar.
+  example: "`ssh ada@203.0.113.10` verbindet sich mit dem Rechner unter dieser IP-Adresse."
+  category: netzwerk
+  aliases: [IP, IP-Adressen, IPv4-Adresse]
+  related: [hostname, port]
+  lesson: ssh/was-ist-ssh
+- slug: hostname
+  term: Hostname
+  short: Ein lesbarer Name für einen Rechner im Netz.
+  explanation: >
+    Weil sich Menschen Namen besser merken als Zahlen, bekommen Rechner Namen wie `server.example.com`.
+    Bevor eine Verbindung aufgebaut wird, wird der Name per DNS in eine IP-Adresse übersetzt. Auch der
+    Name, den ein Rechner sich selbst gibt (Befehl `hostname`), heißt Hostname.
+  example: "`ssh deploy@app.example.com` nutzt einen Hostnamen statt einer IP-Adresse."
+  category: netzwerk
+  aliases: [Host, Hostnamen, Rechnername]
+  related: [ip-adresse]
+  lesson: ssh/was-ist-ssh
+- slug: daemon
+  term: Daemon
+  short: Ein Programm, das dauerhaft im Hintergrund läuft und auf Aufgaben wartet.
+  explanation: >
+    Daemons haben kein Fenster und warten zum Beispiel auf Netzwerkverbindungen. Ihr Name endet unter
+    Linux oft auf „d“: `sshd` für SSH, `httpd` für Webserver. Gestartet und überwacht werden sie meist
+    vom System, etwa mit `systemctl`.
+  example: "`sshd` ist der Daemon, der auf einem Server SSH-Verbindungen annimmt."
+  category: grundlagen
+  aliases: [Daemons, Hintergrunddienst, Dienst]
+  related: [sshd, server]
+  lesson: ssh/was-ist-ssh
+- slug: sshd
+  term: sshd
+  short: Der SSH-Server-Dienst, der auf einem Rechner Verbindungen annimmt.
+  explanation: >
+    sshd (SSH-Daemon) lauscht standardmäßig auf Port 22, prüft die Anmeldung und startet für jeden
+    angemeldeten Nutzer eine Shell. Seine Einstellungen stehen in `/etc/ssh/sshd_config` und in Dateien
+    unter `/etc/ssh/sshd_config.d/`.
+  example: "`sudo sshd -t` prüft die Konfiguration des SSH-Servers auf Fehler."
+  category: netzwerk
+  aliases: [SSH-Daemon, SSH-Server, OpenSSH-Server]
+  related: [ssh, daemon, port]
+  lesson: ssh/was-ist-ssh
+- slug: symmetrische-verschluesselung
+  term: Symmetrische Verschlüsselung
+  short: Verschlüsselung, bei der beide Seiten denselben geheimen Schlüssel benutzen.
+  explanation: >
+    Mit einem einzigen Schlüssel wird ver- und entschlüsselt. Das ist sehr schnell, aber beide Seiten
+    müssen den Schlüssel vorher sicher austauschen. SSH verschlüsselt den eigentlichen Datenverkehr
+    symmetrisch, nachdem beide Seiten per Schlüsselaustausch ein gemeinsames Geheimnis berechnet haben.
+  example: Nach dem Verbindungsaufbau verschlüsselt SSH jedes Paket mit einem gemeinsamen Sitzungsschlüssel.
+  category: sicherheit
+  aliases: [symmetrisch]
+  related: [asymmetrische-kryptografie, verschluesselung]
+  lesson: ssh/schluessel-verstehen
+- slug: asymmetrische-kryptografie
+  term: Asymmetrische Kryptografie
+  short: Verfahren mit einem Schlüsselpaar aus privatem und öffentlichem Schlüssel.
+  explanation: >
+    Die beiden Schlüssel gehören mathematisch zusammen. Mit dem privaten Schlüssel erstellt man
+    Signaturen, mit dem öffentlichen prüft man sie. Aus dem öffentlichen Schlüssel lässt sich der private
+    praktisch nicht berechnen – deshalb darf der öffentliche Schlüssel überall liegen.
+  example: SSH-Anmeldung, HTTPS-Zertifikate und signierte Git-Commits beruhen auf asymmetrischer Kryptografie.
+  category: sicherheit
+  aliases: [Public-Key-Kryptografie, asymmetrische Verschlüsselung]
+  related: [schluesselpaar, privater-schluessel, oeffentlicher-schluessel]
+  lesson: ssh/schluessel-verstehen
+- slug: schluesselpaar
+  term: Schlüsselpaar
+  short: Ein zusammengehörender privater und öffentlicher Schlüssel.
+  explanation: >
+    Ein Schlüsselpaar entsteht mit `ssh-keygen`. Der private Teil bleibt geheim auf deinem Rechner, der
+    öffentliche wird verteilt – etwa auf Server oder zu GitHub. Nur wer den privaten Teil besitzt, kann
+    Signaturen erzeugen, die zum öffentlichen Teil passen.
+  example: "`id_ed25519` und `id_ed25519.pub` bilden ein Schlüsselpaar."
+  category: sicherheit
+  aliases: [Schlüsselpaare, Key Pair, SSH-Schlüssel]
+  related: [privater-schluessel, oeffentlicher-schluessel, ed25519]
+  lesson: ssh/schluessel-verstehen
+- slug: privater-schluessel
+  term: Privater Schlüssel
+  short: Der geheime Teil eines Schlüsselpaars, mit dem du Signaturen erzeugst.
+  explanation: >
+    Wer deinen privaten Schlüssel besitzt, kann sich überall als du ausgeben. Er verlässt deshalb nie
+    deinen Rechner, wird mit einer Passphrase geschützt und hat die Dateirechte 600. Bei SSH liegt er
+    meist in `~/.ssh/id_ed25519`.
+  example: "Die Datei beginnt mit `-----BEGIN OPENSSH PRIVATE KEY-----`."
+  category: sicherheit
+  aliases: [privaten Schlüssel, Private Key]
+  related: [oeffentlicher-schluessel, schluesselpaar, passphrase]
+  lesson: ssh/schluessel-verstehen
+- slug: oeffentlicher-schluessel
+  term: Öffentlicher Schlüssel
+  short: Der teilbare Teil eines Schlüsselpaars, mit dem andere deine Signaturen prüfen.
+  explanation: >
+    Den öffentlichen Schlüssel darf jeder sehen. Er kommt auf Server in die Datei `authorized_keys` und
+    zu Diensten wie GitHub. Mit ihm lassen sich Signaturen prüfen, aber nicht erzeugen.
+  example: "`ssh-ed25519 AAAAC3Nz… ada@example.com` in der Datei `id_ed25519.pub`."
+  category: sicherheit
+  aliases: [öffentlichen Schlüssel, Public Key, .pub-Datei]
+  related: [privater-schluessel, authorized-keys]
+  lesson: ssh/schluessel-verstehen
+- slug: signatur
+  term: Signatur
+  short: Ein mit dem privaten Schlüssel berechneter Nachweis, dass Daten von dir stammen und unverändert sind.
+  explanation: >
+    Eine digitale Signatur wird mit dem privaten Schlüssel über bestimmte Daten berechnet. Mit dem
+    öffentlichen Schlüssel kann jeder prüfen, ob sie gültig ist. Ändert sich ein einziges Zeichen der
+    Daten, passt die Signatur nicht mehr.
+  example: Bei der SSH-Anmeldung signiert dein Client sitzungsgebundene Daten; der Server prüft die Signatur.
+  category: sicherheit
+  aliases: [Signaturen, signieren, digitale Signatur]
+  related: [privater-schluessel, oeffentlicher-schluessel, commit-signatur]
+  lesson: ssh/schluessel-verstehen
+- slug: host-key
+  term: Host-Key
+  short: Das Schlüsselpaar, mit dem sich ein SSH-Server gegenüber Clients ausweist.
+  explanation: >
+    Jeder SSH-Server erzeugt bei der Installation eigene Host-Keys unter `/etc/ssh/`. Beim
+    Verbindungsaufbau beweist er damit seine Identität. Dein Client merkt sich den öffentlichen Host-Key in
+    `known_hosts` und warnt, wenn er sich ändert.
+  example: "`/etc/ssh/ssh_host_ed25519_key.pub` ist der öffentliche Host-Key eines Servers."
+  category: sicherheit
+  aliases: [Host-Keys, Hostschlüssel, Server-Schlüssel]
+  related: [known-hosts, fingerprint]
+  lesson: ssh/host-keys-known-hosts
+- slug: known-hosts
+  term: known_hosts
+  short: Die Datei, in der dein SSH-Client die Host-Keys bekannter Server speichert.
+  explanation: >
+    `~/.ssh/known_hosts` enthält pro Zeile einen Server und seinen öffentlichen Host-Key. Beim nächsten
+    Verbinden vergleicht SSH den Schlüssel des Servers damit. Einträge findest du mit `ssh-keygen -F` und
+    entfernst sie mit `ssh-keygen -R`.
+  example: "`[203.0.113.30]:2222 ssh-ed25519 AAAAC3Nz…`"
+  category: sicherheit
+  aliases: [known hosts, ~/.ssh/known_hosts]
+  related: [host-key, fingerprint, tofu]
+  lesson: ssh/host-keys-known-hosts
+- slug: fingerprint
+  term: Fingerprint
+  short: Eine kurze Prüfsumme, an der man einen Schlüssel eindeutig wiedererkennt.
+  explanation: >
+    Weil öffentliche Schlüssel lang sind, vergleicht man stattdessen ihren Fingerprint – einen SHA-256-Hash
+    des Schlüssels. Ändert sich der Schlüssel minimal, sieht der Fingerprint völlig anders aus. `ssh-keygen -l`
+    zeigt ihn an.
+  example: "`SHA256:Px8xS4IrakCrlOCdhDydCu0YZCiYdQqi7yU4QlPGqyc`"
+  category: sicherheit
+  aliases: [Fingerprints, Fingerabdruck, Schlüssel-Fingerprint]
+  related: [hash, host-key]
+  lesson: ssh/host-keys-known-hosts
+- slug: hash
+  term: Hash
+  short: Ein kurzer, fester Wert, der aus beliebigen Daten berechnet wird und sie eindeutig kennzeichnet.
+  explanation: >
+    Eine Hash-Funktion wie SHA-256 macht aus Daten jeder Größe eine Zeichenkette fester Länge. Dieselben
+    Daten ergeben immer denselben Hash, kleinste Änderungen einen völlig anderen. Zurückrechnen ist nicht
+    möglich – deshalb eignen sich Hashes für Prüfsummen und Fingerprints.
+  example: Der Fingerprint eines SSH-Schlüssels ist ein SHA-256-Hash des öffentlichen Schlüssels.
+  category: sicherheit
+  aliases: [Hashes, Hashwert, Prüfsumme, gehasht]
+  related: [fingerprint]
+  lesson: ssh/host-keys-known-hosts
+- slug: tofu
+  term: TOFU
+  short: Trust On First Use – einem Gegenüber beim ersten Kontakt vertrauen und es sich merken.
+  explanation: >
+    SSH kennt einen Server beim ersten Verbinden noch nicht und fragt, ob der Fingerprint stimmt. Danach
+    merkt es sich den Host-Key und prüft ihn bei jedem weiteren Kontakt automatisch. Der erste Kontakt ist
+    deshalb der verwundbare Moment.
+  example: "Die Frage „Are you sure you want to continue connecting?“ ist der TOFU-Moment."
+  category: sicherheit
+  aliases: [Trust On First Use]
+  related: [known-hosts, fingerprint]
+  lesson: ssh/host-keys-known-hosts
+- slug: man-in-the-middle
+  term: Man-in-the-Middle
+  short: Ein Angriff, bei dem sich jemand unbemerkt zwischen zwei Kommunikationspartner schaltet.
+  explanation: >
+    Der Angreifer gibt sich jeder Seite gegenüber als die andere aus und kann so mitlesen oder Daten
+    verändern. SSH schützt davor, indem es den Host-Key des Servers prüft. Die Warnung „REMOTE HOST
+    IDENTIFICATION HAS CHANGED“ kann ein Hinweis auf so einen Angriff sein.
+  example: Ein manipulierter WLAN-Router leitet deine SSH-Verbindung an einen falschen Server um.
+  category: sicherheit
+  aliases: [MITM, Man-in-the-Middle-Angriff]
+  related: [host-key, known-hosts]
+  lesson: ssh/host-keys-known-hosts
+- slug: ed25519
+  term: Ed25519
+  short: Ein modernes, schnelles und sicheres Verfahren für Schlüsselpaare.
+  explanation: >
+    Ed25519 beruht auf elliptischen Kurven und erzeugt sehr kurze Schlüssel. Es ist der empfohlene und
+    seit OpenSSH 9.5 voreingestellte Typ für neue SSH-Schlüssel und wird auch von GitHub unterstützt.
+  example: "`ssh-keygen -t ed25519 -C \"ada@example.com\"`"
+  category: sicherheit
+  aliases: [ed25519-Schlüssel]
+  related: [rsa, schluesselpaar]
+  lesson: ssh/schluessel-erzeugen
+- slug: rsa
+  term: RSA
+  short: Ein älteres, weit verbreitetes Verfahren für Schlüsselpaare.
+  explanation: >
+    RSA ist eines der ältesten asymmetrischen Verfahren. Für SSH ist es noch zulässig, braucht aber lange
+    Schlüssel (mindestens 3072 Bit). Für neue Schlüssel ist Ed25519 die bessere Wahl; RSA nimmst du nur für
+    Systeme, die nichts anderes verstehen.
+  example: "`ssh-keygen -t rsa -b 4096` erzeugt einen RSA-Schlüssel mit 4096 Bit."
+  category: sicherheit
+  aliases: [RSA-Schlüssel, id_rsa]
+  related: [ed25519]
+  lesson: ssh/schluessel-erzeugen
+- slug: passphrase
+  term: Passphrase
+  short: Ein Passwort, das deinen privaten Schlüssel auf der Festplatte verschlüsselt.
+  explanation: >
+    Mit Passphrase ist eine gestohlene Schlüsseldatei wertlos. Die Passphrase geht nie über das Netz. Damit
+    du sie nicht ständig eintippen musst, lädst du den Schlüssel einmal in den ssh-agent. Ändern lässt sie
+    sich mit `ssh-keygen -p`.
+  example: "`ssh-keygen -p -f ~/.ssh/id_ed25519` ändert die Passphrase."
+  category: sicherheit
+  aliases: [Passphrasen, Passphrase des Schlüssels]
+  related: [privater-schluessel, ssh-agent]
+  lesson: ssh/schluessel-erzeugen
+- slug: ssh-agent
+  term: ssh-agent
+  short: Ein Hintergrundprogramm, das entsperrte SSH-Schlüssel im Arbeitsspeicher hält und für ssh signiert.
+  explanation: >
+    Du übergibst dem Agent deinen Schlüssel einmal mit `ssh-add`. Danach fragt ssh den Agent nach
+    Signaturen statt dich nach der Passphrase. Der Agent gibt den Schlüssel selbst nie heraus. Gefunden wird
+    er über die Umgebungsvariable `SSH_AUTH_SOCK`.
+  example: "`ssh-add -l` zeigt, welche Schlüssel der Agent gerade hält."
+  category: sicherheit
+  aliases: [Agent, SSH-Agent, ssh-add]
+  related: [passphrase, socket]
+  lesson: ssh/schluessel-erzeugen
+- slug: socket
+  term: Socket
+  short: Ein Kommunikationsendpunkt, über den zwei Programme Daten austauschen.
+  explanation: >
+    Netzwerk-Sockets verbinden Programme über das Netz, Unix-Sockets verbinden Programme auf demselben
+    Rechner und erscheinen als besondere Datei. Der ssh-agent und SSH-Multiplexing nutzen solche
+    Socket-Dateien.
+  example: "`SSH_AUTH_SOCK=/tmp/ssh-XYZ/agent.1234` zeigt auf den Socket des Agents."
+  category: grundlagen
+  aliases: [Sockets, Unix-Socket]
+  related: [ssh-agent]
+  lesson: ssh/schluessel-erzeugen
+- slug: authorized-keys
+  term: authorized_keys
+  short: Die Datei auf einem Server, die alle für einen Benutzer erlaubten öffentlichen Schlüssel auflistet.
+  explanation: >
+    sshd sucht in `~/.ssh/authorized_keys` des Zielbenutzers nach deinem öffentlichen Schlüssel. Jede Zeile
+    ist ein Schlüssel, optional mit Einschränkungen wie `from=` oder `restrict` davor. Die Datei braucht
+    die Rechte 600, der Ordner `~/.ssh` 700.
+  example: "`ssh-copy-id -i ~/.ssh/id_ed25519.pub ada@203.0.113.10` hängt deinen Schlüssel dort an."
+  category: sicherheit
+  aliases: [authorized keys, ~/.ssh/authorized_keys]
+  related: [oeffentlicher-schluessel, dateirechte]
+  lesson: ssh/authorized-keys-und-rechte
+- slug: firewall
+  term: Firewall
+  short: Ein Filter, der entscheidet, welche Netzwerkverbindungen erlaubt sind.
+  explanation: >
+    Eine Firewall lässt nur bestimmte Verbindungen durch, zum Beispiel Port 22 nur von bekannten
+    Adressen. Verworfene Pakete führen beim Client oft zu einem „Connection timed out“. Firewalls laufen
+    auf Servern, Routern oder als Dienst eines Cloud-Anbieters.
+  example: Die Datenbank-Firewall erlaubt Port 5432 nur aus dem internen Netz.
+  category: netzwerk
+  aliases: [Firewalls, Firewall-Regel]
+  related: [port, bastion-host]
+  lesson: ssh/verbinden-und-config
+- slug: ssh-config
+  term: ssh-Config
+  short: Die Datei ~/.ssh/config, in der du Aliase und Optionen für SSH-Verbindungen festlegst.
+  explanation: >
+    Die ssh-Config besteht aus Host-Blöcken mit Optionen wie HostName, User, Port und IdentityFile. Für jede
+    Option gilt der erste passende Wert. Mit `ssh -G alias` siehst du, welche Einstellungen am Ende gelten.
+  example: "Nach `Host web` mit `HostName 203.0.113.10` reicht `ssh web`."
+  category: netzwerk
+  aliases: [SSH-Konfiguration, ~/.ssh/config, ssh_config]
+  related: [proxyjump, ssh]
+  lesson: ssh/verbinden-und-config
+- slug: bastion-host
+  term: Bastion-Host
+  short: Ein einzelner, gut gesicherter Server als einziger SSH-Eingang in ein privates Netz.
+  explanation: >
+    Interne Server sind aus dem Internet nicht erreichbar. Wer zu ihnen will, springt über die Bastion,
+    die zentral abgesichert und protokolliert wird. Mit ProxyJump bleibt dein Schlüssel dabei auf deinem Laptop.
+  example: "`ssh -J deploy@203.0.113.5 deploy@10.0.1.20`"
+  category: netzwerk
+  aliases: [Bastion, Jump-Host, Jumphost, Bastionen]
+  related: [proxyjump, firewall]
+  lesson: ssh/bastion-und-haertung
+- slug: proxyjump
+  term: ProxyJump
+  short: Eine SSH-Option, die die Verbindung zum Ziel durch einen Jump-Host aufbaut.
+  explanation: >
+    Mit `ProxyJump` in der Config oder `-J` auf der Kommandozeile lässt ssh den Jump-Host nur einen Kanal
+    zum Ziel öffnen. Anmeldung und Verschlüsselung laufen Ende-zu-Ende zwischen deinem Laptop und dem Ziel.
+    Mehrere Sprünge trennst du mit Kommas.
+  example: "`ProxyJump bastion` im Block `Host app`."
+  category: netzwerk
+  aliases: [-J, Proxy Jump]
+  related: [bastion-host, ssh-config]
+  lesson: ssh/bastion-und-haertung
+- slug: scp
+  term: scp
+  short: Ein Befehl zum Kopieren von Dateien über SSH, aufgebaut wie cp.
+  explanation: >
+    scp (secure copy) kopiert Dateien zwischen deinem Rechner und einem Server; entfernte Pfade schreibst
+    du als `host:pfad`. Ordner kopierst du mit `-r`, einen anderen Port wählst du mit großem `-P`. Seit
+    OpenSSH 9.0 nutzt scp intern das SFTP-Protokoll.
+  example: "`scp backup.sql web:/tmp/`"
+  category: netzwerk
+  aliases: [secure copy]
+  related: [sftp, rsync]
+  lesson: ssh/dateien-und-tunnel
+- slug: sftp
+  term: SFTP
+  short: Ein Protokoll und Programm für interaktive Dateiübertragung über SSH.
+  explanation: >
+    sftp öffnet eine Sitzung mit eigenem Prompt, in der du mit `ls`, `cd`, `get` und `put` arbeitest. Viele
+    grafische Programme sprechen SFTP ebenfalls. Mit FTP hat es außer dem Namen nichts zu tun – SFTP läuft
+    komplett verschlüsselt über SSH.
+  example: "`sftp web`, dann `get laravel.log`"
+  category: netzwerk
+  aliases: [sftp, SSH File Transfer Protocol]
+  related: [scp, rsync]
+  lesson: ssh/dateien-und-tunnel
+- slug: rsync
+  term: rsync
+  short: Ein Werkzeug, das Ordner abgleicht und nur geänderte Dateien überträgt.
+  explanation: >
+    rsync vergleicht Quelle und Ziel und überträgt nur Unterschiede – ideal für große Ordner und Backups.
+    Über das Netz nutzt es SSH als Transportweg. Wichtige Optionen sind `-a` (Archiv), `-z` (Kompression),
+    `--delete` und `--dry-run`.
+  example: "`rsync -avz public/ web:/srv/app/public/`"
+  category: netzwerk
+  related: [scp, sftp]
+  lesson: ssh/dateien-und-tunnel
+- slug: port-forwarding
+  term: Port-Forwarding
+  short: Das Weiterleiten eines Ports durch eine SSH-Verbindung, auch SSH-Tunnel genannt.
+  explanation: >
+    SSH kann Verbindungen zu einem Port an einem Ende annehmen und verschlüsselt zum anderen Ende
+    weiterleiten. Mit `-L` holst du einen entfernten Dienst auf einen lokalen Port, mit `-R` geht es in die
+    Gegenrichtung, mit `-D` entsteht ein SOCKS-Proxy.
+  example: "`ssh -N -L 5433:localhost:5432 deploy@203.0.113.20`"
+  category: netzwerk
+  aliases: [SSH-Tunnel, Tunnel, Portweiterleitung, LocalForward]
+  related: [port, socks-proxy]
+  lesson: ssh/dateien-und-tunnel
+- slug: socks-proxy
+  term: SOCKS-Proxy
+  short: Ein Vermittler, über den Programme beliebige Verbindungen umleiten können.
+  explanation: >
+    Ein SOCKS-Proxy nimmt Verbindungswünsche entgegen und baut sie stellvertretend auf. `ssh -D 1080`
+    startet einen solchen Proxy, der alle Verbindungen über den SSH-Server leitet – praktisch, um interne
+    Weboberflächen im Browser zu öffnen.
+  example: "Browser-Proxy `localhost:1080` nach `ssh -N -D 1080 deploy@203.0.113.20`"
+  category: netzwerk
+  aliases: [SOCKS, DynamicForward]
+  related: [port-forwarding]
+  lesson: ssh/dateien-und-tunnel
+- slug: keepalive
+  term: Keepalive
+  short: Regelmäßige kleine Nachrichten, die eine untätige Verbindung am Leben halten.
+  explanation: >
+    Router und Firewalls vergessen Verbindungen, über die eine Weile nichts fließt. Mit
+    `ServerAliveInterval` schickt der SSH-Client in festen Abständen ein Lebenszeichen und erkennt
+    zugleich, wenn der Server wirklich weg ist.
+  example: "`ServerAliveInterval 30` in der ssh-Config"
+  category: netzwerk
+  aliases: [Keep-Alive, ServerAliveInterval]
+  related: [ssh-config]
+  lesson: ssh/verbinden-und-config
+- slug: commit-signatur
+  term: Commit-Signatur
+  short: Eine digitale Signatur, die beweist, wer einen Git-Commit erstellt hat.
+  explanation: >
+    Name und E-Mail in einem Commit kann jeder frei eintragen. Eine Signatur mit dem privaten Schlüssel
+    beweist dagegen die Herkunft und dass der Commit unverändert ist. Git kann dafür SSH-Schlüssel nutzen
+    (`gpg.format ssh`); GitHub zeigt gültig signierte Commits als „Verified“.
+  example: "`git log --show-signature -1`"
+  category: git
+  aliases: [signierter Commit, signierte Commits, Commits signieren]
+  related: [signatur, commit]
+  lesson: ssh/ssh-fuer-git
+- slug: brute-force
+  term: Brute-Force-Angriff
+  short: Ein Angriff, der durch massenhaftes Ausprobieren Passwörter oder Schlüssel erraten will.
+  explanation: >
+    Bots probieren rund um die Uhr Benutzernamen und Passwörter an offenen SSH-Servern durch. Gegen
+    Brute-Force hilft vor allem, Passwort-Anmeldungen abzuschalten und nur Schlüssel zu erlauben; fail2ban
+    sperrt zusätzlich auffällige Adressen.
+  example: Tausende Fehlversuche für den Benutzer root im Auth-Log eines frischen Servers.
+  category: sicherheit
+  aliases: [Brute Force, Brute-Force, Brute-Force-Angriffe]
+  related: [fail2ban]
+  lesson: ssh/bastion-und-haertung
+- slug: fail2ban
+  term: fail2ban
+  short: Ein Programm, das Adressen mit vielen fehlgeschlagenen Anmeldungen automatisch sperrt.
+  explanation: >
+    fail2ban liest Log-Dateien, erkennt wiederholte Fehlversuche und legt für die betroffene Adresse eine
+    Firewall-Regel an – meist für eine begrenzte Zeit. Für SSH gibt es eine fertige Regel („Jail“) namens sshd.
+  example: "`sudo fail2ban-client status sshd`"
+  category: sicherheit
+  aliases: [Fail2ban]
+  related: [brute-force, firewall]
+  lesson: ssh/bastion-und-haertung

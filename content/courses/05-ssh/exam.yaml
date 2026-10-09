@@ -1,0 +1,262 @@
+title: Abschlussprüfung SSH
+description: |
+  Teste, ob du SSH sicher beherrschst: von Schlüsselpaaren und Host-Keys über die ssh-Config und
+  Tunnel bis zu GitHub, signierten Commits und Server-Härtung. Die Praxis-Aufgaben laufen im echten
+  Übungs-Terminal.
+time_limit_minutes: 45
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Was unterscheidet SSH grundlegend von Telnet?
+    options:
+      - SSH nutzt einen anderen Port, sonst nichts.
+      - SSH verschlüsselt die gesamte Verbindung und prüft die Identität des Servers.
+      - SSH funktioniert nur mit Linux-Servern.
+      - SSH braucht keinen Client.
+    answer: 1
+    explanation: Telnet überträgt alles im Klartext. SSH verschlüsselt, prüft den Host-Key und erkennt veränderte Daten.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen über die Schlüssel-Anmeldung stimmen?
+    options:
+      - Der private Schlüssel verlässt nie deinen Rechner.
+      - Der Server prüft eine Signatur mit deinem öffentlichen Schlüssel.
+      - Ein Mitschnitt der Anmeldung erlaubt später eine erneute Anmeldung.
+      - Der öffentliche Schlüssel darf weitergegeben werden.
+    answers: [0, 1, 3]
+    explanation: Die Signatur ist an die Sitzung gebunden und deshalb nicht wiederverwendbar. Nur der private Schlüssel ist geheim.
+  - module: grundlagen
+    type: cloze
+    text: "Die Host-Keys bekannter Server speichert dein Client in ___. Einen veralteten Eintrag entfernst du mit `ssh-keygen ___ 203.0.113.10`."
+    blanks:
+      - [known_hosts, ~/.ssh/known_hosts]
+      - [-R]
+    explanation: ~/.ssh/known_hosts ist das Gedächtnis deines Clients; -R entfernt einen Eintrag und legt eine Sicherung an.
+  - module: schluessel-und-config
+    type: single
+    question: Welcher Befehl erzeugt ein modernes Schlüsselpaar mit sinnvollem Kommentar?
+    options:
+      - ssh-keygen -t dsa
+      - ssh-keygen -t ed25519 -C "ada@example.com"
+      - ssh-add -t ed25519
+      - ssh -keygen ed25519
+    answer: 1
+    explanation: Ed25519 ist die erste Wahl, -C setzt den Kommentar.
+  - module: schluessel-und-config
+    type: match
+    question: Ordne Pfad und empfohlene Rechte zu.
+    pairs:
+      - { left: "~/.ssh", right: "700" }
+      - { left: "~/.ssh/authorized_keys", right: "600" }
+      - { left: "~/.ssh/id_ed25519", right: "600 (privat)" }
+      - { left: "~/.ssh/id_ed25519.pub", right: "644" }
+    explanation: Ordner 700, geheime oder sicherheitskritische Dateien 600, öffentliche Schlüssel 644.
+  - module: schluessel-und-config
+    type: multiple
+    question: Welche Aussagen über Passphrase und ssh-agent stimmen?
+    options:
+      - Die Passphrase verschlüsselt die Schlüsseldatei auf der Festplatte.
+      - Der ssh-agent gibt den entsperrten Schlüssel auf Anfrage an ssh heraus.
+      - ssh-add -l listet die geladenen Schlüssel.
+      - ssh-keygen -p ändert die Passphrase, ohne den Schlüssel zu ändern.
+    answers: [0, 2, 3]
+    explanation: Der Agent gibt den Schlüssel nie heraus, er liefert nur Signaturen.
+  - module: schluessel-und-config
+    type: find-bug
+    question: Welche Zeile sperrt alle bisherigen Schlüssel auf dem Server aus?
+    language: bash
+    code: |
+      mkdir -p ~/.ssh
+      chmod 700 ~/.ssh
+      cat /tmp/neu.pub > ~/.ssh/authorized_keys
+      chmod 600 ~/.ssh/authorized_keys
+    bug_line: 3
+    explanation: Ein einzelnes > überschreibt die Datei. Zum Anhängen brauchst du >>.
+  - module: schluessel-und-config
+    type: single
+    question: "In der ssh-Config passt ein Host zu zwei Blöcken mit verschiedenen User-Werten. Welcher gilt?"
+    options:
+      - Der aus dem ersten passenden Block
+      - Der aus dem letzten passenden Block
+      - ssh fragt nach
+    answer: 0
+    explanation: Für jede Option gewinnt der erste gefundene Wert. Deshalb gehört Host * ans Ende.
+  - module: schluessel-und-config
+    type: match
+    question: Ordne jede Fehlermeldung ihrer Stufe zu.
+    pairs:
+      - { left: "Could not resolve hostname", right: "Namensauflösung" }
+      - { left: "Connection refused", right: "Kein sshd auf diesem Port" }
+      - { left: "Host key verification failed", right: "Server-Identität" }
+      - { left: "Permission denied (publickey)", right: "Anmeldung" }
+    explanation: Die Meldung verrät, wie weit der Verbindungsaufbau gekommen ist.
+  - module: praxis
+    type: cloze
+    text: "Mit `ssh ___ deploy@203.0.113.5 deploy@10.0.1.20` springst du über eine Bastion. In der Config heißt die Option ___."
+    blanks:
+      - [-J]
+      - [ProxyJump]
+    explanation: -J und ProxyJump bauen die Verbindung zum Ziel durch die Bastion auf – der Schlüssel bleibt lokal.
+  - module: praxis
+    type: find-bug
+    question: Welche Zeile nutzt die falsche Port-Option?
+    language: bash
+    code: |
+      ssh -p 2222 deploy@203.0.113.10
+      scp -p 2222 app.tar.gz deploy@203.0.113.10:/tmp/
+      sftp -P 2222 deploy@203.0.113.10
+    bug_line: 2
+    explanation: Bei scp heißt die Port-Option -P. Das kleine -p erhält Zeitstempel.
+  - module: praxis
+    type: single
+    question: "Was bewirkt `ssh -N -L 5433:localhost:5432 deploy@203.0.113.20`?"
+    options:
+      - Der Server öffnet Port 5433 und leitet ihn zu deinem Laptop.
+      - Dein Laptop öffnet Port 5433; Verbindungen landen auf dem Server bei localhost:5432.
+      - Die Datenbank wird auf deinen Laptop kopiert.
+    answer: 1
+    explanation: -L holt einen entfernten Dienst auf einen lokalen Port; das Ziel wird aus Sicht des Servers aufgelöst.
+  - module: praxis
+    type: single
+    question: "Woran erkennt GitHub, welches Konto sich per `ssh -T git@github.com` anmeldet?"
+    options:
+      - Am Benutzernamen git
+      - Am verwendeten öffentlichen Schlüssel
+      - An der IP-Adresse
+    answer: 1
+    explanation: Alle nutzen den Benutzer git; zugeordnet wird über den Schlüssel.
+  - module: praxis
+    type: match
+    question: Ordne jede Git-Einstellung ihrer Aufgabe zu.
+    pairs:
+      - { left: "gpg.format ssh", right: "SSH-Schlüssel zum Signieren verwenden" }
+      - { left: "commit.gpgsign true", right: "Jeden Commit automatisch signieren" }
+      - { left: "gpg.ssh.allowedSignersFile", right: "Vertrauenswürdige Schlüssel zum Prüfen" }
+    explanation: Mit diesen Einstellungen signierst und prüfst du Commits mit SSH-Schlüsseln.
+  - module: praxis
+    type: multiple
+    question: Welche Einstellungen härten einen SSH-Server?
+    options:
+      - PasswordAuthentication no
+      - PermitRootLogin no
+      - AllowUsers deploy
+      - StrictModes no
+    answers: [0, 1, 2]
+    explanation: StrictModes no würde die Rechteprüfung abschalten und den Server schwächen.
+tasks:
+  - module: grundlagen
+    id: pruefung-known-hosts
+    type: terminal
+    title: known_hosts aufräumen
+    description: |
+      Im Ordner `pruefung-known-hosts` liegt eine `known_hosts` mit drei Servern.
+
+      1. Entferne den Eintrag für `203.0.113.20`.
+      2. Schreib den SHA256-Fingerprint von `203.0.113.10` in `fingerprint.txt`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-known-hosts
+    setup: |
+      mkdir -p .tmp
+      for h in a b c; do ssh-keygen -q -t ed25519 -N "" -C "" -f ".tmp/$h"; done
+      {
+        echo "203.0.113.10 $(cut -d' ' -f1,2 .tmp/a.pub)"
+        echo "203.0.113.20 $(cut -d' ' -f1,2 .tmp/b.pub)"
+        echo "203.0.113.30 $(cut -d' ' -f1,2 .tmp/c.pub)"
+      } > known_hosts
+      rm -rf .tmp
+    checks:
+      - type: command
+        run: ssh-keygen -F 203.0.113.20 -f known_hosts
+        expect_exit: 1
+        message: Der Eintrag für 203.0.113.20 ist noch vorhanden.
+      - type: command
+        run: ssh-keygen -F 203.0.113.10 -f known_hosts >/dev/null && ssh-keygen -F 203.0.113.30 -f known_hosts >/dev/null
+        message: Die Einträge für 203.0.113.10 und 203.0.113.30 müssen bleiben.
+      - type: command
+        run: grep -qF "$(ssh-keygen -F 203.0.113.10 -f known_hosts | grep -v '^#' | ssh-keygen -l -f - | awk '{print $2}')" fingerprint.txt
+        message: fingerprint.txt enthält nicht den Fingerprint von 203.0.113.10.
+    hints:
+      - "`ssh-keygen -R host -f known_hosts` und `ssh-keygen -l -f known_hosts`."
+    solution: |
+      ```bash
+      cd pruefung-known-hosts
+      ssh-keygen -R 203.0.113.20 -f known_hosts
+      ssh-keygen -l -f known_hosts | grep '203.0.113.10' | awk '{print $2}' > fingerprint.txt
+      ```
+  - module: schluessel-und-config
+    id: pruefung-schluessel
+    type: terminal
+    title: Schlüssel erzeugen und hinterlegen
+    description: |
+      Im Ordner `pruefung-schluessel`:
+
+      1. Erzeuge einen Ed25519-Schlüssel `deploy` ohne Passphrase mit dem Kommentar `deploy@example.com`.
+      2. Lege `server/.ssh/authorized_keys` an, die genau diesen öffentlichen Schlüssel enthält.
+      3. Setze die Rechte: `server/.ssh` → 700, `authorized_keys` → 600, `deploy` → 600.
+    workdir: pruefung-schluessel
+    checks:
+      - type: command
+        run: ssh-keygen -l -f deploy.pub
+        stdout_matches: "deploy@example\\.com \\(ED25519\\)$"
+        message: deploy.pub fehlt oder hat nicht Typ Ed25519 und Kommentar deploy@example.com.
+      - type: command
+        run: grep -qxF "$(cat deploy.pub)" server/.ssh/authorized_keys && test "$(grep -c '' server/.ssh/authorized_keys)" = 1
+        message: authorized_keys muss genau die Zeile aus deploy.pub enthalten.
+      - type: command
+        run: stat -c '%a' server/.ssh server/.ssh/authorized_keys deploy | tr '\n' ' '
+        stdout_matches: "^700 600 600$"
+        message: "Rechte prüfen: server/.ssh 700, authorized_keys 600, deploy 600."
+    hints:
+      - "`ssh-keygen -t ed25519 -C deploy@example.com -f deploy -N \"\"`"
+    solution: |
+      ```bash
+      cd pruefung-schluessel
+      ssh-keygen -t ed25519 -C "deploy@example.com" -f deploy -N ""
+      mkdir -p server/.ssh
+      cp deploy.pub server/.ssh/authorized_keys
+      chmod 700 server/.ssh
+      chmod 600 server/.ssh/authorized_keys deploy
+      ```
+  - module: praxis
+    id: pruefung-config
+    type: terminal
+    title: Config mit Jump-Host
+    description: |
+      Schreibe im Ordner `pruefung-config` eine Datei `config`:
+
+      1. `gateway`: HostName `198.51.100.10`, User `ops`.
+      2. `worker`: HostName `10.0.5.7`, User `ops`, Port `2200`, ProxyJump `gateway`.
+      3. Für alle Hosts: `IdentitiesOnly yes`.
+    workdir: pruefung-config
+    checks:
+      - type: command
+        run: ssh -G gateway -F ./config 2>/dev/null | grep -E '^(hostname|user|proxyjump) ' | sort | tr '\n' ' '
+        stdout_matches: "^hostname 198\\.51\\.100\\.10 user ops$"
+        message: gateway braucht HostName 198.51.100.10 und User ops.
+      - type: command
+        run: ssh -G worker -F ./config 2>/dev/null | grep -E '^(hostname|user|port|proxyjump) ' | sort | tr '\n' ' '
+        stdout_matches: "^hostname 10\\.0\\.5\\.7 port 2200 proxyjump gateway user ops$"
+        message: worker braucht HostName 10.0.5.7, User ops, Port 2200 und ProxyJump gateway.
+      - type: command
+        run: ssh -G irgendwas -F ./config 2>/dev/null | grep '^identitiesonly '
+        stdout_equals: identitiesonly yes
+        message: IdentitiesOnly yes soll für alle Hosts gelten.
+    hints:
+      - "Host * mit IdentitiesOnly yes ans Ende der Datei."
+    solution: |
+      ```text title="pruefung-config/config"
+      Host gateway
+        HostName 198.51.100.10
+        User ops
+
+      Host worker
+        HostName 10.0.5.7
+        User ops
+        Port 2200
+        ProxyJump gateway
+
+      Host *
+        IdentitiesOnly yes
+      ```

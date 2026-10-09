@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="800" height="420" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Anmeldung mit einem Schlüsselpaar</text>
+<rect x="30" y="60" width="230" height="330" rx="16" fill="#22d3ee" fill-opacity=".10" stroke="#22d3ee" stroke-width="3"/>
+<text x="145" y="90" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Dein Laptop</text>
+<text x="145" y="110" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">~/.ssh/id_ed25519</text>
+<rect x="55" y="135" width="180" height="44" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="2.5"/>
+<text x="145" y="163" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Privater Schlüssel</text>
+<text x="145" y="205" text-anchor="middle" font-size="12" fill="#475569">verlässt den Laptop nie</text>
+<rect x="540" y="60" width="230" height="330" rx="16" fill="#34d399" fill-opacity=".10" stroke="#34d399" stroke-width="3"/>
+<text x="655" y="90" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Server</text>
+<text x="655" y="110" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">~/.ssh/</text>
+<rect x="565" y="125" width="180" height="40" rx="10" fill="#ffffff" stroke="#34d399" stroke-width="2.5"/>
+<text x="655" y="151" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">authorized_keys</text>
+<rect x="565" y="180" width="180" height="44" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="655" y="208" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Öffentlicher Schlüssel</text>
+<text x="655" y="246" text-anchor="middle" font-size="12" fill="#475569">darf jeder sehen</text>
+<path d="M262 270 H 536" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="400" y="262" text-anchor="middle" font-size="13" fill="#1e1b3a">1. Ich bin ada, ich habe Schlüssel X</text>
+<path d="M536 305 H 264" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="400" y="297" text-anchor="middle" font-size="13" fill="#1e1b3a">2. Beweise es: unterschreibe diese Zufallsdaten</text>
+<path d="M262 345 H 536" stroke="#a78bfa" stroke-width="3" marker-end="url(#a)"/>
+<rect x="335" y="318" width="130" height="22" rx="6" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+<text x="400" y="334" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a">Signatur</text>
+<text x="400" y="366" text-anchor="middle" font-size="13" fill="#1e1b3a">3. Server prüft mit dem öffentlichen Schlüssel</text>
+<text x="400" y="404" text-anchor="middle" font-size="13" fill="#475569">Über das Netz geht nie der private Schlüssel – nur der Beweis, dass du ihn besitzt.</text>
+</svg>

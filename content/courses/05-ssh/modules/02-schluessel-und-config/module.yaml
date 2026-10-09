@@ -1,0 +1,57 @@
+title: Schlüssel und Config
+description: Du erzeugst und schützt Ed25519-Schlüssel, richtest authorized_keys mit den richtigen Rechten ein und machst Verbindungen mit der ssh-Config bequem.
+exercise:
+  id: modul-uebung-schluessel
+  type: terminal
+  title: Schlüssel für Mensch und Pipeline
+  description: |
+    Richte im Ordner `team-schluessel` ein typisches Setup ein: einen Schlüssel für dich und einen
+    eingeschränkten Schlüssel für eine CI-Pipeline. Der Unterordner `server` spielt das
+    Home-Verzeichnis eines Servers.
+
+    1. Erzeuge `laptop` (Ed25519, Kommentar `ada@laptop`) **mit** einer Passphrase deiner Wahl.
+    2. Erzeuge `ci` (Ed25519, Kommentar `ci@pipeline`) **ohne** Passphrase – eine Pipeline kann nichts eintippen.
+    3. Lege `server/.ssh/authorized_keys` an. Sie enthält den Schlüssel aus `laptop.pub` unverändert und den Schlüssel
+       aus `ci.pub` mit den Optionen `from="203.0.113.0/24",restrict` davor.
+    4. Setze die Rechte: `server/.ssh` → 700, `server/.ssh/authorized_keys` → 600, beide privaten Schlüssel → 600.
+  workdir: team-schluessel
+  checks:
+    - type: command
+      run: ssh-keygen -l -f laptop.pub | grep -q 'ada@laptop (ED25519)$' && ssh-keygen -l -f ci.pub | grep -q 'ci@pipeline (ED25519)$'
+      message: Es fehlen laptop.pub (ada@laptop) oder ci.pub (ci@pipeline) – beide vom Typ Ed25519.
+    - type: command
+      run: ssh-keygen -y -P '' -f laptop >/dev/null 2>&1
+      expect_exit: 255
+      message: Der Schlüssel laptop hat noch keine Passphrase (oder fehlt).
+    - type: command
+      run: ssh-keygen -y -P '' -f ci >/dev/null
+      message: Der Schlüssel ci darf keine Passphrase haben (oder fehlt).
+    - type: command
+      run: grep -c '' server/.ssh/authorized_keys
+      stdout_matches: "^2$"
+      message: server/.ssh/authorized_keys sollte genau zwei Zeilen enthalten.
+    - type: command
+      run: grep -qxF "$(cat laptop.pub)" server/.ssh/authorized_keys
+      message: Die Zeile aus laptop.pub fehlt unverändert in authorized_keys.
+    - type: command
+      run: grep -qxF "from=\"203.0.113.0/24\",restrict $(cat ci.pub)" server/.ssh/authorized_keys
+      message: "Die CI-Zeile muss genau so aussehen: from=\"203.0.113.0/24\",restrict gefolgt vom Inhalt von ci.pub."
+    - type: command
+      run: stat -c '%a' server/.ssh server/.ssh/authorized_keys laptop ci | tr '\n' ' '
+      stdout_matches: "^700 600 600 600$"
+      message: "Rechte prüfen: server/.ssh → 700, authorized_keys → 600, laptop und ci → 600."
+  hints:
+    - "`ssh-keygen -t ed25519 -C ada@laptop -f laptop` fragt nach der Passphrase, `-N \"\"` lässt sie weg."
+    - "Die CI-Zeile baust du mit `echo \"from=\\\"203.0.113.0/24\\\",restrict $(cat ci.pub)\" >> server/.ssh/authorized_keys`."
+    - "`mkdir -p server/.ssh` legt den Ordner an, `stat -c '%a %n' …` zeigt die Rechte."
+  solution: |
+    ```bash
+    cd team-schluessel
+    ssh-keygen -t ed25519 -C "ada@laptop" -f laptop          # Passphrase eingeben
+    ssh-keygen -t ed25519 -C "ci@pipeline" -f ci -N ""
+    mkdir -p server/.ssh
+    cat laptop.pub > server/.ssh/authorized_keys
+    echo "from=\"203.0.113.0/24\",restrict $(cat ci.pub)" >> server/.ssh/authorized_keys
+    chmod 700 server/.ssh
+    chmod 600 server/.ssh/authorized_keys laptop ci
+    ```

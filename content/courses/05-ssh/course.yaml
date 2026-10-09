@@ -1,0 +1,33 @@
+title: SSH
+subtitle: Sicher auf entfernte Rechner zugreifen – mit Schlüsseln, Config und Tunneln
+description: >
+  SSH ist die Tür zu fast jedem Server der Welt. Wer deployt, Logs liest, eine Datenbank im
+  Rechenzentrum erreicht oder Code zu GitHub pusht, benutzt SSH – oft ohne es zu merken.
+
+
+  In diesem Kurs verstehst du zuerst, **warum** SSH sicher ist: Schlüsselpaare, Signaturen,
+  Fingerprints und die Prüfung des Server-Schlüssels. Danach erzeugst du im echten Übungs-Terminal
+  eigene Schlüssel, setzt Dateirechte richtig, schreibst eine `~/.ssh/config` mit Jump-Host und
+  prüfst sie mit `ssh -G`. Verbindungen zu echten Servern, Dateitransfer und Tunnel übst du in
+  realistischen Simulationen. Am Ende signierst du Git-Commits mit deinem SSH-Schlüssel und weißt,
+  wie man einen SSH-Server absichert.
+category: grundlagen
+level: einsteiger
+icon: key-round
+color: "#f59e0b"
+estimated_hours: 4
+workspace_dir: ssh
+prerequisites: [terminal-shell, netzwerk-grundlagen]
+learning_goals:
+  - Du erklärst, wie SSH eine Verbindung verschlüsselt und warum dein privater Schlüssel nie den Rechner verlässt.
+  - Du prüfst Host-Keys, liest die known_hosts und erkennst einen möglichen Man-in-the-Middle-Angriff.
+  - Du erzeugst Ed25519-Schlüssel mit Passphrase und nutzt den ssh-agent.
+  - Du richtest authorized_keys mit korrekten Dateirechten (700/600) ein.
+  - Du schreibst eine ~/.ssh/config mit Aliasen, Jump-Host und Weiterleitungen und prüfst sie mit ssh -G.
+  - Du kopierst Dateien mit scp, sftp und rsync und baust Tunnel mit -L, -R und -D.
+  - Du nutzt SSH-Schlüssel für GitHub und zum Signieren von Git-Commits.
+  - Du kennst die wichtigsten Einstellungen, um einen SSH-Server abzusichern.
+references:
+  - Zugriff auf Produktionsdatenbanken nur über einen SSH-Tunnel durch einen Bastion-Host
+  - Getrennte SSH-Schlüssel für privates und berufliches GitHub-Konto über Host-Aliase in der ~/.ssh/config
+  - SSH-Agenten von Passwort-Managern, die private Schlüssel nie auf die Festplatte schreiben

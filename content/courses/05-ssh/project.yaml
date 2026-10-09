@@ -1,0 +1,248 @@
+title: Dein SSH-Starterkit
+description: |
+  Du baust ein komplettes, wiederverwendbares SSH-Setup für ein kleines Team-Projekt: ein geschütztes
+  Schlüsselpaar mit korrekten Rechten, eine ssh-Config mit Bastion, App-Server und Datenbank-Tunnel,
+  eine authorized_keys-Vorlage für neue Server und eine README, mit der eine neue Kollegin alles in
+  zehn Minuten nachbauen kann.
+
+  Alles entsteht im Ordner `starterkit`. Stacklab prüft nach jedem Schritt mit echten Werkzeugen –
+  `ssh-keygen -l`, `stat` und `ssh -G` – ob dein Kit funktioniert.
+goal: Ein Ordner `starterkit` mit Schlüsselpaar, Fingerprint, getesteter ssh-Config, authorized_keys-Vorlage und README.
+workdir: starterkit
+steps:
+  - id: ordner
+    title: Den Schlüsselordner anlegen
+    description: |
+      Lege im Ordner `starterkit` einen Unterordner `keys` an. Nur du darfst ihn lesen, beschreiben und
+      betreten – genau wie `~/.ssh`.
+    checklist:
+      - Ordner keys angelegt
+      - Rechte auf 700 gesetzt
+    hints:
+      - "`mkdir keys` und dann `chmod 700 keys`."
+    checks:
+      - type: dir_exists
+        path: keys
+        message: Der Ordner keys fehlt noch.
+      - type: command
+        run: stat -c '%a' keys
+        stdout_equals: "700"
+        message: keys sollte die Rechte 700 haben.
+    solution: |
+      ```bash
+      cd starterkit
+      mkdir keys
+      chmod 700 keys
+      ```
+  - id: schluessel
+    title: Ein geschütztes Schlüsselpaar erzeugen
+    description: |
+      Erzeuge in `keys` ein Ed25519-Schlüsselpaar mit dem Dateinamen `id_ed25519_kit` und dem Kommentar
+      `kit@example.com`. Diesmal **mit** Passphrase – merke sie dir oder speichere sie in deinem Passwort-Manager.
+      Der private Schlüssel braucht die Rechte 600, der öffentliche 644.
+    checklist:
+      - Schlüsselpaar vom Typ Ed25519 erzeugt
+      - Kommentar kit@example.com gesetzt
+      - Passphrase vergeben
+      - Rechte 600 und 644 geprüft
+    hints:
+      - "`ssh-keygen -t ed25519 -C \"kit@example.com\" -f keys/id_ed25519_kit`"
+      - "Mit `stat -c '%a %n' keys/*` siehst du die Rechte beider Dateien."
+    checks:
+      - type: command
+        run: ssh-keygen -l -f keys/id_ed25519_kit.pub
+        stdout_matches: "kit@example\\.com \\(ED25519\\)$"
+        message: keys/id_ed25519_kit.pub fehlt oder ist kein Ed25519-Schlüssel mit dem Kommentar kit@example.com.
+      - type: command
+        run: ssh-keygen -y -P '' -f keys/id_ed25519_kit >/dev/null 2>&1
+        expect_exit: 255
+        message: Der private Schlüssel hat noch keine Passphrase (oder fehlt).
+      - type: command
+        run: stat -c '%a' keys/id_ed25519_kit keys/id_ed25519_kit.pub | tr '\n' ' '
+        stdout_matches: "^600 644$"
+        message: "Rechte prüfen: privater Schlüssel 600, öffentlicher 644."
+    solution: |
+      ```bash
+      ssh-keygen -t ed25519 -C "kit@example.com" -f keys/id_ed25519_kit
+      chmod 600 keys/id_ed25519_kit
+      chmod 644 keys/id_ed25519_kit.pub
+      ```
+  - id: fingerprint
+    title: Den Fingerprint dokumentieren
+    description: |
+      Schreib die Ausgabe von `ssh-keygen -l -f keys/id_ed25519_kit.pub` in die Datei `keys/FINGERPRINT.txt`.
+      So kann später jede:r prüfen, welcher Schlüssel bei GitHub oder auf einem Server hinterlegt ist.
+    checklist:
+      - FINGERPRINT.txt angelegt
+      - Fingerprint stimmt mit dem Schlüssel überein
+    hints:
+      - Die Ausgabe eines Befehls leitest du mit `>` in eine Datei um.
+    checks:
+      - type: command
+        run: grep -qF "$(ssh-keygen -l -f keys/id_ed25519_kit.pub | awk '{print $2}')" keys/FINGERPRINT.txt
+        message: keys/FINGERPRINT.txt enthält noch nicht den SHA256-Fingerprint deines Schlüssels.
+    solution: |
+      ```bash
+      ssh-keygen -l -f keys/id_ed25519_kit.pub > keys/FINGERPRINT.txt
+      ```
+  - id: config
+    title: Die ssh-Config mit Bastion schreiben
+    description: |
+      Lege in `starterkit` eine Datei `config` an:
+
+      - `bastion`: HostName `203.0.113.5`, User `deploy`, Port `2222`
+      - `app`: HostName `10.0.1.20`, User `deploy`, ProxyJump `bastion`
+      - `Host *` (am Ende): IdentityFile `~/.ssh/id_ed25519_kit`, `IdentitiesOnly yes`, `AddKeysToAgent yes`, `ServerAliveInterval 30`
+
+      Teste jeden Alias mit `ssh -G <alias> -F ./config`.
+    checklist:
+      - Alias bastion mit Port 2222
+      - Alias app über ProxyJump
+      - Gemeinsame Vorgaben unter Host * am Ende
+      - Mit ssh -G geprüft
+    hints:
+      - Spezielle Hosts oben, `Host *` ganz unten – der erste Treffer gewinnt.
+      - "`ssh -G app -F ./config | grep -E '^(user|hostname|port|proxyjump|identityfile) '`"
+    checks:
+      - type: command
+        run: ssh -G bastion -F ./config 2>/dev/null | grep -E '^(hostname|user|port|proxyjump) ' | sort | tr '\n' ' '
+        stdout_matches: "^hostname 203\\.0\\.113\\.5 port 2222 user deploy$"
+        message: bastion braucht HostName 203.0.113.5, User deploy und Port 2222.
+      - type: command
+        run: ssh -G app -F ./config 2>/dev/null | grep -E '^(hostname|user|proxyjump) ' | sort | tr '\n' ' '
+        stdout_matches: "^hostname 10\\.0\\.1\\.20 proxyjump bastion user deploy$"
+        message: app braucht HostName 10.0.1.20, User deploy und ProxyJump bastion.
+      - type: command
+        run: ssh -G app -F ./config 2>/dev/null | grep -E '^(identityfile|identitiesonly|addkeystoagent|serveraliveinterval) ' | sort | tr '\n' ' '
+        stdout_matches: "^addkeystoagent (yes|true) identitiesonly yes identityfile ~/\\.ssh/id_ed25519_kit serveraliveinterval 30$"
+        message: "Unter Host * fehlen Vorgaben: IdentityFile ~/.ssh/id_ed25519_kit, IdentitiesOnly yes, AddKeysToAgent yes, ServerAliveInterval 30."
+    solution: |
+      ```text title="starterkit/config"
+      Host bastion
+        HostName 203.0.113.5
+        User deploy
+        Port 2222
+
+      Host app
+        HostName 10.0.1.20
+        User deploy
+        ProxyJump bastion
+
+      Host *
+        IdentityFile ~/.ssh/id_ed25519_kit
+        IdentitiesOnly yes
+        AddKeysToAgent yes
+        ServerAliveInterval 30
+      ```
+  - id: tunnel
+    title: Einen Datenbank-Tunnel ergänzen
+    description: |
+      Ergänze einen Alias `app-db`, der über die Bastion zu `10.0.1.30` (User `deploy`) verbindet und deinen
+      lokalen Port `5433` auf `localhost:5432` der Datenbank-Maschine weiterleitet. Der Tunnel soll
+      abbrechen, wenn der lokale Port belegt ist. Achte darauf, dass der Block **vor** `Host *` steht.
+    checklist:
+      - Alias app-db angelegt
+      - LocalForward und ProxyJump gesetzt
+      - ExitOnForwardFailure aktiviert
+    hints:
+      - "Die Optionen heißen LocalForward, ProxyJump und ExitOnForwardFailure."
+    checks:
+      - type: command
+        run: ssh -G app-db -F ./config 2>/dev/null | grep -E '^(hostname|user|proxyjump|localforward|exitonforwardfailure) ' | sort | tr '\n' ' '
+        stdout_matches: "^exitonforwardfailure yes hostname 10\\.0\\.1\\.30 localforward 5433 \\[localhost\\]:5432 proxyjump bastion user deploy$"
+        message: "app-db braucht HostName 10.0.1.30, User deploy, ProxyJump bastion, LocalForward 5433 localhost:5432 und ExitOnForwardFailure yes."
+    solution: |
+      ```text title="Ergänzung in starterkit/config (vor Host *)"
+      Host app-db
+        HostName 10.0.1.30
+        User deploy
+        ProxyJump bastion
+        LocalForward 5433 localhost:5432
+        ExitOnForwardFailure yes
+      ```
+  - id: vorlage
+    title: Eine authorized_keys-Vorlage für neue Server
+    description: |
+      Neue Server sollen deinen Schlüssel sofort akzeptieren. Lege dafür `server-vorlage/.ssh/authorized_keys`
+      an, die genau deinen öffentlichen Schlüssel enthält. Setze die Rechte so, wie sshd sie verlangt:
+      `.ssh` → 700, `authorized_keys` → 600.
+    checklist:
+      - Vorlage enthält genau deinen öffentlichen Schlüssel
+      - Rechte 700 und 600 gesetzt
+    hints:
+      - "`mkdir -p server-vorlage/.ssh` und `cp keys/id_ed25519_kit.pub server-vorlage/.ssh/authorized_keys`."
+    checks:
+      - type: command
+        run: grep -c '' server-vorlage/.ssh/authorized_keys
+        stdout_equals: "1"
+        message: authorized_keys sollte genau eine Zeile enthalten.
+      - type: command
+        run: grep -qF "$(cut -d' ' -f2 keys/id_ed25519_kit.pub)" server-vorlage/.ssh/authorized_keys
+        message: Die Vorlage enthält noch nicht deinen öffentlichen Schlüssel.
+      - type: command
+        run: stat -c '%a' server-vorlage/.ssh server-vorlage/.ssh/authorized_keys | tr '\n' ' '
+        stdout_matches: "^700 600$"
+        message: "Rechte prüfen: server-vorlage/.ssh → 700, authorized_keys → 600."
+    solution: |
+      ```bash
+      mkdir -p server-vorlage/.ssh
+      cp keys/id_ed25519_kit.pub server-vorlage/.ssh/authorized_keys
+      chmod 700 server-vorlage/.ssh
+      chmod 600 server-vorlage/.ssh/authorized_keys
+      ```
+  - id: readme
+    title: Die README schreiben
+    description: |
+      Schreib eine `README.md`, mit der eine neue Kollegin das Kit nutzen kann. Sie soll mindestens enthalten:
+
+      - eine Überschrift,
+      - einen Abschnitt `## Fingerprint` mit dem SHA256-Fingerprint deines Schlüssels,
+      - einen Abschnitt `## Verbinden` mit den Befehlen `ssh app` und `ssh -N app-db`,
+      - einen Abschnitt `## Prüfen`, der erklärt, wie man die Config mit `ssh -G` testet,
+      - den Hinweis, dass der private Schlüssel **niemals** weitergegeben wird.
+    checklist:
+      - Überschrift und drei Abschnitte
+      - Fingerprint eingetragen
+      - Befehle zum Verbinden und Prüfen
+      - Sicherheitshinweis zum privaten Schlüssel
+    hints:
+      - "Den Fingerprint kopierst du aus keys/FINGERPRINT.txt."
+      - "Markdown-Abschnitte beginnen mit `## `."
+    checks:
+      - type: file_contains
+        path: README.md
+        pattern: "^#\\s+\\S"
+        message: README.md braucht eine Überschrift.
+      - type: command
+        run: grep -qF "$(ssh-keygen -l -f keys/id_ed25519_kit.pub | awk '{print $2}')" README.md
+        message: Der SHA256-Fingerprint deines Schlüssels fehlt in der README.
+      - type: command
+        run: grep -c -E '^## (Fingerprint|Verbinden|Prüfen)' README.md
+        stdout_equals: "3"
+        message: "Es fehlen Abschnitte: ## Fingerprint, ## Verbinden und ## Prüfen."
+      - type: command
+        run: grep -q 'ssh app' README.md && grep -q 'ssh -N app-db' README.md && grep -q 'ssh -G' README.md
+        message: Die README sollte ssh app, ssh -N app-db und ssh -G erwähnen.
+      - type: file_contains
+        path: README.md
+        pattern: "[Pp]rivat"
+        message: Der Hinweis zum privaten Schlüssel fehlt.
+    solution: |
+      ```markdown title="starterkit/README.md"
+      # SSH-Starterkit
+
+      Der private Schlüssel `keys/id_ed25519_kit` wird niemals weitergegeben oder committet.
+
+      ## Fingerprint
+
+      256 SHA256:… kit@example.com (ED25519)
+
+      ## Verbinden
+
+      ssh app          # App-Server über die Bastion
+      ssh -N app-db    # Datenbank-Tunnel auf localhost:5433
+
+      ## Prüfen
+
+      ssh -G app -F ./config zeigt die wirksame Konfiguration, ohne zu verbinden.
+      ```

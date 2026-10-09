@@ -1,0 +1,59 @@
+title: Wie SSH funktioniert
+description: Was SSH ist, warum es Telnet ersetzt hat, wie Schlüsselpaare funktionieren und wie SSH die Identität des Servers prüft.
+exercise:
+  id: modul-uebung-grundlagen
+  type: terminal
+  title: Server-Inventur in known_hosts
+  description: |
+    Im Ordner `inventur` liegt eine `known_hosts` mit vier Servern. Bring sie in Ordnung:
+
+    1. Der Server `203.0.113.40` wurde abgeschaltet – entferne seinen Eintrag.
+    2. Schreib den Fingerprint des Servers `[203.0.113.30]:2222` (der Teil `SHA256:…`) in die Datei `cache-fingerprint.txt`.
+    3. Hashe danach alle Hostnamen in der Datei, damit ein Dieb nicht sieht, welche Server du nutzt.
+    4. `ssh-keygen` legt bei Änderungen eine Sicherung `known_hosts.old` an – mit den Hostnamen im Klartext.
+       Lösche sie zum Schluss.
+
+    Die drei übrigen Server müssen weiterhin gefunden werden. Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: inventur
+  setup: |
+    mkdir -p .tmp
+    for h in a b c d; do ssh-keygen -q -t ed25519 -N "" -C "" -f ".tmp/$h"; done
+    {
+      echo "203.0.113.10 $(cut -d' ' -f1,2 .tmp/a.pub)"
+      echo "203.0.113.20 $(cut -d' ' -f1,2 .tmp/b.pub)"
+      echo "[203.0.113.30]:2222 $(cut -d' ' -f1,2 .tmp/c.pub)"
+      echo "203.0.113.40 $(cut -d' ' -f1,2 .tmp/d.pub)"
+    } > known_hosts
+    rm -rf .tmp
+  checks:
+    - type: command
+      run: ssh-keygen -F 203.0.113.40 -f known_hosts
+      expect_exit: 1
+      message: Der Eintrag für 203.0.113.40 ist noch vorhanden – entferne ihn mit ssh-keygen -R.
+    - type: command
+      run: for h in 203.0.113.10 203.0.113.20 "[203.0.113.30]:2222"; do ssh-keygen -F "$h" -f known_hosts >/dev/null || exit 1; done
+      message: Einer der drei übrigen Server (203.0.113.10, 203.0.113.20, [203.0.113.30]:2222) fehlt in known_hosts.
+    - type: command
+      run: grep -cvE '^\|1\|' known_hosts
+      expect_exit: 1
+      stdout_matches: "^0$"
+      message: In known_hosts stehen noch Hostnamen im Klartext. Hashe die Datei mit ssh-keygen -H.
+    - type: command
+      run: grep -qF "$(ssh-keygen -F '[203.0.113.30]:2222' -f known_hosts | grep -v '^#' | ssh-keygen -l -f - | awk '{print $2}')" cache-fingerprint.txt
+      message: cache-fingerprint.txt enthält noch nicht den SHA256-Fingerprint von [203.0.113.30]:2222.
+    - type: file_absent
+      path: known_hosts.old
+      message: Die Sicherung known_hosts.old existiert noch – sie enthält die Hostnamen im Klartext.
+  hints:
+    - "Arbeite in der Reihenfolge der Aufgabe: Nach dem Hashen zeigt `ssh-keygen -l -f known_hosts` keine Hostnamen mehr an."
+    - "`ssh-keygen -R 203.0.113.40 -f known_hosts`, danach `ssh-keygen -l -f known_hosts` für den Fingerprint."
+    - "`ssh-keygen -H -f known_hosts` hasht alle Einträge, `rm known_hosts.old` entfernt die Sicherung."
+  solution: |
+    ```bash
+    cd inventur
+    ssh-keygen -R 203.0.113.40 -f known_hosts
+    ssh-keygen -l -f known_hosts | grep '203.0.113.30' | awk '{print $2}' > cache-fingerprint.txt
+    ssh-keygen -H -f known_hosts
+    rm known_hosts.old
+    ssh-keygen -F 203.0.113.10 -f known_hosts   # findet den Eintrag trotz Hash
+    ```
