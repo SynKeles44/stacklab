@@ -1,26 +1,27 @@
-import { ArrowLeft, ArrowRight, BookA, CheckCircle2, Clock, ExternalLink, ListChecks, ListTree, NotebookPen } from 'lucide-react'
-import { motion } from 'motion/react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLoaderData } from 'react-router'
+import { ArrowLeft, ArrowRight, BookA, CheckCircle2, Clock, ExternalLink, ListTree, NotebookPen } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLoaderData, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { BookmarkButton } from '@/components/common/bookmark-button'
-import { CourseOutline } from '@/components/common/course-outline'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { CourseIcon } from '@/components/common/course-icon'
-import { LessonMarkdown, slugifyHeading } from '@/components/markdown/lesson-markdown'
+import { CourseOutline } from '@/components/common/course-outline'
+import { LessonMarkdown } from '@/components/markdown/lesson-markdown'
 import { LessonQuiz } from '@/components/quiz/lesson-quiz'
 import { TaskRenderer } from '@/components/tasks/task-renderer'
 import { Badge } from '@/components/ui/badge'
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
+import { Kbd } from '@/components/ui/kbd'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Api, type CourseDetail, type LessonResponse } from '@/lib/api'
 import { useSession } from '@/lib/auth'
 import { celebrateBig, celebrateSmall, originFromElement } from '@/lib/celebrate'
+import { buildPages, type LessonPage as Page } from '@/lib/lesson-pages'
 import { markKnown } from '@/lib/unlocks'
 import { cn } from '@/lib/utils'
 
@@ -34,19 +35,26 @@ export function LessonPage() {
 function LessonView({ data }: { data: LessonData }) {
   const { lesson, state } = data
   const user = useSession()
+  const [params, setParams] = useSearchParams()
   const [completed, setCompleted] = useState(state?.completed ?? false)
   const [completedTasks, setCompletedTasks] = useState<string[]>(state?.completed_tasks ?? [])
-  const [busy, setBusy] = useState(false)
   const [outlineOpen, setOutlineOpen] = useState(false)
-  const completeRef = useRef<HTMLButtonElement>(null)
+  const [direction, setDirection] = useState(1)
+  const topRef = useRef<HTMLDivElement>(null)
 
-  const headings = useMemo(
-    () =>
-      [...lesson.body.matchAll(/^##\s+(.+)$/gm)].map((match) => {
-        const text = match[1]!.replace(/\[\[([a-z0-9-]+)(?:\|([^\]]+))?\]\]/g, (_, slug: string, label?: string) => label ?? slug).replace(/[`*_]/g, '')
-        return { text, id: slugifyHeading(text) }
-      }),
-    [lesson.body],
+  const pages = useMemo(() => buildPages(lesson.body, lesson.tasks.map((task) => task.title), lesson.quiz.length > 0), [lesson])
+  const requested = Number(params.get('seite') ?? '1')
+  const index = Number.isInteger(requested) ? Math.min(Math.max(requested, 1), pages.length) - 1 : 0
+  const page = pages[index]!
+
+  const goTo = useCallback(
+    (next: number) => {
+      if (next < 0 || next >= pages.length || next === index) return
+      setDirection(next > index ? 1 : -1)
+      setParams(next === 0 ? {} : { seite: String(next + 1) }, { replace: true, preventScrollReset: true })
+      topRef.current?.scrollIntoView({ block: 'start' })
+    },
+    [index, pages.length, setParams],
   )
 
   useEffect(() => {
@@ -55,26 +63,16 @@ function LessonView({ data }: { data: LessonData }) {
     document.title = `${lesson.title} · ${lesson.course.title} · Stacklab`
   }, [lesson.id, lesson.title, lesson.course.title, state?.unlocked_terms, user])
 
-  const complete = async () => {
-    if (!user) {
-      toast.info('Melde dich an, damit dein Fortschritt gespeichert wird.')
-      return
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement
+      if (target.closest('input, textarea, select, [contenteditable="true"], .cm-editor, .xterm, [role="dialog"]')) return
+      if (event.key === 'ArrowRight') goTo(index + 1)
+      if (event.key === 'ArrowLeft') goTo(index - 1)
     }
-    setBusy(true)
-    try {
-      const result = await Api.completeLesson(lesson.id)
-      setCompleted(true)
-      if (result.course_completed && result.newly_completed) {
-        celebrateBig()
-        toast.success('Kurs abgeschlossen! 🎓', { description: `Du hast alle Lektionen von „${lesson.course.title}“ geschafft. Zeit für die Prüfung!` })
-      } else if (result.newly_completed) {
-        celebrateSmall(originFromElement(completeRef.current))
-        toast.success('Lektion abgeschlossen', { description: result.course_progress ? `Kursfortschritt: ${result.course_progress.percent} %` : undefined })
-      }
-    } finally {
-      setBusy(false)
-    }
-  }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [goTo, index])
 
   const taskContext = {
     scope: { scope: 'lesson' as const, id: lesson.id },
@@ -84,182 +82,225 @@ function LessonView({ data }: { data: LessonData }) {
     url: `/kurse/${lesson.course.slug}/${lesson.slug}`,
   }
 
-  const lessonUrl = `/kurse/${lesson.course.slug}/${lesson.slug}`
+  const isDone = (candidate: Page) =>
+    (candidate.kind === 'task' && completedTasks.includes(lesson.tasks[candidate.taskIndex]!.id)) || (candidate.kind === 'finish' && completed)
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
-      <div className="grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_14rem]">
-        <aside className="hidden lg:block">
-          <div className="sticky top-20">
-            <ScrollArea className="h-[calc(100svh-6rem)] pr-3">
-              <Link to={`/kurse/${lesson.course.slug}`} className="mb-4 block font-semibold hover:text-brand">{lesson.course.title}</Link>
-              <CourseOutline course={data.outline} activeSlug={lesson.slug} />
+    <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
+      <div ref={topRef} className="scroll-mt-20" />
+
+      <div className="mb-4 flex items-center gap-2">
+        <Sheet open={outlineOpen} onOpenChange={setOutlineOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm"><ListTree /> Kursinhalt</Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-80">
+            <SheetHeader><SheetTitle>{lesson.course.title}</SheetTitle></SheetHeader>
+            <ScrollArea className="h-[calc(100svh-5rem)] px-4 pb-6">
+              <CourseOutline course={data.outline} activeSlug={lesson.slug} onNavigate={() => setOutlineOpen(false)} />
             </ScrollArea>
-          </div>
-        </aside>
-        <article className="mx-auto w-full max-w-3xl min-w-0">
-          <Sheet open={outlineOpen} onOpenChange={setOutlineOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="mb-4 lg:hidden"><ListTree /> Kursinhalt</Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80">
-              <SheetHeader><SheetTitle>{lesson.course.title}</SheetTitle></SheetHeader>
-              <ScrollArea className="h-[calc(100svh-5rem)] px-4 pb-6">
-                <CourseOutline course={data.outline} activeSlug={lesson.slug} onNavigate={() => setOutlineOpen(false)} />
-              </ScrollArea>
-            </SheetContent>
-          </Sheet>
-          <Breadcrumb className="mb-5">
-            <BreadcrumbList>
-              <BreadcrumbItem><BreadcrumbLink asChild><Link to="/kurse">Kurse</Link></BreadcrumbLink></BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem><BreadcrumbLink asChild><Link to={`/kurse/${lesson.course.slug}`}>{lesson.course.title}</Link></BreadcrumbLink></BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden sm:block" />
-              <BreadcrumbItem className="hidden sm:inline-flex"><BreadcrumbPage>{lesson.module.title}</BreadcrumbPage></BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
-          <header className="mb-8">
-            <div className="flex items-start gap-4">
-              <CourseIcon icon={lesson.course.icon} color={lesson.course.color} className="hidden sm:inline-flex" />
-              <div className="min-w-0 flex-1">
-                <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <span>Lektion {lesson.position} von {lesson.total}</span>
-                  <span aria-hidden>·</span>
-                  <span className="inline-flex items-center gap-1"><Clock className="size-3.5" /> {lesson.duration_minutes} Min.</span>
-                  {completed && <Badge className="gap-1 bg-success text-white"><CheckCircle2 className="size-3" /> Abgeschlossen</Badge>}
-                </div>
-                <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-                  {lesson.title}
-                </motion.h1>
-                {lesson.summary && <p className="mt-3 text-lg text-muted-foreground">{lesson.summary}</p>}
-              </div>
-              <BookmarkButton type="lesson" refKey={`${lesson.course.slug}/${lesson.slug}`} label={lesson.title} url={lessonUrl} />
-            </div>
-            <Progress value={lesson.position && lesson.total ? (lesson.position / lesson.total) * 100 : 0} className="mt-6 h-1" />
-          </header>
-
-          <LessonMarkdown body={lesson.body} terms={lesson.terms} />
-
-          {lesson.terms.length > 0 && (
-            <section className="mt-12 rounded-2xl border bg-muted/30 p-5">
-              <h2 className="flex items-center gap-2 text-lg font-semibold"><BookA className="size-5 text-brand" /> Begriffe aus dieser Lektion</h2>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {lesson.terms.map((term) => (
-                  <Link key={term.slug} to={`/lexikon/${term.slug}`} className="rounded-full border bg-background px-3 py-1 text-sm transition-colors hover:border-brand hover:text-brand">
-                    {term.term}
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {lesson.tasks.length > 0 && (
-            <section className="mt-12 space-y-5" id="aufgaben">
-              <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-                <ListChecks className="size-6 text-brand" /> Jetzt bist du dran
-                <span className="ml-auto text-sm font-normal text-muted-foreground">{completedTasks.length} / {lesson.tasks.length} gelöst</span>
-              </h2>
-              {lesson.tasks.map((task) => (
-                <TaskRenderer
-                  key={task.id}
-                  task={task}
-                  context={taskContext}
-                  done={completedTasks.includes(task.id)}
-                  onCompleted={(id) => setCompletedTasks((previous) => (previous.includes(id) ? previous : [...previous, id]))}
-                />
-              ))}
-            </section>
-          )}
-
-          {lesson.quiz.length > 0 && (
-            <section className="mt-12" id="quiz">
-              <LessonQuiz lessonId={lesson.id} questions={lesson.quiz} best={state?.best_quiz ?? null} />
-            </section>
-          )}
-
-          {user && <NoteEditor lessonId={lesson.id} initial={state?.note ?? ''} />}
-
-          {lesson.sources.length > 0 && (
-            <section className="mt-10 text-sm text-muted-foreground">
-              <h2 className="mb-2 font-semibold text-foreground">Quellen & Weiterlesen</h2>
-              <ul className="space-y-1">
-                {lesson.sources.map((source) => (
-                  <li key={source.url}>
-                    <a href={source.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 hover:text-foreground hover:underline">
-                      {source.title} <ExternalLink className="size-3" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <Card className={cn('mt-12', completed && 'border-success/40 bg-success/5')}>
-            <CardContent className="flex flex-col items-center gap-3 py-6 text-center sm:flex-row sm:text-left">
-              <div className="flex-1">
-                <p className="font-semibold">{completed ? 'Diese Lektion hast du abgeschlossen.' : 'Alles verstanden?'}</p>
-                <p className="text-sm text-muted-foreground">
-                  {completed
-                    ? 'Du kannst sie jederzeit wieder als Nachschlagewerk nutzen.'
-                    : completedTasks.length < lesson.tasks.length
-                      ? 'Tipp: Löse zuerst die Aufgaben – erst durch Tun bleibt Wissen hängen.'
-                      : 'Super, alle Aufgaben gelöst. Schließe die Lektion ab.'}
-                </p>
-              </div>
-              {!completed && (
-                <Button ref={completeRef} size="lg" onClick={complete} disabled={busy}>
-                  {busy ? <Spinner /> : <CheckCircle2 />} Lektion abschließen
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          <nav className="mt-8 grid gap-3 sm:grid-cols-2" aria-label="Lektionsnavigation">
-            {lesson.previous ? (
-              <Link to={`/kurse/${lesson.course.slug}/${lesson.previous.slug}`} className="group rounded-xl border p-4 transition-colors hover:border-brand">
-                <span className="flex items-center gap-1 text-xs text-muted-foreground"><ArrowLeft className="size-3.5" /> Vorherige Lektion</span>
-                <span className="mt-1 block font-medium group-hover:text-brand">{lesson.previous.title}</span>
-              </Link>
-            ) : <span />}
-            {lesson.next ? (
-              <Link to={`/kurse/${lesson.course.slug}/${lesson.next.slug}`} className="group rounded-xl border p-4 text-right transition-colors hover:border-brand">
-                <span className="flex items-center justify-end gap-1 text-xs text-muted-foreground">Nächste Lektion <ArrowRight className="size-3.5" /></span>
-                <span className="mt-1 block font-medium group-hover:text-brand">{lesson.next.title}</span>
-              </Link>
-            ) : (
-              <Link to={`/kurse/${lesson.course.slug}`} className="group rounded-xl border p-4 text-right transition-colors hover:border-brand">
-                <span className="text-xs text-muted-foreground">Ende des Kurses</span>
-                <span className="mt-1 block font-medium group-hover:text-brand">Zur Kursübersicht, Projekt & Prüfung</span>
-              </Link>
-            )}
-          </nav>
-        </article>
-
-        <aside className="hidden xl:block">
-          <div className="sticky top-20 space-y-6 text-sm">
-            {headings.length > 0 && (
-              <div>
-                <p className="mb-2 font-semibold">Auf dieser Seite</p>
-                <ul className="space-y-1.5 border-l">
-                  {headings.map((heading) => (
-                    <li key={heading.id}>
-                      <a href={`#${heading.id}`} className="-ml-px block border-l border-transparent pl-3 text-muted-foreground hover:border-brand hover:text-foreground">{heading.text}</a>
-                    </li>
-                  ))}
-                  {lesson.tasks.length > 0 && <li><a href="#aufgaben" className="-ml-px block border-l border-transparent pl-3 text-muted-foreground hover:border-brand hover:text-foreground">Aufgaben</a></li>}
-                  {lesson.quiz.length > 0 && <li><a href="#quiz" className="-ml-px block border-l border-transparent pl-3 text-muted-foreground hover:border-brand hover:text-foreground">Quiz</a></li>}
-                </ul>
-              </div>
-            )}
-            <div className="rounded-xl border p-3">
-              <p className="font-medium">{lesson.module.title}</p>
-              <p className="mt-1 text-muted-foreground">Modul im Kurs {lesson.course.title}</p>
-              <Button asChild variant="link" className="mt-1 h-auto p-0"><Link to={`/kurse/${lesson.course.slug}`}>Alle Lektionen</Link></Button>
-            </div>
-          </div>
-        </aside>
+          </SheetContent>
+        </Sheet>
+        <Link to={`/kurse/${lesson.course.slug}`} className="min-w-0 truncate text-sm text-muted-foreground hover:text-foreground">
+          {lesson.course.title} · {lesson.module.title}
+        </Link>
+        <div className="ml-auto">
+          <BookmarkButton type="lesson" refKey={`${lesson.course.slug}/${lesson.slug}`} label={lesson.title} url={taskContext.url} size="icon-sm" />
+        </div>
       </div>
+
+      <header className="flex items-start gap-3">
+        <CourseIcon icon={lesson.course.icon} color={lesson.course.color} size="sm" className="mt-1" />
+        <div className="min-w-0 flex-1">
+          <h1 className={cn('font-bold tracking-tight text-balance', index === 0 ? 'text-2xl sm:text-3xl' : 'text-lg sm:text-xl')}>{lesson.title}</h1>
+          {index === 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+              <span>Lektion {lesson.position} von {lesson.total}</span>
+              <span className="inline-flex items-center gap-1"><Clock className="size-3.5" /> {lesson.duration_minutes} Min.</span>
+              {completed && <Badge className="gap-1 bg-success text-white"><CheckCircle2 className="size-3" /> Abgeschlossen</Badge>}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <PageBar pages={pages} index={index} onSelect={goTo} isDone={isDone} />
+
+      <div className="min-h-[45svh]">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.section
+            key={index}
+            initial={{ opacity: 0, x: direction * 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction * -32 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            aria-label={`Seite ${index + 1} von ${pages.length}: ${page.title}`}
+          >
+            {page.kind === 'text' && <LessonMarkdown body={page.markdown} terms={lesson.terms} />}
+
+            {page.kind === 'task' && (
+              <TaskRenderer
+                task={lesson.tasks[page.taskIndex]!}
+                context={taskContext}
+                done={completedTasks.includes(lesson.tasks[page.taskIndex]!.id)}
+                onCompleted={(id) => setCompletedTasks((previous) => (previous.includes(id) ? previous : [...previous, id]))}
+              />
+            )}
+
+            {page.kind === 'quiz' && <LessonQuiz lessonId={lesson.id} questions={lesson.quiz} best={state?.best_quiz ?? null} />}
+
+            {page.kind === 'finish' && <FinishPage data={data} completed={completed} completedTasks={completedTasks.length} onCompleted={() => setCompleted(true)} />}
+          </motion.section>
+        </AnimatePresence>
+      </div>
+
+      <nav
+        className="sticky bottom-0 z-20 -mx-4 mt-8 flex items-center gap-2 border-t bg-background/90 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none"
+        aria-label="Blättern"
+      >
+        <Button variant="outline" onClick={() => goTo(index - 1)} disabled={index === 0} aria-label="Vorherige Seite">
+          <ArrowLeft /> <span className="hidden sm:inline">Zurück</span>
+        </Button>
+        <span className="flex-1 text-center text-sm text-muted-foreground tabular-nums">
+          {index + 1} / {pages.length}
+          <span className="ml-3 hidden gap-1 md:inline-flex"><Kbd>←</Kbd><Kbd>→</Kbd></span>
+        </span>
+        {index < pages.length - 1 ? (
+          <Button onClick={() => goTo(index + 1)}>
+            {nextLabel(pages[index + 1]!)} <ArrowRight />
+          </Button>
+        ) : lesson.next ? (
+          <Button asChild>
+            <Link to={`/kurse/${lesson.course.slug}/${lesson.next.slug}`}>Nächste Lektion <ArrowRight /></Link>
+          </Button>
+        ) : (
+          <Button asChild variant="secondary">
+            <Link to={`/kurse/${lesson.course.slug}`}>Zur Kursübersicht <ArrowRight /></Link>
+          </Button>
+        )}
+      </nav>
+    </div>
+  )
+}
+
+function nextLabel(page: Page): string {
+  if (page.kind === 'task') return 'Zur Aufgabe'
+  if (page.kind === 'quiz') return 'Zum Quiz'
+  if (page.kind === 'finish') return 'Abschluss'
+  return 'Weiter'
+}
+
+function PageBar({ pages, index, onSelect, isDone }: { pages: Page[]; index: number; onSelect: (index: number) => void; isDone: (page: Page) => boolean }) {
+  const current = pages[index]!
+  const prefix = current.kind === 'task' ? 'Aufgabe · ' : current.kind === 'text' ? '' : ''
+  return (
+    <div className="my-5">
+      <div className="flex gap-1" role="tablist" aria-label="Seiten der Lektion">
+        {pages.map((page, i) => (
+          <Tooltip key={i}>
+            <TooltipTrigger asChild>
+              <button type="button" role="tab" aria-selected={i === index} aria-label={`Seite ${i + 1}: ${page.title}`} onClick={() => onSelect(i)} className="group flex h-6 flex-1 items-center">
+                <span
+                  className={cn(
+                    'h-1.5 w-full rounded-full transition-colors',
+                    i < index ? 'bg-brand/60' : i === index ? 'bg-brand' : page.kind === 'text' ? 'bg-muted group-hover:bg-muted-foreground/30' : 'bg-brand-2/25 group-hover:bg-brand-2/40',
+                    isDone(page) && 'bg-success',
+                  )}
+                />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{page.kind === 'task' ? `Aufgabe: ${page.title}` : page.title}</TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+      <p className="mt-1 truncate text-xs font-medium text-muted-foreground">{prefix}{current.title}</p>
+    </div>
+  )
+}
+
+function FinishPage({ data, completed, completedTasks, onCompleted }: { data: LessonData; completed: boolean; completedTasks: number; onCompleted: () => void }) {
+  const { lesson, state } = data
+  const user = useSession()
+  const [busy, setBusy] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  const complete = async () => {
+    if (!user) {
+      toast.info('Melde dich an, damit dein Fortschritt gespeichert wird.')
+      return
+    }
+    setBusy(true)
+    try {
+      const result = await Api.completeLesson(lesson.id)
+      onCompleted()
+      if (result.course_completed && result.newly_completed) {
+        celebrateBig()
+        toast.success('Kurs abgeschlossen!', { description: `Du hast alle Lektionen von „${lesson.course.title}“ geschafft. Zeit für die Prüfung!` })
+      } else if (result.newly_completed) {
+        celebrateSmall(originFromElement(buttonRef.current))
+        toast.success('Lektion abgeschlossen', { description: result.course_progress ? `Kursfortschritt: ${result.course_progress.percent} %` : undefined })
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className={cn(completed && 'border-success/40 bg-success/5')}>
+        <CardContent className="flex flex-col items-center gap-3 py-6 text-center sm:flex-row sm:text-left">
+          <div className="flex-1">
+            <p className="font-semibold">{completed ? 'Diese Lektion hast du abgeschlossen.' : 'Alles verstanden?'}</p>
+            <p className="text-sm text-muted-foreground">
+              {completed
+                ? 'Du kannst sie jederzeit wieder als Nachschlagewerk nutzen.'
+                : completedTasks < lesson.tasks.length
+                  ? `Du hast ${completedTasks} von ${lesson.tasks.length} Aufgaben gelöst. Erst durch Tun bleibt Wissen hängen.`
+                  : 'Super, alle Aufgaben gelöst. Schließe die Lektion ab.'}
+            </p>
+          </div>
+          {!completed && (
+            <Button ref={buttonRef} size="lg" onClick={complete} disabled={busy}>
+              {busy ? <Spinner /> : <CheckCircle2 />} Lektion abschließen
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {lesson.terms.length > 0 && (
+        <section>
+          <h2 className="mb-2 flex items-center gap-2 font-semibold"><BookA className="size-4 text-brand" /> Begriffe aus dieser Lektion</h2>
+          <div className="flex flex-wrap gap-2">
+            {lesson.terms.map((term) => (
+              <Link key={term.slug} to={`/lexikon/${term.slug}`} className="rounded-full border bg-background px-3 py-1 text-sm transition-colors hover:border-brand hover:text-brand">
+                {term.term}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {user && <NoteEditor lessonId={lesson.id} initial={state?.note ?? ''} />}
+
+      {lesson.sources.length > 0 && (
+        <section className="text-sm text-muted-foreground">
+          <h2 className="mb-2 font-semibold text-foreground">Quellen & Weiterlesen</h2>
+          <ul className="space-y-1">
+            {lesson.sources.map((source) => (
+              <li key={source.url}>
+                <a href={source.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 hover:text-foreground hover:underline">
+                  {source.title} <ExternalLink className="size-3" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {lesson.previous && (
+        <Link to={`/kurse/${lesson.course.slug}/${lesson.previous.slug}`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-4" /> Vorherige Lektion: {lesson.previous.title}
+        </Link>
+      )}
     </div>
   )
 }
@@ -283,9 +324,9 @@ function NoteEditor({ lessonId, initial }: { lessonId: number; initial: string }
   }, [value, lessonId])
 
   return (
-    <section className="mt-12">
+    <section>
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-semibold"><NotebookPen className="size-5 text-brand" /> Deine Notizen</h2>
+        <h2 className="flex items-center gap-2 font-semibold"><NotebookPen className="size-4 text-brand" /> Deine Notizen</h2>
         <span className="text-xs text-muted-foreground">{status === 'saving' ? 'Speichert …' : status === 'saved' ? 'Gespeichert' : 'Nur für dich sichtbar'}</span>
       </div>
       <Textarea value={value} onChange={(event) => setValue(event.target.value)} placeholder="Was willst du dir merken? Eigene Beispiele, offene Fragen …" className="min-h-28" />
