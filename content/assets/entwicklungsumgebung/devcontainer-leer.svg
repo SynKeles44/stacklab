@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="400" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">So arbeitet ein Dev-Container</text>
+  <rect x="30" y="56" width="300" height="330" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="180" y="80" text-anchor="middle" font-size="14" fill="#1e1b3a">Dein Rechner (Host)</text>
+  <rect x="470" y="56" width="300" height="330" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="620" y="80" text-anchor="middle" font-size="14" fill="#1e1b3a">Container (aus devcontainer.json)</text>
+  <rect x="60" y="110" width="240" height="60" rx="10" fill="#ffffff" stroke="#1e1b3a" stroke-width="1.5"/>
+  <rect x="60" y="260" width="240" height="60" rx="10" fill="#ffffff" stroke="#1e1b3a" stroke-width="1.5"/>
+  <rect x="500" y="110" width="240" height="60" rx="10" fill="#ffffff" stroke="#1e1b3a" stroke-width="1.5"/>
+  <rect x="500" y="260" width="240" height="60" rx="10" fill="#ffffff" stroke="#1e1b3a" stroke-width="1.5"/>
+  <line x1="300" y1="140" x2="500" y2="140" stroke="#1e1b3a" stroke-width="2"/>
+  <polygon points="490,134 500,140 490,146" fill="#1e1b3a"/>
+  <polygon points="310,134 300,140 310,146" fill="#1e1b3a"/>
+  <line x1="300" y1="290" x2="500" y2="290" stroke="#34d399" stroke-width="3"/>
+  <polygon points="490,284 500,290 490,296" fill="#34d399"/>
+  <line x1="620" y1="170" x2="620" y2="205" stroke="#f59e0b" stroke-width="2"/>
+  <line x1="620" y1="205" x2="300" y2="205" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 4"/>
+  <polygon points="310,199 300,205 310,211" fill="#f59e0b"/>
+  <rect x="330" y="186" width="140" height="38" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+  <rect x="345" y="240" width="110" height="36" rx="8" fill="#ecfdf5" stroke="#34d399" stroke-width="1.5"/>
+  <text x="400" y="128" text-anchor="middle" font-size="12" fill="#1e1b3a">steuert den Container</text>
+  <text x="400" y="354" text-anchor="middle" font-size="12" fill="#1e1b3a">Dein Code liegt auf dem Host – der Container sieht ihn als Ordner.</text>
+  <text x="620" y="296" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">/workspaces/app</text>
+</svg>

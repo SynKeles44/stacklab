@@ -1,0 +1,335 @@
+title: Abschlussprüfung Entwicklungsumgebung & Task-Runner
+description: |
+  Prüfe dein Wissen aus allen vier Modulen: Bestandteile einer Entwicklungsumgebung, Editoren und
+  EditorConfig, Versionsmanager und Variablen, Makefile, Git-Hooks und Container-Umgebungen. Zum Schluss
+  löst du drei praktische Aufgaben im Übungs-Terminal und im Code-Editor.
+time_limit_minutes: 45
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Was ist der beste Weg, „works on my machine“ dauerhaft zu vermeiden?
+    options:
+      - Eine ausführliche Wiki-Seite mit allen Installationsschritten
+      - Die Umgebung als Dateien im Repository beschreiben (Versionen, Variablen-Vorlage, Makefile, Container)
+      - Alle im Team nutzen denselben Laptop-Typ
+    answer: 1
+    explanation: Dateien im Repository werden mit dem Code geklont und versioniert. Eine Wiki-Seite veraltet und wird übersprungen.
+  - module: grundlagen
+    type: multiple
+    question: Welche Funktionen gehören zum Refactoring einer IDE?
+    options:
+      - Rename (Symbol im ganzen Projekt umbenennen)
+      - Extract Method
+      - Syntax-Hervorhebung
+      - Move (Klasse verschieben und Imports anpassen)
+    answers: [0, 1, 3]
+    explanation: Refactorings ändern die Struktur, nicht das Verhalten. Syntax-Hervorhebung ist reine Darstellung.
+  - module: grundlagen
+    type: find-bug
+    question: "Mit dieser `.editorconfig` bricht `make` mit „missing separator“ ab. In welcher Zeile liegt der Fehler?"
+    language: ini
+    code: |
+      root = true
+
+      [*]
+      indent_style = space
+      indent_size = 2
+
+      [Makefile]
+      indent_size = 4
+    bug_line: 8
+    explanation: Für das Makefile muss `indent_style = tab` gesetzt werden. Eine andere Einrückungsbreite allein ändert nichts an den Leerzeichen.
+  - module: grundlagen
+    type: cloze
+    text: Windows-Zeilenenden heißen ___, Linux und macOS nutzen ___.
+    blanks:
+      - [CRLF]
+      - [LF]
+    explanation: "`end_of_line = lf` in der `.editorconfig` sorgt für einheitliche LF-Zeilenenden im ganzen Team."
+  - module: versionen-und-variablen
+    type: single
+    question: Ein Projekt braucht Node.js 24, PHP 8.5 und Bun 1.4. Welches Werkzeug verwaltet alle drei mit einer Datei?
+    options:
+      - nvm mit .nvmrc
+      - mise mit mise.toml
+      - npm mit package.json
+    answer: 1
+    explanation: mise ist polyglott. nvm kennt nur Node.js, und npm verwaltet Pakete, keine Runtime-Versionen.
+  - module: versionen-und-variablen
+    type: match
+    question: Ordne jede Datei zu.
+    pairs:
+      - { left: ".env.example", right: "Wird committet und listet alle Variablen" }
+      - { left: ".env", right: "Echte lokale Werte, steht in .gitignore" }
+      - { left: ".nvmrc", right: "Node-Version für nvm" }
+      - { left: ".envrc", right: "Wird von direnv beim Betreten des Ordners geladen" }
+    explanation: Vorlage, lokale Werte, Versionsangabe und ordnerbasiertes Laden sind vier verschiedene Aufgaben.
+  - module: versionen-und-variablen
+    type: single
+    question: Ein Kollege hat versehentlich ein API-Token committet und gepusht. Was ist der wichtigste erste Schritt?
+    options:
+      - Die Datei im nächsten Commit löschen
+      - Das Token beim Anbieter sofort ungültig machen und ein neues erzeugen
+      - Das Repository umbenennen
+    answer: 1
+    explanation: Was gepusht wurde, steckt in der Historie jedes Klons. Nur das Widerrufen des Tokens macht es wertlos.
+  - module: versionen-und-variablen
+    type: cloze
+    text: "In Bash liefert `${PORT___8000}` den Wert 8000, wenn PORT nicht gesetzt ist."
+    blanks:
+      - [":-"]
+    explanation: "`:-` setzt einen Standardwert, `:?` bricht mit einer Meldung ab."
+  - module: versionen-und-variablen
+    type: single
+    question: "Warum meldet direnv bei einer neuen `.envrc`, sie sei „blocked“?"
+    options:
+      - Die Datei hat einen Syntaxfehler.
+      - Eine .envrc kann beliebigen Code ausführen und muss deshalb erst mit direnv allow freigegeben werden.
+      - direnv ist nicht installiert.
+    answer: 1
+    explanation: Die Freigabe schützt davor, dass ein fremdes Repository beim bloßen cd Code ausführt.
+  - module: task-runner
+    type: single
+    question: Warum gehört `test` in die `.PHONY`-Zeile eines Makefiles?
+    options:
+      - Damit test in der Hilfe erscheint.
+      - Weil test keine Datei erzeugt – sonst würde eine zufällig vorhandene Datei namens test das Rezept verhindern.
+      - Damit test schneller läuft.
+    answer: 1
+    explanation: make denkt in Dateien. Phony-Targets laufen bei jedem Aufruf.
+  - module: task-runner
+    type: find-bug
+    question: Das help-Target zeigt nur leere Namen und Beschreibungen. In welcher Zeile liegt der Fehler?
+    language: makefile
+    code: |
+      .DEFAULT_GOAL := help
+
+      help: ## Zeigt diese Hilfe
+      	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "%-12s %s\n", $1, $2}'
+    bug_line: 4
+    explanation: make wertet `$1` und `$2` selbst aus. In Rezepten müssen sie `$$1` und `$$2` heißen.
+  - module: task-runner
+    type: match
+    question: Wo stehen die Befehle des jeweiligen Task-Runners?
+    pairs:
+      - { left: "npm", right: "scripts in der package.json" }
+      - { left: "Composer", right: "scripts in der composer.json" }
+      - { left: "make", right: "Makefile" }
+      - { left: "Task", right: "Taskfile.yml" }
+    explanation: Jedes Werkzeug hat seine Datei. In gemischten Projekten ruft ein Makefile die Sprach-Scripts auf.
+  - module: task-runner
+    type: single
+    question: Wie sorgt ein Team dafür, dass alle dieselben Git-Hooks nutzen?
+    options:
+      - Hooks in .git/hooks anlegen und pushen
+      - Hooks in einem versionierten Ordner wie .githooks ablegen und per core.hooksPath aktivieren (oder einen Hook-Manager nutzen)
+      - Hooks per E-Mail verschicken
+    answer: 1
+    explanation: Der Ordner .git wird nicht versioniert. Ein eigener Hook-Ordner oder lefthook/husky machen Hooks teilbar.
+  - module: task-runner
+    type: multiple
+    question: Welche Aussagen über Git-Hooks stimmen?
+    options:
+      - Ein pre-commit-Hook mit Exit-Code 1 bricht den Commit ab.
+      - Hooks ohne Ausführungsrecht werden ignoriert.
+      - Mit git commit --no-verify lassen sich pre-commit-Hooks umgehen.
+      - Hooks ersetzen die Prüfungen in der CI vollständig.
+    answers: [0, 1, 2]
+    explanation: Hooks geben schnelles Feedback, die CI bleibt die verbindliche Prüfung.
+  - module: container-umgebungen
+    type: single
+    question: "Was macht der Bind-Mount `./:/var/www/html` in einer compose.yaml?"
+    options:
+      - Er kopiert den Code einmalig in das Image.
+      - Er macht den Projektordner im Container sichtbar – Änderungen im Editor gelten sofort.
+      - Er leitet einen Port weiter.
+    answer: 1
+    explanation: Mit dem Bind-Mount arbeitest du lokal im Editor, und der Container sieht die Dateien live.
+  - module: container-umgebungen
+    type: match
+    question: Ordne die Eigenschaften der devcontainer.json zu.
+    pairs:
+      - { left: "features", right: "Werkzeuge wie Node.js oder PHP nachinstallieren" }
+      - { left: "forwardPorts", right: "Ports auf localhost erreichbar machen" }
+      - { left: "postCreateCommand", right: "Einmaliger Befehl nach dem Erstellen" }
+      - { left: "dockerComposeFile", right: "Bestehende Compose-Datei als Grundlage nutzen" }
+    explanation: Mit diesen Eigenschaften wird aus einem Repository eine vollständige Arbeitsumgebung.
+  - module: container-umgebungen
+    type: single
+    question: Woraus baut GitHub Codespaces die Umgebung eines Repositorys?
+    options:
+      - Aus der README.md
+      - Aus der .devcontainer/devcontainer.json
+      - Aus der package.json
+    answer: 1
+    explanation: Codespaces nutzt dieselbe Dev-Container-Spezifikation wie VS Code lokal.
+  - module: container-umgebungen
+    type: multiple
+    question: Was gehört in einen guten Setup-Abschnitt der README?
+    options:
+      - Die Voraussetzungen
+      - Wenige Befehle bis zur laufenden App, z. B. make setup und make start
+      - Das Datenbank-Passwort
+      - Wo die App danach erreichbar ist
+    answers: [0, 1, 3]
+    explanation: Secrets gehören nie in die README – sie stehen nur in der lokalen .env.
+tasks:
+  - module: task-runner
+    id: pruefung-makefile
+    type: terminal
+    title: Ein Makefile mit Hilfe und Variablen
+    description: |
+      Im Ordner `pruefung-make` liegt ein Skript `tests/run.sh`. Schreibe ein `Makefile` mit:
+
+      1. `.DEFAULT_GOAL := help` und einem help-Target, das alle `## `-Kommentare auflistet.
+      2. `test: ## …`, das `./tests/run.sh` ausführt.
+      3. Einer Variable `NAME ?= Welt` und einem Target `greet: ## …`, das `Hallo, <NAME>!` ausgibt.
+      4. `.PHONY` für help, test und greet.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-make
+    setup: |
+      mkdir -p tests
+      printf '#!/usr/bin/env bash\necho "Alle Tests grün"\n' > tests/run.sh
+      chmod +x tests/run.sh
+    checks:
+      - type: command
+        run: make | grep -cE '^\s*(help|test|greet)\s+\S'
+        stdout_matches: "^3$"
+        message: make ohne Target soll die Hilfe mit help, test und greet (mit Beschreibung) zeigen.
+      - type: command
+        run: make test
+        stdout_matches: "Alle Tests grün"
+        message: make test soll ./tests/run.sh ausführen.
+      - type: command
+        run: make greet NAME=Ada
+        stdout_matches: "^Hallo, Ada!$"
+        message: make greet NAME=Ada soll „Hallo, Ada!“ ausgeben.
+      - type: command
+        run: make greet
+        stdout_matches: "^Hallo, Welt!$"
+        message: Ohne NAME soll make greet „Hallo, Welt!“ ausgeben (NAME ?= Welt).
+      - type: file_contains
+        path: Makefile
+        pattern: "^\\.PHONY:(?=.*\\bhelp\\b)(?=.*\\btest\\b)(?=.*\\bgreet\\b)"
+        message: In der .PHONY-Zeile fehlen help, test oder greet.
+    hints:
+      - "`@echo \"Hallo, $(NAME)!\"` gibt den Gruß ohne Befehlsanzeige aus."
+      - Rezeptzeilen beginnen mit einem Tab.
+    solution: |
+      ```bash
+      cd pruefung-make
+      cat > Makefile <<'EOF'
+      NAME ?= Welt
+      .DEFAULT_GOAL := help
+      .PHONY: help test greet
+
+      help: ## Zeigt diese Hilfe
+      	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-12s %s\n", $$1, $$2}'
+
+      test: ## Führt die Tests aus
+      	@./tests/run.sh
+
+      greet: ## Begrüßt NAME
+      	@echo "Hallo, $(NAME)!"
+      EOF
+      make
+      ```
+  - module: task-runner
+    id: pruefung-hook
+    type: terminal
+    title: Ein pre-commit-Hook gegen debugger
+    description: |
+      Im Ordner `pruefung-hook` liegt ein Repository mit einem ersten Commit. Lege einen versionierten
+      pre-commit-Hook `.githooks/pre-commit` an, der einen Commit ablehnt, wenn eine vorgemerkte
+      `.js`-Datei eine hinzugefügte Zeile mit `debugger` enthält. Mach ihn ausführbar, aktiviere den
+      Ordner mit `core.hooksPath` und committe den Hook.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-hook
+    setup: |
+      git init -q
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      printf 'export const ok = true;\n' > app.js
+      git add app.js
+      git commit -q -m "chore: initial commit"
+    checks:
+      - type: command
+        run: git config core.hooksPath
+        stdout_equals: .githooks
+        message: core.hooksPath ist noch nicht auf .githooks gesetzt.
+      - type: command
+        run: git ls-files -s .githooks/pre-commit
+        stdout_matches: "^100755 "
+        message: Der Hook ist nicht committet oder nicht ausführbar.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          git clone -q . "$d/r" && cd "$d/r" && git config core.hooksPath .githooks && git config user.name t && git config user.email t@example.com
+          printf 'function f() {\n  debugger;\n}\n' > bad.js && git add bad.js
+          git commit -q -m "test: bad" > /dev/null 2>&1; schlecht=$?
+          git reset -q
+          printf 'export const x = 1;\n' > good.js && git add good.js
+          git commit -q -m "test: good" > /dev/null 2>&1; gut=$?
+          cd / && rm -rf "$d"
+          [ "$schlecht" -ne 0 ] && [ "$gut" -eq 0 ]
+        message: Der Hook muss debugger in vorgemerkten .js-Dateien blockieren und saubere Commits erlauben.
+    hints:
+      - "`git diff --cached -- '*.js' | grep -qE '^\\+.*debugger'`"
+    solution: |
+      ```bash
+      cd pruefung-hook
+      mkdir -p .githooks
+      cat > .githooks/pre-commit <<'EOF'
+      #!/usr/bin/env bash
+      if git diff --cached -- '*.js' | grep -qE '^\+.*debugger'; then
+        echo "Commit abgelehnt: Entferne debugger-Anweisungen."
+        exit 1
+      fi
+      EOF
+      chmod +x .githooks/pre-commit
+      git config core.hooksPath .githooks
+      git add .githooks/pre-commit
+      git commit -m "chore: add pre-commit hook"
+      ```
+  - module: versionen-und-variablen
+    id: pruefung-env
+    type: code
+    language: js
+    title: Fehlende Variablen finden
+    description: |
+      Schreibe `missingVars(exampleText, env)`. `exampleText` ist der Inhalt einer `.env.example`, `env` ein
+      Objekt mit den aktuell gesetzten Variablen. Gib ein Array mit den Namen aller Variablen aus der
+      Vorlage zurück, die in `env` fehlen oder leer sind – in der Reihenfolge der Vorlage. Leere Zeilen
+      und Kommentare (`#`) werden ignoriert.
+    starter: |
+      function missingVars(exampleText, env) {
+        // dein Code
+        return [];
+      }
+    tests:
+      - name: meldet fehlende und leere Variablen
+        code: |
+          assertDeepEqual(missingVars("APP_NAME=Demo\nAPP_PORT=8000\nDB_PASSWORD=", { APP_NAME: "Shop", APP_PORT: "" }), ["APP_PORT", "DB_PASSWORD"])
+      - name: alles gesetzt ergibt leeres Array
+        code: |
+          assertDeepEqual(missingVars("A=1\nB=2", { A: "x", B: "y" }), [])
+      - name: ignoriert Kommentare und leere Zeilen
+        code: |
+          assertDeepEqual(missingVars("# Kommentar\n\nTOKEN=<dein-token>\n", {}), ["TOKEN"])
+      - name: leere Vorlage
+        code: |
+          assertDeepEqual(missingVars("", { A: "1" }), [])
+    solution: |
+      function missingVars(exampleText, env) {
+        const missing = [];
+        for (const raw of exampleText.split("\n")) {
+          const line = raw.trim();
+          if (line === "" || line.startsWith("#")) continue;
+          const name = line.split("=")[0].trim();
+          if (!env[name]) missing.push(name);
+        }
+        return missing;
+      }

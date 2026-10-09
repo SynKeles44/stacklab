@@ -1,0 +1,92 @@
+title: Task-Runner und Git-Hooks
+description: Wiederkehrende Projektbefehle mit make bündeln – vom ersten Target bis zum selbstdokumentierenden Makefile –, npm- und Composer-Scripts einordnen und Qualitätsprüfungen als Git-Hooks im Team teilen.
+exercise:
+  id: modul-uebung-task-runner
+  type: terminal
+  title: Das Bedienfeld für ein Projekt
+  description: |
+    Im Ordner `bedienfeld` liegen eine `.env.example` und ein Testskript `tests/run.sh`. Schreibe ein
+    `Makefile`, das neuen Teammitgliedern alles Nötige bietet:
+
+    1. Eine Variable `PORT ?= 8000`.
+    2. Ein Datei-Target `.env`, das `.env.example` nach `.env` kopiert – nur wenn `.env` noch fehlt.
+    3. `setup: .env` mit Beschreibung, das zusätzlich `Setup fertig` ausgibt.
+    4. `start`, das `Starte auf Port <PORT>` ausgibt (mit dem Wert der Variable).
+    5. `test`, das `./tests/run.sh` ausführt.
+    6. Ein `help`-Target wie in der Lektion; `make` ohne Target zeigt die Hilfe.
+    7. `setup`, `start`, `test` und `help` stehen in `.PHONY` und haben je einen `## `-Kommentar.
+    8. Ein Target `hooks` (ebenfalls mit `## `-Kommentar), das `git config core.hooksPath .githooks` ausführt.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: bedienfeld
+  setup: |
+    mkdir -p tests
+    printf 'APP_NAME=Demo\nAPP_PORT=8000\n' > .env.example
+    printf '#!/usr/bin/env bash\necho "4 Tests bestanden"\n' > tests/run.sh
+    chmod +x tests/run.sh
+  checks:
+    - type: command
+      run: make | grep -cE '^\s*(setup|start|test|help)\s+\S'
+      stdout_matches: "^4$"
+      message: make ohne Target soll die Hilfe mit setup, start, test und help (jeweils mit Beschreibung) zeigen.
+    - type: command
+      run: d=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp Makefile .env.example "$d/" && cd "$d" && make setup && grep -q '^APP_NAME=Demo$' .env; rc=$?; cd ..; rm -rf "$d"; exit $rc
+      stdout_matches: "Setup fertig"
+      message: make setup soll .env aus .env.example anlegen und „Setup fertig“ ausgeben.
+    - type: command
+      run: d=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp Makefile .env.example "$d/" && cd "$d" && echo 'APP_NAME=Meins' > .env && make setup > /dev/null && grep -q '^APP_NAME=Meins$' .env; rc=$?; cd ..; rm -rf "$d"; exit $rc
+      message: Eine vorhandene .env darf make setup nicht überschreiben – nutze ein Datei-Target .env mit der Voraussetzung .env.example.
+    - type: command
+      run: make start
+      stdout_matches: "Starte auf Port 8000"
+      message: make start soll „Starte auf Port 8000“ ausgeben (Variable PORT ?= 8000).
+    - type: command
+      run: make start PORT=9000
+      stdout_matches: "Starte auf Port 9000"
+      message: Mit make start PORT=9000 soll der Port 9000 erscheinen – nutze $(PORT) im Rezept.
+    - type: command
+      run: make test
+      stdout_matches: "4 Tests bestanden"
+      message: make test soll ./tests/run.sh ausführen.
+    - type: file_contains
+      path: Makefile
+      pattern: "^\\.PHONY:(?=.*\\bsetup\\b)(?=.*\\bstart\\b)(?=.*\\btest\\b)(?=.*\\bhelp\\b)"
+      message: In der .PHONY-Zeile müssen setup, start, test und help stehen.
+    - type: command
+      run: make -n hooks
+      stdout_matches: "git config core\\.hooksPath \\.githooks"
+      message: Das Target hooks soll git config core.hooksPath .githooks ausführen.
+  hints:
+    - "Datei-Target: `.env: .env.example` mit dem Rezept `cp .env.example .env`. Achtung: Ist .env.example neuer als .env, kopiert make erneut – nutze deshalb `cp -n` oder `test -f .env || cp …`."
+    - "Ausgabe ohne Befehlsanzeige: `@echo \"Starte auf Port $(PORT)\"`"
+    - Übernimm das help-Target aus der Lektion und setze `.DEFAULT_GOAL := help`.
+  solution: |
+    ```bash
+    cd bedienfeld
+    cat > Makefile <<'EOF'
+    PORT ?= 8000
+    .DEFAULT_GOAL := help
+    .PHONY: help setup start test hooks
+
+    help: ## Zeigt diese Hilfe
+    	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-12s %s\n", $$1, $$2}'
+
+    .env: .env.example
+    	@test -f .env || cp .env.example .env
+
+    setup: .env ## Richtet das Projekt ein
+    	@echo "Setup fertig"
+
+    start: ## Startet die App
+    	@echo "Starte auf Port $(PORT)"
+
+    test: ## Führt die Tests aus
+    	@./tests/run.sh
+
+    hooks: ## Aktiviert die Git-Hooks
+    	git config core.hooksPath .githooks
+    EOF
+    make
+    make setup
+    ```
+    Die eingerückten Zeilen beginnen mit einem **Tab**.

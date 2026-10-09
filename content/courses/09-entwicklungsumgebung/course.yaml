@@ -1,0 +1,35 @@
+title: Entwicklungsumgebung & Task-Runner
+subtitle: Eine professionelle Entwicklungsumgebung aufsetzen, die auf jedem Rechner gleich funktioniert
+description: >
+  „Bei mir läuft's aber!“ – dieser Satz kostet Teams jede Woche Stunden. In diesem Kurs lernst du,
+  wie Profis ihre Entwicklungsumgebung so beschreiben, dass ein neues Teammitglied mit drei Befehlen
+  startklar ist: Editor und IDE sinnvoll einrichten, gemeinsame Regeln mit `.editorconfig`, feste
+  Tool-Versionen mit mise, Konfiguration über Umgebungsvariablen und `.env`-Dateien, ein Makefile als
+  Bedienfeld für das ganze Projekt, Git-Hooks als automatische Qualitätsschranke und Dev-Container,
+  die die komplette Umgebung in einen Container packen.
+
+
+  Fast jede Lektion hat Aufgaben im echten Übungs-Terminal: Du schreibst Makefiles, Hooks und
+  Konfigurationsdateien, und Stacklab prüft, ob sie wirklich funktionieren. Am Ende baust du ein
+  komplettes **Starter-Kit** für ein neues Teamprojekt.
+category: grundlagen
+level: einsteiger
+icon: wrench
+color: "#64748b"
+estimated_hours: 12
+workspace_dir: umgebung
+prerequisites: [terminal-shell, git]
+learning_goals:
+  - Du erklärst, aus welchen Teilen eine Entwicklungsumgebung besteht und warum „works on my machine“ entsteht.
+  - Du richtest VS Code, PhpStorm oder Zed produktiv ein und nutzt Suche, Multi-Cursor und Refactoring.
+  - Du schreibst eine `.editorconfig`, die Einrückung, Zeichensatz und Zeilenenden im Team vereinheitlicht.
+  - Du legst Tool-Versionen mit mise fest und verstehst den Unterschied zu nvm und `.nvmrc`.
+  - Du trennst Konfiguration und Code mit Umgebungsvariablen, `.env`, `.env.example` und direnv – ohne Secrets zu committen.
+  - Du baust ein selbstdokumentierendes Makefile mit Targets wie setup, start, test und help.
+  - Du richtest Git-Hooks mit `core.hooksPath` ein und kennst Hook-Manager wie lefthook und husky.
+  - Du beschreibst eine komplette Umgebung als Dev-Container und kennst GitHub Codespaces.
+references:
+  - Makefiles als zentrales Bedienfeld in großen Web-Projekten (setup, start, stop, logs, console, test)
+  - Polyglotte Versionsverwaltung mit mise für Node.js, PHP und Bun in einem Repository
+  - Git-Hooks über lefthook bzw. einen versionierten Hook-Ordner mit core.hooksPath
+  - Dev-Container-Konfigurationen für einheitliche Onboarding-Umgebungen

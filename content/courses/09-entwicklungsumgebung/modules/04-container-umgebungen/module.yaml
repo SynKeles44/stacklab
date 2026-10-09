@@ -1,0 +1,90 @@
+title: Container-Umgebungen
+description: Dienste mit Docker Compose bereitstellen, die ganze Arbeitsumgebung als Dev-Container beschreiben, GitHub Codespaces nutzen und das Onboarding in der README zusammenführen.
+exercise:
+  id: modul-uebung-container
+  type: terminal
+  title: Dev-Container auf Basis von Docker Compose
+  description: |
+    Im Ordner `compose-devcontainer` liegt ein Projekt mit Makefile. Die App und die Datenbank sollen
+    über Docker Compose laufen, und der Editor soll sich als Dev-Container mit dem Dienst `app` verbinden.
+
+    1. Lege eine `compose.yaml` an mit den Diensten `app` (`build: .`, Volume `.:/workspaces/shop`,
+       Port `8000:8000`) und `db` (`image: postgres:18`).
+    2. Lege `.devcontainer/devcontainer.json` an mit
+       - `"name": "Shop"`,
+       - `"dockerComposeFile": "../compose.yaml"`, `"service": "app"`, `"workspaceFolder": "/workspaces/shop"`,
+       - `"forwardPorts": [8000]`,
+       - `"postCreateCommand": "make setup"`,
+       - dem Feature `ghcr.io/devcontainers/features/github-cli:1` (Optionen: `{}`).
+    3. Ergänze im Makefile ein Target `devcontainer` (mit `## `-Kommentar), das
+       `npx @devcontainers/cli up --workspace-folder .` ausführt.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: compose-devcontainer
+  setup: |
+    printf '.PHONY: setup\n\nsetup: ## Richtet das Projekt ein\n\t@echo "Setup fertig"\n' > Makefile
+  checks:
+    - type: command
+      run: jq -e . .devcontainer/devcontainer.json > /dev/null
+      message: .devcontainer/devcontainer.json fehlt oder ist kein gültiges JSON.
+    - type: command
+      run: jq -r '[.dockerComposeFile, .service, .workspaceFolder] | join(" ")' .devcontainer/devcontainer.json
+      stdout_equals: ../compose.yaml app /workspaces/shop
+      message: dockerComposeFile, service oder workspaceFolder stimmen noch nicht.
+    - type: command
+      run: jq -c '[.forwardPorts, .postCreateCommand, (.features | has("ghcr.io/devcontainers/features/github-cli:1"))]' .devcontainer/devcontainer.json
+      stdout_equals: '[[8000],"make setup",true]'
+      message: Prüfe forwardPorts [8000], postCreateCommand "make setup" und das github-cli-Feature.
+    - type: file_contains
+      path: compose.yaml
+      pattern: "^services:"
+      message: Die compose.yaml braucht ganz oben services.
+    - type: file_contains
+      path: compose.yaml
+      pattern: "^\\s+image:\\s*postgres:18\\s*$"
+      message: Der Dienst db soll image postgres:18 nutzen.
+    - type: file_contains
+      path: compose.yaml
+      pattern: "\\.:/workspaces/shop"
+      message: Der Dienst app soll den Projektordner nach /workspaces/shop einbinden (.:/workspaces/shop).
+    - type: command
+      run: make -n devcontainer
+      stdout_matches: "npx @devcontainers/cli up --workspace-folder \\."
+      message: Das Target devcontainer soll npx @devcontainers/cli up --workspace-folder . ausführen.
+    - type: command
+      run: grep -E '^devcontainer:.*## ' Makefile
+      message: Das Target devcontainer braucht einen ##-Kommentar.
+  hints:
+    - "Teste dein JSON mit `jq . .devcontainer/devcontainer.json`."
+    - "YAML rückt mit Leerzeichen ein: `services:`, darunter `  app:`, darunter `    build: .`"
+    - "Im Makefile beginnt die Rezeptzeile mit einem Tab."
+  solution: |
+    ```bash
+    cd compose-devcontainer
+    cat > compose.yaml <<'EOF'
+    services:
+      app:
+        build: .
+        volumes:
+          - .:/workspaces/shop
+        ports:
+          - "8000:8000"
+      db:
+        image: postgres:18
+    EOF
+    mkdir -p .devcontainer
+    cat > .devcontainer/devcontainer.json <<'EOF'
+    {
+      "name": "Shop",
+      "dockerComposeFile": "../compose.yaml",
+      "service": "app",
+      "workspaceFolder": "/workspaces/shop",
+      "features": { "ghcr.io/devcontainers/features/github-cli:1": {} },
+      "forwardPorts": [8000],
+      "postCreateCommand": "make setup"
+    }
+    EOF
+    printf '\ndevcontainer: ## Startet den Dev-Container\n\tnpx @devcontainers/cli up --workspace-folder .\n' >> Makefile
+    sed -i 's/^.PHONY: setup$/.PHONY: setup devcontainer/' Makefile
+    make -n devcontainer
+    ```

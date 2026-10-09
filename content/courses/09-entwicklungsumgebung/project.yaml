@@ -1,0 +1,370 @@
+title: Starter-Kit für ein neues Teamprojekt
+description: |
+  Dein Team startet ein neues Projekt mit PHP-Backend und JavaScript-Frontend. Du bekommst den Auftrag,
+  die Entwicklungsumgebung so vorzubereiten, dass jedes neue Teammitglied mit wenigen Befehlen startklar
+  ist. Dafür baust du ein **Starter-Kit**: ein Repository, das nur aus den Umgebungsdateien dieses Kurses
+  besteht – EditorConfig, Versionen, Variablen, Makefile, Git-Hooks, Dev-Container und eine README.
+
+  Jeder Schritt wird automatisch geprüft. Arbeite im Ordner `starter-kit` im Übungs-Terminal.
+goal: Ein committetes Repository `starter-kit` mit `.editorconfig`, `mise.toml`, `.nvmrc`, `.env.example`, `.gitignore`, selbstdokumentierendem `Makefile`, `.githooks/pre-commit`, `.devcontainer/devcontainer.json` und einer README mit Setup-Abschnitt.
+workdir: starter-kit
+steps:
+  - id: repository
+    title: Repository anlegen
+    description: |
+      Lege den Ordner `starter-kit` an (falls er noch nicht existiert), mache ihn zu einem Git-Repository
+      und setze eine **lokale** Git-Identität (`git config user.name …`, `git config user.email …` mit einer
+      Adresse wie `du@example.com`). Lege eine `README.md` an, deren erste Zeile `# Starter-Kit` ist.
+    checklist:
+      - Git-Repository angelegt
+      - Lokale Git-Identität gesetzt
+      - README.md mit Überschrift
+    hints:
+      - "`mkdir -p starter-kit && cd starter-kit && git init`"
+      - "`git config user.email` ohne `--global` gilt nur für dieses Repository."
+    checks:
+      - type: dir_exists
+        path: .git
+        message: Im Ordner starter-kit gibt es noch kein Git-Repository.
+      - type: command
+        run: git config --local user.email
+        stdout_matches: "@"
+        message: Setze eine lokale Git-E-Mail mit git config user.email "du@example.com".
+      - type: file_contains
+        path: README.md
+        pattern: "^# Starter-Kit"
+        message: Die README.md braucht als erste Zeile „# Starter-Kit“.
+    solution: |
+      ```bash
+      mkdir -p starter-kit && cd starter-kit
+      git init
+      git config user.name "Ada Beispiel"
+      git config user.email "ada@example.com"
+      echo "# Starter-Kit" > README.md
+      ```
+  - id: editorconfig
+    title: Gemeinsame Formatierung mit .editorconfig
+    description: |
+      Lege eine `.editorconfig` an: `root = true`; für alle Dateien UTF-8, LF-Zeilenenden, Zeilenumbruch
+      am Dateiende, keine Leerzeichen am Zeilenende, Einrückung mit 2 Leerzeichen. PHP-Dateien rücken mit
+      4 Leerzeichen ein, das Makefile mit Tabs, und in Markdown bleiben Leerzeichen am Zeilenende erhalten.
+    checklist:
+      - root = true gesetzt
+      - Regeln für alle Dateien
+      - Ausnahmen für PHP, Makefile und Markdown
+    hints:
+      - "Abschnitte: `[*]`, `[*.php]`, `[Makefile]`, `[*.md]`"
+    checks:
+      - type: file_contains
+        path: .editorconfig
+        pattern: "^root\\s*=\\s*true"
+        message: In der .editorconfig fehlt root = true.
+      - type: command
+        run: awk '/^\[/{s=$0} s=="[*]"' .editorconfig | tr -d ' ' | sort | tr '\n' ' '
+        stdout_matches: "charset=utf-8.*end_of_line=lf.*indent_size=2.*indent_style=space.*insert_final_newline=true.*trim_trailing_whitespace=true"
+        message: Im Abschnitt [*] fehlen Regeln (charset, end_of_line, indent_style, indent_size, insert_final_newline, trim_trailing_whitespace).
+      - type: command
+        run: awk '/^\[/{s=$0} s=="[*.php]"' .editorconfig | tr -d ' ' | grep -q 'indent_size=4' && awk '/^\[/{s=$0} s=="[Makefile]"' .editorconfig | tr -d ' ' | grep -q 'indent_style=tab' && awk '/^\[/{s=$0} s=="[*.md]"' .editorconfig | tr -d ' ' | grep -q 'trim_trailing_whitespace=false'
+        message: Prüfe die Ausnahmen [*.php] indent_size = 4, [Makefile] indent_style = tab und [*.md] trim_trailing_whitespace = false.
+    solution: |
+      ```bash
+      cat > .editorconfig <<'EOF'
+      root = true
+
+      [*]
+      charset = utf-8
+      end_of_line = lf
+      insert_final_newline = true
+      trim_trailing_whitespace = true
+      indent_style = space
+      indent_size = 2
+
+      [*.php]
+      indent_size = 4
+
+      [Makefile]
+      indent_style = tab
+
+      [*.md]
+      trim_trailing_whitespace = false
+      EOF
+      ```
+  - id: versionen
+    title: Tool-Versionen festlegen
+    description: |
+      Lege eine `mise.toml` an, die im Abschnitt `[tools]` Node.js 24, PHP 8.5 und Bun 1.4 festlegt und im
+      Abschnitt `[env]` die `.env` lädt (`_.file = ".env"`). Für alle, die nvm nutzen, kommt eine `.nvmrc`
+      mit `24` dazu. Prüfe mit `nvm use`, dass Node.js 24 aktiv wird.
+    checklist:
+      - mise.toml mit [tools] und [env]
+      - .nvmrc mit 24
+    hints:
+      - "TOML-Strings stehen in doppelten Anführungszeichen: `node = \"24\"`."
+    checks:
+      - type: file_contains
+        path: mise.toml
+        pattern: "^node\\s*=\\s*\"24\""
+        message: In der mise.toml fehlt node = "24".
+      - type: file_contains
+        path: mise.toml
+        pattern: "^php\\s*=\\s*\"8\\.5\""
+        message: In der mise.toml fehlt php = "8.5".
+      - type: file_contains
+        path: mise.toml
+        pattern: "^bun\\s*=\\s*\"1\\.4\""
+        message: In der mise.toml fehlt bun = "1.4".
+      - type: file_contains
+        path: mise.toml
+        pattern: "^_\\.file\\s*=\\s*\"\\.env\""
+        message: Im Abschnitt [env] fehlt _.file = ".env".
+      - type: command
+        run: . "$NVM_DIR/nvm.sh" && nvm use > /dev/null && node --version
+        stdout_matches: "^v24\\."
+        message: Die .nvmrc soll 24 enthalten, sodass nvm use Node.js 24 aktiviert.
+    solution: |
+      ```bash
+      cat > mise.toml <<'EOF'
+      [tools]
+      node = "24"
+      php = "8.5"
+      bun = "1.4"
+
+      [env]
+      _.file = ".env"
+      EOF
+      echo 24 > .nvmrc
+      nvm use
+      ```
+  - id: variablen
+    title: Variablen-Vorlage und .gitignore
+    description: |
+      Lege eine `.env.example` mit `APP_NAME=Starter`, `APP_PORT=8000` und `DB_PASSWORD=` (ohne Wert) an.
+      Sorge mit einer `.gitignore` dafür, dass `.env` niemals committet wird – die `.env.example` aber schon.
+    checklist:
+      - .env.example ohne echte Secrets
+      - .env wird ignoriert
+    hints:
+      - "Prüfen: `git check-ignore -v .env`"
+    checks:
+      - type: file_contains
+        path: .env.example
+        pattern: "^APP_PORT=8000$"
+        message: In der .env.example fehlt APP_PORT=8000.
+      - type: file_contains
+        path: .env.example
+        pattern: "^DB_PASSWORD=$"
+        message: In der .env.example fehlt die leere Zeile DB_PASSWORD=.
+      - type: command
+        run: git check-ignore -q .env && ! git check-ignore -q .env.example
+        message: .env muss ignoriert werden, .env.example nicht.
+    solution: |
+      ```bash
+      printf 'APP_NAME=Starter\nAPP_PORT=8000\nDB_PASSWORD=\n' > .env.example
+      echo ".env" > .gitignore
+      git check-ignore -v .env
+      ```
+  - id: makefile
+    title: Ein selbstdokumentierendes Makefile
+    description: |
+      Schreibe ein `Makefile` mit:
+
+      - `help` (Standard-Target per `.DEFAULT_GOAL := help`), das alle `## `-Kommentare auflistet,
+      - einem Datei-Target `.env`, das `.env.example` kopiert, falls `.env` fehlt,
+      - `setup: .env hooks` mit Beschreibung, das am Ende `Setup fertig` ausgibt,
+      - `hooks`, das `git config core.hooksPath .githooks` ausführt,
+      - `test`, das `Keine Tests vorhanden` ausgibt (Platzhalter, bis echter Code kommt),
+      - einer `.PHONY`-Zeile für help, setup, hooks und test.
+    checklist:
+      - make zeigt die Hilfe
+      - make setup legt .env an und aktiviert die Hooks
+      - Alle Rezeptzeilen mit Tab eingerückt
+    hints:
+      - Übernimm das help-Target aus der Lektion „Ein selbstdokumentierendes Makefile“.
+      - "`cat -A Makefile` zeigt Tabs als `^I`."
+    checks:
+      - type: command
+        run: make | grep -cE '^\s*(help|setup|hooks|test)\s+\S'
+        stdout_matches: "^4$"
+        message: make ohne Target soll die Hilfe mit help, setup, hooks und test (jeweils mit Beschreibung) zeigen.
+      - type: command
+        run: make -n setup
+        stdout_matches: "core\\.hooksPath \\.githooks"
+        message: make setup soll über die Voraussetzung hooks auch git config core.hooksPath .githooks ausführen.
+      - type: command
+        run: make test
+        stdout_matches: "Keine Tests vorhanden"
+        message: make test soll „Keine Tests vorhanden“ ausgeben.
+      - type: file_contains
+        path: Makefile
+        pattern: "^\\.PHONY:(?=.*\\bhelp\\b)(?=.*\\bsetup\\b)(?=.*\\bhooks\\b)(?=.*\\btest\\b)"
+        message: In der .PHONY-Zeile müssen help, setup, hooks und test stehen.
+    solution: |
+      ```bash
+      cat > Makefile <<'EOF'
+      .DEFAULT_GOAL := help
+      .PHONY: help setup hooks test
+
+      help: ## Zeigt diese Hilfe
+      	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-12s %s\n", $$1, $$2}'
+
+      .env: .env.example
+      	@test -f .env || cp .env.example .env
+
+      setup: .env hooks ## Richtet das Projekt ein
+      	@echo "Setup fertig"
+
+      hooks: ## Aktiviert die Git-Hooks
+      	git config core.hooksPath .githooks
+
+      test: ## Führt die Tests aus
+      	@echo "Keine Tests vorhanden"
+      EOF
+      make
+      ```
+      Die eingerückten Zeilen beginnen mit einem **Tab**.
+  - id: hooks
+    title: Ein pre-commit-Hook gegen Secrets
+    description: |
+      Lege `.githooks/pre-commit` an. Der Hook bricht mit einer Meldung und `exit 1` ab, wenn eine Datei
+      namens `.env` vorgemerkt ist. Mach ihn ausführbar und führe `make setup` aus – damit wird `.env`
+      angelegt und `core.hooksPath` gesetzt.
+    checklist:
+      - Hook ist ausführbar
+      - make setup ausgeführt
+      - core.hooksPath zeigt auf .githooks
+    hints:
+      - "`git diff --cached --name-only | grep -qE '(^|/)\\.env$'`"
+      - "`chmod +x .githooks/pre-commit`"
+    checks:
+      - type: command
+        run: test -x .githooks/pre-commit
+        message: .githooks/pre-commit fehlt oder ist nicht ausführbar.
+      - type: command
+        run: git config core.hooksPath
+        stdout_equals: .githooks
+        message: core.hooksPath ist noch nicht gesetzt – führe make setup aus.
+      - type: file_exists
+        path: .env
+        message: Die .env fehlt – make setup soll sie aus .env.example anlegen.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          mkdir "$d/r" && cp -r .githooks "$d/r/" && cd "$d/r" && git init -q && git config core.hooksPath .githooks && git config user.name t && git config user.email t@example.com
+          echo "DB_PASSWORD=geheim" > .env && git add .env
+          git commit -q -m "chore: test" > /dev/null 2>&1; rc=$?
+          cd / && rm -rf "$d"
+          [ "$rc" -ne 0 ]
+        message: Der Hook lässt einen Commit mit einer vorgemerkten .env durch.
+    solution: |
+      ```bash
+      mkdir -p .githooks
+      cat > .githooks/pre-commit <<'EOF'
+      #!/usr/bin/env bash
+      if git diff --cached --name-only | grep -qE '(^|/)\.env$'; then
+        echo "Commit abgelehnt: .env enthält Secrets und gehört nicht ins Repository."
+        exit 1
+      fi
+      EOF
+      chmod +x .githooks/pre-commit
+      make setup
+      ```
+  - id: devcontainer
+    title: Den Dev-Container beschreiben
+    description: |
+      Lege `.devcontainer/devcontainer.json` an mit `"name": "Starter-Kit"`, dem Image
+      `mcr.microsoft.com/devcontainers/base:ubuntu`, den Features für Node.js 24
+      (`ghcr.io/devcontainers/features/node:1`) und PHP 8.5 (`ghcr.io/devcontainers/features/php:1`),
+      `forwardPorts` mit `8000`, `postCreateCommand` `make setup` und der empfohlenen Erweiterung
+      `editorconfig.editorconfig`. Prüfe die Datei mit `jq`.
+    checklist:
+      - Gültiges JSON
+      - Features, Port und postCreateCommand gesetzt
+    hints:
+      - Orientiere dich an der Lektion „Dev-Container mit devcontainer.json“.
+    checks:
+      - type: command
+        run: jq -e . .devcontainer/devcontainer.json > /dev/null
+        message: .devcontainer/devcontainer.json fehlt oder ist kein gültiges JSON.
+      - type: command
+        run: jq -r '[.features["ghcr.io/devcontainers/features/node:1"].version, .features["ghcr.io/devcontainers/features/php:1"].version, .postCreateCommand] | join("|")' .devcontainer/devcontainer.json
+        stdout_equals: 24|8.5|make setup
+        message: Prüfe die Features (node 24, php 8.5) und postCreateCommand make setup.
+      - type: command
+        run: jq -e '(.forwardPorts | index(8000)) and (.customizations.vscode.extensions | index("editorconfig.editorconfig"))' .devcontainer/devcontainer.json
+        message: forwardPorts muss 8000 enthalten und customizations.vscode.extensions die Erweiterung editorconfig.editorconfig.
+    solution: |
+      ```bash
+      mkdir -p .devcontainer
+      cat > .devcontainer/devcontainer.json <<'EOF'
+      {
+        "name": "Starter-Kit",
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+          "ghcr.io/devcontainers/features/node:1": { "version": "24" },
+          "ghcr.io/devcontainers/features/php:1": { "version": "8.5" }
+        },
+        "forwardPorts": [8000],
+        "postCreateCommand": "make setup",
+        "customizations": {
+          "vscode": { "extensions": ["editorconfig.editorconfig"] }
+        }
+      }
+      EOF
+      jq . .devcontainer/devcontainer.json
+      ```
+  - id: readme-commit
+    title: Setup-Anleitung und erster Commit
+    description: |
+      Ergänze die `README.md` um einen Abschnitt `## Setup`: Voraussetzungen (Docker oder mise), ein
+      ```` ```bash ````-Block mit `make setup` und der Hinweis, dass `make` alle Befehle zeigt. Committe
+      danach **alle** Dateien mit einer Conventional-Commits-Nachricht. Die `.env` darf nicht im Commit sein.
+    checklist:
+      - README mit Setup-Abschnitt
+      - Alles committet, .env nicht
+      - Arbeitsverzeichnis sauber
+    hints:
+      - "`git status` muss nach dem Commit „nothing to commit, working tree clean“ zeigen."
+      - "Nachricht z. B. `chore: add development environment starter kit`"
+    checks:
+      - type: file_contains
+        path: README.md
+        pattern: "^## Setup"
+        message: In der README fehlt der Abschnitt „## Setup“.
+      - type: command
+        run: awk '/^```bash/{c=1;next} /^```/{c=0} c' README.md
+        stdout_matches: "make setup"
+        message: Im Setup-Abschnitt fehlt ein ```bash-Block mit make setup.
+      - type: command
+        run: git ls-files | sort | tr '\n' ' '
+        stdout_matches: "\\.devcontainer/devcontainer\\.json \\.editorconfig \\.env\\.example \\.githooks/pre-commit \\.gitignore \\.nvmrc Makefile README\\.md mise\\.toml"
+        message: Es sind noch nicht alle Dateien committet (devcontainer.json, .editorconfig, .env.example, Hook, .gitignore, .nvmrc, Makefile, README.md, mise.toml).
+      - type: command
+        run: git ls-files --error-unmatch .env
+        expect_exit: 1
+        message: Die .env ist im Repository gelandet – entferne sie mit git rm --cached .env.
+      - type: command
+        run: git status --porcelain | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: Es gibt noch nicht committete Änderungen.
+      - type: command
+        run: git log -1 --format=%s
+        stdout_matches: "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([a-z0-9-]+\\))?!?: \\S"
+        message: "Die letzte Commit-Nachricht folgt nicht Conventional Commits, z. B. „chore: add starter kit“."
+    solution: |
+      ~~~bash
+      cat >> README.md <<'EOF'
+
+      ## Setup
+
+      Voraussetzungen: Docker oder mise (für Node.js 24 und PHP 8.5).
+
+      ```bash
+      make setup
+      ```
+
+      `make` zeigt alle verfügbaren Befehle.
+      EOF
+      git add -A
+      git status
+      git commit -m "chore: add development environment starter kit"
+      ~~~

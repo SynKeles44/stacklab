@@ -1,0 +1,90 @@
+title: Die Grundlagen
+description: Woraus eine Entwicklungsumgebung besteht, wie du deinen Editor produktiv nutzt und wie eine .editorconfig das Team vereinheitlicht.
+exercise:
+  id: modul-uebung-grundlagen
+  type: terminal
+  title: Ein Projekt-Check für neue Teammitglieder
+  description: |
+    Im Ordner `projekt-check` liegt ein leeres Git-Repository. Bereite es so vor, dass neue
+    Teammitglieder sofort sehen, ob ihre Umgebung passt.
+
+    1. Lege eine `.editorconfig` mit `root = true` an. Für alle Dateien gelten `charset = utf-8`,
+       `end_of_line = lf`, `insert_final_newline = true`, `indent_style = space` und `indent_size = 2`.
+       Im Abschnitt `[Makefile]` steht `indent_style = tab`.
+    2. Schreibe ein ausführbares Skript `check-tools.sh` (Shebang `#!/usr/bin/env bash`). Es prüft
+       `git`, `node` und `php` mit `command -v`, gibt pro Programm `name: ok` oder `name: FEHLT` aus
+       und endet mit **Exit-Code 1**, wenn mindestens ein Programm fehlt – sonst mit 0.
+    3. Committe beide Dateien (die Git-Identität ist im Repository schon gesetzt).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: projekt-check
+  setup: |
+    git init -q
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+  checks:
+    - type: file_contains
+      path: .editorconfig
+      pattern: "^root\\s*=\\s*true"
+      message: In der .editorconfig fehlt root = true.
+    - type: command
+      run: awk '/^\[/{s=$0} s=="[*]"' .editorconfig | tr -d ' ' | sort | tr '\n' ' '
+      stdout_matches: "charset=utf-8.*end_of_line=lf.*indent_size=2.*indent_style=space.*insert_final_newline=true"
+      message: Im Abschnitt [*] fehlen charset, end_of_line, indent_style, indent_size oder insert_final_newline.
+    - type: command
+      run: awk '/^\[/{s=$0} s=="[Makefile]"' .editorconfig | tr -d ' '
+      stdout_matches: "indent_style=tab"
+      message: Im Abschnitt [Makefile] fehlt indent_style = tab.
+    - type: command
+      run: test -x check-tools.sh && head -n 1 check-tools.sh
+      stdout_matches: "^#!/usr/bin/env bash"
+      message: check-tools.sh muss ausführbar sein und mit dem Shebang #!/usr/bin/env bash beginnen.
+    - type: command
+      run: ./check-tools.sh
+      stdout_matches: "^php: ok$"
+      message: "Wenn alles installiert ist, soll das Skript mit Exit-Code 0 enden und z. B. „php: ok“ ausgeben."
+    - type: command
+      run: env PATH=/nirgendwo /bin/bash ./check-tools.sh
+      expect_exit: 1
+      message: Wenn ein Programm fehlt, muss das Skript mit Exit-Code 1 enden (exit 1).
+    - type: command
+      run: git ls-files | sort | tr '\n' ' '
+      stdout_matches: "\\.editorconfig check-tools\\.sh"
+      message: Beide Dateien müssen committet sein.
+  hints:
+    - Merke dir in einer Variable `fehlt=0`, ob etwas fehlt, und setze sie in der Schleife auf 1.
+    - Am Ende des Skripts steht `exit $fehlt`.
+    - "Committen: `git add .editorconfig check-tools.sh && git commit -m \"chore: add environment check\"`"
+  solution: |
+    ```bash
+    cd projekt-check
+    cat > .editorconfig <<'EOF'
+    root = true
+
+    [*]
+    charset = utf-8
+    end_of_line = lf
+    insert_final_newline = true
+    indent_style = space
+    indent_size = 2
+
+    [Makefile]
+    indent_style = tab
+    EOF
+    cat > check-tools.sh <<'EOF'
+    #!/usr/bin/env bash
+    fehlt=0
+    for tool in git node php; do
+      if command -v "$tool" > /dev/null; then
+        echo "$tool: ok"
+      else
+        echo "$tool: FEHLT"
+        fehlt=1
+      fi
+    done
+    exit $fehlt
+    EOF
+    chmod +x check-tools.sh
+    git add .editorconfig check-tools.sh
+    git commit -m "chore: add environment check"
+    ```

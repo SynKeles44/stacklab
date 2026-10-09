@@ -1,0 +1,414 @@
+- slug: entwicklungsumgebung
+  term: Entwicklungsumgebung
+  short: Alles auf deinem Rechner, was du brauchst, um an einem Projekt zu arbeiten, es zu starten und zu testen.
+  explanation: >
+    Dazu gehören Editor oder IDE, Werkzeuge wie Git und make, Laufzeitumgebungen wie Node.js oder PHP,
+    Dienste wie eine Datenbank sowie Betriebssystem und Konfiguration. Professionelle Teams beschreiben
+    ihre Entwicklungsumgebung als Dateien im Repository, damit sie auf jedem Rechner gleich ist.
+  example: "`mise.toml`, `.env.example`, `Makefile` und `.devcontainer/` beschreiben gemeinsam die Entwicklungsumgebung eines Projekts."
+  category: werkzeuge
+  aliases: [Dev-Umgebung, Development Environment]
+  related: [ide, laufzeitumgebung, works-on-my-machine]
+  lesson: entwicklungsumgebung/was-ist-eine-entwicklungsumgebung
+- slug: works-on-my-machine
+  term: Works on my machine
+  short: Das Problem, dass Code auf einem Rechner läuft und auf einem anderen nicht – weil sich die Umgebungen unterscheiden.
+  explanation: >
+    Meist stecken unterschiedliche Versionen, fehlende Umgebungsvariablen, fehlende Dienste oder
+    vergessene Handarbeit dahinter. Die Lösung ist, die Umgebung als Dateien im Repository festzuhalten.
+  example: Die Kollegin hat Node.js 24, du Node.js 22 – bei dir bricht der Start ab, bei ihr nicht.
+  category: werkzeuge
+  aliases: ["Bei mir läuft's"]
+  related: [entwicklungsumgebung, versionsmanager]
+  lesson: entwicklungsumgebung/was-ist-eine-entwicklungsumgebung
+- slug: datenbank
+  term: Datenbank
+  short: Ein Programm, das Daten dauerhaft und strukturiert speichert und Abfragen darauf beantwortet.
+  explanation: >
+    Web-Anwendungen speichern Nutzer, Bestellungen oder Artikel in einer Datenbank wie PostgreSQL oder
+    MySQL. In der Entwicklung läuft sie meist als Dienst im Hintergrund, oft in einem Container.
+  example: "`image: postgres:18` in der compose.yaml startet eine PostgreSQL-Datenbank."
+  category: werkzeuge
+  aliases: [DB, Datenbanken]
+  related: [container, docker-compose]
+  lesson: entwicklungsumgebung/was-ist-eine-entwicklungsumgebung
+- slug: container
+  term: Container
+  short: Ein abgeschottetes Paket aus einem Programm und allem, was es zum Laufen braucht.
+  explanation: >
+    Ein Container läuft isoliert vom restlichen System, startet in Sekunden und verhält sich auf jedem
+    Rechner gleich. Er entsteht aus einem Image. In der Entwicklung nutzt man Container vor allem für
+    Dienste wie Datenbanken und für Dev-Container.
+  example: "`docker compose up -d` startet die Container eines Projekts im Hintergrund."
+  category: werkzeuge
+  aliases: [Containern, Docker-Container]
+  related: [docker, docker-image, devcontainer]
+  lesson: entwicklungsumgebung/docker-als-entwicklungsumgebung
+- slug: docker
+  term: Docker
+  short: Die verbreitetste Software, um Container zu bauen und auszuführen.
+  explanation: >
+    Docker baut Images aus einem Dockerfile und startet daraus Container. Mit Docker Compose beschreibst
+    du mehrere zusammenarbeitende Container in einer Datei.
+  example: "`docker compose exec app php -v` führt einen Befehl im Container app aus."
+  category: werkzeuge
+  aliases: []
+  related: [container, docker-image, docker-compose]
+  lesson: entwicklungsumgebung/docker-als-entwicklungsumgebung
+- slug: docker-image
+  term: Docker-Image
+  short: Eine unveränderliche Vorlage, aus der Container gestartet werden.
+  explanation: >
+    Ein Image enthält Betriebssystem-Grundlage, Programme und Dateien in einer festen Version. Images
+    haben einen Namen und ein Tag, zum Beispiel `postgres:18`. Aus einem Image kannst du beliebig viele
+    Container starten.
+  example: "`image: mcr.microsoft.com/devcontainers/base:ubuntu` ist das Image eines Dev-Containers."
+  category: werkzeuge
+  aliases: [Image, Images]
+  related: [container, docker]
+  lesson: entwicklungsumgebung/docker-als-entwicklungsumgebung
+- slug: docker-compose
+  term: Docker Compose
+  short: Ein Werkzeug, das mehrere Container und ihr Zusammenspiel in einer YAML-Datei beschreibt.
+  explanation: >
+    In der `compose.yaml` stehen Dienste mit Image, Ports, Volumes und Umgebungsvariablen. Compose v2 ist
+    ein Unterbefehl von docker und wird mit Leerzeichen geschrieben: `docker compose`.
+  example: "`docker compose up -d` startet alle Dienste, `docker compose down` stoppt und entfernt sie."
+  category: werkzeuge
+  aliases: [Compose, compose.yaml]
+  related: [docker, container, yaml]
+  lesson: entwicklungsumgebung/docker-als-entwicklungsumgebung
+- slug: yaml
+  term: YAML
+  short: Ein lesbares Textformat für Konfigurationsdateien, das Struktur über Einrückung ausdrückt.
+  explanation: >
+    YAML nutzt `schluessel: wert`, Listen mit `-` und Einrückung mit Leerzeichen (keine Tabs).
+    Viele Werkzeuge wie Docker Compose, lefthook oder CI-Systeme werden in YAML konfiguriert.
+  example: "`services:` und darunter eingerückt `db:` mit `image: postgres:18`."
+  category: werkzeuge
+  aliases: [YML]
+  related: [json, docker-compose]
+  lesson: entwicklungsumgebung/docker-als-entwicklungsumgebung
+- slug: codespaces
+  term: GitHub Codespaces
+  short: Ein Dienst von GitHub, der einen Dev-Container auf einem Server startet – nutzbar im Browser oder im lokalen Editor.
+  explanation: >
+    Codespaces baut die Umgebung aus der `devcontainer.json` des Repositorys. Ein Codespace verbraucht
+    Rechenzeit, solange er läuft, und sollte nach der Arbeit angehalten werden.
+  example: "`gh codespace create --repo example/shop` legt einen Codespace an."
+  category: werkzeuge
+  aliases: [Codespace, Codespaces]
+  related: [devcontainer, github]
+  lesson: entwicklungsumgebung/codespaces-und-onboarding
+- slug: onboarding
+  term: Onboarding
+  short: Der Prozess, in dem ein neues Teammitglied arbeitsfähig wird.
+  explanation: >
+    Für die Entwicklungsumgebung misst man Onboarding oft an der Zeit vom Klonen bis zur laufenden App.
+    Ein Repository mit Makefile, `.env.example`, `mise.toml` und Dev-Container verkürzt sie stark.
+  example: "Die README sagt nur: `make setup`, dann `make start`."
+  category: werkzeuge
+  aliases: []
+  related: [readme, makefile, devcontainer]
+  lesson: entwicklungsumgebung/codespaces-und-onboarding
+- slug: readme
+  term: README
+  short: Die Einstiegsdatei eines Repositorys, die erklärt, worum es geht und wie man startet.
+  explanation: >
+    Die `README.md` wird auf GitHub direkt unter der Dateiliste angezeigt. Ein guter Setup-Abschnitt nennt
+    Voraussetzungen, wenige Befehle und wo die App danach erreichbar ist.
+  example: "Ein Abschnitt `## Setup` mit `make setup` und `make start`."
+  category: werkzeuge
+  aliases: [README.md, Readme]
+  related: [onboarding]
+  lesson: entwicklungsumgebung/codespaces-und-onboarding
+- slug: devcontainer
+  term: Dev-Container
+  short: Ein Container, in dem die komplette Arbeitsumgebung eines Projekts läuft und mit dem sich der Editor verbindet.
+  explanation: >
+    Runtimes, Werkzeuge, Terminal und Language Server laufen im Container, der Projektordner wird
+    eingebunden. Beschrieben wird alles in `.devcontainer/devcontainer.json`, einer offenen Spezifikation,
+    die VS Code, JetBrains-IDEs und GitHub Codespaces unterstützen.
+  example: "In VS Code öffnest du das Projekt mit „Reopen in Container“."
+  category: werkzeuge
+  aliases: [Devcontainer, Dev Container, devcontainer.json, Dev-Containern]
+  related: [container, devcontainer-feature, codespaces]
+  lesson: entwicklungsumgebung/devcontainer
+- slug: devcontainer-feature
+  term: Dev-Container-Feature
+  short: Ein wiederverwendbarer Baustein, der ein Werkzeug in einen Dev-Container installiert.
+  explanation: >
+    Features werden in der `devcontainer.json` unter `features` mit ihrer ID und Optionen eingetragen.
+    So brauchst du kein eigenes Dockerfile, nur um Node.js oder PHP nachzuinstallieren.
+  example: "`\"ghcr.io/devcontainers/features/node:1\": { \"version\": \"24\" }`"
+  category: werkzeuge
+  aliases: [Feature, Features]
+  related: [devcontainer]
+  lesson: entwicklungsumgebung/devcontainer
+- slug: erweiterung
+  term: Erweiterung
+  short: Ein Zusatzmodul, das einem Editor neue Funktionen gibt, etwa Sprachunterstützung oder einen Linter.
+  explanation: >
+    Erweiterungen (auch Plugins) laufen mit den Rechten des Editors und können deine Dateien lesen. Ein
+    Team kann empfohlene Erweiterungen im Repository festhalten, in VS Code in `.vscode/extensions.json`.
+  example: "Die Erweiterung „EditorConfig for VS Code“ bringt VS Code die `.editorconfig` bei."
+  category: werkzeuge
+  aliases: [Erweiterungen, Plugin, Plugins, Extension]
+  related: [editor, ide]
+  lesson: entwicklungsumgebung/editoren-und-ides
+- slug: language-server
+  term: Language Server
+  short: Ein Hintergrundprogramm, das einem Editor Code-Verständnis für eine Sprache liefert.
+  explanation: >
+    Der Language Server analysiert den Code und beantwortet Fragen des Editors über das Language Server
+    Protocol (LSP): Wo ist diese Funktion definiert? Wo gibt es Fehler? Was passt zur Auto-Vervollständigung?
+  example: Der TypeScript-Language-Server markiert in VS Code einen Tippfehler im Funktionsnamen rot.
+  category: werkzeuge
+  aliases: [LSP, Language Server Protocol]
+  related: [editor, ide]
+  lesson: entwicklungsumgebung/editoren-und-ides
+- slug: multi-cursor
+  term: Multi-Cursor
+  short: Eine Editor-Funktion, mit der du an mehreren Stellen gleichzeitig tippst.
+  explanation: >
+    Du setzt mehrere Cursor (in VS Code mit Alt+Klick oder Strg+D für das nächste Vorkommen) und änderst
+    alle Stellen auf einmal. Ideal für gleichartige Zeilen.
+  example: Drei Zeilen markieren, Umschalt+Alt+I drücken und an jedes Zeilenende ein Komma setzen.
+  category: werkzeuge
+  aliases: [mehrere Cursor, Mehrfachcursor]
+  related: [editor]
+  lesson: entwicklungsumgebung/editoren-und-ides
+- slug: refactoring
+  term: Refactoring
+  short: Die Struktur von Code verbessern, ohne sein Verhalten zu ändern.
+  explanation: >
+    Typische Refactorings sind Umbenennen, Methode extrahieren oder Klasse verschieben. IDEs führen sie
+    automatisch und sicher aus, weil sie den Code verstehen – anders als Suchen und Ersetzen.
+  example: Mit F2 benennst du in VS Code `calcTotal` in allen Dateien sicher in `calculateTotal` um.
+  category: werkzeuge
+  aliases: [Refactorings, refaktorisieren]
+  related: [ide]
+  lesson: entwicklungsumgebung/editoren-und-ides
+- slug: settings-sync
+  term: Settings Sync
+  short: Eine Editor-Funktion, die persönliche Einstellungen über ein Konto auf mehreren Rechnern gleich hält.
+  explanation: >
+    VS Code synchronisiert Theme, Tastenkürzel und Erweiterungen über ein GitHub- oder Microsoft-Konto,
+    JetBrains-IDEs über das JetBrains-Konto. Projektregeln gehören dagegen ins Repository.
+  example: Nach der Anmeldung sieht VS Code auf dem neuen Laptop sofort aus wie gewohnt.
+  category: werkzeuge
+  aliases: [Einstellungs-Synchronisation]
+  related: [editor, dotfiles]
+  lesson: entwicklungsumgebung/editoren-und-ides
+- slug: editorconfig
+  term: EditorConfig
+  short: Ein Dateiformat, das editorunabhängig festlegt, wie Dateien gespeichert werden.
+  explanation: >
+    Die `.editorconfig` im Wurzelordner regelt Einrückung, Zeichensatz, Zeilenenden und Leerzeichen am
+    Zeilenende. Abschnitte wie `[*.php]` sind Dateimuster; `root = true` beendet die Suche nach weiteren Dateien.
+  example: "`[Makefile]` mit `indent_style = tab` sorgt für echte Tabs im Makefile."
+  category: werkzeuge
+  aliases: [.editorconfig]
+  related: [einrueckung, zeilenende, formatter]
+  lesson: entwicklungsumgebung/editorconfig
+- slug: einrueckung
+  term: Einrückung
+  short: Der Abstand am Zeilenanfang, der die Struktur von Code sichtbar macht.
+  explanation: >
+    Eingerückt wird mit Tabs oder Leerzeichen, üblich sind zwei oder vier Leerzeichen pro Ebene. Ein Team
+    legt die Regel einmal fest, zum Beispiel in der `.editorconfig`.
+  example: "`indent_style = space` und `indent_size = 4` für PHP-Dateien."
+  category: werkzeuge
+  aliases: [Einrückungsebene, Indentation, einrücken]
+  related: [editorconfig, formatter]
+  lesson: entwicklungsumgebung/editorconfig
+- slug: formatter
+  term: Formatter
+  short: Ein Werkzeug, das Code automatisch nach festen Regeln formatiert.
+  explanation: >
+    Ein Formatter wie Prettier (JavaScript) oder Pint (PHP) vereinheitlicht Anführungszeichen,
+    Zeilenumbrüche und Klammern. Er geht viel weiter als die `.editorconfig` und läuft oft beim Speichern
+    oder in einem Git-Hook.
+  example: "`vendor/bin/pint` formatiert alle PHP-Dateien eines Laravel-Projekts."
+  category: werkzeuge
+  aliases: [Formatierer, Code-Formatter]
+  related: [linter, editorconfig]
+  lesson: entwicklungsumgebung/editorconfig
+- slug: versionsmanager
+  term: Versionsmanager
+  short: Ein Werkzeug, das mehrere Versionen einer Laufzeitumgebung nebeneinander installiert und pro Projekt die richtige aktiviert.
+  explanation: >
+    Die gewünschte Version steht in einer Datei im Projekt (`.nvmrc`, `mise.toml`). Beim Wechsel in den
+    Ordner passt der Versionsmanager die Variable PATH so an, dass die richtige Version gefunden wird.
+  example: "`nvm use` aktiviert die Node-Version aus der `.nvmrc`."
+  category: werkzeuge
+  aliases: [Versionsmanagers, Version Manager]
+  related: [mise, nvm, laufzeitumgebung]
+  lesson: entwicklungsumgebung/versionsmanager-mise
+- slug: mise
+  term: mise
+  short: Ein polyglotter Versionsmanager, der Node.js, PHP, Bun und viele weitere Werkzeuge über eine mise.toml verwaltet.
+  explanation: >
+    mise liest die Versionen aus dem Abschnitt `[tools]` der `mise.toml`, kann Umgebungsvariablen laden
+    (`[env]`) und Tasks ausführen (`[tasks]`). Es ist mit asdf kompatibel und liest auch `.tool-versions`.
+  example: "`mise use node@24` installiert Node.js 24 und trägt es in die `mise.toml` ein."
+  category: werkzeuge
+  aliases: [mise-en-place, mise.toml]
+  related: [versionsmanager, nvm, toml]
+  lesson: entwicklungsumgebung/versionsmanager-mise
+- slug: nvm
+  term: nvm
+  short: Der Node Version Manager – ein Versionsmanager nur für Node.js.
+  explanation: >
+    nvm installiert mehrere Node.js-Versionen und wechselt zwischen ihnen. Die Projekt-Version steht in
+    der Datei `.nvmrc`; `nvm install` und `nvm use` lesen sie automatisch.
+  example: "`echo 24 > .nvmrc && nvm use`"
+  category: werkzeuge
+  aliases: [Node Version Manager, .nvmrc]
+  related: [versionsmanager, mise, nodejs]
+  lesson: entwicklungsumgebung/versionsmanager-mise
+- slug: toml
+  term: TOML
+  short: Ein einfaches Konfigurationsformat mit Abschnitten in eckigen Klammern und Schlüssel-Wert-Paaren.
+  explanation: >
+    TOML (Tom's Obvious Minimal Language) schreibt Abschnitte wie `[tools]` und darunter
+    `schluessel = "wert"`. Texte stehen in doppelten Anführungszeichen. mise und viele Rust- und
+    Python-Werkzeuge nutzen TOML.
+  example: "`[tools]` und darunter `node = \"24\"`"
+  category: werkzeuge
+  aliases: [TOML-Format]
+  related: [mise, yaml, json]
+  lesson: entwicklungsumgebung/versionsmanager-mise
+- slug: secret
+  term: Secret
+  short: Ein geheimer Wert, der Zugriff gewährt – etwa ein Passwort, API-Token oder privater Schlüssel.
+  explanation: >
+    Secrets gehören nie ins Repository, auch nicht in die `.env.example`. Ein versehentlich committetes
+    Secret muss sofort beim Anbieter ungültig gemacht und neu erzeugt werden.
+  example: "`DB_PASSWORD=` bleibt in der `.env.example` leer; der echte Wert steht nur in der lokalen `.env`."
+  category: werkzeuge
+  aliases: [Secrets, Geheimnis, Zugangsdaten]
+  related: [env-datei, umgebungsvariable]
+  lesson: entwicklungsumgebung/umgebungsvariablen-und-env
+- slug: direnv
+  term: direnv
+  short: Ein Werkzeug, das beim Betreten eines Ordners automatisch dessen Umgebungsvariablen lädt und beim Verlassen entfernt.
+  explanation: >
+    direnv liest die Datei `.envrc`, ein kleines Bash-Skript mit Funktionen wie `PATH_add` und
+    `dotenv_if_exists`. Neue oder geänderte `.envrc`-Dateien sind blockiert, bis du sie mit `direnv allow` freigibst.
+  example: "`eval \"$(direnv hook zsh)\"` in der `~/.zshrc` aktiviert direnv."
+  category: werkzeuge
+  aliases: [.envrc]
+  related: [umgebungsvariable, env-datei]
+  lesson: entwicklungsumgebung/umgebungsvariablen-und-env
+- slug: task-runner
+  term: Task-Runner
+  short: Ein Werkzeug, das wiederkehrende Projektbefehle unter kurzen Namen bündelt.
+  explanation: >
+    Statt langer Befehle tippst du `make test` oder `npm run lint`. Bekannte Task-Runner sind make,
+    npm- und Composer-Scripts, Task, just und mise-Tasks.
+  example: "`make start` statt `docker compose up -d`."
+  category: werkzeuge
+  aliases: [Task-Runners, Taskrunner]
+  related: [makefile, npm-script]
+  lesson: entwicklungsumgebung/makefile-grundlagen
+- slug: makefile
+  term: Makefile
+  short: Die Datei, aus der das Programm make seine Regeln (Targets, Voraussetzungen, Rezepte) liest.
+  explanation: >
+    Jede Regel hat ein Target, optionale Voraussetzungen und ein Rezept aus Shell-Befehlen, die mit einem
+    Tab eingerückt sind. In Web-Projekten dient das Makefile oft als zentrales Bedienfeld.
+  example: "`test: install` und darunter mit Tab `npm test`."
+  category: werkzeuge
+  aliases: [make, Makefiles]
+  related: [make-target, phony-target, task-runner]
+  lesson: entwicklungsumgebung/makefile-grundlagen
+- slug: make-target
+  term: Target (make)
+  short: Der Name einer Regel im Makefile – eine Aufgabe oder eine Datei, die gebaut wird.
+  explanation: >
+    `make test` führt das Target test aus. Ohne Angabe läuft das erste Target oder das per `.DEFAULT_GOAL`
+    festgelegte. Ein Target kann andere Targets als Voraussetzungen haben.
+  example: "`setup: .env install` – setup hat die Voraussetzungen .env und install."
+  category: werkzeuge
+  aliases: [Target, Targets]
+  related: [makefile, phony-target]
+  lesson: entwicklungsumgebung/makefile-grundlagen
+- slug: phony-target
+  term: Phony-Target
+  short: Ein make-Target, das keine Datei erzeugt und deshalb in .PHONY eingetragen wird.
+  explanation: >
+    make denkt eigentlich in Dateien. Ohne `.PHONY` würde ein Target wie `clean` nicht laufen, wenn
+    zufällig eine Datei namens clean existiert. Mit `.PHONY: clean` läuft das Rezept bei jedem Aufruf.
+  example: "`.PHONY: install test clean`"
+  category: werkzeuge
+  aliases: [.PHONY, Phony-Targets]
+  related: [makefile, make-target]
+  lesson: entwicklungsumgebung/makefile-grundlagen
+- slug: npm-script
+  term: npm-Script
+  short: Ein benannter Befehl im Abschnitt scripts der package.json.
+  explanation: >
+    `npm run name` führt ihn aus; `npm test` und `npm start` gehen ohne `run`. Während des Scripts liegt
+    `node_modules/.bin` im PATH, sodass Projektwerkzeuge in der richtigen Version gefunden werden.
+  example: "`\"lint\": \"eslint .\"` wird mit `npm run lint` gestartet."
+  category: werkzeuge
+  aliases: [npm-Scripts, npm scripts]
+  related: [task-runner, paketmanager]
+  lesson: entwicklungsumgebung/alternativen-zu-make
+- slug: core-hookspath
+  term: core.hooksPath
+  short: Eine Git-Einstellung, die festlegt, in welchem Ordner Git nach Hooks sucht.
+  explanation: >
+    Standardmäßig liegen Hooks in `.git/hooks`, das nicht versioniert wird. Mit core.hooksPath zeigt Git
+    auf einen versionierten Ordner wie `.githooks`, sodass alle im Team dieselben Hooks nutzen. Die
+    Einstellung selbst setzt jede Person einmal, etwa über `make setup`.
+  example: "`git config core.hooksPath .githooks`"
+  category: werkzeuge
+  aliases: [hooksPath]
+  related: [git-hook, git-konfiguration, hook-manager]
+  lesson: entwicklungsumgebung/git-hooks
+- slug: hook-manager
+  term: Hook-Manager
+  short: Ein Werkzeug, das Git-Hooks aus einer Konfigurationsdatei erzeugt und ausführt.
+  explanation: >
+    Hook-Manager wie lefthook oder husky bündeln mehrere Prüfungen pro Hook, filtern nach Dateitypen,
+    übergeben nur die vorgemerkten Dateien und installieren die Hooks automatisch.
+  example: "`lefthook install` aktiviert die Hooks aus der `lefthook.yml`."
+  category: werkzeuge
+  aliases: [Hook-Managern, Hook-Manager]
+  related: [git-hook, lefthook, husky]
+  lesson: entwicklungsumgebung/git-hooks
+- slug: lefthook
+  term: lefthook
+  short: Ein schneller, sprachunabhängiger Hook-Manager, konfiguriert über eine lefthook.yml.
+  explanation: >
+    In der `lefthook.yml` stehen pro Hook Jobs mit `run`, `glob` und Platzhaltern wie `{staged_files}`.
+    lefthook passt gut zu gemischten Projekten mit PHP und JavaScript.
+  example: "`run: npx eslint {staged_files}` mit `glob: \"*.{js,ts}\"`"
+  category: werkzeuge
+  aliases: [lefthook.yml]
+  related: [hook-manager, husky]
+  lesson: entwicklungsumgebung/git-hooks
+- slug: husky
+  term: husky
+  short: Ein Hook-Manager aus der JavaScript-Welt, der als npm-Paket installiert wird.
+  explanation: >
+    `npx husky init` legt den Ordner `.husky/` mit Hook-Skripten an und ergänzt das Script
+    `"prepare": "husky"`, damit die Hooks nach jedem `npm install` aktiv sind.
+  example: "`.husky/pre-commit` mit dem Inhalt `npm test`."
+  category: werkzeuge
+  aliases: [.husky]
+  related: [hook-manager, lefthook]
+  lesson: entwicklungsumgebung/git-hooks
+- slug: dotfiles
+  term: Dotfiles
+  short: Persönliche Konfigurationsdateien im Home-Verzeichnis, deren Name mit einem Punkt beginnt.
+  explanation: >
+    Beispiele sind `~/.zshrc` und `~/.gitconfig`. Viele Entwickler:innen versionieren sie in einem eigenen
+    Repository und verlinken sie per `ln -s` ins Home-Verzeichnis – ohne Secrets.
+  example: "`ln -s ~/dotfiles/zshrc ~/.zshrc`"
+  category: werkzeuge
+  aliases: [Dotfile, dotfiles-Repository]
+  related: [versteckte-datei, home-verzeichnis, settings-sync]
+  lesson: entwicklungsumgebung/was-ist-eine-entwicklungsumgebung

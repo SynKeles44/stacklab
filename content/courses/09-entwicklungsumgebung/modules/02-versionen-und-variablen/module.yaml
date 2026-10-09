@@ -1,0 +1,94 @@
+title: Versionen und Variablen
+description: Tool-Versionen mit mise und nvm festlegen, Konfiguration über Umgebungsvariablen und .env-Dateien steuern und Variablen mit direnv automatisch laden.
+exercise:
+  id: modul-uebung-versionen
+  type: terminal
+  title: Die Konfiguration eines Projekts beschreiben
+  description: |
+    Im Ordner `konfiguration` liegt ein leeres Git-Repository. Beschreibe darin, welche Versionen und
+    welche Variablen das Projekt braucht – und schreibe ein Skript, das fehlende Variablen meldet.
+
+    1. Lege eine `mise.toml` an mit `[tools]` (`node = "24"`, `php = "8.5"`) und einem Abschnitt `[env]`
+       mit `_.file = ".env"`.
+    2. Lege eine `.nvmrc` mit `24` an – für alle, die nvm statt mise nutzen.
+    3. Lege eine `.env.example` an mit den Zeilen `APP_NAME=Demo`, `APP_PORT=8000` und `DB_PASSWORD=`
+       (ohne Wert – es ist ein Secret).
+    4. Sorge per `.gitignore` dafür, dass `.env` ignoriert wird.
+    5. Schreibe ein ausführbares Skript `check-env.sh`. Es liest jeden Variablennamen aus der
+       `.env.example` (Kommentare und leere Zeilen überspringen), gibt für jede Variable, die in der
+       Umgebung leer ist, `fehlt: NAME` aus und endet dann mit Exit-Code 1. Sind alle gesetzt, gibt es
+       `alles da` aus und endet mit 0.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: konfiguration
+  setup: |
+    git init -q
+  checks:
+    - type: file_contains
+      path: mise.toml
+      pattern: "^node\\s*=\\s*\"24\""
+      message: In der mise.toml fehlt node = "24" im Abschnitt [tools].
+    - type: file_contains
+      path: mise.toml
+      pattern: "^php\\s*=\\s*\"8\\.5\""
+      message: In der mise.toml fehlt php = "8.5".
+    - type: file_contains
+      path: mise.toml
+      pattern: "^\\[env\\]\\s*\\n(.*\\n)*?_\\.file\\s*=\\s*\"\\.env\""
+      message: In der mise.toml fehlt der Abschnitt [env] mit _.file = ".env".
+    - type: file_contains
+      path: .nvmrc
+      pattern: "^24\\s*$"
+      message: Die .nvmrc soll 24 enthalten.
+    - type: file_contains
+      path: .env.example
+      pattern: "^DB_PASSWORD=$"
+      message: In der .env.example fehlt die Zeile DB_PASSWORD= (ohne Wert).
+    - type: command
+      run: git check-ignore -q .env && ! git check-ignore -q .env.example
+      message: .env muss ignoriert werden, .env.example nicht.
+    - type: command
+      run: APP_NAME=Shop APP_PORT=8000 DB_PASSWORD=x ./check-env.sh
+      stdout_matches: "alles da"
+      message: Sind alle Variablen gesetzt, soll check-env.sh „alles da“ ausgeben und mit 0 enden.
+    - type: command
+      run: env -u DB_PASSWORD APP_NAME=Shop APP_PORT=8000 ./check-env.sh; echo "exit=$?"
+      stdout_matches: "fehlt: DB_PASSWORD[\\s\\S]*exit=1"
+      message: "Fehlt DB_PASSWORD, soll das Skript „fehlt: DB_PASSWORD“ ausgeben und mit Exit-Code 1 enden."
+    - type: command
+      run: env -u APP_NAME -u APP_PORT -u DB_PASSWORD ./check-env.sh | grep -c '^fehlt:'
+      stdout_matches: "^3$"
+      message: "Fehlen alle drei Variablen, soll das Skript drei Zeilen „fehlt: …“ ausgeben."
+  hints:
+    - "Zeilen lesen: `while IFS='=' read -r name _; do … done < .env.example`"
+    - "Den Wert einer Variable, deren Name in `name` steht, liest du in Bash mit `${!name}`."
+    - "Kommentare überspringen: `[[ -z \"$name\" || \"$name\" == \\#* ]] && continue`"
+  solution: |
+    ```bash
+    cd konfiguration
+    cat > mise.toml <<'EOF'
+    [tools]
+    node = "24"
+    php = "8.5"
+
+    [env]
+    _.file = ".env"
+    EOF
+    echo 24 > .nvmrc
+    printf 'APP_NAME=Demo\nAPP_PORT=8000\nDB_PASSWORD=\n' > .env.example
+    echo ".env" > .gitignore
+    cat > check-env.sh <<'EOF'
+    #!/usr/bin/env bash
+    fehlt=0
+    while IFS='=' read -r name _; do
+      [[ -z "$name" || "$name" == \#* ]] && continue
+      if [ -z "${!name}" ]; then
+        echo "fehlt: $name"
+        fehlt=1
+      fi
+    done < .env.example
+    [ "$fehlt" -eq 0 ] && echo "alles da"
+    exit $fehlt
+    EOF
+    chmod +x check-env.sh
+    ```
