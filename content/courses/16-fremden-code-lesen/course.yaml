@@ -1,0 +1,31 @@
+title: Fremden Code lesen und verstehen
+subtitle: Dich in eine unbekannte Codebasis einarbeiten – systematisch statt planlos
+description: >
+  Im Berufsalltag schreibst du selten auf der grünen Wiese. Meistens öffnest du ein Projekt, das andere
+  Menschen über Jahre gebaut haben, und sollst darin einen Fehler finden oder ein Feature ergänzen. Dieser
+  Kurs zeigt dir, wie du dabei vorgehst: vom README über die Einstiegspunkte bis zur Frage, welcher Commit
+  ein Verhalten eingeführt hat.
+
+
+  Geübt wird an einem echten Beispielprojekt: dem **Kiezladen**, einem kleinen PHP-Shop mit Routen,
+  Controllern, Services, Events, Tests und einer Git-Historie aus zehn Commits. Irgendwo darin steckt ein
+  Fehler. Am Ende des Kurses hast du dich vollständig eingearbeitet, den Fehler bis zu seinem Commit
+  zurückverfolgt, ihn behoben und alles in einer `NOTES.md` dokumentiert.
+category: grundlagen
+level: fortgeschritten
+icon: search
+color: "#06b6d4"
+estimated_hours: 5
+workspace_dir: code-lesen
+prerequisites: [git, terminal-shell, programmieren-grundlagen]
+learning_goals:
+  - Du gehst in einem unbekannten Projekt planvoll vor – README, Setup, Tests, Einstiegspunkte.
+  - Du baust dir eine mentale Landkarte, indem du einen Request von Anfang bis Ende verfolgst.
+  - Du findest Code gezielt mit grep, find und den Navigationsfunktionen deiner IDE.
+  - Du beantwortest mit git log, git log -S, git blame und git show, wann und warum Code entstanden ist.
+  - Du liest Tests als Spezifikation und erkennst Muster wie Services, DTOs und Events.
+  - Du stellst gute Fragen und hältst dein Wissen in Notizen und ADRs fest.
+references:
+  - Onboarding-Checklisten, wie Teams sie für neue Entwickler:innen pflegen
+  - Code-Archäologie mit git blame und git log -S bei Fehlern in gewachsenen Projekten
+  - Architecture Decision Records (ADRs) als leichtgewichtige Entscheidungsdokumentation

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="450" y="36" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Welches Werkzeug für welche Spur?</text>
+<text x="140" y="70" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">WAS DU WEISST</text>
+<text x="455" y="70" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">WOMIT DU SUCHST</text>
+<text x="790" y="70" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">ERGEBNIS</text>
+<rect x="20" y="88" width="240" height="56" rx="10" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="140" y="121" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Ich kenne die verdächtige Zeile</text>
+<line x1="260" y1="116" x2="300" y2="116" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="300" y="88" width="310" height="56" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+<text x="455" y="121" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git blame -L 21,21 datei.php</text>
+<line x1="610" y1="116" x2="690" y2="238" stroke="#64748b" stroke-width="2" marker-end="url(#a)"/>
+<rect x="20" y="168" width="240" height="56" rx="10" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="140" y="201" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Ich kenne einen Namen oder Text</text>
+<line x1="260" y1="196" x2="300" y2="196" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="300" y="168" width="310" height="56" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+<text x="455" y="201" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git log -S &quot;FREE_SHIPPING_FROM&quot;</text>
+<line x1="610" y1="196" x2="690" y2="238" stroke="#64748b" stroke-width="2" marker-end="url(#a)"/>
+<rect x="20" y="248" width="240" height="56" rx="10" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="2.5"/>
+<text x="140" y="281" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Ich kenne die betroffene Datei</text>
+<line x1="260" y1="276" x2="300" y2="276" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="300" y="248" width="310" height="56" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+<text x="455" y="281" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git log --oneline -- datei.php</text>
+<line x1="610" y1="276" x2="690" y2="238" stroke="#64748b" stroke-width="2" marker-end="url(#a)"/>
+<rect x="20" y="328" width="240" height="56" rx="10" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="2.5"/>
+<text x="140" y="361" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Ich weiß nur: „Früher ging es“</text>
+<line x1="260" y1="356" x2="300" y2="356" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="300" y="328" width="310" height="56" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+<text x="455" y="361" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git bisect start / good / bad</text>
+<line x1="610" y1="356" x2="690" y2="238" stroke="#64748b" stroke-width="2" marker-end="url(#a)"/>
+<rect x="690" y="196" width="190" height="84" rx="12" fill="#22d3ee" fill-opacity=".18" stroke="#0891b2" stroke-width="2.5"/>
+<text x="785" y="230" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Ein Commit-Hash</text>
+<text x="785" y="258" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git show &lt;hash&gt;</text>
+<text x="785" y="320" text-anchor="middle" font-size="13" fill="#475569">Diff, Message, Ticket,</text>
+<text x="785" y="338" text-anchor="middle" font-size="13" fill="#475569">Autor:in → das Warum</text>
+<text x="20" y="420" font-size="13" fill="#475569">Jede Spur endet bei einem Commit. Erst git show verrät, was wirklich geändert wurde – und warum.</text>
+</svg>

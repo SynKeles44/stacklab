@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="480" y="36" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Der Weg eines Requests durch den Kiezladen</text>
+<line x1="150" y1="129" x2="200" y2="129" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="175" y="119" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">1</text>
+<line x1="360" y1="129" x2="410" y2="129" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="385" y="119" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">2</text>
+<line x1="560" y1="129" x2="610" y2="129" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="585" y="119" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">3</text>
+<line x1="690" y1="168" x2="690" y2="270" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="706" y="223" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">4</text>
+<line x1="770" y1="309" x2="820" y2="309" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="795" y="299" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">5</text>
+<line x1="640" y1="168" x2="530" y2="270" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="585" y="209" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">6</text>
+<line x1="410" y1="309" x2="360" y2="309" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="385" y="299" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">7</text>
+<rect x="20" y="90" width="130" height="78" rx="10" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="85" y="122" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Browser</text>
+<text x="85" y="150" text-anchor="middle" font-size="12.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">POST /checkout</text>
+<rect x="200" y="90" width="160" height="78" rx="10" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="280" y="122" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Front Controller</text>
+<text x="280" y="150" text-anchor="middle" font-size="12.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">public/index.php</text>
+<rect x="410" y="90" width="150" height="78" rx="10" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="485" y="122" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Router</text>
+<text x="485" y="150" text-anchor="middle" font-size="12.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">src/routes.php</text>
+<rect x="610" y="90" width="160" height="78" rx="10" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="2.5"/>
+<text x="690" y="122" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Controller</text>
+<text x="690" y="150" text-anchor="middle" font-size="12.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">CheckoutController</text>
+<rect x="610" y="270" width="160" height="78" rx="10" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="2.5"/>
+<text x="690" y="302" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Service</text>
+<text x="690" y="330" text-anchor="middle" font-size="12.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">PriceCalculator</text>
+<rect x="820" y="270" width="120" height="78" rx="10" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="2.5"/>
+<text x="880" y="302" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">DTO</text>
+<text x="880" y="330" text-anchor="middle" font-size="12.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">OrderSummary</text>
+<rect x="410" y="270" width="150" height="78" rx="10" fill="#f87171" fill-opacity=".14" stroke="#f87171" stroke-width="2.5"/>
+<text x="485" y="302" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Event</text>
+<text x="485" y="330" text-anchor="middle" font-size="12.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">OrderPlaced</text>
+<rect x="200" y="270" width="160" height="78" rx="10" fill="#f87171" fill-opacity=".14" stroke="#f87171" stroke-width="2.5"/>
+<text x="280" y="302" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Listener</text>
+<text x="280" y="330" text-anchor="middle" font-size="11" fill="#475569" font-family="ui-monospace, Menlo, monospace">SendOrderConfirmation</text>
+<text x="20" y="400" font-size="13" fill="#475569">Die Antwort („Danke! Summe: …“) läuft denselben Weg zurück: Controller → Router → index.php → Browser.</text>
+</svg>

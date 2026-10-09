@@ -1,0 +1,375 @@
+- slug: codebasis
+  term: Codebasis
+  short: Die Gesamtheit allen Quellcodes eines Projekts.
+  explanation: >
+    Zur Codebasis gehören alle Dateien, die das Team selbst schreibt und pflegt – Anwendungscode, Tests,
+    Konfiguration und Skripte. Fremde Pakete in `vendor/` oder `node_modules/` zählt man meist nicht dazu.
+  example: Die Codebasis des Kiezladens besteht aus 19 Dateien in public, src und tests.
+  category: programmierung
+  aliases: [Codebase, Codebasen]
+  related: [repository, legacy-code]
+  lesson: fremden-code-lesen/warum-code-lesen
+- slug: legacy-code
+  term: Legacy-Code
+  short: Gewachsener, älterer Code, den das aktuelle Team nicht selbst geschrieben hat und nur teilweise kennt.
+  explanation: >
+    Legacy-Code ist oft schlecht dokumentiert und hat wenige Tests, läuft aber produktiv und bringt Geld ein.
+    Deshalb ändert man ihn vorsichtig: erst verstehen, dann mit Tests absichern, dann anpassen.
+  example: Ein zehn Jahre alter Bestellprozess, den niemand im Team mehr vollständig erklären kann.
+  category: programmierung
+  aliases: [Altcode, Legacy]
+  related: [codebasis, technische-schulden]
+  lesson: fremden-code-lesen/warum-code-lesen
+- slug: mentales-modell
+  term: Mentales Modell
+  short: Deine Vorstellung im Kopf, aus welchen Teilen ein System besteht und wie sie zusammenspielen.
+  explanation: >
+    Beim Lesen von Code baust du nach und nach ein mentales Modell auf – grob am Anfang, immer genauer mit jeder
+    Aufgabe. Notizen und Skizzen helfen, es festzuhalten und mit anderen abzugleichen.
+  example: „Requests kommen über index.php, der Router verteilt an Controller, Services rechnen.“
+  category: programmierung
+  aliases: [mentale Landkarte]
+  related: [sequenzdiagramm, schichtenarchitektur]
+  lesson: fremden-code-lesen/warum-code-lesen
+- slug: top-down
+  term: Top-down
+  short: Eine Lesestrategie, bei der du vom Großen ins Kleine gehst – erst Überblick, dann Details.
+  explanation: >
+    Top-down beginnst du bei Ordnerstruktur, Einstiegspunkten und grobem Ablauf und steigst nur dort in Details
+    ein, wo es nötig ist. Gut für den ersten Überblick und die Planung neuer Features.
+  example: Erst `tree -L 2` und die Routen lesen, dann einen Controller öffnen.
+  category: programmierung
+  aliases: [Top-down-Lesen]
+  related: [bottom-up, mentales-modell]
+  lesson: fremden-code-lesen/warum-code-lesen
+- slug: bottom-up
+  term: Bottom-up
+  short: Eine Lesestrategie, bei der du von einer konkreten Stelle aus nach außen arbeitest.
+  explanation: >
+    Bottom-up startest du bei einer Fehlermeldung, einer Zeile aus einem Stack Trace oder einer Funktion und
+    folgst von dort den Aufrufern. Gut für die Fehlersuche.
+  example: Vom Text „Gutschein ungültig“ zum PriceCalculator und weiter zum CheckoutController.
+  category: programmierung
+  aliases: [Bottom-up-Lesen]
+  related: [top-down, stack-trace]
+  lesson: fremden-code-lesen/warum-code-lesen
+- slug: front-controller
+  term: Front Controller
+  short: Eine einzelne Datei, die jede Anfrage an eine Webanwendung zuerst entgegennimmt und weiterverteilt.
+  explanation: >
+    Der Webserver schickt alle Requests an den Front Controller, meist `public/index.php`. Dieser lädt die
+    Anwendung und übergibt die Anfrage an den Router, der den zuständigen Code findet.
+  example: "Im Kiezladen und in Laravel ist `public/index.php` der Front Controller."
+  category: programmierung
+  aliases: []
+  related: [einstiegspunkt, http-router]
+  lesson: fremden-code-lesen/einstiegspunkte-finden
+- slug: autoloader
+  term: Autoloader
+  short: Eine Funktion, die PHP-Klassen automatisch lädt, sobald sie zum ersten Mal gebraucht werden.
+  explanation: >
+    Ohne Autoloader müsstest du jede Klassendatei mit `require` einbinden. Der Autoloader leitet aus dem
+    Klassennamen samt Namespace den Dateipfad ab. In den meisten Projekten erzeugt Composer ihn automatisch.
+  example: "`Kiez\\Service\\Cart` wird im Kiezladen aus `src/Service/Cart.php` geladen."
+  category: programmierung
+  aliases: [Autoloading]
+  related: [namespace, composer]
+  lesson: fremden-code-lesen/einstiegspunkte-finden
+- slug: http-router
+  term: Router (Webanwendung)
+  short: Der Teil einer Webanwendung, der zu Methode und Pfad eines Requests den zuständigen Code sucht.
+  explanation: >
+    Der Router kennt alle Routen und ruft den passenden Handler auf. Findet er keinen, antwortet die Anwendung
+    meist mit 404. Nicht zu verwechseln mit dem Router im Netzwerk, der Datenpakete weiterleitet.
+  example: "`$router->dispatch('POST', '/checkout')` ruft im Kiezladen `CheckoutController::store` auf."
+  category: programmierung
+  aliases: [Web-Router]
+  related: [web-route, front-controller, controller]
+  lesson: fremden-code-lesen/einstiegspunkte-finden
+- slug: web-route
+  term: Route
+  short: Die Verbindung einer HTTP-Methode und eines Pfads mit dem Code, der darauf antwortet.
+  explanation: >
+    Routen sind das Inhaltsverzeichnis einer Webanwendung. Sie stehen oft in einer eigenen Datei wie
+    `routes/web.php`. Wer eine URL verstehen will, sucht zuerst ihre Route.
+  example: "`$router->post(\"/cart/add\", [new CartController(), \"add\"]);`"
+  category: programmierung
+  aliases: [Routen, Routes, Web-Route]
+  related: [http-router, controller, http-methode]
+  lesson: fremden-code-lesen/einstiegspunkte-finden
+- slug: controller
+  term: Controller
+  short: Eine Klasse, die Requests entgegennimmt, Arbeit an andere Klassen delegiert und eine Antwort zurückgibt.
+  explanation: >
+    Controller sind die Eingangsschicht einer Webanwendung. Gute Controller sind dünn: Die eigentlichen
+    Geschäftsregeln stecken in Services. Jede Route zeigt meist auf eine Controller-Methode.
+  example: "`CheckoutController::store()` bearbeitet im Kiezladen `POST /checkout`."
+  category: programmierung
+  aliases: [Controllern]
+  related: [web-route, service-klasse]
+  lesson: fremden-code-lesen/einstiegspunkte-finden
+- slug: schichtenarchitektur
+  term: Schichtenarchitektur
+  short: Eine Aufteilung von Code in Schichten, die jeweils eine Aufgabe haben, etwa Eingang, Logik und Datenzugriff.
+  explanation: >
+    Jede Schicht spricht nur mit bestimmten anderen. Das macht Code übersichtlich und austauschbar. In vielen
+    Projekten erkennst du die Schichten an Ordnern wie Controller, Service und Repository.
+  example: Controller → Service → Repository im Kiezladen.
+  category: programmierung
+  aliases: [Schichten, Layer]
+  related: [controller, service-klasse, repository-muster]
+  lesson: fremden-code-lesen/die-mentale-landkarte
+- slug: request-lebenszyklus
+  term: Request-Lebenszyklus
+  short: Der Weg, den eine Anfrage vom Eintreffen bis zur Antwort durch eine Webanwendung nimmt.
+  explanation: >
+    Dazu gehören Front Controller, Router, Middleware, Controller und alles, was diese aufrufen. Wer einen
+    Request einmal ganz verfolgt hat, versteht den Aufbau der ganzen Anwendung viel besser.
+  example: index.php → Router → CheckoutController → PriceCalculator → Antwort.
+  category: programmierung
+  aliases: [Request Lifecycle, Request-Ablauf]
+  related: [front-controller, http-router]
+  lesson: fremden-code-lesen/die-mentale-landkarte
+- slug: session
+  term: Session
+  short: Ein Speicher auf dem Server, der Daten eines Besuchers über mehrere Requests hinweg aufbewahrt.
+  explanation: >
+    HTTP vergisst nach jeder Anfrage alles. Eine Session merkt sich Daten wie den Warenkorb und erkennt den
+    Besucher meist an einem Cookie mit einer Session-ID wieder.
+  example: Der Kiezladen legt den Warenkorb in `$_SESSION['cart']` ab.
+  category: internet
+  aliases: [Sessions, Sitzung]
+  related: [http-request]
+  lesson: fremden-code-lesen/die-mentale-landkarte
+- slug: sequenzdiagramm
+  term: Sequenzdiagramm
+  short: Ein Diagramm, das zeigt, welcher Teil eines Systems in welcher Reihenfolge welchen anderen aufruft.
+  explanation: >
+    Die Beteiligten stehen nebeneinander, die Aufrufe laufen als Pfeile von oben nach unten. Mit Werkzeugen wie
+    Mermaid schreibst du Sequenzdiagramme als Text direkt in Markdown.
+  example: "`Browser->>index.php: POST /checkout` ist eine Zeile eines Mermaid-Sequenzdiagramms."
+  category: werkzeuge
+  aliases: [Sequenzdiagramme]
+  related: [mentales-modell, markdown]
+  lesson: fremden-code-lesen/die-mentale-landkarte
+- slug: ripgrep
+  term: ripgrep
+  short: Ein sehr schnelles Suchprogramm für Code, das ignorierte Dateien automatisch überspringt.
+  explanation: >
+    ripgrep (Befehl `rg`) funktioniert ähnlich wie `grep -rn`, beachtet aber von selbst die `.gitignore` und ist
+    bei großen Projekten deutlich schneller. Viele Editoren nutzen es intern für ihre Suche.
+  example: "`rg \"Gutschein ungültig\"` durchsucht den aktuellen Ordner rekursiv."
+  category: werkzeuge
+  aliases: [rg]
+  related: [grep, gitignore]
+  lesson: fremden-code-lesen/suchen-mit-grep-und-find
+- slug: go-to-definition
+  term: Go to Definition
+  short: Eine IDE-Funktion, die von einem Aufruf direkt zur Stelle springt, an der Funktion oder Klasse geschrieben ist.
+  explanation: >
+    Die IDE kennt die Struktur des Codes und findet deshalb auch die Definition in einer anderen Datei. Zusammen
+    mit „Zurück“ lässt sich Code damit lesen wie eine Webseite mit Links.
+  example: In PhpStorm Strg+B bzw. Cmd+B, in VS Code F12.
+  category: werkzeuge
+  aliases: [Zur Definition springen]
+  related: [find-usages, ide]
+  lesson: fremden-code-lesen/navigieren-in-der-ide
+- slug: find-usages
+  term: Find Usages
+  short: Eine IDE-Funktion, die alle Stellen auflistet, an denen eine Klasse, Methode oder Konstante benutzt wird.
+  explanation: >
+    Vor jeder Änderung zeigt dir Find Usages, wer betroffen sein könnte. Dynamische Aufrufe, etwa Methodennamen
+    als String, findet die Funktion nicht immer – dann ergänzt du mit grep.
+  example: In PhpStorm Alt+F7, in VS Code Umschalt+Alt+F12 (Find All References).
+  category: werkzeuge
+  aliases: [Verwendungen finden, Find References]
+  related: [go-to-definition, aufrufhierarchie]
+  lesson: fremden-code-lesen/navigieren-in-der-ide
+- slug: aufrufhierarchie
+  term: Call Hierarchy
+  short: Eine IDE-Ansicht, die als Baum zeigt, wer eine Methode aufruft und wer wiederum diese Aufrufer aufruft.
+  explanation: >
+    Die Aufrufhierarchie führt von einer Methode Schritt für Schritt zurück bis zum Einstiegspunkt. So siehst du,
+    über welche Wege Code erreicht wird.
+  example: "`Cart::subtotal()` wird von `CartController::show()` und `CheckoutController::store()` aufgerufen."
+  category: werkzeuge
+  aliases: [Aufrufhierarchie, Call-Hierarchie]
+  related: [find-usages, go-to-definition]
+  lesson: fremden-code-lesen/navigieren-in-der-ide
+- slug: code-archaeologie
+  term: Code-Archäologie
+  short: Das gezielte Auswerten der Versionsgeschichte, um herauszufinden, wann, von wem und warum Code entstanden ist.
+  explanation: >
+    Mit Werkzeugen wie git log, git blame und git show gräbst du dich durch die Historie. So findest du den
+    Commit, das Ticket und die Person hinter einer Zeile – oft die beste Dokumentation, die es gibt.
+  example: Mit `git log -S` den Commit finden, der eine Konstante eingeführt hat.
+  category: git
+  aliases: [Code-Archaeologie]
+  related: [git-log, git-blame, pickaxe]
+  lesson: fremden-code-lesen/historie-mit-log-und-show
+- slug: git-log
+  term: git log
+  short: Der Git-Befehl, der die Commit-Historie anzeigt – vom neuesten Commit rückwärts.
+  explanation: >
+    git log lässt sich vielfältig filtern: nach Pfad, Person, Zeitraum oder Message. Mit `--oneline` bekommst
+    du den Überblick, mit `--stat` und `-p` die Details.
+  example: "`git log --oneline -- src/Service` zeigt alle Commits, die den Ordner src/Service betreffen."
+  category: git
+  aliases: []
+  related: [git-show, pickaxe, commit]
+  lesson: fremden-code-lesen/historie-mit-log-und-show
+- slug: git-show
+  term: git show
+  short: Der Git-Befehl, der einen einzelnen Commit mit Message und Diff oder eine alte Dateiversion anzeigt.
+  explanation: >
+    `git show <hash>` zeigt, was ein Commit wirklich geändert hat. Mit `git show <hash>:<pfad>` liest du eine
+    Datei so, wie sie in diesem Commit aussah – ohne etwas auszuchecken.
+  example: "`git show HEAD~3:src/Service/PriceCalculator.php`"
+  category: git
+  aliases: []
+  related: [git-log, diff]
+  lesson: fremden-code-lesen/historie-mit-log-und-show
+- slug: pickaxe
+  term: Pickaxe-Suche
+  short: Die Suche mit `git log -S`, die Commits findet, in denen ein bestimmter Text hinzukam oder verschwand.
+  explanation: >
+    Die Pickaxe (Spitzhacke) vergleicht, wie oft ein Text vor und nach jedem Commit vorkommt. So findest du
+    schnell den Commit, der eine Funktion, Konstante oder Meldung eingeführt hat. Verwandt ist `-G` mit
+    regulärem Ausdruck.
+  example: "`git log -S FREE_SHIPPING_FROM --oneline`"
+  category: git
+  aliases: [git log -S, Pickaxe]
+  related: [git-log, code-archaeologie]
+  lesson: fremden-code-lesen/spuren-mit-pickaxe-und-blame
+- slug: spezifikation
+  term: Spezifikation
+  short: Eine genaue Beschreibung, was ein Programm oder eine Funktion tun soll.
+  explanation: >
+    Eine Spezifikation kann ein Dokument, ein Ticket oder eine Reihe von Tests sein. Tests haben den Vorteil,
+    dass sie ausführbar sind und sofort melden, wenn der Code davon abweicht.
+  example: "Der Test „orders of exactly 50 euro ship for free“ spezifiziert die Versandregel."
+  category: programmierung
+  aliases: [Spec, Spezifikationen]
+  related: [automatisierter-test, akzeptanzkriterien]
+  lesson: fremden-code-lesen/tests-als-dokumentation
+- slug: arrange-act-assert
+  term: Arrange-Act-Assert
+  short: Ein Aufbau für Tests in drei Teilen – Ausgangslage herstellen, Aktion ausführen, Ergebnis prüfen.
+  explanation: >
+    Das Muster macht Tests leicht lesbar: Du siehst sofort, was vorbereitet wird, was getestet wird und was
+    herauskommen soll. Es heißt auch Given-When-Then.
+  example: "Arrange: `new Cart(…)`, Act: `$cart->add(1, 2)`, Assert: `expect_same(2580, $cart->subtotal())`."
+  category: programmierung
+  aliases: [AAA, Given-When-Then]
+  related: [automatisierter-test, assertion]
+  lesson: fremden-code-lesen/tests-als-dokumentation
+- slug: unit-test
+  term: Unit-Test
+  short: Ein Test, der eine einzelne Klasse oder Funktion isoliert von der übrigen Anwendung prüft.
+  explanation: >
+    Unit-Tests sind schnell und zeigen genau, welche Einheit falsch rechnet. Feature- oder Integrationstests
+    prüfen dagegen, wie mehrere Teile zusammenspielen, etwa einen kompletten Request.
+  example: Ein Test, der nur `PriceCalculator::summarize()` aufruft.
+  category: programmierung
+  aliases: [Unit-Tests, Komponententest]
+  related: [automatisierter-test, regressionstest]
+  lesson: fremden-code-lesen/tests-als-dokumentation
+- slug: regressionstest
+  term: Regressionstest
+  short: Ein Test, der sicherstellt, dass ein bereits behobener Fehler nicht wieder auftritt.
+  explanation: >
+    Bevor man einen Bug behebt, schreibt man oft zuerst einen Test, der ihn zeigt. Nach dem Fix bleibt dieser
+    Test im Projekt und schlägt Alarm, falls jemand den Fehler erneut einbaut.
+  example: "„orders of exactly 50 euro ship for free“ ist im Kiezladen ein Regressionstest."
+  category: programmierung
+  aliases: [Regressionstests]
+  related: [automatisierter-test, bug]
+  lesson: fremden-code-lesen/tests-als-dokumentation
+- slug: entwurfsmuster
+  term: Entwurfsmuster
+  short: Eine bewährte, benannte Lösung für ein wiederkehrendes Problem im Softwareentwurf.
+  explanation: >
+    Muster wie Repository, Factory oder Observer geben Teams eine gemeinsame Sprache. Wer den Namen eines Musters
+    in einem Klassennamen erkennt, kennt schon die Rolle der Klasse.
+  example: Ein Listener, der auf ein Event reagiert, folgt dem Observer-Muster.
+  category: programmierung
+  aliases: [Design Pattern, Design Patterns, Muster]
+  related: [dto, repository-muster, event]
+  lesson: fremden-code-lesen/unbekannte-muster-erkennen
+- slug: service-klasse
+  term: Service
+  short: Eine Klasse, die Geschäftslogik bündelt, etwa eine Preisberechnung, unabhängig von HTTP und Darstellung.
+  explanation: >
+    Services enthalten die eigentlichen Regeln einer Anwendung. Controller rufen sie auf, Tests können sie
+    direkt prüfen. Suchst du eine Geschäftsregel, schaust du zuerst in die Services.
+  example: "`PriceCalculator` im Ordner `src/Service`."
+  category: programmierung
+  aliases: [Services, Service-Klasse]
+  related: [controller, dependency-injection]
+  lesson: fremden-code-lesen/unbekannte-muster-erkennen
+- slug: dependency-injection
+  term: Dependency Injection
+  short: Eine Klasse bekommt ihre Abhängigkeiten von außen übergeben, statt sie selbst zu erzeugen.
+  explanation: >
+    Meist geschieht das über den Konstruktor. Dadurch ist sofort sichtbar, was eine Klasse braucht, und in Tests
+    lassen sich Abhängigkeiten leicht austauschen. Frameworks wie Laravel erzeugen solche Objekte automatisch.
+  example: "`public function __construct(private ProductRepository $products) {}`"
+  category: programmierung
+  aliases: [DI, Abhängigkeitsinjektion]
+  related: [service-klasse, konstruktor]
+  lesson: fremden-code-lesen/unbekannte-muster-erkennen
+- slug: dto
+  term: DTO
+  short: Ein Data Transfer Object – ein Objekt, das Daten in fester Form transportiert und keine eigene Logik hat.
+  explanation: >
+    DTOs ersetzen lose Arrays durch klar benannte Eigenschaften. In PHP sind sie oft `readonly`, damit sich die
+    Werte nach dem Erzeugen nicht mehr ändern.
+  example: "`OrderSummary` mit subtotal, discount, shipping und total."
+  category: programmierung
+  aliases: [DTOs, Data Transfer Object]
+  related: [entwurfsmuster, klasse]
+  lesson: fremden-code-lesen/unbekannte-muster-erkennen
+- slug: event
+  term: Event
+  short: Ein Objekt, das meldet, dass in der Anwendung etwas passiert ist, etwa eine abgeschlossene Bestellung.
+  explanation: >
+    Wer ein Event auslöst, weiß nicht, wer darauf reagiert. Dadurch lassen sich neue Reaktionen ergänzen, ohne
+    den auslösenden Code zu ändern. Um die Wirkung zu verstehen, suchst du die registrierten Listener.
+  example: "`dispatch(new OrderPlaced($summary))`"
+  category: programmierung
+  aliases: [Events, Ereignis, Ereignisse]
+  related: [event-listener, entwurfsmuster]
+  lesson: fremden-code-lesen/unbekannte-muster-erkennen
+- slug: event-listener
+  term: Listener
+  short: Code, der automatisch ausgeführt wird, wenn ein bestimmtes Event ausgelöst wird.
+  explanation: >
+    Listener werden für ein Event registriert und erledigen Nebenwirkungen wie E-Mails oder Protokolle. In
+    Laravel listet `php artisan event:list` alle Events mit ihren Listenern auf.
+  example: "`SendOrderConfirmation` reagiert im Kiezladen auf `OrderPlaced`."
+  category: programmierung
+  aliases: [Listener, Event-Listener]
+  related: [event]
+  lesson: fremden-code-lesen/unbekannte-muster-erkennen
+- slug: repository-muster
+  term: Repository (Muster)
+  short: Eine Klasse, die das Laden und Speichern von Daten kapselt, sodass der übrige Code nicht weiß, woher sie kommen.
+  explanation: >
+    Ein Repository bietet Methoden wie `find()` oder `all()`. Ob die Daten aus einer Datenbank, einer API oder
+    einem Array stammen, bleibt dahinter verborgen. Nicht zu verwechseln mit einem Git-Repository.
+  example: "`ProductRepository::find(1)` liefert im Kiezladen ein Produkt."
+  category: programmierung
+  aliases: [Repository-Pattern, Repository-Muster]
+  related: [entwurfsmuster, schichtenarchitektur]
+  lesson: fremden-code-lesen/unbekannte-muster-erkennen
+- slug: adr
+  term: Architecture Decision Record
+  short: Ein kurzes Dokument im Repository, das eine wichtige technische Entscheidung samt Kontext und Folgen festhält.
+  explanation: >
+    ADRs sind nummerierte Markdown-Dateien mit Titel, Status, Kontext, Entscheidung und Konsequenzen. Sie
+    beantworten Jahre später die Frage „Warum ist das so?“, ohne dass jemand die Historie durchsuchen muss.
+  example: "`docs/adr/0001-preise-in-cent.md`"
+  category: teamarbeit
+  aliases: [ADR, ADRs]
+  related: [markdown, readme]
+  lesson: fremden-code-lesen/fragen-und-notizen

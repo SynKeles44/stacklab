@@ -1,0 +1,1270 @@
+title: Abschlussprüfung – Fremden Code lesen und verstehen
+description: |
+  Diese Prüfung deckt alle vier Module ab: das Ankommen in einem neuen Projekt, Orientierung und Suche,
+  Code-Archäologie mit Git sowie das Erkennen von Mustern und das Festhalten von Wissen. Zuerst beantwortest
+  du Fragen, danach löst du drei Praxis-Aufgaben – zwei im echten Übungs-Terminal am Kiezladen, eine als
+  Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  # --- Ankommen ---
+  - module: ankommen
+    type: single
+    question: Du übernimmst ein Ticket in einem Projekt, das du nie gesehen hast. Was tust du als Erstes?
+    options:
+      - Den Code ab der ersten Datei alphabetisch lesen.
+      - README lesen, die Befehle zum Testen finden und die Tests einmal ausführen.
+      - Die verdächtige Stelle sofort umschreiben.
+      - Alle Abhängigkeiten auf die neueste Version aktualisieren.
+    answer: 1
+    explanation: >
+      README, Befehle und ein erster Testlauf geben dir in Minuten Überblick und eine Ausgangslage, gegen die du
+      jede spätere Änderung prüfen kannst.
+  - module: ankommen
+    type: match
+    question: Ordne jedem Projekt den Ort zu, an dem du seine Befehle findest.
+    pairs:
+      - { left: "Node-Projekt", right: "scripts in package.json" }
+      - { left: "Projekt mit Makefile", right: "Targets im Makefile" }
+      - { left: "Laravel-Projekt", right: "php artisan list" }
+      - { left: "PHP-Projekt mit Composer", right: "scripts in composer.json" }
+    explanation: Diese Dateien sind die Bedienungsanleitung eines Projekts – dort stehen Starten, Testen und Bauen.
+  - module: ankommen
+    type: multiple
+    question: Welche Dateien sind typische Einstiegspunkte?
+    options:
+      - "`public/index.php` einer PHP-Webanwendung"
+      - "`src/main.tsx` einer React-App mit Vite"
+      - "`vendor/autoload.php`"
+      - "`artisan` in einem Laravel-Projekt"
+    answers: [0, 1, 3]
+    explanation: >
+      `vendor/autoload.php` wird zwar früh geladen, ist aber Teil der installierten Pakete und kein Einstiegspunkt
+      des eigenen Codes.
+  - module: ankommen
+    type: find-bug
+    question: Ein Formular schickt `POST /checkout`. Trotzdem antwortet der Shop mit „Seite nicht gefunden“. In welcher Zeile steckt der Fehler?
+    language: php
+    code: |
+      $router = new Router();
+      $router->get("/products", [new Controller\ProductController(), "index"]);
+      $router->post("/cart/add", [new Controller\CartController(), "add"]);
+      $router->get("/checkout", [new Controller\CheckoutController(), "store"]);
+      return $router;
+    bug_line: 4
+    explanation: Die Route ist für GET registriert. Ein POST-Request findet unter dieser Methode keinen Handler.
+  # --- Orientieren ---
+  - module: orientieren
+    type: single
+    question: "Im Browser steht „Zwischensumme: 2829 Cent“. Mit welcher Suche findest du die Stelle im Code am zuverlässigsten?"
+    options:
+      - "`grep -rn \"Zwischensumme: 2829 Cent\" src`"
+      - "`grep -rn \"Zwischensumme\" src`"
+      - "`find src -name Zwischensumme`"
+      - "`grep -rn \"Cent\" src`"
+    answer: 1
+    explanation: >
+      Die Zahl wird zur Laufzeit eingesetzt und steht nicht im Code. „Cent“ trifft viel zu oft. Der feste, seltene
+      Teil „Zwischensumme“ führt direkt zum CartController.
+  - module: orientieren
+    type: cloze
+    text: "`grep -___ \"Gutschein\" src` durchsucht den Ordner rekursiv mit Zeilennummern. Nur Dateien, die Git verfolgt, durchsucht `git ___`."
+    blanks:
+      - [rn, nr]
+      - [grep]
+    explanation: "`-r` steht für rekursiv, `-n` für Zeilennummern. `git grep` lässt ignorierte Ordner wie vendor automatisch weg."
+  - module: orientieren
+    type: single
+    question: "„Find Usages“ findet keinen Aufruf von `CartController::add()`. Was folgt daraus?"
+    options:
+      - Die Methode ist tot und kann gelöscht werden.
+      - Nichts Sicheres – sie kann dynamisch aufgerufen werden, etwa über den String "add" in den Routen. Eine Textsuche ergänzt die IDE.
+      - Die IDE ist kaputt und muss neu installiert werden.
+      - Die Methode wird nur in Tests verwendet.
+    answer: 1
+    explanation: >
+      Methodennamen als String, variable Funktionen und Framework-Magie entgehen der statischen Analyse. Vor dem
+      Löschen prüfst du zusätzlich mit grep.
+  - module: orientieren
+    type: multiple
+    question: Was gehört zu einer guten mentalen Landkarte einer Webanwendung?
+    options:
+      - Die Schichten, die du an den Ordnern erkennst.
+      - Ein Request, den du vom Einstiegspunkt bis zur Antwort verfolgt hast.
+      - Der Quellcode des Frameworks in vendor/, Zeile für Zeile.
+      - Eine Skizze oder ein Sequenzdiagramm der Stationen.
+    answers: [0, 1, 3]
+    explanation: Fremde Pakete behandelst du als Blackbox. Die Landkarte zeigt die Hauptwege deiner Anwendung.
+  # --- Code-Archäologie ---
+  - module: code-archaeologie
+    type: match
+    question: Ordne jeder Frage den passenden Befehl zu.
+    pairs:
+      - { left: "Wer hat Zeile 21 zuletzt geändert?", right: "git blame -L 21,21 datei.php" }
+      - { left: "Welcher Commit hat FREE_SHIPPING_FROM eingeführt?", right: "git log -S FREE_SHIPPING_FROM" }
+      - { left: "Wie sah die Datei vor diesem Commit aus?", right: "git show <hash>^:datei.php" }
+      - { left: "Welche Commits erwähnen voucher in der Message?", right: "git log --grep=voucher" }
+    explanation: blame arbeitet zeilenweise, -S durchsucht Code-Änderungen, --grep die Messages, `<hash>^:pfad` zeigt alte Stände.
+  - module: code-archaeologie
+    type: single
+    question: "`git blame` zeigt für eine fehlerhafte Zeile einen Commit „style: reformat code“. Was tust du?"
+    options:
+      - Die Person aus diesem Commit verantwortlich machen.
+      - Hinter den Commit zurückblicken, z. B. mit `git blame <hash>^ -- datei` oder `git blame -w`.
+      - Aufgeben, weil die Historie zerstört ist.
+      - Den Commit mit git reset entfernen.
+    answer: 1
+    explanation: >
+      blame zeigt die letzte Änderung – bei reiner Formatierung nicht die eigentliche Entscheidung. Mit `<hash>^`
+      oder `-w` gehst du weiter zurück.
+  - module: code-archaeologie
+    type: cloze
+    text: Ein Test, der sicherstellt, dass ein behobener Fehler nicht zurückkommt, heißt ___test. Tests sind meist nach dem Muster Arrange, Act, ___ aufgebaut.
+    blanks:
+      - [Regressions, Regression]
+      - [Assert]
+    explanation: Arrange stellt die Ausgangslage her, Act führt die Aktion aus, Assert prüft das Ergebnis.
+  - module: code-archaeologie
+    type: single
+    question: Ein Test erwartet bei 5000 Cent kostenlosen Versand, der Code berechnet 495 Cent. Es gibt keinen Hinweis, dass sich die Regel geändert hat. Was ist richtig?
+    options:
+      - Den Test auf 495 ändern, damit er grün wird.
+      - Den Code ändern – der Test beschreibt die Anforderung.
+      - Den Test löschen.
+      - Beides so lassen.
+    answer: 1
+    explanation: >
+      Ein Test ist eine ausführbare Anforderung. Bei einem Bug ändert sich der Code. Nur wenn sich die Anforderung
+      wirklich geändert hat – geklärt mit dem Team –, passt man den Test an.
+  # --- Verstehen und festhalten ---
+  - module: verstehen-und-festhalten
+    type: match
+    question: Ordne jedem Muster seine Rolle zu.
+    pairs:
+      - { left: "Service", right: "Enthält Geschäftslogik" }
+      - { left: "DTO", right: "Transportiert Daten ohne Logik" }
+      - { left: "Listener", right: "Reagiert auf ein Ereignis" }
+      - { left: "Repository", right: "Lädt und speichert Daten" }
+    explanation: Wer die Rolle eines Musters kennt, versteht eine Klasse schon zur Hälfte, bevor er sie liest.
+  - module: verstehen-und-festhalten
+    type: single
+    question: "`public function __construct(private ProductRepository $products) {}` – welches Prinzip siehst du?"
+    options:
+      - Vererbung
+      - Dependency Injection
+      - Ein Event
+      - Ein Singleton
+    answer: 1
+    explanation: Die Klasse bekommt ihre Abhängigkeit von außen übergeben, statt sie selbst mit new zu erzeugen.
+  - module: verstehen-und-festhalten
+    type: multiple
+    question: Welche Bestandteile hat eine gute Frage an das Team?
+    options:
+      - Woran du arbeitest und was du beobachtest.
+      - Was du schon herausgefunden hast, mit Fundstelle.
+      - Deine Vermutung und eine konkrete, schnell beantwortbare Frage.
+      - Wer den Fehler verursacht hat.
+    answers: [0, 1, 2]
+    explanation: Eine gute Frage ermöglicht eine Antwort ohne Rückfrage. Schuldzuweisungen helfen niemandem.
+  - module: verstehen-und-festhalten
+    type: single
+    question: Welcher Abschnitt eines ADR erklärt späteren Leser:innen, warum eine Entscheidung damals sinnvoll war?
+    options:
+      - Status
+      - Kontext
+      - Titel
+      - Dateiname
+    answer: 1
+    explanation: Der Kontext beschreibt Problem und Rahmenbedingungen. Ohne ihn wirkt eine alte Entscheidung oft willkürlich.
+tasks:
+  - module: code-archaeologie
+    id: pruefung-regression
+    type: terminal
+    title: Die Tests sind wieder rot
+    description: |
+      Klicke zuerst auf **Aufgabe vorbereiten**. Im Ordner `pruefung-regression` liegt eine neuere Version des
+      Kiezladens: Der Versandfehler ist inzwischen behoben, danach kamen weitere Commits. Jetzt ist wieder ein
+      Test rot.
+
+      1. Führe die Tests aus und finde heraus, welcher Test fehlschlägt.
+      2. Finde den Commit, der den Fehler eingeführt hat, und schreibe seinen Hash (mindestens 7 Zeichen) in
+         `antwort.txt`.
+      3. Behebe den Fehler im Code, sodass alle Tests grün sind. Ändere keine Tests.
+    workdir: pruefung-regression
+    setup: |
+      # Beispielprojekt "Kiezladen" mit fester Git-Historie (10 Commits)
+      git init -q -b main
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      commit() {
+        if [ "$1" = tom ]; then n="Tom Muster"; else n="Mira Beispiel"; fi
+        git add -A
+        GIT_AUTHOR_NAME="$n" GIT_AUTHOR_EMAIL="$1@example.com" GIT_AUTHOR_DATE="$2" \
+        GIT_COMMITTER_NAME="$n" GIT_COMMITTER_EMAIL="$1@example.com" GIT_COMMITTER_DATE="$2" \
+        git commit -q -m "$3" ${4:+-m "$4"}
+      }
+      routes() {
+        { printf '<?php\ndeclare(strict_types=1);\n\nnamespace Kiez;\n\n$router = new Router();\n'
+          printf '%s\n' "$@"; printf '\nreturn $router;\n'; } > src/routes.php
+      }
+      R1='$router->get("/", fn () => "Willkommen im Kiezladen – versandkostenfrei ab 50 €");'
+      R2='$router->get("/products", [new Controller\ProductController(), "index"]);'
+      R3='$router->get("/cart", [new Controller\CartController(), "show"]);
+      $router->post("/cart/add", [new Controller\CartController(), "add"]);'
+      R4='$router->post("/checkout", [new Controller\CheckoutController(), "store"]);'
+      mkdir -p public src/Controller src/Service src/Repository src/Dto src/Event src/Listener tests
+      printf '# Kiezladen\n\nEin kleiner Online-Shop für den Laden um die Ecke.\n' > README.md
+      printf '.PHONY: serve test\n\nserve:\n\tphp -S localhost:8000 -t public\n\ntest:\n\tphp tests/run.php\n' > Makefile
+      cat > public/index.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      require __DIR__ . '/../src/bootstrap.php';
+
+      $router = require __DIR__ . '/../src/routes.php';
+      echo $router->dispatch($_SERVER['REQUEST_METHOD'], parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+      EOF
+      cat > src/bootstrap.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      spl_autoload_register(function (string $class): void {
+          $file = __DIR__ . '/' . str_replace(['Kiez\\', '\\'], ['', '/'], $class) . '.php';
+          if (is_file($file)) {
+              require $file;
+          }
+      });
+      EOF
+      cat > src/Router.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez;
+
+      final class Router
+      {
+          private array $routes = [];
+
+          public function get(string $path, callable $handler): void
+          {
+              $this->routes['GET'][$path] = $handler;
+          }
+
+          public function post(string $path, callable $handler): void
+          {
+              $this->routes['POST'][$path] = $handler;
+          }
+
+          public function dispatch(string $method, string $path): string
+          {
+              $handler = $this->routes[$method][$path] ?? null;
+              if ($handler === null) {
+                  http_response_code(404);
+                  return 'Seite nicht gefunden';
+              }
+              return $handler();
+          }
+      }
+      EOF
+      routes "$R1"
+      commit mira 2026-03-02T09:15:00+01:00 "chore: initial project skeleton"
+      cat > src/Repository/ProductRepository.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Repository;
+
+      final class ProductRepository
+      {
+          private const PRODUCTS = [
+              1 => ['name' => 'Kaffee Hausmischung', 'price' => 1290],
+              2 => ['name' => 'Bio-Hafermilch', 'price' => 249],
+              3 => ['name' => 'Kiez-Tasse', 'price' => 1500],
+          ];
+
+          public function all(): array
+          {
+              return self::PRODUCTS;
+          }
+
+          public function find(int $id): ?array
+          {
+              return self::PRODUCTS[$id] ?? null;
+          }
+      }
+      EOF
+      cat > src/Controller/ProductController.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Controller;
+
+      use Kiez\Repository\ProductRepository;
+
+      final class ProductController
+      {
+          public function index(): string
+          {
+              $lines = [];
+              foreach ((new ProductRepository())->all() as $id => $product) {
+                  $lines[] = sprintf('%d: %s (%d Cent)', $id, $product['name'], $product['price']);
+              }
+              return implode("\n", $lines);
+          }
+      }
+      EOF
+      routes "$R1" "$R2"
+      commit mira 2026-03-04T14:40:00+01:00 "feat(catalog): list products"
+      cat > src/Service/Cart.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Service;
+
+      use Kiez\Repository\ProductRepository;
+
+      final class Cart
+      {
+          private array $items = [];
+
+          public function __construct(private ProductRepository $products)
+          {
+          }
+
+          public function add(int $productId, int $quantity = 1): void
+          {
+              if ($this->products->find($productId) === null) {
+                  throw new \InvalidArgumentException('Produkt nicht gefunden');
+              }
+              $this->items[$productId] = ($this->items[$productId] ?? 0) + $quantity;
+          }
+
+          public function subtotal(): int
+          {
+              $sum = 0;
+              foreach ($this->items as $id => $quantity) {
+                  $sum += $this->products->find($id)['price'] * $quantity;
+              }
+              return $sum;
+          }
+      }
+      EOF
+      cat > src/Controller/CartController.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Controller;
+
+      use Kiez\Repository\ProductRepository;
+      use Kiez\Service\Cart;
+
+      final class CartController
+      {
+          public static function cart(): Cart
+          {
+              session_start();
+              return $_SESSION['cart'] ??= new Cart(new ProductRepository());
+          }
+
+          public function show(): string
+          {
+              return sprintf('Zwischensumme: %d Cent', self::cart()->subtotal());
+          }
+
+          public function add(): string
+          {
+              self::cart()->add((int) ($_POST['product_id'] ?? 0));
+              return 'Zum Warenkorb hinzugefügt';
+          }
+      }
+      EOF
+      routes "$R1" "$R2" "$R3"
+      commit tom 2026-03-09T11:05:00+01:00 "feat(cart): add cart and endpoints"
+      cat > tests/run.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      require __DIR__ . '/../src/bootstrap.php';
+
+      function expect_same(mixed $expected, mixed $actual): void
+      {
+          if ($expected !== $actual) {
+              throw new RuntimeException('erwartet ' . var_export($expected, true) . ', bekommen ' . var_export($actual, true));
+          }
+      }
+
+      $passed = 0;
+      $failed = 0;
+      foreach (glob(__DIR__ . '/*Test.php') as $file) {
+          foreach (require $file as $name => $test) {
+              try {
+                  $test();
+                  $passed++;
+                  echo "  ok    $name\n";
+              } catch (Throwable $e) {
+                  $failed++;
+                  echo "  FAIL  $name: {$e->getMessage()}\n";
+              }
+          }
+      }
+      echo "\n$passed bestanden, $failed fehlgeschlagen\n";
+      exit($failed > 0 ? 1 : 0);
+      EOF
+      cat > tests/CartTest.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      use Kiez\Repository\ProductRepository;
+      use Kiez\Service\Cart;
+
+      return [
+          'cart sums up price times quantity' => function (): void {
+              $cart = new Cart(new ProductRepository());
+              $cart->add(1, 2);
+              $cart->add(2);
+              expect_same(2829, $cart->subtotal());
+          },
+          'cart rejects unknown products' => function (): void {
+              try {
+                  (new Cart(new ProductRepository()))->add(99);
+              } catch (InvalidArgumentException) {
+                  return;
+              }
+              throw new RuntimeException('keine Exception für Produkt 99');
+          },
+      ];
+      EOF
+      commit tom 2026-03-12T16:30:00+01:00 "test: add tiny test runner and cart tests"
+      cat > src/Dto/OrderSummary.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Dto;
+
+      final readonly class OrderSummary
+      {
+          public function __construct(
+              public int $subtotal,
+              public int $discount,
+              public int $shipping,
+              public int $total,
+          ) {
+          }
+      }
+      EOF
+      cat > src/Service/PriceCalculator.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Service;
+
+      use Kiez\Dto\OrderSummary;
+
+      final class PriceCalculator
+      {
+          public function summarize(int $subtotal): OrderSummary
+          {
+              $shipping = $subtotal >= 5000 ? 0 : 495;
+
+              return new OrderSummary($subtotal, 0, $shipping, $subtotal + $shipping);
+          }
+      }
+      EOF
+      cat > src/Controller/CheckoutController.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Controller;
+
+      use Kiez\Service\PriceCalculator;
+
+      final class CheckoutController
+      {
+          public function store(): string
+          {
+              $summary = (new PriceCalculator())->summarize(CartController::cart()->subtotal());
+
+              return sprintf('Danke! Summe: %d Cent (Versand: %d Cent)', $summary->total, $summary->shipping);
+          }
+      }
+      EOF
+      cat > tests/PriceCalculatorTest.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      use Kiez\Service\PriceCalculator;
+
+      return [
+          'orders below 50 euro pay shipping' => function (): void {
+              $summary = (new PriceCalculator())->summarize(4999);
+              expect_same(495, $summary->shipping);
+              expect_same(5494, $summary->total);
+          },
+          'orders above 50 euro ship for free' => function (): void {
+              expect_same(0, (new PriceCalculator())->summarize(6000)->shipping);
+          },
+      ];
+      EOF
+      routes "$R1" "$R2" "$R3" "$R4"
+      commit mira 2026-03-18T10:20:00+01:00 "feat(checkout): calculate shipping and order total"
+      cat > src/Service/PriceCalculator.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Service;
+
+      use Kiez\Dto\OrderSummary;
+
+      final class PriceCalculator
+      {
+          private const VOUCHERS = ['KIEZ10' => 10];
+
+          public function summarize(int $subtotal, ?string $voucher = null): OrderSummary
+          {
+              $discount = 0;
+              if ($voucher !== null) {
+                  $percent = self::VOUCHERS[$voucher] ?? throw new \InvalidArgumentException('Gutschein ungültig');
+                  $discount = intdiv($subtotal * $percent, 100);
+              }
+              $shipping = $subtotal - $discount >= 5000 ? 0 : 495;
+
+              return new OrderSummary($subtotal, $discount, $shipping, $subtotal - $discount + $shipping);
+          }
+      }
+      EOF
+      sed -i "s/subtotal())/subtotal(), \$_POST['voucher'] ?? null)/" src/Controller/CheckoutController.php
+      sed -i '$d' tests/PriceCalculatorTest.php
+      cat >> tests/PriceCalculatorTest.php <<'EOF'
+          'voucher KIEZ10 gives ten percent off' => function (): void {
+              $summary = (new PriceCalculator())->summarize(10000, 'KIEZ10');
+              expect_same(1000, $summary->discount);
+              expect_same(9000, $summary->total);
+          },
+      ];
+      EOF
+      commit tom 2026-03-25T13:45:00+01:00 "feat(checkout): support voucher codes" "Refs: KIEZ-12"
+      cat > src/Event/OrderPlaced.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Event;
+
+      use Kiez\Dto\OrderSummary;
+
+      final readonly class OrderPlaced
+      {
+          public function __construct(public OrderSummary $summary)
+          {
+          }
+      }
+      EOF
+      cat > src/Event/EventDispatcher.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Event;
+
+      use Kiez\Listener\SendOrderConfirmation;
+
+      final class EventDispatcher
+      {
+          private array $listeners = [];
+
+          public static function default(): self
+          {
+              $dispatcher = new self();
+              $dispatcher->listen(OrderPlaced::class, new SendOrderConfirmation());
+              return $dispatcher;
+          }
+
+          public function listen(string $event, callable $listener): void
+          {
+              $this->listeners[$event][] = $listener;
+          }
+
+          public function dispatch(object $event): void
+          {
+              foreach ($this->listeners[$event::class] ?? [] as $listener) {
+                  $listener($event);
+              }
+          }
+      }
+      EOF
+      cat > src/Listener/SendOrderConfirmation.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Listener;
+
+      use Kiez\Event\OrderPlaced;
+
+      final class SendOrderConfirmation
+      {
+          public function __invoke(OrderPlaced $event): void
+          {
+              error_log(sprintf('Bestellbestätigung über %d Cent verschickt', $event->summary->total));
+          }
+      }
+      EOF
+      cat > src/Controller/CheckoutController.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Controller;
+
+      use Kiez\Event\EventDispatcher;
+      use Kiez\Event\OrderPlaced;
+      use Kiez\Service\PriceCalculator;
+
+      final class CheckoutController
+      {
+          public function store(): string
+          {
+              try {
+                  $summary = (new PriceCalculator())->summarize(CartController::cart()->subtotal(), $_POST['voucher'] ?? null);
+              } catch (\InvalidArgumentException $e) {
+                  http_response_code(422);
+                  return $e->getMessage();
+              }
+              EventDispatcher::default()->dispatch(new OrderPlaced($summary));
+
+              return sprintf('Danke! Summe: %d Cent (Versand: %d Cent)', $summary->total, $summary->shipping);
+          }
+      }
+      EOF
+      commit mira 2026-04-01T09:50:00+02:00 "feat(checkout): dispatch OrderPlaced event"
+      sed -i -e 's/>= 5000 ? 0 : 495/> self::FREE_SHIPPING_FROM ? 0 : self::SHIPPING_COST/' \
+        -e 's/^    private const VOUCHERS.*/    private const FREE_SHIPPING_FROM = 5000;\n    private const SHIPPING_COST = 495;\n&/' src/Service/PriceCalculator.php
+      commit tom 2026-04-08T17:10:00+02:00 "refactor(pricing): extract shipping constants" "Replaces magic numbers with named constants. Refs: KIEZ-17"
+      printf '\n## Lokal starten\n\n    make serve   # startet http://localhost:8000\n    make test    # führt alle Tests aus\n\nVoraussetzung: PHP 8.5, keine weiteren Pakete.\n' >> README.md
+      commit mira 2026-04-15T08:30:00+02:00 "docs: describe local setup in readme"
+      sed -i '$d' tests/PriceCalculatorTest.php
+      cat >> tests/PriceCalculatorTest.php <<'EOF'
+          'orders of exactly 50 euro ship for free' => function (): void {
+              expect_same(0, (new PriceCalculator())->summarize(5000)->shipping);
+          },
+      ];
+      EOF
+      commit tom 2026-04-22T15:00:00+02:00 "test(pricing): cover free shipping boundary" "Customer report: orders of exactly 50.00 EUR are charged shipping. Refs: KIEZ-23"
+      sed -i 's/> self::FREE_SHIPPING_FROM/>= self::FREE_SHIPPING_FROM/' src/Service/PriceCalculator.php
+      commit mira 2026-04-24T10:00:00+02:00 "fix(pricing): ship for free from exactly 50 euro" "Refs: KIEZ-23"
+      cat > src/Service/Cart.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Service;
+
+      use Kiez\Repository\ProductRepository;
+
+      final class Cart
+      {
+          private array $items = [];
+
+          public function __construct(private ProductRepository $products)
+          {
+          }
+
+          public function add(int $productId, int $quantity = 1): void
+          {
+              if ($this->products->find($productId) === null) {
+                  throw new \InvalidArgumentException('Produkt nicht gefunden');
+              }
+              $this->items[$productId] = ($this->items[$productId] ?? 0) + $quantity;
+          }
+
+          public function subtotal(): int
+          {
+              return array_sum(array_map(
+                  fn (int $id): int => $this->products->find($id)['price'],
+                  array_keys($this->items),
+              ));
+          }
+      }
+      EOF
+      commit tom 2026-04-29T16:20:00+02:00 "refactor(cart): compute subtotal with array functions"
+      printf '# Mitmachen\n\nBitte schreibe Commits nach Conventional Commits und nenne die Ticket-ID.\n' > CONTRIBUTING.md
+      commit mira 2026-05-04T09:00:00+02:00 "docs: add contributing guide"
+    checks:
+      - type: file_exists
+        path: antwort.txt
+        message: Lege die Datei antwort.txt mit dem Hash des verursachenden Commits an.
+      - type: command
+        run: |
+          a=$(tr -d '[:space:]' < antwort.txt | tr 'A-F' 'a-f')
+          h=$(git log --format=%H --grep='compute subtotal with array functions')
+          [ ${#a} -ge 7 ] && [ "${h#"$a"}" != "$h" ] && echo ok
+        stdout_equals: ok
+        message: Der Hash in antwort.txt zeigt nicht auf den Commit, der den Fehler eingeführt hat. Welcher Commit hat zuletzt die Berechnung in src/Service/Cart.php geändert?
+      - type: command
+        run: php tests/run.php | tail -n 1
+        stdout_equals: "6 bestanden, 0 fehlgeschlagen"
+        message: Es sind noch nicht alle Tests grün. Vergleiche subtotal() mit der Version vor dem verursachenden Commit.
+      - type: command
+        run: git diff --quiet HEAD -- tests && echo ok
+        stdout_equals: ok
+        message: Du hast Tests geändert. Stelle sie mit git restore tests wieder her und behebe den Fehler im Code.
+    hints:
+      - "Der rote Test heißt `cart sums up price times quantity`. Welche Datei rechnet die Zwischensumme aus?"
+      - "`git log --oneline -- src/Service/Cart.php` zeigt, wann Cart.php zuletzt geändert wurde. `git show <hash>` zeigt den Diff."
+      - "Im Diff fehlt bei der neuen Berechnung die Multiplikation mit der Menge `$quantity`."
+    solution: |
+      ```bash
+      cd pruefung-regression
+      php tests/run.php
+      git log --oneline -- src/Service/Cart.php
+      git show HEAD~1
+      git log --format=%h -1 -- src/Service/Cart.php > antwort.txt
+      cat > fix.php <<'EOF'
+      <?php
+      $f = 'src/Service/Cart.php';
+      $code = file_get_contents($f);
+      $old = "fn (int \$id): int => \$this->products->find(\$id)['price'],\n            array_keys(\$this->items),";
+      $new = "fn (int \$id, int \$quantity): int => \$this->products->find(\$id)['price'] * \$quantity,\n            array_keys(\$this->items),\n            \$this->items,";
+      file_put_contents($f, str_replace($old, $new, $code));
+      EOF
+      php fix.php && rm fix.php
+      php tests/run.php
+      ```
+      Einfacher geht es im Editor: Ersetze den Körper von `subtotal()` wieder durch die Schleife aus dem Commit
+      davor (`git show HEAD~1^:src/Service/Cart.php`), die Preis **mal Menge** addiert.
+  - module: verstehen-und-festhalten
+    id: pruefung-herkunft
+    type: terminal
+    title: Seit wann gibt es Events?
+    description: |
+      Klicke zuerst auf **Aufgabe vorbereiten**. Im Ordner `pruefung-herkunft` liegt der Kiezladen.
+
+      Ein neues Teammitglied fragt, wer sich mit den Events im Shop auskennt.
+
+      1. Finde den Commit, mit dem die Datei `src/Event/EventDispatcher.php` angelegt wurde. Schreibe seinen
+         Hash (mindestens 7 Zeichen) in `antwort.txt`.
+      2. Schreibe den Namen der Person, die diesen Commit verfasst hat, in `autor.txt`.
+      3. Schreibe den Klassennamen des Listeners, der im EventDispatcher registriert wird, in `listener.txt`.
+    workdir: pruefung-herkunft
+    setup: |
+      # Beispielprojekt "Kiezladen" mit fester Git-Historie (10 Commits)
+      git init -q -b main
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      commit() {
+        if [ "$1" = tom ]; then n="Tom Muster"; else n="Mira Beispiel"; fi
+        git add -A
+        GIT_AUTHOR_NAME="$n" GIT_AUTHOR_EMAIL="$1@example.com" GIT_AUTHOR_DATE="$2" \
+        GIT_COMMITTER_NAME="$n" GIT_COMMITTER_EMAIL="$1@example.com" GIT_COMMITTER_DATE="$2" \
+        git commit -q -m "$3" ${4:+-m "$4"}
+      }
+      routes() {
+        { printf '<?php\ndeclare(strict_types=1);\n\nnamespace Kiez;\n\n$router = new Router();\n'
+          printf '%s\n' "$@"; printf '\nreturn $router;\n'; } > src/routes.php
+      }
+      R1='$router->get("/", fn () => "Willkommen im Kiezladen – versandkostenfrei ab 50 €");'
+      R2='$router->get("/products", [new Controller\ProductController(), "index"]);'
+      R3='$router->get("/cart", [new Controller\CartController(), "show"]);
+      $router->post("/cart/add", [new Controller\CartController(), "add"]);'
+      R4='$router->post("/checkout", [new Controller\CheckoutController(), "store"]);'
+      mkdir -p public src/Controller src/Service src/Repository src/Dto src/Event src/Listener tests
+      printf '# Kiezladen\n\nEin kleiner Online-Shop für den Laden um die Ecke.\n' > README.md
+      printf '.PHONY: serve test\n\nserve:\n\tphp -S localhost:8000 -t public\n\ntest:\n\tphp tests/run.php\n' > Makefile
+      cat > public/index.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      require __DIR__ . '/../src/bootstrap.php';
+
+      $router = require __DIR__ . '/../src/routes.php';
+      echo $router->dispatch($_SERVER['REQUEST_METHOD'], parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+      EOF
+      cat > src/bootstrap.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      spl_autoload_register(function (string $class): void {
+          $file = __DIR__ . '/' . str_replace(['Kiez\\', '\\'], ['', '/'], $class) . '.php';
+          if (is_file($file)) {
+              require $file;
+          }
+      });
+      EOF
+      cat > src/Router.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez;
+
+      final class Router
+      {
+          private array $routes = [];
+
+          public function get(string $path, callable $handler): void
+          {
+              $this->routes['GET'][$path] = $handler;
+          }
+
+          public function post(string $path, callable $handler): void
+          {
+              $this->routes['POST'][$path] = $handler;
+          }
+
+          public function dispatch(string $method, string $path): string
+          {
+              $handler = $this->routes[$method][$path] ?? null;
+              if ($handler === null) {
+                  http_response_code(404);
+                  return 'Seite nicht gefunden';
+              }
+              return $handler();
+          }
+      }
+      EOF
+      routes "$R1"
+      commit mira 2026-03-02T09:15:00+01:00 "chore: initial project skeleton"
+      cat > src/Repository/ProductRepository.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Repository;
+
+      final class ProductRepository
+      {
+          private const PRODUCTS = [
+              1 => ['name' => 'Kaffee Hausmischung', 'price' => 1290],
+              2 => ['name' => 'Bio-Hafermilch', 'price' => 249],
+              3 => ['name' => 'Kiez-Tasse', 'price' => 1500],
+          ];
+
+          public function all(): array
+          {
+              return self::PRODUCTS;
+          }
+
+          public function find(int $id): ?array
+          {
+              return self::PRODUCTS[$id] ?? null;
+          }
+      }
+      EOF
+      cat > src/Controller/ProductController.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Controller;
+
+      use Kiez\Repository\ProductRepository;
+
+      final class ProductController
+      {
+          public function index(): string
+          {
+              $lines = [];
+              foreach ((new ProductRepository())->all() as $id => $product) {
+                  $lines[] = sprintf('%d: %s (%d Cent)', $id, $product['name'], $product['price']);
+              }
+              return implode("\n", $lines);
+          }
+      }
+      EOF
+      routes "$R1" "$R2"
+      commit mira 2026-03-04T14:40:00+01:00 "feat(catalog): list products"
+      cat > src/Service/Cart.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Service;
+
+      use Kiez\Repository\ProductRepository;
+
+      final class Cart
+      {
+          private array $items = [];
+
+          public function __construct(private ProductRepository $products)
+          {
+          }
+
+          public function add(int $productId, int $quantity = 1): void
+          {
+              if ($this->products->find($productId) === null) {
+                  throw new \InvalidArgumentException('Produkt nicht gefunden');
+              }
+              $this->items[$productId] = ($this->items[$productId] ?? 0) + $quantity;
+          }
+
+          public function subtotal(): int
+          {
+              $sum = 0;
+              foreach ($this->items as $id => $quantity) {
+                  $sum += $this->products->find($id)['price'] * $quantity;
+              }
+              return $sum;
+          }
+      }
+      EOF
+      cat > src/Controller/CartController.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Controller;
+
+      use Kiez\Repository\ProductRepository;
+      use Kiez\Service\Cart;
+
+      final class CartController
+      {
+          public static function cart(): Cart
+          {
+              session_start();
+              return $_SESSION['cart'] ??= new Cart(new ProductRepository());
+          }
+
+          public function show(): string
+          {
+              return sprintf('Zwischensumme: %d Cent', self::cart()->subtotal());
+          }
+
+          public function add(): string
+          {
+              self::cart()->add((int) ($_POST['product_id'] ?? 0));
+              return 'Zum Warenkorb hinzugefügt';
+          }
+      }
+      EOF
+      routes "$R1" "$R2" "$R3"
+      commit tom 2026-03-09T11:05:00+01:00 "feat(cart): add cart and endpoints"
+      cat > tests/run.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      require __DIR__ . '/../src/bootstrap.php';
+
+      function expect_same(mixed $expected, mixed $actual): void
+      {
+          if ($expected !== $actual) {
+              throw new RuntimeException('erwartet ' . var_export($expected, true) . ', bekommen ' . var_export($actual, true));
+          }
+      }
+
+      $passed = 0;
+      $failed = 0;
+      foreach (glob(__DIR__ . '/*Test.php') as $file) {
+          foreach (require $file as $name => $test) {
+              try {
+                  $test();
+                  $passed++;
+                  echo "  ok    $name\n";
+              } catch (Throwable $e) {
+                  $failed++;
+                  echo "  FAIL  $name: {$e->getMessage()}\n";
+              }
+          }
+      }
+      echo "\n$passed bestanden, $failed fehlgeschlagen\n";
+      exit($failed > 0 ? 1 : 0);
+      EOF
+      cat > tests/CartTest.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      use Kiez\Repository\ProductRepository;
+      use Kiez\Service\Cart;
+
+      return [
+          'cart sums up price times quantity' => function (): void {
+              $cart = new Cart(new ProductRepository());
+              $cart->add(1, 2);
+              $cart->add(2);
+              expect_same(2829, $cart->subtotal());
+          },
+          'cart rejects unknown products' => function (): void {
+              try {
+                  (new Cart(new ProductRepository()))->add(99);
+              } catch (InvalidArgumentException) {
+                  return;
+              }
+              throw new RuntimeException('keine Exception für Produkt 99');
+          },
+      ];
+      EOF
+      commit tom 2026-03-12T16:30:00+01:00 "test: add tiny test runner and cart tests"
+      cat > src/Dto/OrderSummary.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Dto;
+
+      final readonly class OrderSummary
+      {
+          public function __construct(
+              public int $subtotal,
+              public int $discount,
+              public int $shipping,
+              public int $total,
+          ) {
+          }
+      }
+      EOF
+      cat > src/Service/PriceCalculator.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Service;
+
+      use Kiez\Dto\OrderSummary;
+
+      final class PriceCalculator
+      {
+          public function summarize(int $subtotal): OrderSummary
+          {
+              $shipping = $subtotal >= 5000 ? 0 : 495;
+
+              return new OrderSummary($subtotal, 0, $shipping, $subtotal + $shipping);
+          }
+      }
+      EOF
+      cat > src/Controller/CheckoutController.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Controller;
+
+      use Kiez\Service\PriceCalculator;
+
+      final class CheckoutController
+      {
+          public function store(): string
+          {
+              $summary = (new PriceCalculator())->summarize(CartController::cart()->subtotal());
+
+              return sprintf('Danke! Summe: %d Cent (Versand: %d Cent)', $summary->total, $summary->shipping);
+          }
+      }
+      EOF
+      cat > tests/PriceCalculatorTest.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      use Kiez\Service\PriceCalculator;
+
+      return [
+          'orders below 50 euro pay shipping' => function (): void {
+              $summary = (new PriceCalculator())->summarize(4999);
+              expect_same(495, $summary->shipping);
+              expect_same(5494, $summary->total);
+          },
+          'orders above 50 euro ship for free' => function (): void {
+              expect_same(0, (new PriceCalculator())->summarize(6000)->shipping);
+          },
+      ];
+      EOF
+      routes "$R1" "$R2" "$R3" "$R4"
+      commit mira 2026-03-18T10:20:00+01:00 "feat(checkout): calculate shipping and order total"
+      cat > src/Service/PriceCalculator.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Service;
+
+      use Kiez\Dto\OrderSummary;
+
+      final class PriceCalculator
+      {
+          private const VOUCHERS = ['KIEZ10' => 10];
+
+          public function summarize(int $subtotal, ?string $voucher = null): OrderSummary
+          {
+              $discount = 0;
+              if ($voucher !== null) {
+                  $percent = self::VOUCHERS[$voucher] ?? throw new \InvalidArgumentException('Gutschein ungültig');
+                  $discount = intdiv($subtotal * $percent, 100);
+              }
+              $shipping = $subtotal - $discount >= 5000 ? 0 : 495;
+
+              return new OrderSummary($subtotal, $discount, $shipping, $subtotal - $discount + $shipping);
+          }
+      }
+      EOF
+      sed -i "s/subtotal())/subtotal(), \$_POST['voucher'] ?? null)/" src/Controller/CheckoutController.php
+      sed -i '$d' tests/PriceCalculatorTest.php
+      cat >> tests/PriceCalculatorTest.php <<'EOF'
+          'voucher KIEZ10 gives ten percent off' => function (): void {
+              $summary = (new PriceCalculator())->summarize(10000, 'KIEZ10');
+              expect_same(1000, $summary->discount);
+              expect_same(9000, $summary->total);
+          },
+      ];
+      EOF
+      commit tom 2026-03-25T13:45:00+01:00 "feat(checkout): support voucher codes" "Refs: KIEZ-12"
+      cat > src/Event/OrderPlaced.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Event;
+
+      use Kiez\Dto\OrderSummary;
+
+      final readonly class OrderPlaced
+      {
+          public function __construct(public OrderSummary $summary)
+          {
+          }
+      }
+      EOF
+      cat > src/Event/EventDispatcher.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Event;
+
+      use Kiez\Listener\SendOrderConfirmation;
+
+      final class EventDispatcher
+      {
+          private array $listeners = [];
+
+          public static function default(): self
+          {
+              $dispatcher = new self();
+              $dispatcher->listen(OrderPlaced::class, new SendOrderConfirmation());
+              return $dispatcher;
+          }
+
+          public function listen(string $event, callable $listener): void
+          {
+              $this->listeners[$event][] = $listener;
+          }
+
+          public function dispatch(object $event): void
+          {
+              foreach ($this->listeners[$event::class] ?? [] as $listener) {
+                  $listener($event);
+              }
+          }
+      }
+      EOF
+      cat > src/Listener/SendOrderConfirmation.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Listener;
+
+      use Kiez\Event\OrderPlaced;
+
+      final class SendOrderConfirmation
+      {
+          public function __invoke(OrderPlaced $event): void
+          {
+              error_log(sprintf('Bestellbestätigung über %d Cent verschickt', $event->summary->total));
+          }
+      }
+      EOF
+      cat > src/Controller/CheckoutController.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Kiez\Controller;
+
+      use Kiez\Event\EventDispatcher;
+      use Kiez\Event\OrderPlaced;
+      use Kiez\Service\PriceCalculator;
+
+      final class CheckoutController
+      {
+          public function store(): string
+          {
+              try {
+                  $summary = (new PriceCalculator())->summarize(CartController::cart()->subtotal(), $_POST['voucher'] ?? null);
+              } catch (\InvalidArgumentException $e) {
+                  http_response_code(422);
+                  return $e->getMessage();
+              }
+              EventDispatcher::default()->dispatch(new OrderPlaced($summary));
+
+              return sprintf('Danke! Summe: %d Cent (Versand: %d Cent)', $summary->total, $summary->shipping);
+          }
+      }
+      EOF
+      commit mira 2026-04-01T09:50:00+02:00 "feat(checkout): dispatch OrderPlaced event"
+      sed -i -e 's/>= 5000 ? 0 : 495/> self::FREE_SHIPPING_FROM ? 0 : self::SHIPPING_COST/' \
+        -e 's/^    private const VOUCHERS.*/    private const FREE_SHIPPING_FROM = 5000;\n    private const SHIPPING_COST = 495;\n&/' src/Service/PriceCalculator.php
+      commit tom 2026-04-08T17:10:00+02:00 "refactor(pricing): extract shipping constants" "Replaces magic numbers with named constants. Refs: KIEZ-17"
+      printf '\n## Lokal starten\n\n    make serve   # startet http://localhost:8000\n    make test    # führt alle Tests aus\n\nVoraussetzung: PHP 8.5, keine weiteren Pakete.\n' >> README.md
+      commit mira 2026-04-15T08:30:00+02:00 "docs: describe local setup in readme"
+      sed -i '$d' tests/PriceCalculatorTest.php
+      cat >> tests/PriceCalculatorTest.php <<'EOF'
+          'orders of exactly 50 euro ship for free' => function (): void {
+              expect_same(0, (new PriceCalculator())->summarize(5000)->shipping);
+          },
+      ];
+      EOF
+      commit tom 2026-04-22T15:00:00+02:00 "test(pricing): cover free shipping boundary" "Customer report: orders of exactly 50.00 EUR are charged shipping. Refs: KIEZ-23"
+    checks:
+      - type: command
+        run: |
+          a=$(tr -d '[:space:]' < antwort.txt | tr 'A-F' 'a-f')
+          h=$(git log --diff-filter=A --format=%H -- src/Event/EventDispatcher.php)
+          [ ${#a} -ge 7 ] && [ "${h#"$a"}" != "$h" ] && echo ok
+        stdout_equals: ok
+        message: Der Hash in antwort.txt passt nicht zum Commit, der EventDispatcher.php angelegt hat. Nutze git log -- src/Event/EventDispatcher.php.
+      - type: command
+        run: sed 's/[[:space:]]*$//' autor.txt | head -n 1
+        stdout_equals: Mira Beispiel
+        message: In autor.txt steht nicht der richtige Name. git log --format='%h %an %s' zeigt die Autor:innen.
+      - type: command
+        run: tr -d '[:space:]' < listener.txt
+        stdout_equals: SendOrderConfirmation
+        message: In listener.txt steht nicht der richtige Listener. Sieh dir die Methode default() im EventDispatcher an.
+    hints:
+      - "`git log --oneline -- src/Event/EventDispatcher.php` zeigt alle Commits, die die Datei berühren – der älteste hat sie angelegt."
+      - "`git log --diff-filter=A --format='%h %an' -- src/Event/EventDispatcher.php` liefert direkt Hash und Name."
+    solution: |
+      ```bash
+      cd pruefung-herkunft
+      git log --diff-filter=A --format='%h %an %s' -- src/Event/EventDispatcher.php
+      echo a3900af > antwort.txt
+      echo "Mira Beispiel" > autor.txt
+      grep -n listen src/Event/EventDispatcher.php
+      echo SendOrderConfirmation > listener.txt
+      ```
+  - module: code-archaeologie
+    id: pruefung-ticket-ids
+    type: code
+    language: php
+    title: Ticket-IDs aus einer Historie sammeln
+    description: |
+      Für einen Bericht sollen alle Tickets gesammelt werden, die in einer Git-Historie erwähnt werden.
+
+      Schreibe `ticketIds(string $log): array`. Die Funktion bekommt die Ausgabe von `git log` als Text und gibt
+      alle Ticket-IDs der Form `KIEZ-` plus Zahl zurück:
+
+      - jede ID nur einmal,
+      - aufsteigend nach der Zahl sortiert,
+      - bei keinem Treffer ein leeres Array.
+    starter: |
+      <?php
+      function ticketIds(string $log): array
+      {
+          return [];
+      }
+    tests:
+      - name: Findet und sortiert IDs
+        code: "assert_same(['KIEZ-12', 'KIEZ-17'], ticketIds(\"fix: a\\nRefs: KIEZ-17\\nfeat: b\\nRefs: KIEZ-12\"));"
+      - name: Entfernt doppelte IDs
+        code: "assert_same(['KIEZ-23'], ticketIds('KIEZ-23 and again KIEZ-23'));"
+      - name: Leerer Text ergibt leeres Array
+        code: "assert_same([], ticketIds(''));"
+      - name: Sortiert numerisch, nicht alphabetisch
+        code: "assert_same(['KIEZ-9', 'KIEZ-10'], ticketIds('KIEZ-10 KIEZ-9'));"
+    hints:
+      - "`preg_match_all('/KIEZ-(\\d+)/', $log, $m)` liefert in `$m[1]` alle Zahlen."
+      - "`array_unique`, `sort` mit Zahlen und `array_map` für das Präfix bringen dich ans Ziel."
+    solution: |
+      <?php
+      function ticketIds(string $log): array
+      {
+          preg_match_all('/KIEZ-(\d+)/', $log, $matches);
+          $numbers = array_unique(array_map('intval', $matches[1]));
+          sort($numbers);
+
+          return array_map(fn (int $n): string => 'KIEZ-' . $n, $numbers);
+      }

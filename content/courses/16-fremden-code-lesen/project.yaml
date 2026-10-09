@@ -1,0 +1,349 @@
+title: Onboarding im Kiezladen
+description: |
+  In diesem Projekt arbeitest du dich vollständig in den Kiezladen ein – so, wie du es an deinem ersten Tag in
+  einem echten Team tun würdest. Du hältst alles in einer `NOTES.md` fest: wie man das Projekt testet, wo es
+  beginnt, welchen Weg ein Checkout nimmt und welche Muster es nutzt. Dann jagst du den Versandfehler aus
+  Ticket KIEZ-23 bis zu seinem Commit zurück, behebst ihn und committest den Fix sauber.
+
+  Du arbeitest im Ordner `kiezladen` deines Workspaces. Angelegt wird er von der Modulübung
+  **„Ein Steckbrief für den Kiezladen“** in Modul 1: Öffne sie und klicke auf **Aufgabe vorbereiten**, falls
+  du das noch nicht getan hast. Achtung: Ein erneutes Vorbereiten setzt den Ordner komplett zurück.
+
+  Die Schritte bauen aufeinander auf. Alle Abschnitte schreibst du in dieselbe Datei `NOTES.md` – lösche
+  zwischendurch nichts, sonst schlagen frühere Prüfungen wieder fehl.
+goal: >
+  Im Ordner `kiezladen` liegt eine committete `NOTES.md` mit den Abschnitten Setup, Einstiegspunkte,
+  Request-Ablauf, Muster, Bug und Herkunft. Alle Tests sind grün, und der Fix steckt in einem
+  `fix`-Commit mit Verweis auf KIEZ-23.
+workdir: kiezladen
+steps:
+  - id: setup-notieren
+    title: Notizen anlegen und die Ausgangslage festhalten
+    description: |
+      Jede Einarbeitung beginnt mit der Ausgangslage: Wie startet man die Tests, und was ist schon rot?
+
+      1. Wechsle mit `cd kiezladen` in den Projektordner und lies README und Makefile.
+      2. Führe die Tests aus.
+      3. Lege `NOTES.md` an. Die erste Zeile ist eine Überschrift, z. B. `# Onboarding-Notizen Kiezladen`.
+      4. Schreibe einen Abschnitt `## Setup` mit dem Befehl, mit dem du die Tests startest, und dem Ergebnis
+         des ersten Testlaufs (wie viele bestanden, wie viele fehlgeschlagen).
+    checklist:
+      - README und Makefile gelesen
+      - Tests einmal ausgeführt
+      - NOTES.md mit Überschrift und Abschnitt Setup
+    hints:
+      - "`make test` ruft `php tests/run.php` auf. Die letzte Zeile der Ausgabe ist dein Ergebnis."
+      - "Schreibe Markdown: `## Setup` als eigene Zeile, darunter Stichpunkte mit `- `."
+    checks:
+      - type: file_contains
+        path: NOTES.md
+        pattern: "^# \\S"
+        message: NOTES.md fehlt oder beginnt nicht mit einer Überschrift wie „# Onboarding-Notizen Kiezladen“.
+      - type: command
+        run: awk '/^## Setup/{f=1;next} /^## /{f=0} f' NOTES.md | grep -cE 'make test|php tests/run\.php'
+        stdout_matches: "^\\s*[1-9]"
+        message: Im Abschnitt „## Setup“ fehlt der Befehl, mit dem du die Tests startest (make test oder php tests/run.php).
+      - type: command
+        run: awk '/^## Setup/{f=1;next} /^## /{f=0} f' NOTES.md | grep -cE '5 bestanden|1 fehlgeschlagen|1 (roter|rot|Test)'
+        stdout_matches: "^\\s*[1-9]"
+        message: Notiere im Abschnitt „## Setup“ auch das Ergebnis des ersten Testlaufs, z. B. „5 bestanden, 1 fehlgeschlagen“.
+    solution: |
+      ```bash
+      cd kiezladen
+      cat README.md Makefile
+      make test
+      cat > NOTES.md <<'EOF'
+      # Onboarding-Notizen Kiezladen
+
+      ## Setup
+      - Tests: make test (ruft php tests/run.php auf)
+      - Erster Lauf: 5 bestanden, 1 fehlgeschlagen
+      EOF
+      ```
+  - id: einstiegspunkte
+    title: Einstiegspunkte festhalten
+    description: |
+      Jetzt notierst du, wo Anfragen in die Anwendung kommen.
+
+      1. Lies `public/index.php` und `src/routes.php`.
+      2. Ergänze in `NOTES.md` einen Abschnitt `## Einstiegspunkte`. Nenne darin den Front Controller
+         (`public/index.php`), die Routen-Datei (`src/routes.php`) und den Ordner der Tests (`tests/`), denn
+         auch der Test-Runner ist ein Einstiegspunkt.
+      3. Liste alle fünf Routen mit Methode und Pfad auf, z. B. `GET /products → ProductController::index`.
+    checklist:
+      - Front Controller und Routen-Datei notiert
+      - Alle fünf Routen mit Methode, Pfad und Handler aufgelistet
+    hints:
+      - "`grep -nE 'router->(get|post)' src/routes.php` zeigt alle Routen auf einen Blick."
+      - "Hänge mit `cat >> NOTES.md <<'EOF'` … `EOF` einen neuen Abschnitt an die Datei an."
+    checks:
+      - type: command
+        run: |
+          s=$(awk '/^## Einstiegspunkte/{f=1;next} /^## /{f=0} f' NOTES.md)
+          echo "$s" | grep -q 'public/index\.php' && echo "$s" | grep -q 'src/routes\.php' && echo ok
+        stdout_equals: ok
+        message: Im Abschnitt „## Einstiegspunkte“ sollen public/index.php und src/routes.php vorkommen.
+      - type: command
+        run: |
+          s=$(awk '/^## Einstiegspunkte/{f=1;next} /^## /{f=0} f' NOTES.md)
+          n=0
+          for r in 'GET /products' 'GET /cart' 'POST /cart/add' 'POST /checkout'; do
+            echo "$s" | grep -qF "$r" && n=$((n+1))
+          done
+          echo "$s" | grep -qE 'GET /( |$|→|-)' && n=$((n+1))
+          echo $n
+        stdout_equals: "5"
+        message: "Im Abschnitt „## Einstiegspunkte“ fehlen Routen. Erwartet werden alle fünf im Format „METHODE /pfad“: GET /, GET /products, GET /cart, POST /cart/add und POST /checkout."
+    solution: |
+      ```bash
+      cat >> NOTES.md <<'EOF'
+
+      ## Einstiegspunkte
+      - Web: public/index.php (Front Controller), Routen in src/routes.php
+      - Tests: tests/run.php startet alle *Test.php-Dateien
+      - GET / → Begrüßungstext
+      - GET /products → ProductController::index
+      - GET /cart → CartController::show
+      - POST /cart/add → CartController::add
+      - POST /checkout → CheckoutController::store
+      EOF
+      ```
+  - id: request-ablauf
+    title: Einen Checkout von Anfang bis Ende verfolgen
+    description: |
+      Verfolge `POST /checkout` durch den Code und halte die Stationen fest.
+
+      1. Beginne bei `public/index.php` und folge dem Request über die Route bis in den `CheckoutController`.
+      2. Lies `store()` und folge jedem Aufruf bis zur Bestellbestätigung.
+      3. Ergänze den Abschnitt `## Request-Ablauf: POST /checkout` mit den Stationen **in dieser Reihenfolge**:
+         `index.php`, `routes.php`, `CheckoutController`, `PriceCalculator`, `OrderPlaced`,
+         `SendOrderConfirmation` – gern mit Zwischenschritten und einem Satz pro Station.
+    checklist:
+      - Stationen in der richtigen Reihenfolge
+      - Pro Station ein kurzer Satz, was dort passiert
+    hints:
+      - "Eine Zeile pro Station, nummeriert mit `1.`, `2.` … ist am übersichtlichsten."
+      - "Nach `summarize()` erzeugt der Controller ein `OrderPlaced`-Event, auf das `SendOrderConfirmation` reagiert."
+    checks:
+      - type: command
+        run: |
+          s=$(awk '/^## Request-Ablauf/{f=1;next} /^## /{f=0} f' NOTES.md)
+          prev=0
+          for w in index.php routes.php CheckoutController PriceCalculator OrderPlaced SendOrderConfirmation; do
+            n=$(echo "$s" | grep -n -m1 -F "$w" | cut -d: -f1)
+            [ -n "$n" ] && [ "$n" -gt "$prev" ] || { echo "$w"; exit 1; }
+            prev=$n
+          done
+          echo ok
+        stdout_equals: ok
+        message: "Im Abschnitt „## Request-Ablauf“ fehlt eine Station oder die Reihenfolge stimmt nicht (jede Station in einer eigenen Zeile): index.php, routes.php, CheckoutController, PriceCalculator, OrderPlaced, SendOrderConfirmation."
+    solution: |
+      ```bash
+      cat >> NOTES.md <<'EOF'
+
+      ## Request-Ablauf: POST /checkout
+      1. public/index.php lädt den Autoloader (bootstrap.php)
+      2. routes.php liefert den Router mit allen Routen
+      3. CheckoutController::store holt den Warenkorb aus der Session
+      4. PriceCalculator berechnet Rabatt, Versand und Summe (gibt OrderSummary zurück)
+      5. Der Controller meldet das Event OrderPlaced
+      6. SendOrderConfirmation reagiert und protokolliert die Bestätigung
+      EOF
+      ```
+  - id: muster
+    title: Die Muster benennen
+    description: |
+      Ergänze einen Abschnitt `## Muster`. Erkläre in je einem Satz die Rolle dieser drei Klassen und nenne das
+      Muster dahinter:
+
+      - `OrderSummary` (DTO)
+      - `OrderPlaced` (Event)
+      - `SendOrderConfirmation` (Listener)
+    checklist:
+      - Drei Klassen mit ihrem Muster
+      - Je ein Satz zur Rolle
+    hints:
+      - Ein DTO transportiert Daten ohne Logik, ein Event meldet etwas, ein Listener reagiert.
+    checks:
+      - type: command
+        run: |
+          s=$(awk '/^## Muster/{f=1;next} /^## /{f=0} f' NOTES.md)
+          n=0
+          echo "$s" | grep -i 'OrderSummary' | grep -qi 'dto' && n=$((n+1))
+          echo "$s" | grep -i 'OrderPlaced' | grep -qi 'event' && n=$((n+1))
+          echo "$s" | grep -i 'SendOrderConfirmation' | grep -qi 'listener' && n=$((n+1))
+          echo $n
+        stdout_equals: "3"
+        message: Im Abschnitt „## Muster“ soll jede der drei Klassen in einer Zeile zusammen mit ihrem Muster stehen – OrderSummary mit DTO, OrderPlaced mit Event, SendOrderConfirmation mit Listener.
+    solution: |
+      ```bash
+      cat >> NOTES.md <<'EOF'
+
+      ## Muster
+      - OrderSummary ist ein DTO: transportiert Zwischensumme, Rabatt, Versand und Summe, ohne eigene Logik.
+      - OrderPlaced ist ein Event: meldet, dass eine Bestellung abgeschlossen wurde.
+      - SendOrderConfirmation ist ein Listener: reagiert auf OrderPlaced und bestätigt die Bestellung.
+      EOF
+      ```
+  - id: bug-eingrenzen
+    title: Den Fehler eingrenzen
+    description: |
+      Jetzt nimmst du dir Ticket KIEZ-23 vor: „Bei genau 50,00 € wird Versand berechnet.“
+
+      1. Finde den roten Test und lies, was er erwartet.
+      2. Finde die Zeile im Code, die die Versandkosten berechnet.
+      3. Ergänze einen Abschnitt `## Bug` mit dem Namen des roten Tests, dem Pfad der betroffenen Datei
+         (`src/…`) und einem Satz, warum 5000 Cent falsch behandelt werden.
+    checklist:
+      - Roter Test notiert
+      - Betroffene Datei und Zeile gefunden
+      - Ursache in einem Satz erklärt
+    hints:
+      - "`grep -rn FREE_SHIPPING_FROM src` führt dich zur Berechnung."
+      - "Vergleiche den Operator in der Zeile mit der Anforderung „ab 50 €“."
+    checks:
+      - type: command
+        run: awk '/^## Bug/{f=1;next} /^## /{f=0} f' NOTES.md | grep -c 'orders of exactly 50 euro ship for free'
+        stdout_matches: "^\\s*[1-9]"
+        message: Im Abschnitt „## Bug“ fehlt der vollständige Name des roten Tests.
+      - type: command
+        run: awk '/^## Bug/{f=1;next} /^## /{f=0} f' NOTES.md | grep -c 'src/Service/PriceCalculator\.php'
+        stdout_matches: "^\\s*[1-9]"
+        message: Im Abschnitt „## Bug“ fehlt der Pfad der betroffenen Datei (src/Service/PriceCalculator.php).
+    solution: |
+      ```bash
+      make test
+      grep -rn FREE_SHIPPING_FROM src
+      cat >> NOTES.md <<'EOF'
+
+      ## Bug
+      - Roter Test: orders of exactly 50 euro ship for free
+      - Datei: src/Service/PriceCalculator.php, Zeile mit $shipping = …
+      - Ursache: Der Vergleich nutzt > statt >=, also zahlt eine Bestellung über genau 5000 Cent Versand.
+      EOF
+      ```
+  - id: herkunft
+    title: Den verursachenden Commit finden
+    description: |
+      Ein guter Fix erklärt, woher ein Fehler kommt. Finde den Commit, der ihn eingeführt hat.
+
+      1. Nutze `git blame` auf die Zeile mit dem Vergleich oder `git log -S FREE_SHIPPING_FROM`.
+      2. Sieh dir den Commit mit `git show` an.
+      3. Ergänze einen Abschnitt `## Herkunft` mit dem Hash des Commits (mindestens 7 Zeichen), seiner
+         Ticket-ID und einem Satz, was in diesem Commit schiefging.
+    checklist:
+      - Commit mit blame oder log -S gefunden
+      - Diff mit git show gelesen
+      - Hash und Ticket-ID notiert
+    hints:
+      - "`git blame -L 21,21 src/Service/PriceCalculator.php` zeigt den Commit der letzten Änderung."
+      - "Die Ticket-ID steht unter dem Betreff: `git show -s <hash>`."
+    checks:
+      - type: command
+        run: |
+          s=$(awk '/^## Herkunft/{f=1;next} /^## /{f=0} f' NOTES.md)
+          h=$(git log -S FREE_SHIPPING_FROM --reverse --format=%H | head -n 1)
+          for w in $(echo "$s" | grep -oE '[0-9a-f]{7,40}'); do
+            case "$h" in "$w"*) echo ok; exit 0;; esac
+          done
+          exit 1
+        stdout_equals: ok
+        message: Im Abschnitt „## Herkunft“ fehlt der Hash des verursachenden Commits (mindestens 7 Zeichen, kleingeschrieben). Der Commit mit dem roten Test hat den Fehler nur sichtbar gemacht.
+      - type: command
+        run: awk '/^## Herkunft/{f=1;next} /^## /{f=0} f' NOTES.md | grep -c 'KIEZ-17'
+        stdout_matches: "^\\s*[1-9]"
+        message: Im Abschnitt „## Herkunft“ fehlt die Ticket-ID aus der Commit-Message des verursachenden Commits.
+    solution: |
+      ```bash
+      git blame -L 21,21 src/Service/PriceCalculator.php
+      git show 862c991
+      cat >> NOTES.md <<'EOF'
+
+      ## Herkunft
+      - Commit 862c991 (Tom Muster, 2026-04-08): refactor(pricing): extract shipping constants, Refs: KIEZ-17
+      - Beim Auslagern von 5000 in FREE_SHIPPING_FROM wurde aus >= versehentlich >.
+      EOF
+      ```
+  - id: fixen
+    title: Den Fehler beheben
+    description: |
+      Jetzt änderst du endlich Code – genau eine Stelle.
+
+      1. Korrigiere in `src/Service/PriceCalculator.php` den Vergleich, sodass der Versand **ab** 5000 Cent
+         kostenlos ist. Die Konstanten `FREE_SHIPPING_FROM` und `SHIPPING_COST` bleiben erhalten.
+      2. Führe die Tests aus. Alle sechs müssen grün sein.
+      3. Ändere **keine** Tests – der rote Test ist die Anforderung.
+    checklist:
+      - Vergleich korrigiert, Konstanten erhalten
+      - Alle Tests grün
+      - Tests unverändert
+    hints:
+      - Aus `>` muss `>=` werden.
+      - "`sed -i 's/> self::FREE_SHIPPING_FROM/>= self::FREE_SHIPPING_FROM/' src/Service/PriceCalculator.php` erledigt das in einem Schritt – oder du nutzt nano."
+    checks:
+      - type: command
+        run: php tests/run.php | tail -n 1
+        stdout_equals: "6 bestanden, 0 fehlgeschlagen"
+        message: Noch sind nicht alle Tests grün. Führe php tests/run.php aus und prüfe den Vergleich im PriceCalculator.
+      - type: command
+        run: |
+          c=$(git log --format=%H --grep='cover free shipping boundary' | tail -n 1)
+          git diff --quiet "$c" -- tests && echo ok
+        stdout_equals: ok
+        message: Du hast Dateien im Ordner tests geändert. Stelle sie mit git restore tests bzw. git checkout <commit> -- tests wieder her – geändert wird der Code, nicht die Anforderung.
+      - type: command
+        run: grep -c 'FREE_SHIPPING_FROM' src/Service/PriceCalculator.php
+        stdout_matches: "^\\s*([2-9]|[1-9][0-9])\\s*$"
+        message: Die Konstante FREE_SHIPPING_FROM soll erhalten bleiben und weiterhin im Vergleich benutzt werden.
+    solution: |
+      ```bash
+      sed -i 's/> self::FREE_SHIPPING_FROM/>= self::FREE_SHIPPING_FROM/' src/Service/PriceCalculator.php
+      git diff
+      make test
+      ```
+  - id: committen
+    title: Fix und Notizen committen
+    description: |
+      Zum Schluss committest du deine Arbeit so, dass die nächste Person sie in der Historie wiederfindet.
+
+      1. Committe den Fix mit einer Nachricht vom Typ `fix`, z. B. `fix(pricing): ship for free from exactly 50 euro`,
+         und füge im Nachrichtentext die Zeile `Refs: KIEZ-23` hinzu (zweites `-m`).
+      2. Committe auch `NOTES.md` – im selben oder in einem eigenen `docs`-Commit.
+      3. Am Ende ist nichts in `src`, `tests` oder `NOTES.md` mehr ungespeichert.
+    checklist:
+      - fix-Commit mit Verweis auf KIEZ-23
+      - NOTES.md committet
+      - Arbeitsverzeichnis sauber
+    hints:
+      - "`git commit -m \"fix(pricing): ship for free from exactly 50 euro\" -m \"Refs: KIEZ-23\"` erzeugt Betreff und Nachrichtentext."
+      - "`git status` zeigt, was noch fehlt. `steckbrief.md` aus Modul 1 darf liegen bleiben."
+    checks:
+      - type: command
+        run: |
+          c=$(git log --format=%H --grep='cover free shipping boundary' | tail -n 1)
+          git merge-base --is-ancestor "$c" HEAD && git log --format=%s "$c"..HEAD -- src/Service/PriceCalculator.php | grep -cE '^fix(\([^()]+\))?!?: \S'
+        stdout_matches: "^\\s*[1-9]"
+        message: "Es fehlt ein Commit vom Typ fix, der src/Service/PriceCalculator.php ändert – oben auf der bisherigen Historie, z. B. „fix(pricing): ship for free from exactly 50 euro“."
+      - type: command
+        run: |
+          c=$(git log --format=%H --grep='cover free shipping boundary' | tail -n 1)
+          git log --format=%B "$c"..HEAD | grep -c 'KIEZ-23'
+        stdout_matches: "^\\s*[1-9]"
+        message: In deinen neuen Commits fehlt der Verweis auf das Ticket. Ergänze im fix-Commit die Zeile „Refs KIEZ-23“ im Nachrichtentext, z. B. mit git commit --amend.
+      - type: command
+        run: git ls-files NOTES.md
+        stdout_equals: NOTES.md
+        message: NOTES.md ist noch nicht committet.
+      - type: command
+        run: git status --porcelain -- src tests NOTES.md | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: In src, tests oder NOTES.md gibt es noch ungespeicherte Änderungen. Prüfe mit git status und committe sie.
+    solution: |
+      ```bash
+      git add src/Service/PriceCalculator.php
+      git commit -m "fix(pricing): ship for free from exactly 50 euro" -m "Refs: KIEZ-23"
+      git add NOTES.md
+      git commit -m "docs: add onboarding notes"
+      git log --oneline -3
+      git status
+      ```
