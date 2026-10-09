@@ -1,0 +1,105 @@
+title: Der Git-Werkzeugkasten
+description: Fehler rückgängig machen, Arbeit zwischenlagern, Dateien ignorieren, Versionen taggen und Abläufe mit Hooks automatisieren.
+exercise:
+  id: modul-uebung-werkzeugkasten
+  type: terminal
+  title: Release-Tag mitten im Umbau
+  description: |
+    Im Ordner `werkzeug-uebung` liegt ein Shop-Projekt. Du baust gerade die Startseite um – die Änderung an
+    `index.html` ist noch nicht fertig und nicht committet. Da kommt die Ansage: Version **2.0.0** muss heute
+    raus. Vorher muss aber noch aufgeräumt werden:
+
+    - Der bereits geteilte Commit **„feat: add tracking script“** soll nicht ins Release. Mache ihn rückgängig,
+      **ohne** die Historie umzuschreiben.
+    - Im Ordner liegt eine Logdatei `debug.log`. Sie und alle anderen `*.log`-Dateien sollen künftig ignoriert
+      werden – lege dafür eine `.gitignore` an und committe sie.
+
+    So gehst du vor:
+
+    1. Parke deine halbfertige Änderung an `index.html` im Stash (der Revert ändert dieselbe Datei).
+    2. Revertiere „feat: add tracking script“ und committe die `.gitignore`.
+    3. Setze einen **annotierten** Tag `v2.0.0` auf den neuen Stand (`HEAD`).
+    4. Hole deine halbfertige Änderung aus dem Stash zurück. Sie bleibt uncommittet, der Stash ist danach leer.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit das Repository angelegt wird.
+  workdir: werkzeug-uebung
+  setup: |
+    git init -q
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    printf '<h1>Mini-Shop</h1>\n<p>Angebote</p>\n<ul>\n  <li>Tasse</li>\n  <li>Teller</li>\n</ul>\n' > index.html
+    git add index.html
+    git commit -q -m "chore: initial commit"
+    printf 'console.log("tracking");\n' > tracking.js
+    printf '<script src="tracking.js"></script>\n' >> index.html
+    git add tracking.js index.html
+    git commit -q -m "feat: add tracking script"
+    printf 'body { font-family: sans-serif; }\n' > style.css
+    git add style.css
+    git commit -q -m "feat: add styles"
+    sed -i 's|<p>Angebote</p>|<p>Angebote der Woche</p>|' index.html
+    printf 'Server gestartet\n' > debug.log
+  checks:
+    - type: command
+      run: |-
+        git log --format=%s | grep -q '^Revert "feat: add tracking script"'
+      message: "Es gibt noch keinen Revert-Commit für „feat: add tracking script“."
+    - type: file_absent
+      path: tracking.js
+      message: tracking.js ist noch da – der Revert fehlt oder ist unvollständig.
+    - type: command
+      run: git show HEAD:index.html | grep -c tracking.js
+      expect_exit: 1
+      message: Im committeten Stand von index.html steht noch das Tracking-Skript.
+    - type: command
+      run: |-
+        git log --format=%s | grep -c "^feat: add tracking script$"
+      stdout_matches: "^\\s*1\\s*$"
+      message: Der Tracking-Commit muss in der Historie bleiben – nutze revert statt reset.
+    - type: command
+      run: git ls-files .gitignore
+      stdout_equals: .gitignore
+      message: Die .gitignore ist noch nicht committet.
+    - type: command
+      run: git check-ignore -q debug.log && git check-ignore -q --no-index logs/app.log
+      message: debug.log beziehungsweise andere .log-Dateien werden noch nicht ignoriert.
+    - type: command
+      run: git ls-files debug.log | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: debug.log darf nicht committet werden.
+    - type: command
+      run: git cat-file -t v2.0.0
+      stdout_equals: tag
+      message: Es gibt noch keinen annotierten Tag v2.0.0.
+    - type: command
+      run: test "$(git rev-parse 'v2.0.0^{commit}')" = "$(git rev-parse HEAD)"
+      message: v2.0.0 zeigt noch nicht auf den aktuellen Commit (HEAD).
+    - type: file_contains
+      path: index.html
+      pattern: "Angebote der Woche"
+      message: Deine halbfertige Änderung an index.html fehlt noch – hol sie aus dem Stash zurück.
+    - type: command
+      run: git status --porcelain index.html
+      stdout_matches: "^ M index\\.html"
+      message: Die Änderung an index.html soll zurück, aber uncommittet bleiben.
+    - type: command
+      run: git stash list | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: Im Stash liegt noch etwas – nutze git stash pop.
+  hints:
+    - Reihenfolge ist alles – erst stashen, dann revertieren, committen und taggen, ganz zum Schluss `git stash pop`.
+    - "`git revert --no-edit <hash>` übernimmt die vorgeschlagene Nachricht. Den Hash zeigt `git log --oneline`."
+    - "Für die `.gitignore` reicht eine Zeile `*.log`. Der Tag: `git tag -a v2.0.0 -m \"Release 2.0.0\"`."
+  solution: |
+    ```bash
+    cd werkzeug-uebung
+    git stash push -m "startseite halbfertig"
+    git log --oneline                        # Hash von "feat: add tracking script" ablesen
+    git revert --no-edit <hash>
+    printf '*.log\n' > .gitignore
+    git add .gitignore
+    git commit -m "chore: ignore log files"
+    git tag -a v2.0.0 -m "Release 2.0.0"
+    git stash pop
+    git status                               # index.html geändert, sonst sauber
+    ```

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="800" height="420" fill="#ffffff"/>
+<text x="400" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Was im Ordner .git steckt</text>
+<rect x="30" y="60" width="230" height="330" rx="16" fill="#22d3ee" fill-opacity=".10" stroke="#22d3ee" stroke-width="3"/>
+<text x="145" y="92" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">mein-projekt/</text>
+<text x="56" y="132" font-size="15" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace" font-weight="700">.git/</text>
+<text x="56" y="166" font-size="15" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">index.html</text>
+<text x="56" y="196" font-size="15" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">style.css</text>
+<text x="56" y="226" font-size="15" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">README.md</text>
+<text x="56" y="290" font-size="13" fill="#475569">Deine Dateien =</text>
+<text x="56" y="310" font-size="13" fill="#475569">Arbeitsverzeichnis</text>
+<path d="M110 127 C 200 127, 220 100, 290 100" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="6 5"/>
+<rect x="290" y="60" width="480" height="330" rx="16" fill="#a78bfa" fill-opacity=".10" stroke="#a78bfa" stroke-width="3"/>
+<rect x="310" y="78" width="440" height="56" rx="10" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+<text x="326" y="102" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">HEAD</text>
+<text x="326" y="124" font-size="13" fill="#475569">Zeigt auf den aktuellen Branch, z. B. refs/heads/main</text>
+<rect x="310" y="144" width="440" height="56" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+<text x="326" y="168" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">config</text>
+<text x="326" y="190" font-size="13" fill="#475569">Lokale Einstellungen nur für dieses Repository</text>
+<rect x="310" y="210" width="440" height="56" rx="10" fill="#ffffff" stroke="#34d399" stroke-width="2"/>
+<text x="326" y="234" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">objects/</text>
+<text x="326" y="256" font-size="13" fill="#475569">Die Objektdatenbank: Inhalte, Ordner-Listen, Commits</text>
+<rect x="310" y="276" width="440" height="56" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="326" y="300" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">refs/</text>
+<text x="326" y="322" font-size="13" fill="#475569">Namen für Commits: Branches (heads/) und Tags (tags/)</text>
+<text x="326" y="368" font-size="13" fill="#475569"><tspan font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">index</tspan> (Staging-Bereich), <tspan font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">hooks/</tspan>, <tspan font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">logs/</tspan> … kommen später</text>
+</svg>

@@ -1,0 +1,85 @@
+title: Historie & Branches
+description: Die Historie lesen, parallel in Branches arbeiten, Branches zusammenführen und Merge-Konflikte lösen.
+exercise:
+  id: modul-uebung-branches
+  type: terminal
+  title: Team-Seite mit Branches, Merge und Konflikt
+  description: |
+    Im Ordner `branches-uebung` liegt ein Repository mit der Datei `team.txt`. Darin steht die Zeile
+    `Teamleitung: offen`. Außerdem gibt es den Branch `fix/teamleitung`, auf dem jemand diese Zeile zu
+    `Teamleitung: Grace Hopper` geändert hat.
+
+    1. Lege von `main` aus den Branch `feat/team` an und wechsle dorthin.
+    2. Ändere dort die Zeile zu `Teamleitung: Ada Lovelace` und committe.
+    3. Wechsle auf `main` und merge `feat/team` **mit einem Merge-Commit** (`--no-ff`).
+    4. Merge danach `fix/teamleitung` in `main`. Es entsteht ein Konflikt.
+    5. Löse ihn so, dass in `team.txt` genau diese Zeile steht: `Teamleitung: Ada Lovelace, Grace Hopper`.
+       Alle anderen Zeilen bleiben, alle Konfliktmarker verschwinden. Schließe den Merge mit einem Commit ab.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit das Repository angelegt wird.
+  workdir: branches-uebung
+  setup: |
+    git init -q
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    printf 'Unser Team\nTeamleitung: offen\nKontakt: team@example.com\n' > team.txt
+    git add team.txt
+    git commit -q -m "docs: add team page"
+    git switch -q -c fix/teamleitung
+    printf 'Unser Team\nTeamleitung: Grace Hopper\nKontakt: team@example.com\n' > team.txt
+    git commit -q -am "fix: name team lead"
+    git switch -q main
+  checks:
+    - type: command
+      run: git rev-parse --abbrev-ref HEAD
+      stdout_equals: main
+      message: Du solltest am Ende auf main stehen.
+    - type: command
+      run: "git show feat/team:team.txt | grep -qxF 'Teamleitung: Ada Lovelace'"
+      message: "Auf feat/team fehlt noch der Commit mit der Zeile „Teamleitung: Ada Lovelace“."
+    - type: command
+      run: git merge-base --is-ancestor feat/team main
+      message: feat/team ist noch nicht in main gemergt.
+    - type: command
+      run: git merge-base --is-ancestor fix/teamleitung main
+      message: fix/teamleitung ist noch nicht in main gemergt.
+    - type: command
+      run: git rev-list --merges main | wc -l
+      stdout_matches: "^\\s*2\\s*$"
+      message: Auf main sollte es genau zwei Merge-Commits geben – einen für feat/team (mit --no-ff) und einen für fix/teamleitung.
+    - type: command
+      run: test ! -f .git/MERGE_HEAD
+      message: Der Merge von fix/teamleitung ist noch nicht abgeschlossen (git add, dann git commit).
+    - type: command
+      run: grep -qE '^(<<<<<<<|=======|>>>>>>>)' team.txt
+      expect_exit: 1
+      message: In team.txt stehen noch Konfliktmarker.
+    - type: command
+      run: "grep -qxF 'Teamleitung: Ada Lovelace, Grace Hopper' team.txt && grep -c '^Teamleitung:' team.txt"
+      stdout_matches: "^\\s*1\\s*$"
+      message: "team.txt muss genau eine Teamleitung-Zeile enthalten: „Teamleitung: Ada Lovelace, Grace Hopper“."
+    - type: command
+      run: "grep -qxF 'Unser Team' team.txt && grep -qxF 'Kontakt: team@example.com' team.txt"
+      message: Die übrigen Zeilen von team.txt sollen erhalten bleiben.
+    - type: command
+      run: git status --porcelain | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: Es gibt noch nicht committete Änderungen.
+  hints:
+    - "Erst `git switch -c feat/team`, ändern, committen. Dann zurück auf main und `git merge --no-ff --no-edit feat/team`."
+    - "Beim Merge von fix/teamleitung zeigt `git status` die Datei als „both modified“. Öffne team.txt mit `nano`."
+    - "Ersetze den ganzen Block von `<<<<<<<` bis `>>>>>>>` durch die eine gewünschte Zeile, dann `git add team.txt` und `git commit --no-edit`."
+  solution: |
+    ```bash
+    cd branches-uebung
+    git switch -c feat/team
+    sed -i 's/^Teamleitung: offen$/Teamleitung: Ada Lovelace/' team.txt
+    git commit -am "docs: name ada as team lead"
+    git switch main
+    git merge --no-ff --no-edit feat/team
+    git merge fix/teamleitung          # CONFLICT in team.txt
+    printf 'Unser Team\nTeamleitung: Ada Lovelace, Grace Hopper\nKontakt: team@example.com\n' > team.txt
+    git add team.txt
+    git commit --no-edit
+    git log --graph --oneline
+    ```

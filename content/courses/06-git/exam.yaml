@@ -1,0 +1,425 @@
+title: Abschlussprüfung Git
+description: |
+  Diese Prüfung deckt alle fünf Module ab: Grundlagen, Commits, Branches, Zusammenarbeit mit Remotes
+  und den Git-Werkzeugkasten. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben –
+  zwei davon im echten Übungs-Terminal, eine als Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast,
+  und kannst gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Grundlagen ---
+  - module: grundlagen
+    type: single
+    question: Was speichert Git bei einem Commit?
+    options:
+      - Nur die Zeilen, die sich seit dem letzten Commit geändert haben.
+      - Einen Schnappschuss aller vorgemerkten Dateien mit Autor, Zeit, Nachricht und Vorgänger.
+      - Eine Kopie des gesamten Ordners inklusive `.git`.
+      - Nur die Dateinamen, nicht die Inhalte.
+    answer: 1
+    explanation: >
+      Ein Commit ist ein vollständiger Schnappschuss. Unveränderte Dateien speichert Git dabei nicht doppelt,
+      sondern verweist auf den bereits vorhandenen Inhalt in der Objektdatenbank.
+  - module: grundlagen
+    type: match
+    question: Ordne jeder Konfigurationsebene den Ort zu, an dem Git sie speichert.
+    pairs:
+      - { left: "--system", right: "Für alle Benutzer des Rechners" }
+      - { left: "--global", right: "Für deinen Benutzer, Datei ~/.gitconfig" }
+      - { left: "--local", right: "Nur für dieses Repository, Datei .git/config" }
+    explanation: >
+      Je spezieller die Ebene, desto höher ihre Priorität: Ein Wert in `.git/config` überschreibt denselben
+      Schlüssel aus `~/.gitconfig`.
+  - module: grundlagen
+    type: cloze
+    text: Mit `git config --global init.___ main` legst du fest, wie der erste Branch neuer Repositorys heißt. Alle Commits liegen im versteckten Ordner `___`.
+    blanks:
+      - [defaultBranch, defaultbranch]
+      - [.git, ".git/"]
+    explanation: >
+      `init.defaultBranch` bestimmt den Namen des Standard-Branches. Der Ordner `.git` ist das Gedächtnis des
+      Repositorys – ohne ihn ist die Historie weg.
+  - module: grundlagen
+    type: single
+    question: Du hast `app.js` geändert und `git add app.js` ausgeführt. Danach änderst du `app.js` noch einmal und committest sofort. Was landet im Commit?
+    options:
+      - Beide Änderungen.
+      - Nur der Stand zum Zeitpunkt von `git add`.
+      - Gar nichts, weil die Datei erneut geändert wurde.
+      - Nur die zweite Änderung.
+    answer: 1
+    explanation: >
+      `git add` merkt den damaligen Inhalt vor. Die spätere Änderung liegt nur im Arbeitsverzeichnis und
+      braucht ein weiteres `git add`.
+  - module: grundlagen
+    type: multiple
+    question: Welche Commit-Messages folgen Conventional Commits?
+    options:
+      - "feat(SHOP-123): add voucher field to checkout"
+      - "Fixed the bug"
+      - "fix: prevent double submit on slow networks"
+      - "feat!: drop support for Node.js 20"
+      - "update stuff"
+    answers: [0, 2, 3]
+    explanation: >
+      Gültig ist `typ(optionaler-scope)!: beschreibung`. Das `!` markiert einen Breaking Change, der Scope
+      darf eine Ticket-Nummer sein. „Fixed the bug“ und „update stuff“ haben keinen Typ.
+  - module: grundlagen
+    type: find-bug
+    question: Ada wollte nur die Message des letzten Commits korrigieren, hat aber versehentlich eine Datei mitgenommen. In welcher Zeile steckt der Fehler?
+    language: bash
+    code: |
+      git log --oneline -1
+      git add debug.log
+      git commit --amend -m "fix: correct footer link"
+      git log --oneline -1
+    bug_line: 2
+    explanation: >
+      `git commit --amend` übernimmt alles, was im Staging-Bereich liegt. Durch `git add debug.log` landet die
+      Logdatei im korrigierten Commit. Für eine reine Message-Korrektur hätte Zeile 2 entfallen müssen.
+  - module: branches
+    type: cloze
+    text: Was im nächsten Commit landen würde, zeigt `git diff ___`. Den Vorgänger des aktuellen Commits sprichst du mit `HEAD___` an.
+    blanks:
+      - [--staged, --cached]
+      - ["~1", "~", "^"]
+    explanation: >
+      `git diff` ohne Optionen vergleicht Arbeitsverzeichnis und Staging-Bereich, `--staged` (gleichbedeutend
+      `--cached`) Staging-Bereich und letzten Commit. `HEAD~1` ist der Eltern-Commit.
+  - module: branches
+    type: match
+    question: Ordne jedem Befehl seine Wirkung zu.
+    pairs:
+      - { left: "git switch -c feat/login", right: "Branch anlegen und hineinwechseln" }
+      - { left: "git branch -d feat/login", right: "Gemergten Branch löschen" }
+      - { left: "git merge --no-ff feat/login", right: "Merge-Commit erzwingen" }
+      - { left: "git merge --abort", right: "Abgebrochenen Merge zurückdrehen" }
+    explanation: >
+      `-d` löscht nur gemergte Branches (sonst `-D`). `--no-ff` erzeugt auch dann einen Merge-Commit, wenn ein
+      Fast-Forward möglich wäre. `--abort` stellt den Zustand vor dem Merge wieder her.
+  - module: branches
+    type: find-bug
+    question: Diese Datei wurde nach einem Merge-Konflikt committet. In welcher Zeile steckt der Fehler?
+    language: php
+    code: |
+      <?php
+      return [
+          'timeout' => 30,
+      =======
+          'retries' => 3,
+      ];
+    bug_line: 4
+    explanation: >
+      Die Markerzeile `=======` ist beim Lösen des Konflikts stehen geblieben. Die Datei ist jetzt kein gültiges
+      PHP mehr. Vor dem Commit müssen alle drei Markerarten entfernt sein.
+  - module: branches
+    type: single
+    question: "`main` hat sich seit dem Abzweigen von `feat/footer` nicht verändert. Was passiert bei `git merge feat/footer` auf main?"
+    options:
+      - Git erzeugt einen Merge-Commit mit zwei Eltern.
+      - Git verschiebt den Zeiger main per Fast-Forward nach vorne.
+      - Git meldet einen Konflikt.
+      - Git kopiert die Commits mit neuen Hashes.
+    answer: 1
+    explanation: >
+      Liegen alle neuen Commits in einer Linie vor main, muss Git nichts zusammenführen. Es schiebt den Zeiger
+      nur vorwärts – ein Fast-Forward.
+  - module: zusammenarbeiten
+    type: single
+    question: Was ist der Unterschied zwischen `git fetch` und `git pull`?
+    options:
+      - Es gibt keinen Unterschied.
+      - "`fetch` holt neue Commits nur ab, `pull` holt sie ab und integriert sie in deinen aktuellen Branch."
+      - "`fetch` lädt hoch, `pull` lädt herunter."
+      - "`pull` funktioniert nur mit GitHub."
+    answer: 1
+    explanation: >
+      `git pull` ist `git fetch` plus `git merge` (oder mit `--rebase` plus `git rebase`). Fetch allein
+      aktualisiert nur `origin/main` und lässt deine Dateien in Ruhe.
+  - module: zusammenarbeiten
+    type: single
+    question: Dein `git push` wird mit „rejected (fetch first)“ abgelehnt. Was ist der richtige nächste Schritt?
+    options:
+      - "`git push --force` – dein Stand ist wichtiger."
+      - Die neuen Commits vom Remote holen und integrieren (`git pull` bzw. `git pull --rebase`), dann erneut pushen.
+      - Das Repository neu klonen und die Änderungen von Hand übertragen.
+      - Den Branch umbenennen und unter neuem Namen pushen.
+    answer: 1
+    explanation: >
+      Das Remote hat Commits, die du nicht kennst. Ein Force-Push würde sie löschen. Erst holen und
+      integrieren, dann pushen.
+  - module: zusammenarbeiten
+    type: cloze
+    text: Mit `git push ___ origin feat/login` setzt du beim ersten Push den Upstream. Das Remote, von dem du geklont hast, heißt standardmäßig `___`.
+    blanks:
+      - [-u, --set-upstream]
+      - [origin]
+    explanation: >
+      Nach `-u` reicht für diesen Branch ein einfaches `git push` oder `git pull`. `origin` legt `git clone`
+      automatisch an.
+  - module: zusammenarbeiten
+    type: multiple
+    question: Welche Aussagen über Rebase stimmen?
+    options:
+      - Rebase erzeugt neue Commits mit neuen Hashes.
+      - Commits, die andere schon verwenden, solltest du nicht rebasen.
+      - Rebase erzeugt immer einen Merge-Commit.
+      - Mit `git rebase -i` kannst du Commits zusammenfassen oder umbenennen.
+    answers: [0, 1, 3]
+    explanation: >
+      Rebase spielt Commits neu ab – deshalb ändern sich die Hashes, und geteilte Historie bleibt tabu. Ein
+      Merge-Commit entsteht dabei gerade nicht.
+  # --- Werkzeugkasten ---
+  - module: werkzeugkasten
+    type: match
+    question: Welcher Befehl passt zu welcher Situation?
+    pairs:
+      - { left: "Änderung in einer Datei verwerfen", right: "git restore datei" }
+      - { left: "Fehlerhaften, schon gepushten Commit rückgängig machen", right: "git revert <hash>" }
+      - { left: "Letzten lokalen Commit auflösen, Änderungen vorgemerkt lassen", right: "git reset --soft HEAD~1" }
+      - { left: "Verlorenen Commit wiederfinden", right: "git reflog" }
+    explanation: >
+      `revert` ergänzt die Historie und ist damit sicher für geteilte Commits. `reset` schreibt sie um und ist
+      nur lokal in Ordnung. Der Reflog merkt sich, wo HEAD überall war.
+  - module: werkzeugkasten
+    type: single
+    question: "`.env` wurde versehentlich committet. Du trägst `.env` in die `.gitignore` ein. Was passiert?"
+    options:
+      - Git löscht die Datei automatisch aus dem Repository.
+      - Nichts – bereits verfolgte Dateien bleiben verfolgt, bis du sie mit `git rm --cached .env` aus dem Index nimmst.
+      - Git löscht die Datei von der Festplatte.
+      - Git entfernt die Datei aus allen alten Commits.
+    answer: 1
+    explanation: >
+      Die `.gitignore` wirkt nur auf noch nicht verfolgte Dateien. Und Achtung: Ein Geheimnis, das einmal
+      committet wurde, steckt in der Historie – es muss ausgetauscht (rotiert) werden.
+  - module: werkzeugkasten
+    type: cloze
+    text: Unfertige Änderungen samt neuer Dateien parkst du mit `git stash ___`. Zurück holst du sie und entfernst den Eintrag mit `git stash ___`.
+    blanks:
+      - [-u, --include-untracked]
+      - [pop]
+    explanation: >
+      Ohne `-u` bleiben untracked Dateien im Arbeitsverzeichnis liegen. `pop` wendet den Stash an und löscht
+      ihn, `apply` lässt ihn auf dem Stapel.
+  - module: werkzeugkasten
+    type: find-bug
+    question: Dieser `pre-commit`-Hook soll den Commit abbrechen, wenn der Linter Fehler findet. In welcher Zeile steckt der Fehler?
+    language: bash
+    code: |
+      #!/bin/sh
+      echo "Prüfe Codestil …"
+      if ! vendor/bin/pint --test; then
+        echo "Codestil-Fehler gefunden. Bitte zuerst 'vendor/bin/pint' ausführen."
+        exit 0
+      fi
+    bug_line: 5
+    explanation: >
+      Git bricht nur ab, wenn der Hook mit einem Exit-Code ungleich 0 endet. `exit 0` meldet Erfolg – der
+      fehlerhafte Code würde trotzdem committet. Richtig ist `exit 1`.
+tasks:
+  - module: branches
+    id: pruefung-konflikt
+    type: terminal
+    title: Einen Konfigurations-Konflikt lösen
+    description: |
+      Im Ordner `pruefung-konflikt` liegt ein Repository mit der Datei `config.txt`. Auf `main` und auf
+      dem Branch `feat/timeout` wurde dieselbe Zeile unterschiedlich geändert.
+
+      1. Merge `feat/timeout` in `main`.
+      2. Löse den Konflikt so, dass `config.txt` am Ende genau diese drei Zeilen enthält:
+         `host=localhost`, `timeout=30` und `retries=3`.
+      3. Schließe den Merge mit einem Merge-Commit ab.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-konflikt
+    setup: |
+      git init -q
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      printf 'host=localhost\ntimeout=10\nretries=3\n' > config.txt
+      git add config.txt
+      git commit -q -m "chore: add config"
+      git switch -q -c feat/timeout
+      sed -i 's/^timeout=.*/timeout=30/' config.txt
+      git commit -q -am "feat: raise timeout for slow networks"
+      git switch -q main
+      sed -i 's/^timeout=.*/timeout=15/' config.txt
+      git commit -q -am "fix: lower timeout for tests"
+    checks:
+      - type: command
+        run: git merge-base --is-ancestor feat/timeout main && echo ok
+        stdout_equals: ok
+        message: feat/timeout ist noch nicht in main gemergt.
+      - type: command
+        run: test ! -f .git/MERGE_HEAD && git rev-list --parents -n 1 main | wc -w
+        stdout_matches: "^\\s*3\\s*$"
+        message: Der Merge ist noch nicht mit einem Merge-Commit abgeschlossen (`git add` und `git commit`).
+      - type: command
+        run: grep -cE '^(<<<<<<<|=======|>>>>>>>)' config.txt
+        expect_exit: 1
+        message: In config.txt stehen noch Konfliktmarker.
+      - type: command
+        run: sort config.txt | tr '\n' ' '
+        stdout_matches: "^host=localhost retries=3 timeout=30\\s*$"
+        message: config.txt soll genau die Zeilen host=localhost, timeout=30 und retries=3 enthalten.
+      - type: command
+        run: git status --porcelain | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: Es gibt noch uncommittete Änderungen.
+    hints:
+      - "`git switch main` und `git merge feat/timeout` starten den Merge."
+      - Öffne config.txt, entferne die drei Markerzeilen und behalte `timeout=30`.
+    solution: |
+      ```bash
+      cd pruefung-konflikt
+      git switch main
+      git merge feat/timeout
+      printf 'host=localhost\ntimeout=30\nretries=3\n' > config.txt
+      git add config.txt
+      git commit --no-edit
+      ```
+  - module: werkzeugkasten
+    id: pruefung-aufraeumen
+    type: terminal
+    title: Ein Repository aufräumen
+    description: |
+      Im Ordner `pruefung-aufraeumen` liegt ein Repository, das schon mit dem Team geteilt wurde. Darin
+      sind zwei Dinge schiefgelaufen:
+
+      - Die Datei `secret.env` mit einem Passwort wurde versehentlich committet.
+      - Der Commit „feat: add broken banner“ hat eine kaputte Datei `banner.html` hinzugefügt.
+
+      Da die Historie geteilt ist, darfst du sie **nicht umschreiben** (kein reset, kein rebase).
+
+      1. Mache den Commit „feat: add broken banner“ mit einem neuen Commit rückgängig.
+      2. Sorge dafür, dass alle Dateien mit der Endung `.env` künftig ignoriert werden.
+      3. Nimm `secret.env` aus dem Repository, **ohne** sie von der Festplatte zu löschen, und committe.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-aufraeumen
+    setup: |
+      git init -q
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      echo '<h1>Shop</h1>' > index.html
+      git add index.html
+      git commit -q -m "feat: add index page"
+      echo 'DB_PASSWORD=<geheim>' > secret.env
+      git add secret.env
+      git commit -q -m "chore: add local settings"
+      echo '<div class="banner">kaputt' > banner.html
+      git add banner.html
+      git commit -q -m "feat: add broken banner"
+      echo 'body { margin: 0; }' > style.css
+      git add style.css
+      git commit -q -m "style: add stylesheet"
+    checks:
+      - type: command
+        run: |
+          git log --format=%s | grep -c '^feat: add broken banner$'
+        stdout_equals: "1"
+        message: "Der ursprüngliche Commit „feat: add broken banner“ muss in der Historie bleiben – nutze revert statt reset."
+      - type: command
+        run: |
+          git log --format=%s | grep -c '^Revert "feat: add broken banner"'
+        stdout_matches: "^[1-9]"
+        message: "Es gibt noch keinen Revert-Commit für „feat: add broken banner“."
+      - type: file_absent
+        path: banner.html
+        message: banner.html sollte nach dem Revert verschwunden sein.
+      - type: command
+        run: git check-ignore -q secret.env && git check-ignore -q prod.env && echo ok
+        stdout_equals: ok
+        message: Die .gitignore muss alle Dateien mit der Endung .env ausschließen (z. B. `*.env`).
+      - type: command
+        run: git ls-files secret.env | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: secret.env ist noch im Repository. Nutze `git rm --cached secret.env`.
+      - type: file_exists
+        path: secret.env
+        message: secret.env soll auf der Festplatte bleiben – nur aus dem Repository entfernen.
+      - type: command
+        run: git ls-files .gitignore && git status --porcelain | wc -l
+        stdout_matches: "^\\.gitignore\\n\\s*0\\s*$"
+        message: Committe die .gitignore und die Entfernung von secret.env – danach darf nichts mehr offen sein.
+    hints:
+      - Den Hash des kaputten Commits findest du mit `git log --oneline`.
+      - "`git revert <hash>` erzeugt den Gegen-Commit, `git rm --cached secret.env` nimmt die Datei nur aus dem Index."
+      - Schreibe `*.env` in die `.gitignore` und committe sie zusammen mit der Entfernung.
+    solution: |
+      ```bash
+      cd pruefung-aufraeumen
+      git log --oneline
+      git revert --no-edit "$(git log --format=%h --grep='^feat: add broken banner$')"
+      echo '*.env' > .gitignore
+      git rm --cached secret.env
+      git add .gitignore
+      git commit -m "chore: stop tracking env files"
+      ```
+  - module: werkzeugkasten
+    id: pruefung-naechste-version
+    type: code
+    language: js
+    title: Die nächste Version berechnen
+    description: |
+      Schreibe eine Funktion `nextVersion(current, messages)`. `current` ist eine Versionsnummer nach
+      Semantic Versioning (`"MAJOR.MINOR.PATCH"`), `messages` eine Liste von Commit-Messages seit dem
+      letzten Release. Gib die nächste Versionsnummer als String zurück:
+
+      - Enthält irgendeine Message einen Breaking Change – ein `!` direkt vor dem Doppelpunkt der ersten
+        Zeile (z. B. `feat!:` oder `feat(api)!:`) **oder** eine Zeile, die mit `BREAKING CHANGE:` beginnt –,
+        erhöhe MAJOR und setze MINOR und PATCH auf 0.
+      - Sonst: Beginnt mindestens eine erste Zeile mit dem Typ `feat`, erhöhe MINOR und setze PATCH auf 0.
+      - Sonst: Beginnt mindestens eine erste Zeile mit dem Typ `fix`, erhöhe PATCH.
+      - Sonst (z. B. nur `docs`, `chore` oder eine leere Liste): gib `current` unverändert zurück.
+
+      Ein Typ kann einen Scope haben, z. B. `fix(SHOP-123): …`.
+    starter: |
+      function nextVersion(current, messages) {
+        const [major, minor, patch] = current.split('.').map(Number)
+        // Prüfe hier die Messages und gib die neue Version zurück
+        return current
+      }
+    tests:
+      - name: Ein fix erhöht PATCH
+        code: "assertEqual(nextVersion('1.4.2', ['fix: correct footer link']), '1.4.3')"
+      - name: Ein feat erhöht MINOR und setzt PATCH zurück
+        code: "assertEqual(nextVersion('1.4.2', ['fix: typo', 'feat(SHOP-123): add voucher field']), '1.5.0')"
+      - name: Ausrufezeichen bedeutet Breaking Change
+        code: "assertEqual(nextVersion('1.4.2', ['feat(api)!: remove v1 endpoints']), '2.0.0')"
+      - name: BREAKING CHANGE im Footer zählt ebenfalls
+        code: "assertEqual(nextVersion('0.9.3', ['refactor: rename config keys\\n\\nBREAKING CHANGE: the key timeout is now timeoutMs']), '1.0.0')"
+      - name: Leere Liste lässt die Version unverändert
+        code: assertEqual(nextVersion('3.1.0', []), '3.1.0')
+      - name: Nur docs und chore ändern nichts
+        code: "assertEqual(nextVersion('3.1.0', ['docs: update readme', 'chore: bump deps']), '3.1.0')"
+      - name: Ein Wort wie fixed ist kein fix-Typ
+        code: "assertEqual(nextVersion('2.0.0', ['fixed things', 'feature: something']), '2.0.0')"
+    hints:
+      - Hole die erste Zeile mit `message.split('\n')[0]`.
+      - "Ein regulärer Ausdruck wie `/^(\\w+)(\\([^)]*\\))?(!)?: /` liefert Typ und Ausrufezeichen."
+      - Prüfe zuerst auf Breaking Changes, dann auf feat, dann auf fix.
+    solution: |
+      function nextVersion(current, messages) {
+        const [major, minor, patch] = current.split('.').map(Number)
+        let bump = null
+        for (const message of messages) {
+          const lines = message.split('\n')
+          const match = lines[0].match(/^(\w+)(\([^)]*\))?(!)?: \S/)
+          const breaking = (match && match[3] === '!') || lines.some((line) => line.startsWith('BREAKING CHANGE:'))
+          if (breaking) {
+            bump = 'major'
+          } else if (match && match[1] === 'feat' && bump !== 'major') {
+            bump = 'minor'
+          } else if (match && match[1] === 'fix' && bump === null) {
+            bump = 'patch'
+          }
+        }
+        if (bump === 'major') return `${major + 1}.0.0`
+        if (bump === 'minor') return `${major}.${minor + 1}.0`
+        if (bump === 'patch') return `${major}.${minor}.${patch + 1}`
+        return current
+      }

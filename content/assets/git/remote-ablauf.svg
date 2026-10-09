@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="34" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Lokales Repository und Remote</text>
+<rect x="20" y="58" width="400" height="330" rx="18" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 6"/>
+<text x="220" y="84" text-anchor="middle" font-size="14" font-weight="600" fill="#475569">Dein Rechner</text>
+<rect x="38" y="105" width="152" height="185" rx="16" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="114" y="195" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Arbeitsverzeichnis</text>
+<text x="114" y="220" text-anchor="middle" font-size="12" fill="#475569">deine Dateien</text>
+<rect x="248" y="105" width="152" height="185" rx="16" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="324" y="195" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Lokales Repository</text>
+<text x="324" y="220" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">.git</text>
+<rect x="570" y="105" width="200" height="185" rx="16" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="670" y="195" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Remote (origin)</text>
+<text x="670" y="220" text-anchor="middle" font-size="12" fill="#475569">Bare Repository, z. B. GitHub</text>
+<path d="M192 250 H 244" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="219" y="240" text-anchor="middle" font-size="11" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">commit</text>
+<path d="M402 140 H 566" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="484" y="130" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git push</text>
+<path d="M568 200 H 404" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="484" y="190" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git fetch</text>
+<path d="M568 260 H 404" stroke="#64748b" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#a)"/>
+<text x="484" y="250" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git clone</text>
+<text x="484" y="278" text-anchor="middle" font-size="11" fill="#475569">einmalig: alles kopieren</text>
+<path d="M670 292 C 670 372, 114 372, 114 296" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="400" y="343" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git pull</text>
+<text x="400" y="408" text-anchor="middle" font-size="12" fill="#475569">pull = fetch + merge (oder rebase)</text>
+</svg>

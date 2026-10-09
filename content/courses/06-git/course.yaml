@@ -13,7 +13,7 @@ category: grundlagen
 level: einsteiger
 icon: git-branch
 color: "#f05032"
-estimated_hours: 14
+estimated_hours: 5
 workspace_dir: git
 prerequisites: [terminal-shell]
 learning_goals:

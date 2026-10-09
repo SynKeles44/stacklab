@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="28" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Merge oder Rebase – dieselbe Ausgangslage, zwei Ergebnisse</text>
+<text x="30" y="60" font-size="16" font-weight="700" fill="#1e1b3a">1. Ausgangslage</text>
+<line x1="90" y1="105" x2="170" y2="105" stroke="#64748b" stroke-width="3"/>
+<line x1="170" y1="105" x2="250" y2="105" stroke="#64748b" stroke-width="3"/>
+<line x1="250" y1="105" x2="330" y2="105" stroke="#64748b" stroke-width="3"/>
+<line x1="170" y1="105" x2="250" y2="155" stroke="#64748b" stroke-width="3"/>
+<line x1="250" y1="155" x2="330" y2="155" stroke="#64748b" stroke-width="3"/>
+<circle cx="90" cy="105" r="17" fill="#ffffff"/>
+<circle cx="90" cy="105" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="90" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">A</text>
+<circle cx="170" cy="105" r="17" fill="#ffffff"/>
+<circle cx="170" cy="105" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="170" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">B</text>
+<circle cx="250" cy="105" r="17" fill="#ffffff"/>
+<circle cx="250" cy="105" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="250" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">C</text>
+<circle cx="330" cy="105" r="17" fill="#ffffff"/>
+<circle cx="330" cy="105" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="330" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">D</text>
+<circle cx="250" cy="155" r="17" fill="#ffffff"/>
+<circle cx="250" cy="155" r="17" fill="#a78bfa" fill-opacity="0.25" stroke="#a78bfa" stroke-width="3"/>
+<text x="250" y="160" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">E</text>
+<circle cx="330" cy="155" r="17" fill="#ffffff"/>
+<circle cx="330" cy="155" r="17" fill="#a78bfa" fill-opacity="0.25" stroke="#a78bfa" stroke-width="3"/>
+<text x="330" y="160" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">F</text>
+<rect x="365" y="93" width="48" height="24" rx="12" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee" stroke-width="2"/>
+<text x="389.0" y="110" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">main</text>
+<rect x="365" y="143" width="96" height="24" rx="12" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="2"/>
+<text x="413.0" y="160" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">feat/suche</text>
+<text x="790" y="105" text-anchor="end" font-size="13" fill="#475569">feat/suche zweigt bei B ab,</text>
+<text x="790" y="125" text-anchor="end" font-size="13" fill="#475569">main ist mit C und D weitergelaufen.</text>
+<text x="30" y="225" font-size="16" font-weight="700" fill="#1e1b3a">2. Nach git merge main (auf feat/suche)</text>
+<line x1="90" y1="285" x2="170" y2="285" stroke="#64748b" stroke-width="3"/>
+<line x1="170" y1="285" x2="250" y2="285" stroke="#64748b" stroke-width="3"/>
+<line x1="250" y1="285" x2="330" y2="285" stroke="#64748b" stroke-width="3"/>
+<line x1="170" y1="285" x2="250" y2="335" stroke="#64748b" stroke-width="3"/>
+<line x1="250" y1="335" x2="330" y2="335" stroke="#64748b" stroke-width="3"/>
+<line x1="330" y1="335" x2="410" y2="335" stroke="#64748b" stroke-width="3"/>
+<line x1="330" y1="285" x2="410" y2="335" stroke="#64748b" stroke-width="3"/>
+<circle cx="90" cy="285" r="17" fill="#ffffff"/>
+<circle cx="90" cy="285" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="90" y="290" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">A</text>
+<circle cx="170" cy="285" r="17" fill="#ffffff"/>
+<circle cx="170" cy="285" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="170" y="290" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">B</text>
+<circle cx="250" cy="285" r="17" fill="#ffffff"/>
+<circle cx="250" cy="285" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="250" y="290" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">C</text>
+<circle cx="330" cy="285" r="17" fill="#ffffff"/>
+<circle cx="330" cy="285" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="330" y="290" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">D</text>
+<circle cx="250" cy="335" r="17" fill="#ffffff"/>
+<circle cx="250" cy="335" r="17" fill="#a78bfa" fill-opacity="0.25" stroke="#a78bfa" stroke-width="3"/>
+<text x="250" y="340" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">E</text>
+<circle cx="330" cy="335" r="17" fill="#ffffff"/>
+<circle cx="330" cy="335" r="17" fill="#a78bfa" fill-opacity="0.25" stroke="#a78bfa" stroke-width="3"/>
+<text x="330" y="340" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">F</text>
+<circle cx="410" cy="335" r="17" fill="#ffffff"/>
+<circle cx="410" cy="335" r="17" fill="#f59e0b" fill-opacity="0.25" stroke="#f59e0b" stroke-width="3"/>
+<text x="410" y="340" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">M</text>
+<rect x="303" y="235" width="48" height="24" rx="12" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee" stroke-width="2"/>
+<text x="327.0" y="252" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">main</text>
+<rect x="445" y="349" width="96" height="24" rx="12" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="2"/>
+<text x="493.0" y="366" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">feat/suche</text>
+<text x="790" y="285" text-anchor="end" font-size="13" fill="#475569">E und F bleiben unverändert.</text>
+<text x="790" y="305" text-anchor="end" font-size="13" fill="#475569">Neu: Merge-Commit M mit zwei Eltern.</text>
+<text x="30" y="410" font-size="16" font-weight="700" fill="#1e1b3a">3. Nach git rebase main (auf feat/suche)</text>
+<line x1="170" y1="465" x2="250" y2="520" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="5 4"/>
+<line x1="250" y1="520" x2="330" y2="520" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="5 4"/>
+<circle cx="250" cy="520" r="17" fill="#ffffff"/>
+<circle cx="250" cy="520" r="17" fill="#a78bfa" fill-opacity="0.08" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4 3"/>
+<text x="250" y="525" text-anchor="middle" font-size="14" font-weight="700" fill="#94a3b8" font-family="ui-monospace, Menlo, monospace">E</text>
+<circle cx="330" cy="520" r="17" fill="#ffffff"/>
+<circle cx="330" cy="520" r="17" fill="#a78bfa" fill-opacity="0.08" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4 3"/>
+<text x="330" y="525" text-anchor="middle" font-size="14" font-weight="700" fill="#94a3b8" font-family="ui-monospace, Menlo, monospace">F</text>
+<line x1="90" y1="465" x2="170" y2="465" stroke="#64748b" stroke-width="3"/>
+<line x1="170" y1="465" x2="250" y2="465" stroke="#64748b" stroke-width="3"/>
+<line x1="250" y1="465" x2="330" y2="465" stroke="#64748b" stroke-width="3"/>
+<line x1="330" y1="465" x2="410" y2="465" stroke="#64748b" stroke-width="3"/>
+<line x1="410" y1="465" x2="490" y2="465" stroke="#64748b" stroke-width="3"/>
+<circle cx="90" cy="465" r="17" fill="#ffffff"/>
+<circle cx="90" cy="465" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="90" y="470" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">A</text>
+<circle cx="170" cy="465" r="17" fill="#ffffff"/>
+<circle cx="170" cy="465" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="170" y="470" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">B</text>
+<circle cx="250" cy="465" r="17" fill="#ffffff"/>
+<circle cx="250" cy="465" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="250" y="470" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">C</text>
+<circle cx="330" cy="465" r="17" fill="#ffffff"/>
+<circle cx="330" cy="465" r="17" fill="#22d3ee" fill-opacity="0.25" stroke="#22d3ee" stroke-width="3"/>
+<text x="330" y="470" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">D</text>
+<circle cx="410" cy="465" r="17" fill="#ffffff"/>
+<circle cx="410" cy="465" r="17" fill="#a78bfa" fill-opacity="0.25" stroke="#a78bfa" stroke-width="3"/>
+<text x="410" y="470" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">E'</text>
+<circle cx="490" cy="465" r="17" fill="#ffffff"/>
+<circle cx="490" cy="465" r="17" fill="#a78bfa" fill-opacity="0.25" stroke="#a78bfa" stroke-width="3"/>
+<text x="490" y="470" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">F'</text>
+<rect x="303" y="415" width="48" height="24" rx="12" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee" stroke-width="2"/>
+<text x="327.0" y="432" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">main</text>
+<rect x="438" y="415" width="96" height="24" rx="12" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="2"/>
+<text x="486.0" y="432" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">feat/suche</text>
+<text x="360" y="525" font-size="12" fill="#94a3b8">alte Commits – kein Branch zeigt mehr darauf</text>
+<text x="790" y="465" text-anchor="end" font-size="13" fill="#475569">E' und F' sind neue Commits</text>
+<text x="790" y="485" text-anchor="end" font-size="13" fill="#475569">mit neuen Hashes – Historie linear.</text>
+</svg>

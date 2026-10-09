@@ -76,3 +76,867 @@
   aliases: []
   related: [git, repository]
   lesson: git/was-ist-versionskontrolle
+- slug: git-konfiguration
+  term: Git-Konfiguration
+  short: Die Einstellungen, mit denen Git arbeitet – etwa dein Name, deine E-Mail und dein Editor.
+  explanation: >
+    Git liest Einstellungen aus drei Ebenen: systemweit (`--system`), für deinen Benutzer (`--global`,
+    Datei `~/.gitconfig`) und pro Repository (`--local`, Datei `.git/config`). Die speziellere Ebene gewinnt,
+    lokale Werte überschreiben also globale.
+  example: "`git config --global user.name \"Ada Lovelace\"` setzt deinen Namen für alle Repositorys."
+  category: git
+  aliases: [git config, Konfiguration, gitconfig]
+  related: [git, commit]
+  lesson: git/einrichten-und-erstes-repository
+- slug: paketmanager
+  term: Paketmanager
+  short: Ein Programm, das Software installiert, aktualisiert und wieder entfernt.
+  explanation: >
+    Statt Installationsdateien von Websites herunterzuladen, sagst du dem Paketmanager, was du brauchst.
+    Er lädt die passende Version aus einer vertrauenswürdigen Quelle und kümmert sich um Updates.
+    Beispiele sind Homebrew (macOS), winget (Windows) und apt (Debian/Ubuntu).
+  example: "`sudo apt install git` installiert Git auf Debian oder Ubuntu."
+  category: git
+  aliases: [Paketmanagers, Package Manager, winget, apt]
+  related: [programm, betriebssystem]
+  lesson: git/einrichten-und-erstes-repository
+- slug: standard-branch
+  term: Standard-Branch
+  short: Der Branch, den Git bei einem neuen Repository automatisch anlegt – heute meist `main`.
+  explanation: >
+    Früher hieß der erste Branch immer `master`. Heute stellen die meisten Teams `main` ein. Welchen Namen
+    Git für neue Repositorys verwendet, legst du mit der Einstellung `init.defaultBranch` fest.
+  example: "`git config --global init.defaultBranch main`"
+  category: git
+  aliases: [Default Branch, Hauptbranch, main]
+  related: [branch, git-konfiguration]
+  lesson: git/einrichten-und-erstes-repository
+- slug: untracked-datei
+  term: Untracked-Datei
+  short: Eine Datei im Arbeitsverzeichnis, die Git noch nie vorgemerkt oder committet hat.
+  explanation: >
+    Git beobachtet nur Dateien, die du einmal mit `git add` hinzugefügt hast. Neue Dateien tauchen in
+    `git status` unter „Untracked files“ auf, bis du sie vormerkst oder in der `.gitignore` ausschließt.
+  example: "`git status -s` zeigt untracked Dateien mit `??`."
+  category: git
+  aliases: [untracked, Untracked Files, nicht verfolgt]
+  related: [arbeitsverzeichnis, gitignore]
+  lesson: git/einrichten-und-erstes-repository
+- slug: git-objektdatenbank
+  term: Objektdatenbank
+  short: Der Speicher im Ordner `.git/objects`, in dem Git alle Inhalte, Ordnerstrukturen und Commits ablegt.
+  explanation: >
+    Git speichert Dateiinhalte als Blobs, Ordnerstrukturen als Trees und Schnappschüsse als Commits. Jedes
+    Objekt wird über seinen Hash adressiert. Gleiche Inhalte werden nur einmal gespeichert.
+  example: "`git cat-file -t HEAD` gibt `commit` aus – den Typ des Objekts, auf das HEAD zeigt."
+  category: git
+  aliases: [Blob, Tree, Git-Objekt, Git-Objekte, .git/objects]
+  related: [commit, commit-hash]
+  lesson: git/einrichten-und-erstes-repository
+- slug: hunk
+  term: Hunk
+  short: Ein zusammenhängender Block geänderter Zeilen innerhalb einer Datei.
+  explanation: >
+    Ein Diff besteht aus einem oder mehreren Hunks. Mit `git add -p` fragt Git dich für jeden Hunk einzeln,
+    ob er in den nächsten Commit soll. So kannst du Änderungen in einer Datei auf mehrere Commits verteilen.
+  example: "In `git add -p` bedeutet die Antwort `y` „diesen Hunk vormerken“, `n` „überspringen“."
+  category: git
+  aliases: [Hunks, Patch]
+  related: [diff, staging-bereich]
+  lesson: git/commits-und-messages
+- slug: amend
+  term: Amend
+  short: Das nachträgliche Ersetzen des letzten Commits durch eine verbesserte Version.
+  explanation: >
+    `git commit --amend` nimmt den aktuellen Staging-Bereich und die neue Nachricht und baut daraus einen
+    neuen Commit, der den letzten ersetzt. Er bekommt einen neuen Hash. Deshalb amendest du nur Commits,
+    die du noch nicht mit anderen geteilt hast.
+  example: "`git commit --amend -m \"fix: correct typo in footer\"` korrigiert die letzte Nachricht."
+  category: git
+  aliases: [--amend, amenden]
+  related: [commit, commit-hash]
+  lesson: git/commits-und-messages
+- slug: commit-message
+  term: Commit-Message
+  short: Die Nachricht eines Commits, die erklärt, was und warum sich etwas geändert hat.
+  explanation: >
+    Eine Commit-Message besteht aus einer kurzen Betreffzeile, optional einer Leerzeile und einem
+    ausführlichen Text (Body) sowie Zusatzzeilen (Footer). Gute Messages machen die Historie lesbar und
+    beantworten die Frage „Warum?“.
+  example: "`fix(SHOP-123): prevent double checkout on slow networks`"
+  category: git
+  aliases: [Commit-Messages, Commit-Nachricht, Nachricht]
+  related: [commit, conventional-commits]
+  lesson: git/commits-und-messages
+- slug: conventional-commits
+  term: Conventional Commits
+  short: "Eine verbreitete Konvention, wie Commit-Messages aufgebaut sind – `typ(scope): beschreibung`."
+  explanation: >
+    Der Typ (`feat`, `fix`, `docs`, `chore` …) sagt, welche Art Änderung es ist, der optionale Scope in
+    Klammern, welchen Bereich sie betrifft. Werkzeuge können daraus automatisch Changelogs und
+    Versionsnummern erzeugen.
+  example: "`feat(SHOP-123): add voucher field to checkout`"
+  category: git
+  aliases: [Conventional Commit]
+  related: [commit-message, semantic-versioning, breaking-change]
+  lesson: git/commits-und-messages
+- slug: breaking-change
+  term: Breaking Change
+  short: Eine Änderung, nach der bestehender Code oder bestehende Nutzer nicht mehr wie bisher funktionieren.
+  explanation: >
+    Wird zum Beispiel eine Funktion umbenannt oder ein API-Feld entfernt, müssen alle Nutzer ihren Code
+    anpassen. In Conventional Commits markierst du das mit `!` nach dem Typ oder mit einer Footer-Zeile
+    `BREAKING CHANGE:`. Bei Semantic Versioning erhöht das die Hauptversion.
+  example: "`feat(api)!: remove deprecated /v1/orders endpoint`"
+  category: git
+  aliases: [Breaking Changes, BREAKING CHANGE]
+  related: [conventional-commits, semantic-versioning]
+  lesson: git/commits-und-messages
+- slug: ticket
+  term: Ticket
+  short: Ein Eintrag in einem Aufgaben-System, der eine Aufgabe, einen Fehler oder einen Wunsch beschreibt.
+  explanation: >
+    Teams planen Arbeit in Ticket-Systemen wie Jira, Linear oder GitHub Issues. Jedes Ticket hat eine
+    Kennung wie `SHOP-123`. Schreibst du sie in Commit-Messages oder Branch-Namen, lässt sich jede Änderung
+    ihrer Aufgabe zuordnen.
+  example: "Branch `feat/SHOP-123-voucher-field` gehört zum Ticket SHOP-123."
+  category: git
+  aliases: [Tickets, Issue, Issues]
+  related: [commit-message, branch]
+  lesson: git/commits-und-messages
+- slug: regex
+  term: Regulärer Ausdruck
+  short: Ein Suchmuster, mit dem du prüfst, ob ein Text einem bestimmten Aufbau folgt.
+  explanation: >
+    Reguläre Ausdrücke (kurz Regex) beschreiben Textmuster mit Sonderzeichen: `^` steht für den
+    Textanfang, `$` für das Ende, `[a-z]+` für einen oder mehrere Kleinbuchstaben. Fast jede
+    Programmiersprache kann damit Texte prüfen und durchsuchen.
+  example: "`/^feat: .+$/` passt auf jede Zeile, die mit `feat: ` beginnt und danach Text hat."
+  category: git
+  aliases: [Regex, RegExp, regulären Ausdruck, regulärer Ausdrücke, Regulärer Ausdrücke]
+  related: [conventional-commits]
+  lesson: git/commits-und-messages
+- slug: funktion
+  term: Funktion
+  short: Ein benannter Code-Block, der Eingaben (Parameter) bekommt und ein Ergebnis zurückgibt.
+  explanation: >
+    Funktionen bündeln eine Aufgabe, damit du sie mehrfach verwenden kannst. Du rufst sie mit ihrem
+    Namen und passenden Werten auf, sie liefert mit `return` ein Ergebnis zurück.
+  example: "`isValidBranchName(\"feat/login\")` ruft eine Funktion auf und bekommt `true` zurück."
+  category: git
+  aliases: [Funktionen]
+  related: [code]
+  lesson: git/commits-und-messages
+- slug: commit-hash
+  term: Commit-Hash
+  short: Die eindeutige Kennung eines Commits – eine lange Zeichenfolge aus Ziffern und Buchstaben a–f.
+  explanation: >
+    Git berechnet den Hash aus dem Inhalt des Commits (Dateien, Autor, Zeit, Nachricht, Vorgänger). Ändert
+    sich irgendetwas, entsteht ein neuer Hash. Meist reichen die ersten sieben Zeichen, um einen Commit
+    eindeutig anzusprechen.
+  example: "`git show 3f2a9c1` zeigt den Commit, dessen Hash mit 3f2a9c1 beginnt."
+  category: git
+  aliases: [Hash, Hashes, Commit-ID, SHA, SHA-1]
+  related: [commit, git-objektdatenbank]
+  lesson: git/die-historie-lesen
+- slug: diff
+  term: Diff
+  short: Die Darstellung der Unterschiede zwischen zwei Ständen einer Datei, Zeile für Zeile.
+  explanation: >
+    Ein Diff zeigt entfernte Zeilen mit `-` und hinzugefügte mit `+`. Git kann Arbeitsverzeichnis,
+    Staging-Bereich und beliebige Commits miteinander vergleichen.
+  example: "`git diff --staged` zeigt, was im nächsten Commit landen würde."
+  category: git
+  aliases: [Diffs, Unterschied]
+  related: [hunk, commit]
+  lesson: git/die-historie-lesen
+- slug: branch
+  term: Branch
+  short: Ein beweglicher Zeiger auf einen Commit – eine eigene Entwicklungslinie in deinem Repository.
+  explanation: >
+    Ein Branch ist nur ein Name, der auf einen Commit zeigt. Committest du auf einem Branch, wandert der
+    Zeiger automatisch zum neuen Commit weiter. So kannst du parallel an mehreren Features arbeiten, ohne
+    dass sie sich gegenseitig stören.
+  example: "`git switch -c feat/login` legt den Branch feat/login an und wechselt dorthin."
+  category: git
+  aliases: [Branches, Zweig, Zweige]
+  related: [head, merge, standard-branch]
+  lesson: git/branches-verstehen
+- slug: head
+  term: HEAD
+  short: Der Zeiger, der markiert, wo du gerade im Repository stehst – meist auf dem aktuellen Branch.
+  explanation: >
+    HEAD zeigt normalerweise auf einen Branch, der Branch auf einen Commit. Wechselst du den Branch, zeigt
+    HEAD auf den neuen. Mit `HEAD~1` meinst du den Vorgänger des aktuellen Commits.
+  example: "`cat .git/HEAD` gibt `ref: refs/heads/main` aus."
+  category: git
+  aliases: [HEAD~1]
+  related: [branch, detached-head]
+  lesson: git/branches-verstehen
+- slug: detached-head
+  term: Detached HEAD
+  short: Der Zustand, in dem HEAD direkt auf einen Commit statt auf einen Branch zeigt.
+  explanation: >
+    Das passiert, wenn du einen alten Commit oder einen Tag auscheckst. Du kannst dich umsehen und sogar
+    committen, aber neue Commits gehören zu keinem Branch und gehen leicht verloren. Mit
+    `git switch -c neuer-name` sicherst du sie in einem Branch.
+  example: "`git switch --detach v1.0.0` bringt dich in den Detached-HEAD-Zustand."
+  category: git
+  aliases: [detached HEAD, losgelöster HEAD]
+  related: [head, branch]
+  lesson: git/branches-verstehen
+- slug: merge
+  term: Merge
+  short: Das Zusammenführen der Änderungen eines Branches in einen anderen.
+  explanation: >
+    `git merge feature` holt alle Commits von `feature` in den aktuellen Branch. Je nach Situation macht
+    Git einen Fast-Forward oder erzeugt einen Merge-Commit. Widersprechen sich Änderungen, entsteht ein
+    Merge-Konflikt.
+  example: "`git switch main && git merge feat/login`"
+  category: git
+  aliases: [mergen, Merges, zusammenführen]
+  related: [branch, fast-forward, merge-commit, merge-konflikt]
+  lesson: git/mergen-und-konflikte
+- slug: fast-forward
+  term: Fast-Forward
+  short: Ein Merge, bei dem Git den Branch-Zeiger einfach nach vorne schiebt, ohne neuen Commit.
+  explanation: >
+    Hat sich der Zielbranch seit dem Abzweigen nicht verändert, liegen alle neuen Commits in einer Linie.
+    Git muss nichts zusammenführen und verschiebt nur den Zeiger. Mit `--no-ff` erzwingst du trotzdem einen
+    Merge-Commit.
+  example: "`git merge feat/login` meldet „Fast-forward“, wenn main nicht weitergewachsen ist."
+  category: git
+  aliases: [Fast Forward, fast-forward-Merge]
+  related: [merge, merge-commit]
+  lesson: git/mergen-und-konflikte
+- slug: merge-commit
+  term: Merge-Commit
+  short: Ein Commit mit zwei Vorgängern, der zwei Entwicklungslinien zusammenführt.
+  explanation: >
+    Sind beide Branches weitergewachsen, erzeugt Git beim Merge einen neuen Commit, der auf beide Enden
+    zeigt. In `git log --graph` siehst du an dieser Stelle, wie sich zwei Linien wieder vereinen.
+  example: "`Merge branch 'feat/login'` ist die Standardnachricht eines Merge-Commits."
+  category: git
+  aliases: [Merge-Commits]
+  related: [merge, fast-forward]
+  lesson: git/mergen-und-konflikte
+- slug: merge-konflikt
+  term: Merge-Konflikt
+  short: Eine Situation, in der Git zwei Änderungen an derselben Stelle nicht automatisch zusammenführen kann.
+  explanation: >
+    Haben beide Branches dieselben Zeilen unterschiedlich geändert, hält Git den Merge an und markiert die
+    Stelle in der Datei mit Konfliktmarkern. Du entscheidest, welcher Inhalt richtig ist, entfernst die
+    Marker, merkst die Datei mit `git add` vor und schließt den Merge mit `git commit` ab.
+  example: "`CONFLICT (content): Merge conflict in index.html`"
+  category: git
+  aliases: [Merge-Konflikte, Konflikt, Konflikte]
+  related: [merge, konfliktmarker]
+  lesson: git/mergen-und-konflikte
+- slug: konfliktmarker
+  term: Konfliktmarker
+  short: Die Zeilen `<<<<<<<`, `=======` und `>>>>>>>`, mit denen Git einen Konflikt in einer Datei markiert.
+  explanation: >
+    Zwischen `<<<<<<< HEAD` und `=======` steht deine Version, zwischen `=======` und `>>>>>>> branch` die
+    Version des anderen Branches. Beim Lösen entfernst du alle drei Markerzeilen und behältst den richtigen
+    Inhalt.
+  example: "Bleibt `=======` versehentlich stehen, landet die Zeile im Commit und bricht oft den Code."
+  category: git
+  aliases: [Konfliktmarkierungen, Conflict Markers]
+  related: [merge-konflikt]
+  lesson: git/mergen-und-konflikte
+- slug: remote
+  term: Remote
+  short: Eine andere Kopie deines Repositorys, mit der du Commits austauschst – etwa auf GitHub oder einem Server.
+  explanation: >
+    Ein Remote ist ein gespeicherter Name für eine Adresse (URL oder Pfad). Über diesen Namen holst du
+    Commits ab (`fetch`, `pull`) und schickst deine eigenen hin (`push`). Ein Repository kann mehrere
+    Remotes haben.
+  example: "`git remote -v` listet alle Remotes mit ihren Adressen."
+  category: git
+  aliases: [Remotes, Remote-Repository]
+  related: [origin, push, fetch, clone]
+  lesson: git/remotes-push-pull
+- slug: origin
+  term: origin
+  short: Der übliche Name für das Remote, von dem du ein Repository geklont hast.
+  explanation: >
+    `git clone` legt automatisch ein Remote namens `origin` an. Der Name ist nur eine Konvention – du
+    könntest ihn ändern. In fast allen Teams ist `origin` aber das zentrale Repository.
+  example: "`git push origin main` schickt deinen Branch main zum Remote origin."
+  category: git
+  aliases: []
+  related: [remote, clone]
+  lesson: git/remotes-push-pull
+- slug: clone
+  term: Clone
+  short: Eine vollständige Kopie eines Repositorys samt Historie, die du mit `git clone` anlegst.
+  explanation: >
+    Beim Klonen lädt Git alle Commits, Branches und Tags herunter, legt ein Remote `origin` an und checkt
+    den Standard-Branch aus. Danach kannst du sofort lokal arbeiten.
+  example: "`git clone https://github.com/example/shop.git`"
+  category: git
+  aliases: [klonen, Klon, git clone, geklont]
+  related: [remote, origin, repository]
+  lesson: git/remotes-push-pull
+- slug: bare-repository
+  term: Bare Repository
+  short: Ein Repository ohne Arbeitsverzeichnis, das nur die Git-Daten enthält – typisch für Server.
+  explanation: >
+    In ein Bare Repository wird nur gepusht, niemand bearbeitet darin Dateien. Deshalb fehlt der
+    Arbeitsordner, und der Inhalt entspricht dem, was sonst im Ordner `.git` liegt. GitHub speichert deine
+    Repositorys intern ebenfalls als Bare Repositorys.
+  example: "`git init --bare server.git` legt ein Bare Repository an."
+  category: git
+  aliases: [Bare Repositorys, --bare, bare]
+  related: [remote, repository]
+  lesson: git/remotes-push-pull
+- slug: fork
+  term: Fork
+  short: Eine eigene Kopie eines fremden Repositorys auf einer Plattform wie GitHub.
+  explanation: >
+    Wenn du an einem Projekt mitarbeiten willst, auf das du keine Schreibrechte hast, forkst du es. Du
+    änderst deine Kopie und schlägst die Änderungen dem Original per Pull Request vor.
+  example: Du forkst ein Open-Source-Projekt, behebst einen Fehler und öffnest einen Pull Request.
+  category: git
+  aliases: [Forks, forken]
+  related: [clone, pull-request]
+  lesson: git/remotes-push-pull
+- slug: push
+  term: Push
+  short: Das Hochladen deiner lokalen Commits zu einem Remote.
+  explanation: >
+    `git push` schickt Commits, die das Remote noch nicht hat, dorthin und verschiebt den Branch dort.
+    Hat das Remote inzwischen Commits, die du nicht kennst, lehnt Git den Push ab – erst musst du sie holen.
+  example: "`git push -u origin feat/login`"
+  category: git
+  aliases: [pushen, git push]
+  related: [remote, pull, force-push]
+  lesson: git/remotes-push-pull
+- slug: fetch
+  term: Fetch
+  short: Das Abholen neuer Commits von einem Remote, ohne deine eigenen Branches zu verändern.
+  explanation: >
+    `git fetch` aktualisiert nur die Remote-Tracking-Branches wie `origin/main`. Deine Dateien und dein
+    lokaler Branch bleiben unberührt. So kannst du in Ruhe ansehen, was neu ist, bevor du es übernimmst.
+  example: "`git fetch && git log main..origin/main --oneline`"
+  category: git
+  aliases: [fetchen, git fetch]
+  related: [pull, remote-tracking-branch]
+  lesson: git/remotes-push-pull
+- slug: pull
+  term: Pull
+  short: Das Abholen und direkte Übernehmen neuer Commits von einem Remote – fetch plus merge (oder rebase).
+  explanation: >
+    `git pull` führt zuerst `git fetch` aus und integriert danach den Remote-Branch in deinen aktuellen
+    Branch, standardmäßig per Merge. Mit `git pull --rebase` werden deine lokalen Commits stattdessen oben
+    auf die neuen gesetzt.
+  example: "`git pull --rebase origin main`"
+  category: git
+  aliases: [pullen, git pull]
+  related: [fetch, merge, rebase]
+  lesson: git/remotes-push-pull
+- slug: upstream-branch
+  term: Upstream-Branch
+  short: Der Remote-Branch, mit dem ein lokaler Branch verknüpft ist und den push und pull automatisch nutzen.
+  explanation: >
+    Ist ein Upstream gesetzt, reicht ein einfaches `git push` oder `git pull` ohne weitere Angaben. Außerdem
+    zeigt `git status`, wie viele Commits du vor oder hinter dem Remote bist. Gesetzt wird er mit
+    `git push -u` oder `git branch --set-upstream-to`.
+  example: "`Your branch is ahead of 'origin/main' by 2 commits.`"
+  category: git
+  aliases: [Upstream, Tracking-Branch, Tracking]
+  related: [push, pull, remote-tracking-branch]
+  lesson: git/remotes-push-pull
+- slug: remote-tracking-branch
+  term: Remote-Tracking-Branch
+  short: Eine lokale, schreibgeschützte Kopie eines Remote-Branches, etwa `origin/main`.
+  explanation: >
+    Remote-Tracking-Branches merken sich, wo die Branches auf dem Remote beim letzten Kontakt standen. Sie
+    werden nur durch `fetch`, `pull` und `push` aktualisiert – nie durch eigene Commits.
+  example: "`git branch -r` listet alle Remote-Tracking-Branches."
+  category: git
+  aliases: [origin/main, Remote-Tracking-Branches]
+  related: [fetch, upstream-branch]
+  lesson: git/remotes-push-pull
+- slug: rebase
+  term: Rebase
+  short: Das Verschieben deiner Commits auf einen neuen Ausgangspunkt, sodass eine gerade Historie entsteht.
+  explanation: >
+    `git rebase main` nimmt die Commits deines Branches, die main noch nicht hat, und spielt sie einzeln
+    oben auf main neu ab. Dabei entstehen neue Commits mit neuen Hashes. Deshalb rebasest du nie Commits,
+    die andere schon verwenden.
+  example: "`git switch feat/login && git rebase main`"
+  category: git
+  aliases: [rebasen, git rebase]
+  related: [merge, interaktiver-rebase, force-push]
+  lesson: git/rebase-und-github
+- slug: interaktiver-rebase
+  term: Interaktiver Rebase
+  short: Ein Rebase, bei dem du jeden Commit einzeln bearbeiten, zusammenfassen, umsortieren oder löschen kannst.
+  explanation: >
+    `git rebase -i HEAD~3` öffnet eine Liste der letzten drei Commits im Editor. Mit Befehlen wie `pick`,
+    `reword`, `squash`, `fixup` und `drop` bestimmst du, was mit jedem Commit passiert. So räumst du deine
+    Historie auf, bevor du sie teilst.
+  example: "`squash` fasst einen Commit mit seinem Vorgänger zusammen."
+  category: git
+  aliases: [rebase -i, squash, fixup]
+  related: [rebase, amend]
+  lesson: git/rebase-und-github
+- slug: force-push
+  term: Force-Push
+  short: Ein Push, der die Historie auf dem Remote überschreibt, auch wenn dabei Commits verloren gehen.
+  explanation: >
+    Nach einem Rebase oder Amend passt deine lokale Historie nicht mehr zum Remote, ein normaler Push wird
+    abgelehnt. `git push --force-with-lease` überschreibt trotzdem, bricht aber ab, wenn jemand anderes in
+    der Zwischenzeit gepusht hat. Auf geteilten Branches wie main ist Force-Push tabu.
+  example: "`git push --force-with-lease origin feat/login`"
+  category: git
+  aliases: [--force, --force-with-lease, force push]
+  related: [push, rebase]
+  lesson: git/rebase-und-github
+- slug: ssh
+  term: SSH
+  short: Ein Protokoll für verschlüsselte Verbindungen zu anderen Rechnern, das mit Schlüsselpaaren statt Passwörtern arbeitet.
+  explanation: >
+    Mit SSH meldest du dich an Servern an oder überträgst Git-Daten. Du erzeugst ein Schlüsselpaar: Der
+    öffentliche Schlüssel kommt auf den Server (oder zu GitHub), der private bleibt geheim auf deinem
+    Rechner.
+  example: "`git@github.com:example/shop.git` ist eine SSH-Adresse eines Repositorys."
+  category: git
+  aliases: [SSH-Schlüssel, Secure Shell]
+  related: [https, remote]
+  lesson: git/rebase-und-github
+- slug: https
+  term: HTTPS
+  short: Die verschlüsselte Variante von HTTP, mit der Browser und Programme sicher mit Servern sprechen.
+  explanation: >
+    HTTPS schützt die übertragenen Daten vor Mitlesen und Verändern. Git kann Repositorys über HTTPS klonen
+    und pushen. Zum Anmelden benutzt du dabei statt eines Passworts ein Token.
+  example: "`https://github.com/example/shop.git` ist eine HTTPS-Adresse eines Repositorys."
+  category: git
+  aliases: []
+  related: [ssh, personal-access-token]
+  lesson: git/rebase-und-github
+- slug: personal-access-token
+  term: Personal Access Token
+  short: Ein geheimer Schlüssel, der statt deines Passworts für Git über HTTPS und für API-Aufrufe verwendet wird.
+  explanation: >
+    Ein Token gewährt nur die Rechte, die du beim Erstellen auswählst, und läuft nach einer festgelegten Zeit
+    ab. Du kannst es jederzeit widerrufen, ohne dein Passwort zu ändern. Ein Token gehört niemals in den
+    Code oder in ein Repository.
+  example: "`Authorization: Bearer <dein-token>`"
+  category: git
+  aliases: [PAT, Token, Tokens, Zugangstoken]
+  related: [https, api]
+  lesson: git/rebase-und-github
+- slug: api
+  term: API
+  short: Eine Schnittstelle, über die Programme miteinander sprechen und Daten austauschen.
+  explanation: >
+    Eine Web-API bietet Adressen (Endpunkte) an, die ein Programm per HTTP aufruft. Die GitHub-API erlaubt
+    zum Beispiel, Repositorys anzulegen oder Issues zu lesen – ohne Browser, direkt aus einem Skript.
+  example: "`POST https://api.github.com/user/repos` legt ein neues Repository an."
+  category: git
+  aliases: [APIs, Schnittstelle, REST-API]
+  related: [json, personal-access-token]
+  lesson: git/rebase-und-github
+- slug: json
+  term: JSON
+  short: Ein Textformat für strukturierte Daten aus Objekten in `{}`, Listen in `[]` und Werten.
+  explanation: >
+    JSON (JavaScript Object Notation) ist das Standardformat vieler Web-APIs. Schlüssel stehen in doppelten
+    Anführungszeichen, Werte können Text, Zahlen, `true`/`false`, `null`, Listen oder Objekte sein.
+  example: "`{\"name\": \"portfolio\", \"private\": true}`"
+  category: git
+  aliases: []
+  related: [api]
+  lesson: git/rebase-und-github
+- slug: pull-request
+  term: Pull Request
+  short: Ein Vorschlag auf einer Plattform wie GitHub, die Änderungen eines Branches in einen anderen zu übernehmen.
+  explanation: >
+    In einem Pull Request (bei GitLab Merge Request) sehen andere deine Änderungen, kommentieren sie und
+    geben sie frei. Automatische Prüfungen laufen mit. Erst nach dem Review wird der Branch gemergt.
+  example: "Du pushst `feat/login` und öffnest einen Pull Request nach `main`."
+  category: git
+  aliases: [Pull Requests, PR, PRs, Merge Request]
+  related: [branch, merge, fork]
+  lesson: git/rebase-und-github
+- slug: credential-helper
+  term: Credential Helper
+  short: Ein Hilfsprogramm, das Git-Zugangsdaten sicher speichert, damit du sie nicht ständig eintippen musst.
+  explanation: >
+    Bei HTTPS fragt Git nach Benutzername und Token. Ein Credential Helper wie der Git Credential Manager
+    oder der macOS-Schlüsselbund merkt sie sich verschlüsselt und gibt sie Git beim nächsten Mal automatisch.
+  example: "`git config --global credential.helper osxkeychain`"
+  category: git
+  aliases: [Credential Manager, credential.helper]
+  related: [https, personal-access-token]
+  lesson: git/rebase-und-github
+- slug: reset
+  term: Reset
+  short: Ein Befehl, der den aktuellen Branch auf einen anderen Commit zurücksetzt – wahlweise mit oder ohne Dateiänderungen.
+  explanation: >
+    `git reset` verschiebt den Branch-Zeiger. `--soft` lässt Staging-Bereich und Dateien in Ruhe, `--mixed`
+    (Standard) leert den Staging-Bereich, `--hard` setzt zusätzlich alle Dateien zurück. Uncommittete
+    Änderungen sind bei `--hard` endgültig weg.
+  example: "`git reset --soft HEAD~1` macht den letzten Commit rückgängig, die Änderungen bleiben vorgemerkt."
+  category: git
+  aliases: [git reset, zurücksetzen]
+  related: [revert, reflog, head]
+  lesson: git/aenderungen-rueckgaengig-machen
+- slug: revert
+  term: Revert
+  short: Ein neuer Commit, der die Änderungen eines älteren Commits genau umkehrt.
+  explanation: >
+    Anders als `reset` schreibt `git revert` die Historie nicht um, sondern ergänzt sie. Deshalb ist revert
+    der sichere Weg, einen Fehler rückgängig zu machen, der schon mit anderen geteilt wurde.
+  example: "`git revert 3f2a9c1`"
+  category: git
+  aliases: [git revert, reverten]
+  related: [reset, commit]
+  lesson: git/aenderungen-rueckgaengig-machen
+- slug: reflog
+  term: Reflog
+  short: Das Tagebuch von Git, in dem jede Bewegung von HEAD und den Branches lokal mitgeschrieben wird.
+  explanation: >
+    Auch Commits, die nach einem Reset oder Rebase in keinem Branch mehr auftauchen, stehen noch eine Weile
+    im Reflog. Mit ihrem Hash holst du sie zurück. Der Reflog ist das Sicherheitsnetz für fast jeden Fehler.
+  example: "`git reflog` zeigt Einträge wie `HEAD@{2}: commit: feat: add footer`."
+  category: git
+  aliases: [git reflog]
+  related: [reset, head]
+  lesson: git/aenderungen-rueckgaengig-machen
+- slug: stash
+  term: Stash
+  short: Ein Zwischenlager, in dem Git uncommittete Änderungen parkt, damit du kurz etwas anderes tun kannst.
+  explanation: >
+    `git stash` räumt Arbeitsverzeichnis und Staging-Bereich auf und legt die Änderungen auf einen Stapel.
+    Mit `git stash pop` holst du sie zurück. Der Stash ist praktisch, ersetzt aber keine Commits.
+  example: "`git stash push -m \"halbfertiges Formular\"`"
+  category: git
+  aliases: [git stash, stashen, Stashes]
+  related: [arbeitsverzeichnis, staging-bereich]
+  lesson: git/stash-und-gitignore
+- slug: gitignore
+  term: .gitignore
+  short: Eine Datei mit Mustern für Dateien und Ordner, die Git nicht verfolgen soll.
+  explanation: >
+    In die `.gitignore` gehören Dinge, die automatisch entstehen oder geheim sind: Abhängigkeitsordner wie
+    `node_modules/`, Build-Ergebnisse, Logs und `.env`-Dateien. Dateien, die schon committet sind, ignoriert
+    Git trotz Eintrag weiter nicht – die musst du erst mit `git rm --cached` aus dem Index nehmen.
+  example: "Die Zeile `*.log` ignoriert alle Logdateien."
+  category: git
+  aliases: [gitignore, Ignore-Datei]
+  related: [glob-muster, untracked-datei]
+  lesson: git/stash-und-gitignore
+- slug: glob-muster
+  term: Glob-Muster
+  short: Ein einfaches Dateimuster mit Platzhaltern wie `*`, `?` und `**`.
+  explanation: >
+    `*` steht für beliebig viele Zeichen außer `/`, `?` für genau ein Zeichen und `**` für beliebig viele
+    Ordnerebenen. Glob-Muster findest du in `.gitignore`, in der Shell und in vielen Konfigurationsdateien.
+  example: "`logs/**/*.log` passt auf jede .log-Datei unterhalb von logs/."
+  category: git
+  aliases: [Glob, Globs, Wildcard, Platzhalter]
+  related: [gitignore]
+  lesson: git/stash-und-gitignore
+- slug: tag
+  term: Tag
+  short: Ein fester Name für einen bestimmten Commit, meist eine Versionsnummer wie `v1.0.0`.
+  explanation: >
+    Anders als ein Branch bewegt sich ein Tag nie weiter. Er markiert dauerhaft einen Stand – typischerweise
+    eine veröffentlichte Version. Tags werden nicht automatisch gepusht, du schickst sie mit
+    `git push origin v1.0.0` oder `git push --tags`.
+  example: "`git tag -a v1.0.0 -m \"Erste Version\"`"
+  category: git
+  aliases: [Tags, taggen]
+  related: [annotierter-tag, release, semantic-versioning]
+  lesson: git/tags-und-hooks
+- slug: annotierter-tag
+  term: Annotierter Tag
+  short: Ein Tag, der als eigenes Objekt mit Autor, Datum und Nachricht gespeichert wird.
+  explanation: >
+    Ein Lightweight Tag ist nur ein Name für einen Commit. Ein annotierter Tag (`git tag -a`) speichert
+    zusätzlich, wer ihn wann und warum erstellt hat, und kann signiert werden. Für Releases nimmst du immer
+    annotierte Tags.
+  example: "`git show v1.0.0` zeigt bei einem annotierten Tag zuerst Tagger und Nachricht."
+  category: git
+  aliases: [annotierte Tags, Annotated Tag]
+  related: [tag, release]
+  lesson: git/tags-und-hooks
+- slug: semantic-versioning
+  term: Semantic Versioning
+  short: Ein Schema für Versionsnummern der Form MAJOR.MINOR.PATCH, das ausdrückt, wie groß eine Änderung ist.
+  explanation: >
+    PATCH (1.0.0 → 1.0.1) heißt „Fehler behoben“, MINOR (1.0.1 → 1.1.0) „neue Funktion, kompatibel“, MAJOR
+    (1.1.0 → 2.0.0) „Breaking Change“. So erkennen Nutzer an der Nummer, ob ein Update gefahrlos ist.
+  example: "Von `2.4.1` auf `2.5.0` kommt eine neue Funktion ohne Breaking Change."
+  category: git
+  aliases: [SemVer, Semantische Versionierung, Versionsnummer, Versionsnummern]
+  related: [tag, breaking-change, conventional-commits]
+  lesson: git/tags-und-hooks
+- slug: release
+  term: Release
+  short: Eine veröffentlichte, benannte Version einer Software.
+  explanation: >
+    Ein Release besteht in Git meist aus einem annotierten Tag. Plattformen wie GitHub machen daraus eine
+    Release-Seite mit Änderungsliste (Changelog) und herunterladbaren Dateien.
+  example: Das Release `v2.0.0` enthält einen Changelog mit allen Breaking Changes.
+  category: git
+  aliases: [Releases]
+  related: [tag, semantic-versioning]
+  lesson: git/tags-und-hooks
+- slug: git-hook
+  term: Git-Hook
+  short: Ein Skript, das Git automatisch bei bestimmten Ereignissen ausführt, etwa vor einem Commit.
+  explanation: >
+    Hooks liegen in `.git/hooks` (oder in dem Ordner, den `core.hooksPath` angibt) und tragen den Namen
+    des Ereignisses, z. B. `pre-commit`, `commit-msg`, `post-checkout` oder `pre-push`. Beendet sich ein
+    `pre-…`-Hook mit einem Exit-Code ungleich 0, bricht Git die Aktion ab.
+  example: "Ein `commit-msg`-Hook lehnt Nachrichten ab, die nicht Conventional Commits folgen."
+  category: git
+  aliases: [Hook, Hooks, Git-Hooks, pre-commit, commit-msg, post-checkout, pre-push]
+  related: [skript, exit-code, linter]
+  lesson: git/tags-und-hooks
+- slug: skript
+  term: Skript
+  short: Eine Textdatei mit Befehlen, die ein Programm wie die Bash der Reihe nach ausführt.
+  explanation: >
+    Skripte automatisieren Abläufe, die du sonst von Hand tippen würdest. Die erste Zeile (Shebang) legt
+    fest, welches Programm das Skript ausführt. Damit du es direkt starten kannst, muss es ausführbar sein.
+  example: "`./check.sh` startet das Skript check.sh im aktuellen Ordner."
+  category: git
+  aliases: [Skripte, Script, Shell-Skript]
+  related: [shebang, dateirechte]
+  lesson: git/tags-und-hooks
+- slug: shebang
+  term: Shebang
+  short: Die erste Zeile eines Skripts, die mit `#!` beginnt und das ausführende Programm nennt.
+  explanation: >
+    `#!/bin/sh` bedeutet „führe mich mit der Standard-Shell aus“, `#!/usr/bin/env php` „führe mich mit PHP
+    aus“. Ohne Shebang weiß das Betriebssystem nicht, wie es die Datei starten soll.
+  example: "`#!/bin/sh`"
+  category: git
+  aliases: ["#!"]
+  related: [skript]
+  lesson: git/tags-und-hooks
+- slug: exit-code
+  term: Exit-Code
+  short: Die Zahl, mit der sich ein Programm beendet – 0 heißt Erfolg, alles andere Fehler.
+  explanation: >
+    Jedes Programm meldet beim Beenden einen Exit-Code an seinen Aufrufer. In der Bash steht der Code des
+    letzten Befehls in `$?`. Git-Hooks nutzen ihn, um eine Aktion zu erlauben (0) oder abzubrechen (≠ 0).
+  example: "`exit 1` am Ende eines pre-commit-Hooks verhindert den Commit."
+  category: git
+  aliases: [Exit-Codes, Rückgabewert, Exit Status]
+  related: [git-hook, skript]
+  lesson: git/tags-und-hooks
+- slug: dateirechte
+  term: Dateirechte
+  short: Die Angaben, wer eine Datei lesen, schreiben oder ausführen darf.
+  explanation: >
+    Unter Linux und macOS hat jede Datei Rechte für Besitzer, Gruppe und alle anderen. Damit ein Skript oder
+    Hook starten kann, braucht es das Ausführrecht, das du mit `chmod +x datei` setzt.
+  example: "`chmod +x .git/hooks/pre-commit`"
+  category: git
+  aliases: [Ausführrecht, chmod, ausführbar, Berechtigungen]
+  related: [skript, git-hook]
+  lesson: git/tags-und-hooks
+- slug: linter
+  term: Linter
+  short: Ein Werkzeug, das Code automatisch auf Fehler, Stilprobleme und verdächtige Muster prüft.
+  explanation: >
+    Ein Linter führt den Code nicht aus, sondern liest ihn und meldet Probleme – etwa ungenutzte Variablen
+    oder falsche Einrückung. Beispiele sind ESLint für JavaScript und Pint oder PHPStan für PHP.
+  example: "`vendor/bin/pint --test` prüft den PHP-Codestil, ohne etwas zu ändern."
+  category: git
+  aliases: [Linters, Linting, linten]
+  related: [git-hook]
+  lesson: git/tags-und-hooks
+- slug: composer
+  term: Composer
+  short: Der Paketmanager für PHP, der Bibliotheken eines Projekts installiert und verwaltet.
+  explanation: >
+    In `composer.json` steht, welche Pakete ein PHP-Projekt braucht. `composer install` lädt genau die
+    Versionen, die in `composer.lock` festgehalten sind, in den Ordner `vendor/`.
+  example: "`composer install`"
+  category: git
+  aliases: [composer install]
+  related: [abhaengigkeit, lockfile, paketmanager]
+  lesson: git/tags-und-hooks
+- slug: abhaengigkeit
+  term: Abhängigkeit
+  short: Ein fremdes Paket oder eine Bibliothek, die dein Projekt zum Laufen braucht.
+  explanation: >
+    Moderne Projekte nutzen viele Pakete anderer Entwickler. Welche das sind, steht in einer Datei wie
+    `composer.json` oder `package.json`. Die Pakete selbst gehören nicht ins Repository – sie werden per
+    Paketmanager installiert.
+  example: "Ein Laravel-Projekt hat Abhängigkeiten wie `laravel/framework`."
+  category: git
+  aliases: [Abhängigkeiten, Dependency, Dependencies]
+  related: [composer, lockfile]
+  lesson: git/tags-und-hooks
+- slug: lockfile
+  term: Lockfile
+  short: Eine Datei, die die exakten Versionen aller installierten Abhängigkeiten festhält.
+  explanation: >
+    Dank Lockfile (`composer.lock`, `package-lock.json`, `bun.lock`) bekommt jede Person im Team genau
+    dieselben Paketversionen. Das Lockfile wird committet. Ändert es sich nach einem Branch-Wechsel, musst du
+    die Abhängigkeiten neu installieren.
+  example: "`git diff --name-only HEAD@{1} HEAD -- composer.lock`"
+  category: git
+  aliases: [Lockfiles, composer.lock, package-lock.json]
+  related: [abhaengigkeit, composer]
+  lesson: git/tags-und-hooks
+- slug: parent-commit
+  term: Parent-Commit
+  short: Der Vorgänger-Commit, auf den ein Commit verweist.
+  explanation: >
+    Jeder Commit speichert den Hash seines Vorgängers, seines Parents. So entsteht die Kette, die
+    `git log` rückwärts abläuft. Der erste Commit hat keinen Parent, ein Merge-Commit hat zwei.
+  example: "`git cat-file -p HEAD` zeigt in der Zeile `parent` den Hash des Vorgängers."
+  category: git
+  aliases: [Parent, Parents, Eltern-Commit, Vorgänger-Commit]
+  related: [commit, commit-hash, merge-commit]
+  lesson: git/branches-verstehen
+- slug: git-referenz
+  term: Referenz (Git)
+  short: Ein Name in Git, der auf einen Commit zeigt – zum Beispiel ein Branch oder ein Tag.
+  explanation: >
+    Git speichert Referenzen als kleine Dateien unter `.git/refs/` (oder gesammelt in `.git/packed-refs`).
+    Ein Branch liegt unter `refs/heads/`, ein Tag unter `refs/tags/`. Statt dir Hashes zu merken, nutzt du
+    diese lesbaren Namen.
+  example: "`cat .git/refs/heads/main` zeigt den Commit-Hash, auf den main gerade zeigt."
+  category: git
+  aliases: [Ref, Refs, Git-Referenz, Git-Referenzen]
+  related: [branch, tag, head]
+  lesson: git/branches-verstehen
+- slug: merge-basis
+  term: Merge-Basis
+  short: Der letzte gemeinsame Vorfahren-Commit zweier Branches.
+  explanation: >
+    Beim Mergen vergleicht Git beide Branches mit ihrer Merge-Basis, also dem Commit, an dem sie sich
+    getrennt haben. Daraus erkennt Git, welche Seite was geändert hat (Three-Way-Merge). Ist die
+    Merge-Basis die Spitze des Zielbranches, reicht ein Fast-Forward.
+  example: "`git merge-base main feat/login` gibt den Hash der Merge-Basis aus."
+  category: git
+  aliases: [Merge-Base, merge base, Mergebasis]
+  related: [merge, fast-forward, merge-commit]
+  lesson: git/mergen-und-konflikte
+- slug: url
+  term: URL
+  short: Eine Adresse, unter der etwas im Netz (oder auf dem Rechner) zu finden ist, z. B. eine Webseite oder ein Repository.
+  explanation: >
+    URL steht für „Uniform Resource Locator“. Sie beginnt meist mit einem Schema wie `https://` und nennt
+    dann Rechner und Pfad. Git akzeptiert als Remote-Adresse URLs (HTTPS, SSH) und einfache Pfade.
+  example: "`https://github.com/dein-name/portfolio.git` ist die HTTPS-URL eines Repositorys."
+  category: git
+  aliases: [URLs, Adresse]
+  related: [remote, https, ssh]
+  lesson: git/remotes-push-pull
+- slug: ssh-schluessel
+  term: SSH-Schlüssel
+  short: Ein Schlüsselpaar aus privatem und öffentlichem Teil, mit dem du dich ohne Passwort per SSH anmeldest.
+  explanation: >
+    Der private Schlüssel bleibt immer auf deinem Rechner, den öffentlichen Teil (Datei mit `.pub`) hinterlegst
+    du beim Dienst, etwa bei GitHub. Beim Verbinden beweist dein Rechner mit dem privaten Schlüssel, dass er
+    zum hinterlegten öffentlichen passt. Empfohlen ist der Typ Ed25519.
+  example: "`ssh-keygen -t ed25519 -C \"user@example.com\"` erzeugt ein neues Schlüsselpaar."
+  category: git
+  aliases: [SSH-Schlüssels, SSH-Key, SSH-Keys, Schlüsselpaar]
+  related: [ssh, github]
+  lesson: git/rebase-und-github
+- slug: http-header
+  term: HTTP-Header
+  short: Eine Zusatzangabe in einer HTTP-Anfrage oder -Antwort, z. B. für die Anmeldung oder das Datenformat.
+  explanation: >
+    Header stehen vor dem eigentlichen Inhalt und bestehen aus Name und Wert, getrennt durch einen
+    Doppelpunkt. Über Header schickst du etwa einen Token (`Authorization`) oder sagst, dass der Body
+    JSON ist (`Content-Type`).
+  example: "`Authorization: Bearer <dein-token>` meldet dich bei der GitHub-API an."
+  category: git
+  aliases: [Header, HTTP-Headers]
+  related: [api, https, json]
+  lesson: git/rebase-und-github
+- slug: lightweight-tag
+  term: Lightweight Tag
+  short: Ein Tag, der nur aus einem Namen besteht, der direkt auf einen Commit zeigt.
+  explanation: >
+    `git tag v1.0.0` ohne `-a` legt einen Lightweight Tag an. Git speichert dabei weder Autor noch Datum noch
+    Nachricht. Für private, schnelle Markierungen reicht das, für Releases nimmst du annotierte Tags.
+  example: "`git cat-file -t v1.0.0` meldet bei einem Lightweight Tag `commit` statt `tag`."
+  category: git
+  aliases: [Lightweight Tags, leichtgewichtiger Tag]
+  related: [tag, annotierter-tag]
+  lesson: git/tags-und-hooks
+- slug: changelog
+  term: Changelog
+  short: Eine Datei, die für jede Version auflistet, was sich geändert hat.
+  explanation: >
+    Ein Changelog (meist `CHANGELOG.md`) ist für Menschen geschrieben: neue Funktionen, Fehlerbehebungen und
+    inkompatible Änderungen je Version. Mit Conventional Commits lässt er sich teilweise automatisch aus der
+    Historie erzeugen.
+  example: "`## 2.4.0` – Neu: Wunschliste. Behoben: leerer Warenkorb führte zu einem Fehler."
+  category: git
+  aliases: [Änderungsprotokoll, CHANGELOG.md]
+  related: [release, semantic-versioning, conventional-commits]
+  lesson: git/tags-und-hooks
+- slug: env-datei
+  term: .env-Datei
+  short: Eine Textdatei mit Einstellungen und Geheimnissen eines Projekts, die nie ins Repository gehört.
+  explanation: >
+    In der `.env` stehen Werte wie Datenbank-Passwörter oder API-Schlüssel, die je Rechner verschieden sind.
+    Sie wird per `.gitignore` ausgeschlossen. Ins Repository kommt stattdessen eine `.env.example` mit
+    Platzhaltern, damit alle wissen, welche Werte sie setzen müssen.
+  example: "`DB_PASSWORD=<dein-passwort>` in `.env.example`, der echte Wert nur in der lokalen `.env`."
+  category: git
+  aliases: [.env, env-Datei, .env.example]
+  related: [gitignore]
+  lesson: git/stash-und-gitignore
+- slug: ci-pipeline
+  term: CI-Pipeline
+  short: Eine automatische Abfolge von Prüfungen, die ein Server bei jedem Push oder Pull Request ausführt.
+  explanation: >
+    CI steht für Continuous Integration. Die Pipeline startet Tests, Linter und Builds auf einem Server, etwa
+    mit GitHub Actions. Anders als lokale Git-Hooks lässt sie sich nicht einfach überspringen und ist deshalb
+    die verbindliche Prüfung im Team.
+  example: "Ein Pull Request darf erst gemergt werden, wenn die CI-Pipeline grün ist."
+  category: git
+  aliases: [CI, Continuous Integration, Pipeline]
+  related: [git-hook, pull-request, linter]
+  lesson: git/tags-und-hooks
+- slug: homebrew
+  term: Homebrew
+  short: Der verbreitetste Paketmanager für macOS.
+  explanation: >
+    Homebrew installiert, aktualisiert und entfernt Kommandozeilen-Programme auf dem Mac mit dem Befehl `brew`.
+    Programme landen auf Apple-Silicon-Macs unter `/opt/homebrew`, auf Intel-Macs unter `/usr/local`.
+  example: "`brew install git` installiert eine aktuelle Git-Version."
+  category: git
+  aliases: [brew]
+  related: [paketmanager, betriebssystem]
+  lesson: git/einrichten-und-erstes-repository
+- slug: home-verzeichnis
+  term: Home-Verzeichnis
+  short: Dein persönlicher Ordner auf dem Rechner, abgekürzt mit `~`.
+  explanation: >
+    Jede Benutzerin und jeder Benutzer hat ein eigenes Home-Verzeichnis, etwa `/home/ada` unter Linux oder
+    `/Users/ada` unter macOS. Dort liegen persönliche Dateien und Einstellungen wie die globale Git-Konfiguration
+    `~/.gitconfig`.
+  example: "`cd ~` wechselt in dein Home-Verzeichnis."
+  category: git
+  aliases: [Home, Heimverzeichnis, "~"]
+  related: [ordner, pfad, git-konfiguration]
+  lesson: git/einrichten-und-erstes-repository
+- slug: git-blame
+  term: git blame
+  short: Zeigt für jede Zeile einer Datei, in welchem Commit und von wem sie zuletzt geändert wurde.
+  explanation: >
+    `git blame` ist hilfreich, wenn du verstehen willst, warum eine bestimmte Zeile so aussieht. Über den
+    angezeigten Commit-Hash findest du mit `git show` die vollständige Änderung samt Nachricht.
+  example: "`git blame preise.txt` zeigt neben jeder Preiszeile Hash, Autor und Datum."
+  category: git
+  aliases: [blame]
+  related: [commit, commit-hash, diff]
+  lesson: git/die-historie-lesen

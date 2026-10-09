@@ -1,0 +1,337 @@
+title: Dein Portfolio-Repository
+description: |
+  In diesem Projekt baust du von Grund auf ein echtes Git-Repository für dein Entwickler-Portfolio.
+  Du gehst dabei genau die Schritte, die du auch in einem Team-Projekt gehst: Repository anlegen,
+  sauber committen, unerwünschte Dateien ausschließen, ein Feature in einem eigenen Branch bauen,
+  mergen, einen Merge-Konflikt lösen, Commit-Messages per Hook absichern und am Ende eine Version
+  taggen.
+
+  Alles passiert im Ordner `projekt` in deinem Git-Workspace. Öffne dafür das Übungs-Terminal und
+  wechsle mit `cd projekt` hinein (lege den Ordner vorher mit `mkdir projekt` an, falls es ihn noch
+  nicht gibt). Nach jedem Schritt prüft Stacklab den echten Zustand deines Repositorys.
+
+  Die Schritte bauen aufeinander auf. Lösche zwischendurch nichts, was ein früherer Schritt
+  angelegt hat – auch keine Branches –, sonst schlagen frühere Prüfungen wieder fehl.
+goal: >
+  Ein Repository `projekt` mit sauberer Historie aus Conventional Commits, einer `.gitignore`, zwei
+  gemergten Feature-Branches (einer davon mit gelöstem Konflikt), einem versionierten
+  `commit-msg`-Hook und dem annotierten Tag `v1.0.0`.
+workdir: projekt
+steps:
+  - id: repository-anlegen
+    title: Repository anlegen und erster Commit
+    description: |
+      Jedes Projekt beginnt mit einem leeren Repository und einer `README.md` – der Visitenkarte
+      deines Projekts. Da es im Übungs-Terminal keine globale Git-Identität gibt, setzt du Name und
+      E-Mail für dieses Repository.
+
+      1. Lege den Ordner an und wechsle hinein: `mkdir -p projekt && cd projekt`.
+      2. Mache daraus ein Git-Repository und setze **lokal** deinen Namen und deine E-Mail-Adresse
+         (gern einen Platzhalter wie `du@example.com`).
+      3. Lege `README.md` mit genau diesem Aufbau an – die zweite Zeile brauchst du später für den
+         Merge-Konflikt:
+
+         ```markdown
+         # Mein Portfolio
+         Kontakt: noch offen
+         ```
+
+      4. Committe die Datei mit einer Conventional-Commit-Message, z. B. `docs: add readme`.
+    checklist:
+      - "`git init` ausgeführt, `user.name` und `user.email` lokal gesetzt"
+      - README.md mit Überschrift in Zeile 1 und Kontaktzeile in Zeile 2
+      - Erster Commit mit Conventional-Commit-Message
+    hints:
+      - "`git config user.name \"Ada Lovelace\"` und `git config user.email \"ada@example.com\"` – ohne `--global` gilt das nur hier."
+      - "`printf '# Mein Portfolio\\nKontakt: noch offen\\n' > README.md` legt die Datei in einem Rutsch an."
+      - Die Message beginnt mit einem Typ wie `docs:` und einem Leerzeichen.
+    checks:
+      - type: dir_exists
+        path: .git
+        message: Im Ordner projekt gibt es noch kein Git-Repository. Führe `git init` aus.
+      - type: command
+        run: git config --local --get user.name
+        stdout_matches: "\\S"
+        message: Setze deinen Namen lokal mit `git config user.name "…"`.
+      - type: command
+        run: git config --local --get user.email
+        stdout_matches: "^\\S+@\\S+$"
+        message: Setze eine E-Mail-Adresse (mit @) lokal mit `git config user.email "…"`.
+      - type: file_contains
+        path: README.md
+        pattern: "^# \\S"
+        message: README.md braucht in der ersten Zeile eine Überschrift wie `# Mein Portfolio`.
+      - type: command
+        run: git ls-files README.md
+        stdout_equals: README.md
+        message: README.md ist noch nicht committet.
+      - type: command
+        run: git log --reverse --format=%s | head -n 1
+        stdout_matches: "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)(\\([^)]+\\))?!?: \\S"
+        message: "Der erste Commit sollte eine Conventional-Commit-Message haben, z. B. `docs: add readme`."
+    solution: |
+      ```bash
+      mkdir -p projekt && cd projekt
+      git init
+      git config user.name "Ada Lovelace"
+      git config user.email "ada@example.com"
+      printf '# Mein Portfolio\nKontakt: noch offen\n' > README.md
+      git add README.md
+      git commit -m "docs: add readme"
+      ```
+  - id: gitignore-anlegen
+    title: Unerwünschte Dateien ausschließen
+    description: |
+      In echten Projekten liegen Dateien im Ordner, die **nie** ins Repository gehören: Geheimnisse in
+      `.env`, Logdateien und installierte Abhängigkeiten.
+
+      1. Lege eine Datei `.env` mit dem Inhalt `API_TOKEN=<dein-token>` an (sie simuliert eine geheime
+         Konfiguration).
+      2. Erstelle eine `.gitignore`, die `.env`, alle Dateien mit der Endung `.log` und den Ordner
+         `node_modules/` ausschließt.
+      3. Prüfe mit `git status`: `.env` darf nicht mehr als untracked auftauchen.
+      4. Committe die `.gitignore` (z. B. `chore: add gitignore`).
+    checklist:
+      - "`.env` existiert, wird aber ignoriert"
+      - "`.gitignore` mit `.env`, `*.log` und `node_modules/` committet"
+    hints:
+      - Jede Zeile der `.gitignore` ist ein Muster.
+      - "`git check-ignore -v .env` zeigt dir, welche Regel greift."
+    checks:
+      - type: command
+        run: git ls-files .gitignore
+        stdout_equals: .gitignore
+        message: Die .gitignore ist noch nicht committet.
+      - type: command
+        run: git check-ignore -q .env && git check-ignore -q fehler.log && git check-ignore -q node_modules/paket/index.js && echo ok
+        stdout_equals: ok
+        message: Die .gitignore muss `.env`, `*.log` und `node_modules/` ausschließen.
+      - type: command
+        run: git ls-files .env | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: .env darf nicht im Repository landen. Entferne sie mit `git rm --cached .env` aus dem Index.
+    solution: |
+      ```bash
+      echo 'API_TOKEN=<dein-token>' > .env
+      printf '.env\n*.log\nnode_modules/\n' > .gitignore
+      git status          # .env taucht nicht mehr auf
+      git add .gitignore
+      git commit -m "chore: add gitignore"
+      ```
+  - id: feature-branch
+    title: Ein Feature im eigenen Branch bauen
+    description: |
+      Neue Inhalte entstehen nicht direkt auf `main`, sondern in einem Feature-Branch.
+
+      1. Lege den Branch `feat/projekte` an und wechsle hinein.
+      2. Erstelle `projekte.md` mit einer Überschrift `# Projekte` und committe sie
+         (z. B. `feat: add projects page`).
+      3. Ergänze `projekte.md` um mindestens einen Projekt-Eintrag (z. B. `- Stacklab-Kurs Git`) und
+         committe erneut.
+
+      `main` bleibt in diesem Schritt unverändert. Lösche den Branch auch später nicht.
+    checklist:
+      - Branch `feat/projekte` existiert
+      - Mindestens zwei Commits ändern `projekte.md`
+    hints:
+      - "`git switch -c feat/projekte` legt den Branch an und wechselt sofort hinein."
+      - Prüfe mit `git log --oneline --graph --all`, auf welchem Branch deine Commits liegen.
+    checks:
+      - type: command
+        run: git rev-parse --verify --quiet refs/heads/feat/projekte >/dev/null && echo ok
+        stdout_equals: ok
+        message: Der Branch feat/projekte existiert (noch) nicht.
+      - type: command
+        run: git log feat/projekte --oneline -- projekte.md | wc -l
+        stdout_matches: "^\\s*([2-9]|[1-9][0-9]+)\\s*$"
+        message: Auf feat/projekte sollten mindestens zwei Commits projekte.md ändern.
+    solution: |
+      ```bash
+      git switch -c feat/projekte
+      echo '# Projekte' > projekte.md
+      git add projekte.md
+      git commit -m "feat: add projects page"
+      echo '- Stacklab-Kurs Git' >> projekte.md
+      git commit -am "feat: add first project entry"
+      ```
+  - id: feature-mergen
+    title: Das Feature mit einem Merge-Commit übernehmen
+    description: |
+      Das Feature ist fertig. Damit in der Historie sichtbar bleibt, dass es ein eigener
+      Entwicklungsstrang war, mergst du es mit einem Merge-Commit – auch wenn ein Fast-Forward möglich
+      wäre.
+
+      1. Wechsle zurück auf `main`.
+      2. Merge `feat/projekte` mit `--no-ff`.
+      3. Sieh dir das Ergebnis mit `git log --oneline --graph` an.
+    checklist:
+      - "`feat/projekte` ist in `main` enthalten"
+      - Es gibt einen Merge-Commit auf `main`
+    hints:
+      - Ohne `--no-ff` würde Git hier nur den Zeiger verschieben.
+      - "`git switch main && git merge --no-ff feat/projekte`"
+    checks:
+      - type: command
+        run: git merge-base --is-ancestor feat/projekte main && echo ok
+        stdout_equals: ok
+        message: feat/projekte ist noch nicht in main gemergt.
+      - type: command
+        run: git rev-list --merges main | wc -l
+        stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+        message: Auf main gibt es noch keinen Merge-Commit. Nutze `git merge --no-ff feat/projekte`.
+      - type: file_exists
+        path: projekte.md
+        message: Nach dem Merge sollte projekte.md auch auf main liegen. Bist du auf main?
+    solution: |
+      ```bash
+      git switch main
+      git merge --no-ff feat/projekte -m "Merge branch 'feat/projekte'"
+      git log --oneline --graph
+      ```
+  - id: konflikt-loesen
+    title: Einen Merge-Konflikt erzeugen und lösen
+    description: |
+      Konflikte gehören zum Alltag. Hier erzeugst du absichtlich einen und löst ihn sauber.
+
+      1. Lege von `main` aus den Branch `feat/kontakt` an. Ändere dort Zeile 2 der `README.md` in
+         `Kontakt: kontakt@example.com` und committe.
+      2. Wechsle auf `main` und ändere **dieselbe Zeile** in `Kontakt: hallo@example.com`. Committe.
+      3. Merge `feat/kontakt` in `main`. Git meldet einen Konflikt.
+      4. Löse ihn so, dass die Zeile am Ende `Kontakt: kontakt@example.com` lautet und keine
+         Konfliktmarker mehr in der Datei stehen.
+      5. Schließe den Merge mit `git add README.md` und `git commit` ab.
+    checklist:
+      - Zwei Branches haben dieselbe Zeile unterschiedlich geändert
+      - Konflikt gelöst, keine Marker mehr in README.md
+      - Merge-Commit erstellt
+    hints:
+      - "`git status` zeigt während des Konflikts `both modified: README.md`."
+      - Entferne die Zeilen `<<<<<<<`, `=======` und `>>>>>>>` und behalte nur die gewünschte Kontaktzeile.
+      - "Falls du dich verrennst: `git merge --abort` bringt dich zurück zum Stand vor dem Merge."
+    checks:
+      - type: command
+        run: git merge-base --is-ancestor feat/kontakt main && echo ok
+        stdout_equals: ok
+        message: feat/kontakt ist noch nicht in main gemergt.
+      - type: command
+        run: git log --full-history main --oneline -- README.md | wc -l
+        stdout_matches: "^\\s*([3-9]|[1-9][0-9]+)\\s*$"
+        message: README.md sollte auf beiden Branches geändert worden sein (mindestens drei Commits an der Datei).
+      - type: file_contains
+        path: README.md
+        pattern: "^Kontakt: kontakt@example\\.com\\s*$"
+        message: "In README.md muss die Zeile `Kontakt: kontakt@example.com` stehen."
+      - type: command
+        run: grep -cE '^(<<<<<<<|=======|>>>>>>>)' README.md
+        expect_exit: 1
+        message: In README.md stehen noch Konfliktmarker.
+      - type: command
+        run: test ! -f .git/MERGE_HEAD && git rev-list --merges main | wc -l
+        stdout_matches: "^\\s*([2-9]|[1-9][0-9]+)\\s*$"
+        message: Der Merge ist noch nicht abgeschlossen. Führe `git add README.md` und `git commit` aus.
+    solution: |
+      ```bash
+      git switch -c feat/kontakt
+      sed -i 's/^Kontakt:.*/Kontakt: kontakt@example.com/' README.md
+      git commit -am "docs: add contact address"
+      git switch main
+      sed -i 's/^Kontakt:.*/Kontakt: hallo@example.com/' README.md
+      git commit -am "docs: add alternative contact"
+      git merge feat/kontakt          # CONFLICT (content): Merge conflict in README.md
+      printf '# Mein Portfolio\nKontakt: kontakt@example.com\n' > README.md
+      git add README.md
+      git commit --no-edit
+      ```
+  - id: hook-einrichten
+    title: Commit-Messages mit einem Hook absichern
+    description: |
+      Damit die Historie sauber bleibt, soll Git schlechte Commit-Messages automatisch ablehnen. Weil
+      Hooks in `.git/hooks` nicht mitcommittet werden, legst du ihn in einem versionierten Ordner ab.
+
+      1. Erstelle `.githooks/commit-msg`. Das Skript bekommt als erstes Argument den Pfad zur Datei mit
+         der Commit-Message. Es soll mit Exit-Code `1` abbrechen, wenn die erste Zeile nicht dem Muster
+         `typ(scope): beschreibung` folgt (Typen: feat, fix, docs, style, refactor, perf, test, build,
+         ci, chore, revert; Scope optional). Merge-Messages (`Merge …`) sollen erlaubt bleiben.
+      2. Mache das Skript ausführbar.
+      3. Sage Git mit `core.hooksPath`, dass die Hooks in `.githooks` liegen.
+      4. Committe den Hook – mit einer gültigen Message, sonst lehnt er sich selbst ab.
+    checklist:
+      - "`.githooks/commit-msg` ist ausführbar und committet"
+      - "`core.hooksPath` zeigt auf `.githooks`"
+      - Der Hook lehnt ungültige Messages ab und lässt gültige durch
+    hints:
+      - "Die erste Zeile des Skripts ist der Shebang `#!/bin/sh`."
+      - "`head -n 1 \"$1\" | grep -Eq '^(feat|fix|…)(\\([^)]+\\))?!?: .+'` prüft die erste Zeile."
+      - "`chmod +x .githooks/commit-msg` und `git config core.hooksPath .githooks`"
+    checks:
+      - type: command
+        run: git config --get core.hooksPath
+        stdout_matches: "^(\\./)?\\.githooks/?$"
+        message: Setze `git config core.hooksPath .githooks`.
+      - type: command
+        run: test -x .githooks/commit-msg && git ls-files .githooks/commit-msg
+        stdout_equals: .githooks/commit-msg
+        message: .githooks/commit-msg muss ausführbar sein (`chmod +x`) und committet werden.
+      - type: command
+        run: |
+          f=$(mktemp) && printf 'irgendwas geaendert\n' > "$f" && ./.githooks/commit-msg "$f" >/dev/null 2>&1; code=$?; rm -f "$f"; test "$code" -ne 0 && echo blockiert
+        stdout_equals: blockiert
+        message: Der Hook lässt die Message „irgendwas geaendert“ noch durch. Er muss mit `exit 1` abbrechen.
+      - type: command
+        run: |
+          f=$(mktemp) && printf 'feat(SHOP-123): add voucher field\n' > "$f" && ./.githooks/commit-msg "$f" >/dev/null 2>&1; code=$?; rm -f "$f"; test "$code" -eq 0 && echo erlaubt
+        stdout_equals: erlaubt
+        message: Der Hook lehnt die gültige Message „feat(SHOP-123) …“ ab. Prüfe dein Muster (Scope optional).
+    solution: |
+      ```bash
+      mkdir -p .githooks
+      cat > .githooks/commit-msg <<'EOF'
+      #!/bin/sh
+      first_line=$(head -n 1 "$1")
+      case "$first_line" in
+        Merge*) exit 0 ;;
+      esac
+      if ! printf '%s\n' "$first_line" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^)]+\))?!?: .+'; then
+        echo "Commit-Message folgt nicht Conventional Commits: $first_line" >&2
+        exit 1
+      fi
+      EOF
+      chmod +x .githooks/commit-msg
+      git config core.hooksPath .githooks
+      git add .githooks/commit-msg
+      git commit -m "chore: add commit-msg hook"
+      ```
+  - id: version-taggen
+    title: Die erste Version taggen
+    description: |
+      Dein Portfolio ist bereit für die erste Version. Versionen markierst du mit annotierten Tags.
+
+      1. Stelle sicher, dass du auf `main` bist und alles committet ist.
+      2. Erstelle den **annotierten** Tag `v1.0.0` mit einer Nachricht wie „Erste Version“.
+      3. Sieh ihn dir mit `git show v1.0.0` an.
+    checklist:
+      - "Annotierter Tag `v1.0.0` existiert"
+      - Der Tag zeigt auf einen Commit von `main`
+    hints:
+      - Ein annotierter Tag braucht `-a` und eine Nachricht mit `-m`.
+      - "`git tag -a v1.0.0 -m \"Erste Version\"`"
+    checks:
+      - type: command
+        run: git cat-file -t v1.0.0
+        stdout_equals: tag
+        message: Es gibt noch keinen annotierten Tag v1.0.0 (ein Lightweight-Tag reicht nicht – nutze `-a`).
+      - type: command
+        run: git merge-base --is-ancestor v1.0.0 main && echo ok
+        stdout_equals: ok
+        message: v1.0.0 sollte auf einen Commit von main zeigen.
+      - type: command
+        run: git merge-base --is-ancestor feat/kontakt v1.0.0 && git merge-base --is-ancestor feat/projekte v1.0.0 && echo ok
+        stdout_equals: ok
+        message: v1.0.0 sollte beide gemergten Features enthalten – tagge den aktuellen Stand von main.
+    solution: |
+      ```bash
+      git switch main
+      git status
+      git tag -a v1.0.0 -m "Erste Version"
+      git show v1.0.0
+      ```

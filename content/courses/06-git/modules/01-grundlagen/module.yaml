@@ -1,42 +1,79 @@
 title: Die Grundlagen
 description: Was Versionskontrolle ist, wie du Git einrichtest und dein erstes Repository anlegst.
 exercise:
-  id: modul-uebung-grundlagen
+  id: modul-uebung-commits
   type: terminal
-  title: Ein Repository für deine Notizen
+  title: Saubere Commits aus einem Durcheinander
   description: |
-    Lege im Ordner `notizen` ein neues Git-Repository an. Erstelle darin eine Datei `README.md`
-    mit einer Überschrift (eine Zeile, die mit `#` beginnt) und eine Datei `ideen.txt` mit
-    mindestens einer Zeile Text. Speichere beides in **einem** Commit.
-  workdir: notizen
+    Im Ordner `commits-uebung` liegt das Repository einer kleinen Website mit einem ersten Commit. Seitdem
+    wurde einiges gleichzeitig erledigt:
+
+    - In `README.md` wurde der Tippfehler „Instalation“ korrigiert.
+    - `index.html` hat ein neues Newsletter-Formular bekommen.
+    - Die neue Datei `newsletter.css` gehört zum Newsletter-Formular.
+    - `debug.log` ist eine Log-Datei, die **nicht** ins Repository gehört.
+
+    Mach daraus zwei saubere Commits nach Conventional Commits:
+
+    1. Committe **nur** `README.md` mit einer Nachricht vom Typ `docs`, z. B. `docs: fix typo in readme`.
+    2. Committe **nur** `index.html` mit einer Nachricht vom Typ `feat`, z. B. `feat: add newsletter form`.
+    3. Hoppla – `newsletter.css` fehlt im Feature-Commit. Nimm sie mit `git commit --amend` in den letzten
+       Commit auf, ohne einen neuen Commit anzulegen.
+    4. `debug.log` bleibt untracked liegen.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit das Repository angelegt wird.
+  workdir: commits-uebung
+  setup: |
+    git init -q
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    printf '# Website\n\n## Instalation\n\nOpen index.html in your browser.\n' > README.md
+    printf '<h1>Willkommen</h1>\n' > index.html
+    git add README.md index.html
+    git commit -q -m "chore: initial commit"
+    printf '# Website\n\n## Installation\n\nOpen index.html in your browser.\n' > README.md
+    printf '<h1>Willkommen</h1>\n<form class="newsletter">\n  <input type="email" name="email">\n  <button>Abonnieren</button>\n</form>\n' > index.html
+    printf '.newsletter {\n  display: flex;\n  gap: 0.5rem;\n}\n' > newsletter.css
+    printf 'DEBUG form rendered\n' > debug.log
   checks:
-    - type: dir_exists
-      path: .git
-      message: Im Ordner notizen gibt es noch kein Git-Repository (git init).
-    - type: file_contains
-      path: README.md
-      pattern: "^#\\s+\\S"
-      message: README.md braucht eine Überschrift, z. B. "# Meine Notizen".
-    - type: file_exists
-      path: ideen.txt
-      message: Die Datei ideen.txt fehlt noch.
     - type: command
-      run: git log --oneline 2>/dev/null | wc -l
-      stdout_matches: "^\\s*1\\s*$"
-      message: Es sollte genau ein Commit existieren.
+      run: git log --oneline | wc -l
+      stdout_matches: "^\\s*3\\s*$"
+      message: Es sollen genau drei Commits existieren – der erste plus dein docs- und dein feat-Commit. Für newsletter.css nutzt du --amend statt eines neuen Commits.
     - type: command
-      run: git ls-files | sort | tr '\n' ' '
-      stdout_matches: "README\\.md ideen\\.txt"
-      message: Beide Dateien müssen im Commit enthalten sein.
+      run: git log -1 --format=%s HEAD~1
+      stdout_matches: "^docs(\\([^()\\s]+\\))?!?: \\S"
+      message: 'Der vorletzte Commit braucht eine Nachricht vom Typ docs, z. B. "docs: fix typo in readme".'
+    - type: command
+      run: git show --name-only --format= HEAD~1
+      stdout_equals: README.md
+      message: Der docs-Commit darf nur README.md enthalten.
+    - type: command
+      run: git log -1 --format=%s HEAD
+      stdout_matches: "^feat(\\([^()\\s]+\\))?!?: \\S"
+      message: 'Der letzte Commit braucht eine Nachricht vom Typ feat, z. B. "feat: add newsletter form".'
+    - type: command
+      run: git show --name-only --format= HEAD | sort | tr '\n' ' '
+      stdout_matches: "^index\\.html newsletter\\.css$"
+      message: Der feat-Commit soll genau index.html und newsletter.css enthalten. Merke newsletter.css vor und nutze git commit --amend --no-edit.
+    - type: command
+      run: git status --porcelain
+      stdout_equals: "?? debug.log"
+      message: Am Ende soll nur debug.log als untracked Datei übrig sein – nichts Vorgemerktes, nichts Geändertes, und debug.log nicht committet.
   hints:
-    - "`git init` macht aus dem aktuellen Ordner ein Repository."
-    - "Mit `git add README.md ideen.txt` merkst du beide Dateien vor."
+    - "Arbeite Schritt für Schritt: erst `git add README.md` und committen, dann `git add index.html` und committen."
+    - "Mit `git status` und `git show --stat` prüfst du nach jedem Schritt, was in welchem Commit gelandet ist."
+    - "Für die vergessene Datei: `git add newsletter.css`, dann `git commit --amend --no-edit`."
   solution: |
     ```bash
-    cd notizen
-    git init
-    echo "# Meine Notizen" > README.md
-    echo "Stacklab durcharbeiten" > ideen.txt
-    git add README.md ideen.txt
-    git commit -m "docs: add readme and ideas"
+    cd commits-uebung
+    git status
+    git add README.md
+    git commit -m "docs: fix typo in readme"
+    git add index.html
+    git commit -m "feat: add newsletter form"
+    git add newsletter.css
+    git commit --amend --no-edit
+    git log --oneline
+    git status
     ```

@@ -1,0 +1,104 @@
+title: Zusammenarbeiten mit Remotes
+description: Repositorys verbinden, Änderungen mit push, pull und fetch austauschen, die Historie mit rebase sauber halten und GitHub anbinden.
+exercise:
+  id: modul-uebung-zusammenarbeiten
+  type: terminal
+  title: Ein Feature im Team auf den neuesten Stand bringen
+  description: |
+    Im Ordner `team-uebung` spielt `server.git` das Team-Repository. Daneben liegt der Klon `kollegin`
+    und ein kleines Skript `kollegin-arbeitet.sh`, das so tut, als würde deine Kollegin etwas auf `main`
+    pushen.
+
+    1. Klone `server.git` in den Ordner `app` und richte dort deine Identität ein
+       (`git config user.name "…"` und `git config user.email "…"` – ohne `--global` genügt es für dieses Repository).
+    2. Lege in `app` den Branch `feat/kontakt` an, erstelle eine Datei `kontakt.html` und committe sie.
+    3. Pushe den Branch zum ersten Mal und setze dabei den Upstream.
+    4. Führe im Ordner `team-uebung` das Skript aus: `bash kollegin-arbeitet.sh`. Jetzt liegt auf
+       `main` ein neuer Commit, den dein Feature-Branch noch nicht kennt.
+    5. Hole die Neuigkeiten in `app` ab und setze `feat/kontakt` per Rebase auf `origin/main`.
+    6. Pushe den Branch erneut. Weil sich die Hashes geändert haben, brauchst du `--force-with-lease`.
+
+    Am Ende soll `feat/kontakt` auf dem Server auf dem neuesten `main` aufbauen – ohne Merge-Commit.
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: team-uebung
+  setup: |
+    git init -q --bare server.git
+    git init -q vorlage
+    cd vorlage
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    printf '# Vereinsseite\n' > README.md
+    git add README.md
+    git commit -q -m "docs: add readme"
+    printf '<h1>Willkommen</h1>\n' > index.html
+    git add index.html
+    git commit -q -m "feat: add start page"
+    git push -q ../server.git main
+    cd ..
+    rm -rf vorlage
+    git clone -q server.git kollegin
+    git -C kollegin config user.name "Grace Hopper"
+    git -C kollegin config user.email "grace@example.com"
+    cat > kollegin-arbeitet.sh <<'SCRIPT'
+    #!/usr/bin/env bash
+    set -e
+    cd "$(dirname "$0")/kollegin"
+    git pull -q --ff-only
+    printf '\nÖffnungszeiten: Mo-Fr 9-17 Uhr\n' >> README.md
+    git commit -q -am "docs: add opening hours"
+    git push -q origin main
+    echo "Die Kollegin hat einen neuen Commit auf main gepusht."
+    SCRIPT
+  checks:
+    - type: dir_exists
+      path: app/.git
+      message: Der Ordner app mit deinem Klon fehlt noch (git clone server.git app).
+    - type: command
+      run: git -C server.git rev-parse --verify -q refs/heads/feat/kontakt
+      message: Auf dem Server gibt es noch keinen Branch feat/kontakt – pushe ihn mit git push -u origin feat/kontakt.
+    - type: command
+      run: git -C server.git cat-file -e feat/kontakt:kontakt.html && echo ja
+      stdout_equals: ja
+      message: Im Branch feat/kontakt auf dem Server fehlt die Datei kontakt.html.
+    - type: command
+      run: 'git -C server.git log --format=%s main | grep -c "docs: add opening hours"'
+      stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+      message: Auf main fehlt noch der Commit der Kollegin – führe bash kollegin-arbeitet.sh aus.
+    - type: command
+      run: git -C server.git merge-base --is-ancestor main feat/kontakt && echo ja
+      stdout_equals: ja
+      message: feat/kontakt auf dem Server baut noch nicht auf dem neuesten main auf – rebase auf origin/main und pushe erneut.
+    - type: command
+      run: git -C server.git rev-list --merges main..feat/kontakt | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: In feat/kontakt steckt ein Merge-Commit – gesucht ist ein Rebase.
+    - type: command
+      run: test "$(git -C app rev-parse feat/kontakt)" = "$(git -C server.git rev-parse feat/kontakt)" && echo gleich
+      stdout_equals: gleich
+      message: Dein lokales feat/kontakt und der Stand auf dem Server unterscheiden sich – pushe mit --force-with-lease.
+    - type: command
+      run: git -C app rev-parse --abbrev-ref feat/kontakt@{upstream}
+      stdout_equals: origin/feat/kontakt
+      message: Für feat/kontakt ist kein Upstream gesetzt – nutze beim ersten Push -u.
+  hints:
+    - "Der erste Push eines neuen Branches: `git push -u origin feat/kontakt`."
+    - "Nach dem Skript: in `app` erst `git fetch`, dann `git rebase origin/main` (auf feat/kontakt)."
+    - "Der normale Push wird danach abgelehnt, weil die alten Commits fehlen – `git push --force-with-lease` ist hier richtig, denn der Branch gehört nur dir."
+  solution: |
+    ```bash
+    cd team-uebung
+    git clone server.git app
+    cd app
+    git config user.name "Ada Lovelace"
+    git config user.email "ada@example.com"
+    git switch -c feat/kontakt
+    echo "<h1>Kontakt</h1>" > kontakt.html
+    git add kontakt.html
+    git commit -m "feat: add contact page"
+    git push -u origin feat/kontakt
+    bash ../kollegin-arbeitet.sh
+    git fetch
+    git rebase origin/main
+    git push --force-with-lease
+    git log --oneline --graph --all
+    ```
