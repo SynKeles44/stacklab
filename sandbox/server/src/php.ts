@@ -26,8 +26,15 @@ ob_start();
 
 /** main.php keeps the learner's line numbers: line 1 is the opening tag. */
 export function buildMain(userCode: string): string {
-  const code = userCode.replace(/^\s*<\?php[ \t]*/i, '').replace(/\?>\s*$/, '');
-  return `<?php require __DIR__ . '/prelude.php';${code}\n;\nrequire __DIR__ . '/tests.php';\n`;
+  let code = userCode.replace(/^\s*<\?php[ \t]*/i, '').replace(/\?>\s*$/, '');
+  // declare() must be the first statement, so it moves in front of the prelude on the same line.
+  let declare = '';
+  const match = /^(\s*)(declare\s*\(\s*strict_types\s*=\s*[01]\s*\)\s*;)/i.exec(code);
+  if (match) {
+    declare = match[2]!;
+    code = match[1]! + code.slice(match[0].length);
+  }
+  return `<?php ${declare}require __DIR__ . '/prelude.php';${code}\n;\nrequire __DIR__ . '/tests.php';\n`;
 }
 
 export function buildTests(tests: PhpTest[]): string {

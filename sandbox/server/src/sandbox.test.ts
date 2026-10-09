@@ -54,3 +54,9 @@ test('php main keeps learner line numbers and tests are separate', () => {
   assert.equal(main.split('\n')[1], 'function add($a, $b) { return $a + $b; }');
   assert.match(buildTests([{ name: 'add', code: 'assert_same(3, add(1, 2))' }]), /\$__stacklab_tests\[\] = \["add"/);
 });
+
+test('php main keeps strict_types as the first statement', () => {
+  const main = buildMain('<?php\ndeclare(strict_types=1);\n\nfunction add(int $a, int $b): int { return $a + $b; }');
+  assert.match(main, /^<\?php declare\(strict_types=1\);require/);
+  assert.equal(main.split('\n')[3], 'function add(int $a, int $b): int { return $a + $b; }');
+});
