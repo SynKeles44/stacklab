@@ -129,6 +129,9 @@ Vorgehen: Die Inhalte schreiben parallele Autoren-Agenten nach [docs/AUTHORING.m
 ein Agent pro Kurs (Laravel: zwei Agenten). Danach Validierung, Dublettenbereinigung im Lexikon,
 Stichproben-Review.
 
+## Phase 6b – Plattform-Nacharbeiten aus den Kursen
+- [ ] project.yaml: optionales `setup` + Button „Projekt zurücksetzen“ (Fremden-Code-Kurs legt das Projekt aktuell über eine Modulübung an)
+
 ## Phase 7 – Tests & Qualität
 - [ ] Backend-Tests (Pest)
 - [ ] Frontend-Tests (Vitest)
