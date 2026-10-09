@@ -5,8 +5,10 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 
 ## Protokoll
 
-- **Zuletzt erledigt:** Fundament (Docker, Backend, Sandbox, Frontend) steht und ist Ende-zu-Ende getestet; Git-Musterlektionen; Autoren-Leitfaden.
-- **Als Nächstes:** Kursinhalte in Wellen von Autoren-Agenten schreiben lassen, danach Validierung und Review.
+- **Zuletzt erledigt (2026-10-10):** Fundament komplett und getestet; Lektionen seitenweise (Blättern); zwei UI-Varianten (Standard + Apple, wählbar unter Einstellungen → Darstellung, gespeichert in users.ui_variant); Kursdauer wird aus Lektionsdauern berechnet; Kurs-Größenregel 10–12 Lektionen / 4–6 h (Laravel bis 10 h) in docs/AUTHORING.md.
+- **Kursstand:** fertig: 02 terminal-shell, 05 ssh, 06 git (werden gerade auf 10–12 bzw. ~9 Lektionen gekürzt). In Arbeit (Autoren-Agenten): 01, 03, 04, 07, 08, 09, 10, 11, 12. Offen: 13–52.
+- **Als Nächstes:** nach Abschluss der laufenden Autoren `make validate` + Import; restliche Kurse 13–52 mit der Größenregel schreiben (Brief: docs/AUTHORING.md + content/README.md); Lexikon-Dubletten prüfen; Testkonten test@example.com und ui-test@example.com löschen; MISSING_SCREENSHOTS.md (PhpStorm-Kurs); GitHub-Repo SynKeles44/stacklab anlegen und pushen (Commits als SynKeles44, Signierung nur in diesem Repo aus); Abschlusszusammenfassung.
+- **Hinweise für Autoren:** Sandbox /tmp ist noexec; kein man/sudo/zsh/python3/rsync; `nvm install` höchstens einmal mit `timeout 300` (Prozesslimit 512).
 
 ## Entscheidungen
 
@@ -26,6 +28,9 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 | D13 | Diagramm-Aufgabe: Antippen statt Popover pro Feld | Popover sprang bei schnellem Wechsel ans falsche Feld; Antippen funktioniert auf Touch zuverlässig |
 | D14 | PHP-FPM nicht im Sandbox-Netz; Backend erreicht Sandbox über internen Nginx-Port 8081 | Sonst könnte die Übungs-Shell per FastCGI Code im Backend-Container ausführen |
 | D15 | Editor, Terminal und Transpiler per Code-Splitting nachgeladen | Haupt-Bundle von 712 KB auf 352 KB gzip |
+| D17 | Keine JetBrains-Screenshots, stattdessen SVG-Nachbau + Links + MISSING_SCREENSHOTS.md | Keine Lizenz gefunden, die Weiterverwendung erlaubt |
+| D18 | Zwei UI-Varianten (Standard/Apple) per data-ui-Attribut und Design-Tokens, Wahl pro Nutzer | Nutzerwunsch; Basis: emilkowalski/skills (MIT) |
+| D19 | Lektionen seitenweise, Kurse 10–12 Lektionen | Nutzerfeedback: zu viel Text, zu lange Kurse |
 | D16 | Commits als SynKeles44, Signierung nur in diesem Repo aus | Globaler Signaturschlüssel gehört zum Arbeitskonto |
 | D12 | Simulierter Terminal-Modus (SSH, AWS, DNS) als Szenario-Engine im Frontend, gleiche Terminal-Komponente | Nicht lokal echt ausführbare Themen trotzdem tippbar |
 
