@@ -79,6 +79,13 @@ steps:
       git add README.md
       git commit -m "docs: add readme"
       ```
+    solve: |
+      git init -q -b main
+      git config user.name "Ada Lovelace"
+      git config user.email "ada@example.com"
+      printf '# Mein Portfolio\nKontakt: noch offen\n' > README.md
+      git add README.md
+      git commit -q -m "docs: add readme"
   - id: gitignore-anlegen
     title: Unerwünschte Dateien ausschließen
     description: |
@@ -118,6 +125,11 @@ steps:
       git add .gitignore
       git commit -m "chore: add gitignore"
       ```
+    solve: |
+      echo 'API_TOKEN=<dein-token>' > .env
+      printf '.env\n*.log\nnode_modules/\n' > .gitignore
+      git add .gitignore
+      git commit -q -m "chore: add gitignore"
   - id: feature-branch
     title: Ein Feature im eigenen Branch bauen
     description: |
@@ -154,6 +166,13 @@ steps:
       echo '- Stacklab-Kurs Git' >> projekte.md
       git commit -am "feat: add first project entry"
       ```
+    solve: |
+      git switch -q -c feat/projekte
+      echo '# Projekte' > projekte.md
+      git add projekte.md
+      git commit -q -m "feat: add projects page"
+      echo '- Stacklab-Kurs Git' >> projekte.md
+      git commit -q -am "feat: add first project entry"
   - id: feature-mergen
     title: Das Feature mit einem Merge-Commit übernehmen
     description: |
@@ -188,6 +207,9 @@ steps:
       git merge --no-ff feat/projekte -m "Merge branch 'feat/projekte'"
       git log --oneline --graph
       ```
+    solve: |
+      git switch -q main
+      git merge -q --no-ff feat/projekte -m "Merge branch 'feat/projekte'"
   - id: konflikt-loesen
     title: Einen Merge-Konflikt erzeugen und lösen
     description: |
@@ -242,6 +264,17 @@ steps:
       git add README.md
       git commit --no-edit
       ```
+    solve: |
+      git switch -q -c feat/kontakt
+      sed -i 's/^Kontakt:.*/Kontakt: kontakt@example.com/' README.md
+      git commit -q -am "docs: add contact address"
+      git switch -q main
+      sed -i 's/^Kontakt:.*/Kontakt: hallo@example.com/' README.md
+      git commit -q -am "docs: add alternative contact"
+      if git merge feat/kontakt; then exit 1; fi
+      printf '# Mein Portfolio\nKontakt: kontakt@example.com\n' > README.md
+      git add README.md
+      git commit -q --no-edit
   - id: hook-einrichten
     title: Commit-Messages mit einem Hook absichern
     description: |
@@ -301,6 +334,23 @@ steps:
       git add .githooks/commit-msg
       git commit -m "chore: add commit-msg hook"
       ```
+    solve: |
+      mkdir -p .githooks
+      cat > .githooks/commit-msg <<'HOOK'
+      #!/bin/sh
+      first_line=$(head -n 1 "$1")
+      case "$first_line" in
+        Merge*) exit 0 ;;
+      esac
+      if ! printf '%s\n' "$first_line" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^)]+\))?!?: .+'; then
+        echo "Commit-Message folgt nicht Conventional Commits: $first_line" >&2
+        exit 1
+      fi
+      HOOK
+      chmod +x .githooks/commit-msg
+      git config core.hooksPath .githooks
+      git add .githooks/commit-msg
+      git commit -q -m "chore: add commit-msg hook"
   - id: version-taggen
     title: Die erste Version taggen
     description: |
@@ -335,3 +385,6 @@ steps:
       git tag -a v1.0.0 -m "Erste Version"
       git show v1.0.0
       ```
+    solve: |
+      git switch -q main
+      git tag -a v1.0.0 -m "Erste Version"
