@@ -32,18 +32,17 @@ export function CourseCard({ course }: { course: CourseSummary }) {
   )
 }
 
-/** Inset-grouped list row used by the Apple variant. */
 export function CourseRow({ course }: { course: CourseSummary }) {
   const started = Boolean(course.progress && course.progress.completed > 0)
   return (
-    <Link to={`/kurse/${course.slug}`} className="flex items-center gap-3 px-4 py-3 transition-colors active:bg-foreground/[0.06] hover:bg-foreground/[0.03]">
-      <CourseIcon icon={course.icon} color={course.color} size="sm" className="rounded-[0.55rem]" />
+    <Link to={`/kurse/${course.slug}`} className="cell py-2.5">
+      <CourseIcon icon={course.icon} color={course.color} size="sm" solid className="rounded-[0.5rem]" />
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{course.title}</p>
-        <p className="truncate text-sm text-muted-foreground">{course.subtitle ?? `${course.lessons_count} Lektionen`}</p>
+        <p className="truncate text-[1.0625rem] leading-snug">{course.title}</p>
+        <p className="truncate text-[0.8125rem] text-muted-foreground">{course.subtitle ?? `${course.lessons_count} Lektionen`}</p>
       </div>
-      {started && <span className="text-sm text-muted-foreground tabular-nums">{course.progress!.percent} %</span>}
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground/50" />
+      {started && <span className="text-[0.9375rem] text-muted-foreground tabular-nums">{course.progress!.percent} %</span>}
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground/45" strokeWidth={2.5} />
     </Link>
   )
 }

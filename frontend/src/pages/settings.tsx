@@ -27,6 +27,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Api, type SandboxStatus } from '@/lib/api'
 import { updateSessionUser, useSession } from '@/lib/auth'
 import { loadBookmarks } from '@/lib/bookmarks'
+import { useUiVariant } from '@/lib/ui-variant'
 
 type WorkspaceInfo = { path: string; writable: boolean; browse?: boolean; sandbox: SandboxStatus }
 
@@ -69,7 +70,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-12">
-      <h1 className="text-3xl font-semibold tracking-tight">Einstellungen</h1>
+      <h1 className={useUiVariant() === 'apple' ? 'large-title' : 'text-3xl font-semibold tracking-tight'}>Einstellungen</h1>
 
       <Card>
         <CardHeader>

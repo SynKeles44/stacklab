@@ -62,7 +62,7 @@ function Landing({ courses }: { courses: CourseSummary[] }) {
       <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-16 sm:px-6 md:grid-cols-[1.1fr_1fr] md:pt-20 md:pb-24">
         <div>
           <p className="text-sm font-medium text-primary">Open Source · läuft komplett lokal</p>
-          <h1 className={cn('mt-3 font-semibold tracking-tight', variant === 'apple' ? 'text-4xl sm:text-6xl' : 'text-4xl sm:text-5xl')}>
+          <h1 className={cn('mt-3 tracking-tight', variant === 'apple' ? 'text-[2.5rem] leading-[1.05] font-bold tracking-[-0.03em] sm:text-6xl' : 'text-4xl font-semibold sm:text-5xl')}>
             IT lernen, indem du es wirklich tust.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
@@ -73,7 +73,7 @@ function Landing({ courses }: { courses: CourseSummary[] }) {
             <Button asChild size="lg" className="h-11 px-5 text-[0.95rem]">
               <Link to="/registrieren">Konto anlegen</Link>
             </Button>
-            <Button asChild size="lg" variant="ghost" className="h-11 px-5 text-[0.95rem]">
+            <Button asChild size="lg" variant="ghost" className={cn('h-11 px-5 text-[0.95rem]', variant === 'apple' && 'text-primary hover:bg-transparent hover:text-primary/80')}>
               <Link to="/kurse">Lernpfad ansehen <ArrowRight /></Link>
             </Button>
           </div>
@@ -100,22 +100,37 @@ function Landing({ courses }: { courses: CourseSummary[] }) {
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Der Lernpfad</h2>
+            <h2 className={cn('tracking-tight', variant === 'apple' ? 'text-[1.75rem] font-bold' : 'text-2xl font-semibold')}>Der Lernpfad</h2>
             <p className="mt-1 text-muted-foreground">Sechs Etappen, in empfohlener Reihenfolge.</p>
           </div>
-          <Button asChild variant="ghost"><Link to="/kurse">Alle Kurse <ArrowRight /></Link></Button>
+          <Button asChild variant="ghost" className={cn(variant === 'apple' && '-ml-1 px-1 text-primary hover:bg-transparent hover:text-primary/80')}><Link to="/kurse">Alle Kurse <ArrowRight /></Link></Button>
         </div>
-        <ol className="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-          {CATEGORY_ORDER.map((category, index) => (
-            <li key={category} className="flex items-baseline gap-3 border-b py-3">
-              <span className="w-5 text-sm text-muted-foreground tabular-nums">{index + 1}</span>
-              <span className="font-medium">{CATEGORY_LABELS[category]}</span>
-              <span className="ml-auto text-sm text-muted-foreground">{pluralize(courses.filter((course) => course.category === category).length, 'Kurs', 'Kurse')}</span>
-            </li>
-          ))}
-        </ol>
+        {variant === 'apple' ? (
+          <ol className="grouped mt-6 max-w-2xl [--grouped-inset:3.75rem]">
+            {CATEGORY_ORDER.map((category, index) => (
+              <li key={category}>
+                <Link to="/kurse" className="cell">
+                  <span className="icon-tile bg-primary text-[0.9375rem] font-semibold tabular-nums">{index + 1}</span>
+                  <span className="min-w-0 flex-1 text-[1.0625rem] leading-snug">{CATEGORY_LABELS[category]}</span>
+                  <span className="text-[0.9375rem] text-muted-foreground">{pluralize(courses.filter((course) => course.category === category).length, 'Kurs', 'Kurse')}</span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground/45" strokeWidth={2.5} />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <ol className="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+            {CATEGORY_ORDER.map((category, index) => (
+              <li key={category} className="flex items-baseline gap-3 border-b py-3">
+                <span className="w-5 text-sm text-muted-foreground tabular-nums">{index + 1}</span>
+                <span className="font-medium">{CATEGORY_LABELS[category]}</span>
+                <span className="ml-auto text-sm text-muted-foreground">{pluralize(courses.filter((course) => course.category === category).length, 'Kurs', 'Kurse')}</span>
+              </li>
+            ))}
+          </ol>
+        )}
 
-        <h2 className="mt-14 text-2xl font-semibold tracking-tight">Hier fängst du an</h2>
+        <h2 className={cn('mt-14 tracking-tight', variant === 'apple' ? 'text-[1.75rem] font-bold' : 'text-2xl font-semibold')}>Hier fängst du an</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {starters.map((course) => <CourseCard key={course.slug} course={course} />)}
         </div>
@@ -134,8 +149,8 @@ function DashboardView({ dashboard, courses, name }: { dashboard: Dashboard; cou
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <header>
-        <p className="text-sm text-muted-foreground">{new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
-        <h1 className={cn('font-semibold tracking-tight', apple ? 'text-4xl font-bold' : 'text-3xl')}>Hallo {name.split(' ')[0]}</h1>
+        <p className={cn('text-sm text-muted-foreground', apple && 'text-[0.8125rem] font-semibold uppercase')}>{new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
+        <h1 className={cn(apple ? 'large-title' : 'text-3xl font-semibold tracking-tight')}>Hallo {name.split(' ')[0]}</h1>
       </header>
 
       <div className="mt-8 grid gap-4 lg:grid-cols-3">
@@ -174,7 +189,7 @@ function DashboardView({ dashboard, courses, name }: { dashboard: Dashboard; cou
         </Card>
       </div>
 
-      <div className={cn('mt-4 grid grid-cols-2 lg:grid-cols-4', apple ? 'grouped gap-0 [--grouped-inset:0]' : 'gap-4')}>
+      <div className={cn('mt-4 grid grid-cols-2 lg:grid-cols-4', apple ? 'gap-3' : 'gap-4')}>
         <Stat apple={apple} icon={BookOpen} label="Lektionen" value={stats.lessons_completed} total={stats.lessons_total} />
         <Stat apple={apple} icon={BookA} label="Begriffe" value={stats.terms_unlocked} total={stats.terms_total} link="/lexikon" />
         <Stat apple={apple} icon={ListChecks} label="Aufgaben gelöst" value={stats.tasks_completed} />
@@ -185,18 +200,18 @@ function DashboardView({ dashboard, courses, name }: { dashboard: Dashboard; cou
         <section>
           <SectionTitle apple={apple}>Deine Kurse</SectionTitle>
           {dashboard.active_courses.length === 0 ? (
-            <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
+            <p className={cn('p-8 text-center text-muted-foreground', apple ? 'rounded-xl bg-card' : 'rounded-xl border border-dashed')}>
               Noch kein Kurs begonnen. <Link to="/kurse" className="text-primary hover:underline">Zum Lernpfad</Link>
             </p>
           ) : (
-            <div className={cn(apple ? 'grouped [--grouped-inset:4.25rem]' : 'space-y-2')}>
+            <div className={cn(apple ? 'grouped [--grouped-inset:4rem]' : 'space-y-2')}>
               {dashboard.active_courses.map((course) => (
                 <Link
                   key={course.slug}
                   to={`/kurse/${course.slug}`}
-                  className={cn('pressable flex items-center gap-4 p-4 transition-colors', apple ? 'hover:bg-foreground/[0.03]' : 'rounded-xl bg-card shadow-card hover:shadow-raised')}
+                  className={cn(apple ? 'cell gap-4 py-3' : 'pressable flex items-center gap-4 rounded-xl bg-card p-4 shadow-card transition-colors hover:shadow-raised')}
                 >
-                  <CourseIcon icon={course.icon} color={course.color} size="sm" />
+                  <CourseIcon icon={course.icon} color={course.color} size="sm" solid={apple} className={cn(apple && 'rounded-[0.5rem]')} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="truncate font-medium">{course.title}</p>
@@ -207,7 +222,7 @@ function DashboardView({ dashboard, courses, name }: { dashboard: Dashboard; cou
                       {course.next_lesson ? `Als Nächstes: ${course.next_lesson.title}` : 'Alle Lektionen geschafft'}
                     </p>
                   </div>
-                  {apple && <ChevronRight className="size-4 text-muted-foreground/60" />}
+                  {apple && <ChevronRight className="size-4 shrink-0 text-muted-foreground/45" strokeWidth={2.5} />}
                 </Link>
               ))}
             </div>
@@ -252,7 +267,7 @@ function DashboardView({ dashboard, courses, name }: { dashboard: Dashboard; cou
 
 function SectionTitle({ children, apple, className }: { children: React.ReactNode; apple: boolean; className?: string }) {
   return (
-    <h2 className={cn(apple ? 'mb-2 px-4 text-xs font-normal tracking-wide text-muted-foreground uppercase' : 'mb-3 text-base font-semibold', className)}>
+    <h2 className={cn(apple ? 'section-header' : 'mb-3 text-base font-semibold', className)}>
       {children}
     </h2>
   )
@@ -260,9 +275,9 @@ function SectionTitle({ children, apple, className }: { children: React.ReactNod
 
 function Stat({ icon: Icon, label, value, total, link, apple }: { icon: typeof BookOpen; label: string; value: number; total?: number; link?: string; apple: boolean }) {
   const content = (
-    <div className={cn('h-full p-4', apple ? '' : 'rounded-xl bg-card shadow-card')}>
-      <Icon className="size-4 text-muted-foreground" />
-      <p className="mt-3 text-2xl font-semibold tabular-nums">
+    <div className={cn('h-full p-4', apple ? 'rounded-xl bg-card' : 'rounded-xl bg-card shadow-card')}>
+      <Icon className={cn('size-4', apple ? 'text-primary' : 'text-muted-foreground')} />
+      <p className={cn('mt-3 text-2xl tabular-nums', apple ? 'font-bold tracking-tight' : 'font-semibold')}>
         {value}
         {total !== undefined && <span className="text-sm font-normal text-muted-foreground"> / {total}</span>}
       </p>

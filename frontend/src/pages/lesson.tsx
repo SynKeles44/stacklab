@@ -225,6 +225,7 @@ function PageBar({ pages, index, onSelect, isDone }: { pages: Page[]; index: num
 function FinishPage({ data, completed, completedTasks, onCompleted }: { data: LessonData; completed: boolean; completedTasks: number; onCompleted: () => void }) {
   const { lesson, state } = data
   const user = useSession()
+  const apple = useUiVariant() === 'apple'
   const [busy, setBusy] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -275,7 +276,7 @@ function FinishPage({ data, completed, completedTasks, onCompleted }: { data: Le
           <h2 className="mb-2 flex items-center gap-2 font-semibold"><BookA className="size-4 text-brand" /> Begriffe aus dieser Lektion</h2>
           <div className="flex flex-wrap gap-2">
             {lesson.terms.map((term) => (
-              <Link key={term.slug} to={`/lexikon/${term.slug}`} className="rounded-full border bg-background px-3 py-1 text-sm transition-colors hover:border-brand hover:text-brand">
+              <Link key={term.slug} to={`/lexikon/${term.slug}`} className={cn('rounded-full px-3 py-1 text-sm transition-colors', apple ? 'bg-[var(--fill)] text-primary hover:bg-[var(--fill-strong)]' : 'border bg-background hover:border-brand hover:text-brand')}>
                 {term.term}
               </Link>
             ))}

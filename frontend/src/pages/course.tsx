@@ -85,9 +85,9 @@ export function CoursePage() {
           {course.learning_goals.length > 0 && (
             <section>
               <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold"><Target className="size-5 text-brand" /> Das kannst du danach</h2>
-              <ul className="grid gap-2 sm:grid-cols-2">
+              <ul className={cn(apple ? 'grouped [--grouped-inset:2.75rem]' : 'grid gap-2 sm:grid-cols-2')}>
                 {course.learning_goals.map((goal) => (
-                  <li key={goal} className="flex gap-2 rounded-xl border bg-card p-3 text-sm">
+                  <li key={goal} className={cn('flex gap-2 text-sm', apple ? 'gap-3 px-4 py-3 text-[0.9375rem]' : 'rounded-xl border bg-card p-3')}>
                     <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" /> {goal}
                   </li>
                 ))}
@@ -140,7 +140,7 @@ export function CoursePage() {
               <CardHeader><CardTitle className="text-base">Vorher hilfreich</CardTitle></CardHeader>
               <CardContent className="flex flex-wrap gap-2">
                 {course.prerequisites.map((item) => (
-                  <Link key={item.slug} to={`/kurse/${item.slug}`} className="rounded-full border px-3 py-1 text-sm hover:border-brand hover:text-brand">{item.title}</Link>
+                  <Link key={item.slug} to={`/kurse/${item.slug}`} className={cn('rounded-full px-3 py-1 text-sm', apple ? 'bg-[var(--fill)] text-primary transition-colors hover:bg-[var(--fill-strong)]' : 'border hover:border-brand hover:text-brand')}>{item.title}</Link>
                 ))}
               </CardContent>
             </Card>
@@ -156,7 +156,7 @@ export function CoursePage() {
             </Card>
           )}
           {course.workspace_dir && (
-            <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+            <p className={cn('text-sm text-muted-foreground', apple ? 'px-4 text-[0.8125rem]' : 'rounded-xl border border-dashed p-4')}>
               Alles, was du in diesem Kurs im Übungs-Terminal baust, liegt auf deinem Rechner unter <code className="font-mono text-foreground">workspace/{course.workspace_dir}/</code>.
             </p>
           )}
@@ -167,6 +167,7 @@ export function CoursePage() {
 }
 
 function ModuleItem({ course, module, index }: { course: CourseDetail; module: CourseModule; index: number }) {
+  const apple = useUiVariant() === 'apple'
   const [exerciseOpen, setExerciseOpen] = useState(false)
   const done = module.lessons.filter((lesson) => lesson.completed).length
   const allDone = module.lessons.length > 0 && done === module.lessons.length
@@ -174,7 +175,7 @@ function ModuleItem({ course, module, index }: { course: CourseDetail; module: C
   return (
     <AccordionItem value={module.slug} className="overflow-hidden rounded-xl border-0 bg-card px-0 shadow-card">
       <div className="flex items-center pr-2">
-        <AccordionTrigger className="items-center gap-3 rounded-none py-4 pr-2 pl-5">
+        <AccordionTrigger className={cn('items-center gap-3 rounded-none py-4 pr-2 pl-5', apple && 'min-w-0 hover:no-underline')}>
           <div className="flex min-w-0 flex-1 items-center gap-4 text-left">
             <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium tabular-nums', allDone && 'bg-success text-white')}>
               {allDone ? <CheckCircle2 className="size-5" /> : index + 1}
