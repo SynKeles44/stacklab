@@ -1,0 +1,13 @@
+^registry\.npmjs\.org$
+^registry\.yarnpkg\.com$
+^(repo\.)?packagist\.org$
+^getcomposer\.org$
+^github\.com$
+^api\.github\.com$
+^codeload\.github\.com$
+^objects\.githubusercontent\.com$
+^raw\.githubusercontent\.com$
+^nodejs\.org$
+^bun\.sh$
+^registry\.bun\.sh$
+^pecl\.php\.net$
