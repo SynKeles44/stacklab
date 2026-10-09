@@ -215,7 +215,7 @@ Willst du einen Block übernehmen **und ergänzen**, gibt es den Merge-Schlüsse
 ```
 
 Der Merge-Schlüssel stammt aus YAML 1.1 und ist nicht Teil des 1.2-Kerns. Docker Compose und viele andere
-Werkzeuge unterstützen ihn trotzdem. GitHub Actions unterstützt Anker erst seit Kurzem – prüfe im Zweifel die
+Werkzeuge unterstützen ihn trotzdem. GitHub Actions unterstützt Anker seit September 2025, Merge-Keys (`<<:`) aber nicht – prüfe im Zweifel die
 Dokumentation des Werkzeugs.
 
 > [!PRAXIS]
