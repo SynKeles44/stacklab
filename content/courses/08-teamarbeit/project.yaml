@@ -58,6 +58,17 @@ steps:
       git commit -m "chore: initial commit"
       git push origin main
       ```
+    solve: |
+      git init -q --bare -b main origin.git
+      git clone -q origin.git anna
+      cd anna
+      git config user.name "Anna"
+      git config user.email "anna@example.com"
+      git config pull.rebase false
+      echo "# Pflanzenshop" > README.md
+      git add README.md
+      git commit -q -m "chore: initial commit"
+      git push -q origin main
   - id: zweiter-klon
     title: Ben kommt ins Team
     description: |
@@ -94,6 +105,12 @@ steps:
       git config user.email "ben@example.com"
       git config pull.rebase false
       ```
+    solve: |
+      git clone -q origin.git ben
+      cd ben
+      git config user.name "Ben"
+      git config user.email "ben@example.com"
+      git config pull.rebase false
   - id: feature-branch
     title: Anna arbeitet auf einem Feature-Branch
     description: |
@@ -133,6 +150,15 @@ steps:
       git commit -am "feat(TEAM-1): add second greeting line"
       git push -u origin feat/TEAM-1-begruessung
       ```
+    solve: |
+      cd anna
+      git switch -q -c feat/TEAM-1-begruessung
+      echo "Willkommen im Shop!" > begruessung.txt
+      git add begruessung.txt
+      git commit -q -m "feat(TEAM-1): add greeting"
+      echo "Schön, dass du da bist." >> begruessung.txt
+      git commit -q -am "feat(TEAM-1): add second greeting line"
+      git push -q -u origin feat/TEAM-1-begruessung
   - id: review-einarbeiten
     title: Ben reviewt, Anna arbeitet die Anmerkung ein
     description: |
@@ -168,6 +194,12 @@ steps:
       git commit -am "fix(TEAM-1): use consistent shop wording"
       git push
       ```
+    solve: |
+      (cd ben && git fetch -q && git diff main...origin/feat/TEAM-1-begruessung)
+      cd anna
+      sed -i '1s/.*/Willkommen in unserem Shop!/' begruessung.txt
+      git commit -q -am "fix(TEAM-1): use consistent shop wording"
+      git push -q
   - id: mergen
     title: Nach der Freigabe mergen
     description: |
@@ -206,6 +238,14 @@ steps:
       git branch -d feat/TEAM-1-begruessung
       git push origin --delete feat/TEAM-1-begruessung
       ```
+    solve: |
+      cd anna
+      git switch -q main
+      git pull -q
+      git merge -q --no-ff feat/TEAM-1-begruessung -m "Merge branch 'feat/TEAM-1-begruessung'"
+      git push -q origin main
+      git branch -q -d feat/TEAM-1-begruessung
+      git push -q origin --delete feat/TEAM-1-begruessung
   - id: konflikt-loesen
     title: Ein Konflikt zwischen Anna und Ben
     description: |
@@ -258,6 +298,21 @@ steps:
       git commit --no-edit
       git push
       ```
+    solve: |
+      cd ben
+      git pull -q
+      sed -i '1s/.*/Herzlich willkommen in unserem Shop!/' begruessung.txt
+      git commit -q -am "fix(TEAM-2): use a warmer greeting"
+      cd ../anna
+      sed -i '1s/.*/Willkommen in unserem Pflanzenshop!/' begruessung.txt
+      git commit -q -am "feat(TEAM-3): mention plants in greeting"
+      git push -q
+      cd ../ben
+      if git pull -q; then exit 1; fi
+      printf 'Herzlich willkommen in unserem Pflanzenshop!\nSchön, dass du da bist.\n' > begruessung.txt
+      git add begruessung.txt
+      git commit -q --no-edit
+      git push -q
   - id: changelog-und-release
     title: Changelog von Hand und Release 1.0.0
     description: |
@@ -314,3 +369,14 @@ steps:
       git tag -a v1.0.0 -m "Release 1.0.0"
       git push origin release/1.0 v1.0.0
       ```
+    solve: |
+      cd anna
+      git pull -q
+      git log --oneline
+      printf '# Changelog\n\n## [1.0.0]\n\n### Features\n- **TEAM-1:** add greeting\n- **TEAM-3:** mention plants in greeting\n\n### Bugfixes\n- **TEAM-1:** use consistent shop wording\n- **TEAM-2:** use a warmer greeting\n' > CHANGELOG.md
+      git add CHANGELOG.md
+      git commit -q -m "docs: add changelog for 1.0.0"
+      git push -q origin main
+      git switch -q -c release/1.0
+      git tag -a v1.0.0 -m "Release 1.0.0"
+      git push -q origin release/1.0 v1.0.0

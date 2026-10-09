@@ -66,6 +66,22 @@ steps:
       EOF
       printf 'body { font-family: sans-serif; max-width: 48rem; margin: 2rem auto; }\n' > style.css
       ```
+    solve: |
+      mkdir -p belege
+      cat > index.html <<'EOF'
+      <!doctype html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <title>Die Reise einer Anfrage</title>
+          <link rel="stylesheet" href="style.css">
+        </head>
+        <body>
+          <h1>Die Reise einer Anfrage</h1>
+        </body>
+      </html>
+      EOF
+      printf 'body { font-family: sans-serif; max-width: 48rem; margin: 2rem auto; }\n' > style.css
   - id: url-abschnitt
     title: Station 1 – die URL zerlegen
     description: |
@@ -110,6 +126,25 @@ steps:
         </table>
       </section>
       ```
+    solve: |
+      cat > abschnitt.html <<'EOF'
+          <section id="url">
+            <h2>1. Die URL</h2>
+            <p><code>https://shop.example.com:8443/produkte?farbe=rot#bewertungen</code></p>
+            <table>
+              <tr><th>Teil</th><th>Wert</th><th>Wer wertet ihn aus?</th></tr>
+              <tr><td>Schema</td><td>https</td><td>Browser (Protokoll wählen)</td></tr>
+              <tr><td>Host</td><td>shop.example.com</td><td>DNS</td></tr>
+              <tr><td>Port</td><td>8443</td><td>TCP</td></tr>
+              <tr><td>Pfad</td><td>/produkte</td><td>Server</td></tr>
+              <tr><td>Query</td><td>farbe=rot</td><td>Server</td></tr>
+              <tr><td>Fragment</td><td>bewertungen</td><td>nur der Browser</td></tr>
+            </table>
+          </section>
+      EOF
+      awk 'FNR==NR{a=a $0 "\n"; next} /<\/body>/{printf "%s", a} {print}' abschnitt.html index.html > index.neu
+      mv index.neu index.html
+      rm abschnitt.html
   - id: dns-abschnitt
     title: Station 2 – DNS erklären und belegen
     description: |
@@ -153,6 +188,21 @@ steps:
         Die Antwort bleibt so lange im Cache, wie die TTL erlaubt.</p>
       </section>
       ```
+    solve: |
+      printf 'shop.example.com.      3600 IN A     192.0.2.10
+      www.shop.example.com.  3600 IN CNAME shop.example.com.
+      ' > belege/dns-eintraege.txt
+      cat > abschnitt.html <<'EOF'
+          <section id="dns">
+            <h2>2. DNS</h2>
+            <p>Der Browser fragt den rekursiven Resolver. Der fragt einen Root-Server, der auf die TLD-Server für .com
+            verweist. Diese nennen den autoritativen Nameserver von example.com, und der liefert 192.0.2.10.
+            Die Antwort bleibt so lange im Cache, wie die TTL erlaubt.</p>
+          </section>
+      EOF
+      awk 'FNR==NR{a=a $0 "\n"; next} /<\/body>/{printf "%s", a} {print}' abschnitt.html index.html > index.neu
+      mv index.neu index.html
+      rm abschnitt.html
   - id: verbindung-abschnitt
     title: Station 3 – TCP- und TLS-Handshake
     description: |
@@ -204,6 +254,20 @@ steps:
         <p>TLS: Client Hello, Server Hello mit Zertifikat, Prüfung, gemeinsamer Schlüssel.</p>
       </section>
       ```
+    solve: |
+      openssl req -x509 -newkey rsa:2048 -nodes -keyout belege/test-schluessel.pem -out belege/test-zertifikat.pem -days 30 -subj "/CN=shop.example.test" 2>/dev/null
+      openssl x509 -in belege/test-zertifikat.pem -noout -subject -issuer -dates > belege/zertifikat-info.txt
+      cat > abschnitt.html <<'EOF'
+          <section id="verbindung">
+            <h2>3. Verbindung</h2>
+            <p>TCP: Der Browser schickt SYN, der Server antwortet SYN-ACK, der Browser bestätigt mit ACK.</p>
+            <p>TLS: Client Hello, Server Hello mit Zertifikat, Prüfung, gemeinsamer Schlüssel.</p>
+            <p>Bei einem selbstsignierten Zertifikat sind Inhaber und Aussteller gleich, weil es sich selbst unterschrieben hat.</p>
+          </section>
+      EOF
+      awk 'FNR==NR{a=a $0 "\n"; next} /<\/body>/{printf "%s", a} {print}' abschnitt.html index.html > index.neu
+      mv index.neu index.html
+      rm abschnitt.html
   - id: http-abschnitt
     title: Station 4 – eine echte HTTP-Unterhaltung
     description: |
@@ -249,6 +313,22 @@ steps:
         Der Statuscode 200 in der Antwort heißt: alles in Ordnung.</p>
       </section>
       ```
+    solve: |
+      php -S 127.0.0.1:8080 > server.log 2>&1 &
+      P=$!
+      for i in $(seq 1 50); do curl -s -o /dev/null http://127.0.0.1:8080/ && break; sleep 0.1; done
+      curl -sv -o /dev/null http://127.0.0.1:8080/ 2> belege/curl-verlauf.txt
+      kill $P
+      cat > abschnitt.html <<'EOF'
+          <section id="http">
+            <h2>4. HTTP</h2>
+            <p><code>GET / HTTP/1.1</code> fordert die Startseite an. Der Host-Header nennt die Website.
+            Der Statuscode 200 in der Antwort heißt: alles in Ordnung.</p>
+          </section>
+      EOF
+      awk 'FNR==NR{a=a $0 "\n"; next} /<\/body>/{printf "%s", a} {print}' abschnitt.html index.html > index.neu
+      mv index.neu index.html
+      rm abschnitt.html
   - id: rendering-abschnitt
     title: Station 5 – vom HTML zum Bild
     description: |
@@ -292,6 +372,21 @@ steps:
         <p id="js-status">JavaScript ist noch nicht gelaufen.</p>
       </section>
       ```
+    solve: |
+      printf "document.querySelector('#js-status').textContent = 'JavaScript lief nach dem Parsen (defer).'\n" > app.js
+      awk '/<\/head>/{print "    <script src=\"app.js\" defer></script>"} {print}' index.html > index.neu
+      mv index.neu index.html
+      cat > abschnitt.html <<'EOF'
+          <section id="rendering">
+            <h2>5. Rendering</h2>
+            <p>Aus HTML wird der DOM, aus CSS das CSSOM. Beide ergeben den Render-Tree. Dann folgen Layout und Paint.
+            Dank defer wartet der Parser nicht auf app.js, sondern führt es erst nach dem Parsen aus.</p>
+            <p id="js-status">JavaScript ist noch nicht gelaufen.</p>
+          </section>
+      EOF
+      awk 'FNR==NR{a=a $0 "\n"; next} /<\/body>/{printf "%s", a} {print}' abschnitt.html index.html > index.neu
+      mv index.neu index.html
+      rm abschnitt.html
   - id: messung
     title: Station 6 – die Reise messen
     description: |
@@ -322,6 +417,24 @@ steps:
       done
       kill %1
       ```
+    solve: |
+      php -S 127.0.0.1:8080 > server.log 2>&1 &
+      P=$!
+      for i in $(seq 1 50); do curl -s -o /dev/null http://127.0.0.1:8080/ && break; sleep 0.1; done
+      for i in 1 2 3; do
+        curl -s -o /dev/null -w "dns=%{time_namelookup} connect=%{time_connect} ttfb=%{time_starttransfer} total=%{time_total}\n" http://127.0.0.1:8080/ >> belege/messung.txt
+      done
+      kill $P
+      cat > abschnitt.html <<'EOF'
+          <section id="messung">
+            <h2>6. Messung</h2>
+            <p>Am längsten dauert die Zeit bis zum ersten Byte (ttfb), weil der Server die Antwort erst erzeugen muss.
+            dns= ist bei 127.0.0.1 fast 0, weil eine IP-Adresse nicht aufgelöst werden muss.</p>
+          </section>
+      EOF
+      awk 'FNR==NR{a=a $0 "\n"; next} /<\/body>/{printf "%s", a} {print}' abschnitt.html index.html > index.neu
+      mv index.neu index.html
+      rm abschnitt.html
   - id: abschluss
     title: Zusammenfassung und Auslieferung
     description: |
@@ -365,3 +478,22 @@ steps:
         </ol>
       </section>
       ```
+    solve: |
+      cat > abschnitt.html <<'EOF'
+          <section id="zusammenfassung">
+            <h2>Die ganze Reise</h2>
+            <ol>
+              <li>URL zerlegen</li>
+              <li>DNS: Name → IP-Adresse</li>
+              <li>TCP-Handshake</li>
+              <li>TLS-Handshake</li>
+              <li>HTTP-Request</li>
+              <li>Server erzeugt die Antwort</li>
+              <li>HTTP-Response</li>
+              <li>Rendering: DOM, CSSOM, Layout, Paint</li>
+            </ol>
+          </section>
+      EOF
+      awk 'FNR==NR{a=a $0 "\n"; next} /<\/body>/{printf "%s", a} {print}' abschnitt.html index.html > index.neu
+      mv index.neu index.html
+      rm abschnitt.html

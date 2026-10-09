@@ -34,6 +34,9 @@ steps:
       mkdir keys
       chmod 700 keys
       ```
+    solve: |
+      mkdir -p keys
+      chmod 700 keys
   - id: schluessel
     title: Ein geschütztes Schlüsselpaar erzeugen
     description: |
@@ -67,6 +70,11 @@ steps:
       chmod 600 keys/id_ed25519_kit
       chmod 644 keys/id_ed25519_kit.pub
       ```
+    solve: |
+      rm -f keys/id_ed25519_kit keys/id_ed25519_kit.pub
+      ssh-keygen -q -t ed25519 -C "kit@example.com" -N "kit-passphrase-123" -f keys/id_ed25519_kit
+      chmod 600 keys/id_ed25519_kit
+      chmod 644 keys/id_ed25519_kit.pub
   - id: fingerprint
     title: Den Fingerprint dokumentieren
     description: |
@@ -85,6 +93,8 @@ steps:
       ```bash
       ssh-keygen -l -f keys/id_ed25519_kit.pub > keys/FINGERPRINT.txt
       ```
+    solve: |
+      ssh-keygen -l -f keys/id_ed25519_kit.pub > keys/FINGERPRINT.txt
   - id: config
     title: Die ssh-Config mit Bastion schreiben
     description: |
@@ -134,6 +144,24 @@ steps:
         AddKeysToAgent yes
         ServerAliveInterval 30
       ```
+    solve: |
+      cat > config <<'EOF'
+      Host bastion
+        HostName 203.0.113.5
+        User deploy
+        Port 2222
+
+      Host app
+        HostName 10.0.1.20
+        User deploy
+        ProxyJump bastion
+
+      Host *
+        IdentityFile ~/.ssh/id_ed25519_kit
+        IdentitiesOnly yes
+        AddKeysToAgent yes
+        ServerAliveInterval 30
+      EOF
   - id: tunnel
     title: Einen Datenbank-Tunnel ergänzen
     description: |
@@ -160,6 +188,31 @@ steps:
         LocalForward 5433 localhost:5432
         ExitOnForwardFailure yes
       ```
+    solve: |
+      cat > config <<'EOF'
+      Host bastion
+        HostName 203.0.113.5
+        User deploy
+        Port 2222
+
+      Host app
+        HostName 10.0.1.20
+        User deploy
+        ProxyJump bastion
+
+      Host app-db
+        HostName 10.0.1.30
+        User deploy
+        ProxyJump bastion
+        LocalForward 5433 localhost:5432
+        ExitOnForwardFailure yes
+
+      Host *
+        IdentityFile ~/.ssh/id_ed25519_kit
+        IdentitiesOnly yes
+        AddKeysToAgent yes
+        ServerAliveInterval 30
+      EOF
   - id: vorlage
     title: Eine authorized_keys-Vorlage für neue Server
     description: |
@@ -190,6 +243,11 @@ steps:
       chmod 700 server-vorlage/.ssh
       chmod 600 server-vorlage/.ssh/authorized_keys
       ```
+    solve: |
+      mkdir -p server-vorlage/.ssh
+      cp keys/id_ed25519_kit.pub server-vorlage/.ssh/authorized_keys
+      chmod 700 server-vorlage/.ssh
+      chmod 600 server-vorlage/.ssh/authorized_keys
   - id: readme
     title: Die README schreiben
     description: |
@@ -246,3 +304,23 @@ steps:
 
       ssh -G app -F ./config zeigt die wirksame Konfiguration, ohne zu verbinden.
       ```
+    solve: |
+      FP="$(ssh-keygen -l -f keys/id_ed25519_kit.pub)"
+      cat > README.md <<EOF
+      # SSH-Starterkit
+
+      Der private Schlüssel keys/id_ed25519_kit wird niemals weitergegeben oder committet.
+
+      ## Fingerprint
+
+      $FP
+
+      ## Verbinden
+
+      ssh app          # App-Server über die Bastion
+      ssh -N app-db    # Datenbank-Tunnel auf localhost:5433
+
+      ## Prüfen
+
+      ssh -G app -F ./config zeigt die wirksame Konfiguration, ohne zu verbinden.
+      EOF

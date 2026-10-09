@@ -42,6 +42,11 @@ steps:
       git config user.email "ada@example.com"
       echo "# Starter-Kit" > README.md
       ```
+    solve: |
+      git init -q -b main
+      git config user.name "Ada Beispiel"
+      git config user.email "ada@example.com"
+      echo "# Starter-Kit" > README.md
   - id: editorconfig
     title: Gemeinsame Formatierung mit .editorconfig
     description: |
@@ -89,6 +94,27 @@ steps:
       trim_trailing_whitespace = false
       EOF
       ```
+    solve: |
+      cat > .editorconfig <<'EOF'
+      root = true
+
+      [*]
+      charset = utf-8
+      end_of_line = lf
+      insert_final_newline = true
+      trim_trailing_whitespace = true
+      indent_style = space
+      indent_size = 2
+
+      [*.php]
+      indent_size = 4
+
+      [Makefile]
+      indent_style = tab
+
+      [*.md]
+      trim_trailing_whitespace = false
+      EOF
   - id: versionen
     title: Tool-Versionen festlegen
     description: |
@@ -135,6 +161,17 @@ steps:
       echo 24 > .nvmrc
       nvm use
       ```
+    solve: |
+      cat > mise.toml <<'EOF'
+      [tools]
+      node = "24"
+      php = "8.5"
+      bun = "1.4"
+
+      [env]
+      _.file = ".env"
+      EOF
+      echo 24 > .nvmrc
   - id: variablen
     title: Variablen-Vorlage und .gitignore
     description: |
@@ -163,6 +200,10 @@ steps:
       echo ".env" > .gitignore
       git check-ignore -v .env
       ```
+    solve: |
+      printf 'APP_NAME=Starter\nAPP_PORT=8000\nDB_PASSWORD=\n' > .env.example
+      echo ".env" > .gitignore
+      git check-ignore -q .env
   - id: makefile
     title: Ein selbstdokumentierendes Makefile
     description: |
@@ -222,6 +263,27 @@ steps:
       make
       ```
       Die eingerückten Zeilen beginnen mit einem **Tab**.
+    solve: |
+      awk '{sub(/^>/, "\t")} 1' > Makefile <<'EOF'
+      .DEFAULT_GOAL := help
+      .PHONY: help setup hooks test
+
+      help: ## Zeigt diese Hilfe
+      >@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-12s %s\n", $$1, $$2}'
+
+      .env: .env.example
+      >@test -f .env || cp .env.example .env
+
+      setup: .env hooks ## Richtet das Projekt ein
+      >@echo "Setup fertig"
+
+      hooks: ## Aktiviert die Git-Hooks
+      >git config core.hooksPath .githooks
+
+      test: ## Führt die Tests aus
+      >@echo "Keine Tests vorhanden"
+      EOF
+      make
   - id: hooks
     title: Ein pre-commit-Hook gegen Secrets
     description: |
@@ -268,6 +330,17 @@ steps:
       chmod +x .githooks/pre-commit
       make setup
       ```
+    solve: |
+      mkdir -p .githooks
+      cat > .githooks/pre-commit <<'EOF'
+      #!/usr/bin/env bash
+      if git diff --cached --name-only | grep -qE '(^|/)\.env$'; then
+        echo "Commit abgelehnt: .env enthält Secrets und gehört nicht ins Repository."
+        exit 1
+      fi
+      EOF
+      chmod +x .githooks/pre-commit
+      make setup
   - id: devcontainer
     title: Den Dev-Container beschreiben
     description: |
@@ -312,6 +385,24 @@ steps:
       EOF
       jq . .devcontainer/devcontainer.json
       ```
+    solve: |
+      mkdir -p .devcontainer
+      cat > .devcontainer/devcontainer.json <<'EOF'
+      {
+        "name": "Starter-Kit",
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+          "ghcr.io/devcontainers/features/node:1": { "version": "24" },
+          "ghcr.io/devcontainers/features/php:1": { "version": "8.5" }
+        },
+        "forwardPorts": [8000],
+        "postCreateCommand": "make setup",
+        "customizations": {
+          "vscode": { "extensions": ["editorconfig.editorconfig"] }
+        }
+      }
+      EOF
+      jq -e . .devcontainer/devcontainer.json > /dev/null
   - id: readme-commit
     title: Setup-Anleitung und erster Commit
     description: |
@@ -368,3 +459,18 @@ steps:
       git status
       git commit -m "chore: add development environment starter kit"
       ~~~
+    solve: |
+      cat >> README.md <<'EOF'
+
+      ## Setup
+
+      Voraussetzungen: Docker oder mise (für Node.js 24 und PHP 8.5).
+
+      ```bash
+      make setup
+      ```
+
+      `make` zeigt alle verfügbaren Befehle.
+      EOF
+      git add -A
+      git commit -q -m "chore: add development environment starter kit"

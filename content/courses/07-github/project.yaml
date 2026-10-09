@@ -72,6 +72,31 @@ steps:
       Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
       EOF
       ```
+    solve: |
+      git init -q -b main
+      git config user.name "Ada Beispiel"
+      git config user.email "user@example.com"
+      cat > README.md <<'EOF'
+      # slugify
+
+      ![CI](https://github.com/du/slugify/actions/workflows/ci.yml/badge.svg)
+
+      Wandelt Texte in URL-taugliche Namen um.
+
+      ## Installation
+
+      ```bash
+      npm install
+      ```
+
+      ## Benutzung
+
+      `slugify("Hallo Welt")` ergibt `hallo-welt`.
+
+      ## Mitmachen
+
+      Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
+      EOF
   - id: lizenz-und-ignore
     title: Lizenz, .gitignore und .env-Vorlage
     description: |
@@ -115,6 +140,32 @@ steps:
       printf 'API_TOKEN=\n' > .env.example
       nano LICENSE   # MIT-Text einfügen
       ```
+    solve: |
+      cat > LICENSE <<'EOF'
+      MIT License
+
+      Copyright (c) 2026 Ada Beispiel
+
+      Permission is hereby granted, free of charge, to any person obtaining a copy
+      of this software and associated documentation files (the "Software"), to deal
+      in the Software without restriction, including without limitation the rights
+      to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+      copies of the Software, and to permit persons to whom the Software is
+      furnished to do so, subject to the following conditions:
+
+      The above copyright notice and this permission notice shall be included in all
+      copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+      IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+      FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+      AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+      LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+      OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+      SOFTWARE.
+      EOF
+      printf 'node_modules/\n.env\n*.log\n' > .gitignore
+      printf 'API_TOKEN=\n' > .env.example
   - id: code-und-tests
     title: Code mit Tests
     description: |
@@ -170,6 +221,25 @@ steps:
       EOF
       npm test
       ```
+    solve: |
+      cat > package.json <<'EOF'
+      { "name": "slugify", "version": "1.0.0", "type": "module", "scripts": { "test": "node --test" } }
+      EOF
+      mkdir -p src test
+      cat > src/slugify.js <<'EOF'
+      export function slugify(text) {
+        return text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      }
+      EOF
+      cat > test/slugify.test.js <<'EOF'
+      import { test } from 'node:test'
+      import assert from 'node:assert/strict'
+      import { slugify } from '../src/slugify.js'
+
+      test('ersetzt Leerzeichen', () => assert.equal(slugify('Hallo Welt'), 'hallo-welt'))
+      test('entfernt Sonderzeichen', () => assert.equal(slugify('Ja!'), 'ja'))
+      EOF
+      npm test --silent
   - id: beitragsregeln
     title: CONTRIBUTING und SECURITY
     description: |
@@ -215,6 +285,21 @@ steps:
       EOF
       printf '# Sicherheit\n\nBitte melde Lücken vertraulich an security@example.com.\n' > SECURITY.md
       ```
+    solve: |
+      cat > CONTRIBUTING.md <<'EOF'
+      # Mitmachen
+
+      Für den Einstieg eignen sich Issues mit dem Label `good first issue`.
+
+      ## Entwicklungsumgebung
+
+      Fork klonen, dann `npm test` ausführen.
+
+      ## Pull Requests
+
+      Ein Thema pro PR, Tests ergänzen, `npm test` muss grün sein, Issue mit `Closes #…` verknüpfen.
+      EOF
+      printf '# Sicherheit\n\nBitte melde Lücken vertraulich an security@example.com.\n' > SECURITY.md
   - id: vorlagen
     title: Issue- und PR-Vorlagen, CODEOWNERS
     description: |
@@ -255,6 +340,11 @@ steps:
       printf '## Was ändert sich?\n\n## Wie wurde getestet?\n\n- [ ] npm test ist grün\n' > .github/pull_request_template.md
       printf '* @du\n' > .github/CODEOWNERS
       ```
+    solve: |
+      mkdir -p .github/ISSUE_TEMPLATE
+      printf -- '---\nname: Fehlerbericht\nabout: Melde einen Fehler\nlabels: bug\n---\n\n## Was ist passiert?\n\n## Schritte zum Nachstellen\n' > .github/ISSUE_TEMPLATE/bug.md
+      printf '## Was ändert sich?\n\n## Wie wurde getestet?\n\n- [ ] npm test ist grün\n' > .github/pull_request_template.md
+      printf '* @du\n' > .github/CODEOWNERS
   - id: ci
     title: CI-Workflow
     description: |
@@ -320,6 +410,32 @@ steps:
             - run: npm test
       EOF
       ```
+    solve: |
+      mkdir -p .github/workflows
+      cat > .github/workflows/ci.yml <<'EOF'
+      name: CI
+
+      on:
+        push:
+          branches: [main]
+        pull_request:
+
+      permissions:
+        contents: read
+
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          strategy:
+            matrix:
+              node-version: [22, 24]
+          steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
+              with:
+                node-version: ${{ matrix.node-version }}
+            - run: npm test
+      EOF
   - id: commit-und-release
     title: Committen, „hochladen“ und Version 1.0.0
     description: |
@@ -368,3 +484,13 @@ steps:
       git tag -a v1.0.0 -m "Version 1.0.0"
       git push origin v1.0.0
       ```
+    solve: |
+      git add .
+      git commit -q -m "chore: initial open source setup"
+      rm -rf ../projekt-server.git
+      git init -q --bare -b main ../projekt-server.git
+      git remote remove origin 2>/dev/null || true
+      git remote add origin ../projekt-server.git
+      git push -q -u origin main
+      git tag -a v1.0.0 -m "Version 1.0.0"
+      git push -q origin v1.0.0

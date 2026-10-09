@@ -57,6 +57,11 @@ steps:
       echo 24 > .nvmrc
       echo node_modules > .gitignore
       ```
+    solve: |
+      npm init -y >/dev/null
+      npm pkg set name=textstat version=0.1.0 type=module engines.node=">=24"
+      echo 24 > .nvmrc
+      echo node_modules > .gitignore
   - id: kernlogik
     title: Die Kernlogik als ES-Modul
     description: |
@@ -98,6 +103,15 @@ steps:
         return { zeilen, woerter, zeichen: text.length };
       }
       ```
+    solve: |
+      mkdir -p src
+      cat > src/stats.js <<'EOF'
+      export function analysiere(text) {
+        const zeilen = text.split("\n").filter((zeile) => zeile.trim() !== "").length;
+        const woerter = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+        return { zeilen, woerter, zeichen: text.length };
+      }
+      EOF
   - id: tests
     title: Tests mit node:test
     description: |
@@ -151,6 +165,27 @@ steps:
       npm pkg set scripts.test="node --test"
       npm test
       ```
+    solve: |
+      mkdir -p test
+      cat > test/stats.test.js <<'EOF'
+      import { test } from "node:test";
+      import assert from "node:assert/strict";
+      import { analysiere } from "../src/stats.js";
+
+      test("zählt Zeilen, Wörter und Zeichen", () => {
+        assert.deepEqual(analysiere("Hallo Welt"), { zeilen: 1, woerter: 2, zeichen: 10 });
+      });
+
+      test("leerer Text", () => {
+        assert.deepEqual(analysiere(""), { zeilen: 0, woerter: 0, zeichen: 0 });
+      });
+
+      test("Leerzeilen zählen nicht als Zeilen", () => {
+        assert.equal(analysiere("a\n\n\nb\n").zeilen, 2);
+      });
+      EOF
+      npm pkg set scripts.test="node --test"
+      npm test --silent >/dev/null
   - id: cli-befehl
     title: Der ausführbare Befehl
     description: |
@@ -212,6 +247,27 @@ steps:
       chmod +x bin/textstat.js
       ./bin/textstat.js README.md
       ```
+    solve: |
+      mkdir -p bin
+      cat > bin/textstat.js <<'EOF'
+      #!/usr/bin/env node
+      import { readFileSync } from "node:fs";
+      import { analysiere } from "../src/stats.js";
+
+      const args = process.argv.slice(2);
+      const datei = args.find((arg) => !arg.startsWith("--"));
+
+      if (!datei) {
+        console.error("Aufruf: textstat <datei> [--json]");
+        process.exit(1);
+      }
+
+      const ergebnis = analysiere(readFileSync(datei, "utf8"));
+      console.log(`Zeilen: ${ergebnis.zeilen}`);
+      console.log(`Wörter: ${ergebnis.woerter}`);
+      console.log(`Zeichen: ${ergebnis.zeichen}`);
+      EOF
+      chmod +x bin/textstat.js
   - id: json-und-farbe
     title: Option --json und farbige Ausgabe
     description: |
@@ -269,6 +325,33 @@ steps:
         console.log(`${pc.cyan("Zeichen:")} ${ergebnis.zeichen}`);
       }
       ```
+    solve: |
+      npm install --silent --no-audit --no-fund picocolors
+      cat > bin/textstat.js <<'EOF'
+      #!/usr/bin/env node
+      import { readFileSync } from "node:fs";
+      import pc from "picocolors";
+      import { analysiere } from "../src/stats.js";
+
+      const args = process.argv.slice(2);
+      const datei = args.find((arg) => !arg.startsWith("--"));
+
+      if (!datei) {
+        console.error("Aufruf: textstat <datei> [--json]");
+        process.exit(1);
+      }
+
+      const ergebnis = analysiere(readFileSync(datei, "utf8"));
+
+      if (args.includes("--json")) {
+        console.log(JSON.stringify(ergebnis));
+      } else {
+        console.log(`${pc.cyan("Zeilen:")} ${ergebnis.zeilen}`);
+        console.log(`${pc.cyan("Wörter:")} ${ergebnis.woerter}`);
+        console.log(`${pc.cyan("Zeichen:")} ${ergebnis.zeichen}`);
+      }
+      EOF
+      chmod +x bin/textstat.js
   - id: bin-feld
     title: Das bin-Feld – aus dem Skript wird ein Befehl
     description: |
@@ -314,6 +397,9 @@ steps:
       npm pkg set 'files[]=bin' 'files[]=src'
       npm pack --dry-run
       ```
+    solve: |
+      npm pkg set bin.textstat=bin/textstat.js
+      npm pkg set 'files[]=bin' 'files[]=src'
   - id: readme-und-version
     title: README, Version und Tarball
     description: |
@@ -373,3 +459,18 @@ steps:
       npm version minor --no-git-tag-version
       npm pack
       ```
+    solve: |
+      cat > README.md <<'MD'
+      # textstat
+
+      Zählt Zeilen, Wörter und Zeichen einer Textdatei.
+
+      ## Verwendung
+
+      ```bash
+      textstat notizen.txt
+      textstat notizen.txt --json | jq .woerter
+      ```
+      MD
+      npm version minor --no-git-tag-version >/dev/null
+      npm pack --silent >/dev/null

@@ -78,6 +78,29 @@ steps:
       grep -c '\[ERROR\]' app.log
       grep -vE '^[0-9]{4}-' app.log
       ```
+    solve: |
+      cat > app.log <<'LOG'
+      2026-10-01 08:00:01 [INFO] auth: User 1042 logged in from 192.0.2.15
+      2026-10-01 08:00:07 [INFO] http: GET /products 200 took 87ms
+      2026-10-01 08:01:13 [WARN] cache: Miss for key product:77 took 312ms
+      2026-10-01 08:02:45 [ERROR] db: Query timeout after 5000ms
+      2026-10-01 08:03:02 [INFO] http: GET /cart 200 took 45ms
+      2026-10-01 08:03:10 [ERROR] payment: Card declined for order 5531
+      2026-10-01 08:04:22 [INFO] auth: User 2210 logged in from 198.51.100.7
+      2026-10-01 08:05:00 [WARN] http: GET /search 200 took 1450ms
+      2026-10-01 08:05:31 [ERROR] db: Query timeout after 5000ms
+      2026-10-01 08:06:12 [INFO] http: POST /orders 201 took 230ms
+      2026-10-01 08:06:13 [INFO] mail: Sent confirmation to user@example.com
+      2026-10-01 08:07:40 [ERROR] payment: Card declined for order 5540
+      2026-10-01 08:08:05 [WARN] auth: Failed login for user 1042 from 203.0.113.9
+      2026-10-01 08:08:09 [WARN] auth: Failed login for user 1042 from 203.0.113.9
+      2026-10-01 08:09:55 [ERROR] db: Query timeout after 7500ms
+      2026-10-01 08:10:30 [INFO] http: GET /products 200 took 92ms
+      2026-10-01 08:11:02 [DEBUG] cache: Warmup finished
+      2026-10-01 08:11:47 [ERROR] http: GET /checkout 500 took 3021ms
+      WARNING: disk almost full
+      2026-10-01 08:12:00 [INFO] auth: User 2210 logged out
+      LOG
   - id: skript-geruest
     title: Das Skript-Gerüst – Datei lesen und Zeilen zählen
     description: |
@@ -127,6 +150,16 @@ steps:
 
       console.log(`Zeilen: ${zeilen.length}`);
       ```
+    solve: |
+      cat > analyse.js <<'JS'
+      const { readFileSync } = require("node:fs");
+
+      const datei = process.argv[2];
+      const inhalt = readFileSync(datei, "utf8");
+      const zeilen = inhalt.split(/\r?\n/).filter((z) => z.trim() !== "");
+
+      console.log(`Zeilen: ${zeilen.length}`);
+      JS
   - id: zeilen-parsen
     title: Zeilen mit benannten Gruppen zerlegen und Level zählen
     description: |
@@ -199,6 +232,36 @@ steps:
         console.log(`${name}: ${anzahl}`);
       }
       ```
+    solve: |
+      cat > analyse.js <<'JS'
+      const { readFileSync } = require("node:fs");
+
+      const LOG_ZEILE =
+        /^(?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2}) \[(?<level>DEBUG|INFO|WARN|ERROR)\] (?<source>[a-z]+): (?<message>.+)$/;
+
+      const datei = process.argv[2];
+      const zeilen = readFileSync(datei, "utf8").split(/\r?\n/).filter((z) => z.trim() !== "");
+
+      const levels = { ERROR: 0, WARN: 0, INFO: 0, DEBUG: 0 };
+      let ungueltig = 0;
+      const eintraege = [];
+
+      for (const zeile of zeilen) {
+        const m = zeile.match(LOG_ZEILE);
+        if (!m) {
+          ungueltig++;
+          continue;
+        }
+        levels[m.groups.level]++;
+        eintraege.push({ ...m.groups });
+      }
+
+      console.log(`Zeilen: ${zeilen.length}`);
+      console.log(`Ungültig: ${ungueltig}`);
+      for (const [name, anzahl] of Object.entries(levels)) {
+        console.log(`${name}: ${anzahl}`);
+      }
+      JS
   - id: top-fehler
     title: Fehlermeldungen normalisieren und die häufigsten finden
     description: |
@@ -258,6 +321,48 @@ steps:
         console.log(`${anzahl}x ${text}`);
       }
       ```
+    solve: |
+      cat > analyse.js <<'JS'
+      const { readFileSync } = require("node:fs");
+
+      const LOG_ZEILE =
+        /^(?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2}) \[(?<level>DEBUG|INFO|WARN|ERROR)\] (?<source>[a-z]+): (?<message>.+)$/;
+
+      const datei = process.argv[2];
+      const zeilen = readFileSync(datei, "utf8").split(/\r?\n/).filter((z) => z.trim() !== "");
+
+      const levels = { ERROR: 0, WARN: 0, INFO: 0, DEBUG: 0 };
+      let ungueltig = 0;
+      const eintraege = [];
+
+      for (const zeile of zeilen) {
+        const m = zeile.match(LOG_ZEILE);
+        if (!m) {
+          ungueltig++;
+          continue;
+        }
+        levels[m.groups.level]++;
+        eintraege.push({ ...m.groups });
+      }
+
+      const zaehler = new Map();
+      for (const e of eintraege) {
+        if (e.level !== "ERROR") continue;
+        const schluessel = `${e.source}: ${e.message}`.replace(/\d+/g, "<n>");
+        zaehler.set(schluessel, (zaehler.get(schluessel) ?? 0) + 1);
+      }
+      const top = [...zaehler].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3);
+
+      console.log(`Zeilen: ${zeilen.length}`);
+      console.log(`Ungültig: ${ungueltig}`);
+      for (const [name, anzahl] of Object.entries(levels)) {
+        console.log(`${name}: ${anzahl}`);
+      }
+      console.log("Top-Fehler:");
+      for (const [text, anzahl] of top) {
+        console.log(`${anzahl}x ${text}`);
+      }
+      JS
   - id: langsamste-anfrage
     title: Die langsamste Anfrage finden
     description: |
@@ -309,6 +414,61 @@ steps:
           : `Langsamste Anfrage: ${langsamste.ms}ms (${langsamste.text})`,
       );
       ```
+    solve: |
+      cat > analyse.js <<'JS'
+      const { readFileSync } = require("node:fs");
+
+      const LOG_ZEILE =
+        /^(?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2}) \[(?<level>DEBUG|INFO|WARN|ERROR)\] (?<source>[a-z]+): (?<message>.+)$/;
+
+      const datei = process.argv[2];
+      const zeilen = readFileSync(datei, "utf8").split(/\r?\n/).filter((z) => z.trim() !== "");
+
+      const levels = { ERROR: 0, WARN: 0, INFO: 0, DEBUG: 0 };
+      let ungueltig = 0;
+      const eintraege = [];
+
+      for (const zeile of zeilen) {
+        const m = zeile.match(LOG_ZEILE);
+        if (!m) {
+          ungueltig++;
+          continue;
+        }
+        levels[m.groups.level]++;
+        eintraege.push({ ...m.groups });
+      }
+
+      const zaehler = new Map();
+      for (const e of eintraege) {
+        if (e.level !== "ERROR") continue;
+        const schluessel = `${e.source}: ${e.message}`.replace(/\d+/g, "<n>");
+        zaehler.set(schluessel, (zaehler.get(schluessel) ?? 0) + 1);
+      }
+      const top = [...zaehler].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3);
+
+      let langsamste = null;
+      for (const e of eintraege) {
+        const m = e.message.match(/\btook (\d+)ms\b/);
+        if (m && (langsamste === null || Number(m[1]) > langsamste.ms)) {
+          langsamste = { ms: Number(m[1]), text: `${e.source}: ${e.message}` };
+        }
+      }
+
+      console.log(`Zeilen: ${zeilen.length}`);
+      console.log(`Ungültig: ${ungueltig}`);
+      for (const [name, anzahl] of Object.entries(levels)) {
+        console.log(`${name}: ${anzahl}`);
+      }
+      console.log("Top-Fehler:");
+      for (const [text, anzahl] of top) {
+        console.log(`${anzahl}x ${text}`);
+      }
+      console.log(
+        langsamste === null
+          ? "Langsamste Anfrage: keine"
+          : `Langsamste Anfrage: ${langsamste.ms}ms (${langsamste.text})`,
+      );
+      JS
   - id: json-ausgabe
     title: Eine JSON-Ausgabe für andere Programme
     description: |
@@ -381,3 +541,75 @@ steps:
         // bisherige Textausgabe
       }
       ```
+    solve: |
+      cat > analyse.js <<'JS'
+      const { readFileSync } = require("node:fs");
+
+      const LOG_ZEILE =
+        /^(?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2}) \[(?<level>DEBUG|INFO|WARN|ERROR)\] (?<source>[a-z]+): (?<message>.+)$/;
+
+      const datei = process.argv[2];
+      const alsJson = process.argv.includes("--json");
+      const zeilen = readFileSync(datei, "utf8").split(/\r?\n/).filter((z) => z.trim() !== "");
+
+      const levels = { ERROR: 0, WARN: 0, INFO: 0, DEBUG: 0 };
+      let ungueltig = 0;
+      const eintraege = [];
+
+      for (const zeile of zeilen) {
+        const m = zeile.match(LOG_ZEILE);
+        if (!m) {
+          ungueltig++;
+          continue;
+        }
+        levels[m.groups.level]++;
+        eintraege.push({ ...m.groups });
+      }
+
+      const zaehler = new Map();
+      for (const e of eintraege) {
+        if (e.level !== "ERROR") continue;
+        const schluessel = `${e.source}: ${e.message}`.replace(/\d+/g, "<n>");
+        zaehler.set(schluessel, (zaehler.get(schluessel) ?? 0) + 1);
+      }
+      const top = [...zaehler].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3);
+
+      let langsamste = null;
+      for (const e of eintraege) {
+        const m = e.message.match(/\btook (\d+)ms\b/);
+        if (m && (langsamste === null || Number(m[1]) > langsamste.ms)) {
+          langsamste = { ms: Number(m[1]), text: `${e.source}: ${e.message}` };
+        }
+      }
+
+      if (alsJson) {
+        console.log(
+          JSON.stringify(
+            {
+              lines: zeilen.length,
+              invalid: ungueltig,
+              levels,
+              topErrors: top.map(([message, count]) => ({ message, count })),
+              slowestMs: langsamste === null ? null : langsamste.ms,
+            },
+            null,
+            2,
+          ),
+        );
+      } else {
+        console.log(`Zeilen: ${zeilen.length}`);
+        console.log(`Ungültig: ${ungueltig}`);
+        for (const [name, anzahl] of Object.entries(levels)) {
+          console.log(`${name}: ${anzahl}`);
+        }
+        console.log("Top-Fehler:");
+        for (const [text, anzahl] of top) {
+          console.log(`${anzahl}x ${text}`);
+        }
+        console.log(
+          langsamste === null
+            ? "Langsamste Anfrage: keine"
+            : `Langsamste Anfrage: ${langsamste.ms}ms (${langsamste.text})`,
+        );
+      }
+      JS

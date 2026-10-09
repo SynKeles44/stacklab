@@ -53,6 +53,11 @@ steps:
       // Eine kleine To-do-Liste für die Kommandozeile
       console.log("To-do-Liste");
       ```
+    solve: |
+      cat > todo.js <<'EOF'
+      // Eine kleine To-do-Liste für die Kommandozeile
+      console.log("To-do-Liste");
+      EOF
   - id: daten-und-ausgabe
     title: Aufgaben als Objekte und eine Ausgabe-Funktion
     description: |
@@ -95,6 +100,22 @@ steps:
 
       aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
       ```
+    solve: |
+      cat > todo.js <<'EOF'
+      // Eine kleine To-do-Liste für die Kommandozeile
+      const aufgaben = [
+        { text: "Milch kaufen", erledigt: false },
+        { text: "Brot backen", erledigt: true },
+      ];
+
+      function zeile(aufgabe, nummer) {
+        const haken = aufgabe.erledigt ? "[x]" : "[ ]";
+        return `${nummer}. ${haken} ${aufgabe.text}`;
+      }
+
+      console.log("To-do-Liste");
+      aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
+      EOF
   - id: befehle-erkennen
     title: Befehle aus dem Terminal lesen
     description: |
@@ -159,6 +180,45 @@ steps:
           process.exitCode = 1;
       }
       ```
+    solve: |
+      cat > todo.js <<'EOF'
+      // Eine kleine To-do-Liste für die Kommandozeile
+
+      function zeile(aufgabe, nummer) {
+        const haken = aufgabe.erledigt ? "[x]" : "[ ]";
+        return `${nummer}. ${haken} ${aufgabe.text}`;
+      }
+
+      function hilfe() {
+        console.log("Verwendung: node todo.js <befehl>");
+        console.log("  list            alle Aufgaben anzeigen");
+        console.log("  add <text>      Aufgabe hinzufügen");
+        console.log("  done <nummer>   Aufgabe abhaken");
+        console.log("  remove <nummer> Aufgabe löschen");
+        console.log("  stats           Statistik anzeigen");
+      }
+
+      const aufgaben = [
+        { text: "Milch kaufen", erledigt: false },
+        { text: "Brot backen", erledigt: true },
+      ];
+
+      const [befehl, ...rest] = process.argv.slice(2);
+
+      switch (befehl) {
+        case "list":
+          aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
+          break;
+        case undefined:
+        case "hilfe":
+          hilfe();
+          break;
+        default:
+          console.log(`Unbekannter Befehl: ${befehl}`);
+          hilfe();
+          process.exitCode = 1;
+      }
+      EOF
   - id: speichern-und-laden
     title: Aufgaben speichern und hinzufügen
     description: |
@@ -249,6 +309,75 @@ steps:
         break;
       }
       ```
+    solve: |
+      cat > todo.js <<'EOF'
+      // Eine kleine To-do-Liste für die Kommandozeile
+      const fs = require("node:fs");
+      const DATEI = "todos.json";
+
+      function laden() {
+        try {
+          return JSON.parse(fs.readFileSync(DATEI, "utf8"));
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function speichern(aufgaben) {
+        fs.writeFileSync(DATEI, JSON.stringify(aufgaben, null, 2));
+      }
+
+      function fehler(nachricht) {
+        console.log(`Fehler: ${nachricht}`);
+        process.exitCode = 1;
+      }
+
+      function zeile(aufgabe, nummer) {
+        const haken = aufgabe.erledigt ? "[x]" : "[ ]";
+        return `${nummer}. ${haken} ${aufgabe.text}`;
+      }
+
+      function hilfe() {
+        console.log("Verwendung: node todo.js <befehl>");
+        console.log("  list            alle Aufgaben anzeigen");
+        console.log("  add <text>      Aufgabe hinzufügen");
+        console.log("  done <nummer>   Aufgabe abhaken");
+        console.log("  remove <nummer> Aufgabe löschen");
+        console.log("  stats           Statistik anzeigen");
+      }
+
+      const aufgaben = laden();
+
+      const [befehl, ...rest] = process.argv.slice(2);
+
+      switch (befehl) {
+        case "list":
+          if (aufgaben.length === 0) {
+            console.log("Keine Aufgaben.");
+          }
+          aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
+          break;
+        case "add": {
+          const text = rest.join(" ").trim();
+          if (text === "") {
+            fehler("Bitte einen Text angeben.");
+            break;
+          }
+          aufgaben.push({ text, erledigt: false });
+          speichern(aufgaben);
+          console.log(`Hinzugefügt: ${text}`);
+          break;
+        }
+        case undefined:
+        case "hilfe":
+          hilfe();
+          break;
+        default:
+          console.log(`Unbekannter Befehl: ${befehl}`);
+          hilfe();
+          process.exitCode = 1;
+      }
+      EOF
   - id: abhaken
     title: Aufgaben abhaken – mit sicherer Nummernprüfung
     description: |
@@ -310,6 +439,94 @@ steps:
         break;
       }
       ```
+    solve: |
+      cat > todo.js <<'EOF'
+      // Eine kleine To-do-Liste für die Kommandozeile
+      const fs = require("node:fs");
+      const DATEI = "todos.json";
+
+      function laden() {
+        try {
+          return JSON.parse(fs.readFileSync(DATEI, "utf8"));
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function speichern(aufgaben) {
+        fs.writeFileSync(DATEI, JSON.stringify(aufgaben, null, 2));
+      }
+
+      function fehler(nachricht) {
+        console.log(`Fehler: ${nachricht}`);
+        process.exitCode = 1;
+      }
+
+      function finde(aufgaben, nummerText) {
+        const nummer = Number(nummerText);
+        if (!Number.isInteger(nummer) || nummer < 1 || nummer > aufgaben.length) {
+          return -1;
+        }
+        return nummer - 1;
+      }
+
+      function zeile(aufgabe, nummer) {
+        const haken = aufgabe.erledigt ? "[x]" : "[ ]";
+        return `${nummer}. ${haken} ${aufgabe.text}`;
+      }
+
+      function hilfe() {
+        console.log("Verwendung: node todo.js <befehl>");
+        console.log("  list            alle Aufgaben anzeigen");
+        console.log("  add <text>      Aufgabe hinzufügen");
+        console.log("  done <nummer>   Aufgabe abhaken");
+        console.log("  remove <nummer> Aufgabe löschen");
+        console.log("  stats           Statistik anzeigen");
+      }
+
+      const aufgaben = laden();
+
+      const [befehl, ...rest] = process.argv.slice(2);
+
+      switch (befehl) {
+        case "list":
+          if (aufgaben.length === 0) {
+            console.log("Keine Aufgaben.");
+          }
+          aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
+          break;
+        case "add": {
+          const text = rest.join(" ").trim();
+          if (text === "") {
+            fehler("Bitte einen Text angeben.");
+            break;
+          }
+          aufgaben.push({ text, erledigt: false });
+          speichern(aufgaben);
+          console.log(`Hinzugefügt: ${text}`);
+          break;
+        }
+        case "done": {
+          const index = finde(aufgaben, rest[0]);
+          if (index === -1) {
+            fehler(`Aufgabe ${rest[0]} gibt es nicht.`);
+            break;
+          }
+          aufgaben[index].erledigt = true;
+          speichern(aufgaben);
+          console.log(`Erledigt: ${aufgaben[index].text}`);
+          break;
+        }
+        case undefined:
+        case "hilfe":
+          hilfe();
+          break;
+        default:
+          console.log(`Unbekannter Befehl: ${befehl}`);
+          hilfe();
+          process.exitCode = 1;
+      }
+      EOF
   - id: loeschen
     title: Aufgaben löschen
     description: |
@@ -351,6 +568,105 @@ steps:
         break;
       }
       ```
+    solve: |
+      cat > todo.js <<'EOF'
+      // Eine kleine To-do-Liste für die Kommandozeile
+      const fs = require("node:fs");
+      const DATEI = "todos.json";
+
+      function laden() {
+        try {
+          return JSON.parse(fs.readFileSync(DATEI, "utf8"));
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function speichern(aufgaben) {
+        fs.writeFileSync(DATEI, JSON.stringify(aufgaben, null, 2));
+      }
+
+      function fehler(nachricht) {
+        console.log(`Fehler: ${nachricht}`);
+        process.exitCode = 1;
+      }
+
+      function finde(aufgaben, nummerText) {
+        const nummer = Number(nummerText);
+        if (!Number.isInteger(nummer) || nummer < 1 || nummer > aufgaben.length) {
+          return -1;
+        }
+        return nummer - 1;
+      }
+
+      function zeile(aufgabe, nummer) {
+        const haken = aufgabe.erledigt ? "[x]" : "[ ]";
+        return `${nummer}. ${haken} ${aufgabe.text}`;
+      }
+
+      function hilfe() {
+        console.log("Verwendung: node todo.js <befehl>");
+        console.log("  list            alle Aufgaben anzeigen");
+        console.log("  add <text>      Aufgabe hinzufügen");
+        console.log("  done <nummer>   Aufgabe abhaken");
+        console.log("  remove <nummer> Aufgabe löschen");
+        console.log("  stats           Statistik anzeigen");
+      }
+
+      const aufgaben = laden();
+
+      const [befehl, ...rest] = process.argv.slice(2);
+
+      switch (befehl) {
+        case "list":
+          if (aufgaben.length === 0) {
+            console.log("Keine Aufgaben.");
+          }
+          aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
+          break;
+        case "add": {
+          const text = rest.join(" ").trim();
+          if (text === "") {
+            fehler("Bitte einen Text angeben.");
+            break;
+          }
+          aufgaben.push({ text, erledigt: false });
+          speichern(aufgaben);
+          console.log(`Hinzugefügt: ${text}`);
+          break;
+        }
+        case "done": {
+          const index = finde(aufgaben, rest[0]);
+          if (index === -1) {
+            fehler(`Aufgabe ${rest[0]} gibt es nicht.`);
+            break;
+          }
+          aufgaben[index].erledigt = true;
+          speichern(aufgaben);
+          console.log(`Erledigt: ${aufgaben[index].text}`);
+          break;
+        }
+        case "remove": {
+          const index = finde(aufgaben, rest[0]);
+          if (index === -1) {
+            fehler(`Aufgabe ${rest[0]} gibt es nicht.`);
+            break;
+          }
+          const [geloescht] = aufgaben.splice(index, 1);
+          speichern(aufgaben);
+          console.log(`Gelöscht: ${geloescht.text}`);
+          break;
+        }
+        case undefined:
+        case "hilfe":
+          hilfe();
+          break;
+        default:
+          console.log(`Unbekannter Befehl: ${befehl}`);
+          hilfe();
+          process.exitCode = 1;
+      }
+      EOF
   - id: statistik
     title: Statistik mit filter
     description: |
@@ -388,3 +704,107 @@ steps:
       ```
       Die vollständige Datei vereint alle Schritte: `laden`, `speichern`, `zeile`, `fehler`, `hilfe`, `finde`
       und den `switch` mit den Befehlen list, add, done, remove, stats, hilfe.
+    solve: |
+      cat > todo.js <<'EOF'
+      // Eine kleine To-do-Liste für die Kommandozeile
+      const fs = require("node:fs");
+      const DATEI = "todos.json";
+
+      function laden() {
+        try {
+          return JSON.parse(fs.readFileSync(DATEI, "utf8"));
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function speichern(aufgaben) {
+        fs.writeFileSync(DATEI, JSON.stringify(aufgaben, null, 2));
+      }
+
+      function fehler(nachricht) {
+        console.log(`Fehler: ${nachricht}`);
+        process.exitCode = 1;
+      }
+
+      function finde(aufgaben, nummerText) {
+        const nummer = Number(nummerText);
+        if (!Number.isInteger(nummer) || nummer < 1 || nummer > aufgaben.length) {
+          return -1;
+        }
+        return nummer - 1;
+      }
+
+      function zeile(aufgabe, nummer) {
+        const haken = aufgabe.erledigt ? "[x]" : "[ ]";
+        return `${nummer}. ${haken} ${aufgabe.text}`;
+      }
+
+      function hilfe() {
+        console.log("Verwendung: node todo.js <befehl>");
+        console.log("  list            alle Aufgaben anzeigen");
+        console.log("  add <text>      Aufgabe hinzufügen");
+        console.log("  done <nummer>   Aufgabe abhaken");
+        console.log("  remove <nummer> Aufgabe löschen");
+        console.log("  stats           Statistik anzeigen");
+      }
+
+      const aufgaben = laden();
+
+      const [befehl, ...rest] = process.argv.slice(2);
+
+      switch (befehl) {
+        case "list":
+          if (aufgaben.length === 0) {
+            console.log("Keine Aufgaben.");
+          }
+          aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
+          break;
+        case "add": {
+          const text = rest.join(" ").trim();
+          if (text === "") {
+            fehler("Bitte einen Text angeben.");
+            break;
+          }
+          aufgaben.push({ text, erledigt: false });
+          speichern(aufgaben);
+          console.log(`Hinzugefügt: ${text}`);
+          break;
+        }
+        case "done": {
+          const index = finde(aufgaben, rest[0]);
+          if (index === -1) {
+            fehler(`Aufgabe ${rest[0]} gibt es nicht.`);
+            break;
+          }
+          aufgaben[index].erledigt = true;
+          speichern(aufgaben);
+          console.log(`Erledigt: ${aufgaben[index].text}`);
+          break;
+        }
+        case "remove": {
+          const index = finde(aufgaben, rest[0]);
+          if (index === -1) {
+            fehler(`Aufgabe ${rest[0]} gibt es nicht.`);
+            break;
+          }
+          const [geloescht] = aufgaben.splice(index, 1);
+          speichern(aufgaben);
+          console.log(`Gelöscht: ${geloescht.text}`);
+          break;
+        }
+        case "stats": {
+          const erledigt = aufgaben.filter((a) => a.erledigt).length;
+          console.log(`${aufgaben.length} Aufgaben, ${erledigt} erledigt, ${aufgaben.length - erledigt} offen`);
+          break;
+        }
+        case undefined:
+        case "hilfe":
+          hilfe();
+          break;
+        default:
+          console.log(`Unbekannter Befehl: ${befehl}`);
+          hilfe();
+          process.exitCode = 1;
+      }
+      EOF

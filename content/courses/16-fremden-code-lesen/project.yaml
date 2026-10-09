@@ -514,6 +514,15 @@ steps:
       - Erster Lauf: 5 bestanden, 1 fehlgeschlagen
       EOF
       ```
+    solve: |
+      ergebnis=$(php tests/run.php 2>&1 | tail -n 1 || true)
+      cat > NOTES.md <<MD
+      # Onboarding-Notizen Kiezladen
+
+      ## Setup
+      - Tests: make test (ruft php tests/run.php auf)
+      - Erster Lauf: ${ergebnis}
+      MD
   - id: einstiegspunkte
     title: Einstiegspunkte festhalten
     description: |
@@ -562,6 +571,18 @@ steps:
       - POST /checkout → CheckoutController::store
       EOF
       ```
+    solve: |
+      cat >> NOTES.md <<'MD'
+
+      ## Einstiegspunkte
+      - Web: public/index.php (Front Controller), Routen in src/routes.php
+      - Tests: tests/run.php startet alle *Test.php-Dateien in tests/
+      - GET / → Begrüßungstext
+      - GET /products → ProductController::index
+      - GET /cart → CartController::show
+      - POST /cart/add → CartController::add
+      - POST /checkout → CheckoutController::store
+      MD
   - id: request-ablauf
     title: Einen Checkout von Anfang bis Ende verfolgen
     description: |
@@ -604,6 +625,17 @@ steps:
       6. SendOrderConfirmation reagiert und protokolliert die Bestätigung
       EOF
       ```
+    solve: |
+      cat >> NOTES.md <<'MD'
+
+      ## Request-Ablauf: POST /checkout
+      1. public/index.php lädt den Autoloader (bootstrap.php)
+      2. routes.php liefert den Router mit allen Routen
+      3. CheckoutController::store holt den Warenkorb aus der Session
+      4. PriceCalculator berechnet Rabatt, Versand und Summe (gibt OrderSummary zurück)
+      5. Der Controller meldet das Event OrderPlaced
+      6. SendOrderConfirmation reagiert und protokolliert die Bestätigung
+      MD
   - id: muster
     title: Die Muster benennen
     description: |
@@ -639,6 +671,14 @@ steps:
       - SendOrderConfirmation ist ein Listener: reagiert auf OrderPlaced und bestätigt die Bestellung.
       EOF
       ```
+    solve: |
+      cat >> NOTES.md <<'MD'
+
+      ## Muster
+      - OrderSummary ist ein DTO: transportiert Zwischensumme, Rabatt, Versand und Summe, ohne eigene Logik.
+      - OrderPlaced ist ein Event: meldet, dass eine Bestellung abgeschlossen wurde.
+      - SendOrderConfirmation ist ein Listener: reagiert auf OrderPlaced und bestätigt die Bestellung.
+      MD
   - id: bug-eingrenzen
     title: Den Fehler eingrenzen
     description: |
@@ -676,6 +716,14 @@ steps:
       - Ursache: Der Vergleich nutzt > statt >=, also zahlt eine Bestellung über genau 5000 Cent Versand.
       EOF
       ```
+    solve: |
+      cat >> NOTES.md <<'MD'
+
+      ## Bug
+      - Roter Test: orders of exactly 50 euro ship for free
+      - Datei: src/Service/PriceCalculator.php, Zeile mit $shipping = …
+      - Ursache: Der Vergleich nutzt > statt >=, also zahlt eine Bestellung über genau 5000 Cent Versand.
+      MD
   - id: herkunft
     title: Den verursachenden Commit finden
     description: |
@@ -718,6 +766,15 @@ steps:
       - Beim Auslagern von 5000 in FREE_SHIPPING_FROM wurde aus >= versehentlich >.
       EOF
       ```
+    solve: |
+      hash=$(git log -S FREE_SHIPPING_FROM --reverse --format=%H | head -n 1 | cut -c1-12)
+      betreff=$(git log -1 --format=%s "$hash")
+      cat >> NOTES.md <<MD
+
+      ## Herkunft
+      - Commit ${hash}: ${betreff}, Refs: KIEZ-17
+      - Beim Auslagern von 5000 in FREE_SHIPPING_FROM wurde aus >= versehentlich >.
+      MD
   - id: fixen
     title: Den Fehler beheben
     description: |
@@ -755,6 +812,9 @@ steps:
       git diff
       make test
       ```
+    solve: |
+      sed -i 's/> self::FREE_SHIPPING_FROM/>= self::FREE_SHIPPING_FROM/' src/Service/PriceCalculator.php
+      php tests/run.php > /dev/null
   - id: committen
     title: Fix und Notizen committen
     description: |
@@ -801,3 +861,8 @@ steps:
       git log --oneline -3
       git status
       ```
+    solve: |
+      git add src/Service/PriceCalculator.php
+      git commit -q -m "fix(pricing): ship for free from exactly 50 euro" -m "Refs: KIEZ-23"
+      git add NOTES.md
+      git commit -q -m "docs: add onboarding notes"

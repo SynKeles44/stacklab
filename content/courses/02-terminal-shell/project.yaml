@@ -74,6 +74,11 @@ steps:
       echo "# Aufräum-Werkzeuge" > README.md
       ls -la testdaten
       ```
+    solve: |
+      mkdir -p testdaten
+      touch testdaten/bericht{1..3}.txt testdaten/foto{1..2}.jpg testdaten/rechnung.pdf
+      touch "testdaten/mein urlaub.jpg" testdaten/notizen
+      echo "# Aufräum-Werkzeuge" > README.md
   - id: skript-geruest
     title: Das Skript-Gerüst mit Shebang und Fehlerprüfung
     description: |
@@ -142,6 +147,23 @@ steps:
       ```
 
       Danach: `chmod +x aufraeumen.sh`, testen mit `./aufraeumen.sh; echo $?`.
+    solve: |
+      cat > aufraeumen.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [[ $# -ne 1 ]]; then
+        echo "Benutzung: $0 <ordner>" >&2
+        exit 1
+      fi
+
+      quelle="$1"
+      if [[ ! -d "$quelle" ]]; then
+        echo "Fehler: '$quelle' ist kein Ordner." >&2
+        exit 1
+      fi
+      EOF
+      chmod +x aufraeumen.sh
   - id: dateien-sortieren
     title: Dateien nach Endung sortieren
     description: |
@@ -197,6 +219,35 @@ steps:
 
       Bei einem leeren Ordner bleibt das Muster `"$quelle"/*` unverändert stehen. Der Test `[[ -f … ]]`
       fängt das ab, deshalb klappt die Schleife auch dann.
+    solve: |
+      cat > aufraeumen.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [[ $# -ne 1 ]]; then
+        echo "Benutzung: $0 <ordner>" >&2
+        exit 1
+      fi
+
+      quelle="$1"
+      if [[ ! -d "$quelle" ]]; then
+        echo "Fehler: '$quelle' ist kein Ordner." >&2
+        exit 1
+      fi
+
+      for datei in "$quelle"/*; do
+        [[ -f "$datei" ]] || continue
+        name=$(basename "$datei")
+        if [[ "$name" == *.* ]]; then
+          endung=$(echo "${name##*.}" | tr '[:upper:]' '[:lower:]')
+        else
+          endung="sonstige"
+        fi
+        mkdir -p "sortiert/$endung"
+        mv -n -- "$datei" "sortiert/$endung/"
+      done
+      EOF
+      chmod +x aufraeumen.sh
   - id: protokoll
     title: Protokoll und Zusammenfassung
     description: |
@@ -243,6 +294,40 @@ steps:
 
       echo "$anzahl Dateien sortiert."
       ```
+    solve: |
+      cat > aufraeumen.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [[ $# -ne 1 ]]; then
+        echo "Benutzung: $0 <ordner>" >&2
+        exit 1
+      fi
+
+      quelle="$1"
+      if [[ ! -d "$quelle" ]]; then
+        echo "Fehler: '$quelle' ist kein Ordner." >&2
+        exit 1
+      fi
+
+      anzahl=0
+      for datei in "$quelle"/*; do
+        [[ -f "$datei" ]] || continue
+        name=$(basename "$datei")
+        if [[ "$name" == *.* ]]; then
+          endung=$(echo "${name##*.}" | tr '[:upper:]' '[:lower:]')
+        else
+          endung="sonstige"
+        fi
+        mkdir -p "sortiert/$endung"
+        mv -n -- "$datei" "sortiert/$endung/"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') verschoben: $name -> sortiert/$endung/" | tee -a aufraeumen.log
+        anzahl=$((anzahl + 1))
+      done
+
+      echo "$anzahl Dateien sortiert."
+      EOF
+      chmod +x aufraeumen.sh
   - id: backup-skript
     title: Das Backup-Skript
     description: |
@@ -309,6 +394,26 @@ steps:
 
       `${1%/}` entfernt einen abschließenden Schrägstrich, damit `./backup.sh testdaten/` genauso
       funktioniert wie `./backup.sh testdaten`.
+    solve: |
+      cat > backup.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [[ $# -ne 1 || ! -d "${1:-}" ]]; then
+        echo "Benutzung: $0 <ordner>" >&2
+        exit 1
+      fi
+
+      quelle="${1%/}"
+      name=$(basename "$quelle")
+      zeit=$(date '+%Y-%m-%d_%H%M%S')
+      mkdir -p backups
+      archiv="backups/$name-$zeit.tar.gz"
+
+      tar -czf "$archiv" -C "$(dirname "$quelle")" "$name"
+      echo "Backup erstellt: $archiv"
+      EOF
+      chmod +x backup.sh
   - id: echter-durchlauf
     title: Der echte Durchlauf und die Dokumentation
     description: |
@@ -376,3 +481,17 @@ steps:
 
       Jede Verschiebung landet mit Zeitstempel in `aufraeumen.log`.
       ```
+    solve: |
+      ./backup.sh testdaten
+      cp -r testdaten eingang
+      ./aufraeumen.sh eingang
+      cat > README.md <<'EOF'
+      # Aufräum-Werkzeuge
+
+      ## Benutzung
+
+      - `./aufraeumen.sh <ordner>` sortiert alle Dateien nach Endung nach `sortiert/<endung>/`.
+      - `./backup.sh <ordner>` legt `backups/<ordner>-JJJJ-MM-TT_HHMMSS.tar.gz` an.
+
+      Jede Verschiebung landet mit Zeitstempel in `aufraeumen.log`.
+      EOF

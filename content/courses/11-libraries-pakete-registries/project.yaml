@@ -49,6 +49,11 @@ steps:
       npm init -y
       npm pkg set name=@stacklab/einheiten version=0.1.0 type=module license=MIT
       ```
+    solve: |
+      mkdir -p js-lib
+      cd js-lib
+      npm init -y >/dev/null
+      npm pkg set name=@stacklab/einheiten version=0.1.0 type=module license=MIT
   - id: js-code
     title: Die Funktion formatBytes
     description: |
@@ -84,6 +89,15 @@ steps:
       }
       EOF
       ```
+    solve: |
+      mkdir -p js-lib/src
+      cat > js-lib/src/index.js <<'EOF'
+      export function formatBytes(bytes) {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+      }
+      EOF
   - id: js-exports
     title: Öffentliche API und Typen festlegen
     description: |
@@ -123,6 +137,11 @@ steps:
       npm pkg set 'files[]=src'
       npm pack --dry-run
       ```
+    solve: |
+      cd js-lib
+      printf 'export declare function formatBytes(bytes: number): string;\n' > src/index.d.ts
+      npm pkg set 'exports[.].types=./src/index.d.ts' 'exports[.].default=./src/index.js'
+      npm pkg set 'files[]=src'
   - id: php-lib
     title: Die PHP-Library mit PSR-4
     description: |
@@ -177,6 +196,31 @@ steps:
       }
       EOF
       ```
+    solve: |
+      mkdir -p php-lib/src
+      cd php-lib
+      composer init -n -q --name=stacklab/einheiten --type=library --license=MIT --autoload=src/
+      cat > src/Bytes.php <<'EOF'
+      <?php
+
+      namespace Stacklab\Einheiten;
+
+      final class Bytes
+      {
+          public static function format(int $bytes): string
+          {
+              if ($bytes < 1024) {
+                  return $bytes.' B';
+              }
+
+              if ($bytes < 1024 ** 2) {
+                  return number_format($bytes / 1024, 1, '.', '').' KB';
+              }
+
+              return number_format($bytes / 1024 ** 2, 1, '.', '').' MB';
+          }
+      }
+      EOF
   - id: app-js
     title: Die App nutzt die JavaScript-Library
     description: |
@@ -210,6 +254,13 @@ steps:
       printf 'import { formatBytes } from "@stacklab/einheiten";\nconsole.log(formatBytes(1536));\n' > main.mjs
       node main.mjs
       ```
+    solve: |
+      mkdir -p app
+      cd app
+      npm init -y >/dev/null
+      npm pkg set type=module
+      npm install --silent --no-audit --no-fund ../js-lib
+      printf 'import { formatBytes } from "@stacklab/einheiten";\nconsole.log(formatBytes(1536));\n' > main.mjs
   - id: app-php
     title: Die App nutzt die PHP-Library
     description: |
@@ -251,6 +302,19 @@ steps:
       EOF
       php index.php
       ```
+    solve: |
+      cd app
+      composer init -n -q --name=stacklab/einheiten-app
+      composer config repositories.einheiten path ../php-lib
+      composer require -n -q stacklab/einheiten:@dev
+      cat > index.php <<'EOF'
+      <?php
+      require __DIR__ . '/vendor/autoload.php';
+
+      use Stacklab\Einheiten\Bytes;
+
+      echo Bytes::format(1048576), PHP_EOL;
+      EOF
   - id: qualitaet
     title: Formatieren und prüfen mit Projekt-Werkzeugen
     description: |
@@ -296,3 +360,9 @@ steps:
       npm audit
       jq -r '(.packages + ."packages-dev")[].name' composer.lock | sort > pakete.txt
       ```
+    solve: |
+      cd app
+      composer require -n -q --dev laravel/pint
+      vendor/bin/pint -q ../php-lib/src
+      npm audit --silent >/dev/null
+      jq -r '(.packages + ."packages-dev")[].name' composer.lock | sort > pakete.txt

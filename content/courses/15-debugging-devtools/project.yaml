@@ -244,6 +244,9 @@ steps:
       ls -R
       node --test        # 12 Tests, mehrere schlagen fehl
       ```
+    solve: |
+      ls -R > /dev/null
+      node --test > /dev/null 2>&1 || true
   - id: fehlerprotokoll
     title: Fehler reproduzieren und protokollieren
     description: |
@@ -285,6 +288,14 @@ steps:
       - `node kassenbuch.js kategorie lebensmittel`: erwartet eine Summe, bekommen `TypeError: buchungen.filter is not a function`
       - `node kassenbuch.js zeige 3`: erwartet die Buchung Supermarkt, bekommen `TypeError: buchungen.find is not a function`
       ```
+    solve: |
+      cat > BUGS.md <<'MD'
+      # Fehlerprotokoll Kassenbuch
+
+      - `node kassenbuch.js summe`: erwartet etwa 1379 €, bekommen `Summe: 0,00 €`
+      - `node kassenbuch.js kategorie lebensmittel`: erwartet eine Summe, bekommen `TypeError: buchungen.filter is not a function`
+      - `node kassenbuch.js zeige 3`: erwartet die Buchung Supermarkt, bekommen `TypeError: buchungen.find is not a function`
+      MD
   - id: await-fehlt
     title: Fehler 1 – die fehlende Promise
     description: |
@@ -324,6 +335,11 @@ steps:
       ```js
       const buchungen = await ladeBuchungen(datei);
       ```
+    solve: |
+      sed -i 's/const buchungen = ladeBuchungen(datei);/const buchungen = await ladeBuchungen(datei);/' kassenbuch.js
+      cat >> BUGS.md <<'MD'
+        - Ursache: `ladeBuchungen` ist async und wurde ohne `await` aufgerufen, `buchungen` war eine Promise statt eines Arrays.
+      MD
   - id: betraege-parsen
     title: Fehler 2 – Kommabeträge
     description: |
@@ -356,6 +372,11 @@ steps:
         return Number(text.replace(',', '.'));
       }
       ```
+    solve: |
+      sed -i "s/return parseInt(text, 10);/return Number(text.replace(',', '.'));/" src/betrag.js
+      cat >> BUGS.md <<'MD'
+      - Kommabeträge ohne Cent: Ursache: `parseInt` bricht am Komma ab, richtig ist `Number(text.replace(',', '.'))`.
+      MD
   - id: summe-off-by-one
     title: Fehler 3 – die Summe
     description: |
@@ -388,6 +409,11 @@ steps:
       ```js
       for (let i = 0; i < buchungen.length; i++) {
       ```
+    solve: |
+      sed -i 's/for (let i = 1; i < buchungen.length; i++)/for (let i = 0; i < buchungen.length; i++)/' src/buchungen.js
+      cat >> BUGS.md <<'MD'
+      - Summe zu klein: Ursache: Die Schleife in `summe()` begann bei Index 1 statt 0 (Off-by-one), die erste Buchung fehlte.
+      MD
   - id: zeige-robust
     title: Fehler 4 – Buchung anzeigen
     description: |
@@ -437,6 +463,41 @@ steps:
         console.log(`#${buchung.id} ${buchung.datum} ${buchung.text}: ${formatBetrag(buchung.betrag)} €`);
       }
       ```
+    solve: |
+      cat > kassenbuch.js <<'JS'
+      const { ladeBuchungen, summe, findeBuchung, nachKategorie } = require('./src/buchungen');
+      const { formatBetrag } = require('./src/betrag');
+
+      async function main() {
+        const [befehl, argument] = process.argv.slice(2);
+        const datei = process.env.KASSENBUCH_DATEI ?? 'daten/buchungen.csv';
+        const buchungen = await ladeBuchungen(datei);
+
+        if (befehl === 'summe') {
+          console.log(`Summe: ${formatBetrag(summe(buchungen))} €`);
+        } else if (befehl === 'kategorie') {
+          const treffer = nachKategorie(buchungen, argument);
+          console.log(`${argument}: ${formatBetrag(summe(treffer))} € in ${treffer.length} Buchungen`);
+        } else if (befehl === 'zeige') {
+          const buchung = findeBuchung(buchungen, Number(argument));
+          if (buchung === undefined) {
+            console.error(`Buchung ${argument} nicht gefunden`);
+            process.exitCode = 1;
+            return;
+          }
+          console.log(`#${buchung.id} ${buchung.datum} ${buchung.text}: ${formatBetrag(buchung.betrag)} €`);
+        } else {
+          console.error('Befehle: summe | kategorie <name> | zeige <id>');
+          process.exitCode = 2;
+        }
+      }
+
+      main();
+      JS
+      cat >> BUGS.md <<'MD'
+      - `zeige 3` findet nichts: Ursache: Die ID aus `process.argv` war ein String, der Vergleich `===` mit der Zahl schlug fehl.
+      - `zeige 99` stürzt ab: Ursache: Es fehlte die Prüfung auf `undefined`, bevor auf `buchung.id` zugegriffen wurde.
+      MD
   - id: logging-einbauen
     title: Logging mit Log-Level einbauen
     description: |
@@ -486,6 +547,47 @@ steps:
       // in main() direkt nach dem Laden:
       log('debug', `${buchungen.length} Buchungen geladen aus ${datei}`);
       ```
+    solve: |
+      cat > kassenbuch.js <<'JS'
+      const { ladeBuchungen, summe, findeBuchung, nachKategorie } = require('./src/buchungen');
+      const { formatBetrag } = require('./src/betrag');
+
+      const LEVELS = ['debug', 'info', 'warn', 'error'];
+
+      function log(level, nachricht) {
+        const schwelle = LEVELS.indexOf(process.env.LOG_LEVEL ?? 'info');
+        if (LEVELS.indexOf(level) >= schwelle) {
+          console.error(`[${level}] ${nachricht}`);
+        }
+      }
+
+      async function main() {
+        const [befehl, argument] = process.argv.slice(2);
+        const datei = process.env.KASSENBUCH_DATEI ?? 'daten/buchungen.csv';
+        const buchungen = await ladeBuchungen(datei);
+        log('debug', `${buchungen.length} Buchungen geladen aus ${datei}`);
+
+        if (befehl === 'summe') {
+          console.log(`Summe: ${formatBetrag(summe(buchungen))} €`);
+        } else if (befehl === 'kategorie') {
+          const treffer = nachKategorie(buchungen, argument);
+          console.log(`${argument}: ${formatBetrag(summe(treffer))} € in ${treffer.length} Buchungen`);
+        } else if (befehl === 'zeige') {
+          const buchung = findeBuchung(buchungen, Number(argument));
+          if (buchung === undefined) {
+            log('error', `Buchung ${argument} nicht gefunden`);
+            process.exitCode = 1;
+            return;
+          }
+          console.log(`#${buchung.id} ${buchung.datum} ${buchung.text}: ${formatBetrag(buchung.betrag)} €`);
+        } else {
+          console.error('Befehle: summe | kategorie <name> | zeige <id>');
+          process.exitCode = 2;
+        }
+      }
+
+      main();
+      JS
   - id: abschluss
     title: Alle Tests grün und Protokoll vollständig
     description: |
@@ -526,3 +628,6 @@ steps:
       ```bash
       node --test     # tests 12, pass 12, fail 0
       ```
+    solve: |
+      node --test > /dev/null
+      grep -rn 'console.log(buchungen\|debugger' kassenbuch.js src/ || true

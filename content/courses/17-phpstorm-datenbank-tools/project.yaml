@@ -46,6 +46,12 @@ steps:
       CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL REFERENCES customers(id), status TEXT NOT NULL, total REAL NOT NULL, created_at TEXT NOT NULL);
       SQL
       ```
+    solve: |
+      rm -f shop.db
+      sqlite3 shop.db <<'SQL'
+      CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL);
+      CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL REFERENCES customers(id), status TEXT NOT NULL, total REAL NOT NULL, created_at TEXT NOT NULL);
+      SQL
   - id: testdaten
     title: Realistische Datenmengen erzeugen
     description: |
@@ -92,6 +98,18 @@ steps:
       FROM n;
       SQL
       ```
+    solve: |
+      sqlite3 shop.db <<'SQL'
+      WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2000)
+      INSERT INTO customers (name, email) SELECT 'Kunde ' || i, 'kunde' || i || '@example.com' FROM n;
+      WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 100000)
+      INSERT INTO orders (customer_id, status, total, created_at)
+      SELECT (i % 2000) + 1,
+             CASE i % 3 WHEN 0 THEN 'open' WHEN 1 THEN 'paid' ELSE 'cancelled' END,
+             (i % 97) + 0.5,
+             date('2026-01-01', '+' || (i % 280) || ' days')
+      FROM n;
+      SQL
   - id: abfrage
     title: Die langsame Abfrage festhalten
     description: |
@@ -126,6 +144,8 @@ steps:
       echo "SELECT id, status, total, created_at FROM orders WHERE customer_id = 42 AND status = 'open' ORDER BY created_at DESC;" > abfrage.sql
       sqlite3 shop.db < abfrage.sql | head
       ```
+    solve: |
+      echo "SELECT id, status, total, created_at FROM orders WHERE customer_id = 42 AND status = 'open' ORDER BY created_at DESC;" > abfrage.sql
   - id: plan-vorher
     title: Den Plan vorher sichern
     description: |
@@ -148,6 +168,8 @@ steps:
       sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage.sql)" > plan-vorher.txt
       cat plan-vorher.txt
       ```
+    solve: |
+      sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage.sql)" > plan-vorher.txt
   - id: index
     title: Den passenden Index anlegen
     description: |
@@ -183,6 +205,9 @@ steps:
       sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage.sql)" > plan-nachher.txt
       cat plan-nachher.txt
       ```
+    solve: |
+      sqlite3 shop.db "CREATE INDEX idx_orders_customer_status_created ON orders (customer_id, status, created_at);"
+      sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage.sql)" > plan-nachher.txt
   - id: export
     title: Das Ergebnis exportieren
     description: |
@@ -207,6 +232,8 @@ steps:
       sqlite3 -csv -header shop.db < abfrage.sql > ergebnis.csv
       head ergebnis.csv
       ```
+    solve: |
+      sqlite3 -csv -header shop.db < abfrage.sql > ergebnis.csv
   - id: befund
     title: Den Befund schreiben
     description: |
@@ -279,3 +306,16 @@ steps:
       `--SEARCH orders USING INDEX idx_orders_customer_status_created (customer_id=? AND status=?)
       ```
       ~~~
+    solve: |
+      {
+        printf '# Befund: langsame Kundenübersicht\n\n'
+        printf '## Problem\n'
+        printf 'Die Abfrage der offenen Bestellungen pro Kunde las alle 100 000 Zeilen von `orders` (SCAN, also ein Seq Scan) und sortierte das Ergebnis danach im Speicher.\n\n'
+        printf '## Plan vorher\n```text\n'
+        cat plan-vorher.txt
+        printf '```\n\n## Maßnahme\n```sql\n'
+        printf 'CREATE INDEX idx_orders_customer_status_created ON orders (customer_id, status, created_at);\n'
+        printf '```\n\n## Plan nachher\n```text\n'
+        cat plan-nachher.txt
+        printf '```\n'
+      } > BEFUND.md

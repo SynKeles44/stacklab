@@ -81,6 +81,17 @@ steps:
       4;Linus Beispiel;linus@example.com;Beispielhausen;ja;
       CSV
       ```
+    solve: |
+      npm init -y >/dev/null
+      npm install --silent --no-audit --no-fund yaml
+      mkdir -p data scripts
+      cat > data/mitglieder.csv <<'CSV'
+      id;name;email;stadt;aktiv;interessen
+      1;Ada Lovelace;ada@example.com;Musterstadt;ja;Schach|Mathematik
+      2;"Turing, Alan";alan@example.com;Beispielhausen;nein;Laufen
+      3;Grace Hopper;grace@example.com;Musterstadt;ja;Segeln|Programmieren|Lesen
+      4;Linus Beispiel;linus@example.com;Beispielhausen;ja;
+      CSV
 
   - id: csv-zu-json
     title: CSV mit PHP in JSON umwandeln
@@ -149,6 +160,32 @@ steps:
           json_encode($members, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . "\n"
       );
       ```
+    solve: |
+      cat > scripts/csv-to-json.php <<'EOF'
+      <?php
+
+      $lines = file('data/mitglieder.csv', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+      $header = str_getcsv(array_shift($lines), ';', '"', '');
+
+      $members = [];
+      foreach ($lines as $line) {
+          $row = array_combine($header, str_getcsv($line, ';', '"', ''));
+          $members[] = [
+              'id' => (int) $row['id'],
+              'name' => $row['name'],
+              'email' => $row['email'],
+              'stadt' => $row['stadt'],
+              'aktiv' => $row['aktiv'] === 'ja',
+              'interessen' => $row['interessen'] === '' ? [] : explode('|', $row['interessen']),
+          ];
+      }
+
+      file_put_contents(
+          'data/mitglieder.json',
+          json_encode($members, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . "\n"
+      );
+      EOF
+      php scripts/csv-to-json.php
 
   - id: json-pruefen
     title: Die Daten mit einem Prüfskript absichern
@@ -232,6 +269,45 @@ steps:
       }
       console.log(`OK: ${data.length} Datensätze`)
       ```
+    solve: |
+      cat > scripts/validate.js <<'EOF'
+      const fs = require('fs')
+
+      const file = process.argv[2] ?? 'data/mitglieder.json'
+      let data
+      try {
+        data = JSON.parse(fs.readFileSync(file, 'utf8'))
+      } catch (error) {
+        console.error(`Kein gültiges JSON: ${error.message}`)
+        process.exit(1)
+      }
+
+      const errors = []
+      if (!Array.isArray(data)) {
+        errors.push('Die Datei muss ein Array enthalten.')
+      } else {
+        const ids = new Set()
+        data.forEach((m, i) => {
+          const where = `Datensatz ${i + 1}`
+          if (!Number.isInteger(m.id) || m.id <= 0) errors.push(`${where}: id muss eine positive Ganzzahl sein`)
+          else if (ids.has(m.id)) errors.push(`${where}: id ${m.id} ist doppelt`)
+          else ids.add(m.id)
+          if (typeof m.name !== 'string' || m.name.trim() === '') errors.push(`${where}: name fehlt`)
+          if (typeof m.email !== 'string' || !m.email.includes('@')) errors.push(`${where}: email ist ungültig`)
+          if (typeof m.aktiv !== 'boolean') errors.push(`${where}: aktiv muss true oder false sein`)
+          if (!Array.isArray(m.interessen) || !m.interessen.every((x) => typeof x === 'string')) {
+            errors.push(`${where}: interessen muss eine Liste von Strings sein`)
+          }
+        })
+      }
+
+      if (errors.length > 0) {
+        errors.forEach((e) => console.error(e))
+        process.exit(1)
+      }
+      console.log(`OK: ${data.length} Datensätze`)
+      EOF
+      node scripts/validate.js data/mitglieder.json >/dev/null
 
   - id: json-zu-yaml
     title: JSON in YAML umwandeln
@@ -284,6 +360,16 @@ steps:
       node scripts/json-to-yaml.js
       cat data/mitglieder.yaml
       ```
+    solve: |
+      cat > scripts/json-to-yaml.js <<'EOF'
+      const fs = require('fs')
+      const YAML = require('yaml')
+
+      const data = JSON.parse(fs.readFileSync('data/mitglieder.json', 'utf8'))
+      const header = '# Erzeugt aus mitglieder.json – nicht von Hand bearbeiten\n'
+      fs.writeFileSync('data/mitglieder.yaml', header + YAML.stringify(data))
+      EOF
+      node scripts/json-to-yaml.js
 
   - id: round-trip
     title: Den Round-Trip prüfen
@@ -332,6 +418,15 @@ steps:
       node scripts/yaml-to-json.js
       jq -n --slurpfile a data/mitglieder.json --slurpfile b data/roundtrip.json '$a == $b'
       ```
+    solve: |
+      cat > scripts/yaml-to-json.js <<'EOF'
+      const fs = require('fs')
+      const YAML = require('yaml')
+
+      const data = YAML.parse(fs.readFileSync('data/mitglieder.yaml', 'utf8'))
+      fs.writeFileSync('data/roundtrip.json', JSON.stringify(data, null, 2) + '\n')
+      EOF
+      node scripts/yaml-to-json.js
 
   - id: bericht
     title: Einen Bericht mit jq erzeugen
@@ -386,6 +481,16 @@ steps:
       jq -f scripts/bericht.jq data/mitglieder.json > data/bericht.json
       jq . data/bericht.json
       ```
+    solve: |
+      cat > scripts/bericht.jq <<'EOF'
+      {
+        anzahl: length,
+        aktiv: (map(select(.aktiv)) | length),
+        staedte: (group_by(.stadt) | map({key: .[0].stadt, value: length}) | from_entries),
+        interessen: (map(.interessen[]) | unique)
+      }
+      EOF
+      jq -f scripts/bericht.jq data/mitglieder.json > data/bericht.json
 
   - id: pipeline
     title: Die Pipeline mit einem Befehl starten
@@ -447,3 +552,7 @@ steps:
       npm run build
       jq . data/bericht.json
       ```
+    solve: |
+      npm pkg set scripts.build="php scripts/csv-to-json.php && node scripts/validate.js data/mitglieder.json && node scripts/json-to-yaml.js && node scripts/yaml-to-json.js && jq -f scripts/bericht.jq data/mitglieder.json > data/bericht.json"
+      grep -q '^5;"Hamilton, Margaret";' data/mitglieder.csv || echo '5;"Hamilton, Margaret";margaret@example.com;Musterstadt;ja;Raumfahrt' >> data/mitglieder.csv
+      npm run build --silent >/dev/null

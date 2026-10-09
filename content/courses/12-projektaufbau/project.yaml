@@ -53,6 +53,11 @@ steps:
       git config user.name "Ada Lovelace"
       git config user.email "ada@example.com"
       ```
+    solve: |
+      mkdir -p frontend/src frontend/tests backend/app docs
+      git init -q -b main
+      git config user.name "Ada Lovelace"
+      git config user.email "ada@example.com"
   - id: gitignore
     title: Eine .gitignore für beide Welten
     description: |
@@ -90,6 +95,8 @@ steps:
       printf 'node_modules/\nvendor/\ndist/\n.env\n*.log\n' > .gitignore
       git check-ignore -v backend/vendor/autoload.php frontend/.env backend/.env.example
       ```
+    solve: |
+      printf 'node_modules/\nvendor/\ndist/\n.env\n*.log\n' > .gitignore
   - id: frontend
     title: Das Frontend einrichten
     description: |
@@ -150,6 +157,22 @@ steps:
       npm test --prefix frontend
       npm start --prefix frontend
       ```
+    solve: |
+      cat > frontend/package.json <<'EOF'
+      {
+        "name": "notizen-frontend",
+        "private": true,
+        "type": "module",
+        "scripts": {
+          "start": "node src/main.js",
+          "test": "node --test"
+        }
+      }
+      EOF
+      printf 'export function greeting(name) {\n  return `Hallo, ${name}!`\n}\n' > frontend/src/greeting.js
+      printf 'import { greeting } from "./greeting.js"\nconsole.log(greeting("Stacklab"))\n' > frontend/src/main.js
+      printf 'import { test } from "node:test"\nimport assert from "node:assert/strict"\nimport { greeting } from "../src/greeting.js"\n\ntest("greets by name", () => {\n  assert.equal(greeting("Ada"), "Hallo, Ada!")\n})\n' > frontend/tests/greeting.test.js
+      echo "VITE_API_URL=http://localhost:8000" > frontend/.env.example
   - id: backend
     title: Das Backend einrichten
     description: |
@@ -232,6 +255,34 @@ steps:
       composer validate --no-check-publish --no-check-lock --working-dir=backend
       composer analyse --working-dir=backend
       ```
+    solve: |
+      cat > backend/composer.json <<'EOF'
+      {
+          "name": "beispiel/notizen-backend",
+          "type": "project",
+          "require": { "php": "^8.4" },
+          "require-dev": { "phpstan/phpstan": "^2.1" },
+          "autoload": { "psr-4": { "App\\": "app/" } },
+          "scripts": { "analyse": "phpstan analyse --no-progress" }
+      }
+      EOF
+      cat > backend/app/Greeter.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final class Greeter
+      {
+          public function greet(string $name): string
+          {
+              return 'Hallo, ' . $name . '!';
+          }
+      }
+      EOF
+      printf 'parameters:\n    level: 6\n    paths:\n        - app\n' > backend/phpstan.neon
+      printf 'APP_NAME=notizen\nDB_PASSWORD=\n' > backend/.env.example
   - id: makefile
     title: Ein Makefile als Bedienoberfläche
     description: |
@@ -272,6 +323,9 @@ steps:
       make setup
       make test
       ```
+    solve: |
+      printf '.PHONY: setup test\n\nsetup:\n\ttest -f backend/.env || cp backend/.env.example backend/.env\n\ttest -f frontend/.env || cp frontend/.env.example frontend/.env\n\ntest:\n\tnpm test --prefix frontend\n\tcomposer analyse --working-dir=backend\n' > Makefile
+      make -s setup
   - id: readme
     title: Die README schreiben
     description: |
@@ -339,6 +393,35 @@ steps:
       - `docs/` – Architektur und Entscheidungen
       EOF
       ````
+    solve: |
+      cat > README.md <<'EOF'
+      # notizen
+
+      Eine Notiz-App mit Node-Frontend und PHP-Backend.
+
+      ## Voraussetzungen
+
+      - Node.js 24 und npm
+      - PHP 8.5 und Composer
+
+      ## Einrichtung
+
+      ```bash
+      make setup
+      ```
+
+      ## Tests
+
+      ```bash
+      make test
+      ```
+
+      ## Projektstruktur
+
+      - `frontend/` – Frontend (Node), Konfiguration in `frontend/.env`
+      - `backend/` – Backend (PHP), Konfiguration in `backend/.env`
+      - `docs/` – Architektur und Entscheidungen
+      EOF
   - id: architektur-doku
     title: Die Architektur dokumentieren
     description: |
@@ -393,6 +476,21 @@ steps:
       EOF
       printf '\nMehr Details: [Architektur](docs/architektur.md)\n' >> README.md
       ```
+    solve: |
+      cat > docs/architektur.md <<'EOF'
+      # Architektur von notizen
+
+      ## Aufbau
+
+      Das Frontend in `frontend/` ist ein Node-Projekt und spricht per HTTP mit dem Backend.
+      Das Backend in `backend/` ist ein PHP-Projekt mit Composer und PHPStan.
+
+      ## Konfiguration
+
+      Beide Teile lesen ihre Einstellungen aus einer `.env`. Die `.env.example` ist die
+      committete Vorlage; `make setup` kopiert sie beim ersten Start.
+      EOF
+      printf '\nMehr Details: [Architektur](docs/architektur.md)\n' >> README.md
   - id: committen
     title: Alles sauber committen
     description: |
@@ -436,3 +534,6 @@ steps:
       git commit -m "chore: set up project skeleton"
       git status
       ```
+    solve: |
+      git add .
+      git commit -q -m "chore: set up project skeleton"

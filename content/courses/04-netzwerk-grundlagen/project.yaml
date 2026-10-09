@@ -48,6 +48,9 @@ steps:
       printf '# Netzplan\n\nPrivates Netz für den Webshop: Load Balancer öffentlich, App und Datenbank privat.\n' > README.md
       printf 'vpc:\n  name: shop-vpc\n  cidr: 10.0.0.0/16\n' > netzplan.yaml
       ```
+    solve: |
+      printf '# Netzplan\n\nPrivates Netz für den Webshop: Load Balancer öffentlich, App und Datenbank privat.\n' > README.md
+      printf 'vpc:\n  name: shop-vpc\n  cidr: 10.0.0.0/16\n' > netzplan.yaml
   - id: subnetze
     title: Subnetze planen
     description: |
@@ -95,6 +98,19 @@ steps:
         message: "Genau ein Subnetz (public-a) soll `oeffentlich: true` haben."
     solution: |
       Ergänze den YAML-Block aus der Beschreibung am Ende von `netzplan.yaml`.
+    solve: |
+      cat >> netzplan.yaml <<'EOF'
+      subnetze:
+        - name: public-a
+          cidr: 10.0.1.0/24
+          oeffentlich: true
+        - name: app-a
+          cidr: 10.0.11.0/24
+          oeffentlich: false
+        - name: db-a
+          cidr: 10.0.21.0/24
+          oeffentlich: false
+      EOF
   - id: rechner
     title: Den Subnetz-Rechner bauen
     description: |
@@ -161,6 +177,32 @@ steps:
         console.log(`${key}: ${value}`)
       }
       ```
+    solve: |
+      cat > subnetz.js <<'EOF'
+      const ipToInt = (ip) => ip.split('.').reduce((sum, o) => sum * 256 + Number(o), 0)
+      const intToIp = (n) => [24, 16, 8, 0].map((s) => Math.floor(n / 2 ** s) % 256).join('.')
+
+      function info(cidr) {
+        const [address, prefixText] = cidr.split('/')
+        const prefix = Number(prefixText)
+        const size = 2 ** (32 - prefix)
+        const network = Math.floor(ipToInt(address) / size) * size
+        const broadcast = network + size - 1
+        const special = size <= 2
+        return {
+          netz: `${intToIp(network)}/${prefix}`,
+          maske: intToIp(2 ** 32 - size),
+          broadcast: intToIp(broadcast),
+          erster: intToIp(special ? network : network + 1),
+          letzter: intToIp(special ? broadcast : broadcast - 1),
+          hosts: special ? size : size - 2,
+        }
+      }
+
+      for (const [key, value] of Object.entries(info(process.argv[2]))) {
+        console.log(`${key}: ${value}`)
+      }
+      EOF
   - id: validierung
     title: Ungültige Eingaben abfangen
     description: |
@@ -192,6 +234,7 @@ steps:
         message: Ohne Argument soll das Programm ebenfalls mit Exit-Code 1 enden.
       - type: command
         run: node subnetz.js 10.0.0.300/24 2>&1 >/dev/null
+        expect_exit: 1
         stdout_matches: "Fehler: ungültige Eingabe"
         message: "Auf stderr soll „Fehler: ungültige Eingabe“ erscheinen (console.error)."
       - type: command
@@ -213,6 +256,45 @@ steps:
         process.exit(1)
       }
       ```
+    solve: |
+      cat > subnetz.js <<'EOF'
+      const ipToInt = (ip) => ip.split('.').reduce((sum, o) => sum * 256 + Number(o), 0)
+      const intToIp = (n) => [24, 16, 8, 0].map((s) => Math.floor(n / 2 ** s) % 256).join('.')
+
+      function info(cidr) {
+        const [address, prefixText] = cidr.split('/')
+        const prefix = Number(prefixText)
+        const size = 2 ** (32 - prefix)
+        const network = Math.floor(ipToInt(address) / size) * size
+        const broadcast = network + size - 1
+        const special = size <= 2
+        return {
+          netz: `${intToIp(network)}/${prefix}`,
+          maske: intToIp(2 ** 32 - size),
+          broadcast: intToIp(broadcast),
+          erster: intToIp(special ? network : network + 1),
+          letzter: intToIp(special ? broadcast : broadcast - 1),
+          hosts: special ? size : size - 2,
+        }
+      }
+
+      function valid(cidr) {
+        if (typeof cidr !== 'string') return false
+        const [address, prefix] = cidr.split('/')
+        if (!/^(\d|[12]\d|3[0-2])$/.test(prefix ?? '')) return false
+        const parts = address.split('.')
+        return parts.length === 4 && parts.every((p) => /^(0|[1-9][0-9]{0,2})$/.test(p) && Number(p) <= 255)
+      }
+
+      if (!valid(process.argv[2])) {
+        console.error('Fehler: ungültige Eingabe')
+        process.exit(1)
+      }
+
+      for (const [key, value] of Object.entries(info(process.argv[2]))) {
+        console.log(`${key}: ${value}`)
+      }
+      EOF
   - id: enthalten
     title: Liegt eine Adresse im Netz?
     description: |
@@ -259,6 +341,54 @@ steps:
         console.log(`enthalten: ${n >= network && n < network + size ? 'ja' : 'nein'}`)
       }
       ```
+    solve: |
+      cat > subnetz.js <<'EOF'
+      const ipToInt = (ip) => ip.split('.').reduce((sum, o) => sum * 256 + Number(o), 0)
+      const intToIp = (n) => [24, 16, 8, 0].map((s) => Math.floor(n / 2 ** s) % 256).join('.')
+
+      function info(cidr) {
+        const [address, prefixText] = cidr.split('/')
+        const prefix = Number(prefixText)
+        const size = 2 ** (32 - prefix)
+        const network = Math.floor(ipToInt(address) / size) * size
+        const broadcast = network + size - 1
+        const special = size <= 2
+        return {
+          netz: `${intToIp(network)}/${prefix}`,
+          maske: intToIp(2 ** 32 - size),
+          broadcast: intToIp(broadcast),
+          erster: intToIp(special ? network : network + 1),
+          letzter: intToIp(special ? broadcast : broadcast - 1),
+          hosts: special ? size : size - 2,
+        }
+      }
+
+      function valid(cidr) {
+        if (typeof cidr !== 'string') return false
+        const [address, prefix] = cidr.split('/')
+        if (!/^(\d|[12]\d|3[0-2])$/.test(prefix ?? '')) return false
+        const parts = address.split('.')
+        return parts.length === 4 && parts.every((p) => /^(0|[1-9][0-9]{0,2})$/.test(p) && Number(p) <= 255)
+      }
+
+      if (!valid(process.argv[2])) {
+        console.error('Fehler: ungültige Eingabe')
+        process.exit(1)
+      }
+
+      for (const [key, value] of Object.entries(info(process.argv[2]))) {
+        console.log(`${key}: ${value}`)
+      }
+
+      const other = process.argv[3]
+      if (other) {
+        const [address, prefix] = process.argv[2].split('/')
+        const size = 2 ** (32 - Number(prefix))
+        const network = Math.floor(ipToInt(address) / size) * size
+        const n = ipToInt(other)
+        console.log(`enthalten: ${n >= network && n < network + size ? 'ja' : 'nein'}`)
+      }
+      EOF
   - id: regeln
     title: Firewall-Regeln dokumentieren
     description: |
@@ -311,6 +441,25 @@ steps:
     solution: |
       Ergänze den YAML-Block aus der Beschreibung am Ende von `netzplan.yaml` (Reihenfolge der Felder:
       `ziel`, `port`, `quelle`).
+    solve: |
+      cat >> netzplan.yaml <<'EOF'
+      regeln:
+        - ziel: load-balancer
+          port: 443
+          quelle: 0.0.0.0/0
+        - ziel: bastion
+          port: 22
+          quelle: 198.51.100.0/24
+        - ziel: app
+          port: 8080
+          quelle: 10.0.1.0/24
+        - ziel: app
+          port: 22
+          quelle: bastion
+        - ziel: datenbank
+          port: 5432
+          quelle: 10.0.11.0/24
+      EOF
   - id: zugang
     title: Zugang über den Bastion-Host
     description: |
@@ -350,3 +499,21 @@ steps:
         User deploy
         ProxyJump bastion
       ```
+    solve: |
+      cat > ssh_config <<'EOF'
+      Host bastion
+        HostName 203.0.113.10
+        User deploy
+
+      Host app
+        HostName 10.0.11.20
+        User deploy
+        ProxyJump bastion
+      EOF
+      cat >> README.md <<'EOF'
+
+      ## Zugang
+
+      Die privaten Server (App und Datenbank) haben keine öffentliche Adresse. Admins erreichen sie nur über den
+      Bastion-Host, z. B. mit `ssh -F ssh_config app` (ProxyJump über bastion).
+      EOF
