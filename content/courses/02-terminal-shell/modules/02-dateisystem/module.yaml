@@ -1,0 +1,79 @@
+title: Dateien verwalten und lesen
+description: |
+  Wie du Dateien und Ordner anlegst, kopierst, verschiebst und sicher löschst, mit Wildcards viele
+  Dateien auf einmal triffst und Textdateien mit cat, less, head, tail und wc liest.
+exercise:
+  id: modul-uebung-dateisystem
+  type: terminal
+  title: Räume den Download-Ordner auf
+  description: |
+    Im Ordner `dateisystem-aufraeumen` liegt ein typischer, unordentlicher Ordner `downloads`:
+    drei Rechnungen als PDF, vier Urlaubsfotos, zwei temporäre `.tmp`-Dateien, eine Datei
+    `notizen.txt` und ein alter Unterordner namens `Alter Kram` (mit Leerzeichen im Namen).
+    Bringe Ordnung hinein – nur mit den Befehlen aus diesem Modul.
+
+    1. Lege die Ordner `ordnung/dokumente` und `ordnung/bilder` an (im Aufgabenordner, nicht in `downloads`).
+    2. Verschiebe **alle** PDF-Dateien aus `downloads` nach `ordnung/dokumente` und **alle**
+       JPG-Dateien nach `ordnung/bilder`. Nutze Wildcards statt jeden Namen einzeln zu tippen.
+    3. Kopiere `downloads/notizen.txt` nach `ordnung/notizen.txt`. Das Original bleibt liegen.
+    4. Lösche alle `.tmp`-Dateien in `downloads`. Prüfe vorher mit `ls`, was dein Muster trifft.
+    5. Lösche den Ordner `Alter Kram` samt Inhalt.
+    6. Zähle die Zeilen von `downloads/notizen.txt` und schreibe das Ergebnis nach
+       `ordnung/zeilen.txt` (`wc -l downloads/notizen.txt > ordnung/zeilen.txt`).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit der Download-Ordner angelegt wird.
+  workdir: dateisystem-aufraeumen
+  setup: |
+    mkdir -p "downloads/Alter Kram"
+    touch downloads/rechnung-januar.pdf downloads/rechnung-februar.pdf downloads/rechnung-maerz.pdf
+    touch downloads/urlaub-1.jpg downloads/urlaub-2.jpg downloads/urlaub-3.jpg downloads/urlaub-4.jpg
+    touch downloads/installer.tmp downloads/cache.tmp
+    for i in $(seq 1 12); do printf 'Notiz %d\n' "$i"; done > downloads/notizen.txt
+    printf 'alte Liste\n' > "downloads/Alter Kram/liste.txt"
+  checks:
+    - type: command
+      run: test -d ordnung/dokumente && test -d ordnung/bilder
+      message: Es fehlen noch die Ordner ordnung/dokumente und ordnung/bilder. Tipp – mkdir -p legt beide in einem Rutsch an.
+    - type: command
+      run: ls ordnung/dokumente/*.pdf 2>/dev/null | wc -l
+      stdout_matches: "^\\s*3\\s*$"
+      message: In ordnung/dokumente sollten alle drei PDF-Dateien liegen.
+    - type: command
+      run: ls ordnung/bilder/*.jpg 2>/dev/null | wc -l
+      stdout_matches: "^\\s*4\\s*$"
+      message: In ordnung/bilder sollten alle vier JPG-Dateien liegen.
+    - type: command
+      run: ls downloads/*.pdf downloads/*.jpg 2>/dev/null | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: In downloads liegen noch PDF- oder JPG-Dateien. Verschiebe sie mit mv (nicht cp).
+    - type: command
+      run: cmp -s downloads/notizen.txt ordnung/notizen.txt
+      message: ordnung/notizen.txt fehlt oder ist keine exakte Kopie. Das Original muss in downloads bleiben – nutze cp.
+    - type: command
+      run: ls downloads/*.tmp 2>/dev/null | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: In downloads liegen noch .tmp-Dateien. Lösche sie mit rm und einem Wildcard-Muster.
+    - type: command
+      run: test ! -e "downloads/Alter Kram"
+      message: Der Ordner „Alter Kram“ existiert noch. Er ist nicht leer – du brauchst rm -r und Anführungszeichen um den Namen.
+    - type: file_contains
+      path: ordnung/zeilen.txt
+      pattern: "^\\s*12\\b"
+      message: ordnung/zeilen.txt soll die Zeilenzahl von notizen.txt enthalten (12). Nutze wc -l.
+  hints:
+    - "Verschaffe dir zuerst einen Überblick: `ls -la downloads` und `tree downloads`."
+    - "`mkdir -p ordnung/dokumente ordnung/bilder` legt alles auf einmal an. `mv downloads/*.pdf ordnung/dokumente/` verschiebt alle PDFs."
+    - "Ordner mit Leerzeichen brauchen Anführungszeichen: `rm -r \"downloads/Alter Kram\"`."
+  solution: |
+    ```bash
+    cd dateisystem-aufraeumen
+    mkdir -p ordnung/dokumente ordnung/bilder
+    mv downloads/*.pdf ordnung/dokumente/
+    mv downloads/*.jpg ordnung/bilder/
+    cp downloads/notizen.txt ordnung/notizen.txt
+    ls downloads/*.tmp          # Vorschau: was würde gelöscht?
+    rm downloads/*.tmp
+    rm -r "downloads/Alter Kram"
+    wc -l downloads/notizen.txt > ordnung/zeilen.txt
+    tree
+    ```

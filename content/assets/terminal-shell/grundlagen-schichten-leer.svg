@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="1000" height="330" fill="#ffffff"/>
+<text x="500" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Wer macht was, wenn du einen Befehl tippst?</text>
+<rect x="20" y="80" width="164" height="150" rx="14" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="3"/>
+<text x="102.0" y="135" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Du</text>
+<text x="102.0" y="175" text-anchor="middle" font-size="13" fill="#475569">Tastatur &amp; Bildschirm</text>
+<text x="102.0" y="205" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">tippst: ls</text>
+<path d="M186 140 H 220" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M222 172 H 190" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<rect x="224" y="80" width="164" height="150" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="306.0" y="175" text-anchor="middle" font-size="13" fill="#475569">Fenster-Programm</text>
+<text x="306.0" y="205" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">Terminal.app, iTerm2</text>
+<path d="M390 140 H 424" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M426 172 H 394" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<rect x="428" y="80" width="164" height="150" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="510.0" y="175" text-anchor="middle" font-size="13" fill="#475569">Befehls-Dolmetscher</text>
+<text x="510.0" y="205" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">bash, zsh, pwsh</text>
+<path d="M594 140 H 628" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M630 172 H 598" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<rect x="632" y="80" width="164" height="150" rx="14" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="714.0" y="175" text-anchor="middle" font-size="13" fill="#475569">Kernel</text>
+<text x="714.0" y="205" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">Linux, macOS</text>
+<path d="M798 140 H 832" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M834 172 H 802" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<rect x="836" y="80" width="164" height="150" rx="14" fill="#f87171" fill-opacity=".14" stroke="#f87171" stroke-width="3"/>
+<text x="918.0" y="135" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Dateien &amp; Programme</text>
+<text x="918.0" y="175" text-anchor="middle" font-size="13" fill="#475569">Festplatte, Prozesse</text>
+<text x="918.0" y="205" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">/usr/bin/ls</text>
+<text x="500" y="280" text-anchor="middle" font-size="14" fill="#1e1b3a">Durchgezogene Pfeile: dein Befehl wandert nach rechts. Gestrichelt: die Ausgabe kommt zurück.</text>
+<text x="500" y="308" text-anchor="middle" font-size="13" fill="#475569">Das Terminal zeigt nur an – verstehen und ausführen lassen tut die Shell.</text>
+</svg>

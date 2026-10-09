@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 380" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="800" height="380" fill="#ffffff"/>
+<text x="400" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Die Rechte-Spalte von ls -l</text>
+<rect x="96" y="128" width="48" height="60" rx="8" fill="#94a3b8" fill-opacity=".16" stroke="#94a3b8" stroke-width="2.5"/>
+<text x="120" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">-</text>
+<rect x="186" y="128" width="48" height="60" rx="8" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="210" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">r</text>
+<rect x="242" y="128" width="48" height="60" rx="8" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="266" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">w</text>
+<rect x="298" y="128" width="48" height="60" rx="8" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="322" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">x</text>
+<rect x="386" y="128" width="48" height="60" rx="8" fill="#a78bfa" fill-opacity=".16" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="410" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">r</text>
+<rect x="442" y="128" width="48" height="60" rx="8" fill="#a78bfa" fill-opacity=".16" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="466" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">-</text>
+<rect x="498" y="128" width="48" height="60" rx="8" fill="#a78bfa" fill-opacity=".16" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="522" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">x</text>
+<rect x="586" y="128" width="48" height="60" rx="8" fill="#34d399" fill-opacity=".16" stroke="#34d399" stroke-width="2.5"/>
+<text x="610" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">r</text>
+<rect x="642" y="128" width="48" height="60" rx="8" fill="#34d399" fill-opacity=".16" stroke="#34d399" stroke-width="2.5"/>
+<text x="666" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">-</text>
+<rect x="698" y="128" width="48" height="60" rx="8" fill="#34d399" fill-opacity=".16" stroke="#34d399" stroke-width="2.5"/>
+<text x="722" y="172" text-anchor="middle" font-size="38" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">-</text>
+<path d="M186 200 V212 H346 V200" fill="none" stroke="#22d3ee" stroke-width="3"/>
+<path d="M266 212 V244" stroke="#22d3ee" stroke-width="3"/>
+<path d="M386 200 V212 H546 V200" fill="none" stroke="#a78bfa" stroke-width="3"/>
+<path d="M466 212 V244" stroke="#a78bfa" stroke-width="3"/>
+<path d="M586 200 V212 H746 V200" fill="none" stroke="#34d399" stroke-width="3"/>
+<path d="M666 212 V244" stroke="#34d399" stroke-width="3"/>
+<path d="M96 200 V212 H144 V200" fill="none" stroke="#94a3b8" stroke-width="3"/>
+<path d="M120 212 V244" stroke="#94a3b8" stroke-width="3"/>
+<rect x="50" y="246" width="140" height="48" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="2.5"/>
+<text x="120" y="276" text-anchor="middle" font-size="16" font-weight="600" fill="#1e1b3a">Dateityp</text>
+<rect x="196" y="246" width="140" height="48" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="266" y="276" text-anchor="middle" font-size="16" font-weight="600" fill="#1e1b3a">Besitzer (u)</text>
+<rect x="396" y="246" width="140" height="48" rx="10" fill="#ffffff" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="466" y="276" text-anchor="middle" font-size="16" font-weight="600" fill="#1e1b3a">Gruppe (g)</text>
+<rect x="596" y="246" width="140" height="48" rx="10" fill="#ffffff" stroke="#34d399" stroke-width="2.5"/>
+<text x="666" y="276" text-anchor="middle" font-size="16" font-weight="600" fill="#1e1b3a">Andere (o)</text>
+<rect x="226" y="70" width="80" height="44" rx="10" fill="#22d3ee" fill-opacity=".12" stroke="#22d3ee" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="266" y="100" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">7</text>
+<rect x="426" y="70" width="80" height="44" rx="10" fill="#a78bfa" fill-opacity=".12" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="466" y="100" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">5</text>
+<rect x="626" y="70" width="80" height="44" rx="10" fill="#34d399" fill-opacity=".12" stroke="#34d399" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="666" y="100" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">4</text>
+<text x="120" y="98" text-anchor="middle" font-size="14" font-weight="600" fill="#475569">Oktal:</text>
+<text x="120" y="232" text-anchor="middle" font-size="12" fill="#475569">- Datei · d Ordner</text>
+<text x="400" y="334" text-anchor="middle" font-size="15" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">r = lesen (4)   w = schreiben (2)   x = ausführen (1)   - = kein Recht (0)</text>
+<text x="400" y="362" text-anchor="middle" font-size="13" fill="#475569">Beispiel: -rwxr-xr-- entspricht chmod 754 datei</text>
+</svg>

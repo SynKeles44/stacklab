@@ -1,0 +1,357 @@
+title: Abschlussprüfung Terminal & Shell
+description: |
+  Die Prüfung deckt alle vier Module ab: Grundlagen, Dateien, Suchen und Umleiten sowie Rechte,
+  Prozesse und Skripte. Zuerst beantwortest du Fragen, danach löst du drei
+  Praxis-Aufgaben im echten Übungs-Terminal. Du bestehst mit 70 Prozent. Nutze ruhig `--help` –
+  im Berufsalltag schaust du auch nach.
+time_limit_minutes: 45
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Was ist die Aufgabe der Shell?
+    options:
+      - Sie zeichnet das Fenster und die Schrift auf den Bildschirm.
+      - Sie liest deine Eingabe, interpretiert sie und startet die passenden Programme.
+      - Sie ist ein anderer Name für das Betriebssystem.
+      - Sie speichert Dateien auf der Festplatte.
+    answer: 1
+    explanation: Das Terminal ist nur das Fenster. Die Shell (z. B. bash oder zsh) ist das Programm darin, das Befehle versteht und ausführt.
+  - module: grundlagen
+    type: match
+    question: Ordne jedem Teil von `ls -l --all projekt` die richtige Rolle zu.
+    pairs:
+      - { left: "ls", right: "Befehlsname" }
+      - { left: "-l", right: "Kurze Option" }
+      - { left: "--all", right: "Lange Option" }
+      - { left: "projekt", right: "Argument" }
+    explanation: Der Befehlsname kommt zuerst. Optionen beginnen mit einem oder zwei Bindestrichen und verändern das Verhalten, Argumente sagen, womit gearbeitet wird.
+  - module: grundlagen
+    type: single
+    question: Du bist in `/home/ada/projekt/src`. Wohin führt `cd ../../bilder`?
+    options:
+      - /home/ada/projekt/bilder
+      - /home/ada/bilder
+      - /home/bilder
+      - /bilder
+    answer: 1
+    explanation: Jedes `..` geht eine Ebene nach oben – von src zu projekt, dann zu ada. Von dort geht es in den Ordner bilder.
+  - module: dateisystem
+    type: cloze
+    text: Mit `mkdir ___ a/b/c` legst du alle fehlenden Zwischenordner auf einmal an. Um einen Ordner samt Inhalt zu kopieren, brauchst du `cp ___`.
+    blanks:
+      - ["-p", "--parents"]
+      - ["-r", "-R", "--recursive", "-a"]
+    explanation: -p (parents) erzeugt fehlende Elternordner. -r (rekursiv) kopiert Ordner mit allem, was darin liegt.
+  - module: dateisystem
+    type: find-bug
+    question: Das Skript soll den Inhalt des Cache-Ordners löschen. In welcher Zeile steckt der gefährliche Fehler?
+    language: bash
+    code: |
+      #!/usr/bin/env bash
+      cache_dir="$HOME/.cache/meine-app"
+      echo "Lösche Cache in $cache_dir"
+      rm -rf "$cachedir"/*
+    bug_line: 4
+    explanation: Tippfehler im Variablennamen – `$cachedir` ist leer, also wird daraus `rm -rf /*`. Mit `set -u` bricht das Skript bei unbekannten Variablen ab; noch sicherer ist `"${cache_dir:?}"`.
+  - module: dateisystem
+    type: single
+    question: Welcher Befehl zeigt dir die letzten 20 Zeilen einer Logdatei und danach laufend jede neue Zeile?
+    options:
+      - head -n 20 app.log
+      - cat -20 app.log
+      - tail -n 20 -f app.log
+      - less +20 app.log
+    answer: 2
+    explanation: tail zeigt das Ende einer Datei, -n 20 die letzten 20 Zeilen, -f (follow) wartet auf neue Zeilen. Beenden mit Ctrl+C.
+  - module: text
+    type: match
+    question: Welche Umleitung macht was?
+    pairs:
+      - { left: "> datei", right: "Standardausgabe in Datei schreiben (überschreiben)" }
+      - { left: ">> datei", right: "Standardausgabe an Datei anhängen" }
+      - { left: "2> datei", right: "Fehlerausgabe in Datei schreiben" }
+      - { left: "> datei 2>&1", right: "Ausgabe und Fehler in dieselbe Datei" }
+    explanation: 1 ist die Standardausgabe, 2 die Fehlerausgabe. 2>&1 heißt „schicke 2 dorthin, wohin 1 gerade zeigt“ – deshalb muss es hinter > datei stehen.
+  - module: text
+    type: single
+    question: Du willst zählen, wie oft jede IP-Adresse in der ersten Spalte von `access.log` vorkommt. Welche Pipeline stimmt?
+    options:
+      - "cut -d' ' -f1 access.log | uniq -c | sort"
+      - "cut -d' ' -f1 access.log | sort | uniq -c | sort -rn"
+      - "sort access.log | cut -f1 | wc -l"
+      - "uniq -c access.log | cut -d' ' -f1"
+    answer: 1
+    explanation: uniq fasst nur direkt aufeinanderfolgende gleiche Zeilen zusammen, deshalb muss vorher sortiert werden. sort -rn sortiert die Zähler absteigend.
+  - module: text
+    type: multiple
+    question: Welche grep-Aufrufe finden Zeilen mit „error“ unabhängig von Groß- und Kleinschreibung in allen Dateien unterhalb von `logs/`?
+    options:
+      - grep -ri error logs/
+      - grep -i -r "error" logs
+      - grep -v error logs/
+      - grep -c error logs/*.log
+    answers: [0, 1]
+    explanation: -i ignoriert Groß-/Kleinschreibung, -r durchsucht Ordner rekursiv. -v kehrt die Suche um, -c zählt nur und arbeitet ohne -r nur auf den angegebenen Dateien.
+  - module: text
+    type: cloze
+    text: "`find . -type ___ -name \"*.log\"` findet nur Dateien. Mit `grep -___ fehler app.log` ignorierst du Groß- und Kleinschreibung."
+    blanks:
+      - [f]
+      - [i]
+    explanation: -type f steht für reguläre Dateien (d wäre Ordner). grep -i (ignore case) findet fehler, Fehler und FEHLER.
+  - module: system
+    type: single
+    question: Eine Datei hat die Rechte `-rwxr-x---`. Welcher chmod-Befehl in Oktalschreibweise erzeugt genau diese Rechte?
+    options:
+      - chmod 750 datei
+      - chmod 755 datei
+      - chmod 640 datei
+      - chmod 570 datei
+    answer: 0
+    explanation: rwx = 4+2+1 = 7 (Besitzer), r-x = 4+1 = 5 (Gruppe), --- = 0 (andere).
+  - module: system
+    type: multiple
+    question: Du tippst `deploy-tool` und bekommst `command not found`. Was sind sinnvolle nächste Schritte?
+    options:
+      - Mit `type deploy-tool` oder `command -v deploy-tool` prüfen, ob die Shell das Programm kennt.
+      - "`echo $PATH` lesen und prüfen, ob der Installationsordner enthalten ist."
+      - Sofort `sudo` vor den Befehl schreiben.
+      - Nach einer Änderung an `.bashrc` ein neues Terminal öffnen oder `source ~/.bashrc` ausführen.
+    answers: [0, 1, 3]
+    explanation: „command not found“ heißt, die Shell findet das Programm in keinem PATH-Ordner. sudo ändert daran nichts – es führt nur mit mehr Rechten aus.
+  - module: system
+    type: match
+    question: Ordne jedem Signal bzw. Tastenkürzel die Wirkung zu.
+    pairs:
+      - { left: "kill PID (SIGTERM)", right: "Höflich bitten, sich zu beenden" }
+      - { left: "kill -9 PID (SIGKILL)", right: "Sofort beenden, ohne Aufräumen" }
+      - { left: "Ctrl+C (SIGINT)", right: "Vordergrundprozess unterbrechen" }
+      - { left: "Ctrl+Z (SIGTSTP)", right: "Vordergrundprozess anhalten" }
+    explanation: SIGTERM lässt dem Programm Zeit zum Aufräumen, SIGKILL nicht. Deshalb ist kill -9 das letzte Mittel.
+  - module: system
+    type: single
+    question: Du führst im Terminal `export API_URL=https://api.example.com` aus und öffnest danach ein **neues** Terminalfenster. Ist API_URL dort gesetzt?
+    options:
+      - Ja, export speichert die Variable dauerhaft.
+      - Nein – export gilt nur für die aktuelle Shell und ihre Kindprozesse. Dauerhaft wird sie erst über eine Konfigurationsdatei wie ~/.bashrc.
+      - Nur, wenn das neue Fenster im selben Ordner geöffnet wird.
+    answer: 1
+    explanation: Jede neue Shell startet frisch und liest ihre Konfigurationsdateien. Was du dort nicht einträgst, ist im neuen Fenster nicht da.
+  - module: system
+    type: find-bug
+    question: Dieses Skript soll abbrechen, wenn kein Argument übergeben wurde. In welcher Zeile ist der Fehler?
+    language: bash
+    code: |
+      #!/usr/bin/env bash
+      if [ -z "$1" ]; then
+        echo "Bitte einen Ordner angeben" >&2
+        exit 0
+      fi
+      ls "$1"
+    bug_line: 4
+    explanation: Ein Fehler muss mit einem Exit-Code ungleich 0 enden, z. B. exit 1. Mit exit 0 hält jedes aufrufende Skript (oder && in der Shell) den Lauf für erfolgreich.
+  - module: system
+    type: single
+    question: Was gibt `false && echo A || echo B` aus?
+    options:
+      - A
+      - B
+      - A und B
+      - Nichts
+    answer: 1
+    explanation: false liefert Exit-Code 1, deshalb wird echo A übersprungen. || greift, weil der letzte ausgeführte Befehl fehlgeschlagen ist, also erscheint B.
+  - module: system
+    type: cloze
+    text: "Die erste Zeile eines Skripts heißt ___ (z. B. `#!/usr/bin/env bash`). Den Exit-Code des letzten Befehls liest du mit `echo $___`."
+    blanks:
+      - [Shebang, "Shebang-Zeile", Hashbang]
+      - ["?"]
+    explanation: Die Shebang-Zeile sagt dem System, mit welchem Interpreter das Skript laufen soll. $? enthält den Exit-Code des zuletzt ausgeführten Befehls.
+
+tasks:
+  - module: dateisystem
+    id: pruefung-aufraeumen
+    type: terminal
+    title: Ordnung im Projektordner
+    description: |
+      Im Ordner `pruefung-aufraeumen` liegt ein unordentliches Projekt: Logdateien im Hauptordner,
+      ein temporärer Ordner `tmp` und eine falsch benannte Datei.
+
+      1. Lege den Ordner `archiv/2026` an (mit allen Zwischenordnern).
+      2. Verschiebe **alle** Dateien mit der Endung `.log` aus dem Hauptordner nach `archiv/2026/`.
+      3. Lösche den Ordner `tmp` samt Inhalt.
+      4. Benenne `NOTES.TXT` in `notizen.txt` um.
+      5. `README.md` und `src/` bleiben, wo sie sind.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-aufraeumen
+    setup: |
+      mkdir -p src tmp/cache
+      echo "# Projekt" > README.md
+      echo "console.log('hi')" > src/app.js
+      for tag in 01 02 03 04; do echo "Start Tag $tag" > "server-2026-10-$tag.log"; done
+      echo "fehler" > error.log
+      touch tmp/a.tmp tmp/cache/b.tmp
+      echo "Ideen sammeln" > NOTES.TXT
+    checks:
+      - type: dir_exists
+        path: archiv/2026
+        message: Der Ordner archiv/2026 fehlt noch (mkdir -p).
+      - type: command
+        run: ls archiv/2026/*.log 2>/dev/null | wc -l
+        stdout_matches: "^\\s*5\\s*$"
+        message: In archiv/2026 sollten alle fünf .log-Dateien liegen.
+      - type: command
+        run: ls ./*.log 2>/dev/null | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: Im Hauptordner liegen noch .log-Dateien.
+      - type: file_absent
+        path: tmp
+        message: Der Ordner tmp existiert noch (rm -r).
+      - type: file_exists
+        path: notizen.txt
+        message: Die Datei notizen.txt fehlt – benenne NOTES.TXT mit mv um.
+      - type: file_absent
+        path: NOTES.TXT
+        message: NOTES.TXT gibt es noch – du sollst sie umbenennen, nicht kopieren.
+      - type: command
+        run: test -f README.md && test -f src/app.js && grep -q "Ideen" notizen.txt && echo ok
+        stdout_equals: ok
+        message: README.md, src/app.js oder der Inhalt der Notizen sind verloren gegangen.
+    hints:
+      - "`mkdir -p archiv/2026` und `mv *.log archiv/2026/` erledigen die ersten beiden Schritte."
+      - "`rm -r tmp` löscht den Ordner mit Inhalt. Schau vorher mit `ls tmp` hinein."
+    solution: |
+      ```bash
+      cd pruefung-aufraeumen
+      mkdir -p archiv/2026
+      mv *.log archiv/2026/
+      rm -r tmp
+      mv NOTES.TXT notizen.txt
+      tree
+      ```
+  - module: text
+    id: pruefung-logs
+    type: terminal
+    title: Logdatei auswerten und Ausgaben umleiten
+    description: |
+      Im Ordner `pruefung-logs` liegen eine Logdatei `access.log` (Spalten: IP-Adresse, Methode, Pfad,
+      Statuscode) und ein Programm `pruefen.sh`, das Meldungen auf die Standardausgabe **und** auf die
+      Fehlerausgabe schreibt.
+
+      1. Schreibe die **Anzahl** der Zeilen mit dem Statuscode `500` in die Datei `fehler-anzahl.txt`
+         (nur die Zahl).
+      2. Schreibe alle **unterschiedlichen** IP-Adressen, alphabetisch sortiert und jede nur einmal, in
+         `ips.txt`.
+      3. Führe `./pruefen.sh` aus und leite dabei die normale Ausgabe nach `ausgabe.txt` und die
+         Fehlerausgabe nach `fehler.txt` um.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-logs
+    setup: |
+      cat > access.log <<'EOF'
+      192.0.2.10 GET /index.html 200
+      198.51.100.7 GET /api/users 500
+      192.0.2.10 POST /api/login 200
+      203.0.113.5 GET /api/users 500
+      198.51.100.7 GET /bilder/logo.png 404
+      192.0.2.10 GET /api/orders 500
+      203.0.113.5 GET /index.html 200
+      EOF
+      cat > pruefen.sh <<'EOF'
+      #!/usr/bin/env bash
+      echo "3 Dienste geprüft"
+      echo "WARNUNG: Dienst mail antwortet langsam" >&2
+      echo "Prüfung beendet"
+      EOF
+      chmod +x pruefen.sh
+    checks:
+      - type: command
+        run: tr -d '[:space:]' < fehler-anzahl.txt
+        stdout_equals: "3"
+        message: fehler-anzahl.txt soll nur die Zahl der Zeilen mit Status 500 enthalten (grep -c).
+      - type: command
+        run: cat ips.txt | tr '\n' ' '
+        stdout_matches: "^192\\.0\\.2\\.10 198\\.51\\.100\\.7 203\\.0\\.113\\.5\\s*$"
+        message: ips.txt soll jede IP genau einmal enthalten, sortiert (cut, sort, uniq oder sort -u).
+      - type: command
+        run: echo "$(grep -c '' ausgabe.txt) $(grep -c WARNUNG ausgabe.txt)"
+        stdout_equals: 2 0
+        message: ausgabe.txt soll genau die zwei normalen Zeilen enthalten – ohne die Warnung (>).
+      - type: file_contains
+        path: fehler.txt
+        pattern: "WARNUNG: Dienst mail"
+        message: Die Warnung von pruefen.sh soll in fehler.txt landen (2>).
+    hints:
+      - "`grep -c ' 500$' access.log > fehler-anzahl.txt` zählt die passenden Zeilen."
+      - "`cut -d' ' -f1 access.log | sort -u > ips.txt` – oder sort | uniq."
+      - "`./pruefen.sh > ausgabe.txt 2> fehler.txt` trennt die beiden Ausgaben."
+    solution: |
+      ```bash
+      cd pruefung-logs
+      grep -c ' 500$' access.log > fehler-anzahl.txt
+      cut -d' ' -f1 access.log | sort -u > ips.txt
+      ./pruefen.sh > ausgabe.txt 2> fehler.txt
+      cat fehler-anzahl.txt ips.txt ausgabe.txt fehler.txt
+      ```
+  - module: system
+    id: pruefung-skript
+    type: terminal
+    title: Ein Skript, das Textdateien zählt
+    description: |
+      Schreibe im Ordner `pruefung-skript` ein Bash-Skript `zaehle.sh`:
+
+      1. Erste Zeile: Shebang für bash. Das Skript muss **ausführbar** sein.
+      2. Es erwartet genau **ein** Argument: einen Ordner.
+      3. Fehlt das Argument oder ist es kein Ordner, gibt es eine Meldung auf der **Fehlerausgabe** aus
+         und endet mit Exit-Code **2**.
+      4. Sonst gibt es **nur eine Zahl** aus: wie viele Dateien mit der Endung `.txt` direkt in diesem
+         Ordner liegen (nicht in Unterordnern). Exit-Code 0.
+
+      Zum Ausprobieren liegt ein Ordner `beispiel` bereit (er enthält drei .txt-Dateien). Klicke zuerst
+      auf **Aufgabe vorbereiten**.
+    workdir: pruefung-skript
+    setup: |
+      mkdir -p beispiel/unter
+      touch beispiel/a.txt beispiel/b.txt "beispiel/mit leerzeichen.txt" beispiel/bild.png beispiel/unter/c.txt
+    checks:
+      - type: command
+        run: test -x zaehle.sh && head -n 1 zaehle.sh | grep -Eq '^#!.*bash' && bash -n zaehle.sh && echo ok
+        stdout_equals: ok
+        message: zaehle.sh fehlt, ist nicht ausführbar, hat keine bash-Shebang-Zeile oder einen Syntaxfehler.
+      - type: command
+        run: ./zaehle.sh beispiel 2>/dev/null
+        stdout_matches: "^\\s*3\\s*$"
+        message: "./zaehle.sh beispiel soll 3 ausgeben (die Datei in unter/ zählt nicht, die mit Leerzeichen schon)."
+      - type: command
+        run: |
+          [ -x zaehle.sh ] || { echo "fehlt"; exit 0; }; mkdir -p .pruefung-leer && out=$(./zaehle.sh .pruefung-leer 2>/dev/null); code=$?; rm -rf .pruefung-leer; echo "code=$code out=$out"
+        stdout_matches: "^code=0 out=\\s*0$"
+        message: Für einen Ordner ohne .txt-Dateien soll das Skript 0 ausgeben und mit Exit-Code 0 enden.
+      - type: command
+        run: |
+          [ -x zaehle.sh ] || { echo "fehlt"; exit 0; }; out=$(./zaehle.sh 2>/dev/null); a=$?; ./zaehle.sh gibt-es-nicht >/dev/null 2>&1; b=$?; echo "$a $b [$out]"
+        stdout_equals: 2 2 []
+        message: Ohne Argument oder mit einem Pfad, der kein Ordner ist, soll das Skript nur auf stderr schreiben und mit exit 2 enden.
+    hints:
+      - "Prüfe das Argument mit `if [[ $# -ne 1 || ! -d \"${1:-}\" ]]; then … exit 2; fi`."
+      - "`find \"$1\" -maxdepth 1 -type f -name '*.txt' | wc -l` zählt nur direkte .txt-Dateien."
+      - "Wenn `wc -l` Leerzeichen vor die Zahl setzt (z. B. auf macOS), hilft `tr -d ' '`."
+    solution: |
+      ```bash
+      cd pruefung-skript
+      cat > zaehle.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [[ $# -ne 1 || ! -d "${1:-}" ]]; then
+        echo "Benutzung: $0 <ordner>" >&2
+        exit 2
+      fi
+
+      find "$1" -maxdepth 1 -type f -name '*.txt' | wc -l
+      EOF
+      chmod +x zaehle.sh
+      ./zaehle.sh beispiel
+      ```

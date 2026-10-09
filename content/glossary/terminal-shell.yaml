@@ -1,0 +1,595 @@
+# Begriffe aus dem Kurs Terminal & Shell.
+- slug: kommandozeile
+  term: "Kommandozeile"
+  short: "Eine textbasierte Art, den Computer zu bedienen: Du tippst Befehle, statt zu klicken."
+  explanation: "Statt Ordner per Doppelklick zu öffnen, schreibst du kurze Befehle und bekommst Text als Antwort. Die Kommandozeile ist schnell, lässt sich automatisieren und ist auf Servern oft die einzige Bedienmöglichkeit."
+  example: "`ls` zeigt die Dateien im aktuellen Ordner – wie ein Doppelklick auf den Ordner."
+  category: "terminal"
+  aliases: ["Befehlszeile", "Command Line", "Konsole"]
+  related: [terminal, shell, cli]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: cli
+  term: "CLI (Command Line Interface)"
+  short: "Die Bedienoberfläche eines Programms, das über getippte Befehle gesteuert wird."
+  explanation: "Viele Entwicklerwerkzeuge haben nur eine CLI oder bieten sie zusätzlich zur grafischen Oberfläche an. Du rufst sie im Terminal mit ihrem Namen auf und steuerst sie mit Optionen und Argumenten."
+  example: "Git hat eine CLI: `git status` zeigt den Zustand deines Repositorys."
+  category: "terminal"
+  aliases: ["Command Line Interface", "Kommandozeilenprogramm"]
+  related: [gui, kommandozeile]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: gui
+  term: "GUI (grafische Benutzeroberfläche)"
+  short: "Eine Bedienoberfläche mit Fenstern, Symbolen und Knöpfen, die du mit der Maus nutzt."
+  explanation: "Eine GUI ist leicht zu entdecken, weil du alle Möglichkeiten siehst. Wiederholte Abläufe lassen sich damit aber schlecht automatisieren – dafür ist die Kommandozeile stärker."
+  example: "Der Finder auf dem Mac oder der Explorer unter Windows sind GUIs."
+  category: "terminal"
+  aliases: ["Graphical User Interface", "grafische Oberfläche"]
+  related: [cli]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: terminal-emulator
+  term: "Terminal-Emulator"
+  short: "Ein Programm, das ein Text-Terminal nachahmt und in dem eine Shell läuft."
+  explanation: "Früher waren Terminals eigene Geräte mit Bildschirm und Tastatur. Heute ahmt ein Fensterprogramm dieses Gerät nach: Es nimmt Tastendrücke an, reicht sie an die Shell weiter und zeigt deren Ausgabe an."
+  example: "Terminal.app und iTerm2 auf dem Mac, Windows Terminal, GNOME Terminal unter Linux."
+  category: "terminal"
+  aliases: ["Terminalprogramm"]
+  related: [terminal, shell]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: bash
+  term: "bash"
+  short: "Die verbreitetste Shell auf Linux-Systemen, die Bourne Again Shell."
+  explanation: "bash liest deine Befehle, setzt Variablen und Wildcards ein und startet Programme. Sie ist die Standard-Shell vieler Linux-Distributionen und die Sprache der meisten Shell-Skripte."
+  example: "Das Stacklab-Übungs-Terminal nutzt Bash 5.2; `bash --version` zeigt die Version."
+  category: "terminal"
+  aliases: ["Bash", "Bourne Again Shell"]
+  related: [shell, zsh, powershell]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: zsh
+  term: "zsh"
+  short: "Eine bash-ähnliche Shell, seit macOS Catalina die Standard-Shell auf dem Mac."
+  explanation: "zsh (Z Shell) versteht fast alle bash-Befehle und bringt zusätzlich komfortable Vervollständigung und Themes mit. Ihre Einstellungen stehen in `~/.zshrc`."
+  example: "Öffnest du auf einem neuen Mac das Terminal, läuft zsh – erkennbar an `%` im Prompt."
+  category: "terminal"
+  aliases: ["Z Shell", "Zsh"]
+  related: [bash, shell]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: powershell
+  term: "PowerShell"
+  short: "Die moderne Shell von Microsoft, die Objekte statt reinem Text zwischen Befehlen weitergibt."
+  explanation: "PowerShell läuft unter Windows, macOS und Linux und hat eigene Befehle (Cmdlets) wie `Get-ChildItem`. Bash-Skripte versteht sie nicht direkt – dafür brauchst du unter Windows WSL oder Git Bash."
+  example: "`Get-ChildItem` listet den Inhalt eines Ordners, `ls` ist dort nur ein Alias darauf."
+  category: "terminal"
+  aliases: ["pwsh"]
+  related: [bash, wsl, git-bash]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: prompt
+  term: "Prompt"
+  short: "Die Eingabeaufforderung, mit der die Shell zeigt, dass sie auf einen Befehl wartet."
+  explanation: "Der Prompt verrät meist Benutzer, Rechner und aktuellen Ordner. Ein `$` am Ende steht für einen normalen Benutzer, ein `#` für root."
+  example: "`ada@laptop:~$` – Benutzerin ada, Rechner laptop, Ordner ~ (Home)."
+  category: "terminal"
+  aliases: ["Eingabeaufforderung"]
+  related: [shell, root]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: wsl
+  term: "WSL (Windows Subsystem for Linux)"
+  short: "Eine Windows-Funktion, die ein echtes Linux mit bash direkt unter Windows laufen lässt."
+  explanation: "Mit WSL 2 installierst du z. B. Ubuntu als App und arbeitest darin wie auf einem Linux-Rechner. Deine Windows-Laufwerke findest du dort unter `/mnt/c`."
+  example: "`wsl --install` installiert WSL mit Ubuntu."
+  category: "terminal"
+  aliases: ["Windows Subsystem for Linux", "WSL2"]
+  related: [git-bash, powershell, linux]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: git-bash
+  term: "Git Bash"
+  short: "Eine kleine bash-Umgebung für Windows, die mit Git für Windows installiert wird."
+  explanation: "Git Bash bringt bash und die wichtigsten Unix-Werkzeuge nach Windows, ohne ein komplettes Linux. Für Git und einfache Skripte reicht das oft; für echte Linux-Entwicklung ist WSL besser."
+  example: "In Git Bash heißt Laufwerk C `/c`, z. B. `cd /c/Users/ada`."
+  category: "terminal"
+  related: [wsl, bash, git]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: posix
+  term: "POSIX"
+  short: "Ein Standard, der festlegt, wie Unix-artige Systeme, Shells und Grundbefehle sich verhalten sollen."
+  explanation: "Weil Linux, macOS und viele Shells sich an POSIX halten, funktionieren Grundbefehle überall ähnlich. Skripte, die nur POSIX-Funktionen nutzen, laufen auf den meisten Systemen."
+  example: "`ls -l` und `cp -r` verhalten sich dank POSIX auf Linux und macOS gleich."
+  category: "terminal"
+  related: [bash, linux]
+  lesson: terminal-shell/was-ist-das-terminal
+- slug: option
+  term: "Option"
+  short: "Ein Zusatz zu einem Befehl, der mit - oder -- beginnt und sein Verhalten verändert."
+  explanation: "Kurze Optionen bestehen aus einem Bindestrich und einem Buchstaben und lassen sich kombinieren (`-la`). Lange Optionen haben zwei Bindestriche und einen Namen (`--all`). Manche Optionen erwarten einen Wert, z. B. `-n 5`."
+  example: "In `ls -la` sind `-l` (ausführlich) und `-a` (alle Dateien) Optionen."
+  category: "terminal"
+  aliases: ["Optionen", "Flag", "Flags", "Schalter"]
+  related: [befehl, argument]
+  lesson: terminal-shell/anatomie-eines-befehls
+- slug: man-page
+  term: "Man-Page"
+  short: "Die ausführliche Handbuchseite zu einem Befehl, geöffnet mit `man`."
+  explanation: "Man-Pages beschreiben alle Optionen eines Befehls und werden in einem Pager angezeigt. Im Übungs-Terminal ist `man` nicht installiert – dort hilft `--help`, auf normalen Linux- und Mac-Systemen ist `man` vorhanden."
+  example: "`man ls` zeigt alle Optionen von ls; mit `/` suchst du, mit `q` beendest du."
+  category: "terminal"
+  aliases: ["man", "Handbuchseite", "Manpage"]
+  related: [pager, option]
+  lesson: terminal-shell/anatomie-eines-befehls
+- slug: anfuehrungszeichen
+  term: "Anführungszeichen (Quoting)"
+  short: "Zeichen, die Wörter mit Leerzeichen zusammenhalten und Sonderzeichen vor der Shell schützen."
+  explanation: "Die Shell trennt Argumente an Leerzeichen. In einfachen Anführungszeichen bleibt alles wörtlich, in doppelten werden `$`-Variablen noch ersetzt. Ein Backslash schützt ein einzelnes Zeichen."
+  example: "`cat \"meine notizen.txt\"` öffnet eine Datei mit Leerzeichen im Namen."
+  category: "terminal"
+  aliases: ["Quoting", "Quotes"]
+  related: [argument, variable]
+  lesson: terminal-shell/anatomie-eines-befehls
+- slug: dateisystem
+  term: "Dateisystem"
+  short: "Die baumartige Ordnung, in der das Betriebssystem alle Dateien und Ordner ablegt."
+  explanation: "Auf Linux und macOS gibt es genau eine Wurzel `/`, unter der alles hängt – auch weitere Festplatten. Windows hat dagegen Laufwerksbuchstaben wie `C:\\`."
+  example: "Unter `/` liegen auf Linux Ordner wie `/home`, `/etc` und `/var/log`."
+  category: "terminal"
+  aliases: ["Dateisysteme", "Filesystem"]
+  related: [wurzelverzeichnis, pfad, ordner]
+  lesson: terminal-shell/navigieren
+- slug: wurzelverzeichnis
+  term: "Wurzelverzeichnis"
+  short: "Der oberste Ordner des Dateisystems, auf Linux und macOS `/`."
+  explanation: "Jeder absolute Pfad beginnt im Wurzelverzeichnis. Darunter liegen Systemordner wie `/etc` (Konfiguration), `/home` (Benutzer) und `/tmp` (temporäre Dateien)."
+  example: "`cd /` wechselt ins Wurzelverzeichnis, `ls /` zeigt home, etc, tmp, usr, var."
+  category: "terminal"
+  aliases: ["Root-Verzeichnis", "Wurzel"]
+  related: [dateisystem, absoluter-pfad]
+  lesson: terminal-shell/navigieren
+- slug: aktuelles-verzeichnis
+  term: "aktuelles Verzeichnis"
+  short: "Der Ordner, in dem du dich in der Shell gerade befindest."
+  explanation: "Befehle ohne Ortsangabe arbeiten immer im aktuellen Verzeichnis, und relative Pfade beginnen dort. `pwd` zeigt es an, `cd` wechselt es, und `.` ist seine Abkürzung."
+  example: "`pwd` gibt z. B. `/home/ada/projekte` aus."
+  category: "terminal"
+  aliases: ["Arbeitsordner", "Current Directory", "aktueller Ordner"]
+  related: [relativer-pfad, pfad]
+  lesson: terminal-shell/navigieren
+- slug: absoluter-pfad
+  term: "absoluter Pfad"
+  short: "Ein Pfad, der bei der Wurzel `/` beginnt und deshalb von überall aus zum selben Ziel führt."
+  explanation: "Weil ein absoluter Pfad vollständig ist, hängt sein Ziel nicht vom aktuellen Verzeichnis ab. In Skripten und Konfigurationen ist er deshalb oft die sicherere Wahl."
+  example: "`/home/ada/bilder/urlaub.jpg` oder kurz `~/bilder/urlaub.jpg`."
+  category: "terminal"
+  aliases: ["absolute Pfade"]
+  related: [relativer-pfad, wurzelverzeichnis]
+  lesson: terminal-shell/navigieren
+- slug: relativer-pfad
+  term: "relativer Pfad"
+  short: "Ein Pfad, der nicht mit `/` beginnt und vom aktuellen Verzeichnis aus gelesen wird."
+  explanation: "`..` steht für den Elternordner, `.` für den aktuellen Ordner. Relative Pfade sind kurz, führen aber je nach Standort zu unterschiedlichen Zielen."
+  example: "Aus `/home/ada/projekte` führt `../bilder/urlaub.jpg` zu `/home/ada/bilder/urlaub.jpg`."
+  category: "terminal"
+  aliases: ["relative Pfade"]
+  related: [absoluter-pfad, aktuelles-verzeichnis]
+  lesson: terminal-shell/navigieren
+- slug: versteckte-datei
+  term: "versteckte Datei"
+  short: "Eine Datei oder ein Ordner, deren Name mit einem Punkt beginnt."
+  explanation: "`ls` zeigt solche Einträge nur mit der Option `-a` an. Meist sind es Konfigurationsdateien, die im Alltag nicht stören sollen."
+  example: "`.bashrc`, `.gitconfig` und `.env` erscheinen erst mit `ls -a`."
+  category: "terminal"
+  aliases: ["Dotfile", "Dotfiles", "versteckte Dateien"]
+  related: [shell-konfiguration]
+  lesson: terminal-shell/navigieren
+- slug: rekursiv
+  term: "rekursiv"
+  short: "Ein Befehl arbeitet rekursiv, wenn er einen Ordner samt aller Unterordner bis zur untersten Ebene bearbeitet."
+  explanation: "Viele Befehle arbeiten erst mit einer Option rekursiv, meist `-r` oder `-R`. Bei Lösch- und Rechtebefehlen ist das besonders mächtig – und gefährlich."
+  example: "`cp -r fotos fotos-backup` kopiert fotos mit allen Unterordnern."
+  category: "terminal"
+  aliases: ["Rekursion", "-r"]
+  related: [ordner]
+  lesson: terminal-shell/dateien-und-ordner-anlegen
+- slug: zeitstempel
+  term: "Zeitstempel"
+  short: "Die gespeicherte Angabe, wann eine Datei zuletzt geändert oder gelesen wurde."
+  explanation: "Das Dateisystem merkt sich zu jeder Datei mehrere Zeiten, vor allem die letzte Änderung. `ls -l` und `ls -t` nutzen sie, `find -mtime` sucht danach."
+  example: "`touch datei` setzt den Zeitstempel auf jetzt oder legt die Datei leer an."
+  category: "terminal"
+  aliases: ["Änderungszeit", "Timestamp", "mtime"]
+  related: [datei]
+  lesson: terminal-shell/dateien-und-ordner-anlegen
+- slug: wildcard
+  term: "Wildcard"
+  short: "Ein Platzhalterzeichen wie `*`, `?` oder `[abc]`, mit dem die Shell passende Dateinamen einsetzt."
+  explanation: "Die Shell ersetzt das Muster vor dem Start des Befehls durch alle passenden Namen. `*` steht für beliebig viele Zeichen, `?` für genau eines. Mit `echo *.txt` siehst du vorher, was getroffen wird."
+  example: "`rm *.tmp` löscht alle Dateien, die auf `.tmp` enden."
+  category: "terminal"
+  aliases: ["Globbing", "Platzhalter", "Glob", "Wildcards"]
+  related: [klammererweiterung, shell]
+  lesson: terminal-shell/loeschen-und-wildcards
+- slug: klammererweiterung
+  term: "Klammererweiterung"
+  short: "Eine Bash-Funktion, die aus `{a,b}` oder `{1..5}` mehrere Wörter erzeugt."
+  explanation: "Anders als Wildcards prüft die Klammererweiterung nicht, ob Dateien existieren – sie erzeugt einfach Text. Damit legst du viele Dateien oder Ordner auf einmal an."
+  example: "`mkdir -p kapitel-{1..3}` legt kapitel-1, kapitel-2 und kapitel-3 an."
+  category: "terminal"
+  aliases: ["Brace Expansion"]
+  related: [wildcard, bash]
+  lesson: terminal-shell/loeschen-und-wildcards
+- slug: pager
+  term: "Pager"
+  short: "Ein Programm, das langen Text seitenweise anzeigt, sodass du blättern und suchen kannst."
+  explanation: "Der bekannteste Pager ist `less`. Viele Programme wie `man` oder `git log` benutzen ihn automatisch, wenn ihre Ausgabe nicht auf einen Bildschirm passt."
+  example: "`less app.log` – Leertaste blättert, `/ERROR` sucht, `q` beendet."
+  category: "terminal"
+  aliases: ["less"]
+  related: [logdatei, man-page]
+  lesson: terminal-shell/dateien-lesen
+- slug: logdatei
+  term: "Logdatei"
+  short: "Eine Textdatei, in die ein Programm laufend notiert, was passiert."
+  explanation: "Jede Zeile beginnt meist mit Datum und Uhrzeit und einer Stufe wie INFO oder ERROR. Logdateien sind die erste Anlaufstelle bei Fehlern; mit `tail -f` liest du sie live mit."
+  example: "`/var/log/nginx/error.log` sammelt die Fehler eines Webservers."
+  category: "terminal"
+  aliases: ["Log", "Logs", "Protokolldatei", "Logfile"]
+  related: [textdatei, pager]
+  lesson: terminal-shell/dateien-lesen
+- slug: textdatei
+  term: "Textdatei"
+  short: "Eine Datei, die nur für Menschen lesbare Zeichen und Zeilenumbrüche enthält."
+  explanation: "Quellcode, Konfiguration, Markdown und Logs sind Textdateien. Du kannst sie mit `cat`, `less` oder einem Editor lesen und mit Werkzeugen wie grep durchsuchen."
+  example: "`notizen.txt`, `config.yml` und `app.log` sind Textdateien."
+  category: "terminal"
+  aliases: ["Textdateien"]
+  related: [binaerdatei, zeichenkodierung]
+  lesson: terminal-shell/dateien-lesen
+- slug: binaerdatei
+  term: "Binärdatei"
+  short: "Eine Datei aus Bytes, die nur ein Programm sinnvoll lesen kann."
+  explanation: "Bilder, PDFs, Archive und ausführbare Programme sind Binärdateien. Gibst du sie mit `cat` aus, erscheint nur Zeichensalat; `file` verrät, was drinsteckt."
+  example: "`file foto.jpg` meldet „JPEG image data“."
+  category: "terminal"
+  aliases: ["Binärdateien", "binäre Datei"]
+  related: [textdatei]
+  lesson: terminal-shell/dateien-lesen
+- slug: zeichenkodierung
+  term: "Zeichenkodierung"
+  short: "Die Regel, welches Byte für welches Zeichen steht – heute meist UTF-8."
+  explanation: "Wird eine Datei mit einer anderen Kodierung gelesen, als sie geschrieben wurde, erscheinen Umlaute falsch. UTF-8 kann alle Zeichen der Welt darstellen und ist der Standard."
+  example: "Falsch gelesen erscheint „Ã¼“ statt „ü“."
+  category: "terminal"
+  aliases: ["Encoding", "UTF-8", "Kodierung"]
+  related: [textdatei]
+  lesson: terminal-shell/dateien-lesen
+- slug: grep
+  term: "grep"
+  short: "Ein Programm, das Text Zeile für Zeile durchsucht und alle Zeilen ausgibt, auf die ein Suchmuster passt."
+  explanation: "grep versteht einfache Wörter und reguläre Ausdrücke. Optionen wie `-i` (Groß-/Kleinschreibung egal), `-n` (Zeilennummern) und `-r` (ganze Ordner) machen es zum wichtigsten Suchwerkzeug im Terminal."
+  example: "`grep -rn TODO src` zeigt jede Zeile mit TODO im Ordner src samt Zeilennummer."
+  category: "terminal"
+  related: [regex, find, pipe]
+  lesson: terminal-shell/grep
+- slug: find
+  term: "find"
+  short: "Ein Programm, das einen Ordnerbaum nach Dateien mit bestimmten Eigenschaften durchsucht."
+  explanation: "find filtert nach Name, Typ, Größe oder Alter und kann für jeden Treffer einen Befehl ausführen (`-exec`). Während grep in Dateien sucht, sucht find nach Dateien."
+  example: "`find . -name \"*.log\" -mtime +30` listet alle Logdateien, die älter als 30 Tage sind."
+  category: "terminal"
+  related: [grep, xargs]
+  lesson: terminal-shell/grep
+- slug: standardeingabe
+  term: "Standardeingabe (stdin)"
+  short: "Der Eingabekanal 0 eines Programms, normalerweise mit der Tastatur verbunden."
+  explanation: "Viele Programme lesen von der Standardeingabe, wenn du ihnen keine Datei nennst. Mit `<` oder einer Pipe verbindest du sie stattdessen mit einer Datei oder einem anderen Programm."
+  example: "Bei `wc -l < liste.txt` kommt der Inhalt von liste.txt über stdin in wc."
+  category: "terminal"
+  aliases: ["stdin", "Standard Input"]
+  related: [standardausgabe, dateideskriptor, pipe]
+  lesson: terminal-shell/umleitung
+- slug: standardausgabe
+  term: "Standardausgabe (stdout)"
+  short: "Der Ausgabekanal 1 eines Programms für normale Ergebnisse, normalerweise der Bildschirm."
+  explanation: "Was ein Befehl als Ergebnis ausgibt, landet auf der Standardausgabe. Mit `>` schreibst du sie in eine Datei, mit `|` reichst du sie an den nächsten Befehl weiter."
+  example: "`ls > dateien.txt` leitet die Standardausgabe von ls in eine Datei um."
+  category: "terminal"
+  aliases: ["stdout", "Standard Output"]
+  related: [standardfehlerausgabe, umleitung]
+  lesson: terminal-shell/umleitung
+- slug: standardfehlerausgabe
+  term: "Standardfehlerausgabe (stderr)"
+  short: "Der Ausgabekanal 2 eines Programms für Fehler- und Statusmeldungen."
+  explanation: "Weil Fehler über einen eigenen Kanal laufen, landen sie nicht in umgeleiteten Ergebnissen. Mit `2>` leitest du sie gezielt um; in Skripten schreibst du Fehlermeldungen mit `>&2` dorthin."
+  example: "`find / -name \"*.conf\" 2> /dev/null` blendet alle Fehlermeldungen von find aus."
+  category: "terminal"
+  aliases: ["stderr", "Standard Error", "Fehlerausgabe"]
+  related: [standardausgabe, dev-null]
+  lesson: terminal-shell/umleitung
+- slug: dateideskriptor
+  term: "Dateideskriptor"
+  short: "Eine Zahl, über die ein Programm einen geöffneten Kanal anspricht."
+  explanation: "Jedes Programm startet mit drei Deskriptoren: 0 (stdin), 1 (stdout) und 2 (stderr). In Umleitungen schreibst du die Zahl vor das `>`, etwa `2>` für Fehler."
+  example: "In `2>&1` sind 2 und 1 Dateideskriptoren: Kanal 2 geht dorthin, wohin Kanal 1 zeigt."
+  category: "terminal"
+  aliases: ["File Descriptor", "FD"]
+  related: [umleitung, standardausgabe]
+  lesson: terminal-shell/umleitung
+- slug: umleitung
+  term: "Umleitung"
+  short: "Die Shell-Schreibweise mit `>`, `>>`, `<` oder `2>`, die einen Kanal mit einer Datei verbindet."
+  explanation: "`>` überschreibt eine Datei, `>>` hängt an, `<` liest aus einer Datei. Die Shell richtet die Umleitung ein, bevor der Befehl startet – der Befehl selbst merkt davon nichts."
+  example: "`echo \"Lauf 2\" >> protokoll.txt` hängt eine Zeile an die Datei an."
+  category: "terminal"
+  aliases: ["Redirection", "Umleitungen"]
+  related: [dateideskriptor, pipe, tee]
+  lesson: terminal-shell/umleitung
+- slug: dev-null
+  term: "/dev/null"
+  short: "Eine spezielle Datei, die alles verschluckt, was hineingeschrieben wird."
+  explanation: "/dev/null ist der Papierkorb ohne Boden: Was du dorthin umleitest, ist weg. Liest du daraus, bekommst du sofort eine leere Eingabe."
+  example: "`befehl > /dev/null 2>&1` lässt einen Befehl völlig still laufen."
+  category: "terminal"
+  aliases: ["dev null", "Null-Gerät"]
+  related: [umleitung, standardfehlerausgabe]
+  lesson: terminal-shell/umleitung
+- slug: tee
+  term: "tee"
+  short: "Ein Programm, das seine Eingabe gleichzeitig ausgibt und in eine Datei schreibt."
+  explanation: "tee arbeitet wie ein T-Stück in einer Wasserleitung: Der Strom läuft weiter zum Bildschirm, eine Kopie geht in die Datei. Mit `-a` hängt tee an, statt zu überschreiben."
+  example: "`./deploy.sh 2>&1 | tee deploy.log` zeigt den Fortschritt live und speichert ihn."
+  category: "terminal"
+  related: [umleitung, pipe]
+  lesson: terminal-shell/umleitung
+- slug: pipe
+  term: "Pipe"
+  short: "Der senkrechte Strich `|`, der die Ausgabe eines Befehls mit der Eingabe des nächsten verbindet."
+  explanation: "Mit Pipes kombinierst du kleine Werkzeuge zu großen Lösungen, ohne Zwischendateien. Jedes Programm macht einen Schritt und reicht das Ergebnis weiter."
+  example: "`grep ERROR app.log | wc -l` zählt die Fehlerzeilen."
+  category: "terminal"
+  aliases: ["Pipes", "Pipe-Zeichen"]
+  related: [pipeline, filter, standardausgabe]
+  lesson: terminal-shell/pipes-und-textwerkzeuge
+- slug: pipeline
+  term: "Pipeline"
+  short: "Eine Kette von Befehlen, die durch Pipes verbunden sind und Daten wie an einem Fließband verarbeiten."
+  explanation: "Eine Pipeline baust du am besten Schritt für Schritt: einen Befehl ausprobieren, Ausgabe ansehen, nächsten Befehl anhängen. Ihr Exit-Code ist normalerweise der des letzten Befehls."
+  example: "`cut -d, -f3 daten.csv | sort | uniq -c | sort -nr | head -n 3` ermittelt die drei häufigsten Werte."
+  category: "terminal"
+  aliases: ["Pipelines"]
+  related: [pipe, filter]
+  lesson: terminal-shell/pipes-und-textwerkzeuge
+- slug: filter
+  term: "Filter (Unix)"
+  short: "Ein Programm, das Text von der Standardeingabe liest, verändert und wieder ausgibt."
+  explanation: "Filter sind die Bausteine von Pipelines. Sie lesen Zeilen, sortieren, zählen, schneiden oder ersetzen sie und schreiben das Ergebnis auf die Standardausgabe."
+  example: "sort, uniq, cut, tr und grep sind typische Filter."
+  category: "terminal"
+  aliases: ["Textfilter"]
+  related: [pipe, pipeline]
+  lesson: terminal-shell/pipes-und-textwerkzeuge
+- slug: xargs
+  term: "xargs"
+  short: "Ein Programm, das Zeilen von der Standardeingabe liest und sie als Argumente an einen anderen Befehl hängt."
+  explanation: "Manche Befehle wie `rm` lesen keine Eingabe, sondern erwarten Argumente. xargs schlägt die Brücke. `-r` verhindert, dass der Befehl ohne Eingabe trotzdem läuft."
+  example: "`cat veraltet.txt | xargs rm` löscht alle Dateien, die in veraltet.txt stehen."
+  category: "terminal"
+  related: [pipe, find]
+  lesson: terminal-shell/pipes-und-textwerkzeuge
+- slug: csv
+  term: "CSV"
+  short: "Ein einfaches Textformat für Tabellen: eine Zeile pro Datensatz, Spalten durch Kommas getrennt."
+  explanation: "CSV-Dateien lassen sich mit Tabellenprogrammen öffnen und mit Werkzeugen wie `cut` oder `sort` im Terminal auswerten. Die erste Zeile enthält oft die Spaltennamen."
+  example: "`datum,kunde,produkt` ist eine typische CSV-Kopfzeile."
+  category: "terminal"
+  aliases: ["Comma-Separated Values"]
+  related: [textdatei, filter]
+  lesson: terminal-shell/pipes-und-textwerkzeuge
+- slug: benutzer
+  term: "Benutzer"
+  short: "Ein Konto auf dem System mit Namen und User-ID, unter dem Menschen oder Programme arbeiten."
+  explanation: "Jede Datei gehört einem Benutzer, und jeder Prozess läuft als ein Benutzer. Auch Dienste wie ein Webserver haben eigene Benutzer, damit sie nur auf ihre eigenen Dateien zugreifen."
+  example: "`whoami` zeigt deinen Benutzernamen, im Übungs-Terminal `learner`."
+  category: "terminal"
+  aliases: ["User", "Benutzerkonto"]
+  related: [benutzergruppe, root, dateirechte]
+  lesson: terminal-shell/rechte
+- slug: benutzergruppe
+  term: "Benutzergruppe"
+  short: "Eine benannte Sammlung von Benutzern, der man gemeinsam Rechte geben kann."
+  explanation: "Neben dem Besitzer hat jede Datei eine Gruppe. Alle Mitglieder dieser Gruppe bekommen die Gruppenrechte, z. B. Lesen für ein ganzes Team."
+  example: "`groups` zeigt deine Gruppen; `drwxr-x--- ada team` gibt der Gruppe team Lesezugriff."
+  category: "terminal"
+  aliases: ["Gruppe", "Group"]
+  related: [benutzer, dateirechte]
+  lesson: terminal-shell/rechte
+- slug: root
+  term: "root"
+  short: "Der Superuser mit der User-ID 0, für den keine Dateirechte gelten."
+  explanation: "root darf alles – auch Systemdateien löschen. Deshalb arbeitet man normalerweise als einfacher Benutzer und holt sich root-Rechte nur kurz mit sudo."
+  example: "Ein Prompt mit `#` statt `$` zeigt meist, dass du als root arbeitest."
+  category: "terminal"
+  aliases: ["Superuser", "Administrator"]
+  related: [sudo, benutzer]
+  lesson: terminal-shell/rechte
+- slug: sudo
+  term: "sudo"
+  short: "Ein Befehl, der einen einzelnen anderen Befehl mit root-Rechten ausführt."
+  explanation: "sudo fragt nach deinem eigenen Passwort und protokolliert den Aufruf. Nutze es nur, wenn du verstehst, warum ein Befehl mehr Rechte braucht – nie als Reflex bei einer Fehlermeldung. Im Übungs-Terminal gibt es kein sudo."
+  example: "`sudo apt install tree` installiert ein Paket systemweit."
+  category: "terminal"
+  related: [root, chown]
+  lesson: terminal-shell/rechte
+- slug: chmod
+  term: "chmod"
+  short: "Der Befehl zum Ändern der Dateirechte, symbolisch oder als Oktalzahl."
+  explanation: "Symbolisch gibst du an, für wen (u, g, o, a) du welches Recht (r, w, x) hinzufügst oder entfernst. Als Zahl setzt du alle Rechte auf einmal, z. B. 755."
+  example: "`chmod u+x deploy.sh` macht ein Skript für den Besitzer ausführbar."
+  category: "terminal"
+  related: [dateirechte, oktalschreibweise, ausfuehrbare-datei]
+  lesson: terminal-shell/rechte
+- slug: oktalschreibweise
+  term: "Oktalschreibweise (Rechte als Zahl)"
+  short: "Dateirechte als dreistellige Zahl, bei der jede Ziffer die Summe aus r=4, w=2 und x=1 ist."
+  explanation: "Die erste Ziffer gilt für den Besitzer, die zweite für die Gruppe, die dritte für alle anderen. 7 bedeutet alles, 5 lesen und ausführen, 4 nur lesen, 0 nichts."
+  example: "`chmod 644 notiz.txt` ergibt `rw-r--r--`, `chmod 755 skript.sh` ergibt `rwxr-xr-x`."
+  category: "terminal"
+  aliases: ["Oktalzahl", "numerische Rechte"]
+  related: [chmod, dateirechte]
+  lesson: terminal-shell/rechte
+- slug: chown
+  term: "chown"
+  short: "Der Befehl zum Ändern von Besitzer und Gruppe einer Datei."
+  explanation: "Weil eine Datei sonst einfach jemand anderem untergeschoben werden könnte, darf nur root den Besitzer ändern. Deshalb steht vor chown fast immer sudo."
+  example: "`sudo chown deploy:deploy storage/` gibt den Ordner dem Benutzer deploy."
+  category: "terminal"
+  aliases: ["chgrp"]
+  related: [sudo, benutzer]
+  lesson: terminal-shell/rechte
+- slug: umask
+  term: "umask"
+  short: "Eine Einstellung der Shell, die festlegt, welche Rechte neuen Dateien automatisch entzogen werden."
+  explanation: "Neue Dateien starten mit 666, neue Ordner mit 777; die umask zieht davon Rechte ab. Üblich ist 022, das Schreibrechte für Gruppe und andere entfernt."
+  example: "Mit der umask `0022` bekommen neue Dateien `rw-r--r--` (644)."
+  category: "terminal"
+  related: [dateirechte, oktalschreibweise]
+  lesson: terminal-shell/rechte
+- slug: prozess
+  term: "Prozess"
+  short: "Ein laufendes Exemplar eines Programms mit eigener PID, eigenem Speicher und eigener Rechenzeit."
+  explanation: "Ein Programm ist die Datei auf der Festplatte, ein Prozess ist das Programm in Aktion. Dasselbe Programm kann mehrfach gleichzeitig als Prozess laufen."
+  example: "Startest du `sleep 300` zweimal, laufen zwei sleep-Prozesse."
+  category: "terminal"
+  aliases: ["Prozesse", "Process"]
+  related: [pid, signal, programm]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: pid
+  term: "PID (Prozess-ID)"
+  short: "Die eindeutige Nummer, mit der das Betriebssystem einen laufenden Prozess identifiziert."
+  explanation: "Mit der PID sprichst du einen Prozess gezielt an, etwa um ihn mit kill zu beenden. `ps` und `pgrep` zeigen PIDs an, `$$` enthält die PID deiner Shell."
+  example: "`pgrep sleep` gibt die PIDs aller sleep-Prozesse aus."
+  category: "terminal"
+  aliases: ["Prozess-ID", "Process ID"]
+  related: [prozess, signal]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: kindprozess
+  term: "Kindprozess"
+  short: "Ein Prozess, der von einem anderen Prozess, dem Elternprozess, gestartet wurde."
+  explanation: "Jeder Befehl, den du tippst, läuft als Kindprozess deiner Shell. Er bekommt eine Kopie der Umgebungsvariablen – Änderungen darin wirken aber nie zurück auf den Elternprozess."
+  example: "Tippst du `ls` in der Bash, ist der ls-Prozess ein Kindprozess deiner Shell."
+  category: "terminal"
+  aliases: ["Kindprozesse", "Child Process"]
+  related: [prozess, umgebungsvariable]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: signal
+  term: "Signal"
+  short: "Eine kurze, nummerierte Nachricht an einen Prozess, etwa „bitte beenden“."
+  explanation: "SIGTERM (15) bittet höflich ums Beenden, SIGKILL (9) beendet sofort ohne Aufräumen, SIGINT kommt von Strg+C. Mit `kill` schickst du Signale an eine PID."
+  example: "`kill -9 4711` schickt SIGKILL an den Prozess 4711."
+  category: "terminal"
+  aliases: ["Signale", "SIGTERM", "SIGKILL"]
+  related: [prozess, pid]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: hintergrundprozess
+  term: "Hintergrundprozess"
+  short: "Ein Prozess, der läuft, während die Shell sofort wieder Eingaben annimmt."
+  explanation: "Ein `&` am Zeilenende startet einen Befehl im Hintergrund. So kannst du weiterarbeiten, während ein langer Vorgang läuft; mit `fg` holst du ihn zurück nach vorn."
+  example: "`./dienst.sh &` startet das Skript im Hintergrund und meldet z. B. `[1] 2381`."
+  category: "terminal"
+  aliases: ["Hintergrund", "Background"]
+  related: [job, prozess]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: job
+  term: "Job"
+  short: "Ein Prozess, den die aktuelle Shell gestartet hat und mit einer Jobnummer verwaltet."
+  explanation: "Jobs gibt es nur in der Shell, die sie gestartet hat. `jobs` listet sie, `fg` und `bg` schieben sie in den Vorder- oder Hintergrund, `kill %1` beendet Job 1."
+  example: "`jobs -l` listet alle Jobs mit ihren PIDs."
+  category: "terminal"
+  aliases: ["Jobs", "Jobnummer"]
+  related: [hintergrundprozess, prozess]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: umgebungsvariable
+  term: "Umgebungsvariable"
+  short: "Eine exportierte Variable, die jeder Prozess als Kopie an seine Kindprozesse weitergibt."
+  explanation: "Über Umgebungsvariablen erfahren Programme z. B. dein Home-Verzeichnis (`HOME`), deinen Editor (`EDITOR`) oder wo sie Programme suchen (`PATH`). `export` macht aus einer Shell-Variable eine Umgebungsvariable."
+  example: "`export PROJEKT=stacklab` macht PROJEKT für alle danach gestarteten Programme sichtbar."
+  category: "terminal"
+  aliases: ["Umgebungsvariablen", "Environment Variable", "env"]
+  related: [variable, path-variable, kindprozess]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: alias
+  term: "Alias"
+  short: "Ein selbst definierter Kurzname, den die Shell durch einen längeren Befehl ersetzt."
+  explanation: "Aliase sparen Tipparbeit bei Befehlen, die du oft brauchst. Damit sie dauerhaft gelten, trägst du sie in deine Shell-Konfiguration ein."
+  example: "`alias ll='ls -la'` – danach zeigt `ll` alle Dateien ausführlich."
+  category: "terminal"
+  aliases: ["Aliase"]
+  related: [shell-konfiguration]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: shell-konfiguration
+  term: "Shell-Konfigurationsdatei"
+  short: "Eine Datei wie `~/.bashrc` oder `~/.zshrc`, die die Shell beim Start liest."
+  explanation: "Hier richtest du Variablen, Aliase und den PATH dauerhaft ein. Änderungen gelten erst in einer neuen Shell oder nach `source`."
+  example: "In `~/.bashrc` steht `export EDITOR=nano`, damit Git nano öffnet."
+  category: "terminal"
+  aliases: [".bashrc", ".zshrc", "Shell-Konfiguration"]
+  related: [source-befehl, alias, umgebungsvariable]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: source-befehl
+  term: "source (Befehl)"
+  short: "Ein Shell-Befehl, der eine Datei in der aktuellen Shell ausführt."
+  explanation: "Anders als `bash datei` startet source keinen Kindprozess. Deshalb bleiben Variablen und Aliase aus der Datei in deiner Shell erhalten. Die Kurzform ist ein Punkt."
+  example: "`source ~/.bashrc` (oder `. ~/.bashrc`) lädt die geänderte Konfiguration sofort."
+  category: "terminal"
+  aliases: ["source"]
+  related: [shell-konfiguration, kindprozess]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: path-variable
+  term: "PATH"
+  short: "Die Umgebungsvariable mit der Liste von Ordnern, in denen die Shell nach Programmen sucht."
+  explanation: "Die Ordner sind durch Doppelpunkte getrennt und werden von links nach rechts durchsucht; der erste Treffer gewinnt. Steht ein Programm in keinem dieser Ordner, meldet die Shell „command not found“."
+  example: "`export PATH=\"$HOME/bin:$PATH\"` stellt den eigenen bin-Ordner nach vorn."
+  category: "terminal"
+  aliases: ["$PATH", "Suchpfad"]
+  related: [umgebungsvariable, ausfuehrbare-datei]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: ausfuehrbare-datei
+  term: "ausführbare Datei"
+  short: "Eine Datei mit gesetztem x-Recht, die die Shell als Programm starten darf."
+  explanation: "Ohne x-Recht meldet die Shell „Permission denied“, auch wenn die Datei ein gültiges Skript ist. Liegt sie nicht im PATH, startest du sie mit ihrem Pfad, z. B. `./skript.sh`."
+  example: "Nach `chmod +x gruss` lässt sich das Skript mit `./gruss` starten."
+  category: "terminal"
+  aliases: ["Executable", "ausführbar"]
+  related: [chmod, path-variable]
+  lesson: terminal-shell/prozesse-und-umgebung
+- slug: kommandosubstitution
+  term: "Kommandosubstitution"
+  short: "Die Bash führt den Befehl in `$(...)` aus und setzt dessen Ausgabe an dieser Stelle ein."
+  explanation: "So speicherst du das Ergebnis eines Befehls in einer Variable oder baust es in einen Text ein. Ein abschließender Zeilenumbruch der Ausgabe wird dabei entfernt."
+  example: "`heute=$(date +%F)` speichert das heutige Datum in der Variable heute."
+  category: "terminal"
+  aliases: ["Command Substitution", "$()"]
+  related: [variable, skript]
+  lesson: terminal-shell/shell-skripte
+- slug: skript-argument
+  term: "Skript-Argument"
+  short: "Ein Wert, den du einem Skript beim Start mitgibst und den es in `$1`, `$2` … liest."
+  explanation: "`$#` enthält die Anzahl der Argumente, `\"$@\"` alle zusammen. Ein gutes Skript prüft, ob die erwarteten Argumente da sind, und gibt sonst eine Benutzungshilfe aus."
+  example: "Bei `./gruss.sh Ada` steht Ada in `$1` und `$#` ist 1."
+  category: "terminal"
+  aliases: ["Positionsparameter", "$1"]
+  related: [argument, skript]
+  lesson: terminal-shell/shell-skripte
+- slug: strict-mode
+  term: "Strict Mode"
+  short: "Die Zeile `set -euo pipefail`, mit der ein Bash-Skript bei Fehlern früh abbricht."
+  explanation: "`-e` bricht bei einem fehlgeschlagenen Befehl ab, `-u` bei ungesetzten Variablen, `pipefail` wertet Fehler mitten in Pipes aus. Das verhindert, dass ein Skript nach einem Fehler einfach weitermacht."
+  example: "Direkt unter `#!/usr/bin/env bash` steht `set -euo pipefail`."
+  category: "terminal"
+  aliases: ["set -euo pipefail", "set -e"]
+  related: [exit-code, skript]
+  lesson: terminal-shell/shell-skripte
+- slug: zeilenende
+  term: "Zeilenende (LF/CRLF)"
+  short: "Das unsichtbare Zeichen am Ende einer Textzeile: LF unter Linux und macOS, CRLF unter Windows."
+  explanation: "Ein unter Windows gespeichertes Skript trägt am Zeilenende ein zusätzliches `\\r`, das bash nicht versteht. Editoren und Git können Zeilenenden umstellen; im Terminal hilft `sed -i 's/\\r$//' datei`."
+  example: "Ein Skript mit CRLF meldet in bash `$'\\r': command not found`."
+  category: "terminal"
+  aliases: ["Line Ending", "CRLF", "LF", "Zeilenumbruch"]
+  related: [textdatei]
+  lesson: terminal-shell/dateien-lesen

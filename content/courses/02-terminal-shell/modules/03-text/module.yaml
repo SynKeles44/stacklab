@@ -1,0 +1,96 @@
+title: Suchen, Umleiten und Pipes
+description: |
+  Wie du mit grep die richtige Zeile und mit find die richtige Datei findest, Ausgaben und Fehler in
+  Dateien umleitest und kleine Werkzeuge mit Pipes zu echten Auswertungen verbindest.
+exercise:
+  id: modul-uebung-text
+  type: terminal
+  title: Zugriffsprotokolle eines Webshops auswerten
+  description: |
+    Im Ordner `text-auswertung` liegt ein Ordner `logs` mit Zugriffsprotokollen eines Webservers – zwei
+    aktuelle Dateien und eine ältere im Unterordner `logs/archiv`. Jede Zeile hat dieses Format:
+
+    ```text
+    203.0.113.10 - - [01/Oct/2026:08:00:01 +0000] "GET /produkte HTTP/1.1" 200 2048
+    ```
+
+    Die erste Spalte ist die IP-Adresse, die vorletzte der Statuscode. Außerdem liegt in `logs` eine
+    `README.txt`, die du nicht auswerten sollst. Speichere alle Ergebnisse direkt im Ordner `text-auswertung`.
+
+    1. Schreibe die Pfade aller `.log`-Dateien unter `logs` (auch im Unterordner) in `logdateien.txt`.
+    2. Schreibe alle Zeilen aus allen Logdateien mit dem Statuscode `500` in `fehler-500.txt`
+       – nur die Zeilen, ohne Dateinamen davor.
+    3. Schreibe die Anzahl der Zeilen mit Statuscode `404` aus allen Logdateien in `anzahl-404.txt`.
+    4. Ermittle über alle Logdateien die drei IP-Adressen mit den meisten Zugriffen und schreibe sie
+       mit ihrer Anzahl in `top-ips.txt` (häufigste zuerst, Format wie bei `uniq -c`).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Logdateien angelegt werden.
+  workdir: text-auswertung
+  setup: |
+    mkdir -p logs/archiv
+    cat > logs/zugriffe-2026-10-01.log <<'EOF'
+    203.0.113.10 - - [01/Oct/2026:08:00:01 +0000] "GET / HTTP/1.1" 200 1024
+    203.0.113.10 - - [01/Oct/2026:08:00:07 +0000] "GET /produkte HTTP/1.1" 200 2048
+    198.51.100.7 - - [01/Oct/2026:08:03:12 +0000] "GET /warenkorb HTTP/1.1" 500 312
+    203.0.113.10 - - [01/Oct/2026:08:04:40 +0000] "POST /login HTTP/1.1" 200 256
+    192.0.2.44 - - [01/Oct/2026:08:10:02 +0000] "GET /produkte/99 HTTP/1.1" 404 128
+    198.51.100.7 - - [01/Oct/2026:08:10:30 +0000] "GET /warenkorb HTTP/1.1" 500 312
+    203.0.113.25 - - [01/Oct/2026:09:15:00 +0000] "GET / HTTP/1.1" 200 1024
+    192.0.2.44 - - [01/Oct/2026:09:20:11 +0000] "GET /kontakt HTTP/1.1" 200 768
+    EOF
+    cat > logs/zugriffe-2026-10-02.log <<'EOF'
+    198.51.100.7 - - [02/Oct/2026:07:59:59 +0000] "GET / HTTP/1.1" 200 1024
+    203.0.113.10 - - [02/Oct/2026:08:30:00 +0000] "POST /bestellung HTTP/1.1" 500 312
+    203.0.113.25 - - [02/Oct/2026:08:31:15 +0000] "GET /produkte HTTP/1.1" 200 2048
+    203.0.113.10 - - [02/Oct/2026:08:45:00 +0000] "GET /konto HTTP/1.1" 200 640
+    192.0.2.44 - - [02/Oct/2026:09:00:05 +0000] "GET /bild.png HTTP/1.1" 404 128
+    198.51.100.7 - - [02/Oct/2026:10:12:44 +0000] "GET /api/status HTTP/1.1" 200 64
+    203.0.113.25 - - [02/Oct/2026:11:02:09 +0000] "GET /hilfe HTTP/1.1" 200 896
+    EOF
+    cat > logs/archiv/zugriffe-2026-09-30.log <<'EOF'
+    203.0.113.10 - - [30/Sep/2026:18:00:00 +0000] "GET / HTTP/1.1" 200 1024
+    192.0.2.44 - - [30/Sep/2026:18:05:00 +0000] "GET /admin HTTP/1.1" 403 128
+    198.51.100.7 - - [30/Sep/2026:18:10:00 +0000] "GET /warenkorb HTTP/1.1" 500 312
+    203.0.113.99 - - [30/Sep/2026:18:20:00 +0000] "GET / HTTP/1.1" 200 1024
+    EOF
+    printf 'Zugriffsprotokolle des Webshops. Statuscodes wie 404 oder 500 stehen in der vorletzten Spalte.\n' > logs/README.txt
+  checks:
+    - type: command
+      run: echo "$(grep -c '\.log$' logdateien.txt)/$(wc -l < logdateien.txt)"
+      stdout_equals: 3/3
+      message: logdateien.txt soll genau die drei .log-Dateien enthalten – auch die im Ordner archiv. Nutze find mit -name.
+    - type: command
+      run: echo "$(wc -l < fehler-500.txt)/$(awk '$9 != 500' fehler-500.txt | wc -l)"
+      stdout_equals: 4/0
+      message: fehler-500.txt soll genau die vier Zeilen mit Statuscode 500 enthalten. Suche rekursiv nach '" 500 ' und nur in .log-Dateien.
+    - type: command
+      run: grep -c '^[0-9]' fehler-500.txt
+      stdout_matches: "^\\s*4\\s*$"
+      message: Die Zeilen in fehler-500.txt sollen mit der IP-Adresse beginnen, nicht mit dem Dateinamen. Die Option -h lässt Dateinamen weg.
+    - type: command
+      run: cat anzahl-404.txt
+      stdout_matches: "^\\s*2\\s*$"
+      message: In anzahl-404.txt soll nur die Zahl der 404-Zeilen stehen (2). Zähle mit wc -l oder grep -c über alle Logdateien zusammen.
+    - type: command
+      run: wc -l < top-ips.txt
+      stdout_matches: "^\\s*3\\s*$"
+      message: top-ips.txt soll genau drei Zeilen haben. Begrenze mit head -n 3.
+    - type: command
+      run: tr -s ' ' < top-ips.txt | sed 's/^ //' | tr '\n' '|'
+      stdout_matches: "^6 203\\.0\\.113\\.10\\|5 198\\.51\\.100\\.7\\|4 192\\.0\\.2\\.44\\|$"
+      message: Die Rangliste stimmt noch nicht. Erwartet sind 203.0.113.10 (6), 198.51.100.7 (5) und 192.0.2.44 (4) – über alle drei Logdateien.
+  hints:
+    - "Teile die Aufgabe auf: find für die Dateiliste, grep für die Statuscodes, eine Pipeline mit cut, sort, uniq und head für die Rangliste."
+    - "Alle Logdateien auf einmal lesen: `cat logs/*.log logs/archiv/*.log` oder `find logs -name \"*.log\" -exec cat {} +`. Daran kannst du mit `|` jede weitere Station hängen."
+    - "Rangliste: `find logs -name \"*.log\" -exec cat {} + | cut -d' ' -f1 | sort | uniq -c | sort -nr | head -n 3 > top-ips.txt`."
+  solution: |
+    ```bash
+    cd text-auswertung
+    find logs -name "*.log" > logdateien.txt
+    find logs -name "*.log" -exec cat {} + | grep '" 500 ' > fehler-500.txt
+    find logs -name "*.log" -exec cat {} + | grep -c '" 404 ' > anzahl-404.txt
+    find logs -name "*.log" -exec cat {} + | cut -d' ' -f1 | sort | uniq -c | sort -nr | head -n 3 > top-ips.txt
+    ```
+
+    Für Schritt 2 geht auch `grep -rh --include="*.log" '" 500 ' logs > fehler-500.txt`
+    (`--include` beschränkt die rekursive Suche auf passende Dateinamen).

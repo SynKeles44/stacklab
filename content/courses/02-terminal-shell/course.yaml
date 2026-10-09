@@ -1,0 +1,29 @@
+title: Terminal & Shell
+subtitle: Die Kommandozeile von null an – mit echten Befehlen im Übungs-Terminal
+description: >
+  Das schwarze Fenster mit dem blinkenden Cursor wirkt am Anfang einschüchternd. Dabei ist das Terminal
+  nur eine andere Art, mit deinem Computer zu sprechen: Statt zu klicken, tippst du kurze Befehle. Fast
+  jedes Werkzeug, das du als Entwickler:in nutzt – Git, npm, Composer, Docker, SSH – lebt in der Kommandozeile.
+
+
+  In diesem Kurs lernst du die Shell nicht durch Auswendiglernen, sondern durch Tippen. Fast jede Lektion
+  hat Aufgaben im **echten Übungs-Terminal**, und Stacklab prüft danach die Dateien, die du wirklich angelegt,
+  verschoben, durchsucht oder geschrieben hast. Du startest bei „Was ist eigentlich eine Shell?“ und endest
+  bei einem eigenen Shell-Skript, das Dateien sortiert und Backups anlegt.
+category: grundlagen
+level: einsteiger
+icon: terminal
+color: "#10b981"
+estimated_hours: 6
+workspace_dir: terminal
+prerequisites: []
+learning_goals:
+  - Du erklärst den Unterschied zwischen Terminal, Shell und Kommandozeile und kennst bash, zsh und PowerShell.
+  - Du liest jeden Befehl als Befehlsname, Optionen und Argumente und hilfst dir selbst mit --help und man.
+  - Du bewegst dich sicher durch das Dateisystem und legst Dateien und Ordner an, kopierst, verschiebst und löschst sie bewusst.
+  - Du durchsuchst Dateien mit grep, findest Dateien mit find und verbindest Werkzeuge mit Pipes und Umleitungen.
+  - Du verstehst Dateirechte, Prozesse, Umgebungsvariablen und den PATH – und behebst „command not found“ selbst.
+  - Du schreibst eigene Shell-Skripte mit Variablen, Bedingungen, Schleifen und Exit-Codes.
+references:
+  - Aufräum- und Backup-Skripte, wie sie in Entwicklungsteams für Log- und Upload-Ordner üblich sind
+  - Shell-Konfiguration mit Aliasen und PATH-Erweiterungen für den Entwickleralltag

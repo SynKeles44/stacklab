@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="800" height="420" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Anatomie eines Shell-Skripts: gruss.sh</text>
+<rect x="30" y="52" width="430" height="340" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+<g font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#1e1b3a">
+<text x="50" y="88" fill="#94a3b8">1</text><text x="78" y="88" font-weight="700">#!/usr/bin/env bash</text>
+<text x="50" y="128" fill="#94a3b8">2</text><text x="78" y="128" fill="#64748b"># Begrüßt eine Person</text>
+<text x="50" y="168" fill="#94a3b8">3</text>
+<text x="50" y="208" fill="#94a3b8">4</text><text x="78" y="208">name="$1"</text>
+<text x="50" y="248" fill="#94a3b8">5</text><text x="78" y="248">heute=$(date +%F)</text>
+<text x="50" y="288" fill="#94a3b8">6</text><text x="78" y="288">echo "Hallo, ${name}!"</text>
+<text x="50" y="328" fill="#94a3b8">7</text><text x="78" y="328">echo "Heute ist $heute."</text>
+<text x="50" y="368" fill="#94a3b8">8</text><text x="78" y="368">exit 0</text>
+</g>
+<g stroke-width="2" fill="none">
+<path d="M290 83 H 510" stroke="#22d3ee"/>
+<path d="M300 123 H 510" stroke="#94a3b8"/>
+<path d="M170 203 H 510" stroke="#a78bfa"/>
+<path d="M240 243 H 510" stroke="#34d399"/>
+<path d="M290 283 H 510" stroke="#f59e0b"/>
+<path d="M150 363 H 510" stroke="#f87171"/>
+</g>
+<g font-size="14">
+<rect x="510" y="68" width="260" height="30" rx="8" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee"/>
+<text x="522" y="88" fill="#1e1b3a"><tspan font-weight="700">Shebang</tspan> – welches Programm?</text>
+<rect x="510" y="108" width="260" height="30" rx="8" fill="#e2e8f0" stroke="#94a3b8"/>
+<text x="522" y="128" fill="#1e1b3a"><tspan font-weight="700">Kommentar</tspan> – wird ignoriert</text>
+<rect x="510" y="188" width="260" height="30" rx="8" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa"/>
+<text x="522" y="208" fill="#1e1b3a"><tspan font-weight="700">Variable</tspan> ← erstes Argument</text>
+<rect x="510" y="228" width="260" height="30" rx="8" fill="#34d399" fill-opacity=".18" stroke="#34d399"/>
+<text x="522" y="248" fill="#1e1b3a"><tspan font-weight="700">Kommandosubstitution</tspan></text>
+<rect x="510" y="268" width="260" height="30" rx="8" fill="#f59e0b" fill-opacity=".18" stroke="#f59e0b"/>
+<text x="522" y="288" fill="#1e1b3a"><tspan font-weight="700">Ausgabe</tspan> mit Variablen</text>
+<rect x="510" y="348" width="260" height="30" rx="8" fill="#f87171" fill-opacity=".18" stroke="#f87171"/>
+<text x="522" y="368" fill="#1e1b3a"><tspan font-weight="700">Exit-Code</tspan> 0 = alles gut</text>
+</g>
+</svg>

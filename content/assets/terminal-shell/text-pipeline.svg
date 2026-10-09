@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="1000" height="330" fill="#ffffff"/>
+<text x="500" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Eine Pipeline als Fließband: Welches Produkt wird am häufigsten bestellt?</text>
+<rect x="12" y="148" width="976" height="10" rx="5" fill="#e2e8f0"/>
+<rect x="12" y="70" width="145" height="64" rx="12" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee" stroke-width="3"/>
+<text x="84.5" y="96" text-anchor="middle" font-size="12" fill="#475569">Station 1</text>
+<text x="84.5" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">tail -n +2</text>
+<rect x="18" y="176" width="133" height="90" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="28" y="200" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">2026-…,Tee,1</text>
+<text x="28" y="222" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">2026-…,Kaffee,2</text>
+<text x="28" y="244" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">2026-…,Tee,3</text>
+<path d="M158 102 H 177" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="167.5" y="66" text-anchor="middle" font-size="18" font-weight="700" fill="#64748b" font-family="ui-monospace, Menlo, monospace">|</text>
+<rect x="178" y="70" width="145" height="64" rx="12" fill="#a78bfa" fill-opacity=".16" stroke="#a78bfa" stroke-width="3"/>
+<text x="250.5" y="96" text-anchor="middle" font-size="12" fill="#475569">Station 2</text>
+<text x="250.5" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">cut -d, -f3</text>
+<rect x="184" y="176" width="133" height="90" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="194" y="200" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Tee</text>
+<text x="194" y="222" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Kaffee</text>
+<text x="194" y="244" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Tee</text>
+<path d="M324 102 H 343" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="333.5" y="66" text-anchor="middle" font-size="18" font-weight="700" fill="#64748b" font-family="ui-monospace, Menlo, monospace">|</text>
+<rect x="344" y="70" width="145" height="64" rx="12" fill="#34d399" fill-opacity=".16" stroke="#34d399" stroke-width="3"/>
+<text x="416.5" y="96" text-anchor="middle" font-size="12" fill="#475569">Station 3</text>
+<text x="416.5" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">sort</text>
+<rect x="350" y="176" width="133" height="90" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="360" y="200" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Kaffee</text>
+<text x="360" y="222" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Tee</text>
+<text x="360" y="244" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Tee</text>
+<path d="M490 102 H 509" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="499.5" y="66" text-anchor="middle" font-size="18" font-weight="700" fill="#64748b" font-family="ui-monospace, Menlo, monospace">|</text>
+<rect x="510" y="70" width="145" height="64" rx="12" fill="#f59e0b" fill-opacity=".16" stroke="#f59e0b" stroke-width="3"/>
+<text x="582.5" y="96" text-anchor="middle" font-size="12" fill="#475569">Station 4</text>
+<text x="582.5" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">uniq -c</text>
+<rect x="516" y="176" width="133" height="90" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="526" y="200" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">1 Kaffee</text>
+<text x="526" y="222" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">2 Tee</text>
+<path d="M656 102 H 675" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="665.5" y="66" text-anchor="middle" font-size="18" font-weight="700" fill="#64748b" font-family="ui-monospace, Menlo, monospace">|</text>
+<rect x="676" y="70" width="145" height="64" rx="12" fill="#34d399" fill-opacity=".16" stroke="#34d399" stroke-width="3"/>
+<text x="748.5" y="96" text-anchor="middle" font-size="12" fill="#475569">Station 5</text>
+<text x="748.5" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">sort -nr</text>
+<rect x="682" y="176" width="133" height="90" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="692" y="200" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">2 Tee</text>
+<text x="692" y="222" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">1 Kaffee</text>
+<path d="M822 102 H 841" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="831.5" y="66" text-anchor="middle" font-size="18" font-weight="700" fill="#64748b" font-family="ui-monospace, Menlo, monospace">|</text>
+<rect x="842" y="70" width="145" height="64" rx="12" fill="#f87171" fill-opacity=".16" stroke="#f87171" stroke-width="3"/>
+<text x="914.5" y="96" text-anchor="middle" font-size="12" fill="#475569">Station 6</text>
+<text x="914.5" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">head -n 1</text>
+<rect x="848" y="176" width="133" height="90" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="858" y="200" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">2 Tee</text>
+<text x="500" y="300" text-anchor="middle" font-size="13" fill="#475569">Jede Station liest die Zeilen der vorigen Station von stdin und gibt ihr Ergebnis auf stdout an die nächste weiter.</text>
+</svg>

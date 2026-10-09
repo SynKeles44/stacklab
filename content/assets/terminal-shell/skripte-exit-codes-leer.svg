@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker>
+<marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#f87171"/></marker></defs>
+<rect width="800" height="440" fill="#ffffff"/>
+<text x="400" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">befehl_a &amp;&amp; befehl_b || befehl_c</text>
+<rect x="290" y="60" width="220" height="56" rx="12" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee" stroke-width="3"/>
+<text x="400" y="94" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a"><tspan font-family="ui-monospace, Menlo, monospace">befehl_a</tspan> läuft</text>
+<path d="M400 116 V 148" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M400 150 L480 190 L400 230 L320 190 Z" fill="#a78bfa" fill-opacity=".16" stroke="#a78bfa" stroke-width="3"/>
+<text x="400" y="195" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Exit-Code?</text>
+<path d="M320 190 H 170 V 290" fill="none" stroke="#34d399" stroke-width="3" marker-end="url(#a)"/>
+<path d="M480 190 H 630 V 290" fill="none" stroke="#f59e0b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="170.0" y="158" width="150" height="28" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+<rect x="480.0" y="158" width="150" height="28" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+<rect x="60" y="294" width="220" height="56" rx="12" fill="#34d399" fill-opacity=".16" stroke="#34d399" stroke-width="3"/>
+<rect x="90" y="304" width="160" height="30" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+<rect x="520" y="294" width="220" height="56" rx="12" fill="#f59e0b" fill-opacity=".16" stroke="#f59e0b" stroke-width="3"/>
+<rect x="550" y="304" width="160" height="30" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+<path d="M282 322 H 516" stroke="#f87171" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#r)"/>
+<text x="400" y="312" text-anchor="middle" font-size="13" fill="#b91c1c">wenn befehl_b scheitert</text>
+<text x="400" y="400" text-anchor="middle" font-size="14" fill="#1e1b3a">Achtung: <tspan font-family="ui-monospace, Menlo, monospace">befehl_c</tspan> läuft auch, wenn <tspan font-family="ui-monospace, Menlo, monospace">befehl_b</tspan> scheitert –</text>
+<text x="400" y="420" text-anchor="middle" font-size="14" fill="#1e1b3a"><tspan font-family="ui-monospace, Menlo, monospace">a &amp;&amp; b || c</tspan> ist kein echtes if/else.</text>
+</svg>

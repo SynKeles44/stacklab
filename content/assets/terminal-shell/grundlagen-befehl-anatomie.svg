@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="900" height="300" fill="#ffffff"/>
+<text x="450" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Die Anatomie eines Befehls</text>
+<rect x="30" y="70" width="840" height="64" rx="10" fill="#1e1b3a"/>
+<text x="44" y="112" font-size="24" fill="#34d399" font-family="ui-monospace, Menlo, monospace">$</text>
+<text x="70" y="112" font-size="24" fill="#ffffff" font-family="ui-monospace, Menlo, monospace">ls</text>
+<rect x="64" y="78" width="41.0" height="48" rx="6" fill="none" stroke="#22d3ee" stroke-width="2.5"/>
+<path d="M84.5 128 V 172" stroke="#22d3ee" stroke-width="2.5"/>
+<circle cx="84.5" cy="174" r="4" fill="#22d3ee"/>
+<text x="84.5" y="202" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Befehlsname</text>
+<text x="84.5" y="224" text-anchor="middle" font-size="12" fill="#475569">Was soll passieren?</text>
+<text x="210" y="112" font-size="24" fill="#ffffff" font-family="ui-monospace, Menlo, monospace">-l</text>
+<rect x="204" y="78" width="41.0" height="48" rx="6" fill="none" stroke="#a78bfa" stroke-width="2.5"/>
+<path d="M224.5 128 V 172" stroke="#a78bfa" stroke-width="2.5"/>
+<circle cx="224.5" cy="174" r="4" fill="#a78bfa"/>
+<text x="224.5" y="202" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Kurze Option</text>
+<text x="224.5" y="224" text-anchor="middle" font-size="12" fill="#475569">ein Strich, ein Buchstabe</text>
+<text x="330" y="112" font-size="24" fill="#ffffff" font-family="ui-monospace, Menlo, monospace">--all</text>
+<rect x="324" y="78" width="84.5" height="48" rx="6" fill="none" stroke="#a78bfa" stroke-width="2.5"/>
+<path d="M366.25 128 V 172" stroke="#a78bfa" stroke-width="2.5"/>
+<circle cx="366.25" cy="174" r="4" fill="#a78bfa"/>
+<text x="366.25" y="202" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Lange Option</text>
+<text x="366.25" y="224" text-anchor="middle" font-size="12" fill="#475569">zwei Striche, ein Wort</text>
+<text x="490" y="112" font-size="24" fill="#ffffff" font-family="ui-monospace, Menlo, monospace">-n 5</text>
+<rect x="484" y="78" width="70.0" height="48" rx="6" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+<path d="M519.0 128 V 172" stroke="#f59e0b" stroke-width="2.5"/>
+<circle cx="519.0" cy="174" r="4" fill="#f59e0b"/>
+<text x="519.0" y="202" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Option mit Wert</text>
+<text x="519.0" y="224" text-anchor="middle" font-size="12" fill="#475569">Option plus Wert</text>
+<text x="630" y="112" font-size="24" fill="#ffffff" font-family="ui-monospace, Menlo, monospace">notizen.txt</text>
+<rect x="624" y="78" width="171.5" height="48" rx="6" fill="none" stroke="#34d399" stroke-width="2.5"/>
+<path d="M709.75 128 V 172" stroke="#34d399" stroke-width="2.5"/>
+<circle cx="709.75" cy="174" r="4" fill="#34d399"/>
+<text x="709.75" y="202" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Argument</text>
+<text x="709.75" y="224" text-anchor="middle" font-size="12" fill="#475569">Womit? Worauf?</text>
+<text x="450" y="270" text-anchor="middle" font-size="14" fill="#1e1b3a">Leerzeichen trennen die Teile. Die Shell zerlegt die Zeile, bevor das Programm startet.</text>
+</svg>

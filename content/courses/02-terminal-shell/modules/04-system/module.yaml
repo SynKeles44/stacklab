@@ -1,0 +1,90 @@
+title: Rechte, Prozesse und Skripte
+description: |
+  Wer darf welche Datei lesen, ändern und starten? Wie findest und beendest du Prozesse, was sind
+  Umgebungsvariablen und der PATH? Zum Schluss schreibst du eigene Shell-Skripte mit Variablen,
+  Exit-Codes, if und for.
+exercise:
+  id: modul-uebung-system
+  type: terminal
+  title: Eine kleine Werkstatt einrichten
+  description: |
+    Im Ordner `system-werkstatt` liegt ein kleines Werkzeug-Set:
+
+    - `bin/status-melden` – ein Skript, das den Wert der Variable `APP_MODUS` ausgibt (noch nicht ausführbar)
+    - `bin/hintergrund-job` – ein Dienst, der beim Start seine PID in `job.pid` schreibt und dann endlos läuft
+    - `zugang.conf` – eine Datei mit einem Platzhalter-Passwort
+
+    Richte alles so ein, wie man es im Alltag tun würde:
+
+    1. Gib `bin/status-melden` die Rechte `755` und `zugang.conf` die Rechte `600`.
+    2. Lege eine Datei `env.sh` an, die
+       - die Umgebungsvariable `APP_MODUS` mit dem Wert `entwicklung` **exportiert** und
+       - den Ordner `bin` mit seinem **absoluten** Pfad vorne an den PATH anhängt, ohne den alten PATH zu verlieren.
+    3. Lade `env.sh` mit `source` und prüfe, dass `status-melden` aus jedem Ordner `Status: entwicklung` ausgibt.
+    4. Starte `bin/hintergrund-job` im Hintergrund, finde seinen Prozess und beende ihn mit `kill`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Dateien angelegt werden.
+  workdir: system-werkstatt
+  setup: |
+    mkdir -p bin
+    cat > bin/status-melden <<'EOF'
+    #!/usr/bin/env bash
+    echo "Status: ${APP_MODUS:-unbekannt}"
+    EOF
+    chmod 644 bin/status-melden
+    cat > bin/hintergrund-job <<'EOF'
+    #!/usr/bin/env bash
+    echo $$ > "$(dirname "$0")/../job.pid"
+    while true; do sleep 1; done
+    EOF
+    chmod 755 bin/hintergrund-job
+    printf 'DB_PASSWORT=<dein-passwort>\n' > zugang.conf
+    chmod 644 zugang.conf
+  checks:
+    - type: command
+      run: stat -c %a bin/status-melden
+      stdout_matches: "^755$"
+      message: bin/status-melden hat noch nicht die Rechte 755.
+    - type: command
+      run: stat -c %a zugang.conf
+      stdout_matches: "^600$"
+      message: zugang.conf sollte nur für dich lesbar und schreibbar sein (600).
+    - type: file_exists
+      path: env.sh
+      message: Die Datei env.sh fehlt noch.
+    - type: command
+      run: source ./env.sh >/dev/null 2>&1; command -v ls
+      message: Nach `source env.sh` findet die Shell nicht einmal mehr `ls` – du hast den PATH überschrieben statt erweitert.
+    - type: command
+      run: d="$PWD"; cd / && source "$d/env.sh" >/dev/null 2>&1 && command -v status-melden
+      stdout_matches: "/bin/status-melden$"
+      message: Nach `source env.sh` findet die Shell `status-melden` nicht. Hänge den absoluten Pfad von `bin` an den PATH an.
+    - type: command
+      run: d="$PWD"; cd / && source "$d/env.sh" >/dev/null 2>&1 && status-melden
+      stdout_matches: "^Status: entwicklung$"
+      message: "status-melden gibt noch nicht `Status: entwicklung` aus. Hast du APP_MODUS mit `export` gesetzt?"
+    - type: file_exists
+      path: job.pid
+      message: job.pid fehlt – du hast bin/hintergrund-job noch nicht gestartet.
+    - type: command
+      run: test -f job.pid && ! kill -0 "$(cat job.pid)" 2>/dev/null
+      message: Der Hintergrund-Job läuft noch. Beende ihn mit `kill` und seiner PID.
+  hints:
+    - "Rechte: `chmod 755 …` und `chmod 600 …`. Den absoluten Pfad des Ordners zeigt `pwd`."
+    - "env.sh braucht zwei Zeilen mit `export` – eine für APP_MODUS, eine für den PATH (`…/bin:$PATH`)."
+    - "Den Job startest du mit `bin/hintergrund-job &`, beenden kannst du ihn mit `kill %1` oder `kill $(cat job.pid)`."
+  solution: |
+    ```bash
+    cd system-werkstatt
+    chmod 755 bin/status-melden
+    chmod 600 zugang.conf
+    pwd     # /workspace/terminal/system-werkstatt
+    echo 'export APP_MODUS=entwicklung' > env.sh
+    echo 'export PATH="/workspace/terminal/system-werkstatt/bin:$PATH"' >> env.sh
+    source env.sh
+    cd / && status-melden && cd -
+    bin/hintergrund-job &
+    pgrep -af hintergrund-job
+    kill %1
+    jobs
+    ```

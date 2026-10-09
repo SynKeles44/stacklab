@@ -1,0 +1,58 @@
+title: Erste Schritte im Terminal
+description: |
+  Was Terminal, Shell und Kommandozeile sind, wie jeder Befehl aus Befehlsname, Optionen und
+  Argumenten besteht und wie du dich mit pwd, ls und cd durch das Dateisystem bewegst.
+exercise:
+  id: modul-uebung-steckbrief
+  type: terminal
+  title: Dein Terminal-Steckbrief
+  description: |
+    Im Ordner `steckbrief` legst du einen kleinen Steckbrief über deine Shell an – nur mit den
+    Befehlen aus diesem Modul. Jede Antwort landet mit `>` in einer eigenen Datei.
+
+    1. `benutzer.txt`: dein Benutzername (Ausgabe von `whoami`).
+    2. `jahr.txt`: nur die aktuelle Jahreszahl. Tipp: `date` versteht ein Format-Argument, das mit `+`
+       beginnt; `%Y` steht für das Jahr.
+    3. `motto.txt`: genau den Text `Das Terminal ist "gar nicht" so schwer` – **mit** den doppelten
+       Anführungszeichen um „gar nicht“.
+    4. `echo-typ.txt`: die Antwort von `type` auf die Frage, was `echo` für ein Befehl ist.
+    5. `head-hilfe.txt`: die Kurzhilfe von `head`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** und wechsle mit `cd steckbrief` in den Ordner.
+    Nutze Tab und die Pfeiltaste nach oben, um dir Tipparbeit zu sparen.
+  workdir: steckbrief
+  setup: |
+    printf 'Steckbrief: Lege hier deine Antwortdateien an.\n' > LIESMICH.txt
+  checks:
+    - type: command
+      run: cat benutzer.txt
+      stdout_equals: learner
+      message: benutzer.txt soll nur deinen Benutzernamen enthalten (whoami > benutzer.txt).
+    - type: command
+      run: test "$(tr -d '[:space:]' < jahr.txt)" = "$(date +%Y)"
+      message: jahr.txt soll nur die aktuelle Jahreszahl enthalten (date +%Y > jahr.txt).
+    - type: command
+      run: cat motto.txt
+      stdout_equals: 'Das Terminal ist "gar nicht" so schwer'
+      message: motto.txt muss genau „Das Terminal ist "gar nicht" so schwer“ enthalten – umschließe den Text mit einfachen Anführungszeichen.
+    - type: file_contains
+      path: echo-typ.txt
+      pattern: "echo is a shell builtin"
+      message: In echo-typ.txt fehlt die Ausgabe von type echo.
+    - type: file_contains
+      path: head-hilfe.txt
+      pattern: "Usage:\\s+head"
+      message: head-hilfe.txt soll die Kurzhilfe von head enthalten (head --help > head-hilfe.txt).
+  hints:
+    - Jede Datei entsteht nach demselben Muster – befehl > datei.txt.
+    - "Für das Motto brauchst du die *andere* Sorte Anführungszeichen außen herum: einfache."
+    - "Jahreszahl: `date +%Y > jahr.txt`. Motto: `echo 'Das Terminal ist \"gar nicht\" so schwer' > motto.txt`."
+  solution: |
+    ```bash
+    cd steckbrief
+    whoami > benutzer.txt
+    date +%Y > jahr.txt
+    echo 'Das Terminal ist "gar nicht" so schwer' > motto.txt
+    type echo > echo-typ.txt
+    head --help > head-hilfe.txt
+    ```

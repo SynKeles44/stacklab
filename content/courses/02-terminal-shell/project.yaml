@@ -1,0 +1,378 @@
+title: Dein Aufräum- und Backup-Werkzeug
+description: |
+  Jeder kennt ihn: den Download-Ordner, in dem PDFs, Bilder, Zip-Archive und Notizen wild durcheinanderliegen.
+  In diesem Projekt baust du dir zwei kleine, aber echte Werkzeuge für die Kommandozeile:
+
+  - `aufraeumen.sh` sortiert alle Dateien eines Ordners nach ihrer Endung in Unterordner
+    (`sortiert/pdf/`, `sortiert/jpg/` …) und protokolliert jeden Schritt.
+  - `backup.sh` packt einen Ordner in ein Archiv mit Datum und Uhrzeit im Namen.
+
+  Du brauchst dafür fast alles aus dem Kurs: Ordner und Dateien anlegen, Wildcards, Rechte und Shebang,
+  Variablen, Bedingungen, Schleifen, Exit-Codes, Umleitungen und `tee`.
+  Stacklab prüft deine Skripte, indem es sie in einem eigenen Testordner mit Testdateien **wirklich ausführt**.
+
+  Arbeite im Übungs-Terminal im Ordner `projekt` (`mkdir -p projekt && cd projekt`).
+goal: |
+  Im Ordner `projekt` liegen zwei ausführbare, robuste Bash-Skripte (`aufraeumen.sh`, `backup.sh`),
+  ein Ordner mit Testdaten, ein sortierter Ordner, ein Protokoll, mindestens ein Backup-Archiv und eine
+  README.md, die erklärt, wie man die Werkzeuge benutzt.
+workdir: projekt
+steps:
+  - id: testdaten-anlegen
+    title: Testdaten und README anlegen
+    description: |
+      Bevor du ein Aufräum-Skript schreibst, brauchst du etwas zum Aufräumen – und zwar Daten, die du
+      gefahrlos verschieben darfst. Deshalb arbeitest du nie direkt an echten Ordnern, sondern an Testdaten.
+
+      1. Lege im Übungs-Terminal den Ordner `projekt` an und wechsle hinein.
+      2. Lege darin einen Ordner `testdaten` an.
+      3. Erzeuge in `testdaten` **mindestens sechs** leere Dateien mit **mindestens drei verschiedenen
+         Endungen** (z. B. `.txt`, `.jpg`, `.pdf`). Klammererweiterung spart dir Tipparbeit.
+      4. Mindestens eine Datei soll ein **Leerzeichen** im Namen haben (z. B. `mein urlaub.jpg`) und
+         mindestens eine Datei soll **keine Endung** haben (z. B. `notizen`). Genau solche Dateien bringen
+         schlecht geschriebene Skripte zum Absturz.
+      5. Lege eine `README.md` mit einer Überschrift an, z. B. `# Aufräum-Werkzeuge`.
+    checklist:
+      - Ordner projekt/testdaten existiert
+      - Mindestens sechs Dateien mit mindestens drei Endungen
+      - Eine Datei mit Leerzeichen, eine ohne Endung
+      - README.md mit Überschrift
+    hints:
+      - "`mkdir -p projekt/testdaten` legt beide Ordner auf einmal an."
+      - "`touch testdaten/bericht{1..3}.txt` erzeugt drei Dateien in einem Rutsch."
+      - Dateinamen mit Leerzeichen musst du in Anführungszeichen setzen – `touch "testdaten/mein urlaub.jpg"`.
+    checks:
+      - type: dir_exists
+        path: testdaten
+        message: Im Ordner projekt fehlt noch der Ordner testdaten.
+      - type: command
+        run: find testdaten -maxdepth 1 -type f | wc -l
+        stdout_matches: "^\\s*([6-9]|[1-9][0-9]+)\\s*$"
+        message: In testdaten sollten mindestens sechs Dateien liegen.
+      - type: command
+        run: find testdaten -maxdepth 1 -type f -name '*.*' | sed 's/.*\.//' | tr '[:upper:]' '[:lower:]' | sort -u | wc -l
+        stdout_matches: "^\\s*([3-9]|[1-9][0-9]+)\\s*$"
+        message: Deine Testdateien brauchen mindestens drei verschiedene Endungen.
+      - type: command
+        run: find testdaten -maxdepth 1 -type f -name '* *' | wc -l
+        stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+        message: Lege noch eine Datei mit einem Leerzeichen im Namen an (in Anführungszeichen!).
+      - type: command
+        run: find testdaten -maxdepth 1 -type f ! -name '*.*' | wc -l
+        stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+        message: Lege noch eine Datei ohne Endung an, z. B. testdaten/notizen.
+      - type: file_contains
+        path: README.md
+        pattern: "^#\\s+\\S"
+        message: README.md braucht eine Überschrift, z. B. "# Aufräum-Werkzeuge".
+    solution: |
+      ```bash
+      mkdir -p projekt/testdaten
+      cd projekt
+      touch testdaten/bericht{1..3}.txt testdaten/foto{1..2}.jpg testdaten/rechnung.pdf
+      touch "testdaten/mein urlaub.jpg" testdaten/notizen
+      echo "# Aufräum-Werkzeuge" > README.md
+      ls -la testdaten
+      ```
+  - id: skript-geruest
+    title: Das Skript-Gerüst mit Shebang und Fehlerprüfung
+    description: |
+      Jetzt entsteht `aufraeumen.sh`. Noch sortiert es nichts – zuerst baust du das Gerüst, das jedes
+      ordentliche Skript braucht.
+
+      1. Lege `aufraeumen.sh` an (mit nano oder vim). Die **erste Zeile** ist die Shebang-Zeile
+         `#!/usr/bin/env bash`.
+      2. Schalte den „strengen Modus“ ein: `set -euo pipefail`.
+      3. Das Skript erwartet genau **ein Argument**: den Ordner, der aufgeräumt werden soll.
+         Fehlt das Argument oder ist es kein Ordner, gibt das Skript eine Meldung auf
+         **Standardfehlerausgabe** aus (`>&2`) und beendet sich mit **Exit-Code 1**. Auf der normalen
+         Ausgabe erscheint dann nichts.
+      4. Mach das Skript ausführbar und probiere es aus: `./aufraeumen.sh`, danach `echo $?`.
+    checklist:
+      - Shebang in Zeile 1
+      - set -euo pipefail
+      - Ohne Argument → Meldung auf stderr, Exit-Code 1
+      - Mit einem Pfad, der kein Ordner ist → Exit-Code 1
+      - Skript ist ausführbar
+    hints:
+      - "`[[ $# -ne 1 ]]` ist wahr, wenn nicht genau ein Argument übergeben wurde. `[[ ! -d \"$1\" ]]` prüft, ob es kein Ordner ist."
+      - "`echo \"Benutzung: $0 <ordner>\" >&2` schreibt auf die Fehlerausgabe, `exit 1` meldet den Fehler."
+      - "`chmod +x aufraeumen.sh` setzt das Ausführungsrecht. Mit `bash -n aufraeumen.sh` prüfst du die Syntax."
+    checks:
+      - type: file_exists
+        path: aufraeumen.sh
+        message: Die Datei aufraeumen.sh fehlt noch im Ordner projekt.
+      - type: command
+        run: head -n 1 aufraeumen.sh
+        stdout_matches: "^#!\\s*(/usr/bin/env bash|/bin/bash|/usr/bin/bash)\\s*$"
+        message: "Die erste Zeile muss die Shebang-Zeile sein, z. B. #!/usr/bin/env bash."
+      - type: file_contains
+        path: aufraeumen.sh
+        pattern: "^\\s*set\\s+-[a-z]*e[a-z]*u[a-z]*o\\s+pipefail|^\\s*set\\s+-euo\\s+pipefail"
+        message: Schalte den strengen Modus ein – set -euo pipefail.
+      - type: command
+        run: test -x aufraeumen.sh && bash -n aufraeumen.sh && echo ok
+        stdout_equals: ok
+        message: Das Skript ist noch nicht ausführbar (chmod +x) oder enthält einen Syntaxfehler (bash -n).
+      - type: command
+        run: |
+          [ -x aufraeumen.sh ] || { echo "Skript fehlt oder ist nicht ausführbar"; exit 0; }; t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp aufraeumen.sh "$t"/ && cd "$t" && out=$(./aufraeumen.sh 2>/dev/null); code=$?; echo "code=$code out=[$out]"; cd .. && rm -rf "$t"
+        stdout_matches: "^code=1 out=\\[\\]$"
+        message: Ohne Argument soll das Skript nur auf stderr (>&2) meckern und mit exit 1 enden.
+      - type: command
+        run: |
+          [ -x aufraeumen.sh ] || { echo "Skript fehlt oder ist nicht ausführbar"; exit 0; }; t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp aufraeumen.sh "$t"/ && cd "$t" && ./aufraeumen.sh gibt-es-nicht >/dev/null 2>&1; echo "code=$?"; cd .. && rm -rf "$t"
+        stdout_equals: code=1
+        message: Wenn das Argument kein Ordner ist, soll das Skript mit exit 1 enden.
+    solution: |
+      ```bash
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [[ $# -ne 1 ]]; then
+        echo "Benutzung: $0 <ordner>" >&2
+        exit 1
+      fi
+
+      quelle="$1"
+      if [[ ! -d "$quelle" ]]; then
+        echo "Fehler: '$quelle' ist kein Ordner." >&2
+        exit 1
+      fi
+      ```
+
+      Danach: `chmod +x aufraeumen.sh`, testen mit `./aufraeumen.sh; echo $?`.
+  - id: dateien-sortieren
+    title: Dateien nach Endung sortieren
+    description: |
+      Das Herzstück: Das Skript geht jede **Datei** im übergebenen Ordner durch und verschiebt sie nach
+      `sortiert/<endung>/` – relativ zu dem Ordner, in dem du das Skript aufrufst.
+
+      Regeln:
+
+      1. Die Endung ist der Teil nach dem **letzten** Punkt, in **Kleinbuchstaben**
+         (`Foto.JPG` landet in `sortiert/jpg/`).
+      2. Dateien **ohne** Punkt im Namen kommen nach `sortiert/sonstige/`.
+      3. Unterordner im Quellordner werden **nicht** angefasst.
+      4. Dateinamen mit Leerzeichen müssen funktionieren – also überall Anführungszeichen um Variablen.
+      5. Fehlende Zielordner legt das Skript selbst an.
+
+      Teste mit einer **Kopie** deiner Testdaten: `cp -r testdaten probelauf && ./aufraeumen.sh probelauf`.
+      Danach kannst du `sortiert` und `probelauf` wieder löschen.
+    checklist:
+      - for-Schleife über alle Einträge im Ordner
+      - Nur Dateien werden verschoben (Test mit -f)
+      - Endung in Kleinbuchstaben, sonstige für Dateien ohne Endung
+      - Zielordner mit mkdir -p
+      - Leerzeichen im Dateinamen funktionieren
+    hints:
+      - "`for datei in \"$quelle\"/*; do … done` läuft über alle Einträge. Mit `[[ -f \"$datei\" ]] || continue` überspringst du alles, was keine Datei ist."
+      - "`name=$(basename \"$datei\")` liefert den Dateinamen. `${name##*.}` schneidet alles bis zum letzten Punkt ab. Ob es überhaupt einen Punkt gibt, prüfst du mit `[[ \"$name\" == *.* ]]`."
+      - "Kleinbuchstaben: `endung=$(echo \"$endung\" | tr '[:upper:]' '[:lower:]')` (in Bash ab Version 4 geht auch `${endung,,}`)."
+    checks:
+      - type: command
+        run: |
+          t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp aufraeumen.sh "$t"/ && cd "$t" && mkdir -p in/unterordner && touch in/a.txt in/b.TXT in/c.jpg "in/mein bild.png" in/ohne-endung && ./aufraeumen.sh in >/dev/null 2>&1; test -f sortiert/txt/a.txt && test -f sortiert/txt/b.TXT && test -f sortiert/jpg/c.jpg && test -f "sortiert/png/mein bild.png" && test -f sortiert/sonstige/ohne-endung && test -d in/unterordner && echo ok; cd .. && rm -rf "$t"
+        stdout_equals: ok
+        message: "Im Testlauf landen nicht alle Dateien richtig: erwartet sind sortiert/txt/ (auch für .TXT), sortiert/jpg/, sortiert/png/ (Name mit Leerzeichen!), sortiert/sonstige/ – und Unterordner bleiben, wo sie sind."
+      - type: command
+        run: |
+          t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp aufraeumen.sh "$t"/ && cd "$t" && mkdir in && ./aufraeumen.sh in >/dev/null 2>&1; echo "code=$?"; cd .. && rm -rf "$t"
+        stdout_equals: code=0
+        message: Ein leerer Ordner darf kein Fehler sein – das Skript soll dann einfach nichts tun und mit 0 enden.
+    solution: |
+      ```bash
+      for datei in "$quelle"/*; do
+        [[ -f "$datei" ]] || continue
+        name=$(basename "$datei")
+        if [[ "$name" == *.* ]]; then
+          endung=$(echo "${name##*.}" | tr '[:upper:]' '[:lower:]')
+        else
+          endung="sonstige"
+        fi
+        mkdir -p "sortiert/$endung"
+        mv -n -- "$datei" "sortiert/$endung/"
+      done
+      ```
+
+      Bei einem leeren Ordner bleibt das Muster `"$quelle"/*` unverändert stehen. Der Test `[[ -f … ]]`
+      fängt das ab, deshalb klappt die Schleife auch dann.
+  - id: protokoll
+    title: Protokoll und Zusammenfassung
+    description: |
+      Ein Werkzeug, das Dateien verschiebt, muss nachvollziehbar sein. Erweitere `aufraeumen.sh`:
+
+      1. Für **jede** verschobene Datei schreibt das Skript genau **eine Zeile** in die Datei
+         `aufraeumen.log` (im aktuellen Ordner) – mit Zeitstempel, Dateiname und Ziel. Gleichzeitig soll
+         die Zeile auf dem Bildschirm erscheinen. Das Protokoll wird **ergänzt**, nie überschrieben.
+      2. Ganz am Ende gibt das Skript eine Zusammenfassung als **letzte Zeile** aus:
+         `3 Dateien sortiert.` (mit der echten Anzahl).
+    checklist:
+      - Eine Protokollzeile pro Datei in aufraeumen.log
+      - Protokoll wird angehängt (tee -a oder >>)
+      - Letzte Ausgabezeile „N Dateien sortiert.“
+    hints:
+      - "`tee -a datei` gibt aus **und** hängt an die Datei an."
+      - "`date '+%Y-%m-%d %H:%M:%S'` liefert einen gut lesbaren Zeitstempel."
+      - "Zähle mit `anzahl=$((anzahl + 1))` mit. Starte vor der Schleife mit `anzahl=0`."
+    checks:
+      - type: command
+        run: |
+          t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp aufraeumen.sh "$t"/ && cd "$t" && mkdir in && touch in/a.txt in/b.md in/c.jpg && ./aufraeumen.sh in >/dev/null 2>&1; grep -c "" aufraeumen.log 2>/dev/null || echo 0; cd .. && rm -rf "$t"
+        stdout_matches: "^3$"
+        message: Nach einem Lauf mit drei Dateien sollte aufraeumen.log genau drei Zeilen enthalten.
+      - type: command
+        run: |
+          t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp aufraeumen.sh "$t"/ && cd "$t" && mkdir in && touch in/a.txt in/b.md && ./aufraeumen.sh in >/dev/null 2>&1; touch in/c.jpg && ./aufraeumen.sh in >/dev/null 2>&1; grep -c "" aufraeumen.log 2>/dev/null || echo 0; cd .. && rm -rf "$t"
+        stdout_matches: "^3$"
+        message: Das Protokoll wird überschrieben statt ergänzt – nutze tee -a oder >>.
+      - type: command
+        run: |
+          t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp aufraeumen.sh "$t"/ && cd "$t" && mkdir in && touch in/a.txt in/b.md in/c.jpg && ./aufraeumen.sh in 2>/dev/null | tail -n 1; cd .. && rm -rf "$t"
+        stdout_matches: "^3 Dateien sortiert\\.?$"
+        message: Die letzte Ausgabezeile soll die Zusammenfassung sein, z. B. "3 Dateien sortiert."
+    solution: |
+      ```bash
+      anzahl=0
+      for datei in "$quelle"/*; do
+        # … wie in Schritt 3 …
+        mv -n -- "$datei" "sortiert/$endung/"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') verschoben: $name -> sortiert/$endung/" | tee -a aufraeumen.log
+        anzahl=$((anzahl + 1))
+      done
+
+      echo "$anzahl Dateien sortiert."
+      ```
+  - id: backup-skript
+    title: Das Backup-Skript
+    description: |
+      Bevor man aufräumt, sichert man. Schreibe ein zweites Skript `backup.sh`:
+
+      1. Shebang, `set -euo pipefail`, ausführbar.
+      2. Es erwartet genau einen Ordner als Argument. Fehlt er oder ist es kein Ordner: Meldung auf
+         stderr und `exit 1`.
+      3. Es legt (falls nötig) den Ordner `backups` an und erzeugt darin ein gzip-komprimiertes
+         tar-Archiv mit dem Namen `<ordnername>-JJJJ-MM-TT_HHMMSS.tar.gz`, z. B.
+         `backups/testdaten-2026-10-09_143005.tar.gz`.
+      4. Im Archiv soll der Ordner selbst stecken (beim Auspacken entsteht wieder `testdaten/…`).
+      5. Zum Schluss gibt es den Pfad des Archivs aus.
+
+      Probiere es aus und schau mit `tar -tzf backups/<datei>` in das Archiv hinein.
+    checklist:
+      - Argument wird geprüft (exit 1)
+      - Archivname mit Datum und Uhrzeit
+      - Archiv enthält den Ordner
+      - Skript ist ausführbar
+    hints:
+      - "`date '+%Y-%m-%d_%H%M%S'` liefert genau das gewünschte Format."
+      - "`tar -czf ARCHIV -C ELTERNORDNER ORDNERNAME` packt den Ordner so, dass im Archiv nur `ORDNERNAME/…` steht."
+      - "`basename` und `dirname` zerlegen einen Pfad in Name und Elternordner."
+    checks:
+      - type: command
+        run: test -x backup.sh && bash -n backup.sh && head -n 1 backup.sh | grep -q '^#!' && echo ok
+        stdout_equals: ok
+        message: backup.sh fehlt, ist nicht ausführbar, hat keine Shebang-Zeile oder einen Syntaxfehler.
+      - type: command
+        run: |
+          t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp backup.sh "$t"/ && cd "$t" && mkdir daten && echo hallo > daten/x.txt && ./backup.sh daten >/dev/null 2>&1; ls backups 2>/dev/null | grep -cE "^daten-[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}\.tar\.gz$"; cd .. && rm -rf "$t"
+        stdout_matches: "^1$"
+        message: "Nach ./backup.sh daten sollte genau ein Archiv backups/daten-JJJJ-MM-TT_HHMMSS.tar.gz existieren."
+      - type: command
+        run: |
+          t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp backup.sh "$t"/ && cd "$t" && mkdir daten && echo hallo > daten/x.txt && ./backup.sh daten >/dev/null 2>&1; tar -tzf backups/daten-*.tar.gz 2>/dev/null | grep -c "^daten/x\.txt$"; cd .. && rm -rf "$t"
+        stdout_matches: "^1$"
+        message: Im Archiv sollte der Ordner selbst stecken (daten/x.txt) – nutze tar -C mit dem Elternordner.
+      - type: command
+        run: |
+          [ -x backup.sh ] || { echo "Skript fehlt oder ist nicht ausführbar"; exit 0; }; t=$(mktemp -d "$PWD/.pruefung-XXXXXX") && cp backup.sh "$t"/ && cd "$t" && ./backup.sh >/dev/null 2>&1; a=$?; ./backup.sh gibt-es-nicht >/dev/null 2>&1; b=$?; echo "$a $b"; cd .. && rm -rf "$t"
+        stdout_equals: 1 1
+        message: Ohne Argument oder mit einem Pfad, der kein Ordner ist, soll backup.sh mit exit 1 enden.
+    solution: |
+      ```bash
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [[ $# -ne 1 || ! -d "${1:-}" ]]; then
+        echo "Benutzung: $0 <ordner>" >&2
+        exit 1
+      fi
+
+      quelle="${1%/}"
+      name=$(basename "$quelle")
+      zeit=$(date '+%Y-%m-%d_%H%M%S')
+      mkdir -p backups
+      archiv="backups/$name-$zeit.tar.gz"
+
+      tar -czf "$archiv" -C "$(dirname "$quelle")" "$name"
+      echo "Backup erstellt: $archiv"
+      ```
+
+      `${1%/}` entfernt einen abschließenden Schrägstrich, damit `./backup.sh testdaten/` genauso
+      funktioniert wie `./backup.sh testdaten`.
+  - id: echter-durchlauf
+    title: Der echte Durchlauf und die Dokumentation
+    description: |
+      Zeit für den Ernstfall – in der richtigen Reihenfolge:
+
+      1. Sichere deine Testdaten: `./backup.sh testdaten`.
+      2. Kopiere die Testdaten nach `eingang` (`cp -r testdaten eingang`), damit `testdaten` erhalten bleibt.
+      3. Räume die Kopie auf: `./aufraeumen.sh eingang`.
+      4. Kontrolliere das Ergebnis mit `tree sortiert` und `cat aufraeumen.log`.
+      5. Vervollständige die README.md: Wofür sind die beiden Skripte da, und wie ruft man sie auf
+         (`./aufraeumen.sh`, `./backup.sh`)?
+    checklist:
+      - Backup von testdaten angelegt
+      - eingang aufgeräumt, sortiert/ gefüllt
+      - Protokoll vorhanden
+      - README beschreibt beide Skripte
+    hints:
+      - Wenn `sortiert` von früheren Tests noch existiert, ist das kein Problem – neue Dateien kommen dazu.
+      - "`find eingang -maxdepth 1 -type f` sollte nach dem Lauf nichts mehr ausgeben."
+    checks:
+      - type: command
+        run: ls backups/testdaten-*.tar.gz 2>/dev/null | wc -l
+        stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+        message: Es gibt noch kein Backup von testdaten im Ordner backups.
+      - type: dir_exists
+        path: eingang
+        message: Kopiere die Testdaten nach eingang (cp -r testdaten eingang) und räume diesen Ordner auf.
+      - type: command
+        run: find eingang -maxdepth 1 -type f | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: In eingang liegen noch Dateien – lass ./aufraeumen.sh eingang laufen.
+      - type: command
+        run: find sortiert -type f 2>/dev/null | wc -l
+        stdout_matches: "^\\s*([6-9]|[1-9][0-9]+)\\s*$"
+        message: In sortiert sollten mindestens sechs Dateien liegen.
+      - type: command
+        run: grep -c "" aufraeumen.log 2>/dev/null || echo 0
+        stdout_matches: "^([6-9]|[1-9][0-9]+)$"
+        message: aufraeumen.log sollte mindestens sechs Protokollzeilen enthalten.
+      - type: command
+        run: grep -q "aufraeumen.sh" README.md && grep -q "backup.sh" README.md && echo ok
+        stdout_equals: ok
+        message: Die README.md soll beide Skripte (aufraeumen.sh und backup.sh) beschreiben.
+      - type: dir_exists
+        path: testdaten
+        message: Der Ordner testdaten sollte erhalten bleiben – aufgeräumt wird nur die Kopie eingang.
+    solution: |
+      ```bash
+      ./backup.sh testdaten
+      cp -r testdaten eingang
+      ./aufraeumen.sh eingang
+      tree sortiert
+      cat aufraeumen.log
+      ```
+
+      Eine mögliche README.md:
+
+      ```markdown
+      # Aufräum-Werkzeuge
+
+      ## Benutzung
+
+      - `./aufraeumen.sh <ordner>` sortiert alle Dateien nach Endung nach `sortiert/<endung>/`.
+      - `./backup.sh <ordner>` legt `backups/<ordner>-JJJJ-MM-TT_HHMMSS.tar.gz` an.
+
+      Jede Verschiebung landet mit Zeitstempel in `aufraeumen.log`.
+      ```
