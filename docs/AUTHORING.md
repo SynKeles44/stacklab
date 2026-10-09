@@ -17,6 +17,13 @@ Aufgaben gelten. Musterlektionen:
 - Analogien aus dem Alltag (Packtisch, Fotoalbum, Briefumschlag) – danach die präzise Fachsprache.
 - Keine oberflächlichen Zusammenfassungen. Lieber ein Thema vollständig als drei halb.
 
+## Umfang eines Kurses
+
+- **3–4 Module mit je 2–4 Lektionen, insgesamt 10–12 Lektionen.** Ein Kurs soll in **4–6 Stunden**
+  durchgearbeitet sein (Laravel-Hauptkurs: bis 10 Stunden). Lieber ein fokussierter Kurs als ein Nachschlagewerk.
+- Randthemen weglassen oder in einen Satz und einen Link auf die offizielle Dokumentation packen.
+- Die Kursdauer wird automatisch aus den `duration`-Angaben der Lektionen berechnet (typisch 15–25 Minuten pro Lektion).
+
 ## Aufbau einer Lektion
 
 1. Einstieg: ein konkretes Problem oder eine Alltagssituation (2–4 Sätze, keine Überschrift).
