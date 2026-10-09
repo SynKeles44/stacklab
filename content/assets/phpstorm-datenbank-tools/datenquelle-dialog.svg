@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 540" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="20" y="28" font-size="15" font-weight="700" fill="#1e1b3a">Schema: Dialog „Data Sources and Drivers“ (vereinfacht)</text>
+  <rect x="20" y="42" width="700" height="480" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+  <!-- left list -->
+  <rect x="20" y="42" width="190" height="480" rx="10" fill="#eef2ff"/>
+  <text x="34" y="70" font-size="12" font-weight="700" fill="#64748b">Data Sources</text>
+  <rect x="30" y="80" width="170" height="26" rx="5" fill="#a78bfa"/>
+  <text x="42" y="98" font-size="13" fill="#ffffff" font-weight="700">shop@localhost</text>
+  <text x="42" y="126" font-size="13" fill="#1e1b3a">lager.sqlite</text>
+  <text x="34" y="166" font-size="12" font-weight="700" fill="#64748b">Drivers</text>
+  <text x="42" y="188" font-size="13" fill="#1e1b3a">PostgreSQL</text>
+  <text x="42" y="208" font-size="13" fill="#1e1b3a">MySQL</text>
+  <text x="42" y="228" font-size="13" fill="#1e1b3a">SQLite</text>
+  <!-- tabs -->
+  <g font-size="12" fill="#1e1b3a">
+    <rect x="225" y="56" width="70" height="24" rx="5" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/><text x="260" y="73" text-anchor="middle" font-weight="700">General</text>
+    <text x="330" y="73" text-anchor="middle">Options</text>
+    <rect x="368" y="56" width="70" height="24" rx="5" fill="#fef3c7" stroke="#f59e0b"/><text x="403" y="73" text-anchor="middle">SSH/SSL</text>
+    <text x="478" y="73" text-anchor="middle">Schemas</text>
+    <text x="550" y="73" text-anchor="middle">Advanced</text>
+  </g>
+  <!-- fields -->
+  <g font-size="13" fill="#1e1b3a">
+    <text x="232" y="112">Name:</text><rect x="360" y="98" width="330" height="22" rx="4" fill="#ffffff" stroke="#cbd5e1"/><text x="368" y="114">shop@localhost</text>
+    <text x="232" y="146">Connection type:</text><rect x="360" y="132" width="150" height="22" rx="4" fill="#ffffff" stroke="#cbd5e1"/><text x="368" y="148">default ▾</text>
+    <text x="520" y="146">Driver:</text><rect x="570" y="132" width="120" height="22" rx="4" fill="#ffffff" stroke="#cbd5e1"/><text x="578" y="148">PostgreSQL ▾</text>
+    <text x="232" y="186">Host:</text><rect x="360" y="172" width="200" height="22" rx="4" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/><text x="368" y="188">localhost</text>
+    <text x="570" y="186">Port:</text><rect x="610" y="172" width="80" height="22" rx="4" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/><text x="618" y="188">5432</text>
+    <text x="232" y="220">Authentication:</text><rect x="360" y="206" width="180" height="22" rx="4" fill="#ffffff" stroke="#cbd5e1"/><text x="368" y="222">User &amp; Password ▾</text>
+    <text x="232" y="254">User:</text><rect x="360" y="240" width="200" height="22" rx="4" fill="#ffffff" stroke="#cbd5e1"/><text x="368" y="256">app</text>
+    <text x="232" y="288">Password:</text><rect x="360" y="274" width="200" height="22" rx="4" fill="#ffffff" stroke="#cbd5e1"/><text x="368" y="290">••••••••</text><text x="570" y="288" font-size="12">Save: Forever ▾</text>
+    <text x="232" y="322">Database:</text><rect x="360" y="308" width="200" height="22" rx="4" fill="#ffffff" stroke="#34d399" stroke-width="2"/><text x="368" y="324">shop</text>
+    <text x="232" y="356">URL:</text><rect x="360" y="342" width="330" height="22" rx="4" fill="#ffffff" stroke="#cbd5e1"/><text x="368" y="358" font-family="ui-monospace, Menlo, monospace" font-size="12">jdbc:postgresql://localhost:5432/shop</text>
+  </g>
+  <!-- driver warning -->
+  <rect x="232" y="386" width="458" height="30" rx="5" fill="#fef2f2" stroke="#f87171"/>
+  <text x="244" y="406" font-size="13" fill="#1e1b3a">⚠ Download missing driver files</text>
+  <text x="244" y="448" font-size="13" fill="#0e7490" font-weight="700" text-decoration="underline">Test Connection</text>
+  <text x="380" y="448" font-size="12" fill="#64748b">→ „Succeeded“ oder Fehlermeldung</text>
+  <g font-size="13" fill="#1e1b3a" text-anchor="middle">
+    <rect x="460" y="476" width="70" height="28" rx="5" fill="#a78bfa"/><text x="495" y="495" fill="#ffffff" font-weight="700">OK</text>
+    <rect x="540" y="476" width="70" height="28" rx="5" fill="#e2e8f0"/><text x="575" y="495">Cancel</text>
+    <rect x="620" y="476" width="70" height="28" rx="5" fill="#e2e8f0"/><text x="655" y="495">Apply</text>
+  </g>
+  <!-- legend -->
+  <g font-size="12" fill="#1e1b3a">
+    <text x="735" y="70" font-weight="700">Legende</text>
+    <rect x="735" y="84" width="14" height="14" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/><text x="755" y="96">Wo läuft die DB?</text>
+    <rect x="735" y="110" width="14" height="14" fill="#ffffff" stroke="#34d399" stroke-width="2"/><text x="755" y="122">Welche DB?</text>
+    <rect x="735" y="136" width="14" height="14" fill="#fef3c7" stroke="#f59e0b"/><text x="755" y="148">SSH-Tunnel</text>
+    <rect x="735" y="162" width="14" height="14" fill="#fef2f2" stroke="#f87171"/><text x="755" y="174">Treiber fehlt</text>
+  </g>
+</svg>

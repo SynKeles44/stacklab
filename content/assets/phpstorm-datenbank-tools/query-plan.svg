@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="20" y="30" font-size="16" font-weight="700" fill="#1e1b3a">Derselbe Query, zwei Pläne: ohne und mit Index</text>
+  <text x="20" y="52" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#64748b">SELECT * FROM orders WHERE customer_id = 42;   -- Tabelle mit 100 000 Zeilen</text>
+  <!-- left -->
+  <rect x="20" y="70" width="420" height="300" rx="10" fill="#fef2f2" stroke="#f87171" stroke-width="2"/>
+  <text x="36" y="96" font-size="14" font-weight="700" fill="#b91c1c">Ohne Index: Seq Scan</text>
+  <g fill="#f87171">
+    <rect x="40" y="112" width="380" height="14" rx="2"/><rect x="40" y="130" width="380" height="14" rx="2"/><rect x="40" y="148" width="380" height="14" rx="2"/><rect x="40" y="166" width="380" height="14" rx="2"/><rect x="40" y="184" width="380" height="14" rx="2"/>
+  </g>
+  <text x="230" y="215" font-size="12" fill="#1e1b3a" text-anchor="middle">jede Zeile wird gelesen und geprüft</text>
+  <g font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">
+    <text x="36" y="250">Seq Scan on orders</text>
+    <text x="36" y="268">  (cost=0.00..1887.00 rows=40 width=24)</text>
+    <text x="36" y="286">  Filter: (customer_id = 42)</text>
+  </g>
+  <text x="36" y="320" font-size="12" fill="#1e1b3a">SQLite zeigt dasselbe als:</text>
+  <text x="36" y="340" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">`--SCAN orders</text>
+  <!-- right -->
+  <rect x="460" y="70" width="420" height="300" rx="10" fill="#f0fdf4" stroke="#34d399" stroke-width="2"/>
+  <text x="476" y="96" font-size="14" font-weight="700" fill="#15803d">Mit Index: Index Scan</text>
+  <rect x="480" y="112" width="110" height="86" rx="6" fill="#ffffff" stroke="#34d399"/>
+  <text x="535" y="132" font-size="11" fill="#1e1b3a" text-anchor="middle" font-weight="700">Index</text>
+  <text x="535" y="150" font-size="11" fill="#1e1b3a" text-anchor="middle" font-family="ui-monospace, Menlo, monospace">41 → …</text>
+  <text x="535" y="166" font-size="11" fill="#15803d" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-weight="700">42 → 17,58</text>
+  <text x="535" y="182" font-size="11" fill="#1e1b3a" text-anchor="middle" font-family="ui-monospace, Menlo, monospace">43 → …</text>
+  <line x1="590" y1="162" x2="640" y2="162" stroke="#1e1b3a" stroke-width="2"/>
+  <g fill="#e2e8f0"><rect x="645" y="112" width="215" height="14" rx="2"/><rect x="645" y="148" width="215" height="14" rx="2"/><rect x="645" y="166" width="215" height="14" rx="2"/><rect x="645" y="184" width="215" height="14" rx="2"/></g>
+  <rect x="645" y="130" width="215" height="14" rx="2" fill="#34d399"/>
+  <text x="670" y="215" font-size="12" fill="#1e1b3a" text-anchor="middle">nur passende Zeilen werden gelesen</text>
+  <g font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">
+    <text x="476" y="250">Index Scan using idx_orders_customer</text>
+    <text x="476" y="268">  on orders (cost=0.29..8.98 rows=40 width=24)</text>
+    <text x="476" y="286">  Index Cond: (customer_id = 42)</text>
+  </g>
+  <text x="476" y="320" font-size="12" fill="#1e1b3a">SQLite zeigt dasselbe als:</text>
+  <text x="476" y="340" font-size="11" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">`--SEARCH orders USING INDEX idx_orders_customer</text>
+  <!-- cost explanation -->
+  <rect x="20" y="390" width="860" height="110" rx="10" fill="#f5f3ff" stroke="#a78bfa"/>
+  <text x="36" y="414" font-size="13" font-weight="700" fill="#1e1b3a">So liest du die Klammer</text>
+  <g font-size="12" fill="#1e1b3a">
+    <text x="36" y="438"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">cost=0.29..8.98</tspan>  geschätzte Kosten bis zur ersten Zeile .. bis zur letzten Zeile (abstrakte Einheiten, keine ms)</text>
+    <text x="36" y="460"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">rows=40</tspan>  geschätzte Anzahl Ergebniszeilen</text>
+    <text x="36" y="482"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">width=24</tspan>  geschätzte Breite einer Zeile in Bytes</text>
+  </g>
+</svg>

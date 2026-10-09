@@ -1,0 +1,64 @@
+title: Transaktionen und Locks
+description: Transaktionen in PhpStorm bewusst steuern (Auto vs. Manual, Commit, Roll back) und verstehen, wie Sperren, Wartesituationen und Deadlocks entstehen.
+exercise:
+  id: modul-uebung-umlagerung
+  type: terminal
+  title: Eine sichere Umlagerung
+  description: |
+    Im Ordner `umlagerung` liegt `lager.db` mit der Tabelle `stock`. Eine Regel (`CHECK (qty >= 0)`) verhindert
+    negative Bestände. Zeile 1 ist „SKU-1 in Lager Nord“ (10 Stück), Zeile 2 „SKU-1 in Lager Süd“ (20 Stück).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Dann:
+
+    1. Schreibe `umlagerung.sql`: In **einer** Transaktion werden 5 Stück von Lager Süd (id 2) nach Lager Nord
+       (id 1) umgelagert. Damit es nie zu Deadlocks kommt, gilt im Team die Regel: **Zeilen immer aufsteigend
+       nach id ändern** – also zuerst id 1, dann id 2. Am Ende `COMMIT`.
+    2. Führe `umlagerung.sql` genau einmal aus.
+    3. Schreibe `zu-viel.sql`: dieselbe Umlagerung, aber mit **999** Stück. Das zweite UPDATE verletzt die
+       Regel. Führe die Datei so aus, dass sqlite3 beim ersten Fehler abbricht:
+       `sqlite3 -bail lager.db < zu-viel.sql`. Weil nie ein COMMIT erreicht wird, verwirft SQLite die ganze
+       Transaktion – auch das erste UPDATE.
+  workdir: umlagerung
+  setup: |
+    sqlite3 lager.db <<'SQL'
+    CREATE TABLE stock (id INTEGER PRIMARY KEY, sku TEXT NOT NULL, warehouse TEXT NOT NULL, qty INTEGER NOT NULL CHECK (qty >= 0));
+    INSERT INTO stock (sku, warehouse, qty) VALUES ('SKU-1', 'Nord', 10), ('SKU-1', 'Süd', 20);
+    SQL
+  checks:
+    - type: file_contains
+      path: umlagerung.sql
+      pattern: "^\\s*(BEGIN|begin)"
+      message: umlagerung.sql soll mit BEGIN beginnen.
+    - type: file_contains
+      path: umlagerung.sql
+      pattern: "(COMMIT|commit)\\s*;"
+      message: umlagerung.sql soll mit COMMIT enden.
+    - type: command
+      run: |-
+        test "$(grep -n 'id *= *1' umlagerung.sql | head -n 1 | cut -d: -f1)" -lt "$(grep -n 'id *= *2' umlagerung.sql | head -n 1 | cut -d: -f1)"
+      message: In umlagerung.sql muss das UPDATE für id = 1 vor dem UPDATE für id = 2 stehen (aufsteigende Reihenfolge).
+    - type: file_contains
+      path: zu-viel.sql
+      pattern: "999"
+      message: zu-viel.sql soll versuchen, 999 Stück umzulagern.
+    - type: command
+      run: sqlite3 lager.db "SELECT group_concat(qty, ' ') FROM (SELECT qty FROM stock ORDER BY id);"
+      stdout_equals: "15 15"
+      message: "Erwartet sind die Bestände 15 (Nord) und 15 (Süd). Stehen dort riesige Zahlen, wurde zu-viel.sql ohne -bail ausgeführt und teilweise gespeichert – dann Aufgabe neu vorbereiten."
+  hints:
+    - "Gerüst: `BEGIN;` – `UPDATE stock SET qty = qty + 5 WHERE id = 1;` – `UPDATE stock SET qty = qty - 5 WHERE id = 2;` – `COMMIT;`"
+    - "Für zu-viel.sql kopierst du die Datei und ersetzt 5 durch 999: `sed 's/ 5 / 999 /' umlagerung.sql > zu-viel.sql`."
+    - "Ohne `-bail` macht sqlite3 nach dem Fehler weiter und führt das COMMIT aus – genau das sollst du vermeiden."
+  solution: |
+    ```bash
+    cat > umlagerung.sql <<'SQL'
+    BEGIN;
+    UPDATE stock SET qty = qty + 5 WHERE id = 1;
+    UPDATE stock SET qty = qty - 5 WHERE id = 2;
+    COMMIT;
+    SQL
+    sqlite3 lager.db < umlagerung.sql
+    sed 's/ 5 / 999 /' umlagerung.sql > zu-viel.sql
+    sqlite3 -bail lager.db < zu-viel.sql
+    sqlite3 lager.db "SELECT * FROM stock;"
+    ```

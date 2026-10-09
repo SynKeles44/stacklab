@@ -1,0 +1,38 @@
+title: "PhpStorm: Datenbank-Tools in der Praxis"
+subtitle: Datenbanken direkt aus der IDE verbinden, abfragen, analysieren und sicher ändern
+description: >
+  Fast jede Web-Anwendung speichert ihre Daten in einer Datenbank – und fast jeder Arbeitstag führt dich
+  irgendwann dorthin: „Warum fehlt diese Bestellung?“, „Warum ist die Seite so langsam?“, „Kannst du
+  schnell den Status korrigieren?“. PhpStorm bringt dafür ein komplettes Datenbank-Werkzeug mit.
+
+
+  In diesem Kurs lernst du es Klick für Klick kennen: Datenquellen für PostgreSQL, MySQL und SQLite
+  anlegen, Datenbanken in Docker-Containern und hinter SSH-Tunneln erreichen, Daten im Daten-Editor
+  filtern und bearbeiten, in Query-Konsolen mit Parametern und Historie arbeiten, Ergebnisse exportieren
+  und Schemas vergleichen. Danach geht es in die Tiefe: Ausführungspläne lesen, langsame Abfragen mit
+  Indizes beschleunigen, Transaktionen bewusst steuern und Locks und Deadlocks verstehen.
+
+
+  PhpStorm selbst läuft nicht im Übungs-Terminal. Die IDE-Bedienung übst du deshalb mit nachgebauten,
+  schematischen Oberflächen und Klickpfad-Aufgaben – und alles, was SQL ist, machst du **echt** mit
+  `sqlite3` im Übungs-Terminal. Im Projekt untersuchst du eine langsame Abfrage von der Messung bis zum
+  schriftlichen Befund.
+category: grundlagen
+level: fortgeschritten
+icon: database
+color: "#7c3aed"
+estimated_hours: 5
+workspace_dir: phpstorm
+prerequisites: [terminal-shell]
+learning_goals:
+  - Du findest dich im Database-Tool-Fenster zurecht und navigierst sicher durch Datenquellen, Schemas, Tabellen und Indizes.
+  - Du legst Datenquellen für PostgreSQL, MySQL und SQLite an – auch für Datenbanken in Docker-Containern und hinter einem SSH-Tunnel.
+  - Du filterst, sortierst und bearbeitest Daten im Daten-Editor und weißt, wann Änderungen wirklich in der Datenbank landen.
+  - Du arbeitest produktiv in Query-Konsolen mit Parametern, Historie, Export und Ergebnisvergleich.
+  - Du liest Ausführungspläne, erkennst Seq Scans und beschleunigst Abfragen gezielt mit Indizes.
+  - Du steuerst Transaktionen bewusst (Auto vs. Manual, Commit, Roll back) und erklärst, wie Locks und Deadlocks entstehen.
+  - Du kennst die wichtigsten Tastenkürzel für macOS und Windows/Linux.
+references:
+  - Datenbank-Analyse direkt in der IDE bei langsamen Seiten in großen PHP-Projekten (Explain Plan, Index-Vorschläge)
+  - Manueller Transaktionsmodus als Teamregel für Datenkorrekturen auf geteilten Datenbanken
+  - Datenbanken in Docker-Compose-Umgebungen mit veröffentlichtem Port für die IDE

@@ -1,0 +1,262 @@
+title: "Abschlussprüfung PhpStorm: Datenbank-Tools"
+description: |
+  Prüfe dein Wissen aus allen vier Modulen: Datenquellen und Navigation, Daten-Editor und Query-Konsolen,
+  Ausführungspläne und Indizes sowie Transaktionen und Locks. Zum Schluss löst du drei praktische Aufgaben
+  mit `sqlite3` im Übungs-Terminal.
+time_limit_minutes: 45
+pass_percent: 70
+questions:
+  - module: verbinden-und-navigieren
+    type: single
+    question: Was ist eine Datenquelle (Data Source) in PhpStorm?
+    options:
+      - Eine lokale Kopie aller Tabellen
+      - Die gespeicherten Verbindungsangaben zu einer Datenbank (Treiber, Host, Port, Login …)
+      - Eine SQL-Datei im Projekt
+    answer: 1
+    explanation: Die Datenquelle ist nur der Weg zur Datenbank. Löschst du sie, bleibt die Datenbank unberührt.
+  - module: verbinden-und-navigieren
+    type: match
+    question: Ordne jedem Datenbanksystem die typische Verbindungsangabe zu.
+    pairs:
+      - { left: "PostgreSQL", right: "localhost:5432" }
+      - { left: "MySQL", right: "localhost:3306" }
+      - { left: "SQLite", right: "Pfad zu einer .db-Datei" }
+    explanation: Server-Datenbanken erreichst du über Host und Port, SQLite über einen Dateipfad.
+  - module: verbinden-und-navigieren
+    type: single
+    question: "Die compose.yaml enthält `ports: [\"6000:5432\"]`. Welchen Port trägst du in PhpStorm ein?"
+    options: ["5432", "6000", "3306"]
+    answer: 1
+    explanation: Links steht der Port deines Rechners, auf dem PhpStorm den Container erreicht.
+  - module: verbinden-und-navigieren
+    type: multiple
+    question: Ein SSH-Tunnel ist in PhpStorm im Reiter SSH/SSL eingerichtet. Welche Aussagen stimmen?
+    options:
+      - Host und Port im Reiter General gelten aus Sicht des SSH-Servers.
+      - Die Datenbank muss dafür aus dem Internet erreichbar sein.
+      - PhpStorm baut die SSH-Verbindung beim Verbinden selbst auf.
+      - Ohne Tunnel kämst du an die intern laufende Datenbank nicht heran.
+    answers: [0, 2, 3]
+    explanation: Der Tunnel ist gerade dafür da, dass die Datenbank nicht öffentlich erreichbar sein muss.
+  - module: daten-und-abfragen
+    type: single
+    question: Du hast im Daten-Editor einen Wert geändert. Wann wird er in die Datenbank geschrieben?
+    options:
+      - Sofort beim Verlassen der Zelle
+      - Erst nach Submit (Ctrl+Enter / ⌘↩)
+      - Beim Schließen von PhpStorm
+    answer: 1
+    explanation: Änderungen sind zunächst nur markiert. Submit erzeugt die DML und schickt sie ab.
+  - module: daten-und-abfragen
+    type: cloze
+    text: "Im WHERE-Feld des Daten-Editors tippst du `total > 100` – also die Bedingung ohne das Schlüsselwort. Die Query-Historie öffnest du mit Ctrl+Alt+___ (macOS ⌥⌘E)."
+    blanks:
+      - [E]
+    explanation: Browse Query History liegt auf Ctrl+Alt+E bzw. ⌥⌘E.
+  - module: daten-und-abfragen
+    type: find-bug
+    question: PhpStorm fragt beim Ausführen nicht nach einem Wert für den Status. Welche Zeile ist falsch?
+    language: sql
+    code: |
+      SELECT id, total
+      FROM orders
+      WHERE status = ':status'
+      ORDER BY id;
+    bug_line: 3
+    explanation: "In Anführungszeichen ist `:status` ein normaler Text. Richtig: `WHERE status = :status`."
+  - module: daten-und-abfragen
+    type: match
+    question: Ordne jedem Ziel das passende Werkzeug in PhpStorm zu.
+    pairs:
+      - { left: "Ergebnis als Datei speichern", right: "Export Data" }
+      - { left: "Zwei Ergebnismengen vergleichen", right: "Compare Data" }
+      - { left: "Struktur zweier Schemas vergleichen", right: "Compare Structure With" }
+      - { left: "Ausführbare DDL erzeugen", right: "SQL Generator" }
+    explanation: Daten und Struktur haben jeweils eigene Vergleichs-Werkzeuge.
+  - module: daten-und-abfragen
+    type: single
+    question: Beim Schema-Vergleich ist lokal der Origin und Staging das Target. Was macht das Migrationsskript?
+    options:
+      - Es macht Staging gleich lokal.
+      - Es macht lokal gleich Staging.
+      - Es kopiert die Daten von Staging nach lokal.
+    answer: 0
+    explanation: Das Skript macht immer das Target gleich dem Origin – und überträgt nur Struktur.
+  - module: abfragen-analysieren
+    type: single
+    question: Welche Kombination ist das klassische Warnzeichen in einem Ausführungsplan?
+    options:
+      - Index Scan auf einer kleinen Tabelle
+      - Seq Scan auf einer großen Tabelle, obwohl nur wenige Zeilen gesucht werden
+      - Seq Scan auf einer Tabelle mit 10 Zeilen
+    answer: 1
+    explanation: Viele Zeilen lesen, um wenige zu finden, ist teuer. Kleine Tabellen liest der Planer zu Recht komplett.
+  - module: abfragen-analysieren
+    type: multiple
+    question: Welche Aussagen über `cost=0.29..8.98 rows=40` stimmen?
+    options:
+      - 0.29 ist der geschätzte Aufwand bis zur ersten Zeile.
+      - 8.98 sind Millisekunden.
+      - rows=40 ist die geschätzte Anzahl Ergebniszeilen.
+      - Kosten vergleicht man sinnvoll zwischen Plänen derselben Abfrage.
+    answers: [0, 2, 3]
+    explanation: Kosten sind relative Schätzwerte, keine Zeiten. Echte Zeiten liefert EXPLAIN ANALYZE.
+  - module: abfragen-analysieren
+    type: single
+    question: "Index auf `(customer_id, status)`. Welche Bedingung kann ihn NICHT gezielt nutzen?"
+    options:
+      - "WHERE customer_id = 7"
+      - "WHERE customer_id = 7 AND status = 'open'"
+      - "WHERE status = 'open'"
+    answer: 2
+    explanation: Ohne die erste Spalte fehlt der Einstieg in den sortierten Index.
+  - module: abfragen-analysieren
+    type: single
+    question: Warum ist `EXPLAIN ANALYZE DELETE FROM orders WHERE …` gefährlich?
+    options:
+      - Es ist gar nicht erlaubt.
+      - Es führt das DELETE wirklich aus.
+      - Es löscht den Index.
+    answer: 1
+    explanation: ANALYZE führt die Anweisung aus, um zu messen. Pack sie in BEGIN … ROLLBACK.
+  - module: transaktionen-und-locks
+    type: single
+    question: In welchem Modus stehen dir in PhpStorm die Knöpfe Commit und Roll back zur Verfügung?
+    options: ["Tx: Auto", "Tx: Manual", "In beiden Modi"]
+    answer: 1
+    explanation: Im Auto-Modus wird jede Anweisung sofort committet – es gibt nichts zum Zurückrollen.
+  - module: transaktionen-und-locks
+    type: multiple
+    question: Konsole A hat im manuellen Modus eine Zeile geändert und noch nicht committet. Was stimmt?
+    options:
+      - Konsole B sieht noch den alten Wert.
+      - Konsole B muss warten, wenn sie dieselbe Zeile ändern will.
+      - Die Änderung ist bereits dauerhaft.
+      - Bleibt die Transaktion offen, können andere Programme hängen.
+    answers: [0, 1, 3]
+    explanation: Offene Transaktionen halten Sperren und sind nur in der eigenen Sitzung sichtbar.
+  - module: transaktionen-und-locks
+    type: single
+    question: Welche Maßnahme verhindert Deadlocks bei Umbuchungen am zuverlässigsten?
+    options:
+      - Längeres lock_timeout
+      - Zeilen immer in derselben Reihenfolge sperren, z. B. aufsteigend nach id
+      - Mehr Konsolen öffnen
+    answer: 1
+    explanation: Eine feste Reihenfolge verhindert den Kreis aus gegenseitigem Warten.
+  - module: transaktionen-und-locks
+    type: cloze
+    text: "PostgreSQL meldet einen Deadlock mit `ERROR: deadlock ___`. In der abgebrochenen Konsole führst du danach ___ aus."
+    blanks:
+      - [detected]
+      - [ROLLBACK, "Roll back", rollback]
+    explanation: Die Transaktion ist abgebrochen; erst nach ROLLBACK nimmt die Sitzung wieder Befehle an.
+tasks:
+  - module: daten-und-abfragen
+    id: pruefung-export
+    type: terminal
+    title: Umsatz pro Status exportieren
+    description: |
+      Vorbereitet ist `shop.db` mit der Tabelle `orders` (`id`, `status`, `total`). Klicke auf
+      **Aufgabe vorbereiten**.
+
+      Exportiere als `umsatz.csv` **mit Kopfzeile** eine Liste mit den Spalten `status` und `summe`
+      (Summe von `total` je Status, auf 2 Nachkommastellen gerundet mit `round(sum(total), 2)`), sortiert
+      nach `status`.
+    workdir: pruefung-export
+    setup: |
+      sqlite3 shop.db <<'SQL'
+      CREATE TABLE orders (id INTEGER PRIMARY KEY, status TEXT NOT NULL, total REAL NOT NULL);
+      INSERT INTO orders (status, total) VALUES ('paid', 10.50), ('open', 4.25), ('paid', 20.00), ('cancelled', 3.00), ('open', 1.75);
+      SQL
+    checks:
+      - type: command
+        run: head -n 1 umsatz.csv | tr -d '\r'
+        stdout_equals: "status,summe"
+        message: Die Kopfzeile von umsatz.csv soll status,summe lauten.
+      - type: command
+        run: tail -n +2 umsatz.csv | tr -d '\r' | tr '\n' ' '
+        stdout_matches: "^cancelled,3\\.0 open,6\\.0 paid,30\\.5$"
+        message: Die Datenzeilen stimmen noch nicht (erwartet cancelled 3.0, open 6.0, paid 30.5 – sortiert nach status).
+    hints:
+      - "`SELECT status, round(sum(total), 2) AS summe FROM orders GROUP BY status ORDER BY status;`"
+      - "`sqlite3 -csv -header shop.db \"…\" > umsatz.csv`"
+    solution: |
+      ```bash
+      sqlite3 -csv -header shop.db "SELECT status, round(sum(total), 2) AS summe FROM orders GROUP BY status ORDER BY status;" > umsatz.csv
+      ```
+  - module: abfragen-analysieren
+    id: pruefung-index
+    type: terminal
+    title: Seq Scan beseitigen
+    description: |
+      Vorbereitet ist `shop.db` mit 30 000 Bestellungen ohne Index. Klicke auf **Aufgabe vorbereiten**.
+
+      Diese Abfrage soll ohne `SCAN orders` auskommen:
+      `SELECT id, total FROM orders WHERE email = 'kunde7@example.com';`
+
+      Lege einen passenden Index mit dem Namen `idx_orders_email` an.
+    workdir: pruefung-index
+    setup: |
+      sqlite3 shop.db <<'SQL'
+      CREATE TABLE orders (id INTEGER PRIMARY KEY, email TEXT NOT NULL, total REAL NOT NULL);
+      WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 30000)
+      INSERT INTO orders (email, total) SELECT 'kunde' || (i % 3000) || '@example.com', (i % 50) + 0.5 FROM n;
+      SQL
+    checks:
+      - type: command
+        run: sqlite3 shop.db "SELECT group_concat(name, ',') FROM pragma_index_info('idx_orders_email');"
+        stdout_equals: "email"
+        message: Der Index idx_orders_email auf der Spalte email fehlt noch.
+      - type: command
+        run: sqlite3 shop.db "EXPLAIN QUERY PLAN SELECT id, total FROM orders WHERE email = 'kunde7@example.com';"
+        stdout_matches: "SEARCH orders USING INDEX idx_orders_email"
+        message: Der Plan nutzt den Index noch nicht.
+    hints:
+      - "`CREATE INDEX name ON tabelle (spalte);`"
+    solution: |
+      ```bash
+      sqlite3 shop.db "CREATE INDEX idx_orders_email ON orders (email);"
+      sqlite3 shop.db "EXPLAIN QUERY PLAN SELECT id, total FROM orders WHERE email = 'kunde7@example.com';"
+      ```
+  - module: transaktionen-und-locks
+    id: pruefung-transaktion
+    type: terminal
+    title: Alles oder nichts
+    description: |
+      Vorbereitet ist `bank.db` mit den Konten 1 (80.00) und 2 (20.00). Klicke auf **Aufgabe vorbereiten**.
+
+      1. Schreibe `ueberweisung.sql`, das in **einer** Transaktion 30.00 von Konto 1 auf Konto 2 bucht und
+         mit `COMMIT` abschließt. Führe es genau einmal aus.
+      2. Schreibe `probe.sql`, das in einer Transaktion **alle** Kontostände auf 0 setzt und die
+         Transaktion danach mit `ROLLBACK` verwirft. Führe es aus.
+    workdir: pruefung-transaktion
+    setup: |
+      sqlite3 bank.db <<'SQL'
+      CREATE TABLE accounts (id INTEGER PRIMARY KEY, balance REAL NOT NULL);
+      INSERT INTO accounts (balance) VALUES (80.00), (20.00);
+      SQL
+    checks:
+      - type: file_contains
+        path: ueberweisung.sql
+        pattern: "(COMMIT|commit)\\s*;"
+        message: ueberweisung.sql soll mit COMMIT abschließen.
+      - type: file_contains
+        path: probe.sql
+        pattern: "(ROLLBACK|rollback)\\s*;"
+        message: probe.sql soll mit ROLLBACK enden.
+      - type: command
+        run: sqlite3 bank.db "SELECT group_concat(printf('%.2f', balance), ' ') FROM (SELECT balance FROM accounts ORDER BY id);"
+        stdout_equals: "50.00 50.00"
+        message: Die Kontostände sollen 50.00 und 50.00 sein – Überweisung genau einmal, Probe zurückgerollt.
+    hints:
+      - "`BEGIN;` … `COMMIT;` bzw. `BEGIN;` … `ROLLBACK;`"
+      - "Ausführen mit `sqlite3 bank.db < datei.sql`."
+    solution: |
+      ```bash
+      printf 'BEGIN;\nUPDATE accounts SET balance = balance - 30 WHERE id = 1;\nUPDATE accounts SET balance = balance + 30 WHERE id = 2;\nCOMMIT;\n' > ueberweisung.sql
+      sqlite3 bank.db < ueberweisung.sql
+      printf 'BEGIN;\nUPDATE accounts SET balance = 0;\nROLLBACK;\n' > probe.sql
+      sqlite3 bank.db < probe.sql
+      ```

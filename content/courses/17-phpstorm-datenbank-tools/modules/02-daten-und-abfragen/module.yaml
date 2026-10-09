@@ -1,0 +1,80 @@
+title: Daten und Abfragen
+description: Daten im Daten-Editor filtern und bearbeiten, in Query-Konsolen mit Parametern arbeiten, Ergebnisse exportieren und Datenbank-Strukturen vergleichen.
+exercise:
+  id: modul-uebung-support
+  type: terminal
+  title: Eine Support-Anfrage komplett bearbeiten
+  description: |
+    Der Support schreibt: „Die Kundin mit der Adresse `grace@example.com` sagt, sie habe zwei offene
+    Bestellungen, aber eine davon hat sie längst storniert. Bitte schick uns die Liste ihrer offenen
+    Bestellungen als CSV und korrigiere den Status der stornierten Bestellung.“
+
+    Vorbereitet ist `shop.db` mit `customers` und `orders`. Klicke zuerst auf **Aufgabe vorbereiten**.
+
+    1. Schreibe in `offen.sql` **eine** Abfrage mit dem Parameter `:email`, die `id`, `total` und
+       `created_at` aller **offenen** Bestellungen (`status = 'open'`) der Kundin mit dieser E-Mail-Adresse
+       liefert, sortiert nach `id`. Du brauchst dafür einen JOIN zwischen `orders` und `customers`.
+    2. Exportiere das Ergebnis für `grace@example.com` **mit Kopfzeile** als `grace-offen.csv`.
+    3. Laut Support ist die **ältere** der beiden offenen Bestellungen storniert. Setze ihren Status auf
+       `'cancelled'`. Die andere Bestellung bleibt offen.
+  workdir: support-anfrage
+  setup: |
+    sqlite3 shop.db <<'SQL'
+    CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE);
+    CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL REFERENCES customers(id), status TEXT NOT NULL, total REAL NOT NULL, created_at TEXT NOT NULL);
+    INSERT INTO customers (name, email) VALUES ('Ada', 'ada@example.com'), ('Linus', 'linus@example.com'), ('Grace', 'grace@example.com');
+    INSERT INTO orders (customer_id, status, total, created_at) VALUES
+      (1, 'open', 49.90, '2026-09-01'),
+      (3, 'paid', 19.00, '2026-08-11'),
+      (3, 'open', 12.00, '2026-09-14'),
+      (2, 'open', 99.00, '2026-09-20'),
+      (3, 'open', 5.50, '2026-10-02'),
+      (2, 'paid', 3.20, '2026-10-03');
+    SQL
+  checks:
+    - type: file_contains
+      path: offen.sql
+      pattern: ":email"
+      message: In offen.sql fehlt der Parameter :email.
+    - type: command
+      run: 'sqlite3 -cmd ".param set :email ada@example.com" shop.db ".read offen.sql" | xargs'
+      stdout_matches: "^1\\|49\\.9\\|2026-09-01$"
+      message: "Teste offen.sql mit ada@example.com – erwartet wird genau ihre offene Bestellung 1 mit id, total und created_at. Liefert die Abfrage zu viel, fehlt eine Bedingung."
+    - type: command
+      run: head -n 1 grace-offen.csv | tr -d '\r'
+      stdout_equals: "id,total,created_at"
+      message: grace-offen.csv braucht die Kopfzeile id,total,created_at.
+    - type: command
+      run: tail -n +2 grace-offen.csv | tr -d '\r' | tr '\n' ' '
+      stdout_matches: "^3,12\\.0,2026-09-14 5,5\\.5,2026-10-02$"
+      message: In grace-offen.csv sollen die beiden offenen Bestellungen 3 und 5 von Grace stehen – exportiert, bevor du den Status korrigierst.
+    - type: command
+      run: sqlite3 shop.db "SELECT id || ':' || status FROM orders WHERE id IN (3, 5) ORDER BY id;" | tr '\n' ' '
+      stdout_matches: "^3:cancelled 5:open$"
+      message: Die ältere offene Bestellung von Grace (id 3) soll den Status cancelled haben, Bestellung 5 bleibt open.
+    - type: command
+      run: sqlite3 shop.db "SELECT count(*) FROM orders WHERE status = 'cancelled';"
+      stdout_equals: "1"
+      message: Es darf genau eine Bestellung storniert sein. Prüfe das WHERE deines UPDATE.
+  hints:
+    - "JOIN: `SELECT o.id, o.total, o.created_at FROM orders o JOIN customers c ON c.id = o.customer_id WHERE c.email = :email AND o.status = 'open' ORDER BY o.id;`"
+    - "Textwerte für Parameter brauchen in sqlite3 Anführungszeichen: `.param set :email 'grace@example.com'`. Mit `.headers on`, `.mode csv` und `.once grace-offen.csv` landet die nächste Ausgabe in der Datei."
+    - "Erst exportieren, dann `UPDATE orders SET status = 'cancelled' WHERE id = 3;`"
+  solution: |
+    ```bash
+    cat > offen.sql <<'SQL'
+    SELECT o.id, o.total, o.created_at
+    FROM orders o
+    JOIN customers c ON c.id = o.customer_id
+    WHERE c.email = :email AND o.status = 'open'
+    ORDER BY o.id;
+    SQL
+    sqlite3 shop.db <<'EOF'
+    .param set :email 'grace@example.com'
+    .headers on
+    .mode csv
+    .once grace-offen.csv
+    .read offen.sql
+    EOF
+    sqlite3 shop.db "UPDATE orders SET status = 'cancelled' WHERE id = 3;"
+    ```

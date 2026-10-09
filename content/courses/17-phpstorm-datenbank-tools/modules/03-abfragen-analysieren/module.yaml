@@ -1,0 +1,69 @@
+title: Abfragen analysieren
+description: Ausführungspläne mit EXPLAIN und Explain Plan lesen, Seq Scans erkennen und langsame Abfragen gezielt mit Indizes beschleunigen.
+exercise:
+  id: modul-uebung-zwei-bremsen
+  type: terminal
+  title: Zwei Bremsen lösen
+  description: |
+    Im Ordner `zwei-bremsen` liegt `shop.db` mit 20 000 Kunden und 50 000 Bestellungen – ohne eigene Indizes.
+    Zwei Abfragen aus der Anwendung sind langsam:
+
+    - `abfrage1.sql` sucht einen Kunden per E-Mail. Die Adressen sind in der Datenbank bereits klein
+      geschrieben gespeichert.
+    - `abfrage2.sql` listet alle Bestellungen aus September 2026, sortiert nach Datum.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Dann:
+
+    1. Sieh dir beide Pläne mit `EXPLAIN QUERY PLAN` an.
+    2. Schreibe beide Abfragen so um, dass ein Index sie nutzen **kann** – ohne Funktion um die Spalte.
+       Das Ergebnis muss gleich bleiben.
+    3. Lege die passenden Indizes `idx_customers_email` und `idx_orders_created_at` an.
+    4. Am Ende darf in keinem der beiden Pläne mehr `SCAN` oder `TEMP B-TREE` vorkommen.
+  workdir: zwei-bremsen
+  setup: |
+    sqlite3 shop.db <<'SQL'
+    CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL);
+    CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL, total REAL NOT NULL, created_at TEXT NOT NULL);
+    WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 20000)
+    INSERT INTO customers (name, email) SELECT 'Kunde ' || i, 'kunde' || i || '@example.com' FROM n;
+    WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 50000)
+    INSERT INTO orders (customer_id, total, created_at)
+    SELECT (i % 20000) + 1, (i % 97) + 0.5, date('2026-01-01', '+' || (i % 300) || ' days') FROM n;
+    SQL
+    echo "SELECT id FROM customers WHERE lower(email) = 'kunde42@example.com';" > abfrage1.sql
+    echo "SELECT id, total, created_at FROM orders WHERE substr(created_at, 1, 7) = '2026-09' ORDER BY created_at;" > abfrage2.sql
+  checks:
+    - type: command
+      run: sqlite3 shop.db < abfrage1.sql
+      stdout_equals: "42"
+      message: abfrage1.sql liefert nicht mehr genau den Kunden 42. Vergleiche die E-Mail direkt mit 'kunde42@example.com'.
+    - type: command
+      run: sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage1.sql)"
+      stdout_matches: "SEARCH customers USING (COVERING )?INDEX idx_customers_email"
+      message: Der Plan von abfrage1.sql nutzt noch nicht idx_customers_email. Gibt es den Index, und steht keine Funktion mehr um email?
+    - type: command
+      run: |-
+        test "$(sqlite3 shop.db < abfrage2.sql | wc -l)" -eq "$(sqlite3 shop.db "SELECT count(*) FROM orders WHERE substr(created_at, 1, 7) = '2026-09';")" && test "$(sqlite3 shop.db < abfrage2.sql | head -n 1 | cut -d'|' -f3)" = "2026-09-01"
+      message: abfrage2.sql liefert nicht dieselben Zeilen wie vorher (alle Bestellungen aus September 2026, sortiert nach created_at).
+    - type: command
+      run: sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage2.sql)"
+      stdout_matches: "SEARCH orders USING INDEX idx_orders_created_at \\(created_at>\\? AND created_at<\\?\\)"
+      message: Der Plan von abfrage2.sql nutzt noch keinen Bereich auf idx_orders_created_at. Formuliere die Bedingung als created_at >= … AND created_at < ….
+    - type: command
+      run: cat abfrage1.sql abfrage2.sql | sed 's/;.*$//' | while read -r q; do sqlite3 shop.db "EXPLAIN QUERY PLAN $q"; done | grep -cE 'SCAN|TEMP B-TREE'
+      expect_exit: 1
+      stdout_equals: "0"
+      message: In mindestens einem Plan steht noch SCAN oder TEMP B-TREE.
+  hints:
+    - "Die E-Mails sind schon klein gespeichert – `lower(...)` ist überflüssig und verhindert nur den Index."
+    - "Ein Monat als Bereich: `created_at >= '2026-09-01' AND created_at < '2026-10-01'`. Liefert der Index die Zeilen schon sortiert, entfällt das nachträgliche Sortieren."
+    - "`CREATE INDEX idx_customers_email ON customers (email);` und `CREATE INDEX idx_orders_created_at ON orders (created_at);`"
+  solution: |
+    ```bash
+    echo "SELECT id FROM customers WHERE email = 'kunde42@example.com';" > abfrage1.sql
+    echo "SELECT id, total, created_at FROM orders WHERE created_at >= '2026-09-01' AND created_at < '2026-10-01' ORDER BY created_at;" > abfrage2.sql
+    sqlite3 shop.db "CREATE INDEX idx_customers_email ON customers (email);"
+    sqlite3 shop.db "CREATE INDEX idx_orders_created_at ON orders (created_at);"
+    sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage1.sql)"
+    sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage2.sql)"
+    ```

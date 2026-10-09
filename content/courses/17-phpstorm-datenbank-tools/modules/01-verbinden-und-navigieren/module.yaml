@@ -1,0 +1,78 @@
+title: Verbinden und navigieren
+description: Das Database-Tool-Fenster kennenlernen, Datenquellen für PostgreSQL, MySQL und SQLite anlegen und Datenbanken in Docker oder hinter SSH erreichen.
+exercise:
+  id: modul-uebung-steckbrief
+  type: terminal
+  title: Ein Verbindungs-Steckbrief für das Team
+  description: |
+    Ein neues Teammitglied soll in PhpStorm zwei Datenquellen anlegen. Du schreibst dafür einen Steckbrief
+    mit den passenden JDBC-URLs. Im Ordner `verbindungs-steckbrief` liegen:
+
+    - `compose.yaml` – startet die PostgreSQL-Datenbank des Projekts (Docker läuft im Übungs-Terminal nicht,
+      du musst die Datei nur **lesen**),
+    - `archiv.sql` – ein SQL-Skript für eine kleine SQLite-Archivdatenbank.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Dann:
+
+    1. Lies `compose.yaml` und finde Datenbankname und den Port, den PhpStorm auf deinem Rechner benutzen muss.
+    2. Erzeuge aus `archiv.sql` die SQLite-Datei `archiv.db` (Tipp: `sqlite3 archiv.db < archiv.sql`).
+    3. Lege die Datei `steckbrief.txt` mit genau zwei Zeilen an:
+       - Zeile 1: die JDBC-URL der PostgreSQL-Datenbank (Host `localhost`),
+       - Zeile 2: die JDBC-URL der SQLite-Datei `archiv.db` mit absolutem Pfad.
+    4. Finde heraus, wie viele Tabellen `archiv.db` hat, und schreibe die Zahl in `tabellen.txt`.
+  workdir: verbindungs-steckbrief
+  setup: |
+    cat > compose.yaml <<'EOF'
+    services:
+      app:
+        image: php:8.5-fpm
+        depends_on: [db]
+      db:
+        image: postgres:18
+        environment:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: <dein-passwort>
+          POSTGRES_DB: inventar
+        ports:
+          - "5434:5432"
+    EOF
+    cat > archiv.sql <<'EOF'
+    CREATE TABLE suppliers (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+    CREATE TABLE deliveries (id INTEGER PRIMARY KEY, supplier_id INTEGER NOT NULL REFERENCES suppliers(id), delivered_at TEXT NOT NULL);
+    CREATE TABLE delivery_items (id INTEGER PRIMARY KEY, delivery_id INTEGER NOT NULL REFERENCES deliveries(id), sku TEXT NOT NULL, quantity INTEGER NOT NULL);
+    INSERT INTO suppliers (name) VALUES ('Beispiel GmbH'), ('Muster AG');
+    INSERT INTO deliveries (supplier_id, delivered_at) VALUES (1, '2026-08-01'), (2, '2026-08-15');
+    INSERT INTO delivery_items (delivery_id, sku, quantity) VALUES (1, 'SKU-1', 10), (1, 'SKU-2', 5), (2, 'SKU-1', 7);
+    EOF
+  checks:
+    - type: file_exists
+      path: archiv.db
+      message: archiv.db fehlt. Erzeuge sie mit sqlite3 archiv.db < archiv.sql.
+    - type: command
+      run: sqlite3 archiv.db "SELECT count(*) FROM delivery_items;"
+      stdout_equals: "3"
+      message: archiv.db enthält noch nicht die Daten aus archiv.sql. Führe das Skript genau einmal aus.
+    - type: command
+      run: sed -n 1p steckbrief.txt | tr -d ' \r'
+      stdout_equals: "jdbc:postgresql://localhost:5434/inventar"
+      message: "Zeile 1 von steckbrief.txt stimmt nicht. Sie folgt dem Muster jdbc:postgresql://HOST:PORT/DATENBANK – mit dem linken Port aus compose.yaml."
+    - type: command
+      run: sed -n 2p steckbrief.txt | tr -d ' \r'
+      stdout_equals: "jdbc:sqlite:/workspace/phpstorm/verbindungs-steckbrief/archiv.db"
+      message: "Zeile 2 von steckbrief.txt stimmt nicht. Sie lautet jdbc:sqlite: plus absoluter Pfad zu archiv.db (pwd hilft)."
+    - type: command
+      run: tr -d ' \r\n' < tabellen.txt
+      stdout_equals: "3"
+      message: In tabellen.txt steht noch nicht die richtige Anzahl Tabellen. Zähle mit .tables nach.
+  hints:
+    - "In `compose.yaml` steht unter `ports` das Mapping HOST:CONTAINER – PhpStorm braucht die linke Zahl."
+    - "`echo \"jdbc:sqlite:$PWD/archiv.db\"` setzt den absoluten Pfad automatisch ein."
+    - "`sqlite3 archiv.db \".tables\"` listet die Tabellen; `printf 'Zeile1\\nZeile2\\n' > steckbrief.txt` schreibt zwei Zeilen."
+  solution: |
+    ```bash
+    cat compose.yaml
+    sqlite3 archiv.db < archiv.sql
+    printf 'jdbc:postgresql://localhost:5434/inventar\njdbc:sqlite:%s/archiv.db\n' "$PWD" > steckbrief.txt
+    sqlite3 archiv.db ".tables"
+    echo 3 > tabellen.txt
+    ```

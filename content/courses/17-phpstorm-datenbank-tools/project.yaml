@@ -1,0 +1,281 @@
+title: Untersuchung einer langsamen Abfrage
+description: |
+  Die Kundenübersicht eines kleinen Online-Shops wird immer langsamer. Dein Auftrag: die Ursache finden,
+  beheben und so dokumentieren, dass das Team die Entscheidung nachvollziehen kann – so, wie du es in
+  PhpStorm mit Query-Konsole, Explain Plan und Export machen würdest.
+
+  Weil PhpStorm im Übungs-Terminal nicht läuft, arbeitest du mit `sqlite3`. Jeder Schritt entspricht einem
+  Handgriff in der IDE, und jeder Schritt wird automatisch geprüft. Arbeite im Ordner `langsame-abfrage`.
+goal: Ein Ordner `langsame-abfrage` mit der Datenbank `shop.db` (100 000 Bestellungen und passendem Index), der Abfrage `abfrage.sql`, den Plänen `plan-vorher.txt` und `plan-nachher.txt`, dem Export `ergebnis.csv` und einem schriftlichen Befund `BEFUND.md`.
+workdir: langsame-abfrage
+steps:
+  - id: datenbank
+    title: Datenbank und Tabellen anlegen
+    description: |
+      Lege im Ordner `langsame-abfrage` die SQLite-Datei `shop.db` an mit zwei Tabellen:
+
+      - `customers` mit `id INTEGER PRIMARY KEY`, `name TEXT NOT NULL`, `email TEXT NOT NULL`
+      - `orders` mit `id INTEGER PRIMARY KEY`, `customer_id INTEGER NOT NULL REFERENCES customers(id)`,
+        `status TEXT NOT NULL`, `total REAL NOT NULL`, `created_at TEXT NOT NULL`
+
+      In PhpStorm entspricht das einer neuen SQLite-Datenquelle plus zwei `CREATE TABLE` in der Konsole.
+    checklist:
+      - Ordner langsame-abfrage angelegt
+      - shop.db existiert
+      - Tabellen customers und orders mit den geforderten Spalten
+    hints:
+      - "`mkdir -p langsame-abfrage && cd langsame-abfrage`"
+      - "Mehrere Anweisungen auf einmal: `sqlite3 shop.db <<'SQL'` … `SQL`"
+    checks:
+      - type: file_exists
+        path: shop.db
+        message: shop.db fehlt noch.
+      - type: command
+        run: sqlite3 shop.db "SELECT group_concat(name, ',') FROM pragma_table_info('customers');"
+        stdout_equals: "id,name,email"
+        message: Die Tabelle customers braucht die Spalten id, name und email.
+      - type: command
+        run: sqlite3 shop.db "SELECT group_concat(name, ',') FROM pragma_table_info('orders');"
+        stdout_equals: "id,customer_id,status,total,created_at"
+        message: Die Tabelle orders braucht die Spalten id, customer_id, status, total und created_at.
+    solution: |
+      ```bash
+      mkdir -p langsame-abfrage && cd langsame-abfrage
+      sqlite3 shop.db <<'SQL'
+      CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL);
+      CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL REFERENCES customers(id), status TEXT NOT NULL, total REAL NOT NULL, created_at TEXT NOT NULL);
+      SQL
+      ```
+  - id: testdaten
+    title: Realistische Datenmengen erzeugen
+    description: |
+      Langsam wird es erst mit vielen Zeilen. Erzeuge mit einer rekursiven CTE:
+
+      - **2 000 Kunden** (`name` z. B. `'Kunde ' || i`, `email` z. B. `'kunde' || i || '@example.com'`),
+      - **100 000 Bestellungen**: `customer_id` zwischen 1 und 2 000, `status` gemischt aus `'open'`,
+        `'paid'` und `'cancelled'`, ein beliebiger `total` und ein Datum in `created_at`.
+    checklist:
+      - 2 000 Kunden eingefügt
+      - 100 000 Bestellungen eingefügt
+      - Jede Bestellung gehört zu einem existierenden Kunden
+    hints:
+      - "`WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2000) INSERT INTO customers (name, email) SELECT … FROM n;`"
+      - "Für die Kunden-Nummer: `(i % 2000) + 1`; für den Status: `CASE i % 3 WHEN 0 THEN 'open' WHEN 1 THEN 'paid' ELSE 'cancelled' END`; für das Datum: `date('2026-01-01', '+' || (i % 280) || ' days')`."
+    checks:
+      - type: command
+        run: sqlite3 shop.db "SELECT count(*) FROM customers;"
+        stdout_equals: "2000"
+        message: In customers sollen genau 2 000 Zeilen stehen.
+      - type: command
+        run: sqlite3 shop.db "SELECT count(*) FROM orders;"
+        stdout_equals: "100000"
+        message: In orders sollen genau 100 000 Zeilen stehen.
+      - type: command
+        run: sqlite3 shop.db "SELECT count(*) FROM orders o LEFT JOIN customers c ON c.id = o.customer_id WHERE c.id IS NULL;"
+        stdout_equals: "0"
+        message: Einige Bestellungen verweisen auf Kunden, die es nicht gibt. customer_id muss zwischen 1 und 2000 liegen.
+      - type: command
+        run: sqlite3 shop.db "SELECT count(DISTINCT status) FROM orders;"
+        stdout_matches: "^[3-9]$"
+        message: Die Bestellungen sollen mindestens drei verschiedene Status haben (open, paid, cancelled).
+    solution: |
+      ```bash
+      sqlite3 shop.db <<'SQL'
+      WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2000)
+      INSERT INTO customers (name, email) SELECT 'Kunde ' || i, 'kunde' || i || '@example.com' FROM n;
+      WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 100000)
+      INSERT INTO orders (customer_id, status, total, created_at)
+      SELECT (i % 2000) + 1,
+             CASE i % 3 WHEN 0 THEN 'open' WHEN 1 THEN 'paid' ELSE 'cancelled' END,
+             (i % 97) + 0.5,
+             date('2026-01-01', '+' || (i % 280) || ' days')
+      FROM n;
+      SQL
+      ```
+  - id: abfrage
+    title: Die langsame Abfrage festhalten
+    description: |
+      Die Kundenübersicht führt diese Abfrage aus – für jeden Kunden einzeln. Speichere sie für Kunde 42 in
+      der Datei `abfrage.sql` (eine Zeile, mit Semikolon):
+
+      ```sql
+      SELECT id, status, total, created_at FROM orders WHERE customer_id = 42 AND status = 'open' ORDER BY created_at DESC;
+      ```
+
+      In PhpStorm würdest du sie aus dem Log in eine Query-Konsole kopieren.
+    checklist:
+      - abfrage.sql angelegt
+      - Abfrage filtert nach customer_id und status und sortiert nach created_at
+    hints:
+      - "`echo \"…\" > abfrage.sql` – achte auf die einfachen Anführungszeichen um 'open'."
+    checks:
+      - type: file_contains
+        path: abfrage.sql
+        pattern: "customer_id\\s*=\\s*42"
+        message: abfrage.sql soll nach customer_id = 42 filtern.
+      - type: file_contains
+        path: abfrage.sql
+        pattern: "ORDER BY created_at DESC"
+        message: abfrage.sql soll mit ORDER BY created_at DESC sortieren.
+      - type: command
+        run: sqlite3 shop.db < abfrage.sql | wc -l
+        stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+        message: abfrage.sql liefert keine Zeilen. Prüfe Tabellennamen, Spalten und Testdaten.
+    solution: |
+      ```bash
+      echo "SELECT id, status, total, created_at FROM orders WHERE customer_id = 42 AND status = 'open' ORDER BY created_at DESC;" > abfrage.sql
+      sqlite3 shop.db < abfrage.sql | head
+      ```
+  - id: plan-vorher
+    title: Den Plan vorher sichern
+    description: |
+      Bevor du etwas änderst, misst du. Speichere den Ausführungsplan der Abfrage in `plan-vorher.txt`. In
+      PhpStorm wäre das **Explain Plan** mit angeheftetem Ergebnis-Tab.
+
+      Optional: Schalte in `sqlite3` mit `.timer on` die Zeitmessung ein und notiere dir die Laufzeit.
+    checklist:
+      - Plan in plan-vorher.txt gespeichert
+      - SCAN orders im Plan erkannt
+    hints:
+      - "`sqlite3 shop.db \"EXPLAIN QUERY PLAN $(cat abfrage.sql)\" > plan-vorher.txt`"
+    checks:
+      - type: file_contains
+        path: plan-vorher.txt
+        pattern: "SCAN orders"
+        message: plan-vorher.txt soll den Plan ohne Index zeigen (SCAN orders). Hast du schon einen Index angelegt? Dann lösche ihn mit DROP INDEX und sichere den Plan erneut.
+    solution: |
+      ```bash
+      sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage.sql)" > plan-vorher.txt
+      cat plan-vorher.txt
+      ```
+  - id: index
+    title: Den passenden Index anlegen
+    description: |
+      Lege einen zusammengesetzten Index `idx_orders_customer_status_created` an, der **Filter und
+      Sortierung** abdeckt: zuerst die beiden Gleichheits-Spalten `customer_id` und `status`, danach
+      `created_at`. Speichere anschließend den neuen Plan in `plan-nachher.txt`.
+
+      Ziel: kein `SCAN orders` und kein `USE TEMP B-TREE FOR ORDER BY` mehr.
+    checklist:
+      - Index mit drei Spalten in der richtigen Reihenfolge
+      - plan-nachher.txt zeigt SEARCH mit dem neuen Index
+      - Kein nachträgliches Sortieren mehr
+    hints:
+      - "Gleichheit zuerst, Sortierung zuletzt: `(customer_id, status, created_at)`."
+      - "`CREATE INDEX idx_orders_customer_status_created ON orders (customer_id, status, created_at);`"
+    checks:
+      - type: command
+        run: sqlite3 shop.db "SELECT group_concat(name, ',') FROM pragma_index_info('idx_orders_customer_status_created');"
+        stdout_equals: "customer_id,status,created_at"
+        message: Der Index idx_orders_customer_status_created auf (customer_id, status, created_at) fehlt oder hat eine andere Spaltenreihenfolge.
+      - type: file_contains
+        path: plan-nachher.txt
+        pattern: "SEARCH orders USING INDEX idx_orders_customer_status_created"
+        message: plan-nachher.txt soll den Plan mit dem neuen Index zeigen.
+      - type: command
+        run: grep -c "TEMP B-TREE" plan-nachher.txt
+        expect_exit: 1
+        stdout_equals: "0"
+        message: Im Plan steht noch USE TEMP B-TREE FOR ORDER BY – created_at gehört als dritte Spalte in den Index.
+    solution: |
+      ```bash
+      sqlite3 shop.db "CREATE INDEX idx_orders_customer_status_created ON orders (customer_id, status, created_at);"
+      sqlite3 shop.db "EXPLAIN QUERY PLAN $(cat abfrage.sql)" > plan-nachher.txt
+      cat plan-nachher.txt
+      ```
+  - id: export
+    title: Das Ergebnis exportieren
+    description: |
+      Der Support möchte die offenen Bestellungen von Kunde 42 als Tabelle. Exportiere das Ergebnis von
+      `abfrage.sql` **mit Kopfzeile** als `ergebnis.csv` – in PhpStorm wäre das **Export Data → CSV → Export
+      to File**.
+    checklist:
+      - ergebnis.csv mit Kopfzeile
+      - Gleiche Anzahl Zeilen wie die Abfrage
+    hints:
+      - "`sqlite3 -csv -header shop.db < abfrage.sql > ergebnis.csv`"
+    checks:
+      - type: command
+        run: head -n 1 ergebnis.csv | tr -d '\r'
+        stdout_equals: "id,status,total,created_at"
+        message: Die erste Zeile von ergebnis.csv soll die Kopfzeile id,status,total,created_at sein.
+      - type: command
+        run: test "$(tail -n +2 ergebnis.csv | wc -l)" -eq "$(sqlite3 shop.db < abfrage.sql | wc -l)"
+        message: ergebnis.csv hat nicht genauso viele Datenzeilen wie das Ergebnis von abfrage.sql.
+    solution: |
+      ```bash
+      sqlite3 -csv -header shop.db < abfrage.sql > ergebnis.csv
+      head ergebnis.csv
+      ```
+  - id: befund
+    title: Den Befund schreiben
+    description: |
+      Schreibe `BEFUND.md` für das Team mit diesen vier Abschnitten (genau diese Überschriften):
+
+      - `## Problem` – welche Abfrage war langsam und warum (Stichwort Seq Scan / SCAN)?
+      - `## Plan vorher` – die Planzeile(n) aus `plan-vorher.txt` als Codeblock
+      - `## Maßnahme` – das `CREATE INDEX`-Statement
+      - `## Plan nachher` – die Planzeile(n) aus `plan-nachher.txt` als Codeblock
+
+      Optional: Laufzeit vorher und nachher, falls du sie mit `.timer on` gemessen hast.
+    checklist:
+      - Vier Abschnitte vorhanden
+      - Pläne vorher und nachher eingefügt
+      - CREATE INDEX dokumentiert
+    hints:
+      - "Mit `cat plan-vorher.txt` kopierst du die Planzeilen, Codeblöcke beginnen und enden mit drei Backticks."
+    checks:
+      - type: file_contains
+        path: BEFUND.md
+        pattern: "^## Problem"
+        message: In BEFUND.md fehlt der Abschnitt „## Problem“.
+      - type: file_contains
+        path: BEFUND.md
+        pattern: "^## Plan vorher"
+        message: In BEFUND.md fehlt der Abschnitt „## Plan vorher“.
+      - type: file_contains
+        path: BEFUND.md
+        pattern: "^## Maßnahme"
+        message: In BEFUND.md fehlt der Abschnitt „## Maßnahme“.
+      - type: file_contains
+        path: BEFUND.md
+        pattern: "^## Plan nachher"
+        message: In BEFUND.md fehlt der Abschnitt „## Plan nachher“.
+      - type: file_contains
+        path: BEFUND.md
+        pattern: "SCAN orders"
+        message: Füge unter „Plan vorher“ die SCAN-Zeile aus plan-vorher.txt ein.
+      - type: file_contains
+        path: BEFUND.md
+        pattern: "CREATE INDEX idx_orders_customer_status_created"
+        message: Unter „Maßnahme“ fehlt das CREATE INDEX-Statement.
+      - type: file_contains
+        path: BEFUND.md
+        pattern: "SEARCH orders USING INDEX idx_orders_customer_status_created"
+        message: Füge unter „Plan nachher“ die SEARCH-Zeile aus plan-nachher.txt ein.
+    solution: |
+      ~~~markdown
+      # Befund: langsame Kundenübersicht
+
+      ## Problem
+      Die Abfrage der offenen Bestellungen pro Kunde las alle 100 000 Zeilen von `orders` (SCAN) und
+      sortierte das Ergebnis danach im Speicher.
+
+      ## Plan vorher
+      ```text
+      QUERY PLAN
+      |--SCAN orders
+      `--USE TEMP B-TREE FOR ORDER BY
+      ```
+
+      ## Maßnahme
+      ```sql
+      CREATE INDEX idx_orders_customer_status_created ON orders (customer_id, status, created_at);
+      ```
+
+      ## Plan nachher
+      ```text
+      QUERY PLAN
+      `--SEARCH orders USING INDEX idx_orders_customer_status_created (customer_id=? AND status=?)
+      ```
+      ~~~

@@ -1,0 +1,593 @@
+- slug: sql
+  term: SQL
+  short: Die Standardsprache, mit der du Daten in relationalen Datenbanken abfragst und änderst.
+  explanation: >
+    SQL steht für „Structured Query Language“. Mit `SELECT` liest du Daten, mit `INSERT`, `UPDATE` und
+    `DELETE` änderst du sie, mit `CREATE TABLE` legst du Strukturen an. PostgreSQL, MySQL und SQLite
+    sprechen alle SQL, jeweils mit kleinen Eigenheiten (Dialekten).
+  example: "`SELECT id, total FROM orders WHERE status = 'open';`"
+  category: datenbanken
+  aliases: [Structured Query Language, SQL-Dialekt]
+  related: [datenbank, abfrage, tabelle]
+  lesson: phpstorm-datenbank-tools/das-database-tool-fenster
+
+- slug: abfrage
+  term: Abfrage (Query)
+  short: Eine SQL-Anweisung, die Daten aus der Datenbank liest oder verändert.
+  explanation: >
+    Im Alltag sagt man meist „Query“. Eine Lese-Abfrage beginnt mit `SELECT` und liefert eine
+    Ergebnismenge zurück. Auch `UPDATE` oder `DELETE` werden oft Abfrage genannt, obwohl sie Daten ändern.
+  example: "`SELECT count(*) FROM customers;` ist eine Abfrage, die eine einzige Zahl zurückgibt."
+  category: datenbanken
+  aliases: [Query, Queries, Abfragen, SQL-Abfrage]
+  related: [sql, ergebnismenge, query-konsole]
+  lesson: phpstorm-datenbank-tools/query-konsolen
+
+- slug: tool-fenster
+  term: Tool-Fenster
+  short: Ein andockbares Seitenfenster in JetBrains-IDEs, z. B. Project, Terminal oder Database.
+  explanation: >
+    Tool-Fenster sitzen am Rand der IDE und lassen sich ein- und ausklappen. Du öffnest sie über
+    View | Tool Windows oder über die Symbole an der Fensterkante. Das Database-Tool-Fenster zeigt alle
+    deine Datenbankverbindungen als Baum.
+  example: "View | Tool Windows | Database öffnet das Database-Tool-Fenster."
+  category: werkzeuge
+  aliases: [Tool Window, Tool Windows, Toolfenster]
+  related: [ide, datenquelle]
+  lesson: phpstorm-datenbank-tools/das-database-tool-fenster
+
+- slug: tastenkuerzel
+  term: Tastenkürzel
+  short: Eine Tastenkombination, die eine Aktion ohne Maus auslöst.
+  explanation: >
+    In PhpStorm hat fast jede Aktion ein Tastenkürzel. Auf macOS nutzt die Standard-Belegung meist ⌘
+    (Command), auf Windows und Linux Ctrl. Unter Settings | Keymap kannst du jedes Kürzel nachschlagen
+    und ändern.
+  example: "Ctrl+Enter (macOS: ⌘↩) führt in der Query-Konsole das aktuelle Statement aus."
+  category: werkzeuge
+  aliases: [Shortcut, Shortcuts, Tastenkombination, Keymap]
+  related: [ide]
+  lesson: phpstorm-datenbank-tools/das-database-tool-fenster
+
+- slug: datenquelle
+  term: Datenquelle
+  short: Eine gespeicherte Verbindung in PhpStorm – alle Angaben, die die IDE braucht, um eine Datenbank zu erreichen.
+  explanation: >
+    Eine Datenquelle (Data Source) speichert Treiber, Host, Port, Benutzer, Datenbankname und optional
+    SSH-Einstellungen. Sie erscheint als oberster Knoten im Database-Tool-Fenster. Eine Datenquelle ist
+    nicht die Datenbank selbst, sondern nur der Weg dorthin.
+  example: "`shop@localhost` ist eine Datenquelle für die PostgreSQL-Datenbank `shop` auf deinem Rechner."
+  category: datenbanken
+  aliases: [Data Source, Datenquellen, Data Sources]
+  related: [jdbc-treiber, jdbc-url, datenbank]
+  lesson: phpstorm-datenbank-tools/das-database-tool-fenster
+
+- slug: datenbank-schema
+  term: Schema (Datenbank)
+  short: Ein benannter Bereich innerhalb einer Datenbank, der Tabellen, Views und Indizes zusammenfasst.
+  explanation: >
+    In PostgreSQL liegt jede Tabelle in einem Schema, standardmäßig in `public`. Das Wort „Schema“ meint
+    außerdem allgemein die Struktur einer Datenbank, also welche Tabellen und Spalten es gibt. SQLite
+    kennt im Alltag nur das Schema `main`.
+  example: "`public.orders` ist die Tabelle `orders` im Schema `public`."
+  category: datenbanken
+  aliases: [Schema, Schemas, Schemata, Datenbankschema]
+  related: [tabelle, datenbank, schema-vergleich]
+  lesson: phpstorm-datenbank-tools/das-database-tool-fenster
+
+- slug: tabelle
+  term: Tabelle
+  short: Die Grundstruktur einer relationalen Datenbank – Daten in Zeilen und Spalten.
+  explanation: >
+    Jede Tabelle hat feste Spalten mit Namen und Datentyp. Jede Zeile ist ein Datensatz, zum Beispiel
+    eine Bestellung. Tabellen hängen über Schlüssel zusammen, etwa `orders.customer_id` → `customers.id`.
+  example: "`CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT);`"
+  category: datenbanken
+  aliases: [Tabellen, Table, Tables]
+  related: [spalte, datensatz, primaerschluessel]
+  lesson: phpstorm-datenbank-tools/das-database-tool-fenster
+
+- slug: spalte
+  term: Spalte
+  short: Ein benanntes Feld einer Tabelle mit festem Datentyp, z. B. `email TEXT`.
+  explanation: >
+    Spalten legen fest, welche Informationen jede Zeile einer Tabelle enthält. Im Database-Tool-Fenster
+    findest du sie unter dem Knoten `columns` jeder Tabelle, samt Typ und Standardwert.
+  example: "Die Spalte `total` der Tabelle `orders` speichert den Bestellwert."
+  category: datenbanken
+  aliases: [Spalten, Column, Columns, Feld]
+  related: [tabelle, datensatz]
+  lesson: phpstorm-datenbank-tools/das-database-tool-fenster
+
+- slug: datensatz
+  term: Datensatz
+  short: Eine einzelne Zeile einer Tabelle, z. B. eine bestimmte Bestellung.
+  explanation: >
+    Ein Datensatz enthält für jede Spalte genau einen Wert (oder `NULL`). Im Daten-Editor siehst du
+    Datensätze als Zeilen, die du direkt bearbeiten, hinzufügen oder löschen kannst.
+  example: "`(17, 42, 'open', 129.90)` ist ein Datensatz der Tabelle `orders`."
+  category: datenbanken
+  aliases: [Datensätze, Zeile, Zeilen, Row, Rows]
+  related: [tabelle, spalte]
+  lesson: phpstorm-datenbank-tools/das-database-tool-fenster
+
+- slug: primaerschluessel
+  term: Primärschlüssel
+  short: Eine Spalte (oder Spaltenkombination), die jeden Datensatz einer Tabelle eindeutig kennzeichnet.
+  explanation: >
+    Meist ist das die Spalte `id`. Der Primärschlüssel darf nicht doppelt vorkommen und nicht leer sein.
+    Der Daten-Editor braucht ihn, um eine geänderte Zeile eindeutig per `WHERE id = …` zu treffen.
+  example: "`id INTEGER PRIMARY KEY` macht `id` zum Primärschlüssel."
+  category: datenbanken
+  aliases: [Primary Key, PK, Primärschlüssels]
+  related: [fremdschluessel, tabelle, datenbank-index]
+  lesson: phpstorm-datenbank-tools/der-daten-editor
+
+- slug: fremdschluessel
+  term: Fremdschlüssel
+  short: Eine Spalte, die auf den Primärschlüssel einer anderen Tabelle verweist.
+  explanation: >
+    Fremdschlüssel verbinden Tabellen miteinander und verhindern, dass ein Verweis ins Leere zeigt.
+    PhpStorm zeigt sie im Baum unter `keys` bzw. `foreign keys` und springt per Klick zur verknüpften Zeile.
+  example: "`orders.customer_id REFERENCES customers(id)` – jede Bestellung gehört zu einem Kunden."
+  category: datenbanken
+  aliases: [Foreign Key, FK, Fremdschlüssel-Beziehung]
+  related: [primaerschluessel, tabelle]
+  lesson: phpstorm-datenbank-tools/das-database-tool-fenster
+
+- slug: datenbank-index
+  term: Index (Datenbank)
+  short: Eine zusätzliche, sortierte Struktur, mit der die Datenbank passende Zeilen findet, ohne die ganze Tabelle zu lesen.
+  explanation: >
+    Ein Datenbank-Index funktioniert wie das Stichwortverzeichnis eines Buches: Statt jede Seite zu lesen,
+    schlägst du nach und springst direkt zur richtigen Stelle. Indizes beschleunigen Abfragen mit `WHERE`,
+    `JOIN` und `ORDER BY`, kosten aber Speicher und machen Schreibvorgänge etwas langsamer.
+  example: "`CREATE INDEX idx_orders_customer ON orders (customer_id);`"
+  category: datenbanken
+  aliases: [Datenbankindex, Indizes, Indexes, DB-Index]
+  related: [index-scan, seq-scan, zusammengesetzter-index]
+  lesson: phpstorm-datenbank-tools/mit-indizes-beschleunigen
+
+- slug: zusammengesetzter-index
+  term: Zusammengesetzter Index
+  short: Ein Index über mehrere Spalten, dessen Spaltenreihenfolge entscheidet, welche Abfragen er beschleunigt.
+  explanation: >
+    Ein Index auf `(customer_id, status)` hilft bei Abfragen auf `customer_id` allein und auf beide Spalten
+    zusammen – nicht aber bei einer Abfrage nur auf `status`. Die linke Spalte ist der Einstieg, wie der
+    Nachname im Telefonbuch.
+  example: "`CREATE INDEX idx_orders_cust_status ON orders (customer_id, status);`"
+  category: datenbanken
+  aliases: [Mehrspalten-Index, Composite Index, Compound Index]
+  related: [datenbank-index]
+  lesson: phpstorm-datenbank-tools/mit-indizes-beschleunigen
+
+- slug: sqlite
+  term: SQLite
+  short: Eine Datenbank, die komplett in einer einzigen Datei steckt und ohne Server-Prozess auskommt.
+  explanation: >
+    SQLite ist eine Bibliothek, die direkt im Programm läuft. Die ganze Datenbank ist eine Datei wie
+    `shop.db`. Mit dem Kommandozeilenprogramm `sqlite3` kannst du sie öffnen und SQL ausführen. Ideal
+    zum Lernen, für Tests und für kleine Anwendungen.
+  example: "`sqlite3 shop.db \"SELECT count(*) FROM orders;\"`"
+  category: datenbanken
+  aliases: [sqlite3, SQLite-Datei]
+  related: [datenbank, postgresql, mysql]
+  lesson: phpstorm-datenbank-tools/datenquellen-anlegen
+
+- slug: postgresql
+  term: PostgreSQL
+  short: Ein leistungsfähiges, quelloffenes relationales Datenbanksystem, das als Server-Prozess läuft.
+  explanation: >
+    PostgreSQL (kurz „Postgres“) ist in vielen Web-Projekten die Standard-Datenbank. Der Server lauscht
+    standardmäßig auf Port 5432. Das Kommandozeilen-Werkzeug heißt `psql`.
+  example: "`image: postgres:18` startet PostgreSQL 18 in einem Docker-Container."
+  category: datenbanken
+  aliases: [Postgres, psql, PG]
+  related: [datenbank, mysql, sqlite]
+  lesson: phpstorm-datenbank-tools/datenquellen-anlegen
+
+- slug: mysql
+  term: MySQL
+  short: Ein weit verbreitetes relationales Datenbanksystem, Standard-Port 3306.
+  explanation: >
+    MySQL (und der Ableger MariaDB) steckt hinter sehr vielen PHP-Anwendungen. Wie PostgreSQL läuft es als
+    Server, zu dem sich Programme über das Netzwerk verbinden. Der SQL-Dialekt unterscheidet sich in
+    Details, etwa bei Anführungszeichen für Namen.
+  example: "Eine MySQL-Datenquelle in PhpStorm nutzt meist `localhost:3306`."
+  category: datenbanken
+  aliases: [MariaDB]
+  related: [datenbank, postgresql]
+  lesson: phpstorm-datenbank-tools/datenquellen-anlegen
+
+- slug: jdbc-treiber
+  term: JDBC-Treiber
+  short: Eine Java-Bibliothek, über die PhpStorm mit einem bestimmten Datenbanksystem spricht.
+  explanation: >
+    PhpStorm ist in Java geschrieben und verbindet sich über JDBC („Java Database Connectivity“) mit
+    Datenbanken. Für jedes System gibt es einen eigenen Treiber. Fehlt er, zeigt der Dialog den Link
+    „Download missing driver files“.
+  example: "Für PostgreSQL lädt PhpStorm den Treiber `PostgreSQL JDBC` beim ersten Verbinden herunter."
+  category: datenbanken
+  aliases: [JDBC, Treiber, Datenbanktreiber, Driver]
+  related: [datenquelle, jdbc-url]
+  lesson: phpstorm-datenbank-tools/datenquellen-anlegen
+
+- slug: jdbc-url
+  term: JDBC-URL
+  short: Eine Adresse, die Datenbanktyp, Host, Port und Datenbankname in einer Zeile zusammenfasst.
+  explanation: >
+    Die JDBC-URL beginnt immer mit `jdbc:` und dem Datenbanktyp. PhpStorm erzeugt sie aus den Feldern
+    des Dialogs; du kannst sie aber auch direkt einfügen, etwa aus der Projektdokumentation.
+  example: "`jdbc:postgresql://localhost:5432/shop` oder `jdbc:sqlite:/pfad/zu/shop.db`"
+  category: datenbanken
+  aliases: [Verbindungs-URL, Connection String, Verbindungszeichenfolge]
+  related: [datenquelle, jdbc-treiber]
+  lesson: phpstorm-datenbank-tools/datenquellen-anlegen
+
+- slug: port-mapping
+  term: Port-Mapping
+  short: Die Weiterleitung eines Ports deines Rechners auf einen Port in einem Docker-Container.
+  explanation: >
+    Ein Container ist von außen zunächst nicht erreichbar. Mit `ports: ["5433:5432"]` in der
+    `compose.yaml` leitet Docker den Port 5433 deines Rechners auf Port 5432 im Container weiter. Links
+    steht immer der Host-Port, rechts der Container-Port.
+  example: "`docker compose ps` zeigt `0.0.0.0:5433->5432/tcp`."
+  category: werkzeuge
+  aliases: [Port-Veröffentlichung, Published Port, Ports veröffentlichen]
+  related: [port, docker, container]
+  lesson: phpstorm-datenbank-tools/docker-und-ssh-tunnel
+
+- slug: ssh-tunnel
+  term: SSH-Tunnel
+  short: Eine verschlüsselte Weiterleitung, die Datenbank-Verkehr durch eine SSH-Verbindung zu einem Server schickt.
+  explanation: >
+    Datenbanken auf Servern sind aus Sicherheitsgründen meist nicht direkt aus dem Internet erreichbar.
+    Über einen SSH-Tunnel verbindest du dich zuerst per SSH mit einem erreichbaren Rechner und lässt
+    den Datenbank-Port von dort weiterleiten. PhpStorm kann den Tunnel selbst aufbauen (Reiter SSH/SSL).
+  example: "`ssh -L 5433:198.51.100.20:5432 deploy@203.0.113.10` baut einen Tunnel von Hand."
+  category: netzwerk
+  aliases: [SSH-Port-Weiterleitung, SSH Tunnel, Tunnel]
+  related: [ssh, bastion-host, port-forwarding]
+  lesson: phpstorm-datenbank-tools/docker-und-ssh-tunnel
+
+- slug: daten-editor
+  term: Daten-Editor
+  short: Die Tabellenansicht in PhpStorm, in der du Datensätze filtern, sortieren und direkt bearbeiten kannst.
+  explanation: >
+    Du öffnest ihn per Doppelklick auf eine Tabelle. Oben stehen die Felder WHERE und ORDER BY, darunter
+    das Raster mit den Zeilen. Änderungen werden erst mit Submit an die Datenbank geschickt.
+  example: "Doppelklick auf `orders` → Daten-Editor mit den ersten 500 Zeilen."
+  category: datenbanken
+  aliases: [Data Editor, Table Editor, Tabellenansicht]
+  related: [datensatz, dml, tabelle]
+  lesson: phpstorm-datenbank-tools/der-daten-editor
+
+- slug: dml
+  term: DML
+  short: Der Teil von SQL, der Daten ändert – INSERT, UPDATE und DELETE.
+  explanation: >
+    DML steht für „Data Manipulation Language“. Wenn du im Daten-Editor Zellen änderst, erzeugt PhpStorm
+    im Hintergrund DML-Anweisungen. In der Vorschau (Preview Pending Changes) kannst du sie vor dem
+    Absenden lesen.
+  example: "`UPDATE orders SET total = 129.90 WHERE id = 17;` ist eine DML-Anweisung."
+  category: datenbanken
+  aliases: [Data Manipulation Language, DML-Anweisung]
+  related: [ddl, sql, daten-editor]
+  lesson: phpstorm-datenbank-tools/der-daten-editor
+
+- slug: ddl
+  term: DDL
+  short: Der Teil von SQL, der Strukturen anlegt oder ändert – CREATE, ALTER und DROP.
+  explanation: >
+    DDL steht für „Data Definition Language“. Damit beschreibst du Tabellen, Spalten und Indizes, nicht
+    die Daten darin. PhpStorm kann zu jedem Objekt die passende DDL erzeugen.
+  example: "`CREATE INDEX idx_orders_status ON orders (status);`"
+  category: datenbanken
+  aliases: [Data Definition Language, DDL-Anweisung]
+  related: [dml, sql, schema-vergleich]
+  lesson: phpstorm-datenbank-tools/schema-vergleich-und-ddl
+
+- slug: query-konsole
+  term: Query-Konsole
+  short: Ein SQL-Editor in PhpStorm, der an eine Datenquelle gebunden ist und Anweisungen direkt ausführt.
+  explanation: >
+    Eine Query-Konsole ist wie ein Notizblock für SQL mit eigener Verbindung zur Datenbank. Du öffnest sie
+    mit F4 auf einer Datenquelle, schreibst Anweisungen und führst sie mit Ctrl+Enter (macOS ⌘↩) aus.
+    Ergebnisse erscheinen im Services-Tool-Fenster.
+  example: "`console [shop@localhost]` ist die Standard-Konsole der Datenquelle `shop@localhost`."
+  category: datenbanken
+  aliases: [Query Console, Konsole, SQL-Konsole, Database Console]
+  related: [abfrage, datenquelle, query-historie]
+  lesson: phpstorm-datenbank-tools/query-konsolen
+
+- slug: sql-parameter
+  term: SQL-Parameter
+  short: Ein Platzhalter in einer Abfrage, dessen Wert erst beim Ausführen eingesetzt wird.
+  explanation: >
+    Statt einen Wert fest in die Abfrage zu schreiben, setzt du `?` oder einen benannten Platzhalter wie
+    `:kunde`. PhpStorm fragt beim Ausführen nach dem Wert. In Programmen schützen Parameter zusätzlich
+    vor SQL-Injection.
+  example: "`SELECT * FROM orders WHERE customer_id = :kunde;`"
+  category: datenbanken
+  aliases: [Platzhalter, Parameter (SQL), Bind-Parameter, Prepared Statement Parameter]
+  related: [abfrage, query-konsole]
+  lesson: phpstorm-datenbank-tools/query-konsolen
+
+- slug: query-historie
+  term: Query-Historie
+  short: Die Liste aller Anweisungen, die du für eine Datenquelle schon ausgeführt hast.
+  explanation: >
+    PhpStorm speichert jede ausgeführte Anweisung. Mit Browse Query History (Ctrl+Alt+E, macOS ⌥⌘E)
+    durchsuchst du sie und holst alte Abfragen per Doppelklick zurück in die Konsole.
+  example: "Die Abfrage von gestern findest du über die Historie, auch wenn die Konsole geleert ist."
+  category: datenbanken
+  aliases: [Query History, Abfrage-Historie, Verlauf]
+  related: [query-konsole]
+  lesson: phpstorm-datenbank-tools/query-konsolen
+
+- slug: ergebnismenge
+  term: Ergebnismenge
+  short: Die Tabelle aus Zeilen und Spalten, die eine SELECT-Abfrage zurückliefert.
+  explanation: >
+    Eine Ergebnismenge sieht aus wie eine Tabelle, existiert aber nur als Antwort auf eine Abfrage. In
+    PhpStorm kannst du sie sortieren, exportieren, mit einer anderen vergleichen oder als Tab anheften.
+  example: "`SELECT status, count(*) FROM orders GROUP BY status;` liefert eine Ergebnismenge mit zwei Spalten."
+  category: datenbanken
+  aliases: [Result Set, Ergebnis, Abfrageergebnis, Resultset]
+  related: [abfrage, data-extractor]
+  lesson: phpstorm-datenbank-tools/ergebnisse-exportieren-und-vergleichen
+
+- slug: data-extractor
+  term: Data Extractor
+  short: Das Ausgabeformat, in das PhpStorm Daten exportiert oder kopiert, z. B. CSV, JSON oder SQL-INSERTs.
+  explanation: >
+    Im Export-Dialog und neben dem Export-Knopf wählst du den Extractor. Er bestimmt, wie Zeilen in Text
+    umgewandelt werden. Das zuletzt gewählte Format gilt auch für Kopieren in die Zwischenablage.
+  example: "Extractor „CSV“ + Export to File erzeugt `bestellungen.csv`."
+  category: datenbanken
+  aliases: [Extractor, Datenextraktor, Exportformat]
+  related: [ergebnismenge, csv, json]
+  lesson: phpstorm-datenbank-tools/ergebnisse-exportieren-und-vergleichen
+
+- slug: schema-vergleich
+  term: Schema-Vergleich
+  short: Der Abgleich der Struktur zweier Datenbanken oder Tabellen, aus dem ein Änderungsskript entstehen kann.
+  explanation: >
+    Mit Compare Structure With (Ctrl+D, macOS ⌘D) vergleichst du zwei Objekte gleichen Typs, etwa das
+    Schema deiner lokalen Datenbank mit dem einer Testumgebung. PhpStorm zeigt die Unterschiede und erzeugt
+    ein Migrationsskript.
+  example: "Lokal gibt es die Spalte `orders.note`, auf Staging nicht – der Vergleich zeigt das sofort."
+  category: datenbanken
+  aliases: [Schema Diff, Schema-Diff, Compare Structure, Strukturvergleich]
+  related: [ddl, migrationsskript, diff]
+  lesson: phpstorm-datenbank-tools/schema-vergleich-und-ddl
+
+- slug: migrationsskript
+  term: Migrationsskript
+  short: Eine Folge von DDL-Anweisungen, die eine Datenbankstruktur in eine andere überführt.
+  explanation: >
+    Nach einem Schema-Vergleich erzeugt PhpStorm ein Skript, das das Ziel an den Ursprung angleicht. In
+    Projekten mit Frameworks wie Laravel schreibt man Migrationen als Code; das IDE-Skript dient dann zum
+    Prüfen und Verstehen.
+  example: "`ALTER TABLE orders ADD COLUMN note TEXT;`"
+  category: datenbanken
+  aliases: [Migration Script, Migration, Migrationen]
+  related: [schema-vergleich, ddl]
+  lesson: phpstorm-datenbank-tools/schema-vergleich-und-ddl
+
+- slug: ausfuehrungsplan
+  term: Ausführungsplan
+  short: Der Weg, den die Datenbank wählt, um eine Abfrage zu beantworten – welche Tabellen, welche Indizes, in welcher Reihenfolge.
+  explanation: >
+    Bevor eine Datenbank eine Abfrage ausführt, plant der Query-Planer die günstigste Strategie. Mit
+    `EXPLAIN` lässt du dir diesen Plan zeigen, ohne die Abfrage auszuführen. In PhpStorm heißt die Aktion
+    Explain Plan.
+  example: "`EXPLAIN SELECT * FROM orders WHERE customer_id = 42;`"
+  category: datenbanken
+  aliases: [Query Plan, Execution Plan, Abfrageplan, Plan]
+  related: [explain, seq-scan, index-scan, plan-kosten]
+  lesson: phpstorm-datenbank-tools/ausfuehrungsplaene-lesen
+
+- slug: explain
+  term: EXPLAIN
+  short: Der SQL-Befehl, der den Ausführungsplan einer Abfrage anzeigt.
+  explanation: >
+    `EXPLAIN` plant nur und führt nichts aus. `EXPLAIN ANALYZE` (PostgreSQL) führt die Abfrage wirklich aus
+    und zeigt gemessene Zeiten. SQLite nutzt `EXPLAIN QUERY PLAN` für eine lesbare Kurzform.
+  example: "`EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 42;`"
+  category: datenbanken
+  aliases: [EXPLAIN ANALYZE, EXPLAIN QUERY PLAN, Explain Plan, Explain Analyse]
+  related: [ausfuehrungsplan]
+  lesson: phpstorm-datenbank-tools/ausfuehrungsplaene-lesen
+
+- slug: query-planer
+  term: Query-Planer
+  short: Der Teil der Datenbank, der aus mehreren möglichen Wegen den voraussichtlich günstigsten Ausführungsplan auswählt.
+  explanation: >
+    Der Planer schätzt anhand von Statistiken, wie viele Zeilen eine Bedingung trifft und was ein Weg kostet.
+    Sind die Statistiken veraltet, schätzt er falsch – dann hilft in PostgreSQL `ANALYZE`, in SQLite `ANALYZE`
+    bzw. `PRAGMA optimize`.
+  example: "Bei 3 von 100 000 Zeilen wählt der Planer einen Index, bei 90 000 einen Seq Scan."
+  category: datenbanken
+  aliases: [Query Planner, Optimizer, Abfrageoptimierer, Planer]
+  related: [ausfuehrungsplan, plan-kosten]
+  lesson: phpstorm-datenbank-tools/ausfuehrungsplaene-lesen
+
+- slug: seq-scan
+  term: Seq Scan
+  short: Ein Plan-Schritt, bei dem die Datenbank die ganze Tabelle Zeile für Zeile liest.
+  explanation: >
+    „Sequential Scan“ heißt: kein Index, alles lesen, jede Zeile prüfen. Bei kleinen Tabellen ist das
+    völlig in Ordnung, bei großen Tabellen und Abfragen, die nur wenige Zeilen suchen, ist es ein
+    Warnzeichen. SQLite schreibt dafür `SCAN tabelle`.
+  example: "`Seq Scan on orders (cost=0.00..1887.00 rows=40 width=24)`"
+  category: datenbanken
+  aliases: [Sequential Scan, Full Table Scan, Tabellen-Scan, SCAN]
+  related: [index-scan, datenbank-index, ausfuehrungsplan]
+  lesson: phpstorm-datenbank-tools/ausfuehrungsplaene-lesen
+
+- slug: index-scan
+  term: Index Scan
+  short: Ein Plan-Schritt, bei dem die Datenbank über einen Index gezielt nur passende Zeilen liest.
+  explanation: >
+    Die Datenbank sucht den Wert im sortierten Index und springt von dort zu den Zeilen. Das lohnt sich,
+    wenn die Bedingung nur einen kleinen Teil der Tabelle trifft. SQLite schreibt dafür
+    `SEARCH tabelle USING INDEX name`.
+  example: "`Index Scan using idx_orders_customer on orders`"
+  category: datenbanken
+  aliases: [Index-Scan, Index Only Scan, SEARCH USING INDEX]
+  related: [seq-scan, datenbank-index]
+  lesson: phpstorm-datenbank-tools/ausfuehrungsplaene-lesen
+
+- slug: plan-kosten
+  term: Kosten (Ausführungsplan)
+  short: Die geschätzten, einheitslosen Aufwandszahlen, mit denen PostgreSQL Plan-Schritte vergleicht.
+  explanation: >
+    `cost=0.29..8.98` bedeutet: Aufwand bis zur ersten Zeile .. Aufwand bis zur letzten Zeile. Die Zahlen
+    sind keine Millisekunden, sondern relative Schätzungen. Sie eignen sich zum Vergleichen zweier Pläne
+    derselben Abfrage.
+  example: "Seq Scan `cost=..1887.00` gegen Index Scan `cost=..8.98` – der Index-Weg ist rund 200-mal günstiger."
+  category: datenbanken
+  aliases: [cost, Kosten, Plan-Kosten, Startup Cost, Total Cost]
+  related: [ausfuehrungsplan, query-planer]
+  lesson: phpstorm-datenbank-tools/ausfuehrungsplaene-lesen
+
+- slug: rekursive-cte
+  term: Rekursive CTE
+  short: Eine `WITH RECURSIVE`-Abfrage, die sich selbst wiederholt – praktisch, um Zahlenreihen und Testdaten zu erzeugen.
+  explanation: >
+    CTE steht für „Common Table Expression“, eine benannte Hilfsabfrage mit `WITH`. Die rekursive Variante
+    baut Zeile für Zeile neue Ergebnisse aus den vorherigen, bis eine Abbruchbedingung greift.
+  example: "`WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 1000) SELECT i FROM n;`"
+  category: datenbanken
+  aliases: [CTE, WITH RECURSIVE, Common Table Expression]
+  related: [sql, abfrage]
+  lesson: phpstorm-datenbank-tools/mit-indizes-beschleunigen
+
+- slug: transaktion
+  term: Transaktion
+  short: Eine Gruppe von Datenbank-Änderungen, die nur gemeinsam gelten – alles oder nichts.
+  explanation: >
+    Eine Transaktion beginnt mit `BEGIN` und endet mit `COMMIT` (speichern) oder `ROLLBACK` (verwerfen).
+    Bis zum Commit sehen andere Verbindungen die Änderungen nicht. Klassisches Beispiel: Geld von einem
+    Konto abbuchen und auf ein anderes buchen.
+  example: "`BEGIN; UPDATE accounts SET balance = balance - 50 WHERE id = 1; UPDATE accounts SET balance = balance + 50 WHERE id = 2; COMMIT;`"
+  category: datenbanken
+  aliases: [Transaktionen, Transaction, Datenbank-Transaktion, COMMIT]
+  related: [rollback, auto-commit, acid]
+  lesson: phpstorm-datenbank-tools/transaktionen-in-der-ide
+
+- slug: rollback
+  term: Rollback
+  short: Das Verwerfen aller Änderungen einer offenen Transaktion.
+  explanation: >
+    Nach `ROLLBACK` sieht die Datenbank genauso aus wie vor `BEGIN`. In PhpStorm gibt es dafür im manuellen
+    Modus den Knopf Roll back. Nach einem Commit ist kein Rollback mehr möglich.
+  example: "`BEGIN; DELETE FROM orders; ROLLBACK;` – alle Bestellungen sind noch da."
+  category: datenbanken
+  aliases: [ROLLBACK, Roll back, zurückrollen]
+  related: [transaktion, auto-commit]
+  lesson: phpstorm-datenbank-tools/transaktionen-in-der-ide
+
+- slug: auto-commit
+  term: Auto-Commit
+  short: Ein Modus, in dem jede einzelne Anweisung sofort als eigene Transaktion gespeichert wird.
+  explanation: >
+    Im Auto-Commit-Modus (PhpStorm: Tx: Auto) gibt es keine offene Transaktion, die du zurückrollen könntest.
+    Das ist bequem, aber gefährlich bei Änderungen an echten Daten. Im manuellen Modus (Tx: Manual)
+    entscheidest du selbst über Commit oder Roll back.
+  example: "Tx: Auto + `DELETE FROM orders WHERE id = 5` – die Zeile ist sofort endgültig weg."
+  category: datenbanken
+  aliases: [Autocommit, Tx Auto, Auto-Modus]
+  related: [transaktion, rollback]
+  lesson: phpstorm-datenbank-tools/transaktionen-in-der-ide
+
+- slug: acid
+  term: ACID
+  short: Die vier Garantien einer Transaktion – Atomarität, Konsistenz, Isolation und Dauerhaftigkeit.
+  explanation: >
+    Atomarität heißt alles oder nichts. Konsistenz heißt, Regeln wie Schlüssel bleiben erfüllt. Isolation
+    heißt, parallele Transaktionen stören sich nicht unkontrolliert. Dauerhaftigkeit heißt, nach dem Commit
+    ist die Änderung auch nach einem Absturz noch da.
+  example: "Bricht der Strom zwischen Abbuchung und Gutschrift ab, sorgt Atomarität dafür, dass keins von beiden gilt."
+  category: datenbanken
+  aliases: [Atomarität, Atomicity, Durability, Dauerhaftigkeit]
+  related: [transaktion, isolationsebene]
+  lesson: phpstorm-datenbank-tools/transaktionen-in-der-ide
+
+- slug: isolationsebene
+  term: Isolationsebene
+  short: Die Einstellung, wie stark sich gleichzeitige Transaktionen gegenseitig sehen und beeinflussen dürfen.
+  explanation: >
+    Übliche Stufen sind Read Committed, Repeatable Read und Serializable. PostgreSQL nutzt standardmäßig
+    Read Committed: Du siehst nur bestätigte Änderungen anderer. In PhpStorm stellst du die Ebene im
+    gleichen Menü wie den Transaktionsmodus ein.
+  example: "`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;`"
+  category: datenbanken
+  aliases: [Isolation Level, Isolationslevel, Read Committed, Serializable]
+  related: [acid, transaktion]
+  lesson: phpstorm-datenbank-tools/transaktionen-in-der-ide
+
+- slug: datenbank-sitzung
+  term: Sitzung (Datenbank)
+  short: Eine einzelne offene Verbindung zur Datenbank mit eigenem Transaktionszustand.
+  explanation: >
+    Jede Query-Konsole und jede geöffnete Tabelle nutzt in PhpStorm eine Sitzung (Session). Zwei Konsolen
+    sind zwei Sitzungen – sie sehen die offenen Änderungen der jeweils anderen nicht. Du siehst sie im
+    Services-Tool-Fenster.
+  example: "Konsole A und Konsole B auf `shop@localhost` sind zwei getrennte Sitzungen."
+  category: datenbanken
+  aliases: [Session, Sessions, Sitzung, Verbindung]
+  related: [transaktion, query-konsole]
+  lesson: phpstorm-datenbank-tools/transaktionen-in-der-ide
+
+- slug: sperre
+  term: Sperre (Lock)
+  short: Eine Markierung, mit der eine Transaktion Daten für sich reserviert, damit andere sie nicht gleichzeitig ändern.
+  explanation: >
+    Ändert eine Transaktion eine Zeile, sperrt die Datenbank diese Zeile bis zum Commit oder Rollback. Eine
+    zweite Transaktion, die dieselbe Zeile ändern will, muss warten. SQLite sperrt beim Schreiben sogar die
+    ganze Datenbankdatei.
+  example: "`SELECT * FROM accounts WHERE id = 1 FOR UPDATE;` sperrt die Zeile bewusst."
+  category: datenbanken
+  aliases: [Lock, Locks, Sperren, Zeilensperre, Row Lock]
+  related: [deadlock, transaktion, lock-timeout]
+  lesson: phpstorm-datenbank-tools/locks-und-deadlocks
+
+- slug: deadlock
+  term: Deadlock
+  short: Zwei Transaktionen warten gegenseitig auf eine Sperre der anderen – keine kann weiter.
+  explanation: >
+    A hält Zeile 1 und will Zeile 2, B hält Zeile 2 und will Zeile 1. Die Datenbank erkennt den Kreis und
+    bricht eine Transaktion mit einem Fehler ab, damit die andere weiterlaufen kann. Vorbeugen hilft vor
+    allem eine feste Reihenfolge beim Sperren.
+  example: "PostgreSQL meldet `ERROR: deadlock detected`."
+  category: datenbanken
+  aliases: [Deadlocks, Verklemmung, deadlock detected]
+  related: [sperre, transaktion]
+  lesson: phpstorm-datenbank-tools/locks-und-deadlocks
+
+- slug: lock-timeout
+  term: Lock-Timeout
+  short: Die maximale Zeit, die eine Anweisung auf eine Sperre wartet, bevor sie mit einem Fehler abbricht.
+  explanation: >
+    Ohne Timeout kann eine Anweisung sehr lange hängen, wenn jemand eine Transaktion offen lässt. In
+    PostgreSQL setzt du `lock_timeout`, in SQLite den Busy-Timeout (`.timeout 5000` im Kommandozeilenprogramm).
+  example: "`SET lock_timeout = '3s';`"
+  category: datenbanken
+  aliases: [lock_timeout, Busy Timeout, busy_timeout, Wartezeit]
+  related: [sperre, deadlock]
+  lesson: phpstorm-datenbank-tools/locks-und-deadlocks
+
+- slug: join
+  term: JOIN
+  short: Eine SQL-Verknüpfung, die Zeilen aus zwei Tabellen über eine gemeinsame Spalte zusammenführt.
+  explanation: >
+    Mit `JOIN … ON` sagst du der Datenbank, welche Spalten zusammengehören, etwa `orders.customer_id` und
+    `customers.id`. So bekommst du in einer Abfrage Bestellungen samt Kundendaten. Indizes auf den
+    Verknüpfungsspalten machen JOINs bei großen Tabellen schnell.
+  example: "`SELECT o.id, c.email FROM orders o JOIN customers c ON c.id = o.customer_id;`"
+  category: datenbanken
+  aliases: [Joins, INNER JOIN, LEFT JOIN, Tabellenverknüpfung]
+  related: [fremdschluessel, sql, datenbank-index]
+  lesson: phpstorm-datenbank-tools/mit-indizes-beschleunigen

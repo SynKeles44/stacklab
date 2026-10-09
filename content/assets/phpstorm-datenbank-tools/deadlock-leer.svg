@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker>
+  </defs>
+  <text x="20" y="30" font-size="16" font-weight="700" fill="#1e1b3a">Deadlock – beschrifte die vier Kästen</text>
+  <!-- left/right boxes -->
+  <rect x="40" y="150" width="200" height="110" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <rect x="660" y="150" width="200" height="110" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <!-- rows -->
+  <rect x="350" y="80" width="200" height="60" rx="8" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <rect x="350" y="270" width="200" height="60" rx="8" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <g font-size="16" font-weight="700" fill="#1e1b3a" text-anchor="middle">
+  </g>
+  <!-- arrows -->
+  <line x1="240" y1="170" x2="346" y2="120" stroke="#15803d" stroke-width="3" marker-end="url(#g)"/>
+  <text x="272" y="182" font-size="12" fill="#15803d" font-weight="700">① hält Sperre</text>
+  <line x1="660" y1="240" x2="554" y2="290" stroke="#15803d" stroke-width="3" marker-end="url(#g)"/>
+  <text x="556" y="252" font-size="12" fill="#15803d" font-weight="700">② hält Sperre</text>
+  <line x1="240" y1="240" x2="346" y2="290" stroke="#dc2626" stroke-width="3" stroke-dasharray="8 5" marker-end="url(#r)"/>
+  <text x="200" y="300" font-size="12" fill="#dc2626" font-weight="700">③ wartet auf</text>
+  <line x1="660" y1="170" x2="554" y2="120" stroke="#dc2626" stroke-width="3" stroke-dasharray="8 5" marker-end="url(#r)"/>
+  <text x="620" y="128" font-size="12" fill="#dc2626" font-weight="700">④ wartet auf</text>
+  <rect x="20" y="350" width="860" height="72" rx="10" fill="#fef2f2" stroke="#f87171"/>
+  <text x="36" y="374" font-size="13" font-weight="700" fill="#1e1b3a">Nach ④ kann keiner mehr weiter. PostgreSQL erkennt den Kreis (nach deadlock_timeout, Standard 1 s)</text>
+  <text x="36" y="396" font-size="13" fill="#1e1b3a">und bricht eine der beiden Transaktionen ab:</text>
+  <text x="36" y="414" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#b91c1c">ERROR: deadlock detected</text>
+</svg>
