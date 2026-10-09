@@ -135,6 +135,8 @@ final class ContentImporter
             'title' => $data['title'],
             'description' => $data['description'],
             'goal' => $data['goal'] ?? null,
+            'workdir' => (string) ($data['workdir'] ?? 'projekt'),
+            'setup' => isset($data['setup']) && is_string($data['setup']) ? $data['setup'] : null,
             'steps' => array_map(
                 fn (array $step): array => [...$step, 'workdir' => $step['workdir'] ?? ($data['workdir'] ?? 'projekt')],
                 array_values((array) $data['steps']),

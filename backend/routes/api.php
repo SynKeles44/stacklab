@@ -55,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::post('/projects/{project}/steps/{step}/verify', [ProjectController::class, 'verify']);
     Route::delete('/projects/{project}/steps/{step}', [ProjectController::class, 'reopen']);
+    Route::post('/projects/{project}/reset', [ProjectController::class, 'reset'])->middleware('throttle:30,1');
 
     Route::post('/exams/{exam}/start', [ExamController::class, 'start']);
     Route::post('/exam-attempts/{attempt}/submit', [ExamController::class, 'submit']);

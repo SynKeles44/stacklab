@@ -2,6 +2,8 @@ title: Demo-Projekt
 description: Ein kleines Projekt.
 goal: Etwas bauen.
 workdir: projekt
+setup: |
+  echo start > start.txt
 steps:
   - id: start
     title: Starten

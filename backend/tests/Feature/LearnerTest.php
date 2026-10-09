@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Models\Exam;
 use App\Models\Lesson;
+use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 
 beforeEach(fn () => importFixtureContent());
@@ -139,4 +141,16 @@ it('stores the preferred ui variant', function (): void {
     $this->patchJson('/api/me', ['ui_variant' => 'apple'])->assertOk()->assertJsonPath('user.ui_variant', 'apple');
     $this->patchJson('/api/me', ['ui_variant' => 'windows'])->assertUnprocessable();
     $this->getJson('/api/me')->assertJsonPath('user.ui_variant', 'apple');
+});
+
+it('resets a project through the sandbox', function (): void {
+    Sanctum::actingAs(User::factory()->create());
+    Http::fake(['*/api/reset' => Http::response(['ok' => true, 'output' => ''])]);
+    config(['stacklab.sandbox.secret' => 'test-secret']);
+    $project = Project::query()->first();
+
+    $this->getJson('/api/courses/demo/project')->assertJsonPath('project.has_setup', true)->assertJsonPath('project.workdir', 'projekt');
+    $this->postJson("/api/projects/{$project->id}/reset")->assertOk()->assertJsonPath('ok', true);
+
+    Http::assertSent(fn ($request): bool => $request['workdir'] === 'projekt' && str_contains((string) $request['setup'], 'start.txt'));
 });

@@ -34,6 +34,8 @@ final class ProjectController extends Controller
                 'title' => $project->title,
                 'description' => $project->description,
                 'goal' => $project->goal,
+                'workdir' => $project->workdir,
+                'has_setup' => $project->setup !== null,
                 'steps' => $project->steps,
                 'course' => $course->only(['id', 'slug', 'title', 'color', 'icon', 'workspace_dir']),
             ],
@@ -60,6 +62,11 @@ final class ProjectController extends Controller
         }
 
         return response()->json($result);
+    }
+
+    public function reset(Project $project): JsonResponse
+    {
+        return response()->json($this->sandbox->reset((string) $project->course->workspace_dir, $project->workdir, $project->setup));
     }
 
     public function reopen(Request $request, Project $project, string $step): JsonResponse

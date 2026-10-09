@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $title
  * @property string $description
  * @property string|null $goal
+ * @property string $workdir
+ * @property string|null $setup
  * @property list<array<string, mixed>> $steps
  * @property Course $course
  */
