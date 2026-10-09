@@ -1,0 +1,39 @@
+title: Node.js, Runtimes & Paketmanager
+subtitle: JavaScript außerhalb des Browsers – mit Node.js, npm, nvm und Bun wirklich verstehen
+description: >
+  Fast jedes moderne Web-Projekt beginnt mit `npm install` – und fast jede Anfängerin stolpert genau
+  dort: Was ist dieser riesige Ordner `node_modules`? Warum gibt es eine `package-lock.json`? Warum
+  läuft das Projekt bei der Kollegin, aber nicht bei dir? In diesem Kurs bekommst du die Antworten von
+  Grund auf.
+
+
+  Du lernst, was eine JavaScript-Runtime ist, wie die **Event Loop** von Node.js arbeitet und warum
+  Node.js mit einem einzigen Thread tausende Anfragen bedienen kann. Danach beherrschst du **npm**
+  (package.json, Versionsbereiche, Lockfile, Skripte, Veröffentlichen), verwaltest mehrere
+  Node-Versionen mit **nvm** und arbeitest mit **Bun** als schneller All-in-one-Alternative.
+  Zum Schluss vergleichst du pnpm, Yarn und Deno, damit du für jedes Projekt das passende Werkzeug wählst.
+
+
+  Alles passiert im echten Übungs-Terminal: Du installierst Pakete, schreibst Skripte und Tests und
+  baust am Ende dein eigenes Kommandozeilen-Werkzeug als npm-Paket.
+category: grundlagen
+level: einsteiger
+icon: package
+color: "#22c55e"
+estimated_hours: 5
+workspace_dir: npm
+prerequisites: [terminal-shell, programmieren-grundlagen]
+learning_goals:
+  - Du erklärst, was eine JavaScript-Runtime ist und wie V8, libuv und die Node.js-APIs zusammenspielen.
+  - Du sagst die Ausgabe-Reihenfolge von synchronem Code, Promises und Timern mithilfe der Event Loop sicher voraus.
+  - Du schreibst Node-Skripte mit ES-Modulen, Kernmodulen, Kommandozeilenargumenten und Umgebungsvariablen.
+  - Du baust einen kleinen HTTP-Server mit node:http und testest ihn mit curl.
+  - Du liest und schreibst eine package.json, verstehst Versionsbereiche nach Semantic Versioning und nutzt das Lockfile richtig.
+  - Du verwaltest mehrere Node-Versionen mit nvm und .nvmrc.
+  - Du nutzt Bun als Runtime, Paketmanager, Test-Runner und Bundler.
+  - Du wählst begründet zwischen npm, pnpm, Yarn, Bun und Deno.
+references:
+  - Projektweite Node-Version per .nvmrc und engines-Feld, wie sie in Teams mit mehreren Projekten üblich ist
+  - npm ci in CI-Pipelines für reproduzierbare Builds
+  - Monorepos mit Bun-Workspaces und Catalogs für einheitliche Versionen
+  - Eigene interne Kommandozeilen-Werkzeuge als npm-Pakete mit bin-Feld

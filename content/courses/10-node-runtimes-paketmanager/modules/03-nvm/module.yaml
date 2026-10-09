@@ -1,0 +1,74 @@
+title: Node-Versionen mit nvm
+description: Mehrere Node-Versionen parallel installieren, pro Projekt mit .nvmrc festlegen und nach dem LTS-Plan die richtige Version wählen.
+exercise:
+  id: modul-uebung-versionswaechter
+  type: terminal
+  title: Ein Versionswächter für dein Projekt
+  description: |
+    Teams sichern sich gegen die falsche Node-Version ab. Baue im leeren Ordner `versionswaechter`
+    ein kleines Projekt, das das selbst prüft.
+
+    1. Lege eine `.nvmrc` mit dem Inhalt `24` an.
+    2. Lege mit `npm init -y` eine package.json an, setze `"type": "module"` und unter `engines`
+       die Bedingung `"node": ">=24"`.
+    3. Schreibe `check-node.mjs`: Es liest die `.nvmrc` **aus seinem eigenen Ordner**
+       (`import.meta.dirname`) und vergleicht die Hauptversion darin mit der laufenden
+       Hauptversion (`process.versions.node`, z. B. `"24.21.0"`).
+       - Passt sie, gibt es `OK: Node 24 passt` aus (mit der echten Zahl) und endet mit Exit-Code 0.
+       - Passt sie nicht, schreibt es eine Fehlermeldung mit `console.error()` und endet mit Exit-Code 1.
+    4. Lege das Skript `check` an, das `node check-node.mjs` ausführt, und teste mit `npm run check`.
+  workdir: versionswaechter
+  checks:
+    - type: file_contains
+      path: .nvmrc
+      pattern: "^\\s*v?24(\\.\\d+){0,2}\\s*$"
+      message: Die .nvmrc soll auf Version 24 zeigen.
+    - type: command
+      run: jq -r '"\(.type) \(.engines.node)"' package.json
+      stdout_equals: module >=24
+      message: 'Die package.json braucht "type": "module" und engines.node ">=24".'
+    - type: command
+      run: jq -r '.scripts.check' package.json
+      stdout_equals: node check-node.mjs
+      message: Das Skript check soll "node check-node.mjs" ausführen.
+    - type: command
+      run: npm run check --silent
+      stdout_matches: "^OK: Node 24 passt$"
+      message: 'npm run check soll mit Node 24 "OK: Node 24 passt" ausgeben.'
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        cp check-node.mjs "$d/" && echo 99 > "$d/.nvmrc"
+        (cd / && node "$d/check-node.mjs" >/dev/null 2>&1); code=$?
+        rm -rf "$d"
+        echo $code
+      stdout_equals: "1"
+      message: Steht in der .nvmrc eine andere Version (die Prüfung testet mit 99), soll das Skript mit Exit-Code 1 enden. Liest es die .nvmrc über import.meta.dirname?
+  hints:
+    - "`fs.readFileSync(path.join(import.meta.dirname, \".nvmrc\"), \"utf8\").trim()` liefert z. B. \"24\"."
+    - "Die Hauptversion holst du mit `.replace(/^v/, \"\").split(\".\")[0]` – für .nvmrc und `process.versions.node`."
+    - "Bei Abweichung: `console.error(…); process.exitCode = 1;`"
+  solution: |
+    ```bash
+    mkdir -p versionswaechter && cd versionswaechter
+    echo 24 > .nvmrc
+    npm init -y
+    npm pkg set type=module engines.node=">=24" scripts.check="node check-node.mjs"
+    ```
+
+    ```js
+    // check-node.mjs
+    import fs from "node:fs";
+    import path from "node:path";
+
+    const haupt = (v) => v.trim().replace(/^v/, "").split(".")[0];
+    const gewuenscht = haupt(fs.readFileSync(path.join(import.meta.dirname, ".nvmrc"), "utf8"));
+    const aktuell = haupt(process.versions.node);
+
+    if (gewuenscht === aktuell) {
+      console.log(`OK: Node ${aktuell} passt`);
+    } else {
+      console.error(`FEHLER: Projekt braucht Node ${gewuenscht}, aktiv ist Node ${aktuell}. Tipp: nvm use`);
+      process.exitCode = 1;
+    }
+    ```

@@ -1,0 +1,91 @@
+title: npm – der Paketmanager
+description: package.json, Abhängigkeiten, Versionsbereiche nach SemVer, Lockfile, Sicherheitsprüfung, Skripte und das Veröffentlichen eigener Pakete.
+exercise:
+  id: modul-uebung-zeitrechner
+  type: terminal
+  title: Ein Zeitrechner mit Abhängigkeit, Skripten und Tests
+  description: |
+    Baue im leeren Ordner `zeitrechner` ein kleines, sauber aufgesetztes npm-Projekt, das
+    Zeitangaben wie `2h` oder `90m` in Minuten umrechnet. Dafür nutzt du das Paket `ms`.
+
+    1. Lege mit `npm init -y` eine package.json an und setze `"type": "module"`.
+    2. Installiere `ms` als Abhängigkeit. Committe würdest du package.json **und** package-lock.json –
+       lege deshalb eine `.gitignore` an, die nur `node_modules` ausschließt.
+    3. Schreibe `zeit.js` mit der benannten Exportfunktion `inMinuten(text)`, die z. B. für `"2h"`
+       die Zahl `120` liefert (Tipp: `ms("2h")` liefert Millisekunden).
+    4. Schreibe `cli.js`, das das erste Argument umrechnet und `120 Minuten` ausgibt.
+    5. Lege die Skripte an: `start` → `node cli.js`, `test` → `node --test`.
+    6. Schreibe mindestens einen Test in `test/zeit.test.js` mit `node:test`.
+
+    Teste mit `npm start -- 2h` und `npm test`.
+  workdir: zeitrechner
+  checks:
+    - type: command
+      run: jq -r '.type' package.json
+      stdout_equals: module
+      message: 'Setze in der package.json "type": "module".'
+    - type: command
+      run: jq -r '.dependencies.ms // "fehlt"' package.json
+      stdout_matches: "^\\^?\\d"
+      message: ms fehlt in den dependencies.
+    - type: file_exists
+      path: package-lock.json
+      message: Es gibt noch kein Lockfile. Installiere ms mit npm install.
+    - type: file_contains
+      path: .gitignore
+      pattern: "^/?node_modules/?\\s*$"
+      message: Die .gitignore soll node_modules ausschließen.
+    - type: command
+      run: node -e 'import("./zeit.js").then(m => console.log(m.inMinuten("2h"), m.inMinuten("90m")))'
+      stdout_equals: 120 90
+      message: inMinuten("2h") soll 120 und inMinuten("90m") soll 90 liefern.
+    - type: command
+      run: npm start --silent -- 3h
+      stdout_matches: "^180 Minuten$"
+      message: npm start -- 3h soll "180 Minuten" ausgeben.
+    - type: command
+      run: jq -r '.scripts.test' package.json
+      stdout_equals: node --test
+      message: Das Skript test soll "node --test" sein.
+    - type: command
+      run: ls test/*.test.js >/dev/null 2>&1 && npm test --silent >/dev/null 2>&1 && echo gruen
+      stdout_equals: gruen
+      message: Lege einen Test in test/zeit.test.js an – npm test muss grün sein.
+  hints:
+    - "`import ms from \"ms\";` und dann `ms(text) / 60000`."
+    - "In cli.js: `console.log(inMinuten(process.argv[2]) + \" Minuten\")`."
+    - "Ein Test: `test(\"2h\", () => assert.equal(inMinuten(\"2h\"), 120))` mit `node:test` und `node:assert/strict`."
+  solution: |
+    ```bash
+    mkdir -p zeitrechner && cd zeitrechner
+    npm init -y
+    npm pkg set type=module scripts.start="node cli.js" scripts.test="node --test"
+    npm install ms
+    echo node_modules > .gitignore
+    mkdir -p test
+    ```
+
+    ```js
+    // zeit.js
+    import ms from "ms";
+    export function inMinuten(text) {
+      return ms(text) / 60000;
+    }
+    ```
+
+    ```js
+    // cli.js
+    import { inMinuten } from "./zeit.js";
+    console.log(`${inMinuten(process.argv[2])} Minuten`);
+    ```
+
+    ```js
+    // test/zeit.test.js
+    import { test } from "node:test";
+    import assert from "node:assert/strict";
+    import { inMinuten } from "../zeit.js";
+
+    test("Stunden werden zu Minuten", () => {
+      assert.equal(inMinuten("2h"), 120);
+    });
+    ```

@@ -1,0 +1,520 @@
+# Begriffe aus dem Kurs "Node.js, Runtimes & Paketmanager".
+- slug: v8
+  term: V8
+  short: Die JavaScript-Engine von Google, die in Chrome und Node.js steckt.
+  explanation: >
+    V8 liest JavaScript-Code, übersetzt ihn während der Ausführung in Maschinencode und führt ihn aus.
+    V8 kennt nur die Sprache selbst – Funktionen für Dateien oder Netzwerk kommen von der Umgebung drumherum.
+  example: "`node -p process.versions.v8` zeigt die V8-Version deiner Node-Installation."
+  category: node
+  aliases: [V8-Engine, JavaScript-Engine]
+  related: [nodejs, libuv, jit-compiler]
+  lesson: node-runtimes-paketmanager/was-ist-eine-runtime
+- slug: libuv
+  term: libuv
+  short: Eine C-Bibliothek, die Node.js die Event Loop und asynchrones Ein- und Ausgeben liefert.
+  explanation: >
+    libuv übergibt langsame Arbeit wie Dateizugriffe, Timer und Netzwerkverbindungen an das Betriebssystem
+    oder an einen kleinen Pool von Hintergrund-Threads. Ist die Arbeit fertig, meldet libuv das über die Event
+    Loop an deinen JavaScript-Code zurück.
+  example: Wenn du mit `readFile` eine Datei liest, erledigt libuv das Lesen im Hintergrund.
+  category: node
+  related: [event-loop, v8, non-blocking-io]
+  lesson: node-runtimes-paketmanager/was-ist-eine-runtime
+- slug: repl
+  term: REPL
+  short: Eine interaktive Eingabe, die Code sofort ausführt und das Ergebnis anzeigt (Read, Eval, Print, Loop).
+  explanation: >
+    Tippst du im Terminal nur `node`, startet die REPL von Node.js. Jede Eingabe wird ausgewertet und das
+    Ergebnis direkt angezeigt – ideal zum Ausprobieren. Mit `.exit` verlässt du sie wieder.
+  example: "In der REPL ergibt `3 * 7` sofort `21`."
+  category: node
+  aliases: [Read-Eval-Print-Loop]
+  related: [nodejs, skript]
+  lesson: node-runtimes-paketmanager/was-ist-eine-runtime
+- slug: thread
+  term: Thread
+  short: Ein Ausführungsstrang eines Programms, der Anweisungen nacheinander abarbeitet.
+  explanation: >
+    Ein Programm kann einen oder mehrere Threads haben. Dein JavaScript-Code läuft in Node.js auf einem
+    einzigen Thread; langsame Arbeit erledigen Hintergrund-Threads von libuv oder das Betriebssystem.
+  example: Eine lange Berechnung blockiert den einzigen JavaScript-Thread – solange antwortet ein Node-Server nicht.
+  category: node
+  aliases: [Threads, Ausführungsstrang]
+  related: [event-loop, libuv]
+  lesson: node-runtimes-paketmanager/die-event-loop
+- slug: event-loop
+  term: Event Loop
+  short: Die Schleife in Node.js, die fertige Callbacks nacheinander ausführt, sobald der Call Stack leer ist.
+  explanation: >
+    Die Event Loop prüft immer wieder, ob Timer abgelaufen oder Ein-/Ausgaben fertig sind, und legt die
+    passenden Callbacks auf den Call Stack. Zwischen den Tasks arbeitet sie alle Microtasks ab. So bedient ein
+    einzelner Thread viele Aufgaben scheinbar gleichzeitig.
+  example: "`setTimeout(fn, 0)` läuft erst, wenn die Event Loop den Callback nach dem synchronen Code holt."
+  category: node
+  aliases: [Ereignisschleife]
+  related: [call-stack, task-queue, microtask, libuv]
+  lesson: node-runtimes-paketmanager/die-event-loop
+- slug: call-stack
+  term: Call Stack
+  short: Der Stapel, auf dem sich die Runtime merkt, welche Funktion gerade läuft.
+  explanation: >
+    Jeder Funktionsaufruf legt einen Rahmen oben auf den Stapel, jedes return entfernt ihn wieder. Was oben
+    liegt, wird gerade ausgeführt. Bei einem Fehler zeigt der Stack Trace genau diesen Stapel.
+  example: "Ruft `main()` die Funktion `begruesse()` auf, liegen beide auf dem Call Stack – begruesse oben."
+  category: node
+  aliases: [Aufrufstapel, Callstack]
+  related: [event-loop, stack-trace]
+  lesson: node-runtimes-paketmanager/die-event-loop
+- slug: task-queue
+  term: Task-Queue
+  short: Die Warteschlange für fertige Callbacks von Timern und Ein-/Ausgaben.
+  explanation: >
+    Ist ein Timer abgelaufen oder eine Datei gelesen, landet der zugehörige Callback in der Task-Queue. Die
+    Event Loop nimmt sich daraus einen Task nach dem anderen – aber nur, wenn der Call Stack leer ist.
+  example: Der Callback von `setTimeout(() => …, 0)` wartet in der Task-Queue, bis der synchrone Code fertig ist.
+  category: node
+  aliases: [Makrotask-Queue, Callback-Queue, Tasks]
+  related: [event-loop, microtask]
+  lesson: node-runtimes-paketmanager/die-event-loop
+- slug: microtask
+  term: Microtask
+  short: Ein Callback mit Vorrang, der nach dem aktuellen Code und vor dem nächsten Task läuft.
+  explanation: >
+    Callbacks von Promises (`.then`), `queueMicrotask` und Code nach `await` sind Microtasks. Nach jedem Task
+    arbeitet die Event Loop die Microtask-Queue komplett ab, bevor der nächste Task drankommt.
+  example: "`Promise.resolve().then(fn)` läuft vor einem `setTimeout(fn, 0)`, das vorher angelegt wurde."
+  category: node
+  aliases: [Microtasks, Microtask-Queue]
+  related: [promise, event-loop, task-queue]
+  lesson: node-runtimes-paketmanager/die-event-loop
+- slug: promise
+  term: Promise
+  short: Ein Objekt für ein Ergebnis, das erst später feststeht – erfolgreich oder mit Fehler.
+  explanation: >
+    Asynchrone Funktionen geben oft ein Promise zurück. Mit `.then()` oder `await` reagierst du auf das
+    Ergebnis, sobald es da ist. Die Callbacks laufen als Microtasks.
+  example: "`readFile(\"a.txt\", \"utf8\")` aus `node:fs/promises` liefert ein Promise auf den Dateiinhalt."
+  category: node
+  aliases: [Promises, Versprechen]
+  related: [async-await, microtask, callback]
+  lesson: node-runtimes-paketmanager/die-event-loop
+- slug: async-await
+  term: async/await
+  short: Eine Schreibweise, mit der asynchroner Code wie normaler Code von oben nach unten aussieht.
+  explanation: >
+    Eine mit `async` markierte Funktion gibt ein Promise zurück. Mit `await` wartest du darin auf ein Promise,
+    ohne den Thread zu blockieren. Der Code nach `await` läuft als Microtask weiter, sobald das Ergebnis da ist.
+  example: "`const text = await readFile(\"notiz.txt\", \"utf8\");`"
+  category: node
+  aliases: [await, async]
+  related: [promise, microtask]
+  lesson: node-runtimes-paketmanager/die-event-loop
+- slug: non-blocking-io
+  term: Nicht blockierendes I/O
+  short: Ein- und Ausgabe, bei der das Programm nicht stillsteht, während es auf das Ergebnis wartet.
+  explanation: >
+    Statt auf eine Datei oder das Netzwerk zu warten, übergibt Node.js die Arbeit an libuv und macht mit anderem
+    Code weiter. Ist das Ergebnis da, läuft ein Callback. Das Gegenteil sind synchrone Funktionen wie
+    `readFileSync`, die den Thread blockieren.
+  example: "`await readFile()` statt `readFileSync()` hält einen Server reaktionsfähig."
+  category: node
+  aliases: [non-blocking I/O, asynchrones I/O, nicht blockierende Ein-/Ausgabe]
+  related: [event-loop, libuv]
+  lesson: node-runtimes-paketmanager/die-event-loop
+- slug: modul
+  term: Modul
+  short: Eine Datei oder Bibliothek, die Funktionen und Werte für andere Dateien bereitstellt.
+  explanation: >
+    Module teilen ein Programm in kleine, verständliche Teile. Was ein Modul nach außen anbietet, gibt es mit
+    `export` frei; andere Dateien holen es mit `import`. In Node.js gibt es zwei Modulsysteme – ES-Module und CommonJS.
+  example: "`import { addiere } from \"./mathe.js\";` nutzt das Modul `mathe.js`."
+  category: node
+  aliases: [Module]
+  related: [es-module, commonjs, kernmodul]
+  lesson: node-runtimes-paketmanager/process-und-kernmodule
+- slug: kernmodul
+  term: Kernmodul
+  short: Ein in Node.js eingebautes Modul wie fs, path, os oder http.
+  explanation: >
+    Kernmodule sind ohne Installation verfügbar. Du importierst sie am besten mit dem Präfix `node:`, damit
+    klar ist, dass kein gleichnamiges Paket aus npm gemeint ist.
+  example: "`import fs from \"node:fs\";`"
+  category: node
+  aliases: [Kernmodule, Core-Modul, eingebautes Modul]
+  related: [modul, nodejs]
+  lesson: node-runtimes-paketmanager/process-und-kernmodule
+- slug: es-module
+  term: ES-Modul
+  short: Das offizielle Modulsystem von JavaScript mit import und export.
+  explanation: >
+    ES-Module (ESM) funktionieren im Browser und in Node.js. Relative Importe brauchen die Dateiendung. In
+    Node.js gelten `.mjs`-Dateien und `.js`-Dateien in Paketen mit `"type": "module"` als ES-Module.
+  example: "`export function preis() {}` und `import { preis } from \"./format.js\";`"
+  category: node
+  aliases: [ES-Module, ESM, ECMAScript-Modul]
+  related: [commonjs, modul, package-json]
+  lesson: node-runtimes-paketmanager/module-und-http-server
+- slug: commonjs
+  term: CommonJS
+  short: Das ältere Modulsystem von Node.js mit require() und module.exports.
+  explanation: >
+    CommonJS stammt aus der Zeit, als JavaScript noch kein eigenes Modulsystem hatte. Du findest es in vielen
+    älteren Projekten und Paketen. `.cjs`-Dateien sind immer CommonJS.
+  example: "`const fs = require(\"node:fs\");` und `module.exports = { start };`"
+  category: node
+  aliases: [CJS, require]
+  related: [es-module, modul]
+  lesson: node-runtimes-paketmanager/module-und-http-server
+- slug: npm
+  term: npm
+  short: Der Paketmanager, der mit Node.js mitgeliefert wird – Kommandozeilen-Programm und Registry.
+  explanation: >
+    Mit npm installierst du Pakete, startest Projekt-Skripte und veröffentlichst eigene Pakete. Die Pakete
+    stammen aus der öffentlichen npm-Registry. Die Konfiguration eines Projekts steht in der package.json.
+  example: "`npm install picocolors` lädt das Paket picocolors in dein Projekt."
+  category: paketmanager
+  aliases: [Node Package Manager]
+  related: [package-json, npm-registry, paket, npx]
+  lesson: node-runtimes-paketmanager/package-json-und-abhaengigkeiten
+- slug: npm-registry
+  term: npm-Registry
+  short: Das öffentliche Verzeichnis, aus dem npm und andere Paketmanager JavaScript-Pakete laden.
+  explanation: >
+    Die Registry unter registry.npmjs.org enthält Millionen Pakete mit all ihren Versionen. Firmen betreiben
+    oft zusätzlich private Registries für interne Pakete.
+  example: "`npm view ms versions` fragt die Registry nach allen Versionen von ms."
+  category: paketmanager
+  aliases: [Registry, Paket-Registry]
+  related: [npm, paket]
+  lesson: node-runtimes-paketmanager/package-json-und-abhaengigkeiten
+- slug: paket
+  term: Paket
+  short: Ein veröffentlichter Ordner mit Code und package.json, den andere wiederverwenden können.
+  explanation: >
+    Pakete werden in einer Registry veröffentlicht und per Paketmanager installiert. Jedes Paket hat einen
+    Namen und eine Version nach Semantic Versioning und kann selbst Abhängigkeiten haben.
+  example: "`picocolors` ist ein kleines Paket für farbige Terminal-Ausgaben."
+  category: paketmanager
+  aliases: [Pakete, Package, npm-Paket]
+  related: [npm, package-json, abhaengigkeit]
+  lesson: node-runtimes-paketmanager/package-json-und-abhaengigkeiten
+- slug: package-json
+  term: package.json
+  short: Die Datei, die ein Node-Projekt oder Paket beschreibt – Name, Version, Skripte und Abhängigkeiten.
+  explanation: >
+    Die package.json liegt im Hauptordner des Projekts. npm, Bun und andere Werkzeuge lesen daraus, welche
+    Pakete gebraucht werden, wie das Projekt gestartet wird und ob .js-Dateien ES-Module sind.
+  example: "`npm pkg set type=module` setzt ein Feld in der package.json."
+  category: paketmanager
+  aliases: [package.json-Datei]
+  related: [npm, paket, npm-script]
+  lesson: node-runtimes-paketmanager/package-json-und-abhaengigkeiten
+- slug: node-modules
+  term: node_modules
+  short: Der Ordner, in den Paketmanager die installierten Pakete eines Projekts legen.
+  explanation: >
+    node_modules enthält alle direkten und transitiven Abhängigkeiten und wird oft sehr groß. Er lässt sich
+    aus package.json und Lockfile jederzeit neu erzeugen und gehört deshalb in die .gitignore.
+  example: "`rm -rf node_modules && npm install` repariert einen kaputten Ordner."
+  category: paketmanager
+  aliases: [node_modules-Ordner]
+  related: [npm, lockfile, gitignore]
+  lesson: node-runtimes-paketmanager/package-json-und-abhaengigkeiten
+- slug: transitive-abhaengigkeit
+  term: Transitive Abhängigkeit
+  short: Eine Abhängigkeit deiner Abhängigkeit, die automatisch mitinstalliert wird.
+  explanation: >
+    Installierst du ein Paket, bringt es oft weitere Pakete mit, die es selbst braucht. Diese tauchen nicht in
+    deiner package.json auf, wohl aber im Lockfile und in node_modules.
+  example: Das Paket debug bringt das Paket ms als transitive Abhängigkeit mit.
+  category: paketmanager
+  aliases: [transitive Abhängigkeiten, indirekte Abhängigkeit]
+  related: [abhaengigkeit, lockfile, phantom-abhaengigkeit]
+  lesson: node-runtimes-paketmanager/package-json-und-abhaengigkeiten
+- slug: devdependency
+  term: devDependency
+  short: Eine Abhängigkeit, die nur zum Entwickeln, Testen oder Bauen gebraucht wird.
+  explanation: >
+    devDependencies stehen in einer eigenen Liste der package.json. In Produktion kannst du sie mit
+    `npm install --omit=dev` weglassen. Typische Beispiele sind Test-Frameworks, Linter und TypeScript.
+  example: "`npm install -D vitest` trägt vitest als devDependency ein."
+  category: paketmanager
+  aliases: [devDependencies, Entwicklungsabhängigkeit]
+  related: [abhaengigkeit, peerdependency, package-json]
+  lesson: node-runtimes-paketmanager/package-json-und-abhaengigkeiten
+- slug: peerdependency
+  term: peerDependency
+  short: Eine Abhängigkeit, die ein Paket braucht, aber vom einbindenden Projekt mitgebracht werden soll.
+  explanation: >
+    Plugins und Bibliotheken nutzen peerDependencies, damit ein Projekt nicht zwei Kopien derselben Bibliothek
+    enthält. Passt die Version im Projekt nicht, warnt der Paketmanager.
+  example: Ein React-Komponenten-Plugin nennt react als peerDependency.
+  category: paketmanager
+  aliases: [peerDependencies, Peer-Abhängigkeit]
+  related: [devdependency, abhaengigkeit]
+  lesson: node-runtimes-paketmanager/package-json-und-abhaengigkeiten
+- slug: versionsbereich
+  term: Versionsbereich
+  short: Eine Angabe in der package.json, welche Versionen eines Pakets erlaubt sind, z. B. ^1.2.3.
+  explanation: >
+    Das Dach `^` erlaubt neue MINOR- und PATCH-Versionen, die Tilde `~` nur PATCH-Versionen, eine Zahl ohne
+    Zeichen genau diese Version. Der Paketmanager installiert die neueste Version im Bereich.
+  example: "`^2.4.1` erlaubt 2.9.0, aber nicht 3.0.0."
+  category: paketmanager
+  aliases: [Versionsbereiche, Version Range, Range]
+  related: [semantic-versioning, lockfile, prerelease]
+  lesson: node-runtimes-paketmanager/versionen-und-lockfile
+- slug: prerelease
+  term: Vorabversion
+  short: Eine Testversion vor einem Release, erkennbar an einem Zusatz wie -beta.1 oder -rc.2.
+  explanation: >
+    Vorabversionen dienen zum Ausprobieren und gelten als instabil. Normale Versionsbereiche wählen sie nie;
+    du installierst sie nur ausdrücklich, z. B. über einen Tag wie beta.
+  example: "`npm install ms@beta` installiert bewusst `3.0.0-beta.x`."
+  category: paketmanager
+  aliases: [Prerelease, Vorabversionen, Beta-Version, Release Candidate]
+  related: [semantic-versioning, versionsbereich]
+  lesson: node-runtimes-paketmanager/versionen-und-lockfile
+- slug: npm-ci
+  term: npm ci
+  short: Ein npm-Befehl, der streng nach Lockfile installiert und node_modules vorher löscht.
+  explanation: >
+    npm ci ändert das Lockfile nie und bricht ab, wenn package.json und Lockfile nicht zusammenpassen. Damit
+    sind Installationen in CI-Pipelines und nach dem Klonen reproduzierbar.
+  example: Eine CI-Pipeline führt `npm ci` und danach `npm test` aus.
+  category: paketmanager
+  aliases: [clean install]
+  related: [lockfile, continuous-integration, npm]
+  lesson: node-runtimes-paketmanager/versionen-und-lockfile
+- slug: npm-audit
+  term: npm audit
+  short: Ein npm-Befehl, der installierte Pakete auf bekannte Sicherheitslücken prüft.
+  explanation: >
+    npm audit vergleicht den gesamten Abhängigkeitsbaum mit einer Datenbank gemeldeter Lücken und zeigt deren
+    Schwere an. `npm audit fix` spielt kompatible Korrekturen ein.
+  example: "`npm audit --omit=dev` prüft nur die Laufzeit-Abhängigkeiten."
+  category: paketmanager
+  aliases: [audit]
+  related: [sicherheitsluecke, npm]
+  lesson: node-runtimes-paketmanager/versionen-und-lockfile
+- slug: sicherheitsluecke
+  term: Sicherheitslücke
+  short: Ein Fehler in Software, den Angreifer ausnutzen können.
+  explanation: >
+    Bekannte Lücken werden öffentlich gemeldet und mit einer Schwere (low bis critical) bewertet. Weil
+    Abhängigkeiten fremder Code sind, betreffen ihre Lücken auch dein Projekt – deshalb aktualisiert man Pakete regelmäßig.
+  example: "npm audit meldet eine Lücke der Schwere high in einer transitiven Abhängigkeit."
+  category: paketmanager
+  aliases: [Sicherheitslücken, Schwachstelle, Vulnerability]
+  related: [npm-audit]
+  lesson: node-runtimes-paketmanager/versionen-und-lockfile
+- slug: npx
+  term: npx
+  short: Ein Befehl, der den Befehl eines npm-Pakets ausführt – auch ohne dauerhafte Installation.
+  explanation: >
+    Ist das Paket lokal installiert, nutzt npx diese Version aus node_modules/.bin. Sonst lädt es das Paket in
+    einen Zwischenspeicher und führt es einmalig aus. Ideal für Projekt-Generatoren.
+  example: "`npx create-vite@latest meine-app`"
+  category: paketmanager
+  aliases: [npm exec]
+  related: [npm, bunx]
+  lesson: node-runtimes-paketmanager/skripte-npx-veroeffentlichen
+- slug: tarball
+  term: Tarball
+  short: Eine gepackte Archivdatei (.tgz), in der ein npm-Paket verschickt und veröffentlicht wird.
+  explanation: >
+    `npm pack` erzeugt den Tarball eines Pakets – genau die Datei, die `npm publish` hochladen würde. Welche
+    Dateien hineinkommen, bestimmt das Feld files der package.json.
+  example: "`npm pack` erzeugt `textstat-0.2.0.tgz`."
+  category: paketmanager
+  aliases: [.tgz, tgz-Datei, tar-Archiv]
+  related: [paket, npm]
+  lesson: node-runtimes-paketmanager/skripte-npx-veroeffentlichen
+- slug: nvmrc
+  term: .nvmrc
+  short: Eine Datei im Projektordner, die festlegt, welche Node-Version das Projekt nutzt.
+  explanation: >
+    Die .nvmrc enthält eine Versionsangabe wie `24` oder `lts/krypton`. `nvm install` und `nvm use` ohne
+    Argument lesen sie. Sie wird ins Repository committet, damit alle dieselbe Version nutzen.
+  example: "`echo 24 > .nvmrc` und danach `nvm use`."
+  category: node
+  aliases: [nvmrc]
+  related: [nvm, lts]
+  lesson: node-runtimes-paketmanager/nvmrc-und-lts
+- slug: lts
+  term: LTS
+  short: Long Term Support – eine Version, die besonders lange mit Korrekturen versorgt wird.
+  explanation: >
+    Node.js-LTS-Versionen werden rund 30 Monate gepflegt und sind für Produktion gedacht. Sie haben Codenamen
+    wie „Jod“ (22) oder „Krypton“ (24). Nach der LTS-Zeit erreicht eine Version ihr End-of-Life.
+  example: Node.js 24 „Krypton“ ist im Oktober 2026 die empfohlene LTS-Version.
+  category: node
+  aliases: [Long Term Support, LTS-Version]
+  related: [nvm, nvmrc]
+  lesson: node-runtimes-paketmanager/nvmrc-und-lts
+- slug: bun
+  term: Bun
+  short: Eine schnelle JavaScript-Runtime, die zugleich Paketmanager, Test-Runner und Bundler ist.
+  explanation: >
+    Bun nutzt die Engine JavaScriptCore und ist in Zig geschrieben. Es führt TypeScript direkt aus, ist weitgehend
+    kompatibel zu Node.js und npm und ersetzt mehrere Werkzeuge durch ein einziges Programm.
+  example: "`bun index.ts` führt eine TypeScript-Datei direkt aus."
+  category: node
+  aliases: [Bun-Runtime]
+  related: [nodejs, bunx, bun-lock, bunfig]
+  lesson: node-runtimes-paketmanager/bun-runtime-und-paketmanager
+- slug: bun-lock
+  term: bun.lock
+  short: Das Lockfile von Bun – eine lesbare Textdatei mit den exakt installierten Versionen.
+  explanation: >
+    bun install schreibt bun.lock in den Projektordner. Es wird wie jedes Lockfile committet. Ältere Projekte
+    haben noch das binäre bun.lockb, das sich in das Textformat umwandeln lässt.
+  example: "`bun install --frozen-lockfile` bricht ab, wenn bun.lock nicht zur package.json passt."
+  category: paketmanager
+  aliases: [bun.lockb]
+  related: [lockfile, bun]
+  lesson: node-runtimes-paketmanager/bun-runtime-und-paketmanager
+- slug: bunx
+  term: bunx
+  short: Der Bun-Befehl, um Paket-Befehle ohne dauerhafte Installation auszuführen – das Gegenstück zu npx.
+  explanation: >
+    bunx lädt das Paket bei Bedarf herunter und führt seinen Befehl aus. Ist es lokal installiert, wird diese
+    Version genutzt.
+  example: "`bunx create-vite meine-app`"
+  category: paketmanager
+  aliases: [bun x]
+  related: [npx, bun]
+  lesson: node-runtimes-paketmanager/bun-runtime-und-paketmanager
+- slug: test-runner
+  term: Test-Runner
+  short: Ein Programm, das automatisierte Tests findet, ausführt und das Ergebnis meldet.
+  explanation: >
+    Test-Runner suchen Testdateien nach festen Namensregeln, führen alle Tests aus und melden, welche grün und
+    welche rot sind. Beispiele sind bun test, node:test, Vitest und Jest.
+  example: "`bun test` findet alle `*.test.ts`-Dateien und führt sie aus."
+  category: werkzeuge
+  aliases: [Testrunner, Test-Framework]
+  related: [bun]
+  lesson: node-runtimes-paketmanager/bun-test-build-workspaces
+- slug: bundler
+  term: Bundler
+  short: Ein Werkzeug, das Code und seine Importe zu wenigen Dateien zusammenfasst.
+  explanation: >
+    Bundler lösen Importe auf, wandeln TypeScript in JavaScript um und können den Code verkleinern. So
+    entsteht Code, der im Browser oder auf einem Server ohne weitere Werkzeuge läuft.
+  example: "`bun build ./src/index.ts --outdir dist` bündelt ein Projekt."
+  category: werkzeuge
+  aliases: [Bundling, bündeln]
+  related: [bun, modul]
+  lesson: node-runtimes-paketmanager/bun-test-build-workspaces
+- slug: bunfig
+  term: bunfig.toml
+  short: Die Konfigurationsdatei von Bun im Projektordner.
+  explanation: >
+    In der bunfig.toml legst du fest, wie Bun installiert, testet und ausführt – etwa exakte Versionen beim
+    Installieren oder Testabdeckung bei jedem Testlauf. Eine globale Variante liegt unter ~/.bunfig.toml.
+  example: "`[test]` und darunter `coverage = true` schaltet die Testabdeckung ein."
+  category: werkzeuge
+  aliases: [bunfig]
+  related: [bun, package-json]
+  lesson: node-runtimes-paketmanager/bun-test-build-workspaces
+- slug: workspace
+  term: Workspace
+  short: Ein Verbund mehrerer Pakete in einem Repository, die gemeinsam installiert und verwaltet werden.
+  explanation: >
+    In der Root-package.json listet das Feld workspaces die Paketordner auf. Ein einziges `install`
+    installiert dann alles und verlinkt die Pakete untereinander. So entstehen Monorepos.
+  example: "`\"workspaces\": [\"packages/*\"]` in der Root-package.json."
+  category: paketmanager
+  aliases: [Workspaces, Monorepo-Workspace]
+  related: [catalog, package-json]
+  lesson: node-runtimes-paketmanager/bun-test-build-workspaces
+- slug: catalog
+  term: Catalog
+  short: Eine zentrale Liste von Paketversionen, auf die alle Pakete eines Workspaces verweisen.
+  explanation: >
+    Statt in jedem Paket eine Version einzutragen, schreibt man `catalog:` und legt die Version einmal in der
+    Root-package.json fest. Bun und pnpm unterstützen Catalogs, auch mehrere benannte.
+  example: "`\"react\": \"catalog:\"` nutzt die React-Version aus dem Standard-Catalog."
+  category: paketmanager
+  aliases: [Catalogs, catalog-Protokoll]
+  related: [workspace, bun, pnpm]
+  lesson: node-runtimes-paketmanager/bun-test-build-workspaces
+- slug: pnpm
+  term: pnpm
+  short: Ein Paketmanager, der jede Paketversion nur einmal speichert und strenge node_modules anlegt.
+  explanation: >
+    pnpm legt Pakete in einem zentralen Store ab und verlinkt sie per Symlink. In node_modules stehen nur die
+    direkten Abhängigkeiten – Phantom-Abhängigkeiten fallen sofort auf. Das Lockfile heißt pnpm-lock.yaml.
+  example: "`pnpm add zod` installiert zod in ein Projekt."
+  category: paketmanager
+  aliases: [performant npm]
+  related: [content-addressable-store, phantom-abhaengigkeit, npm]
+  lesson: node-runtimes-paketmanager/pnpm-yarn-deno
+- slug: content-addressable-store
+  term: Content-Addressable Store
+  short: Ein Speicher, in dem Dateien nach ihrem Inhalt (Prüfsumme) abgelegt werden – jede nur einmal.
+  explanation: >
+    pnpm speichert so alle Paketdateien eines Rechners an einer Stelle. Nutzen zehn Projekte dieselbe
+    Paketversion, liegt sie trotzdem nur einmal auf der Festplatte.
+  example: Zehn Projekte mit React 19 teilen sich bei pnpm eine einzige Kopie im Store.
+  category: paketmanager
+  aliases: [Store, Paket-Store]
+  related: [pnpm, symlink]
+  lesson: node-runtimes-paketmanager/pnpm-yarn-deno
+- slug: phantom-abhaengigkeit
+  term: Phantom-Abhängigkeit
+  short: Ein Paket, das dein Code nutzt, obwohl es nicht in deiner package.json steht.
+  explanation: >
+    Bei flachen node_modules liegen auch transitive Pakete ganz oben und lassen sich importieren. Entfernt das
+    Paket, das sie mitgebracht hat, sie später, bricht dein Code. pnpm verhindert solche Importe.
+  example: "Nur debug ist eingetragen, aber `import ms from \"ms\"` funktioniert trotzdem."
+  category: paketmanager
+  aliases: [Phantom-Abhängigkeiten, phantom dependency]
+  related: [transitive-abhaengigkeit, pnpm]
+  lesson: node-runtimes-paketmanager/pnpm-yarn-deno
+- slug: symlink
+  term: Symlink
+  short: Eine Verknüpfung im Dateisystem, die auf eine andere Datei oder einen Ordner zeigt.
+  explanation: >
+    Ein symbolischer Link verhält sich für Programme fast wie das Ziel selbst, belegt aber kaum Platz. pnpm und
+    Workspaces nutzen Symlinks, um Pakete zu verknüpfen statt sie zu kopieren.
+  example: "`ln -s ziel verknuepfung` legt einen Symlink an."
+  category: terminal
+  aliases: [Symlinks, symbolischer Link, Softlink]
+  related: [pnpm, content-addressable-store]
+  lesson: node-runtimes-paketmanager/pnpm-yarn-deno
+- slug: yarn
+  term: Yarn
+  short: Ein alternativer Paketmanager für JavaScript, als Classic (1.x) und Berry (ab 2.x).
+  explanation: >
+    Yarn Classic arbeitet ähnlich wie npm und ist nur noch in Wartung. Yarn Berry bietet unter anderem
+    Plug'n'Play ohne node_modules. Die Version eines Projekts steht im Feld packageManager der package.json.
+  example: "`yarn add zod` fügt ein Paket hinzu, das Lockfile heißt yarn.lock."
+  category: paketmanager
+  aliases: [Yarn Classic, Yarn Berry]
+  related: [plug-n-play, npm, pnpm]
+  lesson: node-runtimes-paketmanager/pnpm-yarn-deno
+- slug: plug-n-play
+  term: Plug'n'Play
+  short: Ein Installationsmodus von Yarn Berry, der ohne node_modules-Ordner auskommt.
+  explanation: >
+    Statt Pakete nach node_modules zu kopieren, erzeugt Yarn eine Datei `.pnp.cjs`, die Node.js sagt, wo jedes
+    Paket liegt. Das ist schnell und streng, braucht aber Werkzeuge, die damit umgehen können.
+  example: Ein Yarn-Berry-Projekt mit Plug'n'Play hat eine .pnp.cjs, aber keinen node_modules-Ordner.
+  category: paketmanager
+  aliases: [PnP, Plug and Play]
+  related: [yarn]
+  lesson: node-runtimes-paketmanager/pnpm-yarn-deno
+- slug: deno
+  term: Deno
+  short: Eine JavaScript- und TypeScript-Runtime, die Datei- und Netzzugriffe nur mit Erlaubnis zulässt.
+  explanation: >
+    Deno stammt vom ursprünglichen Node.js-Erfinder, nutzt V8 und ist in Rust geschrieben. Berechtigungen wie
+    `--allow-read` oder `--allow-net` vergibst du gezielt. npm-Pakete nutzt Deno über den Präfix `npm:`.
+  example: "`deno run --allow-read=daten.txt zaehle.ts`"
+  category: node
+  aliases: [Deno-Runtime]
+  related: [nodejs, bun, laufzeitumgebung]
+  lesson: node-runtimes-paketmanager/pnpm-yarn-deno

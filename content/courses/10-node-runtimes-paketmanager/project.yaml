@@ -1,0 +1,375 @@
+title: Dein eigenes Kommandozeilen-Werkzeug als npm-Paket
+description: |
+  In diesem Projekt baust du von Grund auf **textstat** – ein Kommandozeilen-Werkzeug, das für eine
+  Textdatei Zeilen, Wörter und Zeichen zählt. Du gehst dabei den ganzen Weg, den auch echte
+  npm-Pakete gehen: Projekt anlegen, Node-Version festschreiben, Logik als ES-Modul schreiben,
+  testen, einen ausführbaren Befehl mit Shebang bauen, eine Abhängigkeit einbinden, das `bin`-Feld
+  setzen, das Paket packen, als echte Abhängigkeit installieren und versionieren.
+
+  Alles passiert im Ordner `textstat` in deinem npm-Workspace. Öffne das Übungs-Terminal und lege
+  den Ordner mit `mkdir -p textstat && cd textstat` an. Nach jedem Schritt prüft Stacklab den
+  echten Zustand deines Projekts.
+
+  Die Schritte bauen aufeinander auf. Lösche zwischendurch nichts, was ein früherer Schritt
+  angelegt hat.
+goal: >
+  Ein npm-Paket `textstat` mit `.nvmrc`, ES-Modul `src/stats.js`, grünen Tests mit `node:test`,
+  dem Befehl `textstat` (Shebang, `bin`-Feld, `--json`-Option, farbige Ausgabe mit picocolors),
+  README und dem Tarball `textstat-0.2.0.tgz`.
+workdir: textstat
+steps:
+  - id: projekt-anlegen
+    title: Projekt anlegen und Node-Version festschreiben
+    description: |
+      Jedes Paket beginnt mit einer package.json – und in einem sauberen Projekt steht von Anfang
+      an fest, mit welcher Node-Version es läuft.
+
+      1. Lege mit `npm init -y` eine package.json an.
+      2. Setze `name` auf `textstat`, `version` auf `0.1.0`, `type` auf `module` und
+         `engines.node` auf `>=24`.
+      3. Lege eine `.nvmrc` mit dem Inhalt `24` an.
+      4. Lege eine `.gitignore` an, die `node_modules` ausschließt.
+    checklist:
+      - package.json mit name, version, type und engines
+      - .nvmrc zeigt auf 24
+      - .gitignore schließt node_modules aus
+    hints:
+      - "`npm pkg set name=textstat version=0.1.0 type=module engines.node=\">=24\"` setzt alles auf einmal."
+      - "`echo 24 > .nvmrc` und `echo node_modules > .gitignore`."
+    checks:
+      - type: command
+        run: jq -r '"\(.name) \(.version) \(.type) \(.engines.node)"' package.json
+        stdout_equals: textstat 0.1.0 module >=24
+        message: 'In der package.json sollen name "textstat", version "0.1.0", type "module" und engines.node ">=24" stehen.'
+      - type: file_contains
+        path: .nvmrc
+        pattern: "^\\s*v?24(\\.\\d+){0,2}\\s*$"
+        message: Die .nvmrc soll auf Version 24 zeigen.
+      - type: file_contains
+        path: .gitignore
+        pattern: "^/?node_modules/?\\s*$"
+        message: Die .gitignore soll node_modules ausschließen.
+    solution: |
+      ```bash
+      mkdir -p textstat && cd textstat
+      npm init -y
+      npm pkg set name=textstat version=0.1.0 type=module engines.node=">=24"
+      echo 24 > .nvmrc
+      echo node_modules > .gitignore
+      ```
+  - id: kernlogik
+    title: Die Kernlogik als ES-Modul
+    description: |
+      Trenne Logik und Kommandozeile: Die eigentliche Berechnung kommt in ein eigenes Modul. So
+      kannst du sie testen, ohne das Werkzeug zu starten.
+
+      Lege `src/stats.js` an. Es exportiert die benannte Funktion `analysiere(text)`, die ein
+      Objekt `{ zeilen, woerter, zeichen }` zurückgibt:
+
+      - `zeilen`: Anzahl der nicht leeren Zeilen
+      - `woerter`: Anzahl der Wörter (durch Leerraum getrennt)
+      - `zeichen`: Länge des Textes (`text.length`)
+
+      Für einen leeren Text sind alle drei Werte `0`.
+    checklist:
+      - src/stats.js exportiert analysiere()
+      - Leerer Text liefert überall 0
+    hints:
+      - "Zeilen: `text.split(\"\\n\").filter(z => z.trim() !== \"\").length`"
+      - "Wörter: `text.trim() === \"\" ? 0 : text.trim().split(/\\s+/).length`"
+    checks:
+      - type: file_exists
+        path: src/stats.js
+        message: Lege die Datei src/stats.js an.
+      - type: command
+        run: node -e 'import("./src/stats.js").then(m => console.log(JSON.stringify(m.analysiere("Hallo Welt\n\nNode ist toll\n"))))'
+        stdout_equals: '{"zeilen":2,"woerter":5,"zeichen":26}'
+        message: analysiere("Hallo Welt\n\nNode ist toll\n") soll {"zeilen":2,"woerter":5,"zeichen":26} liefern.
+      - type: command
+        run: node -e 'import("./src/stats.js").then(m => console.log(JSON.stringify(m.analysiere(""))))'
+        stdout_equals: '{"zeilen":0,"woerter":0,"zeichen":0}'
+        message: Für einen leeren Text sollen zeilen, woerter und zeichen 0 sein.
+    solution: |
+      ```js
+      // src/stats.js
+      export function analysiere(text) {
+        const zeilen = text.split("\n").filter((zeile) => zeile.trim() !== "").length;
+        const woerter = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+        return { zeilen, woerter, zeichen: text.length };
+      }
+      ```
+  - id: tests
+    title: Tests mit node:test
+    description: |
+      Bevor du weiterbaust, sicherst du die Logik mit Tests ab. Node.js bringt dafür den
+      Test-Runner `node:test` mit – ganz ohne Zusatzpaket.
+
+      1. Lege `test/stats.test.js` mit **mindestens drei** Tests an (Normalfall, leerer Text,
+         Text mit Leerzeilen).
+      2. Setze das Skript `test` auf `node --test`.
+      3. Prüfe mit `npm test`, dass alles grün ist.
+    checklist:
+      - Mindestens drei Tests in test/stats.test.js
+      - "`npm test` ist grün"
+    hints:
+      - "`import { test } from \"node:test\"; import assert from \"node:assert/strict\";`"
+      - "`assert.deepEqual(analysiere(\"\"), { zeilen: 0, woerter: 0, zeichen: 0 });`"
+    checks:
+      - type: command
+        run: jq -r '.scripts.test' package.json
+        stdout_equals: node --test
+        message: Das Skript test soll "node --test" sein.
+      - type: command
+        run: node --test --test-reporter=tap 2>&1 | grep -E '^# pass' | grep -oE '[0-9]+'
+        stdout_matches: "^([3-9]|[1-9][0-9]+)$"
+        message: Es sollen mindestens drei Tests grün sein.
+      - type: command
+        run: npm test --silent >/dev/null 2>&1; echo $?
+        stdout_equals: "0"
+        message: npm test schlägt noch fehl.
+    solution: |
+      ```js
+      // test/stats.test.js
+      import { test } from "node:test";
+      import assert from "node:assert/strict";
+      import { analysiere } from "../src/stats.js";
+
+      test("zählt Zeilen, Wörter und Zeichen", () => {
+        assert.deepEqual(analysiere("Hallo Welt"), { zeilen: 1, woerter: 2, zeichen: 10 });
+      });
+
+      test("leerer Text", () => {
+        assert.deepEqual(analysiere(""), { zeilen: 0, woerter: 0, zeichen: 0 });
+      });
+
+      test("Leerzeilen zählen nicht als Zeilen", () => {
+        assert.equal(analysiere("a\n\n\nb\n").zeilen, 2);
+      });
+      ```
+
+      ```bash
+      npm pkg set scripts.test="node --test"
+      npm test
+      ```
+  - id: cli-befehl
+    title: Der ausführbare Befehl
+    description: |
+      Jetzt wird aus der Logik ein Werkzeug. Lege `bin/textstat.js` an:
+
+      1. Erste Zeile: die Shebang `#!/usr/bin/env node`.
+      2. Das Skript liest den Dateinamen aus dem ersten Argument, liest die Datei mit `node:fs`
+         und gibt drei Zeilen aus: `Zeilen: 2`, `Wörter: 5`, `Zeichen: 26` (mit den echten Werten).
+      3. Fehlt der Dateiname, gibt es eine Fehlermeldung auf stderr aus und endet mit Exit-Code `1`.
+      4. Mach die Datei ausführbar (`chmod +x bin/textstat.js`) und teste mit
+         `./bin/textstat.js README.md` oder einer eigenen Textdatei.
+    checklist:
+      - Shebang in Zeile 1
+      - Datei ist ausführbar
+      - Ausgabe in drei Zeilen
+      - Exit-Code 1 ohne Argument
+    hints:
+      - "Den Dateinamen holst du mit `process.argv.slice(2)` – nimm das erste Element, das nicht mit `--` beginnt."
+      - "`import { analysiere } from \"../src/stats.js\";` – der Pfad ist relativ zu bin/."
+    checks:
+      - type: command
+        run: head -n 1 bin/textstat.js
+        stdout_equals: "#!/usr/bin/env node"
+        message: Die erste Zeile von bin/textstat.js muss die Shebang #!/usr/bin/env node sein.
+      - type: command
+        run: test -x bin/textstat.js && echo ausfuehrbar
+        stdout_equals: ausfuehrbar
+        message: bin/textstat.js ist noch nicht ausführbar. Nutze chmod +x bin/textstat.js.
+      - type: command
+        run: printf 'Hallo Welt\n\nNode ist toll\n' > .pruef.txt && ./bin/textstat.js .pruef.txt | tr '\n' '|'; rm -f .pruef.txt
+        stdout_matches: "Zeilen: 2\\|Wörter: 5\\|Zeichen: 26"
+        message: "Für eine Testdatei sollen die drei Zeilen \"Zeilen: 2\", \"Wörter: 5\" und \"Zeichen: 26\" erscheinen."
+      - type: command
+        run: ./bin/textstat.js >/dev/null 2>&1; echo $?
+        stdout_equals: "1"
+        message: Ohne Dateiname soll das Werkzeug mit Exit-Code 1 enden.
+    solution: |
+      ```js
+      #!/usr/bin/env node
+      // bin/textstat.js
+      import { readFileSync } from "node:fs";
+      import { analysiere } from "../src/stats.js";
+
+      const args = process.argv.slice(2);
+      const datei = args.find((arg) => !arg.startsWith("--"));
+
+      if (!datei) {
+        console.error("Aufruf: textstat <datei> [--json]");
+        process.exit(1);
+      }
+
+      const ergebnis = analysiere(readFileSync(datei, "utf8"));
+      console.log(`Zeilen: ${ergebnis.zeilen}`);
+      console.log(`Wörter: ${ergebnis.woerter}`);
+      console.log(`Zeichen: ${ergebnis.zeichen}`);
+      ```
+
+      ```bash
+      chmod +x bin/textstat.js
+      ./bin/textstat.js README.md
+      ```
+  - id: json-und-farbe
+    title: Option --json und farbige Ausgabe
+    description: |
+      Gute Kommandozeilen-Werkzeuge sind für Menschen **und** Maschinen gemacht.
+
+      1. Mit der Option `--json` gibt `textstat` das Ergebnis als JSON aus, z. B.
+         `{"zeilen":2,"woerter":5,"zeichen":26}` – damit kann man es mit `jq` weiterverarbeiten.
+      2. Installiere `picocolors` als Abhängigkeit und färbe in der normalen Ausgabe die
+         Bezeichnungen (z. B. `pc.cyan("Zeilen:")`). Die JSON-Ausgabe bleibt ungefärbt.
+    checklist:
+      - "`--json` liefert gültiges JSON"
+      - picocolors in den dependencies und im Code genutzt
+    hints:
+      - "`if (args.includes(\"--json\")) { console.log(JSON.stringify(ergebnis)); }`"
+      - "picocolors schaltet Farben automatisch ab, wenn die Ausgabe in eine Pipe geht – die Prüfung funktioniert also auch mit Farbe."
+    checks:
+      - type: command
+        run: printf 'Hallo Welt\n\nNode ist toll\n' > .pruef.txt && ./bin/textstat.js .pruef.txt --json | jq -c '.'; rm -f .pruef.txt
+        stdout_equals: '{"zeilen":2,"woerter":5,"zeichen":26}'
+        message: textstat <datei> --json soll {"zeilen":2,"woerter":5,"zeichen":26} ausgeben.
+      - type: command
+        run: jq -r '.dependencies.picocolors // "fehlt"' package.json
+        stdout_matches: "^\\^?\\d"
+        message: picocolors fehlt in den dependencies.
+      - type: file_contains
+        path: bin/textstat.js
+        pattern: "from\\s+[\"']picocolors[\"']"
+        message: bin/textstat.js soll picocolors importieren.
+    solution: |
+      ```bash
+      npm install picocolors
+      ```
+
+      ```js
+      #!/usr/bin/env node
+      import { readFileSync } from "node:fs";
+      import pc from "picocolors";
+      import { analysiere } from "../src/stats.js";
+
+      const args = process.argv.slice(2);
+      const datei = args.find((arg) => !arg.startsWith("--"));
+
+      if (!datei) {
+        console.error("Aufruf: textstat <datei> [--json]");
+        process.exit(1);
+      }
+
+      const ergebnis = analysiere(readFileSync(datei, "utf8"));
+
+      if (args.includes("--json")) {
+        console.log(JSON.stringify(ergebnis));
+      } else {
+        console.log(`${pc.cyan("Zeilen:")} ${ergebnis.zeilen}`);
+        console.log(`${pc.cyan("Wörter:")} ${ergebnis.woerter}`);
+        console.log(`${pc.cyan("Zeichen:")} ${ergebnis.zeichen}`);
+      }
+      ```
+  - id: bin-feld
+    title: Das bin-Feld – aus dem Skript wird ein Befehl
+    description: |
+      Damit nach `npm install textstat` der Befehl `textstat` verfügbar ist, trägst du ihn im Feld
+      `bin` ein. Lege außerdem fest, welche Dateien ins Paket gehören.
+
+      1. Setze `bin` auf `{ "textstat": "bin/textstat.js" }`.
+      2. Setze `files` auf `["bin", "src"]` – Tests und Lockfile bleiben draußen.
+      3. Prüfe mit `npm pack --dry-run`, welche Dateien im Paket landen würden.
+
+      Die Prüfung packt dein Paket, installiert es in einem Testordner wie ein echtes Paket aus der
+      Registry und ruft dort den Befehl `textstat` auf.
+    checklist:
+      - bin-Feld zeigt auf bin/textstat.js
+      - files enthält bin und src
+      - Paket lässt sich installieren und als Befehl starten
+    hints:
+      - "`npm pkg set bin.textstat=bin/textstat.js`"
+      - "`npm pkg set 'files[]=bin' 'files[]=src'`"
+    checks:
+      - type: command
+        run: jq -r '.bin.textstat' package.json
+        stdout_matches: "^(\\./)?bin/textstat\\.js$"
+        message: Das Feld bin soll den Befehl textstat auf bin/textstat.js abbilden.
+      - type: command
+        run: jq -r '.files | sort | join(",")' package.json
+        stdout_matches: "^bin/?,src/?$"
+        message: Das Feld files soll genau bin und src enthalten.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          npm pack --silent --pack-destination "$d" >/dev/null 2>&1
+          cd "$d" && printf '{"name":"pruefung","version":"1.0.0","private":true}' > package.json
+          npm install --silent --no-audit --no-fund ./textstat-*.tgz >/dev/null 2>&1
+          printf 'eins zwei drei\n' > probe.txt
+          npx --no-install textstat probe.txt --json | jq -r '.woerter'
+          cd .. && rm -rf "$d"
+        stdout_equals: "3"
+        message: Das gepackte Paket lässt sich noch nicht als Befehl textstat starten. Prüfe bin, files und die Shebang.
+    solution: |
+      ```bash
+      npm pkg set bin.textstat=bin/textstat.js
+      npm pkg set 'files[]=bin' 'files[]=src'
+      npm pack --dry-run
+      ```
+  - id: readme-und-version
+    title: README, Version und Tarball
+    description: |
+      Zum Schluss machst du das Paket veröffentlichungsbereit – veröffentlicht wird in diesem Kurs
+      aber nichts.
+
+      1. Schreibe eine `README.md` mit einer Überschrift und einem Abschnitt `## Verwendung`, der
+         zeigt, wie man `textstat` aufruft (auch mit `--json`).
+      2. Erhöhe die Version mit `npm version minor --no-git-tag-version` auf `0.2.0`.
+      3. Erzeuge den Tarball mit `npm pack`.
+    checklist:
+      - README mit Abschnitt Verwendung
+      - Version 0.2.0
+      - textstat-0.2.0.tgz enthält README, bin und src, aber keine Tests
+    hints:
+      - Die README landet automatisch im Paket, auch wenn sie nicht in files steht.
+      - Führe npm pack erst nach npm version aus.
+    checks:
+      - type: file_contains
+        path: README.md
+        pattern: "^##\\s+Verwendung"
+        message: Die README braucht einen Abschnitt "## Verwendung".
+      - type: file_contains
+        path: README.md
+        pattern: "--json"
+        message: Zeige in der README auch den Aufruf mit --json.
+      - type: command
+        run: jq -r '.version' package.json
+        stdout_equals: 0.2.0
+        message: Die Version soll 0.2.0 sein (npm version minor --no-git-tag-version).
+      - type: file_exists
+        path: textstat-0.2.0.tgz
+        message: Der Tarball textstat-0.2.0.tgz fehlt. Führe npm pack aus.
+      - type: command
+        run: tar -tzf textstat-0.2.0.tgz | sort | tr '\n' ' '
+        stdout_matches: "package/README\\.md package/bin/textstat\\.js package/package\\.json package/src/stats\\.js"
+        message: Im Tarball sollen README.md, bin/textstat.js, package.json und src/stats.js liegen.
+      - type: command
+        run: tar -tzf textstat-0.2.0.tgz | grep -c '^package/test/' || true
+        stdout_equals: "0"
+        message: Die Tests sollen nicht im Paket landen.
+    solution: |
+      ~~~markdown
+      # textstat
+
+      Zählt Zeilen, Wörter und Zeichen einer Textdatei.
+
+      ## Verwendung
+
+      ```bash
+      textstat notizen.txt
+      textstat notizen.txt --json | jq .woerter
+      ```
+      ~~~
+
+      ```bash
+      npm version minor --no-git-tag-version
+      npm pack
+      ```

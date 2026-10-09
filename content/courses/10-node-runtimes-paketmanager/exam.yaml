@@ -1,0 +1,303 @@
+title: Abschlussprüfung Node.js, Runtimes & Paketmanager
+description: |
+  Die Prüfung deckt alle vier Module ab: Node.js und die Event Loop, npm, nvm sowie Bun und die
+  Alternativen. Du beantwortest Fragen und löst drei praktische Aufgaben im Übungs-Terminal.
+  Zum Bestehen brauchst du 70 Prozent.
+time_limit_minutes: 45
+pass_percent: 70
+questions:
+  - module: node-grundlagen
+    type: single
+    question: Woraus besteht Node.js im Kern?
+    options:
+      - Aus dem Browser Chrome ohne Fenster
+      - Aus der Engine V8, der Bibliothek libuv und den Node.js-APIs
+      - Aus npm und einem Webserver
+      - Aus JavaScriptCore und Zig
+    answer: 1
+    explanation: V8 führt JavaScript aus, libuv liefert Event Loop und asynchrones I/O, die APIs wie fs und http verbinden beides mit dem Betriebssystem.
+  - module: node-grundlagen
+    type: single
+    question: "Welche Ausgabe erzeugt der Code? `console.log(1); setTimeout(() => console.log(2), 0); Promise.resolve().then(() => console.log(3)); console.log(4);`"
+    options: ["1 2 3 4", "1 4 3 2", "1 4 2 3", "1 3 4 2"]
+    answer: 1
+    explanation: Erst der synchrone Code (1, 4), dann die Microtasks (3), dann der Timer-Task (2).
+  - module: node-grundlagen
+    type: multiple
+    question: Welche Aussagen über process stimmen?
+    options:
+      - process.argv[2] ist das erste eigene Argument.
+      - Werte in process.env sind immer Strings oder undefined.
+      - process.cwd() ist der Ordner der Skriptdatei.
+      - Ein Exit-Code ungleich 0 bedeutet Fehler.
+    answers: [0, 1, 3]
+    explanation: process.cwd() ist der Ordner, aus dem node gestartet wurde. Den Ordner der Skriptdatei liefert import.meta.dirname.
+  - module: node-grundlagen
+    type: find-bug
+    question: "Das Paket hat `\"type\": \"module\"`. Welche Zeile führt zu einem Fehler?"
+    language: js
+    code: |
+      import http from "node:http";
+      import { erzeugeGruss } from "./lib/gruss";
+      http.createServer((req, res) => {
+        res.end(erzeugeGruss("Ada"));
+      }).listen(3000);
+    bug_line: 2
+    explanation: Relative ESM-Importe brauchen die Dateiendung, also "./lib/gruss.js".
+  - module: node-grundlagen
+    type: cloze
+    text: Ein HTTP-Server antwortet mit `res.___()`. JSON-Antworten brauchen den Header `Content-Type` mit dem Wert `application/___`.
+    blanks:
+      - [end]
+      - [json]
+    explanation: Ohne res.end() wartet der Client endlos. Der Content-Type sagt dem Client, wie er die Antwort lesen soll.
+  - module: npm
+    type: single
+    question: "`\"vite\": \"~8.1.2\"` – welche Version ist erlaubt?"
+    options: ["8.2.0", "8.1.9", "9.0.0", "8.1.1"]
+    answer: 1
+    explanation: Die Tilde erlaubt nur PATCH-Updates ab 8.1.2, also 8.1.x.
+  - module: npm
+    type: match
+    question: Welcher Befehl passt zu welcher Situation?
+    pairs:
+      - { left: "Build in der CI-Pipeline", right: "npm ci" }
+      - { left: "Linter nur für die Entwicklung hinzufügen", right: "npm install -D eslint" }
+      - { left: "Veraltete Pakete anzeigen", right: "npm outdated" }
+      - { left: "Bekannte Sicherheitslücken finden", right: "npm audit" }
+    explanation: npm ci für reproduzierbare Builds, -D für devDependencies, outdated für Updates, audit für Sicherheit.
+  - module: npm
+    type: multiple
+    question: Welche Dateien gehören in ein Git-Repository?
+    options: ["package.json", "package-lock.json", "node_modules/", ".nvmrc"]
+    answers: [0, 1, 3]
+    explanation: node_modules ist reproduzierbar und gehört in die .gitignore. Lockfile und .nvmrc sorgen dafür, dass alle dasselbe installieren.
+  - module: npm
+    type: single
+    question: Wozu dient das Feld `bin` in der package.json?
+    options:
+      - Es legt fest, wo node_modules gespeichert wird.
+      - Es macht Dateien des Pakets nach der Installation als Befehle im Terminal verfügbar.
+      - Es listet binäre Abhängigkeiten auf.
+      - Es bestimmt die Node-Version.
+    answer: 1
+    explanation: npm legt für jeden Eintrag in bin einen Befehl in node_modules/.bin (bzw. global) an. Die Datei braucht eine Shebang.
+  - module: npm
+    type: find-bug
+    question: Nach `npm publish` fehlt im Paket der Ordner `src`. Welche Zeile ist schuld?
+    language: json
+    code: |
+      {
+        "name": "textstat",
+        "version": "0.2.0",
+        "bin": { "textstat": "bin/textstat.js" },
+        "files": ["bin"]
+      }
+    bug_line: 5
+    explanation: files ist eine Positivliste. src muss darin stehen, sonst fehlt der Code, den bin/textstat.js importiert.
+  - module: nvm
+    type: single
+    question: Wie sorgst du dafür, dass alle im Team in einem Projekt dieselbe Node-Version nutzen?
+    options:
+      - Jede Person stellt nvm alias default auf die Projektversion.
+      - Eine .nvmrc mit der Version ins Repository committen.
+      - Node.js systemweit installieren.
+      - Die Version in die README schreiben.
+    answer: 1
+    explanation: Die .nvmrc liegt im Repository; nvm install und nvm use lesen sie automatisch.
+  - module: nvm
+    type: match
+    question: Ordne die Phase ihrer Bedeutung zu.
+    pairs:
+      - { left: "Current", right: "Neueste Funktionen, zum Ausprobieren" }
+      - { left: "Active LTS", right: "Empfohlen für Produktion" }
+      - { left: "Maintenance LTS", right: "Nur noch kritische Korrekturen" }
+      - { left: "End-of-Life", right: "Keine Sicherheitsupdates mehr" }
+    explanation: Für Produktion nimmst du LTS; vor dem End-of-Life planst du das Upgrade.
+  - module: nvm
+    type: cloze
+    text: Mit `nvm ___ 22` lädst du Node.js 22 herunter. `nvm use` gilt nur für die aktuelle ___.
+    blanks:
+      - [install]
+      - [Shell, Terminal, Sitzung]
+    explanation: install lädt herunter, use wechselt nur in der aktuellen Shell. Für neue Shells gilt der Alias default.
+  - module: bun-und-alternativen
+    type: multiple
+    question: Welche Aufgaben übernimmt Bun?
+    options: ["JavaScript und TypeScript ausführen", "Pakete installieren", "Tests ausführen", "Datenbanken betreiben"]
+    answers: [0, 1, 2]
+    explanation: Bun ist Runtime, Paketmanager, Test-Runner und Bundler – aber keine Datenbank.
+  - module: bun-und-alternativen
+    type: single
+    question: Was verhindert pnpm durch seine node_modules-Struktur aus Store und Symlinks?
+    options:
+      - Doppelte Lockfiles
+      - Phantom-Abhängigkeiten, also Importe von Paketen, die nicht in der package.json stehen
+      - Langsame Tests
+      - TypeScript-Fehler
+    answer: 1
+    explanation: In node_modules liegen bei pnpm nur die direkten Abhängigkeiten. Ein nicht eingetragenes Paket lässt sich nicht importieren.
+  - module: bun-und-alternativen
+    type: match
+    question: Welche Datei gehört zu welchem Werkzeug?
+    pairs:
+      - { left: "bun.lock", right: "Bun" }
+      - { left: "pnpm-lock.yaml", right: "pnpm" }
+      - { left: "yarn.lock", right: "Yarn" }
+      - { left: "package-lock.json", right: "npm" }
+      - { left: "bunfig.toml", right: "Konfiguration von Bun" }
+    explanation: Am Lockfile erkennst du, welcher Paketmanager im Projekt genutzt wird.
+  - module: bun-und-alternativen
+    type: single
+    question: Wie erlaubst du einem Deno-Skript, genau die Datei daten.txt zu lesen?
+    options: ["deno run -A skript.ts", "deno run --allow-read=daten.txt skript.ts", "deno run skript.ts daten.txt", "sudo deno run skript.ts"]
+    answer: 1
+    explanation: Deno vergibt Berechtigungen gezielt. -A würde alles erlauben, auch Netzwerk und Schreiben.
+tasks:
+  - module: node-grundlagen
+    id: pruefung-gruss
+    type: terminal
+    title: Skript mit Argument, Umgebungsvariable und Exit-Code
+    description: |
+      Schreibe im Ordner `pruefung-gruss` die Datei `gruss.js`:
+
+      1. Das erste Argument ist ein Name: `node gruss.js Ada` gibt `Hallo, Ada!` aus.
+      2. Das Grußwort kommt aus der Umgebungsvariablen `GRUSS` (Standard `Hallo`):
+         `GRUSS=Moin node gruss.js Linus` gibt `Moin, Linus!` aus.
+      3. Fehlt der Name, schreibt das Skript eine Fehlermeldung auf stderr und endet mit Exit-Code `1`.
+    workdir: pruefung-gruss
+    checks:
+      - type: command
+        run: node gruss.js Ada
+        stdout_matches: "^Hallo, Ada!$"
+        message: "\"node gruss.js Ada\" soll genau \"Hallo, Ada!\" ausgeben."
+      - type: command
+        run: GRUSS=Moin node gruss.js Linus
+        stdout_matches: "^Moin, Linus!$"
+        message: Das Grußwort soll aus process.env.GRUSS kommen.
+      - type: command
+        run: node gruss.js >/dev/null 2>&1; echo $?
+        stdout_equals: "1"
+        message: Ohne Namen soll das Skript mit Exit-Code 1 enden.
+      - type: command
+        run: node gruss.js 2>/dev/null | wc -c
+        stdout_matches: "^\\s*0\\s*$"
+        message: Die Fehlermeldung ohne Namen gehört auf stderr (console.error), nicht auf stdout.
+    hints:
+      - "`process.argv[2]`, `process.env.GRUSS ?? \"Hallo\"`, `console.error()` und `process.exit(1)`."
+    solution: |
+      ```js
+      const name = process.argv[2];
+      const gruss = process.env.GRUSS ?? "Hallo";
+      if (!name) {
+        console.error("Bitte gib einen Namen an.");
+        process.exit(1);
+      }
+      console.log(`${gruss}, ${name}!`);
+      ```
+  - module: npm
+    id: pruefung-update
+    type: terminal
+    title: Ein veraltetes Paket aktualisieren
+    description: |
+      Im Ordner `pruefung-update` ist `ms` in der alten Version `2.0.0` fest (exakt) installiert.
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+
+      1. Finde mit `npm outdated` heraus, welche Version die neueste ist.
+      2. Aktualisiere `ms` auf die neueste 2.x-Version, sodass in der package.json ein Dach-Bereich
+         wie `^2.1.3` steht.
+      3. Installiere `picocolors` als **devDependency**.
+    workdir: pruefung-update
+    setup: |
+      npm init -y >/dev/null
+      npm install ms@2.0.0 --save-exact --no-audit --no-fund >/dev/null 2>&1
+    checks:
+      - type: command
+        run: jq -r '.dependencies.ms' package.json
+        stdout_matches: "^\\^2\\.1\\.\\d+$"
+        message: In package.json soll für ms ein Dach-Bereich wie ^2.1.3 stehen.
+      - type: command
+        run: jq -r '.version' node_modules/ms/package.json
+        stdout_matches: "^2\\.1\\.\\d+$"
+        message: In node_modules soll eine 2.1.x-Version von ms liegen.
+      - type: command
+        run: jq -r '.devDependencies.picocolors // "fehlt"' package.json
+        stdout_matches: "^\\^?\\d"
+        message: picocolors soll in den devDependencies stehen.
+    hints:
+      - "`npm install ms@^2.1.0` und `npm install -D picocolors`."
+    solution: |
+      ```bash
+      cd pruefung-update
+      npm outdated
+      npm install ms@^2.1.0
+      npm install -D picocolors
+      ```
+  - module: bun-und-alternativen
+    id: pruefung-bun
+    type: terminal
+    title: Tests mit bun test
+    description: |
+      Im Ordner `pruefung-bun` liegt `src/rabatt.ts` mit der Funktion `rabatt(preis, prozent)`.
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+
+      1. Schreibe `src/rabatt.test.ts` mit mindestens **zwei** Tests (`test`, `expect` aus `bun:test`).
+      2. Lege das Skript `test` → `bun test` an und lass die Tests laufen.
+    workdir: pruefung-bun
+    setup: |
+      cat > package.json <<'EOF'
+      { "name": "pruefung-bun", "version": "1.0.0", "type": "module", "private": true }
+      EOF
+      mkdir -p src
+      cat > src/rabatt.ts <<'EOF'
+      export function rabatt(preis: number, prozent: number): number {
+        if (prozent < 0 || prozent > 100) {
+          throw new Error("Prozent muss zwischen 0 und 100 liegen");
+        }
+        return Math.round(preis * (100 - prozent)) / 100;
+      }
+      EOF
+    checks:
+      - type: command
+        run: jq -r '.scripts.test' package.json
+        stdout_equals: bun test
+        message: Das Skript test soll "bun test" ausführen.
+      - type: command
+        run: bun test 2>&1 | grep -E '^\s*[0-9]+ pass' | grep -oE '[0-9]+' | head -n 1
+        stdout_matches: "^([2-9]|[1-9][0-9]+)$"
+        message: Es sollen mindestens zwei Tests grün sein.
+      - type: command
+        run: bun test >/dev/null 2>&1; echo $?
+        stdout_equals: "0"
+        message: bun test schlägt noch fehl.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          mkdir -p "$d/src" && cp src/rabatt.test.ts "$d/src/" && echo '{"name":"p","type":"module"}' > "$d/package.json"
+          printf 'export function rabatt(preis: number, prozent: number): number {\n  return 0;\n}\n' > "$d/src/rabatt.ts"
+          (cd "$d" && bun test >/dev/null 2>&1); code=$?
+          rm -rf "$d"
+          echo $code
+        stdout_matches: "^[1-9]"
+        message: Deine Tests bleiben grün, auch wenn rabatt() immer 0 liefert. Prüfe echte Ergebnisse mit expect(...).toBe(...).
+    hints:
+      - "`expect(rabatt(100, 20)).toBe(80);`"
+      - "Fehler prüfst du mit `expect(() => rabatt(100, 120)).toThrow();`"
+    solution: |
+      ```ts
+      import { test, expect } from "bun:test";
+      import { rabatt } from "./rabatt";
+
+      test("20 Prozent Rabatt", () => {
+        expect(rabatt(100, 20)).toBe(80);
+      });
+
+      test("ungültige Prozente werfen einen Fehler", () => {
+        expect(() => rabatt(100, 120)).toThrow();
+      });
+      ```
+
+      ```bash
+      npm pkg set scripts.test="bun test"
+      bun test
+      ```

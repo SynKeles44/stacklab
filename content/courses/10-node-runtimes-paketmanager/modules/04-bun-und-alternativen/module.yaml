@@ -1,0 +1,108 @@
+title: Bun und die Alternativen
+description: Bun als Runtime, Paketmanager, Test-Runner und Bundler – und wann pnpm, Yarn oder Deno die bessere Wahl sind.
+exercise:
+  id: modul-uebung-wortzaehler
+  type: terminal
+  title: Ein Wortzähler mit Bun
+  description: |
+    Baue im leeren Ordner `wortzaehler` ein komplettes Bun-Projekt.
+
+    1. Lege das Projekt mit `bun init -y` an.
+    2. Lege eine `bunfig.toml` an, damit `bun add` **exakte** Versionen schreibt
+       (Abschnitt `[install]`, Schlüssel `exact = true`). Installiere danach `picocolors` mit `bun add`.
+    3. Schreibe `src/zaehle.ts` mit der exportierten Funktion `zaehleWoerter(text: string): number`
+       (leerer Text oder nur Leerzeichen ergibt `0`).
+    4. Schreibe mindestens **zwei** Tests in `src/zaehle.test.ts` und lege das Skript `test` → `bun test` an.
+    5. Schreibe `index.ts`: Es liest die Datei aus dem ersten Argument und gibt `<Anzahl> Wörter` aus,
+       z. B. `bun index.ts notiz.txt` → `3 Wörter`.
+    6. Bündle für Node.js: `bun build ./index.ts --outdir dist --target node` – danach funktioniert
+       auch `node dist/index.js notiz.txt`.
+  workdir: wortzaehler
+  checks:
+    - type: file_exists
+      path: bun.lock
+      message: Es gibt noch kein bun.lock. Starte mit bun init -y.
+    - type: file_contains
+      path: bunfig.toml
+      pattern: "\\[install\\][^\\[]*exact\\s*=\\s*true"
+      message: In bunfig.toml fehlt im Abschnitt [install] die Zeile exact = true.
+    - type: command
+      run: jq -r '.dependencies.picocolors // "fehlt"' package.json
+      stdout_matches: "^\\d+\\.\\d+\\.\\d+$"
+      message: picocolors soll mit exakter Version (ohne ^) in den dependencies stehen. Lege zuerst die bunfig.toml an, dann bun add picocolors.
+    - type: command
+      run: bun -e 'import { zaehleWoerter } from "./src/zaehle.ts"; console.log(zaehleWoerter("Bun ist  schnell"), zaehleWoerter("   "))'
+      stdout_equals: 3 0
+      message: zaehleWoerter("Bun ist  schnell") soll 3 liefern, zaehleWoerter("   ") soll 0 liefern.
+    - type: command
+      run: bun test 2>&1 | grep -E '^\s*[0-9]+ pass' | grep -oE '[0-9]+' | head -n 1
+      stdout_matches: "^([2-9]|[1-9][0-9]+)$"
+      message: Es sollen mindestens zwei Tests in src/zaehle.test.ts grün sein.
+    - type: command
+      run: jq -r '.scripts.test' package.json
+      stdout_equals: bun test
+      message: Das Skript test soll "bun test" ausführen.
+    - type: command
+      run: printf 'eins zwei\ndrei vier fünf\n' > .pruef.txt && bun index.ts .pruef.txt; rm -f .pruef.txt
+      stdout_matches: "5 Wörter"
+      message: bun index.ts <datei> soll die Wörter der Datei zählen, z. B. "5 Wörter".
+    - type: command
+      run: printf 'a b c\n' > .pruef.txt && node dist/index.js .pruef.txt; rm -f .pruef.txt
+      stdout_matches: "3 Wörter"
+      message: dist/index.js fehlt oder funktioniert nicht mit Node.js. Bündle mit bun build ./index.ts --outdir dist --target node.
+  hints:
+    - "bunfig.toml: zwei Zeilen – `[install]` und `exact = true`."
+    - "`text.trim() === \"\" ? 0 : text.trim().split(/\\s+/).length`"
+    - "In index.ts: `import { readFileSync } from \"node:fs\";` – so läuft der Code in Bun **und** nach dem Bündeln in Node.js."
+  solution: |
+    ```bash
+    mkdir -p wortzaehler && cd wortzaehler
+    bun init -y
+    printf '[install]\nexact = true\n' > bunfig.toml
+    bun add picocolors
+    npm pkg set scripts.test="bun test"
+    mkdir -p src
+    ```
+
+    ```ts
+    // src/zaehle.ts
+    export function zaehleWoerter(text: string): number {
+      const sauber = text.trim();
+      return sauber === "" ? 0 : sauber.split(/\s+/).length;
+    }
+    ```
+
+    ```ts
+    // src/zaehle.test.ts
+    import { test, expect } from "bun:test";
+    import { zaehleWoerter } from "./zaehle";
+
+    test("zählt Wörter", () => {
+      expect(zaehleWoerter("Bun ist schnell")).toBe(3);
+    });
+
+    test("leerer Text hat null Wörter", () => {
+      expect(zaehleWoerter("   ")).toBe(0);
+    });
+    ```
+
+    ```ts
+    // index.ts
+    import { readFileSync } from "node:fs";
+    import pc from "picocolors";
+    import { zaehleWoerter } from "./src/zaehle";
+
+    const datei = process.argv[2];
+    if (!datei) {
+      console.error("Aufruf: bun index.ts <datei>");
+      process.exit(1);
+    }
+    const anzahl = zaehleWoerter(readFileSync(datei, "utf8"));
+    console.log(pc.green(`${anzahl} Wörter`));
+    ```
+
+    ```bash
+    bun test
+    bun build ./index.ts --outdir dist --target node
+    node dist/index.js README.md
+    ```

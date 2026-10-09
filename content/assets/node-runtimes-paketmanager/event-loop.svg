@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="30" y="30" width="210" height="330" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="135" y="70" text-anchor="middle" font-size="19" font-weight="600" fill="#1e1b3a">Call Stack</text>
+<rect x="55" y="230" width="160" height="34" rx="8" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+<text x="135" y="252" text-anchor="middle" font-size="13" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">console.log()</text>
+<rect x="55" y="272" width="160" height="34" rx="8" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+<text x="135" y="294" text-anchor="middle" font-size="13" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">greet()</text>
+<rect x="55" y="314" width="160" height="34" rx="8" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+<text x="135" y="336" text-anchor="middle" font-size="13" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">main (Skript)</text>
+<text x="135" y="215" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">oben = läuft gerade</text>
+<rect x="290" y="30" width="220" height="130" rx="14" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="400" y="80" text-anchor="middle" font-size="17" font-weight="600" fill="#1e1b3a">libuv / Betriebssystem</text>
+<text x="400" y="110" text-anchor="middle" font-size="13" font-weight="400" fill="#475569">Timer · Dateien · Netzwerk</text>
+<text x="400" y="132" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">arbeitet im Hintergrund</text>
+<rect x="560" y="30" width="215" height="130" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="667" y="70" text-anchor="middle" font-size="17" font-weight="600" fill="#1e1b3a">Microtask-Queue</text>
+<rect x="580" y="88" width="175" height="26" rx="6" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="667" y="106" text-anchor="middle" font-size="12" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Promise.then()</text>
+<rect x="580" y="120" width="175" height="26" rx="6" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="667" y="138" text-anchor="middle" font-size="12" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">queueMicrotask()</text>
+<rect x="560" y="200" width="215" height="130" rx="14" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="3"/>
+<text x="667" y="240" text-anchor="middle" font-size="17" font-weight="600" fill="#1e1b3a">Task-Queue</text>
+<rect x="580" y="258" width="175" height="26" rx="6" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+<text x="667" y="276" text-anchor="middle" font-size="12" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">setTimeout-Callback</text>
+<rect x="580" y="290" width="175" height="26" rx="6" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+<text x="667" y="308" text-anchor="middle" font-size="12" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">I/O-Callback</text>
+<circle cx="400" cy="300" r="62" fill="#f87171" fill-opacity=".12" stroke="#f87171" stroke-width="3"/>
+<text x="400" y="306" text-anchor="middle" font-size="17" font-weight="600" fill="#1e1b3a">Event Loop</text>
+<path d="M242 90 H 286" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="264" y="80" text-anchor="middle" font-size="11" font-weight="500" fill="#475569">startet</text>
+<path d="M512 140 C 535 150, 540 230, 556 250" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="560" y="190" text-anchor="end" font-size="11" font-weight="500" fill="#475569">fertig →</text>
+<path d="M558 300 H 466" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M600 162 C 560 200, 480 230, 450 248" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M338 300 H 244" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="290" y="290" text-anchor="middle" font-size="11" font-weight="500" fill="#475569">nächster</text>
+<text x="290" y="325" text-anchor="middle" font-size="11" font-weight="500" fill="#475569">Callback</text>
+<text x="400" y="405" text-anchor="middle" font-size="13" font-weight="500" fill="#1e1b3a">Regel: erst Stack leer → dann alle Microtasks → dann ein Task aus der Task-Queue</text>
+</svg>

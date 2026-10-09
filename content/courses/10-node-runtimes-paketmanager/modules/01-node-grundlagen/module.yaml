@@ -1,0 +1,109 @@
+title: Node.js verstehen
+description: Was eine JavaScript-Runtime ist, wie du Skripte mit process und Kernmodulen schreibst, wie die Event Loop arbeitet und wie du mit ES-Modulen einen eigenen HTTP-Server baust.
+exercise:
+  id: modul-uebung-gruss-api
+  type: terminal
+  title: Eine kleine Gruß-API
+  description: |
+    Im Ordner `gruss-api` baust du eine kleine API aus mehreren ES-Modulen. Klicke zuerst auf
+    **Aufgabe vorbereiten** – dann liegt dort schon eine Datei `notizen.json`.
+
+    1. Lege eine `package.json` an, die das Projekt als ES-Modul-Projekt kennzeichnet
+       (`"type": "module"`).
+    2. Lege `lib/gruss.js` an. Sie exportiert die benannte Funktion `erzeugeGruss(name)`, die
+       `Hallo, <name>!` zurückgibt – ohne Namen `Hallo, Welt!`.
+    3. Lege `server.js` an, das `erzeugeGruss` importiert und auf dem Port aus `PORT` lauscht
+       (Standard `3000`):
+       - `GET /gruss?name=Ada` antwortet mit JSON `{"gruss":"Hallo, Ada!"}`.
+       - `GET /notizen` liest `notizen.json` **nicht blockierend** mit `node:fs/promises` und
+         schickt den Inhalt als JSON zurück.
+       - Alles andere: Status `404`.
+  workdir: gruss-api
+  setup: |
+    cat > notizen.json <<'X'
+    [
+      { "id": 1, "text": "Event Loop verstehen" },
+      { "id": 2, "text": "ES-Module nutzen" }
+    ]
+    X
+  checks:
+    - type: command
+      run: jq -r '.type' package.json
+      stdout_equals: module
+      message: 'Die package.json braucht "type": "module".'
+    - type: file_exists
+      path: lib/gruss.js
+      message: Lege die Datei lib/gruss.js an.
+    - type: command
+      run: node -e 'import("./lib/gruss.js").then(m => console.log(m.erzeugeGruss("Ada") + "|" + m.erzeugeGruss()))'
+      stdout_equals: Hallo, Ada!|Hallo, Welt!
+      message: erzeugeGruss("Ada") soll "Hallo, Ada!" liefern, erzeugeGruss() ohne Namen "Hallo, Welt!".
+    - type: file_contains
+      path: server.js
+      pattern: "fs/promises"
+      message: Lies notizen.json in server.js mit node:fs/promises, damit der Server nicht blockiert.
+    - type: command
+      run: |
+        PORT=3921 node server.js >/dev/null 2>&1 & pid=$!
+        sleep 1
+        curl -s 'localhost:3921/gruss?name=Linus' | jq -r '.gruss'
+        kill $pid
+      stdout_equals: Hallo, Linus!
+      message: GET /gruss?name=Linus soll {"gruss":"Hallo, Linus!"} liefern.
+    - type: command
+      run: |
+        PORT=3922 node server.js >/dev/null 2>&1 & pid=$!
+        sleep 1
+        curl -s localhost:3922/notizen | jq -r '.[1].text'
+        kill $pid
+      stdout_equals: ES-Module nutzen
+      message: GET /notizen soll den Inhalt von notizen.json als JSON liefern.
+    - type: command
+      run: |
+        PORT=3923 node server.js >/dev/null 2>&1 & pid=$!
+        sleep 1
+        curl -s -o /dev/null -w '%{http_code}' localhost:3923/unbekannt
+        kill $pid
+      stdout_equals: "404"
+      message: Unbekannte Pfade sollen mit Status 404 beantwortet werden.
+  hints:
+    - "`npm init -y` erzeugt eine package.json – danach ergänzt du das Feld type."
+    - "Den Query-Parameter liest du mit `new URL(req.url, \"http://localhost\")` und `.searchParams.get(\"name\")`."
+    - "Der Handler darf `async` sein: `http.createServer(async (req, res) => { const text = await readFile(…) })`."
+  solution: |
+    ```js
+    // lib/gruss.js
+    export function erzeugeGruss(name) {
+      return `Hallo, ${name ?? "Welt"}!`;
+    }
+    ```
+
+    ```js
+    // server.js
+    import http from "node:http";
+    import { readFile } from "node:fs/promises";
+    import { erzeugeGruss } from "./lib/gruss.js";
+
+    const port = Number(process.env.PORT ?? 3000);
+
+    function json(res, status, daten) {
+      res.writeHead(status, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(daten));
+    }
+
+    http.createServer(async (req, res) => {
+      const url = new URL(req.url, "http://localhost");
+      if (req.method === "GET" && url.pathname === "/gruss") {
+        json(res, 200, { gruss: erzeugeGruss(url.searchParams.get("name") ?? undefined) });
+        return;
+      }
+      if (req.method === "GET" && url.pathname === "/notizen") {
+        const text = await readFile(new URL("./notizen.json", import.meta.url), "utf8");
+        json(res, 200, JSON.parse(text));
+        return;
+      }
+      json(res, 404, { fehler: "Nicht gefunden" });
+    }).listen(port);
+    ```
+
+    Dazu in der `package.json`: `"type": "module"`.

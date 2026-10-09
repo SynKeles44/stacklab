@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="70" text-anchor="middle" font-size="56" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">2.4.1</text>
+<line x1="333" y1="82" x2="208" y2="112" stroke="#f87171" stroke-width="3"/>
+<line x1="400" y1="82" x2="400" y2="112" stroke="#f59e0b" stroke-width="3"/>
+<line x1="467" y1="82" x2="592" y2="112" stroke="#34d399" stroke-width="3"/>
+<rect x="113" y="115" width="190" height="58" rx="14" fill="#f87171" fill-opacity=".14" stroke="#f87171" stroke-width="3"/>
+<text x="208" y="140" text-anchor="middle" font-size="16" font-weight="600" fill="#1e1b3a">MAJOR</text>
+<text x="208" y="161" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">inkompatible Änderung</text>
+<rect x="305" y="115" width="190" height="58" rx="14" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="3"/>
+<text x="400" y="140" text-anchor="middle" font-size="16" font-weight="600" fill="#1e1b3a">MINOR</text>
+<text x="400" y="161" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">neue Funktion, kompatibel</text>
+<rect x="497" y="115" width="190" height="58" rx="14" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="592" y="140" text-anchor="middle" font-size="16" font-weight="600" fill="#1e1b3a">PATCH</text>
+<text x="592" y="161" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">nur Fehlerbehebung</text>
+<rect x="60" y="205" width="680" height="34" fill="#a78bfa" fill-opacity=".18" stroke="#cbd5e1"/>
+<text x="80" y="228" text-anchor="start" font-size="14" font-weight="700" fill="#1e1b3a">Angabe</text>
+<text x="250" y="228" text-anchor="start" font-size="14" font-weight="700" fill="#1e1b3a">erlaubt</text>
+<text x="500" y="228" text-anchor="start" font-size="14" font-weight="700" fill="#1e1b3a">Beispiel: passt / passt nicht</text>
+<rect x="60" y="239" width="680" height="34" fill="#ffffff" fill-opacity="1" stroke="#cbd5e1"/>
+<text x="80" y="262" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">^2.4.1</text>
+<text x="250" y="262" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">>=2.4.1  &lt;3.0.0</text>
+<text x="500" y="262" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a">2.9.0 ✓   3.0.0 ✗</text>
+<rect x="60" y="273" width="680" height="34" fill="#ffffff" fill-opacity="1" stroke="#cbd5e1"/>
+<text x="80" y="296" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">~2.4.1</text>
+<text x="250" y="296" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">>=2.4.1  &lt;2.5.0</text>
+<text x="500" y="296" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a">2.4.7 ✓   2.5.0 ✗</text>
+<rect x="60" y="307" width="680" height="34" fill="#ffffff" fill-opacity="1" stroke="#cbd5e1"/>
+<text x="80" y="330" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">2.4.1</text>
+<text x="250" y="330" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">genau 2.4.1</text>
+<text x="500" y="330" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a">2.4.2 ✗</text>
+<rect x="60" y="341" width="680" height="34" fill="#ffffff" fill-opacity="1" stroke="#cbd5e1"/>
+<text x="80" y="364" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">^0.4.1</text>
+<text x="250" y="364" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">>=0.4.1  &lt;0.5.0</text>
+<text x="500" y="364" text-anchor="start" font-size="14" font-weight="500" fill="#1e1b3a">0.4.9 ✓   0.5.0 ✗</text>
+</svg>

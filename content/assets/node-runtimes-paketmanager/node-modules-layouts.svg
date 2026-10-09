@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 380" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="200" y="34" text-anchor="middle" font-size="16" font-weight="600" fill="#1e1b3a">npm / yarn classic: flach (hoisted)</text>
+<text x="600" y="34" text-anchor="middle" font-size="16" font-weight="600" fill="#1e1b3a">pnpm: Store + Symlinks</text>
+<rect x="30" y="50" width="340" height="300" rx="14" fill="#22d3ee" fill-opacity=".08" stroke="#22d3ee" stroke-width="3"/>
+<text x="50" y="82" text-anchor="start" font-size="14" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">node_modules/</text>
+<rect x="60" y="105" width="290" height="44" rx="8" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="75" y="125" text-anchor="start" font-size="14" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">debug/</text>
+<text x="75" y="142" text-anchor="start" font-size="11" font-weight="400" fill="#475569">direkt installiert</text>
+<rect x="60" y="163" width="290" height="44" rx="8" fill="#ffffff" stroke="#f87171" stroke-width="2"/>
+<text x="75" y="183" text-anchor="start" font-size="14" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">ms/</text>
+<text x="75" y="200" text-anchor="start" font-size="11" font-weight="400" fill="#475569">von debug benötigt – trotzdem sichtbar!</text>
+<rect x="60" y="221" width="290" height="44" rx="8" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="75" y="241" text-anchor="start" font-size="14" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">picocolors/</text>
+<text x="75" y="258" text-anchor="start" font-size="11" font-weight="400" fill="#475569">direkt installiert</text>
+<text x="200" y="300" text-anchor="middle" font-size="12" font-weight="500" fill="#b91c1c">require("ms") klappt, obwohl ms</text>
+<text x="200" y="318" text-anchor="middle" font-size="12" font-weight="500" fill="#b91c1c">nicht in package.json steht</text>
+<rect x="430" y="50" width="340" height="140" rx="14" fill="#34d399" fill-opacity=".08" stroke="#34d399" stroke-width="3"/>
+<text x="450" y="82" text-anchor="start" font-size="14" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">node_modules/</text>
+<rect x="460" y="98" width="280" height="32" rx="8" fill="#ffffff" stroke="#34d399" stroke-width="2"/>
+<text x="475" y="119" text-anchor="start" font-size="13" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">debug → Symlink</text>
+<rect x="460" y="140" width="280" height="32" rx="8" fill="#ffffff" stroke="#34d399" stroke-width="2"/>
+<text x="475" y="161" text-anchor="start" font-size="13" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">picocolors → Symlink</text>
+<rect x="430" y="220" width="340" height="130" rx="14" fill="#a78bfa" fill-opacity=".08" stroke="#a78bfa" stroke-width="3"/>
+<text x="450" y="250" text-anchor="start" font-size="14" font-weight="600" fill="#1e1b3a">Store (einmal pro Rechner)</text>
+<text x="465" y="278" text-anchor="start" font-size="13" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">debug@4.4.3</text>
+<text x="465" y="302" text-anchor="start" font-size="13" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">ms@2.1.3  (nur für debug)</text>
+<text x="465" y="326" text-anchor="start" font-size="13" font-weight="500" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">picocolors@1.1.1</text>
+<path d="M600 172 C 640 195, 640 210, 620 232" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="6 5" marker-end="url(#a)"/>
+</svg>
