@@ -21,9 +21,7 @@ use Illuminate\Support\Carbon;
 
 final class LessonController extends Controller
 {
-    public function __construct(private readonly ProgressService $progress)
-    {
-    }
+    public function __construct(private readonly ProgressService $progress) {}
 
     public function show(Request $request, string $courseSlug, string $lessonSlug): JsonResponse
     {

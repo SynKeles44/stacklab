@@ -20,8 +20,7 @@ final class ProjectController extends Controller
     public function __construct(
         private readonly SandboxClient $sandbox,
         private readonly ProgressService $progress,
-    ) {
-    }
+    ) {}
 
     public function show(Request $request, string $courseSlug): JsonResponse
     {

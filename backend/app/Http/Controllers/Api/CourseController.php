@@ -13,9 +13,7 @@ use Illuminate\Http\Request;
 
 final class CourseController extends Controller
 {
-    public function __construct(private readonly ProgressService $progress)
-    {
-    }
+    public function __construct(private readonly ProgressService $progress) {}
 
     public function index(Request $request): JsonResponse
     {

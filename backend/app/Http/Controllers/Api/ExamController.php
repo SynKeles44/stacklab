@@ -22,8 +22,7 @@ final class ExamController extends Controller
         private readonly QuizGrader $grader,
         private readonly SandboxClient $sandbox,
         private readonly ProgressService $progress,
-    ) {
-    }
+    ) {}
 
     public function show(Request $request, string $courseSlug): JsonResponse
     {

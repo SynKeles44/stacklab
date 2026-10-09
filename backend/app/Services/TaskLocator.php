@@ -35,6 +35,7 @@ final class TaskLocator
         return ['task' => $exercise, 'course' => $module->course, 'key' => "module:{$module->id}:{$taskId}"];
     }
 
+    /** @param array<string, mixed> $task */
     public function workdir(array $task): string
     {
         $workdir = trim((string) ($task['workdir'] ?? $task['id'] ?? 'aufgabe'), '/');

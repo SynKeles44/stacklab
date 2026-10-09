@@ -24,8 +24,7 @@ final class TaskController extends Controller
         private readonly TaskLocator $locator,
         private readonly SandboxClient $sandbox,
         private readonly ProgressService $progress,
-    ) {
-    }
+    ) {}
 
     public function complete(TaskRequest $request): JsonResponse
     {

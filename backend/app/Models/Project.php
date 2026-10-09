@@ -7,6 +7,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $course_id
+ * @property string $slug
+ * @property string $title
+ * @property string $description
+ * @property string|null $goal
+ * @property list<array<string, mixed>> $steps
+ * @property Course $course
+ */
 class Project extends Model
 {
     protected $guarded = [];

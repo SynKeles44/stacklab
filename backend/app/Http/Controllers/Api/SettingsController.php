@@ -11,9 +11,7 @@ use Illuminate\Http\JsonResponse;
 
 final class SettingsController extends Controller
 {
-    public function __construct(private readonly SandboxClient $sandbox)
-    {
-    }
+    public function __construct(private readonly SandboxClient $sandbox) {}
 
     public function workspace(): JsonResponse
     {

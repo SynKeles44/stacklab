@@ -88,7 +88,7 @@ final class GlossaryController extends Controller
             'lesson' => $term->lesson !== null ? [
                 'slug' => $term->lesson->slug,
                 'title' => $term->lesson->title,
-                'course_slug' => $term->lesson->course?->slug,
+                'course_slug' => $term->lesson->course->slug,
             ] : null,
         ];
     }

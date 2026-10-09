@@ -18,9 +18,7 @@ use Illuminate\Support\Carbon;
 
 final class DashboardController extends Controller
 {
-    public function __construct(private readonly ProgressService $progress)
-    {
-    }
+    public function __construct(private readonly ProgressService $progress) {}
 
     public function __invoke(Request $request): JsonResponse
     {

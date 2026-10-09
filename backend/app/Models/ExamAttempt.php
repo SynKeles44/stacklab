@@ -6,7 +6,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property int $exam_id
+ * @property Carbon $started_at
+ * @property Carbon|null $finished_at
+ * @property int $score
+ * @property int $max_score
+ * @property bool $passed
+ * @property array<string, mixed>|null $result
+ * @property Exam $exam
+ */
 class ExamAttempt extends Model
 {
     protected $guarded = [];

@@ -4,10 +4,33 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $id
+ * @property string $slug
+ * @property string $title
+ * @property string|null $subtitle
+ * @property string $description
+ * @property string $category
+ * @property string $level
+ * @property int $position
+ * @property string|null $icon
+ * @property string|null $color
+ * @property int $estimated_hours
+ * @property list<string> $prerequisites
+ * @property list<string> $learning_goals
+ * @property list<string> $references
+ * @property string|null $workspace_dir
+ * @property int|null $lessons_count
+ * @property int|null $modules_count
+ * @property Collection<int, CourseModule> $modules
+ * @property Project|null $project
+ * @property Exam|null $exam
+ */
 class Course extends Model
 {
     protected $guarded = [];

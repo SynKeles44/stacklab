@@ -12,9 +12,7 @@ use Illuminate\Http\Request;
 
 final class TerminalController extends Controller
 {
-    public function __construct(private readonly SandboxClient $sandbox)
-    {
-    }
+    public function __construct(private readonly SandboxClient $sandbox) {}
 
     public function session(Request $request): JsonResponse
     {

@@ -13,9 +13,7 @@ final class ContentLoader
     /** @var list<string> */
     private array $errors = [];
 
-    public function __construct(private readonly string $root)
-    {
-    }
+    public function __construct(private readonly string $root) {}
 
     /** @return list<string> */
     public function errors(): array
@@ -156,7 +154,7 @@ final class ContentLoader
         return [(int) $matches[1], $matches[2]];
     }
 
-    /** @return array<string, mixed>|null */
+    /** @return array<mixed>|null */
     private function yaml(string $path): ?array
     {
         if (! is_file($path)) {
