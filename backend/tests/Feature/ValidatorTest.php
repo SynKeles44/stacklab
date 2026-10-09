@@ -37,3 +37,13 @@ it('reports unknown terms, broken answers and missing tasks', function (): void 
         ->toContain('answer must be a valid option index')
         ->toContain('lesson needs at least one interactive task');
 });
+
+it('rejects aliases that YAML parsed as booleans or null', function (): void {
+    $validator = new ContentValidator;
+    $validator->validate(['courses' => [], 'terms' => [[
+        'slug' => 'boolean', 'file' => 'glossary/x.yaml', 'term' => 'Boolean', 'short' => 's', 'explanation' => 'e', 'category' => 'grundlagen',
+        'aliases' => ['bool', true, null],
+    ]]]);
+
+    expect(implode("\n", $validator->errors()))->toContain('got true')->toContain('got null');
+});

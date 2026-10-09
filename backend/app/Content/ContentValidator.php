@@ -94,6 +94,11 @@ final class ContentValidator
         foreach (['term', 'short', 'explanation', 'category'] as $field) {
             $this->requireString($term, $field, $file, "term '{$slug}'");
         }
+        foreach ((array) ($term['aliases'] ?? []) as $alias) {
+            if (! is_string($alias) || trim($alias) === '') {
+                $this->error($file, "term '{$slug}': every alias must be a quoted string, got ".json_encode($alias).' (quote true, false, null, numbers)');
+            }
+        }
     }
 
     /**

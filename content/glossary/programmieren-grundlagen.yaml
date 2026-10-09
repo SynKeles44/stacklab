@@ -355,7 +355,7 @@
     `alter >= 18` liefern immer einen Boolean. Benannt ist der Typ nach dem Mathematiker George Boole.
   example: "`const istVolljaehrig = alter >= 18;` speichert `true` oder `false`."
   category: programmierung
-  aliases: [Booleans, Wahrheitswert, Wahrheitswerte, bool, true, false]
+  aliases: [Booleans, Wahrheitswert, Wahrheitswerte, bool, "true", "false"]
   related: [datentyp, boolesche-logik, bedingung]
   lesson: programmieren-grundlagen/variablen-und-datentypen
 - slug: "null"
@@ -367,7 +367,7 @@
     aus historischen Gründen `"object"`.
   example: "`let gewinner = null;` – es gibt noch keinen Gewinner."
   category: programmierung
-  aliases: [NULL]
+  aliases: ["NULL"]
   related: [undefined, datentyp, nullish-coalescing]
   lesson: programmieren-grundlagen/variablen-und-datentypen
 - slug: undefined
