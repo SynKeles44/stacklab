@@ -24,7 +24,6 @@ export function CoursePage() {
   const percent = lessons.length ? Math.round((completed / lessons.length) * 100) : 0
   const firstLesson = lessons[0]
   const target = course.next_lesson ?? (completed === 0 ? firstLesson : null)
-  const openModule = course.modules.find((module) => module.lessons.some((lesson) => !lesson.completed))?.slug ?? course.modules[0]?.slug
 
   useEffect(() => {
     document.title = `${course.title} · Stacklab`
@@ -98,7 +97,7 @@ export function CoursePage() {
 
           <section>
             <h2 className="mb-4 text-xl font-semibold">Inhalt</h2>
-            <Accordion type="multiple" defaultValue={openModule ? [openModule] : []} className="space-y-3">
+            <Accordion type="multiple" className="space-y-3">
               {course.modules.map((module, index) => (
                 <ModuleItem key={module.id} course={course} module={module} index={index} />
               ))}

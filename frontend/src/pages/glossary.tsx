@@ -1,5 +1,4 @@
 import { BookA, Lock, Search, Sparkles } from 'lucide-react'
-import { motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLoaderData } from 'react-router'
 import { Input } from '@/components/ui/input'
@@ -90,8 +89,7 @@ export function GlossaryPage() {
               {items.map((term) => {
                 const locked = Boolean(user) && !term.unlocked_at
                 return (
-                  <motion.div key={term.slug} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-                    <Link to={`/lexikon/${term.slug}`} className={cn('flex h-full flex-col rounded-xl border bg-card p-4 transition-colors hover:border-brand/50', locked && 'bg-muted/30')}>
+                  <Link key={term.slug} to={`/lexikon/${term.slug}`} className={cn('flex h-full flex-col rounded-xl border bg-card p-4 transition-colors hover:border-brand/50', locked && 'bg-muted/30')}>
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold">{term.term}</span>
                         {locked ? <Lock className="size-3.5 text-muted-foreground" /> : user ? <Sparkles className="size-3.5 text-brand" /> : null}
@@ -99,7 +97,6 @@ export function GlossaryPage() {
                       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{term.short}</p>
                       <span className="mt-auto pt-2 text-xs text-muted-foreground">{term.category}</span>
                     </Link>
-                  </motion.div>
                 )
               })}
             </div>
