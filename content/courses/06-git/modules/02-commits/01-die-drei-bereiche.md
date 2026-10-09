@@ -100,35 +100,29 @@ tasks:
       git status   # notizen.txt bleibt als "modified" stehen
       ```
 ---
-
-Die meisten Menschen, die Git „nicht verstehen“, haben ein einziges Bild nicht im Kopf: die
-**drei Bereiche**. Wenn du dieses Bild einmal verinnerlicht hast, ergeben fast alle Befehle plötzlich Sinn.
+Wer Git „nicht versteht“, hat meist ein einziges Bild nicht im Kopf: die **drei Bereiche**. Mit diesem
+Bild ergeben fast alle Befehle plötzlich Sinn.
 
 ![Die drei Bereiche von Git: Arbeitsverzeichnis, Staging-Bereich und Repository](/assets/git/drei-bereiche.svg)
 
 ## 1. Das Arbeitsverzeichnis
 
-Das [[arbeitsverzeichnis|Arbeitsverzeichnis]] (englisch *working directory*) sind ganz einfach die Dateien,
-die du im Ordner siehst und im Editor bearbeitest. Wenn du `index.html` öffnest, etwas tippst und
-speicherst, änderst du das Arbeitsverzeichnis – und sonst nichts.
+Das [[arbeitsverzeichnis|Arbeitsverzeichnis]] (*working directory*) sind die Dateien, die du im Ordner siehst
+und im Editor bearbeitest. Speicherst du `index.html`, änderst du nur das Arbeitsverzeichnis.
 
-Git beobachtet das Arbeitsverzeichnis und vergleicht es mit dem letzten Commit. Deshalb kann
-`git status` dir sagen: „Diese Datei ist *modified*.“
+Git vergleicht es mit dem letzten Commit. Deshalb meldet `git status`: „Diese Datei ist *modified*.“
 
 ## 2. Der Staging-Bereich
 
-Der [[staging-bereich|Staging-Bereich]] (auch *Index* genannt) ist eine Art **Packtisch**. Bevor du ein
-Paket verschickst, legst du genau die Dinge darauf, die hinein sollen. Alles andere bleibt im Regal.
-
-Mit `git add` legst du eine Änderung auf den Packtisch:
+Der [[staging-bereich|Staging-Bereich]] (auch *Index*) ist ein **Packtisch**: Darauf legst du genau das, was
+ins nächste Paket soll. Alles andere bleibt im Regal.
 
 ```bash
 git add index.html
 ```
 
-Warum gibt es diesen Zwischenschritt überhaupt? Weil du oft an mehreren Dingen gleichzeitig
-arbeitest. Vielleicht hast du einen Fehler behoben **und** nebenbei eine Debug-Ausgabe eingebaut.
-Mit dem Staging-Bereich kannst du gezielt nur die Fehlerbehebung committen – sauber und nachvollziehbar.
+Warum der Zwischenschritt? Oft arbeitest du an mehreren Dingen gleichzeitig – etwa an einer Fehlerbehebung
+und nebenbei an einer Debug-Ausgabe. So committest du gezielt nur die Fehlerbehebung.
 
 > [!MERKSATZ]
 > Ein Commit enthält **genau das, was im Staging-Bereich liegt** – nicht automatisch alles, was du
@@ -136,87 +130,61 @@ Mit dem Staging-Bereich kannst du gezielt nur die Fehlerbehebung committen – s
 
 ## 3. Das Repository
 
-Das [[repository|Repository]] ist das Archiv: der Ordner `.git` mit allen Commits. Mit `git commit`
-nimmst du alles vom Packtisch, verpackst es als Schnappschuss und stellst es ins Archiv:
+Das [[repository|Repository]] ist das Archiv im Ordner `.git`. `git commit` nimmt alles vom Packtisch und
+stellt es als Schnappschuss ins Archiv:
 
 ```bash
 git commit -m "fix: correct typo in headline"
 ```
 
-Danach ist der Staging-Bereich wieder „leer“ in dem Sinne, dass er genau dem letzten Commit entspricht.
+Danach entspricht der Staging-Bereich wieder genau dem letzten Commit.
 
 ## git status liest alle drei Bereiche
 
-`git status` ist dein wichtigster Befehl. Er vergleicht die drei Bereiche und erzählt dir,
-was wo liegt. Eine typische Ausgabe sieht so aus:
-
 ```text title="git status"
-On branch main
 Changes to be committed:
-  (use "git restore --staged <file>..." to unstage)
         modified:   index.html
-
 Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
         modified:   notizen.txt
-
 Untracked files:
-  (use "git add <file>..." to include in what will be committed)
         bild.png
 ```
 
-So liest du sie:
-
 | Abschnitt | Bedeutung | Bereich |
 |---|---|---|
-| *Changes to be committed* | Liegt auf dem Packtisch, kommt in den nächsten Commit | Staging-Bereich |
-| *Changes not staged for commit* | Geändert, aber noch nicht vorgemerkt | Arbeitsverzeichnis |
-| *Untracked files* | Neue Datei, die Git noch nie gesehen hat | Arbeitsverzeichnis |
+| *Changes to be committed* | Kommt in den nächsten Commit | Staging-Bereich |
+| *Changes not staged* | Geändert, aber nicht vorgemerkt | Arbeitsverzeichnis |
+| *Untracked files* | Neue Datei, Git kennt sie noch nicht | Arbeitsverzeichnis |
 
 > [!TIPP]
-> Mit `git status -s` bekommst du eine Kurzfassung. Die erste Spalte zeigt den Staging-Bereich,
-> die zweite das Arbeitsverzeichnis: `M ` = vorgemerkt, ` M` = geändert, aber nicht vorgemerkt,
-> `??` = unbekannt (untracked).
+> `git status -s` zeigt eine Kurzfassung: `M ` = vorgemerkt, ` M` = geändert, `??` = unbekannt.
 
 ## Den Weg zurück gehen
-
-Jeder Schritt nach rechts hat ein Gegenstück nach links:
 
 ```bash title="Vormerkung zurücknehmen – die Änderung bleibt in der Datei"
 git restore --staged index.html
 ```
 
-```bash title="Änderung im Arbeitsverzeichnis verwerfen – Vorsicht!"
+```bash title="Änderung verwerfen – Vorsicht!"
 git restore index.html
 ```
 
 > [!ACHTUNG]
-> `git restore datei` (ohne `--staged`) setzt die Datei auf den letzten Commit zurück. Was du seit
-> dem letzten Commit in dieser Datei geändert hast, ist danach **unwiederbringlich weg** – Git hatte
-> diese Änderung nie gespeichert.
-
-## Typische Fehler
+> `git restore datei` setzt die Datei auf den letzten Commit zurück. Was du seitdem geändert hast, ist
+> **unwiederbringlich weg**.
 
 > [!FEHLER]
-> **„Ich habe committet, aber meine Änderung fehlt!“** – Du hast die Datei nach `git add` noch
-> einmal geändert. Git hat beim `add` den damaligen Stand vorgemerkt. Die spätere Änderung liegt nur
-> im Arbeitsverzeichnis. Lösung: erneut `git add`, dann committen.
-
-> [!FEHLER]
-> **`git add .` aus Gewohnheit.** Der Punkt steht für „alles im aktuellen Ordner“. So landen schnell
-> Log-Dateien, Passwörter in `.env`-Dateien oder riesige Build-Ordner im Repository. Gewöhne dir an,
-> vorher `git status` zu lesen – und nutze eine `.gitignore` (dazu später mehr).
+> **`git add .` aus Gewohnheit.** Der Punkt merkt *alles* vor – auch Log-Dateien oder `.env` mit
+> Passwörtern. Lies vorher `git status` und nutze eine `.gitignore`.
 
 > [!PRAXIS]
-> Viele Entwicklerinnen nutzen `git add -p` („patch“). Git zeigt jede einzelne Änderung und fragt,
-> ob sie in den Commit soll. So entstehen kleine, saubere Commits, die im Code-Review leicht zu
-> verstehen sind.
+> Mit `git add -p` fragt Git dich bei jeder einzelnen Änderung, ob sie in den Commit soll. So entstehen
+> kleine Commits, die im Code-Review leicht zu verstehen sind.
 
 ## Zusammenfassung
 
 - **Arbeitsverzeichnis**: deine Dateien, wie du sie im Editor siehst.
-- **Staging-Bereich / Index**: der Packtisch – was du mit `git add` vormerkst.
-- **Repository**: das Archiv aller Commits im Ordner `.git`.
-- `git add` → nach rechts in den Staging-Bereich, `git commit` → ins Repository,
-  `git restore --staged` und `git restore` → zurück nach links.
-- `git status` zeigt dir jederzeit, was in welchem Bereich liegt.
+- **Staging-Bereich / Index**: der Packtisch – gefüllt mit `git add`.
+- **Repository**: das Archiv aller Commits in `.git`.
+- `git restore --staged` und `git restore` gehen den Weg zurück.
+- `git status` zeigt jederzeit, was wo liegt.

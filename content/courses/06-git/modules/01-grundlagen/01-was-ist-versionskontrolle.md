@@ -87,123 +87,97 @@ tasks:
           Genau dieses Chaos löst Git: Jede Änderung ist ein Commit mit Autor, Zeit und Nachricht, und
           Git kann Änderungen von mehreren Personen kontrolliert zusammenführen.
 ---
-
-Stell dir vor, du schreibst an einer wichtigen Hausarbeit. Du speicherst sie als `hausarbeit.docx`.
-Dann änderst du ein Kapitel, bist unzufrieden und willst zurück zum Stand von gestern – aber der ist
-weg, weil du ihn überschrieben hast. Also fängst du an, Kopien anzulegen: `hausarbeit-v2.docx`,
-`hausarbeit-final.docx`, `hausarbeit-final-wirklich.docx`. Kommt dir bekannt vor?
-
-Genau dieses Problem löst eine **Versionskontrolle**. Und das bekannteste Werkzeug dafür ist [[git]].
+Du schreibst an einer Hausarbeit, änderst ein Kapitel – und willst zurück zum Stand von gestern. Der ist
+weg, weil du ihn überschrieben hast. Also legst du Kopien an: `arbeit-v2.docx`, `arbeit-final.docx`,
+`arbeit-final-wirklich.docx`. Kommt dir bekannt vor? Genau dieses Problem löst eine **Versionskontrolle** –
+und das bekannteste Werkzeug dafür ist [[git]].
 
 ## Das Problem: Speichern überschreibt
 
-Wenn du in einem Editor auf „Speichern“ drückst, wird die [[datei]] auf der Festplatte ersetzt.
-Der vorherige Inhalt ist verloren. Bei einem Text mag das verschmerzbar sein. In der
-Softwareentwicklung ist es eine Katastrophe:
+Drückst du im Editor auf „Speichern“, wird die [[datei]] ersetzt – der alte Inhalt ist verloren.
+In der Softwareentwicklung ist das eine Katastrophe:
 
 - Ein Projekt besteht aus hunderten Dateien, die voneinander abhängen.
-- Mehrere Menschen arbeiten gleichzeitig am selben [[code]].
-- Ein Fehler fällt oft erst Tage später auf – und dann willst du wissen: **Was** wurde **wann**,
-  von **wem** und **warum** geändert?
+- Mehrere Menschen ändern gleichzeitig denselben [[code]].
+- Fehler fallen oft erst Tage später auf. Dann willst du wissen: **Was** wurde **wann**, von **wem**
+  und **warum** geändert?
 
 Ohne Hilfsmittel kann diese Fragen niemand beantworten.
 
 ## Die Lösung: ein Gedächtnis für dein Projekt
 
-Eine Versionskontrolle ist wie ein Fotoalbum für dein Projekt. Immer wenn du einen sinnvollen
-Zwischenstand erreicht hast, machst du ein „Foto“ von allen Dateien. Dieses Foto heißt in Git
-[[commit|Commit]]. Zu jedem Commit speichert Git:
+Git funktioniert wie ein Fotoalbum: Immer wenn du einen sinnvollen Zwischenstand erreicht hast, machst du
+ein „Foto“ von allen Dateien. Dieses Foto heißt [[commit|Commit]]. Zu jedem Commit speichert Git:
 
 | Was | Beispiel |
 |---|---|
-| Den kompletten Stand aller Dateien | So sah das Projekt am Dienstag um 14:03 aus |
-| Wer den Commit gemacht hat | `Ada Lovelace <ada@example.com>` |
+| Den Stand aller Dateien | So sah das Projekt am Dienstag um 14:03 aus |
+| Wer | `Ada Lovelace <ada@example.com>` |
 | Wann | `Tue Oct 7 14:03:12 2026` |
-| Eine Nachricht, **warum** | `fix: show error when email is missing` |
+| Warum (Nachricht) | `fix: show error when email is missing` |
 | Den Vorgänger-Commit | So entsteht eine lückenlose Kette |
 
-Weil jeder Commit auf seinen Vorgänger zeigt, entsteht eine Kette – die **Historie** deines Projekts.
-Du kannst durch diese Kette blättern wie durch ein Album und jeden alten Stand wiederherstellen.
+Die Kette der Commits ist die **Historie** deines Projekts. Du kannst darin blättern und jeden alten
+Stand wiederherstellen.
 
 > [!MERKSATZ]
-> Ein Commit ist ein **Schnappschuss** des ganzen Projekts mit Autor, Zeitpunkt und Nachricht –
-> kein bloßes „Speichern“. Die Kette der Commits ist die Geschichte deines Projekts.
+> Ein Commit ist ein **Schnappschuss** des ganzen Projekts mit Autor, Zeitpunkt und Nachricht.
 
 ## Repository: der Ordner mit Gedächtnis
 
-Ein Ordner, dessen Geschichte Git verwaltet, heißt [[repository|Repository]] (oft kurz „Repo“).
-Von außen sieht er aus wie ein ganz normaler [[ordner|Ordner]] mit deinen Dateien. Zusätzlich liegt darin
-ein versteckter Unterordner `.git`. Dort speichert Git alle Commits – sozusagen das Fotoalbum.
+Ein [[ordner|Ordner]], dessen Geschichte Git verwaltet, heißt [[repository|Repository]] (kurz „Repo“).
+Er sieht aus wie ein normaler Ordner – zusätzlich liegt darin der versteckte Unterordner `.git`.
+Dort speichert Git alle Commits.
 
 ```text title="Ein Repository von innen"
 mein-projekt/
 ├── .git/            ← das Gedächtnis: alle Commits, Branches, Einstellungen
 ├── index.html
-├── style.css
 └── README.md
 ```
 
 > [!ACHTUNG]
-> Lösche niemals den Ordner `.git`, wenn dir die Historie wichtig ist. Ohne ihn ist dein Projekt
-> wieder ein ganz normaler Ordner – alle Commits wären weg.
+> Löschst du `.git`, ist die komplette Historie weg – übrig bleibt ein normaler Ordner.
 
-## Git ist verteilt
+## Verteilt – und nicht dasselbe wie GitHub
 
-Ältere Systeme hatten einen zentralen [[server]]: Die Historie lag nur dort, und ohne Verbindung
-konntest du nichts speichern. Git ist **verteilt**: Jede Kopie eines Repositorys enthält die
-komplette Historie. Das hat drei große Vorteile:
-
-1. Du kannst **offline** arbeiten – im Zug, im Flugzeug, überall.
-2. Fast alles ist **blitzschnell**, weil nichts über das Netzwerk muss.
-3. Jede Kopie ist automatisch ein **Backup** der ganzen Geschichte.
-
-## Git ist nicht GitHub
+Git ist **verteilt**: Jede Kopie eines Repositorys enthält die komplette Historie. Du arbeitest offline,
+fast alles ist blitzschnell, und jede Kopie ist automatisch ein Backup.
 
 Ein häufiges Missverständnis: Git und [[github|GitHub]] sind nicht dasselbe.
 
-- **Git** ist ein Programm auf deinem Rechner. Es verwaltet die Historie – komplett ohne Internet.
-- **GitHub** ist ein Online-Dienst, bei dem du Repositorys ablegen, teilen und gemeinsam bearbeiten
-  kannst. Alternativen sind zum Beispiel GitLab, Bitbucket oder Forgejo.
-
-Du kannst Git also nutzen, ohne jemals ein GitHub-Konto zu haben. In diesem Kurs arbeitest du
-zuerst nur lokal. Wie du Repositorys online teilst, lernst du im Modul „Zusammenarbeiten“ und im
-GitHub-Kurs.
+- **Git** ist ein Programm auf deinem Rechner – es braucht kein Internet.
+- **GitHub** ist ein Online-Dienst ([[server]]), auf dem du Repositorys teilst. Alternativen sind
+  GitLab, Bitbucket oder Forgejo.
 
 > [!FEHLER]
-> „Ich habe meinen Code bei Git hochgeladen.“ – Gemeint ist meistens GitHub. Git selbst lädt
-> nichts hoch. Erst wenn du einen Remote einrichtest und `git push` ausführst, wandern Commits auf
-> einen anderen Rechner.
+> „Ich habe meinen Code bei Git hochgeladen.“ – Gemeint ist meist GitHub. Git selbst lädt nichts hoch;
+> erst `git push` schickt Commits auf einen anderen Rechner.
 
-## Wie du mit Git arbeitest – der grobe Ablauf
+## Der Ablauf im Überblick
 
-Den genauen Ablauf lernst du in den nächsten Lektionen Schritt für Schritt. Hier schon mal das Bild,
-damit du weißt, wohin die Reise geht:
+1. Du änderst Dateien im Editor.
+2. Du fragst Git, was sich geändert hat: `git status`.
+3. Du wählst aus, was in den nächsten Commit soll: `git add`.
+4. Du speicherst den Schnappschuss mit einer Nachricht: `git commit`.
 
-1. Du änderst Dateien wie gewohnt in deinem Editor.
-2. Du fragst Git: „Was hat sich geändert?“ (`git status`).
-3. Du wählst aus, welche Änderungen in den nächsten Commit sollen (`git add`).
-4. Du speicherst den Schnappschuss mit einer Nachricht (`git commit`).
-
-```bash title="Ein kompletter Durchlauf im Terminal"
+```bash title="Ein kompletter Durchlauf"
 git status
 git add index.html
 git commit -m "feat: add contact section"
 git log --oneline
 ```
 
-Keine Sorge, wenn dir diese Befehle noch nichts sagen. Du wirst jeden davon gleich selbst im
-Übungs-Terminal tippen.
+Jeden dieser Befehle tippst du in den nächsten Lektionen selbst im Übungs-Terminal.
 
 > [!PRAXIS]
-> In professionellen Teams ist Git nicht optional. Jede Code-Änderung – vom kleinen Tippfehler bis
-> zum großen Feature – geht als Commit in die Historie. Wer in einem Team anfängt, bekommt am
-> ersten Tag Zugriff auf das Repository, nicht auf einen Ordner mit Dateien.
+> In professionellen Teams geht jede Änderung – vom Tippfehler bis zum großen Feature – als Commit in die
+> Historie. Am ersten Arbeitstag bekommst du Zugriff auf das Repository, nicht auf einen Ordner mit Dateien.
 
 ## Zusammenfassung
 
-- Versionskontrolle speichert Stände deines Projekts, damit nichts verloren geht und Änderungen
-  nachvollziehbar bleiben.
-- In Git heißt ein solcher Stand **Commit**: ein Schnappschuss mit Autor, Zeit, Nachricht und Vorgänger.
-- Ein **Repository** ist ein Ordner, dessen Historie Git im versteckten Ordner `.git` speichert.
-- Git ist **verteilt**: Jede Kopie hat die ganze Geschichte, du arbeitest auch offline.
+- Versionskontrolle speichert Stände deines Projekts, damit nichts verloren geht.
+- Ein **Commit** ist ein Schnappschuss mit Autor, Zeit, Nachricht und Vorgänger.
+- Ein **Repository** speichert seine Historie im versteckten Ordner `.git`.
+- Git ist **verteilt** – jede Kopie hat die ganze Geschichte.
 - **Git ≠ GitHub**: Git ist das Werkzeug, GitHub ein Dienst zum Teilen.

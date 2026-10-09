@@ -20,11 +20,13 @@ Aufgaben gelten. Musterlektionen:
 ## Aufbau einer Lektion
 
 1. Einstieg: ein konkretes Problem oder eine Alltagssituation (2–4 Sätze, keine Überschrift).
-2. 3–7 Abschnitte mit `##`-Überschriften, je mit Erklärung, Code-Beispiel(en) und ggf. Tabelle.
+2. 3–6 kurze Abschnitte mit `##`-Überschriften (jeder wird eine Seite), je mit Erklärung, Code-Beispiel(en) und ggf. Tabelle.
 3. Mindestens ein `> [!MERKSATZ]`, ein `> [!FEHLER]` (typischer Fehler) und ein `> [!PRAXIS]`
    (Bezug zum Berufsalltag).
 4. Abschluss `## Zusammenfassung` mit 4–7 Stichpunkten.
-5. Umfang: **900–2000 Wörter** Fließtext. Code-Blöcke zählen nicht mit.
+5. Umfang: **500–1100 Wörter** Fließtext (Code-Blöcke zählen nicht mit). Die Lektion wird **seitenweise** angezeigt:
+   jeder `##`-Abschnitt ist eine eigene Seite. Halte jeden Abschnitt bei **höchstens ca. 250 Wörtern** plus
+   Beispiel – lieber ein Abschnitt mehr als ein langer. Kurze Absätze (2–4 Sätze), Tabellen und Listen statt Fließtext.
 6. Frontmatter: `title`, `summary`, `duration`, `sources` (offizielle Dokumentation!), `quiz` (3–6 Fragen,
    gemischte Typen), `tasks` (mindestens 1, besser 2 **verschiedene** interaktive Aufgaben).
 
@@ -70,6 +72,9 @@ Die Befehle laufen in einem echten Linux-Container (Debian, Bash) als Benutzer `
 - Checks prüfen das **Ergebnis**, nicht den Weg. Robust formulieren: `git log --oneline | wc -l`
   statt exakte Hashes; `stdout_matches` mit `\\s*` für Leerzeichen; `jq -r` für JSON; keine Checks auf
   Ausgaben, die sich zwischen Versionen ändern.
+- `/tmp` ist `noexec` eingebunden: Skripte dort laufen nicht. Prüfungen legen Hilfsordner im Arbeitsordner an,
+  z. B. `mktemp -d "$PWD/.pruefung-XXXXXX"`. Es gibt kein `man`, kein `sudo`, kein `zsh` und kein `python3`.
+- YAML: Inline-Werte mit Komma oder Doppelpunkt immer in Anführungszeichen setzen.
 - Jede Check-`message` sagt in Du-Form, **was noch fehlt** – sie ist der Hinweis für Lernende.
 - In der Aufgabenbeschreibung steht immer: was vorbereitet ist, was zu tun ist (nummerierte
   Schritte) und dass zuerst **Aufgabe vorbereiten** geklickt werden soll, falls `setup` existiert.
