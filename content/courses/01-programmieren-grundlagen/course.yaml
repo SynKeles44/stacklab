@@ -1,0 +1,31 @@
+title: Grundlagen der Programmierung
+subtitle: Von der ersten Codezeile zum eigenen Kommandozeilen-Programm – mit JavaScript und einem Blick auf PHP
+description: >
+  Du hast noch nie programmiert? Perfekt – dieser Kurs fängt bei null an. Du lernst, was ein Programm
+  eigentlich ist, wie ein Computer Code ausführt und wie Programmierer:innen denken, wenn sie ein
+  Problem in kleine, lösbare Schritte zerlegen.
+
+
+  Als Lehrsprache nutzen wir **JavaScript**, weil es direkt im Browser und mit Node.js im Terminal läuft.
+  An vielen Stellen siehst du das Gegenstück in **PHP**, damit du merkst: Die Konzepte – Variablen,
+  Bedingungen, Schleifen, Funktionen, Objekte und Klassen – sind in fast allen Sprachen gleich, nur die
+  Schreibweise ändert sich. Jede Lektion hat Aufgaben, die du direkt im Browser oder im echten
+  Übungs-Terminal löst. Im Abschlussprojekt baust du eine eigene To-do-Liste für die Kommandozeile.
+category: grundlagen
+level: einsteiger
+icon: code
+color: "#6366f1"
+estimated_hours: 5
+workspace_dir: programmieren
+prerequisites: []
+learning_goals:
+  - Du erklärst, was ein Programm ist und wie Compiler, Interpreter und Laufzeitumgebungen Code ausführen.
+  - Du speicherst Werte in Variablen und kennst die wichtigsten Datentypen samt Typumwandlung.
+  - Du steuerst den Programmablauf mit Bedingungen, boolescher Logik und Schleifen.
+  - Du schreibst eigene Funktionen, verstehst Gültigkeitsbereiche und nutzt Callbacks wie map, filter und reduce.
+  - Du arbeitest sicher mit Arrays und Objekten und kennst die Grundideen der Objektorientierung in JavaScript und PHP.
+  - Du liest Fehlermeldungen, debuggst systematisch und fängst Fehler mit try/catch ab.
+  - Du zerlegst Probleme, schreibst Pseudocode und entwickelst einfache Algorithmen selbst.
+references:
+  - Einstiegsdidaktik aus Programmierkursen für Quereinsteiger:innen (erst Konzept, dann Syntax, dann Praxis)
+  - Kommandozeilen-Werkzeuge in Node.js, wie sie in Teams für kleine Automatisierungen genutzt werden

@@ -1,0 +1,64 @@
+title: Was Programmieren ist
+description: Was ein Programm ist, wie Computer Code ausführen, dein erstes Programm mit Node.js und PHP und wie Programmierer:innen Probleme durchdenken.
+exercise:
+  id: modul-uebung-steckbrief
+  type: terminal
+  title: Dein Steckbrief in JavaScript und PHP
+  description: |
+    Schreibe zwei kleine Programme, die denselben Steckbrief ausgeben – einmal in JavaScript, einmal in PHP.
+    Der Ordner `steckbrief` ist leer.
+
+    1. Lege `steckbrief.js` an (`nano steckbrief.js`). Das Programm soll genau drei Zeilen ausgeben:
+       - `Name: ` gefolgt von einem Namen (gern ein Fantasiename),
+       - `Lieblingsessen: ` gefolgt von einem Essen,
+       - `Alter in Monaten: ` gefolgt von einer Zahl, die JavaScript selbst ausrechnet (Alter in Jahren `* 12`).
+    2. Starte es mit `node steckbrief.js` und prüfe die Ausgabe.
+    3. Lege `steckbrief.php` an, das **exakt dieselbe Ausgabe** erzeugt (denk an `<?php` und `"\n"`).
+    4. Vergleiche: `node steckbrief.js` und `php steckbrief.php` müssen Zeichen für Zeichen gleich ausgeben.
+    5. Schreibe in beide Dateien einen Kommentar, der erklärt, was das Programm macht.
+  workdir: steckbrief
+  checks:
+    - type: command
+      run: node steckbrief.js
+      stdout_matches: "^Name: \\S.*\\nLieblingsessen: \\S.*\\nAlter in Monaten: \\d+$"
+      message: "steckbrief.js soll genau drei Zeilen ausgeben: „Name: …\", „Lieblingsessen: …\" und „Alter in Monaten: <Zahl>\"."
+    - type: file_contains
+      path: steckbrief.js
+      pattern: "\\*\\s*12|12\\s*\\*"
+      message: Lass JavaScript das Alter in Monaten ausrechnen – im Code sollte `* 12` vorkommen.
+    - type: file_contains
+      path: steckbrief.js
+      pattern: "//|/\\*"
+      message: In steckbrief.js fehlt noch ein Kommentar.
+    - type: command
+      run: php steckbrief.php
+      stdout_matches: "^Name: "
+      message: steckbrief.php fehlt oder gibt noch keinen Steckbrief aus. Beginnt die Datei mit `<?php`?
+    - type: command
+      run: test "$(node steckbrief.js)" = "$(php steckbrief.php)"
+      message: Die Ausgaben von node und php unterscheiden sich noch. Vergleiche beide Zeile für Zeile (Leerzeichen, Doppelpunkte, \n).
+    - type: file_contains
+      path: steckbrief.php
+      pattern: "//|#|/\\*"
+      message: In steckbrief.php fehlt noch ein Kommentar.
+  hints:
+    - "In JavaScript gibst du Text und Rechnung zusammen aus: `console.log(\"Alter in Monaten:\", 30 * 12);`"
+    - "In PHP brauchst du für jede Zeile ein `\\n`: `echo \"Alter in Monaten: \", 30 * 12, \"\\n\";`"
+    - Achte auf genau ein Leerzeichen nach jedem Doppelpunkt – console.log setzt zwischen zwei Werten automatisch eines.
+  solution: |
+    `steckbrief.js`:
+    ```js
+    // Gibt einen kurzen Steckbrief aus
+    console.log("Name: Ada");
+    console.log("Lieblingsessen: Pizza");
+    console.log("Alter in Monaten:", 30 * 12);
+    ```
+    `steckbrief.php`:
+    ```php
+    <?php
+    // Gibt denselben Steckbrief wie steckbrief.js aus
+    echo "Name: Ada\n";
+    echo "Lieblingsessen: Pizza\n";
+    echo "Alter in Monaten: ", 30 * 12, "\n";
+    ```
+    Prüfen mit `node steckbrief.js` und `php steckbrief.php`.

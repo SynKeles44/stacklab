@@ -226,7 +226,7 @@
   category: git
   aliases: [Funktionen]
   related: [code]
-  lesson: git/commits-und-messages
+  lesson: programmieren-grundlagen/funktionen
 - slug: commit-hash
   term: Commit-Hash
   short: Die eindeutige Kennung eines Commits – eine lange Zeichenfolge aus Ziffern und Buchstaben a–f.

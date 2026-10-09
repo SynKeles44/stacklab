@@ -1,0 +1,73 @@
+title: Schleifen und Funktionen
+description: Code wiederholen mit Schleifen, eigene Funktionen schreiben und Daten mit Callbacks wie map, filter und reduce verarbeiten.
+exercise:
+  id: modul-uebung-notenstatistik
+  type: code
+  language: js
+  title: Die Notenstatistik
+  description: |
+    Eine Lehrerin möchte ihre Klassenliste auswerten. Jeder Eintrag ist ein Objekt `{ name, note }` (Schulnoten 1 bis 6).
+    Schreibe kleine, **reine** Funktionen und kombiniere sie:
+
+    1. `durchschnitt(noten)` bekommt ein Array von Zahlen und liefert den Durchschnitt, auf zwei Nachkommastellen gerundet (`Math.round(x * 100) / 100`). Für ein leeres Array liefert sie `null`.
+    2. `besteNote(noten)` liefert die kleinste Zahl – oder `null` bei einem leeren Array. Nutze eine Schleife.
+    3. `statistik(klasse)` liefert ein Objekt mit:
+       - `anzahl`: Anzahl der Einträge
+       - `durchschnitt`: Durchschnitt aller Noten (nutze deine Funktion)
+       - `beste`: beste Note (nutze deine Funktion)
+       - `bestanden`: Namen aller mit Note 4 oder besser, als Array
+    4. Verändere das übergebene Array nicht.
+  starter: |
+    function durchschnitt(noten) {
+      return null;
+    }
+
+    function besteNote(noten) {
+      return null;
+    }
+
+    function statistik(klasse) {
+      return { anzahl: 0, durchschnitt: null, beste: null, bestanden: [] };
+    }
+  tests:
+    - name: durchschnitt rundet auf zwei Stellen
+      code: assertTrue(durchschnitt([1, 2, 2]) === 1.67 && durchschnitt([2, 4]) === 3)
+    - name: durchschnitt und besteNote eines leeren Arrays sind null
+      code: assertTrue(durchschnitt([]) === null && besteNote([]) === null)
+    - name: besteNote findet die kleinste Zahl
+      code: assertEqual(besteNote([3, 1, 5, 2]), 1)
+    - name: statistik einer Klasse
+      code: 'assertDeepEqual(statistik([{ name: "Ada", note: 1 }, { name: "Ben", note: 5 }, { name: "Cem", note: 3 }]), { anzahl: 3, durchschnitt: 3, beste: 1, bestanden: ["Ada", "Cem"] })'
+    - name: statistik einer leeren Klasse
+      code: 'assertDeepEqual(statistik([]), { anzahl: 0, durchschnitt: null, beste: null, bestanden: [] })'
+    - name: das Original bleibt unverändert
+      code: 'const k = [{ name: "Ada", note: 2 }]; statistik(k); assertDeepEqual(k, [{ name: "Ada", note: 2 }])'
+  hints:
+    - "Leere Arrays zuerst abfangen: `if (noten.length === 0) return null;`"
+    - "Aus der Klasse holst du die Noten mit `klasse.map((s) => s.note)`."
+    - "Bestanden: `klasse.filter((s) => s.note <= 4).map((s) => s.name)`"
+  solution: |
+    function durchschnitt(noten) {
+      if (noten.length === 0) return null;
+      const summe = noten.reduce((s, n) => s + n, 0);
+      return Math.round((summe / noten.length) * 100) / 100;
+    }
+
+    function besteNote(noten) {
+      if (noten.length === 0) return null;
+      let beste = noten[0];
+      for (const note of noten) {
+        if (note < beste) beste = note;
+      }
+      return beste;
+    }
+
+    function statistik(klasse) {
+      const noten = klasse.map((s) => s.note);
+      return {
+        anzahl: klasse.length,
+        durchschnitt: durchschnitt(noten),
+        beste: besteNote(noten),
+        bestanden: klasse.filter((s) => s.note <= 4).map((s) => s.name),
+      };
+    }

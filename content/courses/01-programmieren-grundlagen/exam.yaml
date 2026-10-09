@@ -1,0 +1,333 @@
+title: Abschlussprüfung Grundlagen der Programmierung
+description: |
+  Teste, ob du die Grundlagen sicher beherrschst: wie Code ausgeführt wird, Variablen und Datentypen,
+  Bedingungen, Schleifen, Funktionen, Arrays und Objekte, Klassen, Fehlerbehandlung und das Lösen von Problemen.
+  Die Prüfung besteht aus Wissensfragen und drei praktischen Aufgaben. Zum Bestehen brauchst du 70 %.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  - module: einstieg
+    type: single
+    question: Was macht ein Interpreter?
+    options:
+      - Er übersetzt das ganze Programm vorab in eine ausführbare Datei.
+      - Er liest den Code und führt ihn direkt während des Laufs aus.
+      - Er speichert den Code im Internet.
+      - Er formatiert den Code schöner.
+    answer: 1
+    explanation: Ein Interpreter führt den Code während des Laufs aus; ein Compiler übersetzt vorab.
+  - module: einstieg
+    type: multiple
+    question: Welche Aussagen über JavaScript und Node.js stimmen?
+    options:
+      - Node.js ist eine Laufzeitumgebung für JavaScript.
+      - Node.js ist eine eigene Programmiersprache.
+      - Mit `node datei.js` führst du eine Datei im Terminal aus.
+      - Im Browser kann JavaScript beliebige Dateien auf deiner Festplatte lesen.
+    answers: [0, 2]
+    explanation: Node.js ist eine Laufzeitumgebung mit Zugriff auf Dateien; der Browser verbietet diesen Zugriff aus Sicherheitsgründen.
+  - module: einstieg
+    type: find-bug
+    question: Dieses PHP-Skript startet nicht. In welcher Zeile steckt der Fehler?
+    language: php
+    code: |
+      <?php
+      echo "Hallo\n";
+      echo "Welt\n"
+      echo 6 * 7, "\n";
+    bug_line: 3
+    explanation: In PHP muss jede Anweisung mit einem Semikolon enden – in Zeile 3 fehlt es.
+  - module: einstieg
+    type: cloze
+    text: "`console.log(\"6 * 7\");` gibt ___ aus, `console.log(6 * 7);` gibt ___ aus."
+    blanks:
+      - ["6 * 7", "6*7"]
+      - ["42"]
+    explanation: In Anführungszeichen ist es Text, ohne Anführungszeichen wird gerechnet.
+  - module: werte-und-logik
+    type: single
+    question: "Was ergibt `\"5\" + 1` in JavaScript?"
+    options: ["6", "\"51\"", "NaN", "Einen Fehler"]
+    answer: 1
+    explanation: Ist bei + ein Operand ein String, wird verkettet.
+  - module: werte-und-logik
+    type: match
+    question: Ordne jedem Wert seinen Datentyp zu.
+    pairs:
+      - { left: "\"42\"", right: "string" }
+      - { left: "42", right: "number" }
+      - { left: "false", right: "boolean" }
+      - { left: "[1, 2]", right: "Array" }
+    explanation: Anführungszeichen machen jeden Wert zum String, eckige Klammern bilden ein Array.
+  - module: werte-und-logik
+    type: find-bug
+    question: Das Programm bricht mit einem TypeError ab. In welcher Zeile?
+    language: js
+    code: |
+      const preis = 10;
+      let menge = 2;
+      menge = menge + 1;
+      preis = preis * menge;
+    bug_line: 4
+    explanation: preis wurde mit const angelegt und darf keinen neuen Wert bekommen.
+  - module: werte-und-logik
+    type: multiple
+    question: Welche Werte sind falsy?
+    options: ["0", "\"\"", "\"false\"", "null", "[]"]
+    answers: [0, 1, 3]
+    explanation: Der String "false" und das leere Array sind truthy.
+  - module: werte-und-logik
+    type: single
+    question: Was gibt `const menge = 0; console.log(menge ?? 5);` aus?
+    options: ["0", "5", "undefined"]
+    answer: 0
+    explanation: ?? ersetzt nur null und undefined – die 0 bleibt erhalten.
+  - module: werte-und-logik
+    type: find-bug
+    question: Bei `tag = "Sa"` erscheint „Wochenende" und „Werktag". Welche Zeile fehlt bzw. ist falsch?
+    language: js
+    code: |
+      switch (tag) {
+        case "Sa":
+        case "So":
+          console.log("Wochenende");
+        default:
+          console.log("Werktag");
+      }
+    bug_line: 4
+    explanation: Nach der Ausgabe „Wochenende" fehlt ein break – der Code fällt in default durch.
+  - module: schleifen-und-funktionen
+    type: single
+    question: Wie oft läuft `for (let i = 1; i <= 5; i += 2) { … }`?
+    options: ["2-mal", "3-mal", "5-mal"]
+    answer: 1
+    explanation: i nimmt die Werte 1, 3 und 5 an. Danach ist i = 7 und die Bedingung falsch.
+  - module: schleifen-und-funktionen
+    type: find-bug
+    question: Die Funktion liefert immer undefined. In welcher Zeile liegt der Fehler?
+    language: js
+    code: |
+      function verdoppeln(zahl) {
+        const ergebnis = zahl * 2;
+        console.log(ergebnis);
+      }
+    bug_line: 3
+    explanation: Die Funktion gibt das Ergebnis nur aus, statt es mit return zurückzugeben.
+  - module: schleifen-und-funktionen
+    type: match
+    question: Was liefern diese Aufrufe für `const z = [3, 6, 9];`?
+    pairs:
+      - { left: "z.map((x) => x / 3)", right: "[1, 2, 3]" }
+      - { left: "z.filter((x) => x > 4)", right: "[6, 9]" }
+      - { left: "z.reduce((s, x) => s + x, 0)", right: "18" }
+      - { left: "z.length", right: "3" }
+    explanation: map wandelt um, filter siebt aus, reduce fasst zusammen.
+  - module: schleifen-und-funktionen
+    type: single
+    question: "Was gibt `const a = { n: 1 }; const b = a; b.n = 2; console.log(a.n);` aus?"
+    options: ["1", "2", "undefined"]
+    answer: 1
+    explanation: b ist eine zweite Referenz auf dasselbe Objekt, keine Kopie.
+  - module: schleifen-und-funktionen
+    type: multiple
+    question: Welche Funktionen sind rein?
+    options:
+      - "function netto(b) { return b / 1.19; }"
+      - "function log(x) { console.log(x); }"
+      - "function add(liste, x) { liste.push(x); }"
+      - "function max2(a, b) { return a > b ? a : b; }"
+    answers: [0, 3]
+    explanation: Ausgaben und das Verändern übergebener Arrays sind Seiteneffekte.
+  - module: objekte-und-problemloesen
+    type: match
+    question: Ordne die OOP-Begriffe zu.
+    pairs:
+      - { left: "Klasse", right: "Bauplan" }
+      - { left: "Instanz", right: "Mit new erzeugtes Objekt" }
+      - { left: "Kapselung", right: "Daten nur über Methoden ändern" }
+      - { left: "Vererbung", right: "Mit extends Verhalten übernehmen" }
+    explanation: Diese vier Ideen sind der Kern der objektorientierten Programmierung.
+  - module: objekte-und-problemloesen
+    type: single
+    question: "Node meldet `ReferenceError: summe is not defined`. Was ist die wahrscheinlichste Ursache?"
+    options:
+      - Ein Name ist falsch geschrieben oder außerhalb seines Gültigkeitsbereichs.
+      - Die Festplatte ist voll.
+      - Eine Klammer fehlt.
+    answer: 0
+    explanation: ReferenceError heißt, der Name ist an dieser Stelle unbekannt – Tippfehler oder falscher Scope.
+  - module: objekte-und-problemloesen
+    type: multiple
+    question: Welche Aussagen über try/catch stimmen?
+    options:
+      - Mit throw löst du eine Exception aus.
+      - Ein leerer catch-Block ist eine gute Idee.
+      - Der finally-Block läuft in jedem Fall.
+      - Nach einem throw im try-Block werden die restlichen Zeilen im try übersprungen.
+    answers: [0, 2, 3]
+    explanation: Fehler nie stillschweigend verschlucken. finally läuft immer, nach throw springt das Programm direkt in catch.
+  - module: objekte-und-problemloesen
+    type: cloze
+    text: Eine eindeutige, endliche Schrittfolge zur Lösung eines Problems heißt ___. Ungewöhnliche Eingaben wie eine leere Liste nennt man ___.
+    blanks:
+      - [Algorithmus]
+      - [Randfälle, Randfall, Edge Cases, Edge Case, Grenzfälle]
+    explanation: Algorithmen plant man oft in Pseudocode; Randfälle sammelt man, bevor man programmiert.
+tasks:
+  - module: schleifen-und-funktionen
+    id: pruefung-wortstatistik
+    type: code
+    language: js
+    title: Wörter zählen
+    description: |
+      Schreibe `woerterZaehlen(text)`: Die Funktion liefert ein Objekt, das für jedes Wort zählt, wie oft es vorkommt.
+      Groß- und Kleinschreibung spielt keine Rolle (alles kleinschreiben), Wörter sind durch Leerzeichen getrennt,
+      mehrfache Leerzeichen und Leerzeichen am Rand sollen nicht stören. Ein leerer Text ergibt `{}`.
+
+      Beispiel: `woerterZaehlen("Der Hund und der Ball")` ergibt `{ der: 2, hund: 1, und: 1, ball: 1 }`.
+    starter: |
+      function woerterZaehlen(text) {
+        return {};
+      }
+    tests:
+      - name: zählt Wörter unabhängig von Groß-/Kleinschreibung
+        code: 'assertDeepEqual(woerterZaehlen("Der Hund und der Ball"), { der: 2, hund: 1, und: 1, ball: 1 })'
+      - name: leerer Text ergibt ein leeres Objekt
+        code: assertDeepEqual(woerterZaehlen("   "), {})
+      - name: mehrfache Leerzeichen stören nicht
+        code: 'assertDeepEqual(woerterZaehlen("  ja  JA ja "), { ja: 3 })'
+    hints:
+      - "`text.trim().toLowerCase().split(\" \")` – leere Teile (bei mehreren Leerzeichen) überspringst du mit continue."
+      - "Zählen: `ergebnis[wort] = (ergebnis[wort] ?? 0) + 1;`"
+    solution: |
+      function woerterZaehlen(text) {
+        const ergebnis = {};
+        for (const wort of text.trim().toLowerCase().split(" ")) {
+          if (wort === "") continue;
+          ergebnis[wort] = (ergebnis[wort] ?? 0) + 1;
+        }
+        return ergebnis;
+      }
+  - module: objekte-und-problemloesen
+    id: pruefung-lager
+    type: code
+    language: php
+    title: Ein Lagerbestand in PHP
+    description: |
+      Schreibe eine PHP-Klasse `Lager` mit einem privaten Bestand (ein Array `Artikelname => Menge`):
+
+      - `einlagern(string $artikel, int $menge): void` erhöht den Bestand. Ist `$menge` kleiner als 1, wirf eine `InvalidArgumentException`.
+      - `auslagern(string $artikel, int $menge): void` verringert den Bestand. Ist nicht genug vorhanden, wirf eine `RuntimeException`.
+      - `bestand(string $artikel): int` liefert die Menge (0, wenn der Artikel unbekannt ist).
+    starter: |
+      <?php
+      class Lager
+      {
+      }
+    tests:
+      - name: einlagern und bestand
+        code: $l = new Lager(); $l->einlagern("Schraube", 10); $l->einlagern("Schraube", 5); assert_same(15, $l->bestand("Schraube")); assert_same(0, $l->bestand("Mutter"));
+      - name: auslagern verringert den Bestand
+        code: $l = new Lager(); $l->einlagern("Schraube", 10); $l->auslagern("Schraube", 4); assert_same(6, $l->bestand("Schraube"));
+      - name: zu viel auslagern wirft RuntimeException
+        code: $l = new Lager(); $l->einlagern("Schraube", 2); try { $l->auslagern("Schraube", 3); assert_true(false, "Es wurde keine Exception geworfen."); } catch (RuntimeException $e) { assert_same(2, $l->bestand("Schraube")); }
+      - name: ungültige Menge wirft InvalidArgumentException
+        code: $l = new Lager(); try { $l->einlagern("Schraube", 0); assert_true(false, "Es wurde keine Exception geworfen."); } catch (InvalidArgumentException $e) { assert_true(true); }
+    hints:
+      - "`private array $bestand = [];` und `$this->bestand[$artikel] = $this->bestand($artikel) + $menge;`"
+      - "`throw new RuntimeException(\"Nicht genug Bestand\");`"
+    solution: |
+      <?php
+      class Lager
+      {
+          private array $bestand = [];
+
+          public function einlagern(string $artikel, int $menge): void
+          {
+              if ($menge < 1) {
+                  throw new InvalidArgumentException("Menge muss mindestens 1 sein");
+              }
+              $this->bestand[$artikel] = $this->bestand($artikel) + $menge;
+          }
+
+          public function auslagern(string $artikel, int $menge): void
+          {
+              if ($menge > $this->bestand($artikel)) {
+                  throw new RuntimeException("Nicht genug Bestand von $artikel");
+              }
+              $this->bestand[$artikel] = $this->bestand($artikel) - $menge;
+          }
+
+          public function bestand(string $artikel): int
+          {
+              return $this->bestand[$artikel] ?? 0;
+          }
+      }
+  - module: objekte-und-problemloesen
+    id: pruefung-notenbericht
+    type: terminal
+    title: Ein fehlerhaftes Skript reparieren
+    description: |
+      Im Ordner `pruefung-noten` liegt `bericht.js`. Es soll für eine Notenliste den Durchschnitt und die beste Note
+      ausgeben, bricht aber ab und rechnet außerdem falsch.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+
+      1. Starte `node bericht.js` und lies die Fehlermeldung.
+      2. Repariere alle Fehler (es sind zwei: ein Laufzeitfehler und ein Off-by-one-Fehler).
+      3. Die Ausgabe soll genau lauten:
+         ```text
+         Durchschnitt: 2.50
+         Beste Note: 1
+         ```
+    workdir: pruefung-noten
+    setup: |
+      cat > bericht.js <<'EOF'
+      const noten = [3, 2, 4, 1];
+
+      function durchschnitt(liste) {
+        let summe = 0;
+        for (let i = 0; i < liste.length; i++) {
+          summe += liste[i];
+        }
+        return summe / liste.length;
+      }
+
+      function beste(liste) {
+        let kleinste = liste[0];
+        for (let i = 1; i < liste.length - 1; i++) {
+          if (liste[i] < kleinste) {
+            kleinste = liste[i];
+          }
+        }
+        return kleinste;
+      }
+
+      console.log(`Durchschnitt: ${durchschnit(noten).toFixed(2)}`);
+      console.log(`Beste Note: ${beste(noten)}`);
+      EOF
+    checks:
+      - type: command
+        run: node bericht.js > /dev/null
+        message: bericht.js bricht noch mit einem Fehler ab. Lies den ReferenceError genau.
+      - type: command
+        run: node bericht.js
+        stdout_equals: "Durchschnitt: 2.50\nBeste Note: 1"
+        message: Die Ausgabe stimmt noch nicht. Prüft die Schleife in beste() wirklich alle Noten bis zur letzten?
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT
+          sed 's/const noten = \[3, 2, 4, 1\];/const noten = [3, 2, 4, 1, 0];/' bericht.js > "$d/b.js"
+          node "$d/b.js" | tail -n 1
+        stdout_equals: "Beste Note: 0"
+        message: beste() soll auch das letzte Element der Liste prüfen – nicht nur für diese eine Notenliste.
+    hints:
+      - "`ReferenceError: durchschnit is not defined` – ein Tippfehler im Funktionsnamen."
+      - "Die Schleife in `beste()` endet bei `liste.length - 1` und lässt so das letzte Element aus."
+    solution: |
+      ```js
+      for (let i = 1; i < liste.length; i++) {     // statt liste.length - 1
+      ```
+      ```js
+      console.log(`Durchschnitt: ${durchschnitt(noten).toFixed(2)}`);
+      ```

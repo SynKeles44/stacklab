@@ -1,0 +1,1167 @@
+# Begriffe aus dem Kurs „Grundlagen der Programmierung" – allgemeine Programmierbegriffe, die viele Kurse verlinken.
+
+# --- Modul 01: Einstieg ---
+- slug: anweisung
+  term: Anweisung
+  short: Ein einzelner Befehl in einem Programm, den der Computer ausführt.
+  explanation: >
+    Programme bestehen aus vielen Anweisungen (englisch *statements*), die der Computer nacheinander
+    abarbeitet – normalerweise von oben nach unten. In JavaScript endet eine Anweisung meist mit einem Semikolon.
+    Eine Anweisung tut etwas, zum Beispiel einen Wert speichern oder etwas ausgeben.
+  example: "`console.log(\"Hallo\");` ist eine Anweisung, die einen Text ausgibt."
+  category: programmierung
+  aliases: [Anweisungen, Statement, Statements]
+  related: [programm, ausdruck, code]
+  lesson: programmieren-grundlagen/was-ist-programmieren
+- slug: prozessor
+  term: Prozessor
+  short: Das Bauteil im Computer, das Befehle tatsächlich ausführt.
+  explanation: >
+    Der Prozessor (CPU, *Central Processing Unit*) ist das „Rechenwerk" des Computers. Er versteht nur sehr
+    einfache Befehle in Maschinencode – etwa „addiere zwei Zahlen" oder „springe zu Adresse X" –, führt davon
+    aber Milliarden pro Sekunde aus.
+  example: Ein Prozessor mit 3 GHz durchläuft rund drei Milliarden Takte pro Sekunde.
+  category: programmierung
+  aliases: [CPU, Prozessoren]
+  related: [maschinencode, computer]
+  lesson: programmieren-grundlagen/wie-computer-code-ausfuehren
+- slug: maschinencode
+  term: Maschinencode
+  short: Befehle in Form von Nullen und Einsen, die der Prozessor direkt ausführen kann.
+  explanation: >
+    Maschinencode ist die einzige Sprache, die ein Prozessor versteht. Er ist für Menschen praktisch
+    unlesbar und hängt von der Prozessor-Architektur ab. Deshalb schreiben Menschen in Programmiersprachen,
+    die ein Compiler oder Interpreter in Maschinencode übersetzt.
+  example: "Die Bitfolge `10110000 01100001` könnte für einen Prozessor „lade den Wert 97 in ein Register\" bedeuten."
+  category: programmierung
+  aliases: [Maschinensprache, Binärcode]
+  related: [prozessor, compiler, interpreter]
+  lesson: programmieren-grundlagen/wie-computer-code-ausfuehren
+- slug: compiler
+  term: Compiler
+  short: Ein Programm, das Quellcode vorab komplett in eine andere Form übersetzt, meist Maschinencode.
+  explanation: >
+    Ein Compiler liest den ganzen Quellcode, prüft ihn und erzeugt daraus eine ausführbare Datei. Erst danach
+    wird das Programm gestartet. Fehler in der Syntax fallen dadurch schon vor dem Start auf. Sprachen wie C,
+    Go oder Rust werden kompiliert; der TypeScript-Compiler übersetzt TypeScript in JavaScript.
+  example: "`gcc hallo.c -o hallo` kompiliert ein C-Programm in die ausführbare Datei `hallo`."
+  category: programmierung
+  aliases: [Compilers, kompilieren, Kompilierung]
+  related: [interpreter, jit-compiler, maschinencode]
+  lesson: programmieren-grundlagen/wie-computer-code-ausfuehren
+- slug: interpreter
+  term: Interpreter
+  short: Ein Programm, das Quellcode liest und direkt ausführt, ohne vorher eine ausführbare Datei zu erzeugen.
+  explanation: >
+    Ein Interpreter arbeitet den Code Schritt für Schritt ab, während das Programm läuft. Das macht das
+    Ausprobieren sehr bequem: Datei speichern, starten, fertig. Moderne Interpreter wie die JavaScript-Engine
+    in Node.js oder PHP mit OPcache kombinieren das mit Kompilierung im Hintergrund.
+  example: "`php hallo.php` übergibt die Datei an den PHP-Interpreter, der sie sofort ausführt."
+  category: programmierung
+  aliases: [Interpreters, interpretiert]
+  related: [compiler, jit-compiler, laufzeitumgebung]
+  lesson: programmieren-grundlagen/wie-computer-code-ausfuehren
+- slug: jit-compiler
+  term: JIT-Compiler
+  short: Ein Compiler, der Code erst während der Ausführung („just in time") in Maschinencode übersetzt.
+  explanation: >
+    Ein JIT-Compiler verbindet die Vorteile von Interpreter und Compiler: Das Programm startet sofort, und
+    Codeteile, die oft laufen, werden im Hintergrund in schnellen Maschinencode übersetzt. JavaScript-Engines
+    wie V8 (in Chrome und Node.js) und PHP ab Version 8 nutzen diese Technik.
+  example: Eine Schleife, die eine Million Mal läuft, übersetzt V8 nach wenigen Durchläufen in optimierten Maschinencode.
+  category: programmierung
+  aliases: [JIT, Just-in-time-Compiler, Just-in-time-Kompilierung]
+  related: [compiler, interpreter]
+  lesson: programmieren-grundlagen/wie-computer-code-ausfuehren
+- slug: laufzeitumgebung
+  term: Laufzeitumgebung
+  short: Die Software, in der ein Programm läuft und die ihm Funktionen wie Ausgabe oder Dateizugriff bereitstellt.
+  explanation: >
+    Eine Laufzeitumgebung (englisch *runtime*) führt Code aus und stellt ihm Werkzeuge zur Verfügung. Derselbe
+    JavaScript-Code kann im Browser oder in Node.js laufen – der Browser bietet zusätzlich Zugriff auf die
+    Webseite, Node.js dafür auf Dateien und das Terminal.
+  example: Node.js, Bun, Deno und jeder Webbrowser sind Laufzeitumgebungen für JavaScript.
+  category: programmierung
+  aliases: [Runtime, Runtimes, Laufzeitumgebungen]
+  related: [interpreter, nodejs, browser]
+  lesson: programmieren-grundlagen/wie-computer-code-ausfuehren
+- slug: javascript
+  term: JavaScript
+  short: Die Programmiersprache des Webs, die im Browser und mit Node.js auch auf Servern und im Terminal läuft.
+  explanation: >
+    JavaScript wurde 1995 für interaktive Webseiten erfunden und ist heute eine der meistgenutzten Sprachen
+    der Welt. Jeder Browser kann es ausführen; mit Node.js oder Bun läuft es auch außerhalb des Browsers.
+    Der offizielle Standard heißt ECMAScript. Mit Java hat JavaScript trotz des Namens nichts zu tun.
+  example: "`console.log(\"Hallo Welt\");` ist ein vollständiges JavaScript-Programm."
+  category: programmierung
+  aliases: [JS, ECMAScript]
+  related: [programmiersprache, nodejs, browser, typescript]
+  lesson: programmieren-grundlagen/was-ist-programmieren
+- slug: nodejs
+  term: Node.js
+  short: Eine Laufzeitumgebung, mit der JavaScript außerhalb des Browsers läuft – im Terminal oder auf Servern.
+  explanation: >
+    Node.js nimmt die JavaScript-Engine V8 aus Chrome und ergänzt sie um Funktionen für Dateien, Netzwerk und
+    Prozesse. Damit kannst du JavaScript-Dateien mit dem Befehl `node` im Terminal starten, Kommandozeilen-
+    Programme schreiben oder Webserver betreiben.
+  example: "`node hallo.js` führt die Datei `hallo.js` mit Node.js aus."
+  category: programmierung
+  aliases: [Node, node]
+  related: [javascript, laufzeitumgebung]
+  lesson: programmieren-grundlagen/wie-computer-code-ausfuehren
+- slug: php
+  term: PHP
+  short: Eine Programmiersprache, die vor allem auf Webservern läuft und dort HTML-Seiten und APIs erzeugt.
+  explanation: >
+    PHP ist eine der ältesten und verbreitetsten Sprachen für Webanwendungen; Frameworks wie Laravel bauen
+    darauf auf. PHP-Code steht in `.php`-Dateien, beginnt mit `<?php` und wird vom PHP-Interpreter ausgeführt.
+    Variablennamen beginnen in PHP immer mit einem Dollarzeichen.
+  example: "`<?php echo \"Hallo Welt\\n\";` gibt mit `php hallo.php` eine Zeile im Terminal aus."
+  category: programmierung
+  aliases: [PHP-Code]
+  related: [programmiersprache, interpreter, javascript]
+  lesson: programmieren-grundlagen/was-ist-programmieren
+- slug: browser
+  term: Browser
+  short: Ein Programm zum Anzeigen von Webseiten, das auch JavaScript ausführen kann.
+  explanation: >
+    Ein Webbrowser lädt Webseiten aus dem Internet, stellt HTML und CSS dar und führt JavaScript aus. Jeder
+    Browser bringt Entwicklerwerkzeuge (DevTools) mit, in deren Konsole du JavaScript direkt eintippen kannst.
+  example: Chrome, Firefox, Safari und Edge sind Browser. Mit F12 öffnest du meist die Entwicklerwerkzeuge.
+  category: programmierung
+  aliases: [Browsers, Webbrowser]
+  related: [javascript, laufzeitumgebung]
+  lesson: programmieren-grundlagen/wie-computer-code-ausfuehren
+- slug: console-log
+  term: console.log
+  short: Eine JavaScript-Funktion, die Werte in der Konsole bzw. im Terminal ausgibt.
+  explanation: >
+    `console.log()` schreibt alles, was du in die Klammern gibst, als Textzeile in die Konsole des Browsers
+    oder – mit Node.js – ins Terminal. Es ist das wichtigste Werkzeug, um zu sehen, was dein Programm gerade tut.
+    Mehrere Werte trennst du mit Kommas.
+  example: "`console.log(\"Summe:\", 2 + 3);` gibt `Summe: 5` aus."
+  category: programmierung
+  aliases: [console.log(), Konsolenausgabe]
+  related: [javascript, debugging]
+  lesson: programmieren-grundlagen/dein-erstes-programm
+- slug: kommentar
+  term: Kommentar
+  short: Text im Code, den der Computer ignoriert und der nur für Menschen gedacht ist.
+  explanation: >
+    Kommentare erklären, **warum** Code so geschrieben ist. In JavaScript beginnt ein einzeiliger Kommentar mit
+    `//`, mehrzeilige stehen zwischen `/*` und `*/`. PHP kennt zusätzlich `#`. Gute Kommentare erklären Absicht,
+    nicht das Offensichtliche.
+  example: "`// Mehrwertsteuer ist seit 2007 19 %` erklärt, woher eine Zahl kommt."
+  category: programmierung
+  aliases: [Kommentare, auskommentieren]
+  related: [code, syntax]
+  lesson: programmieren-grundlagen/dein-erstes-programm
+- slug: algorithmus
+  term: Algorithmus
+  short: Eine eindeutige, endliche Schritt-für-Schritt-Anleitung, die ein Problem löst.
+  explanation: >
+    Ein Algorithmus beschreibt genau, welche Schritte in welcher Reihenfolge nötig sind, um aus einer Eingabe
+    ein Ergebnis zu machen. Er ist unabhängig von einer Programmiersprache: Du kannst ihn auf Deutsch, als
+    Pseudocode oder in JavaScript aufschreiben. Wichtig sind Eindeutigkeit und dass er irgendwann endet.
+  example: "„Geh jede Zahl der Liste durch und merk dir die größte\" ist ein Algorithmus zum Finden des Maximums."
+  category: programmierung
+  aliases: [Algorithmen]
+  related: [pseudocode, dekomposition, programm]
+  lesson: programmieren-grundlagen/vom-problem-zum-programm
+- slug: pseudocode
+  term: Pseudocode
+  short: Eine Beschreibung eines Programms in einfacher, codeähnlicher Umgangssprache.
+  explanation: >
+    Pseudocode hilft dir, die Logik zu planen, bevor du dich um Syntax kümmerst. Es gibt keine festen Regeln –
+    er soll nur eindeutig und gut lesbar sein. Typisch sind Wörter wie WENN, SONST, SOLANGE und FÜR JEDES.
+  example: "`FÜR JEDE Zahl in der Liste: WENN Zahl > größte DANN größte = Zahl`"
+  category: programmierung
+  aliases: [Pseudo-Code]
+  related: [algorithmus, dekomposition]
+  lesson: programmieren-grundlagen/vom-problem-zum-programm
+- slug: dekomposition
+  term: Dekomposition
+  short: Das Zerlegen eines großen Problems in kleinere Teilprobleme, die sich einzeln lösen lassen.
+  explanation: >
+    Kein Mensch kann ein großes Programm auf einmal im Kopf halten. Deshalb zerlegen Programmierer:innen
+    Aufgaben so lange, bis jedes Teilstück klein und klar genug ist, um es direkt umzusetzen – oft als eigene
+    Funktion. Die Teillösungen werden dann zusammengesetzt.
+  example: "„Online-Shop\" → Produkte anzeigen, Warenkorb verwalten, Bezahlen; „Warenkorb\" → hinzufügen, entfernen, Summe berechnen."
+  category: programmierung
+  aliases: [Problemzerlegung, zerlegen, Decomposition]
+  related: [algorithmus, pseudocode, funktion]
+  lesson: programmieren-grundlagen/vom-problem-zum-programm
+- slug: eva-prinzip
+  term: EVA-Prinzip
+  short: Eingabe, Verarbeitung, Ausgabe – das Grundmuster fast jedes Programms.
+  explanation: >
+    Ein Programm nimmt Daten entgegen (Eingabe), verarbeitet sie nach festen Regeln (Verarbeitung) und gibt
+    ein Ergebnis zurück oder aus (Ausgabe). Wer bei einer Aufgabe zuerst diese drei Teile benennt, versteht
+    das Problem meist schon viel besser.
+  example: "Taschenrechner: Eingabe `3` und `4`, Verarbeitung „addieren\", Ausgabe `7`."
+  category: programmierung
+  aliases: [EVA, Eingabe-Verarbeitung-Ausgabe, IPO]
+  related: [algorithmus, programm]
+  lesson: programmieren-grundlagen/vom-problem-zum-programm
+- slug: typescript
+  term: TypeScript
+  short: Eine Erweiterung von JavaScript um Typangaben, die vor dem Ausführen in JavaScript übersetzt wird.
+  explanation: >
+    TypeScript ist JavaScript plus Typen: Du schreibst dazu, welche Art von Wert eine Variable oder ein
+    Parameter haben soll. Der TypeScript-Compiler prüft das und meldet Fehler, bevor das Programm läuft.
+    Anschließend entfernt er die Typen, und übrig bleibt normales JavaScript.
+  example: "`let alter: number = 30;` – versucht man später `alter = \"dreißig\"`, meldet TypeScript einen Fehler."
+  category: programmierung
+  aliases: [TS]
+  related: [javascript, compiler, datentyp, interface]
+  lesson: programmieren-grundlagen/wie-computer-code-ausfuehren
+
+# --- Modul 02: Werte und Datentypen ---
+- slug: variable
+  term: Variable
+  short: Ein benannter Speicherplatz für einen Wert, den du später wieder verwenden kannst.
+  explanation: >
+    Eine Variable ist wie eine beschriftete Schachtel: Der Name steht außen, der Wert liegt darin. In
+    JavaScript legst du Variablen mit `let` (veränderbar) oder `const` (nicht neu zuweisbar) an. In PHP
+    beginnt jeder Variablenname mit `$`.
+  example: "`let punkte = 10;` legt die Variable `punkte` mit dem Wert 10 an."
+  category: programmierung
+  aliases: [Variablen, let]
+  related: [konstante, zuweisung, deklaration, datentyp]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: konstante
+  term: Konstante
+  short: Eine Variable, der nach dem Anlegen kein neuer Wert zugewiesen werden kann.
+  explanation: >
+    In JavaScript legst du Konstanten mit `const` an. Versuchst du später `name = …`, bricht das Programm mit
+    einem TypeError ab. Achtung: Bei Arrays und Objekten bleibt nur die Zuordnung fest – deren Inhalt kann
+    sich trotzdem ändern.
+  example: "`const MWST = 0.19;` – ein Wert, der sich im Programm nicht ändern soll."
+  category: programmierung
+  aliases: [Konstanten, const]
+  related: [variable, zuweisung]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: deklaration
+  term: Deklaration
+  short: Das Anlegen einer Variablen (oder Funktion) unter einem Namen.
+  explanation: >
+    Mit einer Deklaration sagst du dem Programm: „Es gibt jetzt eine Variable mit diesem Namen." In JavaScript
+    deklarierst du mit `let` oder `const`. Deklaration und erste Zuweisung passieren oft in derselben Zeile.
+  example: "`let alter;` deklariert eine Variable, die noch den Wert `undefined` hat."
+  category: programmierung
+  aliases: [Deklarationen, deklarieren]
+  related: [variable, zuweisung]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: zuweisung
+  term: Zuweisung
+  short: Das Speichern eines Werts in einer Variablen mit dem Gleichheitszeichen.
+  explanation: >
+    Das `=` bedeutet in Programmiersprachen nicht „ist gleich", sondern „speichere den Wert rechts in der
+    Variablen links". Zuerst wird die rechte Seite ausgerechnet, dann wird das Ergebnis zugewiesen. Deshalb
+    ist `zaehler = zaehler + 1` sinnvoll.
+  example: "`punkte = punkte + 5;` erhöht den Wert von `punkte` um 5."
+  category: programmierung
+  aliases: [Zuweisungen, zuweisen, Zuweisungsoperator]
+  related: [variable, operator]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: bezeichner
+  term: Bezeichner
+  short: Der Name, den du einer Variablen, Funktion oder Klasse gibst.
+  explanation: >
+    Bezeichner (englisch *identifier*) dürfen in JavaScript Buchstaben, Ziffern, `_` und `$` enthalten, aber
+    nicht mit einer Ziffer beginnen und kein reserviertes Schlüsselwort sein. Groß- und Kleinschreibung
+    zählt: `name` und `Name` sind zwei verschiedene Bezeichner.
+  example: "`anzahlArtikel` ist ein guter Bezeichner, `2fach` ist ungültig."
+  category: programmierung
+  aliases: [Bezeichnern, Identifier, Variablenname, Variablennamen]
+  related: [variable, camelcase, schluesselwort]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: camelcase
+  term: camelCase
+  short: Eine Schreibweise für Namen aus mehreren Wörtern, bei der jedes weitere Wort groß beginnt.
+  explanation: >
+    Weil Bezeichner keine Leerzeichen enthalten dürfen, schreibt man in JavaScript Wörter zusammen und
+    beginnt jedes weitere Wort mit einem Großbuchstaben – wie die Höcker eines Kamels. Klassen schreibt man
+    in PascalCase (erster Buchstabe groß), in PHP-Datenbankspalten oft snake_case.
+  example: "`benutzerName`, `istEingeloggt`, `maxAnzahlVersuche`"
+  category: programmierung
+  aliases: [Camel Case, PascalCase, snake_case, Namenskonvention]
+  related: [bezeichner, variable]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: schluesselwort
+  term: Schlüsselwort
+  short: Ein reserviertes Wort mit fester Bedeutung in einer Programmiersprache.
+  explanation: >
+    Schlüsselwörter wie `let`, `const`, `if`, `for`, `function`, `return` oder `class` steuern die Sprache
+    selbst. Du darfst sie nicht als Namen für Variablen oder Funktionen verwenden. Editoren heben sie meist
+    farbig hervor.
+  example: "`let let = 5;` ist ungültig, weil `let` ein Schlüsselwort ist."
+  category: programmierung
+  aliases: [Schlüsselwörter, Keyword, Keywords, reserviertes Wort]
+  related: [bezeichner, syntax]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: datentyp
+  term: Datentyp
+  short: Die Art eines Werts – zum Beispiel Text, Zahl oder Wahrheitswert – und was man damit tun kann.
+  explanation: >
+    Der Datentyp legt fest, wie ein Wert gespeichert wird und welche Operationen erlaubt sind. Mit Zahlen kannst
+    du rechnen, Texte kannst du zusammenfügen. In JavaScript fragst du den Typ eines Werts mit `typeof` ab.
+  example: "`typeof 42` ergibt `\"number\"`, `typeof \"42\"` ergibt `\"string\"`."
+  category: programmierung
+  aliases: [Datentypen, Typ, Typen]
+  related: [primitiver-datentyp, string, number, boolean, typumwandlung]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: primitiver-datentyp
+  term: Primitiver Datentyp
+  short: Ein einfacher, unveränderlicher Grundwert wie eine Zahl, ein Text oder ein Wahrheitswert.
+  explanation: >
+    JavaScript hat sieben primitive Typen: string, number, boolean, null, undefined, bigint und symbol. Sie
+    werden als Wert kopiert. Alles andere – Arrays, Objekte, Funktionen – sind Objekte und werden über eine
+    Referenz angesprochen.
+  example: "`\"Hallo\"`, `3.14`, `true`, `null` und `undefined` sind primitive Werte."
+  category: programmierung
+  aliases: [primitive Datentypen, primitiver Wert, Primitive]
+  related: [datentyp, objekt, referenz]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: string
+  term: String
+  short: Ein Datentyp für Text – eine Zeichenkette in Anführungszeichen.
+  explanation: >
+    Strings schreibst du in JavaScript in einfache `'…'`, doppelte `"…"` oder schräge Anführungszeichen `` `…` ``.
+    Ein String kann Buchstaben, Ziffern, Leerzeichen und Sonderzeichen enthalten. Auch `"42"` ist ein String –
+    also Text, keine Zahl.
+  example: "`const gruss = \"Hallo Ada\";` speichert einen String."
+  category: programmierung
+  aliases: [Strings, Zeichenkette, Zeichenketten, Text]
+  related: [datentyp, template-literal]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: number
+  term: Number
+  short: Der JavaScript-Datentyp für Zahlen – ganze Zahlen und Kommazahlen gleichermaßen.
+  explanation: >
+    Anders als viele Sprachen unterscheidet JavaScript nicht zwischen Ganzzahlen und Kommazahlen: Beides ist
+    `number`. Das Komma schreibst du als Punkt (`3.5`). Intern sind es Gleitkommazahlen, deshalb gibt es kleine
+    Rundungsungenauigkeiten. PHP unterscheidet dagegen `int` und `float`.
+  example: "`42`, `-7` und `19.99` haben alle den Typ `number`."
+  category: programmierung
+  aliases: [Numbers, Zahl, Zahlen, Integer, int, float]
+  related: [datentyp, gleitkommazahl, nan]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: boolean
+  term: Boolean
+  short: Ein Datentyp mit genau zwei möglichen Werten – true (wahr) oder false (falsch).
+  explanation: >
+    Booleans beantworten Ja/Nein-Fragen: Ist die Person eingeloggt? Ist der Warenkorb leer? Vergleiche wie
+    `alter >= 18` liefern immer einen Boolean. Benannt ist der Typ nach dem Mathematiker George Boole.
+  example: "`const istVolljaehrig = alter >= 18;` speichert `true` oder `false`."
+  category: programmierung
+  aliases: [Booleans, Wahrheitswert, Wahrheitswerte, bool, true, false]
+  related: [datentyp, boolesche-logik, bedingung]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: "null"
+  term: "null"
+  short: Ein Wert, der bewusst „kein Wert" oder „leer" bedeutet.
+  explanation: >
+    Mit `null` sagst du ausdrücklich: Hier ist absichtlich nichts. Zum Beispiel kann eine Variable
+    `ausgewaehlterKunde` den Wert `null` haben, solange niemand ausgewählt ist. Achtung: `typeof null` ergibt
+    aus historischen Gründen `"object"`.
+  example: "`let gewinner = null;` – es gibt noch keinen Gewinner."
+  category: programmierung
+  aliases: [NULL]
+  related: [undefined, datentyp, nullish-coalescing]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: undefined
+  term: undefined
+  short: Der Wert, den JavaScript automatisch vergibt, wenn etwas noch keinen Wert hat.
+  explanation: >
+    Eine deklarierte, aber nie belegte Variable hat den Wert `undefined`. Auch eine Funktion ohne `return`
+    gibt `undefined` zurück, und das Lesen einer nicht vorhandenen Objekt-Eigenschaft liefert `undefined`.
+    Der Unterschied zu `null`: `undefined` passiert, `null` setzt man bewusst.
+  example: "`let x; console.log(x);` gibt `undefined` aus."
+  category: programmierung
+  related: ["null", datentyp]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: array
+  term: Array
+  short: Eine geordnete Liste von Werten, auf die du über eine Positionsnummer (Index) zugreifst.
+  explanation: >
+    Ein Array schreibst du in eckigen Klammern: `["Apfel", "Birne"]`. Jedes Element hat einen Index, der bei 0
+    beginnt. Die Eigenschaft `length` verrät die Anzahl der Elemente. Arrays können wachsen und schrumpfen
+    und beliebige Werte enthalten – auch andere Arrays oder Objekte.
+  example: "`const farben = [\"rot\", \"grün\"]; farben[0]` ergibt `\"rot\"`."
+  category: programmierung
+  aliases: [Arrays, Liste, Listen, Feld]
+  related: [index, objekt, schleife, map-filter-reduce]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: index
+  term: Index
+  short: Die Positionsnummer eines Elements in einem Array oder Zeichens in einem String, beginnend bei 0.
+  explanation: >
+    Das erste Element hat den Index 0, das zweite den Index 1 und das letzte den Index `length - 1`. Greifst du
+    auf einen Index zu, den es nicht gibt, liefert JavaScript `undefined` statt eines Fehlers – eine häufige
+    Quelle für Off-by-one-Fehler.
+  example: "In `[\"a\", \"b\", \"c\"]` hat `\"c\"` den Index 2."
+  category: programmierung
+  aliases: [Indizes, Indices, Indexe, Position]
+  related: [array, off-by-one-fehler]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: objekt
+  term: Objekt
+  short: Eine Sammlung von benannten Werten (Eigenschaften), die zusammengehören.
+  explanation: >
+    Ein Objekt bündelt Daten unter Namen statt unter Nummern: `{ name: "Ada", alter: 36 }`. Jeder Eintrag
+    besteht aus Schlüssel und Wert. In der objektorientierten Programmierung ist ein Objekt außerdem eine
+    Instanz einer Klasse, die Daten und Methoden verbindet.
+  example: "`const user = { name: \"Ada\" }; user.name` ergibt `\"Ada\"`."
+  category: programmierung
+  aliases: [Objekte, Object]
+  related: [eigenschaft, array, klasse, instanz]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: dynamische-typisierung
+  term: Dynamische Typisierung
+  short: Variablen haben keinen festen Typ – derselbe Name kann nacheinander Werte verschiedener Typen speichern.
+  explanation: >
+    In JavaScript und PHP steht der Typ am Wert, nicht an der Variablen. Das macht den Einstieg leicht, kann
+    aber zu Fehlern führen, die erst beim Ausführen auffallen. Statisch typisierte Sprachen wie TypeScript,
+    Java oder C# prüfen Typen schon vorher.
+  example: "`let x = 5; x = \"fünf\";` ist in JavaScript erlaubt."
+  category: programmierung
+  aliases: [dynamisch typisiert, statische Typisierung, statisch typisiert]
+  related: [datentyp, typescript, typumwandlung]
+  lesson: programmieren-grundlagen/variablen-und-datentypen
+- slug: template-literal
+  term: Template-Literal
+  short: Ein String in Backticks, in den du mit ${…} Werte einsetzen kannst.
+  explanation: >
+    Template-Literals (auch Template-Strings) schreibst du mit schrägen Anführungszeichen `` ` ``. Alles in
+    `${…}` wird ausgerechnet und in den Text eingefügt. Außerdem dürfen sie über mehrere Zeilen gehen. Das ist
+    lesbarer als viele `+`-Verkettungen.
+  example: "`` `Hallo ${name}, du hast ${punkte} Punkte` ``"
+  category: programmierung
+  aliases: [Template-Literals, Template-String, Template-Strings, String-Interpolation, Interpolation]
+  related: [string]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+- slug: methode
+  term: Methode
+  short: Eine Funktion, die zu einem Objekt gehört und mit Punkt-Schreibweise aufgerufen wird.
+  explanation: >
+    Methoden sind Fähigkeiten eines Werts oder Objekts: `"hallo".toUpperCase()` ruft die Methode
+    `toUpperCase` des Strings auf. In Klassen definierst du eigene Methoden, die mit `this` auf die Daten des
+    Objekts zugreifen. In PHP ruft man Methoden mit `->` auf.
+  example: "`[3, 1, 2].includes(2)` ruft die Array-Methode `includes` auf und ergibt `true`."
+  category: programmierung
+  aliases: [Methoden, Methodenaufruf]
+  related: [funktion, objekt, klasse]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: nan
+  term: NaN
+  short: „Not a Number" – der Zahlenwert für ein ungültiges Rechenergebnis.
+  explanation: >
+    `NaN` entsteht, wenn eine Rechnung kein sinnvolles Ergebnis hat, etwa `Number("abc")` oder `0 / 0`.
+    Kurioserweise ist `typeof NaN` trotzdem `"number"`, und `NaN === NaN` ist `false`. Prüfen kannst du mit
+    `Number.isNaN(wert)`.
+  example: "`\"Apfel\" * 2` ergibt `NaN`."
+  category: programmierung
+  aliases: [Not a Number]
+  related: [number, typumwandlung]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+- slug: gleitkommazahl
+  term: Gleitkommazahl
+  short: Eine Kommazahl, die der Computer im Binärsystem mit begrenzter Genauigkeit speichert.
+  explanation: >
+    Computer speichern Kommazahlen als Gleitkommazahlen (englisch *floating point*, Standard IEEE 754). Manche
+    Dezimalzahlen wie 0,1 lassen sich binär nicht exakt darstellen, deshalb ergibt `0.1 + 0.2` in JavaScript
+    `0.30000000000000004`. Für Geldbeträge rechnet man deshalb oft in Cent mit ganzen Zahlen.
+  example: "`(0.1 + 0.2).toFixed(2)` ergibt den String `\"0.30\"`."
+  category: programmierung
+  aliases: [Gleitkommazahlen, Fließkommazahl, Float, Floating Point, Kommazahl]
+  related: [number]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+- slug: typumwandlung
+  term: Typumwandlung
+  short: Das Umwandeln eines Werts von einem Datentyp in einen anderen.
+  explanation: >
+    Explizit wandelst du selbst um, etwa mit `Number("42")` oder `String(42)`. Implizit wandelt JavaScript
+    manchmal automatisch um (*Type Coercion*), zum Beispiel bei `"5" + 1`, was den String `"51"` ergibt. Diese
+    automatischen Umwandlungen sind eine häufige Fehlerquelle.
+  example: "`Number(\"3\") + 4` ergibt `7`, aber `\"3\" + 4` ergibt `\"34\"`."
+  category: programmierung
+  aliases: [Typkonvertierung, Type Coercion, Coercion, Casting, Typecast]
+  related: [datentyp, strikte-gleichheit, nan]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+- slug: strikte-gleichheit
+  term: Strikte Gleichheit
+  short: Der Vergleich mit ===, der Wert und Datentyp prüft, ohne vorher umzuwandeln.
+  explanation: >
+    `===` ist nur `true`, wenn beide Seiten denselben Typ und denselben Wert haben. Der lose Vergleich `==`
+    wandelt vorher Typen um und liefert dadurch überraschende Ergebnisse wie `0 == ""` → `true`. Faustregel:
+    In JavaScript und PHP immer `===` und `!==` benutzen.
+  example: "`5 === \"5\"` ergibt `false`, `5 == \"5\"` ergibt `true`."
+  category: programmierung
+  aliases: [Triple Equals, "===", lose Gleichheit, "=="]
+  related: [vergleichsoperator, typumwandlung]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+
+# --- Modul 03: Operatoren und Bedingungen ---
+- slug: operator
+  term: Operator
+  short: Ein Zeichen, das mit Werten etwas tut – rechnen, vergleichen, verknüpfen oder zuweisen.
+  explanation: >
+    Operatoren verbinden Werte (die Operanden) zu einem neuen Wert. `+` addiert, `>` vergleicht, `&&` verknüpft
+    Wahrheitswerte und `=` weist zu. Welche Operation zuerst ausgeführt wird, regelt die Rangfolge – wie
+    „Punkt vor Strich" in der Mathematik.
+  example: "In `2 + 3 * 4` wird zuerst `*` ausgeführt, das Ergebnis ist 14."
+  category: programmierung
+  aliases: [Operatoren, Operand, Operanden, Rangfolge]
+  related: [ausdruck, vergleichsoperator, modulo]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+- slug: ausdruck
+  term: Ausdruck
+  short: Ein Stück Code, das zu einem Wert ausgewertet wird.
+  explanation: >
+    Ein Ausdruck (englisch *expression*) ergibt immer einen Wert: `5`, `alter + 1` oder `name === "Ada"`.
+    Eine Anweisung dagegen tut etwas. Überall, wo ein Wert erwartet wird, kannst du einen Ausdruck einsetzen –
+    etwa in `console.log(…)` oder auf der rechten Seite einer Zuweisung.
+  example: "`preis * menge` ist ein Ausdruck; `const summe = preis * menge;` ist eine Anweisung."
+  category: programmierung
+  aliases: [Ausdrücke, Expression, Expressions]
+  related: [operator, anweisung]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+- slug: modulo
+  term: Modulo
+  short: Der Rest-Operator % – er liefert den Rest einer ganzzahligen Division.
+  explanation: >
+    `a % b` gibt zurück, was übrig bleibt, wenn man `a` so oft wie möglich durch `b` teilt. Damit prüfst du
+    zum Beispiel, ob eine Zahl gerade ist (`zahl % 2 === 0`), oder lässt etwas bei jedem dritten Durchlauf
+    passieren.
+  example: "`17 % 5` ergibt `2`, weil 17 = 3 · 5 + 2."
+  category: programmierung
+  aliases: [Modulo-Operator, Restwert, Rest-Operator, "%"]
+  related: [operator]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+- slug: vergleichsoperator
+  term: Vergleichsoperator
+  short: Ein Operator, der zwei Werte vergleicht und true oder false liefert.
+  explanation: >
+    Zu den Vergleichsoperatoren gehören `===` (gleich), `!==` (ungleich), `<`, `>`, `<=` und `>=`. Ihr Ergebnis
+    ist immer ein Boolean und eignet sich deshalb direkt als Bedingung in `if` oder Schleifen.
+  example: "`punkte >= 50` ergibt `true`, wenn `punkte` 50 oder mehr ist."
+  category: programmierung
+  aliases: [Vergleichsoperatoren, Vergleich, Vergleiche]
+  related: [operator, boolean, strikte-gleichheit, bedingung]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+- slug: inkrement
+  term: Inkrement
+  short: Das Erhöhen einer Zahl um 1, in JavaScript mit ++.
+  explanation: >
+    `zaehler++` ist die Kurzform von `zaehler = zaehler + 1`. Das Gegenstück, das Dekrement `zaehler--`,
+    verringert um 1. Verwandte Kurzformen sind `+=`, `-=`, `*=` und `/=`. Inkremente begegnen dir vor allem
+    in Zählschleifen.
+  example: "`let i = 0; i++;` – danach ist `i` gleich 1."
+  category: programmierung
+  aliases: [Inkrementieren, Dekrement, "++", "--"]
+  related: [operator, zuweisung, schleife]
+  lesson: programmieren-grundlagen/text-zahlen-und-typen
+- slug: bedingung
+  term: Bedingung
+  short: Ein Ausdruck, der true oder false ergibt und entscheidet, welcher Code ausgeführt wird.
+  explanation: >
+    Mit `if (bedingung) { … }` führt ein Programm einen Codeblock nur aus, wenn die Bedingung wahr ist.
+    Mit `else` und `else if` beschreibst du die anderen Fälle. Solche Verzweigungen machen aus einem
+    starren Ablauf ein Programm, das auf Situationen reagiert.
+  example: "`if (alter >= 18) { console.log(\"Zutritt erlaubt\"); }`"
+  category: programmierung
+  aliases: [Bedingungen, if, else, if-Anweisung, Verzweigung, Verzweigungen]
+  related: [boolean, vergleichsoperator, codeblock, switch-anweisung]
+  lesson: programmieren-grundlagen/bedingungen-und-logik
+- slug: codeblock
+  term: Codeblock
+  short: Mehrere Anweisungen, die in geschweiften Klammern zusammengefasst sind.
+  explanation: >
+    Ein Block `{ … }` gruppiert Anweisungen, die gemeinsam ausgeführt werden – etwa der Inhalt eines `if`,
+    einer Schleife oder einer Funktion. Mit `let` und `const` deklarierte Variablen gelten nur innerhalb ihres
+    Blocks. Einrückung macht Blöcke für Menschen sichtbar.
+  example: "`if (x > 0) { console.log(\"positiv\"); zaehler++; }` – beide Anweisungen gehören zum Block."
+  category: programmierung
+  aliases: [Codeblöcke, Block, Blöcke, geschweifte Klammern]
+  related: [bedingung, gueltigkeitsbereich]
+  lesson: programmieren-grundlagen/bedingungen-und-logik
+- slug: boolesche-logik
+  term: Boolesche Logik
+  short: Das Verknüpfen von Wahrheitswerten mit UND (&&), ODER (||) und NICHT (!).
+  explanation: >
+    `a && b` ist nur wahr, wenn beide wahr sind. `a || b` ist wahr, wenn mindestens einer wahr ist. `!a` kehrt
+    den Wert um. Damit baust du aus einfachen Vergleichen komplexe Bedingungen. Wahrheitstabellen zeigen alle
+    Kombinationen auf einen Blick.
+  example: "`alter >= 18 && hatTicket` ist nur wahr, wenn beides zutrifft."
+  category: programmierung
+  aliases: [logische Operatoren, logischer Operator, UND, ODER, NICHT, Wahrheitstabelle]
+  related: [boolean, bedingung, kurzschlussauswertung]
+  lesson: programmieren-grundlagen/bedingungen-und-logik
+- slug: truthy-und-falsy
+  term: Truthy und Falsy
+  short: Werte, die JavaScript in einer Bedingung als wahr (truthy) oder falsch (falsy) behandelt.
+  explanation: >
+    In einer Bedingung muss kein echter Boolean stehen – JavaScript wandelt jeden Wert um. Falsy sind nur
+    `false`, `0`, `-0`, `0n`, `""` (leerer String), `null`, `undefined` und `NaN`. Alles andere ist truthy –
+    auch `"0"`, `"false"`, `[]` und `{}`.
+  example: "`if (\"\") { … }` wird nie ausgeführt, `if (\"0\") { … }` dagegen schon."
+  category: programmierung
+  aliases: [truthy, falsy, Truthiness]
+  related: [boolean, bedingung, boolesche-logik]
+  lesson: programmieren-grundlagen/bedingungen-und-logik
+- slug: kurzschlussauswertung
+  term: Kurzschlussauswertung
+  short: Logische Operatoren werten die rechte Seite nur aus, wenn das Ergebnis noch nicht feststeht.
+  explanation: >
+    Bei `a && b` wird `b` gar nicht angeschaut, wenn `a` schon falsy ist. Bei `a || b` wird `b` übersprungen,
+    wenn `a` truthy ist. Außerdem liefern `&&` und `||` nicht unbedingt `true`/`false`, sondern einen der beiden
+    Operanden. Darauf beruhen Muster wie `name || "Gast"`.
+  example: "`benutzer && benutzer.name` greift nur auf `name` zu, wenn `benutzer` existiert."
+  category: programmierung
+  aliases: [Short-Circuit, Short-Circuit-Evaluation, Kurzschluss]
+  related: [boolesche-logik, truthy-und-falsy, nullish-coalescing]
+  lesson: programmieren-grundlagen/bedingungen-und-logik
+- slug: nullish-coalescing
+  term: Nullish Coalescing
+  short: Der Operator ??, der einen Ersatzwert nur bei null oder undefined verwendet.
+  explanation: >
+    `a ?? b` ergibt `a`, außer `a` ist `null` oder `undefined` – dann `b`. Anders als `||` behält `??` Werte wie
+    `0` oder `""`. Das ist wichtig, wenn 0 eine gültige Eingabe ist, etwa bei einer Menge oder einem Rabatt.
+  example: "`0 ?? 10` ergibt `0`, aber `0 || 10` ergibt `10`."
+  category: programmierung
+  aliases: ["??", Nullish-Coalescing-Operator, Null-Koaleszenz]
+  related: [kurzschlussauswertung, "null", undefined]
+  lesson: programmieren-grundlagen/bedingungen-und-logik
+- slug: ternaerer-operator
+  term: Ternärer Operator
+  short: "Die Kurzform von if/else als Ausdruck: bedingung ? wertWennWahr : wertWennFalsch."
+  explanation: >
+    Der ternäre (dreiteilige) Operator wählt zwischen zwei Werten. Weil er ein Ausdruck ist, kannst du ihn
+    direkt in einer Zuweisung oder einem Template-Literal verwenden. Für längere Logik ist ein normales
+    `if`/`else` lesbarer.
+  example: "`const text = punkte >= 50 ? \"bestanden\" : \"nicht bestanden\";`"
+  category: programmierung
+  aliases: [Ternary, Ternary Operator, Bedingungsoperator, "?:"]
+  related: [bedingung, ausdruck]
+  lesson: programmieren-grundlagen/bedingungen-und-logik
+- slug: switch-anweisung
+  term: switch-Anweisung
+  short: Eine Verzweigung, die einen Wert mit mehreren festen Fällen (case) vergleicht.
+  explanation: >
+    `switch (wert)` springt zum ersten `case`, der strikt gleich ist, und führt ab dort Code aus – bis zu einem
+    `break`. Fehlt das `break`, läuft der Code in den nächsten Fall weiter (*fall-through*). `default` fängt alle
+    übrigen Werte ab. PHP bietet zusätzlich den kompakteren `match`-Ausdruck.
+  example: "`switch (tag) { case \"Sa\": case \"So\": console.log(\"Wochenende\"); break; default: console.log(\"Werktag\"); }`"
+  category: programmierung
+  aliases: [switch, case, default, Fall-through, match]
+  related: [bedingung]
+  lesson: programmieren-grundlagen/bedingungen-und-logik
+
+# --- Modul 04: Schleifen ---
+- slug: schleife
+  term: Schleife
+  short: Ein Sprachkonstrukt, das einen Codeblock wiederholt ausführt, solange eine Bedingung gilt.
+  explanation: >
+    Schleifen ersparen dir, denselben Code zigmal hinzuschreiben. Die `for`-Schleife eignet sich, wenn du
+    zählst, `while`, wenn die Anzahl der Durchläufe vorher unbekannt ist, und `for...of`, um alle Elemente
+    eines Arrays durchzugehen. PHP kennt zusätzlich `foreach`.
+  example: "`for (let i = 1; i <= 3; i++) { console.log(i); }` gibt 1, 2 und 3 aus."
+  category: programmierung
+  aliases: [Schleifen, Loop, Loops, for-Schleife, while-Schleife, for...of, foreach]
+  related: [iteration, bedingung, endlosschleife]
+  lesson: programmieren-grundlagen/schleifen
+- slug: iteration
+  term: Iteration
+  short: Ein einzelner Durchlauf einer Schleife – oder allgemein das wiederholte Durchgehen von Elementen.
+  explanation: >
+    Läuft eine Schleife fünfmal, hat sie fünf Iterationen. „Über ein Array iterieren" bedeutet, jedes Element
+    nacheinander zu bearbeiten. Mit `break` beendest du die Schleife ganz, mit `continue` springst du direkt
+    zur nächsten Iteration.
+  example: "In der dritten Iteration von `for (let i = 0; i < 5; i++)` hat `i` den Wert 2."
+  category: programmierung
+  aliases: [Iterationen, iterieren, Durchlauf, Durchläufe, break, continue]
+  related: [schleife, array]
+  lesson: programmieren-grundlagen/schleifen
+- slug: endlosschleife
+  term: Endlosschleife
+  short: Eine Schleife, deren Bedingung nie falsch wird und die deshalb nie endet.
+  explanation: >
+    Vergisst du in einer `while`-Schleife, die Zählvariable zu verändern, bleibt die Bedingung für immer wahr.
+    Das Programm hängt dann und verbraucht Rechenzeit. Im Terminal brichst du es mit `Strg + C` ab.
+  example: "`let i = 0; while (i < 3) { console.log(i); }` – `i` wird nie erhöht."
+  category: programmierung
+  aliases: [Endlosschleifen, Infinite Loop]
+  related: [schleife, bedingung]
+  lesson: programmieren-grundlagen/schleifen
+- slug: off-by-one-fehler
+  term: Off-by-one-Fehler
+  short: Ein Fehler, bei dem eine Schleife oder ein Index genau um eins daneben liegt.
+  explanation: >
+    Typische Ursachen sind `<=` statt `<` in einer Schleife über `length` oder das Vergessen, dass Indizes bei 0
+    beginnen. Die Schleife läuft dann einmal zu oft oder zu selten. Gegenmittel: Grenzfälle wie das erste und
+    letzte Element gezielt durchdenken.
+  example: "`for (let i = 0; i <= arr.length; i++)` greift im letzten Durchlauf auf `arr[arr.length]` zu – das ist `undefined`."
+  category: programmierung
+  aliases: [Off-by-one, Off-by-one-Fehlern, Zaunpfahlfehler]
+  related: [index, schleife, randfall]
+  lesson: programmieren-grundlagen/schleifen
+- slug: verschachtelte-schleife
+  term: Verschachtelte Schleife
+  short: Eine Schleife innerhalb einer anderen Schleife.
+  explanation: >
+    Bei verschachtelten Schleifen läuft die innere Schleife für jede Iteration der äußeren komplett durch.
+    So entstehen Tabellen, Gitter oder Vergleiche „jeder mit jedem". Die Gesamtzahl der Durchläufe ist das
+    Produkt beider Schleifen – das kann schnell sehr viel werden.
+  example: "Eine äußere Schleife über 10 Zeilen und eine innere über 10 Spalten ergeben das kleine Einmaleins mit 100 Durchläufen."
+  category: programmierung
+  aliases: [verschachtelte Schleifen, Nested Loop, Nested Loops]
+  related: [schleife, iteration]
+  lesson: programmieren-grundlagen/schleifen
+
+# --- Modul 05: Funktionen ---
+- slug: parameter
+  term: Parameter
+  short: Ein Platzhalter-Name in der Funktionsdefinition, der beim Aufruf einen Wert bekommt.
+  explanation: >
+    Parameter stehen in den runden Klammern der Funktionsdefinition und verhalten sich innerhalb der Funktion
+    wie Variablen. Beim Aufruf übergibst du Argumente, die den Parametern der Reihe nach zugeordnet werden.
+    Mit `=` kannst du Standardwerte festlegen.
+  example: "In `function gruesse(name = \"Gast\")` ist `name` ein Parameter mit dem Standardwert `\"Gast\"`."
+  category: programmierung
+  aliases: [Standardparameter, Default-Parameter, Rest-Parameter]
+  related: [argument, funktion]
+  lesson: programmieren-grundlagen/funktionen
+- slug: argument
+  term: Argument
+  short: Der konkrete Wert, den du beim Aufruf einer Funktion übergibst.
+  explanation: >
+    Parameter sind die Platzhalter in der Definition, Argumente die echten Werte beim Aufruf. Bei
+    `gruesse("Ada")` ist `"Ada"` das Argument, das im Parameter `name` landet. Übergibst du zu wenige
+    Argumente, sind die übrigen Parameter `undefined`.
+  example: "`Math.max(3, 9, 4)` wird mit den drei Argumenten 3, 9 und 4 aufgerufen."
+  category: programmierung
+  aliases: [Argumente]
+  related: [parameter, funktion]
+  lesson: programmieren-grundlagen/funktionen
+- slug: rueckgabewert
+  term: Rückgabewert
+  short: Das Ergebnis, das eine Funktion mit return an die aufrufende Stelle zurückgibt.
+  explanation: >
+    `return` beendet die Funktion sofort und liefert einen Wert, mit dem der Aufrufer weiterarbeiten kann – ihn
+    speichern, ausgeben oder weiterrechnen. Eine Funktion ohne `return` gibt `undefined` zurück. Ausgeben mit
+    `console.log` ist nicht dasselbe wie zurückgeben.
+  example: "`const flaeche = rechteck(3, 4);` speichert den Rückgabewert 12."
+  category: programmierung
+  aliases: [Rückgabewerte, return, zurückgeben, Return-Wert]
+  related: [funktion, undefined]
+  lesson: programmieren-grundlagen/funktionen
+- slug: gueltigkeitsbereich
+  term: Gültigkeitsbereich
+  short: Der Bereich im Code, in dem eine Variable sichtbar und verwendbar ist.
+  explanation: >
+    Der Gültigkeitsbereich (englisch *scope*) bestimmt, wo ein Name bekannt ist. Variablen mit `let` und
+    `const` gelten in ihrem Block, Parameter in ihrer Funktion, Variablen auf oberster Ebene global. Innen
+    sieht man nach außen, aber nicht umgekehrt.
+  example: "Eine in einer Funktion deklarierte Variable `summe` ist außerhalb der Funktion unbekannt – Zugriff führt zu einem ReferenceError."
+  category: programmierung
+  aliases: [Scope, Scopes, Gültigkeitsbereiche, Blockscope, globale Variable, lokale Variable, Shadowing]
+  related: [variable, codeblock, closure, funktion]
+  lesson: programmieren-grundlagen/funktionen
+- slug: closure
+  term: Closure
+  short: Eine Funktion, die sich die Variablen aus ihrer Entstehungsumgebung merkt.
+  explanation: >
+    Wird eine Funktion innerhalb einer anderen Funktion erzeugt, behält sie Zugriff auf deren Variablen – auch
+    nachdem die äußere Funktion längst fertig ist. So kann man zum Beispiel einen Zähler bauen, dessen Stand
+    nur über die Funktion verändert werden kann.
+  example: "`function zaehler() { let n = 0; return () => ++n; }` – jeder Aufruf der zurückgegebenen Funktion erhöht `n`."
+  category: programmierung
+  aliases: [Closures, Funktionsabschluss]
+  related: [gueltigkeitsbereich, funktion]
+  lesson: programmieren-grundlagen/funktionen
+- slug: seiteneffekt
+  term: Seiteneffekt
+  short: Eine Wirkung einer Funktion über ihren Rückgabewert hinaus, etwa eine Ausgabe oder eine veränderte Variable.
+  explanation: >
+    Seiteneffekte sind alles, was eine Funktion „draußen" verändert: in die Konsole schreiben, eine globale
+    Variable oder ein übergebenes Array ändern, eine Datei speichern, eine Anfrage ans Netz schicken.
+    Programme brauchen Seiteneffekte, aber sie machen Code schwerer vorhersehbar und testbar.
+  example: "`function hinzufuegen(liste, x) { liste.push(x); }` verändert das übergebene Array – ein Seiteneffekt."
+  category: programmierung
+  aliases: [Seiteneffekte, Nebenwirkung, Side Effect, Side Effects]
+  related: [reine-funktion, funktion]
+  lesson: programmieren-grundlagen/funktionen
+- slug: reine-funktion
+  term: Reine Funktion
+  short: Eine Funktion, die bei gleichen Eingaben immer dasselbe Ergebnis liefert und keine Seiteneffekte hat.
+  explanation: >
+    Reine Funktionen (englisch *pure functions*) hängen nur von ihren Parametern ab und verändern nichts
+    außerhalb. Dadurch sind sie leicht zu verstehen, zu testen und wiederzuverwenden. Gute Programme haben
+    einen großen reinen Kern und wenige, klar abgegrenzte Stellen mit Seiteneffekten.
+  example: "`function brutto(netto) { return netto * 1.19; }` ist rein."
+  category: programmierung
+  aliases: [reine Funktionen, Pure Function, Pure Functions]
+  related: [seiteneffekt, funktion]
+  lesson: programmieren-grundlagen/funktionen
+- slug: arrow-function
+  term: Arrow Function
+  short: Eine kurze Schreibweise für Funktionen in JavaScript mit dem Pfeil =>.
+  explanation: >
+    Arrow Functions schreibst du als `(parameter) => ausdruck`. Besteht der Körper nur aus einem Ausdruck,
+    wird dessen Wert automatisch zurückgegeben – ganz ohne `return`. Sie sind besonders praktisch als
+    Callbacks, etwa in `map` oder `filter`. In PHP gibt es mit `fn($x) => …` eine ähnliche Kurzform.
+  example: "`const quadrat = (x) => x * x;` – `quadrat(5)` ergibt 25."
+  category: programmierung
+  aliases: [Arrow Functions, Pfeilfunktion, Pfeilfunktionen, Lambda, anonyme Funktion, Funktionsausdruck]
+  related: [funktion, callback]
+  lesson: programmieren-grundlagen/arrays-objekte-und-callbacks
+- slug: callback
+  term: Callback
+  short: Eine Funktion, die du einer anderen Funktion übergibst, damit diese sie später aufruft.
+  explanation: >
+    Weil Funktionen in JavaScript Werte sind, kannst du sie als Argument weiterreichen. Die empfangende
+    Funktion entscheidet, wann und wie oft sie den Callback aufruft – für jedes Array-Element, nach einer
+    Wartezeit oder wenn ein Ereignis eintritt.
+  example: "`setTimeout(() => console.log(\"fertig\"), 1000);` ruft den Callback nach einer Sekunde auf."
+  category: programmierung
+  aliases: [Callbacks, Callback-Funktion, Rückruffunktion]
+  related: [higher-order-funktion, arrow-function, funktion]
+  lesson: programmieren-grundlagen/arrays-objekte-und-callbacks
+- slug: higher-order-funktion
+  term: Higher-Order-Funktion
+  short: Eine Funktion, die andere Funktionen als Argument nimmt oder eine Funktion zurückgibt.
+  explanation: >
+    Higher-Order-Funktionen machen Code flexibel: Die Funktion kümmert sich um den Ablauf, der übergebene
+    Callback um das Detail. Bekannte Beispiele sind die Array-Methoden `forEach`, `map`, `filter` und `reduce`.
+  example: "`[1, 2, 3].map((x) => x * 2)` – `map` ist eine Higher-Order-Funktion."
+  category: programmierung
+  aliases: [Higher-Order-Funktionen, Funktion höherer Ordnung, Higher-Order Function]
+  related: [callback, map-filter-reduce]
+  lesson: programmieren-grundlagen/arrays-objekte-und-callbacks
+- slug: map-filter-reduce
+  term: map, filter und reduce
+  short: Drei Array-Methoden, die jedes Element umwandeln, aussieben oder zu einem Wert zusammenfassen.
+  explanation: >
+    `map` erzeugt ein neues Array mit umgewandelten Elementen, `filter` ein neues Array nur mit den Elementen,
+    für die der Callback `true` liefert, und `reduce` fasst alle Elemente zu einem einzigen Wert zusammen,
+    etwa einer Summe. Keine der drei verändert das ursprüngliche Array.
+  example: "`preise.filter((p) => p > 10).map((p) => p * 2).reduce((s, p) => s + p, 0)`"
+  category: programmierung
+  aliases: [map, filter, reduce, Array-Methoden, forEach, find]
+  related: [higher-order-funktion, callback, array]
+  lesson: programmieren-grundlagen/arrays-objekte-und-callbacks
+
+# --- Modul 06: Arrays, Objekte und Objektorientierung ---
+- slug: eigenschaft
+  term: Eigenschaft
+  short: Ein benannter Wert innerhalb eines Objekts.
+  explanation: >
+    Eine Eigenschaft (englisch *property*) besteht aus Schlüssel und Wert, zum Beispiel `name: "Ada"`. Du liest
+    sie mit Punktnotation (`user.name`) oder Klammernotation (`user["name"]`). Klammern brauchst du, wenn der
+    Schlüssel in einer Variablen steht oder Sonderzeichen enthält.
+  example: "`auto.farbe = \"blau\";` setzt die Eigenschaft `farbe` des Objekts `auto`."
+  category: programmierung
+  aliases: [Eigenschaften, Property, Properties, Schlüssel, Key, Attribut, Attribute]
+  related: [objekt, methode]
+  lesson: programmieren-grundlagen/arrays-objekte-und-callbacks
+- slug: referenz
+  term: Referenz
+  short: Ein Verweis auf ein Objekt im Speicher statt einer eigenen Kopie des Objekts.
+  explanation: >
+    Arrays und Objekte werden in JavaScript nicht kopiert, wenn du sie einer anderen Variablen zuweist oder an
+    eine Funktion übergibst – beide Namen zeigen dann auf dasselbe Objekt. Änderst du es über den einen Namen,
+    siehst du die Änderung auch über den anderen. Eine echte Kopie erzeugst du zum Beispiel mit Spread.
+  example: "`const a = [1]; const b = a; b.push(2);` – jetzt ist auch `a` gleich `[1, 2]`."
+  category: programmierung
+  aliases: [Referenzen, Verweis, by reference, Kopie]
+  related: [objekt, array, spread-operator, primitiver-datentyp]
+  lesson: programmieren-grundlagen/arrays-objekte-und-callbacks
+- slug: destrukturierung
+  term: Destrukturierung
+  short: Eine Schreibweise, um Werte aus Arrays oder Objekten direkt in einzelne Variablen zu entpacken.
+  explanation: >
+    Statt `const name = user.name; const alter = user.alter;` schreibst du `const { name, alter } = user;`. Bei
+    Arrays entscheidet die Position: `const [erstes, zweites] = liste;`. Destrukturierung funktioniert auch
+    in Funktionsparametern und erlaubt Standardwerte und Umbenennen.
+  example: "`const [x, y] = [3, 4];` – danach ist `x` gleich 3 und `y` gleich 4."
+  category: programmierung
+  aliases: [Destructuring, destrukturieren, entpacken]
+  related: [objekt, array, spread-operator]
+  lesson: programmieren-grundlagen/arrays-objekte-und-callbacks
+- slug: spread-operator
+  term: Spread-Operator
+  short: Die drei Punkte ..., die ein Array oder Objekt in einzelne Elemente auseinanderfalten.
+  explanation: >
+    `[...liste, 4]` erzeugt ein neues Array mit allen Elementen von `liste` plus der 4. `{ ...user, alter: 37 }`
+    kopiert ein Objekt und überschreibt eine Eigenschaft. So entstehen (flache) Kopien, ohne das Original zu
+    verändern. Dieselben drei Punkte sammeln als Rest-Parameter übrige Argumente ein.
+  example: "`Math.max(...[3, 9, 4])` ergibt 9."
+  category: programmierung
+  aliases: [Spread, Spread-Syntax, Rest-Syntax, "..."]
+  related: [destrukturierung, referenz]
+  lesson: programmieren-grundlagen/arrays-objekte-und-callbacks
+- slug: oop
+  term: Objektorientierte Programmierung
+  short: Ein Programmierstil, bei dem Daten und die dazugehörigen Funktionen in Objekten gebündelt werden.
+  explanation: >
+    In der objektorientierten Programmierung (OOP) beschreibst du mit Klassen, wie Objekte aufgebaut sind und
+    was sie können. Zentrale Ideen sind Kapselung, Vererbung und Polymorphie. PHP-Frameworks wie Laravel sind
+    durch und durch objektorientiert; in JavaScript ist OOP eine von mehreren Möglichkeiten.
+  example: "Eine Klasse `Konto` mit den Daten `saldo` und den Methoden `einzahlen()` und `abheben()`."
+  category: programmierung
+  aliases: [OOP, Objektorientierung, objektorientiert]
+  related: [klasse, objekt, kapselung, vererbung, polymorphie]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: klasse
+  term: Klasse
+  short: Ein Bauplan, der beschreibt, welche Daten und Methoden die Objekte einer Art haben.
+  explanation: >
+    Eine Klasse definierst du mit `class Name { … }`. Sie legt im Konstruktor fest, welche Eigenschaften ein
+    neues Objekt bekommt, und enthält Methoden. Aus einer Klasse erzeugst du mit `new` beliebig viele Objekte
+    (Instanzen). Klassennamen schreibt man in PascalCase.
+  example: "`class Hund { bellen() { return \"Wuff\"; } }` – `new Hund().bellen()` ergibt `\"Wuff\"`."
+  category: programmierung
+  aliases: [Klassen, class, Bauplan]
+  related: [instanz, konstruktor, methode, oop]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: instanz
+  term: Instanz
+  short: Ein konkretes Objekt, das nach dem Bauplan einer Klasse erzeugt wurde.
+  explanation: >
+    Mit `new Klasse(…)` entsteht eine neue Instanz. Alle Instanzen einer Klasse haben dieselben Methoden, aber
+    eigene Daten: Zwei `Konto`-Objekte können unterschiedliche Kontostände haben. Mit `instanceof` prüfst du,
+    ob ein Objekt eine Instanz einer bestimmten Klasse ist.
+  example: "`const konto = new Konto(100);` – `konto` ist eine Instanz von `Konto`."
+  category: programmierung
+  aliases: [Instanzen, instanziieren, new, instanceof]
+  related: [klasse, objekt, konstruktor]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: konstruktor
+  term: Konstruktor
+  short: Eine besondere Methode, die beim Erzeugen eines Objekts mit new automatisch aufgerufen wird.
+  explanation: >
+    Im Konstruktor legst du die Startwerte eines neuen Objekts fest. In JavaScript heißt er `constructor`, in
+    PHP `__construct`. Die Argumente aus `new Klasse(…)` landen in seinen Parametern.
+  example: "`constructor(name) { this.name = name; }` speichert den übergebenen Namen im neuen Objekt."
+  category: programmierung
+  aliases: [Konstruktoren, constructor, __construct]
+  related: [klasse, instanz, this]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: this
+  term: this
+  short: Ein Schlüsselwort, das innerhalb einer Methode auf das aktuelle Objekt verweist.
+  explanation: >
+    In einer Methode meint `this` das Objekt, auf dem die Methode gerade aufgerufen wurde. So greift die Methode
+    auf die eigenen Eigenschaften zu, etwa `this.saldo`. In PHP schreibt man `$this->saldo`.
+  example: "`einzahlen(betrag) { this.saldo += betrag; }`"
+  category: programmierung
+  aliases: [$this]
+  related: [methode, klasse, konstruktor]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: kapselung
+  term: Kapselung
+  short: Das Verbergen der inneren Daten eines Objekts, sodass sie nur über dessen Methoden verändert werden.
+  explanation: >
+    Kapselung schützt ein Objekt vor ungültigen Zuständen: Ein Kontostand soll nicht einfach von außen auf
+    -1000 gesetzt werden können, sondern nur über `abheben()`, das die Regeln prüft. In JavaScript machst du
+    Felder mit `#` privat, in PHP mit `private`.
+  example: "`class Konto { #saldo = 0; }` – `konto.#saldo` außerhalb der Klasse ist ein Syntaxfehler."
+  category: programmierung
+  aliases: [Encapsulation, privat, private, Zugriffsmodifizierer, public, protected]
+  related: [oop, getter-und-setter, klasse]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: getter-und-setter
+  term: Getter und Setter
+  short: Methoden, die wie Eigenschaften aussehen und das Lesen bzw. Schreiben eines Werts steuern.
+  explanation: >
+    Mit `get name() { … }` liefert ein Objekt einen Wert, der wie eine normale Eigenschaft gelesen wird, aber
+    berechnet oder geschützt sein kann. Ein `set name(wert) { … }` kann neue Werte prüfen, bevor er sie
+    speichert. So bleibt die Kapselung erhalten, ohne die Bedienung umständlich zu machen.
+  example: "`get istLeer() { return this.#artikel.length === 0; }` – Aufruf als `korb.istLeer` ohne Klammern."
+  category: programmierung
+  aliases: [Getter, Setter, get, set, Accessor]
+  related: [kapselung, eigenschaft]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: vererbung
+  term: Vererbung
+  short: Eine Klasse übernimmt Eigenschaften und Methoden einer anderen Klasse und erweitert sie.
+  explanation: >
+    Mit `class Hund extends Tier` erbt `Hund` alles von `Tier` und kann Neues ergänzen oder Methoden
+    überschreiben. Mit `super(…)` rufst du den Konstruktor oder Methoden der Elternklasse auf. Vererbung passt
+    bei echten „ist ein"-Beziehungen; sonst ist Komposition oft die bessere Wahl.
+  example: "`class Elektroauto extends Auto { laden() { … } }`"
+  category: programmierung
+  aliases: [erben, extends, super, Elternklasse, Kindklasse, Oberklasse, Unterklasse, überschreiben]
+  related: [klasse, polymorphie, oop]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: polymorphie
+  term: Polymorphie
+  short: Verschiedene Objekte reagieren auf denselben Methodenaufruf auf ihre eigene Weise.
+  explanation: >
+    Polymorphie (griechisch „Vielgestaltigkeit") bedeutet: Code kann `form.flaeche()` aufrufen, ohne zu wissen,
+    ob `form` ein Kreis oder ein Rechteck ist – jede Klasse bringt ihre eigene Umsetzung mit. Das macht Code
+    erweiterbar, weil neue Klassen hinzukommen können, ohne den aufrufenden Code zu ändern.
+  example: "`for (const tier of tiere) console.log(tier.lautGeben());` – Hund bellt, Katze miaut."
+  category: programmierung
+  aliases: [Polymorphismus, polymorph]
+  related: [vererbung, interface, oop]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+- slug: interface
+  term: Interface
+  short: Ein Vertrag, der festlegt, welche Methoden eine Klasse anbieten muss – ohne sie umzusetzen.
+  explanation: >
+    Ein Interface sagt nur „was", nicht „wie": Jede Klasse, die `implements Bezahlbar` angibt, muss zum Beispiel
+    eine Methode `bezahlen()` haben. PHP und TypeScript kennen Interfaces als Sprachmittel; in reinem
+    JavaScript gibt es sie nicht – dort zählt nur, ob ein Objekt die passenden Methoden hat (*Duck Typing*).
+  example: "`interface Form { flaeche(): number; }` und `class Kreis implements Form { … }`"
+  category: programmierung
+  aliases: [Interfaces, Schnittstelle, Schnittstellen, implements, Duck Typing]
+  related: [klasse, polymorphie, typescript]
+  lesson: programmieren-grundlagen/klassen-und-objekte
+
+# --- Modul 07: Fehler finden und Probleme lösen ---
+- slug: fehlermeldung
+  term: Fehlermeldung
+  short: Eine Nachricht der Laufzeitumgebung, die beschreibt, welcher Fehler wo im Code aufgetreten ist.
+  explanation: >
+    Eine Fehlermeldung nennt meist den Fehlertyp (zum Beispiel `TypeError`), eine Beschreibung und die Stelle
+    als Datei, Zeile und Spalte. Sie ist kein Vorwurf, sondern der wichtigste Hinweis zur Lösung – deshalb liest
+    man sie immer vollständig und genau.
+  example: "`ReferenceError: preis is not defined` – die Variable `preis` existiert an dieser Stelle nicht."
+  category: programmierung
+  aliases: [Fehlermeldungen, Error, Errors, Fehler, SyntaxError, ReferenceError, TypeError, Syntaxfehler]
+  related: [stack-trace, laufzeitfehler, debugging, syntax]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: laufzeitfehler
+  term: Laufzeitfehler
+  short: Ein Fehler, der erst auftritt, während das Programm läuft.
+  explanation: >
+    Anders als ein Syntaxfehler verhindert ein Laufzeitfehler nicht den Start – das Programm bricht erst ab,
+    wenn die fehlerhafte Zeile erreicht wird. Typisch sind der Zugriff auf eine nicht existierende Variable
+    (`ReferenceError`) oder das Aufrufen von etwas, das keine Funktion ist (`TypeError`).
+  example: "`const user = null; user.name;` führt beim Ausführen zu einem TypeError."
+  category: programmierung
+  aliases: [Laufzeitfehlern, Runtime Error, Runtime Errors]
+  related: [fehlermeldung, exception, logischer-fehler]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: logischer-fehler
+  term: Logischer Fehler
+  short: Ein Fehler, bei dem das Programm ohne Meldung läuft, aber ein falsches Ergebnis liefert.
+  explanation: >
+    Logische Fehler sind am schwersten zu finden, weil keine Fehlermeldung auf sie hinweist. Das Programm tut
+    genau, was du geschrieben hast – nur nicht, was du gemeint hast. Abhilfe schaffen Tests mit bekannten
+    Ergebnissen und gezieltes Debugging.
+  example: "`const durchschnitt = a + b / 2;` rechnet wegen Punkt-vor-Strich `a + (b / 2)`."
+  category: programmierung
+  aliases: [logische Fehler, Logikfehler]
+  related: [laufzeitfehler, debugging, bug]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: stack-trace
+  term: Stack Trace
+  short: Die Liste der Funktionsaufrufe, die zu einem Fehler geführt haben, mit Datei und Zeile.
+  explanation: >
+    Wenn ein Fehler auftritt, zeigt die Laufzeitumgebung, welche Funktion gerade lief und von wo aus sie
+    aufgerufen wurde – Zeile für Zeile bis zum Programmstart. In JavaScript steht der Ort des Fehlers oben,
+    darunter die Aufrufer. Suche die erste Zeile, die auf deine eigene Datei zeigt.
+  example: "`at berechne (/workspace/app.js:4:15)` – der Fehler passierte in `berechne`, Datei `app.js`, Zeile 4, Spalte 15."
+  category: programmierung
+  aliases: [Stacktrace, Stack Traces, Call Stack, Aufrufstapel, Backtrace]
+  related: [fehlermeldung, funktion, debugging]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: debugging
+  term: Debugging
+  short: Das systematische Suchen und Beheben von Fehlern in einem Programm.
+  explanation: >
+    Beim Debugging stellst du eine Vermutung auf, prüfst sie mit einem gezielten Test – etwa einer Ausgabe oder
+    einem Breakpoint – und grenzt den Fehler so Schritt für Schritt ein. Gutes Debugging ist methodisch und
+    nicht hektisches Herumprobieren.
+  example: Mit einem `console.log` vor und nach einer Berechnung prüfst du, ob die Werte stimmen.
+  category: programmierung
+  aliases: [debuggen, Fehlersuche]
+  related: [bug, debugger, breakpoint, fehlermeldung]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: bug
+  term: Bug
+  short: Ein Fehler in einem Programm, der zu falschem oder unerwartetem Verhalten führt.
+  explanation: >
+    „Bug" heißt auf Englisch Käfer. Der Begriff ist älter als Computer; berühmt ist eine Motte, die 1947 in einem
+    Relais des Rechners Mark II gefunden wurde. Bugs zu finden und zu beheben gehört zum normalen Alltag jeder
+    Entwicklerin und jedes Entwicklers.
+  example: Der Warenkorb zeigt bei 3 Artikeln nur 2 an – ein Bug, vermutlich ein Off-by-one-Fehler.
+  category: programmierung
+  aliases: [Bugs, Programmfehler, Bugfix]
+  related: [debugging, logischer-fehler]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: debugger
+  term: Debugger
+  short: Ein Werkzeug, mit dem du ein Programm anhalten, Schritt für Schritt ausführen und Variablen ansehen kannst.
+  explanation: >
+    Mit einem Debugger setzt du Breakpoints, hältst das Programm dort an und schaust dir den Zustand aller
+    Variablen an. Dann führst du Zeile für Zeile weiter aus. Browser bringen einen Debugger in den DevTools mit,
+    Node.js startet einen mit `node inspect`, für PHP gibt es Xdebug.
+  example: Die Anweisung `debugger;` im Code hält das Programm an, sobald ein Debugger verbunden ist.
+  category: programmierung
+  aliases: [Debuggers, DevTools, Xdebug, node inspect]
+  related: [breakpoint, debugging]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: breakpoint
+  term: Breakpoint
+  short: Eine Markierung im Code, an der der Debugger das Programm anhält.
+  explanation: >
+    An einem Breakpoint stoppt die Ausführung, bevor die markierte Zeile läuft. Du siehst dann alle aktuellen
+    Werte und kannst Schritt für Schritt weitergehen (*step over*, *step into*). Bedingte Breakpoints halten nur
+    an, wenn eine Bedingung erfüllt ist.
+  example: Ein Breakpoint in Zeile 12 einer Schleife zeigt dir bei jedem Durchlauf den Wert von `i`.
+  category: programmierung
+  aliases: [Breakpoints, Haltepunkt, Haltepunkte]
+  related: [debugger, debugging]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: rubber-duck-debugging
+  term: Rubber-Duck-Debugging
+  short: Einen Fehler finden, indem man den Code Zeile für Zeile laut erklärt – zur Not einer Gummiente.
+  explanation: >
+    Wer erklären muss, was jede Zeile tun soll, merkt oft selbst, wo Absicht und Code auseinanderlaufen. Die
+    Methode stammt aus dem Buch „The Pragmatic Programmer". Die Ente muss nichts verstehen – das Erklären ist der
+    eigentliche Trick.
+  example: "„Hier addiere ich alle Preise … ach, die Schleife fängt ja bei 1 an statt bei 0!\""
+  category: programmierung
+  aliases: [Quietscheentchen-Debugging, Rubber Duck, Gummiente]
+  related: [debugging]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: exception
+  term: Exception
+  short: Ein Fehlerobjekt, das den normalen Ablauf unterbricht, bis es irgendwo abgefangen wird.
+  explanation: >
+    Mit `throw` löst du eine Exception (Ausnahme) aus. Das Programm springt dann sofort aus allen laufenden
+    Funktionen heraus, bis ein passendes `catch` sie abfängt – gibt es keines, bricht das Programm mit einer
+    Fehlermeldung ab. In JavaScript wirft man meist `new Error("…")`, in PHP `new Exception("…")`.
+  example: "`throw new Error(\"Menge darf nicht negativ sein\");`"
+  category: programmierung
+  aliases: [Exceptions, Ausnahme, Ausnahmen, throw, werfen, Error-Objekt]
+  related: [try-catch, laufzeitfehler, fehlermeldung]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: try-catch
+  term: try/catch
+  short: Ein Sprachkonstrukt, das Code ausprobiert und auftretende Exceptions abfängt.
+  explanation: >
+    Code im `try`-Block wird ausgeführt. Wirft er eine Exception, springt das Programm in den `catch`-Block und
+    bekommt das Fehlerobjekt. Ein optionaler `finally`-Block läuft in jedem Fall – etwa zum Aufräumen. Fange nur
+    Fehler ab, auf die du sinnvoll reagieren kannst.
+  example: "`try { JSON.parse(text); } catch (error) { console.log(\"Ungültiges JSON\"); }`"
+  category: programmierung
+  aliases: [try, catch, finally, try-catch-Block, abfangen]
+  related: [exception, fehlermeldung]
+  lesson: programmieren-grundlagen/fehler-und-debugging
+- slug: randfall
+  term: Randfall
+  short: Eine ungewöhnliche, aber mögliche Eingabe an der Grenze dessen, was ein Programm verarbeiten soll.
+  explanation: >
+    Randfälle (englisch *edge cases*) sind zum Beispiel eine leere Liste, die Zahl 0, ein sehr langer Text oder
+    ein negativer Wert. Viele Bugs verstecken sich genau dort. Wer Randfälle schon vor dem Programmieren
+    sammelt und später testet, schreibt deutlich robusteren Code.
+  example: "Für eine Funktion `durchschnitt(zahlen)` ist das leere Array `[]` ein wichtiger Randfall."
+  category: programmierung
+  aliases: [Randfälle, Edge Case, Edge Cases, Grenzfall, Grenzfälle, Sonderfall]
+  related: [off-by-one-fehler, algorithmus]
+  lesson: programmieren-grundlagen/vom-problem-zum-programm

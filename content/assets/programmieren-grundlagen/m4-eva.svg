@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Das EVA-Prinzip am Beispiel „Durchschnitt berechnen"</text>
+<rect x="30" y="70" width="210" height="130" rx="16" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="135" y="110" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Eingabe</text>
+<rect x="295" y="70" width="210" height="130" rx="16" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="400" y="110" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Verarbeitung</text>
+<rect x="560" y="70" width="210" height="130" rx="16" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="665" y="110" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Ausgabe</text>
+<path d="M242 135 H291" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M507 135 H556" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="135" y="155" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">[4, 8, 6]</text>
+<text x="135" y="178" text-anchor="middle" font-size="12" fill="#475569">Noten einer Klassenarbeit</text>
+<text x="400" y="150" text-anchor="middle" font-size="13" fill="#1e1b3a">1. alle addieren → 18</text>
+<text x="400" y="172" text-anchor="middle" font-size="13" fill="#1e1b3a">2. durch Anzahl teilen → 6</text>
+<text x="665" y="155" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Schnitt: 6</text>
+<text x="665" y="178" text-anchor="middle" font-size="12" fill="#475569">auf dem Bildschirm</text>
+<text x="400" y="255" text-anchor="middle" font-size="13" fill="#475569">Fast jedes Programm folgt diesem Muster – vom Taschenrechner bis zur Web-App.</text>
+</svg>

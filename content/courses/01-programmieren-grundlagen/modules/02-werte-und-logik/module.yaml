@@ -1,0 +1,78 @@
+title: Werte, Typen und Entscheidungen
+description: Wie Programme Werte in Variablen speichern, mit Text und Zahlen rechnen, Typen umwandeln und mit Bedingungen Entscheidungen treffen.
+exercise:
+  id: modul-uebung-versandkosten
+  type: code
+  language: js
+  title: Der Versandkosten-Rechner
+  description: |
+    Ein Online-Shop berechnet Versandkosten (in Euro) nach diesen Regeln. Ergänze `versandkosten(bestellwert, land, istMitglied)`:
+
+    1. Ist `bestellwert` keine gültige Zahl (`NaN`) oder kleiner als 0, gib `-1` zurück (ungültige Eingabe).
+    2. Mitglieder (`istMitglied` ist `true`) zahlen **nie** Versand: `0`.
+    3. Sonst hängt der Grundpreis vom Land ab – nutze dafür `switch`:
+       - `"DE"` → 4.90
+       - `"AT"` und `"CH"` → 9.90
+       - jedes andere Land → 14.90
+    4. Ab einem Bestellwert von **50 €** (genau 50 eingeschlossen) ist der Versand **innerhalb Deutschlands** kostenlos.
+    5. Bei einem Bestellwert unter 10 € kommt ein Mindermengenzuschlag von 2 € auf den Versandpreis dazu.
+
+    Der Funktionsrahmen ist vorbereitet: Die Eingaben kommen über die Parameter, das Ergebnis gibst du mit `return` zurück.
+  starter: |
+    function versandkosten(bestellwert, land, istMitglied) {
+      // Regel 1: ungültige Eingabe
+
+      // Regel 2: Mitglieder
+
+      // Regel 3–5: Grundpreis, Gratisversand, Zuschlag
+      return 4.9;
+    }
+  tests:
+    - name: Deutschland unter 50 € kostet 4.90
+      code: assertEqual(versandkosten(30, "DE", false), 4.9)
+    - name: Grenze – genau 50 € in Deutschland ist gratis
+      code: assertEqual(versandkosten(50, "DE", false), 0)
+    - name: Österreich und Schweiz kosten 9.90, auch über 50 €
+      code: assertTrue(versandkosten(80, "AT", false) === 9.9 && versandkosten(20, "CH", false) === 9.9)
+    - name: anderes Land kostet 14.90
+      code: assertEqual(versandkosten(20, "FR", false), 14.9)
+    - name: Mindermengenzuschlag unter 10 €
+      code: assertTrue(versandkosten(5, "DE", false) === 6.9 && versandkosten(9.99, "FR", false) === 16.9)
+    - name: Mitglieder zahlen nichts
+      code: assertTrue(versandkosten(5, "FR", true) === 0 && versandkosten(100, "DE", true) === 0)
+    - name: ungültige Eingaben liefern -1
+      code: assertTrue(versandkosten(-1, "DE", false) === -1 && versandkosten(NaN, "DE", true) === -1)
+  hints:
+    - Prüfe die Sonderfälle (ungültig, Mitglied) zuerst und gib dort sofort mit return zurück.
+    - "Ungültig: `Number.isNaN(bestellwert) || bestellwert < 0`"
+    - "Speichere den Grundpreis in einer `let`-Variablen, passe ihn mit if an und gib ihn am Ende zurück. Achtung: 4.9 + 2 ergibt exakt 6.9 – rechne so, dass keine Rundungsfehler entstehen."
+  solution: |
+    function versandkosten(bestellwert, land, istMitglied) {
+      if (Number.isNaN(bestellwert) || bestellwert < 0) {
+        return -1;
+      }
+      if (istMitglied) {
+        return 0;
+      }
+
+      let preis;
+      switch (land) {
+        case "DE":
+          preis = 4.9;
+          break;
+        case "AT":
+        case "CH":
+          preis = 9.9;
+          break;
+        default:
+          preis = 14.9;
+      }
+
+      if (land === "DE" && bestellwert >= 50) {
+        preis = 0;
+      }
+      if (bestellwert < 10) {
+        preis += 2;
+      }
+      return preis;
+    }

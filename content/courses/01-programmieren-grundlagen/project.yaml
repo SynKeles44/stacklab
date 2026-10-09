@@ -1,0 +1,390 @@
+title: Deine To-do-Liste für die Kommandozeile
+description: |
+  Du baust Schritt für Schritt ein echtes Kommandozeilen-Programm in Node.js: eine To-do-Liste, die du mit
+  Befehlen wie `node todo.js add "Milch kaufen"` oder `node todo.js done 1` bedienst und die ihre Aufgaben in
+  einer Datei speichert. Dabei setzt du alles ein, was du im Kurs gelernt hast – Variablen, Bedingungen, switch,
+  Schleifen, Funktionen, Arrays, Objekte, map/filter, Fehlerbehandlung und das Zerlegen eines Problems.
+
+  Alles passiert im Übungs-Terminal im Ordner `todo-cli`. Arbeite mit `nano todo.js` (Speichern: Strg+O, Enter;
+  Beenden: Strg+X) und teste nach jedem Schritt mit `node todo.js …`. Stacklab prüft dein Programm mit eigenen
+  Testläufen in einem Unterordner – deine echten Aufgaben bleiben dabei unberührt.
+goal: >
+  Im Ordner `todo-cli` liegt `todo.js`, ein Kommandozeilen-Programm mit den Befehlen list, add, done, remove,
+  stats und hilfe, das seine Aufgaben in `todos.json` speichert und bei falschen Eingaben verständliche
+  Fehlermeldungen mit Exit-Code 1 ausgibt.
+workdir: todo-cli
+steps:
+  - id: planen-und-anlegen
+    title: Planen und die Datei anlegen
+    description: |
+      Bevor du programmierst, planst du – wie in der letzten Lektion gelernt.
+
+      **EVA:** Eingabe sind die Befehle im Terminal (`add Milch kaufen`), Verarbeitung ist das Ändern der Liste,
+      Ausgabe sind Textzeilen und die gespeicherte Datei.
+
+      **Zerlegung:** Daten anzeigen → Befehle erkennen → speichern und laden → abhaken → löschen → Statistik.
+
+      Lege jetzt im Ordner `todo-cli` die Datei `todo.js` an. Schreibe oben einen Kommentar, was das Programm tut,
+      und lass es als erste Zeile `To-do-Liste` ausgeben. Teste mit `node todo.js`.
+    checklist:
+      - Datei todo.js im Ordner todo-cli angelegt
+      - Kommentar am Anfang der Datei
+      - node todo.js läuft ohne Fehler
+    hints:
+      - "Ordner anlegen und hineinwechseln: `mkdir -p todo-cli` (falls er fehlt) und `cd todo-cli`."
+      - "`console.log(\"To-do-Liste\");` reicht für den Anfang."
+    checks:
+      - type: file_exists
+        path: todo.js
+        message: Die Datei todo.js fehlt noch im Ordner todo-cli.
+      - type: file_contains
+        path: todo.js
+        pattern: "^\\s*(//|/\\*)"
+        message: Schreib einen Kommentar an den Anfang von todo.js, der erklärt, was das Programm tut.
+      - type: command
+        run: node todo.js
+        message: node todo.js bricht noch mit einem Fehler ab.
+    solution: |
+      ```bash
+      cd todo-cli
+      nano todo.js
+      ```
+      ```js
+      // Eine kleine To-do-Liste für die Kommandozeile
+      console.log("To-do-Liste");
+      ```
+  - id: daten-und-ausgabe
+    title: Aufgaben als Objekte und eine Ausgabe-Funktion
+    description: |
+      Jede Aufgabe ist ein Objekt mit `text` und `erledigt`. Alle Aufgaben liegen in einem Array.
+
+      1. Lege zum Testen ein Array `aufgaben` mit zwei Beispielen an, eines davon erledigt.
+      2. Schreibe eine **reine** Funktion `zeile(aufgabe, nummer)`, die einen Text liefert:
+         `1. [ ] Milch kaufen` für offene und `2. [x] Brot backen` für erledigte Aufgaben.
+      3. Gib alle Aufgaben mit einer Schleife (oder `forEach`) aus. Die Nummer beginnt bei 1, nicht bei 0!
+    checklist:
+      - Array mit Aufgaben-Objekten
+      - Funktion zeile() mit return statt console.log
+      - Nummerierung beginnt bei 1
+    hints:
+      - "Ternärer Operator für den Haken: `const haken = aufgabe.erledigt ? \"[x]\" : \"[ ]\";`"
+      - "`aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));`"
+    checks:
+      - type: file_contains
+        path: todo.js
+        pattern: "function zeile\\s*\\(|const zeile\\s*="
+        message: Es fehlt noch die Funktion zeile(aufgabe, nummer).
+      - type: file_contains
+        path: todo.js
+        pattern: "\\[x\\]"
+        message: Erledigte Aufgaben sollen mit [x] markiert werden.
+      - type: command
+        run: node todo.js list
+        message: node todo.js list bricht noch mit einem Fehler ab.
+    solution: |
+      ```js
+      const aufgaben = [
+        { text: "Milch kaufen", erledigt: false },
+        { text: "Brot backen", erledigt: true },
+      ];
+
+      function zeile(aufgabe, nummer) {
+        const haken = aufgabe.erledigt ? "[x]" : "[ ]";
+        return `${nummer}. ${haken} ${aufgabe.text}`;
+      }
+
+      aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
+      ```
+  - id: befehle-erkennen
+    title: Befehle aus dem Terminal lesen
+    description: |
+      Alles, was du hinter `node todo.js` tippst, steht in `process.argv` – einem Array von Strings.
+      `process.argv[2]` ist das erste Wort nach dem Dateinamen, ab `process.argv[3]` folgen die weiteren.
+      Mit Destrukturierung holst du beides elegant heraus:
+
+      ```js
+      const [befehl, ...rest] = process.argv.slice(2);
+      ```
+
+      Baue mit `switch (befehl)` einen Verteiler:
+
+      1. `list` gibt die Aufgaben aus (wie bisher).
+      2. Kein Befehl oder `hilfe` zeigt eine Hilfe, deren erste Zeile `Verwendung: node todo.js <befehl>` lautet, gefolgt von einer Zeile je Befehl (list, add, done, remove, stats).
+      3. Jeder andere Befehl gibt `Unbekannter Befehl: <befehl>` aus, zeigt die Hilfe und setzt `process.exitCode = 1`. Der Exit-Code 1 signalisiert dem Terminal „hat nicht geklappt".
+    checklist:
+      - switch über den Befehl
+      - Hilfe-Funktion mit Verwendungszeile
+      - Unbekannte Befehle liefern Exit-Code 1
+    hints:
+      - "Mit `echo $?` siehst du im Terminal den Exit-Code des letzten Befehls."
+      - "`case undefined:` und `case \"hilfe\":` können sich einen Block teilen."
+    checks:
+      - type: command
+        run: node todo.js hilfe
+        stdout_matches: "^Verwendung: node todo\\.js <befehl>"
+        message: "node todo.js hilfe soll mit der Zeile „Verwendung: node todo.js <befehl>\" beginnen."
+      - type: command
+        run: node todo.js
+        stdout_matches: "^Verwendung: "
+        message: Ohne Befehl soll ebenfalls die Hilfe erscheinen.
+      - type: command
+        run: node todo.js quatsch
+        expect_exit: 1
+        stdout_matches: "Unbekannter Befehl: quatsch"
+        message: 'Ein unbekannter Befehl soll „Unbekannter Befehl: quatsch" ausgeben und mit Exit-Code 1 enden.'
+    solution: |
+      ```js
+      function hilfe() {
+        console.log("Verwendung: node todo.js <befehl>");
+        console.log("  list            alle Aufgaben anzeigen");
+        console.log("  add <text>      Aufgabe hinzufügen");
+        console.log("  done <nummer>   Aufgabe abhaken");
+        console.log("  remove <nummer> Aufgabe löschen");
+        console.log("  stats           Statistik anzeigen");
+      }
+
+      const [befehl, ...rest] = process.argv.slice(2);
+
+      switch (befehl) {
+        case "list":
+          aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
+          break;
+        case undefined:
+        case "hilfe":
+          hilfe();
+          break;
+        default:
+          console.log(`Unbekannter Befehl: ${befehl}`);
+          hilfe();
+          process.exitCode = 1;
+      }
+      ```
+  - id: speichern-und-laden
+    title: Aufgaben speichern und hinzufügen
+    description: |
+      Damit die Liste den Programmstart überlebt, speicherst du sie in der Datei `todos.json` im aktuellen Ordner.
+      Node.js bringt dafür das Modul `fs` (file system) mit:
+
+      ```js
+      const fs = require("node:fs");
+      fs.writeFileSync("todos.json", JSON.stringify(aufgaben, null, 2));   // speichern
+      const daten = JSON.parse(fs.readFileSync("todos.json", "utf8"));      // laden
+      ```
+
+      `JSON.stringify` macht aus dem Array einen Text, `JSON.parse` wieder ein Array.
+
+      1. Schreibe `laden()`: Sie liest `todos.json`. Gibt es die Datei noch nicht, wirft `readFileSync` einen Fehler – fange ihn mit `try`/`catch` ab und gib ein leeres Array zurück.
+      2. Schreibe `speichern(aufgaben)`.
+      3. Ersetze dein Beispiel-Array durch `const aufgaben = laden();`.
+      4. Neuer Befehl `add <text>`: Text aus den restlichen Wörtern bilden (`rest.join(" ")`), als offene Aufgabe anhängen, speichern und `Hinzugefügt: <text>` ausgeben. Fehlt der Text, gib `Fehler: Bitte einen Text angeben.` aus und setze den Exit-Code 1.
+      5. `list` gibt bei leerer Liste `Keine Aufgaben.` aus.
+    checklist:
+      - laden() mit try/catch
+      - speichern() schreibt todos.json
+      - add hängt Aufgaben an und prüft leere Eingaben
+      - list zeigt „Keine Aufgaben." bei leerer Liste
+    hints:
+      - Probier es aus und schau mit `cat todos.json` in die Datei.
+      - "`node todo.js add Milch kaufen` funktioniert auch ohne Anführungszeichen, weil du `rest.join(\" \")` nutzt."
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT; cp todo.js "$d/"; cd "$d"
+          node todo.js list
+        stdout_equals: Keine Aufgaben.
+        message: Ohne todos.json soll list „Keine Aufgaben." ausgeben – fängt laden() den Fehler ab?
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT; cp todo.js "$d/"; cd "$d"
+          node todo.js add Milch kaufen && node todo.js add "Brot backen" > /dev/null && node todo.js list
+        stdout_equals: "Hinzugefügt: Milch kaufen\n1. [ ] Milch kaufen\n2. [ ] Brot backen"
+        message: 'Nach zwei add-Befehlen soll list beide Aufgaben nummeriert anzeigen (und add „Hinzugefügt: …" melden).'
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT; cp todo.js "$d/"; cd "$d"
+          node todo.js add
+        expect_exit: 1
+        stdout_matches: "^Fehler: Bitte einen Text angeben\\.$"
+        message: 'add ohne Text soll „Fehler: Bitte einen Text angeben." ausgeben und mit Exit-Code 1 enden.'
+    solution: |
+      ```js
+      const fs = require("node:fs");
+      const DATEI = "todos.json";
+
+      function laden() {
+        try {
+          return JSON.parse(fs.readFileSync(DATEI, "utf8"));
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function speichern(aufgaben) {
+        fs.writeFileSync(DATEI, JSON.stringify(aufgaben, null, 2));
+      }
+
+      function fehler(nachricht) {
+        console.log(`Fehler: ${nachricht}`);
+        process.exitCode = 1;
+      }
+
+      const aufgaben = laden();
+
+      // im switch:
+      case "list":
+        if (aufgaben.length === 0) {
+          console.log("Keine Aufgaben.");
+        }
+        aufgaben.forEach((aufgabe, i) => console.log(zeile(aufgabe, i + 1)));
+        break;
+      case "add": {
+        const text = rest.join(" ").trim();
+        if (text === "") {
+          fehler("Bitte einen Text angeben.");
+          break;
+        }
+        aufgaben.push({ text, erledigt: false });
+        speichern(aufgaben);
+        console.log(`Hinzugefügt: ${text}`);
+        break;
+      }
+      ```
+  - id: abhaken
+    title: Aufgaben abhaken – mit sicherer Nummernprüfung
+    description: |
+      Neuer Befehl `done <nummer>`:
+
+      1. Schreibe eine Funktion `finde(aufgaben, nummerText)`, die die Nummer in einen Index umwandelt. Ist sie keine ganze Zahl, kleiner als 1 oder größer als die Anzahl der Aufgaben, liefert sie `-1`. Achtung, Off-by-one: Nummer 1 ist Index 0.
+      2. `done 2` setzt `erledigt` der zweiten Aufgabe auf `true`, speichert und gibt `Erledigt: <text>` aus.
+      3. Bei ungültiger Nummer: `Fehler: Aufgabe <nummer> gibt es nicht.` und Exit-Code 1.
+    checklist:
+      - finde() prüft Zahl und Bereich
+      - done markiert und speichert
+      - ungültige Nummern führen zu einer Fehlermeldung
+    hints:
+      - "`const nummer = Number(nummerText); if (!Number.isInteger(nummer) || nummer < 1 || nummer > aufgaben.length) return -1;`"
+      - Teste die Randfälle selbst – `done 0`, `done 99`, `done abc`.
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT; cp todo.js "$d/"; cd "$d"
+          node todo.js add Milch kaufen > /dev/null && node todo.js add Brot backen > /dev/null
+          node todo.js done 2 && node todo.js list
+        stdout_equals: "Erledigt: Brot backen\n1. [ ] Milch kaufen\n2. [x] Brot backen"
+        message: 'done 2 soll „Erledigt: Brot backen" melden, und list soll die zweite Aufgabe danach mit [x] zeigen.'
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT; cp todo.js "$d/"; cd "$d"
+          node todo.js add Milch kaufen > /dev/null
+          node todo.js done 5
+        expect_exit: 1
+        stdout_matches: "^Fehler: Aufgabe 5 gibt es nicht\\.$"
+        message: 'Bei einer Nummer, die es nicht gibt, soll „Fehler: Aufgabe 5 gibt es nicht." mit Exit-Code 1 erscheinen.'
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT; cp todo.js "$d/"; cd "$d"
+          node todo.js add Milch kaufen > /dev/null
+          node todo.js done 0
+        expect_exit: 1
+        message: Auch die Nummer 0 gibt es nicht – done 0 soll mit Exit-Code 1 enden (Off-by-one!).
+    solution: |
+      ```js
+      function finde(aufgaben, nummerText) {
+        const nummer = Number(nummerText);
+        if (!Number.isInteger(nummer) || nummer < 1 || nummer > aufgaben.length) {
+          return -1;
+        }
+        return nummer - 1;
+      }
+
+      // im switch:
+      case "done": {
+        const index = finde(aufgaben, rest[0]);
+        if (index === -1) {
+          fehler(`Aufgabe ${rest[0]} gibt es nicht.`);
+          break;
+        }
+        aufgaben[index].erledigt = true;
+        speichern(aufgaben);
+        console.log(`Erledigt: ${aufgaben[index].text}`);
+        break;
+      }
+      ```
+  - id: loeschen
+    title: Aufgaben löschen
+    description: |
+      Neuer Befehl `remove <nummer>`: Er entfernt die Aufgabe, speichert und gibt `Gelöscht: <text>` aus. Nutze
+      wieder `finde()` – bei ungültiger Nummer erscheint dieselbe Fehlermeldung wie bei `done`.
+
+      Zum Entfernen eignet sich `aufgaben.splice(index, 1)`: Es schneidet ein Element heraus und liefert es als Array zurück.
+    checklist:
+      - remove nutzt finde()
+      - die Aufgabe wird entfernt und gespeichert
+      - die Nummern rücken danach nach
+    hints:
+      - "`const [geloescht] = aufgaben.splice(index, 1);` – Destrukturierung holt das eine entfernte Element heraus."
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT; cp todo.js "$d/"; cd "$d"
+          node todo.js add A > /dev/null && node todo.js add B > /dev/null && node todo.js add C > /dev/null
+          node todo.js remove 2 && node todo.js list
+        stdout_equals: "Gelöscht: B\n1. [ ] A\n2. [ ] C"
+        message: 'remove 2 soll „Gelöscht: B" melden; danach rücken die Nummern nach (1. A, 2. C).'
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT; cp todo.js "$d/"; cd "$d"
+          node todo.js remove 1
+        expect_exit: 1
+        message: remove bei leerer Liste soll mit einer Fehlermeldung und Exit-Code 1 enden.
+    solution: |
+      ```js
+      case "remove": {
+        const index = finde(aufgaben, rest[0]);
+        if (index === -1) {
+          fehler(`Aufgabe ${rest[0]} gibt es nicht.`);
+          break;
+        }
+        const [geloescht] = aufgaben.splice(index, 1);
+        speichern(aufgaben);
+        console.log(`Gelöscht: ${geloescht.text}`);
+        break;
+      }
+      ```
+  - id: statistik
+    title: Statistik mit filter
+    description: |
+      Neuer Befehl `stats`: Er gibt eine Zeile wie `3 Aufgaben, 1 erledigt, 2 offen` aus. Berechne die Anzahl der
+      erledigten Aufgaben mit `filter` (oder `reduce`) – ohne Schleife.
+
+      Zum Abschluss: Probiere alle Befehle einmal mit deinen echten Aufgaben aus und schau dir `todos.json` an.
+      Herzlichen Glückwunsch – du hast ein komplettes Kommandozeilen-Programm geschrieben!
+    checklist:
+      - stats zählt alle, erledigte und offene Aufgaben
+      - Berechnung mit filter oder reduce
+      - alle Befehle einmal selbst ausprobiert
+    hints:
+      - "`const erledigt = aufgaben.filter((a) => a.erledigt).length;`"
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT; cp todo.js "$d/"; cd "$d"
+          node todo.js add A > /dev/null && node todo.js add B > /dev/null && node todo.js add C > /dev/null
+          node todo.js done 1 > /dev/null
+          node todo.js stats
+        stdout_equals: "3 Aufgaben, 1 erledigt, 2 offen"
+        message: Nach drei Aufgaben, von denen eine erledigt ist, soll stats „3 Aufgaben, 1 erledigt, 2 offen" ausgeben.
+      - type: file_contains
+        path: todo.js
+        pattern: "\\.(filter|reduce)\\("
+        message: Berechne die Statistik mit filter oder reduce.
+    solution: |
+      ```js
+      case "stats": {
+        const erledigt = aufgaben.filter((a) => a.erledigt).length;
+        console.log(`${aufgaben.length} Aufgaben, ${erledigt} erledigt, ${aufgaben.length - erledigt} offen`);
+        break;
+      }
+      ```
+      Die vollständige Datei vereint alle Schritte: `laden`, `speichern`, `zeile`, `fehler`, `hilfe`, `finde`
+      und den `switch` mit den Befehlen list, add, done, remove, stats, hilfe.

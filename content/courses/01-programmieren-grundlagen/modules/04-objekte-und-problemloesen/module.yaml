@@ -1,0 +1,82 @@
+title: Objekte, Fehler und Problemlösen
+description: Klassen und Objekte als Bauplan, Fehlermeldungen lesen und systematisch debuggen – und der Weg vom Problem zum fertigen Programm.
+exercise:
+  id: modul-uebung-rechnung
+  type: terminal
+  title: Repariere die Rechnungs-Klasse
+  description: |
+    Im Ordner `rechnung` liegt `rechnung.js`: eine kleine Klasse `Rechnung`, die Posten sammelt und eine Summe
+    berechnet. Darin stecken **drei Fehler** – ein Syntaxfehler, ein Laufzeitfehler und ein logischer Fehler.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+
+    1. Wechsle in den Ordner (`cd rechnung`) und starte `node rechnung.js`. Lies jede Fehlermeldung genau (Typ, Zeile, Nachricht).
+    2. Behebe einen Fehler nach dem anderen mit `nano rechnung.js` und starte nach jeder Änderung erneut. `cat -n rechnung.js` zeigt dir Zeilennummern.
+    3. Ist kein Fehler mehr zu sehen, prüfe das Ergebnis: Stimmt die Summe? (2 × 3.50 + 1 × 12.00 = 19.00)
+    4. Am Ende soll die Ausgabe genau so aussehen:
+       ```text
+       2 x Kaffee: 7.00 €
+       1 x Kuchen: 12.00 €
+       Summe: 19.00 €
+       ```
+    Ändere nur die fehlerhaften Stellen – schreibe die Summe nicht als feste Zahl hinein.
+  workdir: rechnung
+  setup: |
+    cat > rechnung.js <<'EOF'
+    class Rechnung {
+      constructor() {
+        this.posten = [];
+      }
+
+      hinzufuegen(name, preis, menge) {
+        this.posten.psuh({ name, preis, menge });
+      }
+
+      summe() {
+        let summe = 0;
+        for (const p of this.posten) {
+          summe += p.preis + p.menge;
+        }
+        return summe;
+      }
+
+      drucken() {
+        for (const p of this.posten) {
+          console.log(`${p.menge} x ${p.name}: ${(p.preis * p.menge).toFixed(2)} €`);
+        }
+        console.log(`Summe: ${this.summe().toFixed(2)} €`;
+      }
+    }
+
+    const rechnung = new Rechnung();
+    rechnung.hinzufuegen("Kaffee", 3.5, 2);
+    rechnung.hinzufuegen("Kuchen", 12, 1);
+    rechnung.drucken();
+    EOF
+  checks:
+    - type: command
+      run: node --check rechnung.js
+      message: rechnung.js hat noch einen Syntaxfehler. Node zeigt dir Zeile und Stelle – fehlt eine Klammer?
+    - type: command
+      run: node rechnung.js > /dev/null
+      message: Das Programm bricht noch mit einem Laufzeitfehler ab. Lies den TypeError – welche Methode gibt es nicht?
+    - type: command
+      run: node rechnung.js
+      stdout_equals: "2 x Kaffee: 7.00 €\n1 x Kuchen: 12.00 €\nSumme: 19.00 €"
+      message: Die Ausgabe stimmt noch nicht. Rechnet summe() wirklich Preis mal Menge?
+    - type: file_contains
+      path: rechnung.js
+      pattern: "p\\.preis\\s*\\*\\s*p\\.menge;"
+      message: Behebe den logischen Fehler in summe() – dort soll Preis mal Menge addiert werden.
+  hints:
+    - "Der Syntaxfehler steckt in der Zeile mit `Summe:` – vor dem Semikolon fehlt eine schließende Klammer."
+    - "`TypeError: this.posten.psuh is not a function` – Arrays haben die Methode `push`."
+    - "In `summe()` steht `p.preis + p.menge` – richtig ist `p.preis * p.menge`."
+  solution: |
+    Die drei Korrekturen:
+    ```js
+    this.posten.push({ name, preis, menge });            // Laufzeitfehler: psuh → push
+    summe += p.preis * p.menge;                            // logischer Fehler: + → *
+    console.log(`Summe: ${this.summe().toFixed(2)} €`);   // Syntaxfehler: ) ergänzt
+    ```
+    Danach liefert `node rechnung.js` die erwartete Ausgabe mit `Summe: 19.00 €`.

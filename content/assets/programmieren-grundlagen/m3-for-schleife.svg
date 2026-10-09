@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="410" y="34" text-anchor="middle" font-size="16" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">for (<tspan fill="#0e7490" font-weight="700">let i = 0</tspan>; <tspan fill="#b45309" font-weight="700">i &lt; 3</tspan>; <tspan fill="#7c3aed" font-weight="700">i++</tspan>) { <tspan fill="#047857" font-weight="700">console.log(i);</tspan> }</text>
+<rect x="40" y="80" width="200" height="80" rx="12" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="140" y="112" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">1. Start</text>
+<text x="140" y="140" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">let i = 0</text>
+<text x="140" y="178" text-anchor="middle" font-size="12" fill="#475569">läuft genau einmal</text>
+<rect x="310" y="80" width="200" height="80" rx="12" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="3"/>
+<text x="410" y="112" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">2. Bedingung</text>
+<text x="410" y="140" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">i &lt; 3 ?</text>
+<rect x="580" y="80" width="200" height="80" rx="12" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
+<text x="680" y="112" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Ende</text>
+<text x="680" y="140" text-anchor="middle" font-size="13" fill="#1e1b3a">weiter nach der Schleife</text>
+<rect x="310" y="270" width="200" height="80" rx="12" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="410" y="302" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">3. Schleifenkörper</text>
+<text x="410" y="330" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">console.log(i)</text>
+<rect x="40" y="270" width="200" height="80" rx="12" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="140" y="302" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">4. Schritt</text>
+<text x="140" y="330" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">i++</text>
+<path d="M242 120 H306" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<path d="M512 120 H576" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="544" y="110" text-anchor="middle" font-size="13" font-weight="700" fill="#b91c1c">false</text>
+<path d="M410 162 V266" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="436" y="220" font-size="13" font-weight="700" fill="#047857">true</text>
+<path d="M308 310 H244" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<path d="M140 268 C 140 210, 300 210, 340 164" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#a)"/>
+<text x="200" y="230" text-anchor="middle" font-size="12" fill="#475569">zurück zur Bedingung</text>
+<text x="410" y="400" text-anchor="middle" font-size="13" fill="#475569">Ausgabe: 0, 1, 2 – bei i = 3 ist die Bedingung falsch und die Schleife endet.</text>
+</svg>

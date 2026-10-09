@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto"><path d="M0 0 10 5 0 10z" fill="#ffffff" stroke="#64748b" stroke-width="1.5"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Vererbung: Kreis und Rechteck sind Formen</text>
+<rect x="290" y="56" width="220" height="110" rx="10" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="400" y="82" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Form</text>
+<line x1="290" y1="94" x2="510" y2="94" stroke="#a78bfa" stroke-width="2"/>
+<text x="305" y="118" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">name</text>
+<text x="305" y="144" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">beschreibung()</text>
+<rect x="80" y="240" width="260" height="120" rx="10" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="210" y="266" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Kreis extends Form</text>
+<line x1="80" y1="278" x2="340" y2="278" stroke="#22d3ee" stroke-width="2"/>
+<text x="95" y="302" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">radius</text>
+<text x="95" y="328" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">flaeche() → π · r²</text>
+<rect x="460" y="240" width="260" height="120" rx="10" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="590" y="266" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Rechteck extends Form</text>
+<line x1="460" y1="278" x2="720" y2="278" stroke="#34d399" stroke-width="2"/>
+<text x="475" y="302" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">breite, hoehe</text>
+<text x="475" y="328" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">flaeche() → b · h</text>
+<path d="M210 238 V200 H380 V172" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<path d="M590 238 V200 H420 V172" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="400" y="216" text-anchor="middle" font-size="12" fill="#475569">„ist eine"</text>
+<text x="400" y="388" text-anchor="middle" font-size="12" fill="#475569">Beide erben name und beschreibung() – und bringen ihre eigene flaeche() mit (Polymorphie).</text>
+</svg>
