@@ -16,10 +16,12 @@ export function CoursesPage() {
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    return courses.filter(
-      (course) => (category === 'alle' || course.category === category) && (!q || `${course.title} ${course.subtitle ?? ''} ${course.description}`.toLowerCase().includes(q)),
-    )
+    const inCategory = courses.filter((course) => category === 'alle' || course.category === category)
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    if (words.length === 0) return inCategory
+    const matches = (text: string) => words.every((word) => text.toLowerCase().includes(word))
+    const byTitle = inCategory.filter((course) => matches(`${course.title} ${course.subtitle ?? ''} ${course.slug}`))
+    return byTitle.length > 0 ? byTitle : inCategory.filter((course) => matches(course.description))
   }, [courses, category, query])
 
   const groups = CATEGORY_ORDER.map((key) => ({ key, courses: filtered.filter((course) => course.category === key) })).filter((group) => group.courses.length > 0)
