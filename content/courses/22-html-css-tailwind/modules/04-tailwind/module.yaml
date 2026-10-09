@@ -1,0 +1,108 @@
+title: Tailwind CSS
+description: Utility-first mit Tailwind CSS 4 – Installation mit dem CLI, Build-Schritt, Utilities, Varianten, beliebige Werte, @theme und @apply.
+exercise:
+  id: modul-uebung-preisseite
+  type: terminal
+  title: Eine Preisübersicht mit Tailwind
+  description: |
+    Im Ordner `preise` ist Tailwind installiert, `input.css` enthält `@import "tailwindcss";`. Baue eine
+    responsive Preisübersicht mit drei Tarifen und einem sauberen Build-Prozess.
+
+    1. Ergänze in `input.css` einen `@theme`-Block mit `--color-marke` und `--font-display`.
+    2. Lege in der `package.json` ein Script `build` an, das `tailwindcss -i input.css -o output.css --minify` ausführt.
+    3. Schreibe `index.html` (bindet `output.css` ein) mit:
+       - einer `<section>` mit `grid`, `grid-cols-1` und `md:grid-cols-3` für drei `<article>`-Karten,
+       - einer Überschrift mit `font-display` und `text-marke`,
+       - Buttons mit `bg-marke`, einem `hover:`-Zustand und `focus-visible:outline-2`,
+       - Dark-Mode-Klassen mit `dark:` für Hintergrund und Text des `body`.
+    4. Baue mit `npm run build`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – die Installation dauert ein paar Sekunden.
+  workdir: preise
+  setup: |
+    npm init -y > /dev/null
+    npm install -D --no-audit --no-fund --silent tailwindcss @tailwindcss/cli
+    printf '@import "tailwindcss";\n' > input.css
+  checks:
+    - type: file_contains
+      path: input.css
+      pattern: "@theme\\s*\\{(?=[^}]*--color-marke\\s*:)(?=[^}]*--font-display\\s*:)[^}]*\\}"
+      message: Im @theme-Block von input.css fehlen --color-marke und/oder --font-display.
+    - type: command
+      run: jq -r '.scripts.build // ""' package.json
+      stdout_matches: "tailwindcss\\s+.*-i\\s+(\\./)?input\\.css.*-o\\s+(\\./)?output\\.css.*--minify|tailwindcss\\s+.*-o\\s+(\\./)?output\\.css.*-i\\s+(\\./)?input\\.css.*--minify"
+      message: "Das Script build in der package.json soll `tailwindcss -i input.css -o output.css --minify` ausführen."
+    - type: file_exists
+      path: output.css
+      message: output.css fehlt. Baue mit `npm run build`.
+    - type: command
+      run: wc -l < output.css
+      stdout_matches: "^\\s*[1-9]\\s*$"
+      message: output.css ist nicht minifiziert. Nutze `npm run build` mit --minify.
+    - type: file_contains
+      path: index.html
+      pattern: "<section[^>]*class=\"(?=[^\"]*\\bgrid\\b)(?=[^\"]*\\bgrid-cols-1\\b)(?=[^\"]*md:grid-cols-3)[^\"]*\""
+      message: "Die section braucht die Klassen grid, grid-cols-1 und md:grid-cols-3."
+    - type: command
+      run: grep -o "<article" index.html | wc -l
+      stdout_matches: "^\\s*([3-9])\\s*$"
+      message: Es sollen mindestens drei article-Karten in der Übersicht stehen.
+    - type: command
+      run: for c in 'md\\:grid-cols-3' '\.font-display' '\.text-marke' '\.bg-marke' 'hover\\:' 'focus-visible\\:outline-2' 'dark\\:'; do grep -q "$c" output.css || echo "$c"; done
+      stdout_equals: ""
+      message: "In output.css fehlen Klassen (md:grid-cols-3, font-display, text-marke, bg-marke, hover:, focus-visible:outline-2 oder dark:). Benutze sie im HTML und baue neu."
+    - type: file_contains
+      path: index.html
+      pattern: "<body[^>]*class=\"[^\"]*dark:bg-[^\"]*\""
+      message: Der body braucht eine dark:bg-…-Klasse für den Dunkelmodus.
+  hints:
+    - "Das Script: `npm pkg set scripts.build=\"tailwindcss -i input.css -o output.css --minify\"` – oder du bearbeitest die package.json mit nano."
+    - "Der Theme-Block: `@theme { --color-marke: #e11d48; --font-display: \"Inter\", sans-serif; }`."
+    - "Die section: `<section class=\"grid grid-cols-1 md:grid-cols-3 gap-6\">` mit drei `<article>` darin."
+  solution: |
+    ```bash
+    cd preise
+    cat > input.css <<'EOF'
+    @import "tailwindcss";
+
+    @theme {
+      --color-marke: #e11d48;
+      --font-display: "Inter", sans-serif;
+    }
+    EOF
+    npm pkg set scripts.build="tailwindcss -i input.css -o output.css --minify"
+    cat > index.html <<'EOF'
+    <!DOCTYPE html>
+    <html lang="de">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Preise</title>
+        <link rel="stylesheet" href="output.css">
+      </head>
+      <body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 p-8">
+        <main class="max-w-5xl mx-auto">
+          <h1 class="font-display text-marke text-4xl font-bold mb-8">Unsere Tarife</h1>
+          <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <article class="rounded-xl bg-white dark:bg-slate-800 p-6 shadow">
+              <h2 class="text-xl font-semibold">Basis</h2>
+              <p class="mt-2">5 € im Monat</p>
+              <button class="mt-4 bg-marke hover:bg-rose-700 focus-visible:outline-2 text-white px-4 py-2 rounded-lg">Wählen</button>
+            </article>
+            <article class="rounded-xl bg-white dark:bg-slate-800 p-6 shadow">
+              <h2 class="text-xl font-semibold">Plus</h2>
+              <p class="mt-2">12 € im Monat</p>
+              <button class="mt-4 bg-marke hover:bg-rose-700 focus-visible:outline-2 text-white px-4 py-2 rounded-lg">Wählen</button>
+            </article>
+            <article class="rounded-xl bg-white dark:bg-slate-800 p-6 shadow">
+              <h2 class="text-xl font-semibold">Team</h2>
+              <p class="mt-2">29 € im Monat</p>
+              <button class="mt-4 bg-marke hover:bg-rose-700 focus-visible:outline-2 text-white px-4 py-2 rounded-lg">Wählen</button>
+            </article>
+          </section>
+        </main>
+      </body>
+    </html>
+    EOF
+    npm run build
+    ```

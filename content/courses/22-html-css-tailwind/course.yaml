@@ -1,0 +1,31 @@
+title: HTML & CSS inkl. Tailwind
+subtitle: Webseiten sauber strukturieren, gestalten und responsiv machen – von der ersten Datei bis Tailwind CSS 4
+description: >
+  Jede Webseite besteht aus zwei Schichten: HTML beschreibt, **was** auf der Seite steht, CSS legt fest,
+  **wie** es aussieht. In diesem Kurs lernst du beide Sprachen von null an – nicht als Sammlung von
+  Rezepten, sondern so, dass du verstehst, warum der Browser eine Seite genau so darstellt.
+
+
+  Du baust semantisches, barrierearmes HTML, verstehst Selektoren, Spezifität und Kaskade, beherrschst
+  das Box-Modell, Flexbox und Grid und machst Seiten mit Media Queries und CSS-Variablen responsiv und
+  dark-mode-fähig. Zum Schluss arbeitest du mit Tailwind CSS 4 und dem Tailwind-CLI – und baust eine
+  eigene, responsive Profilseite.
+category: frontend
+level: einsteiger
+icon: palette
+color: "#e11d48"
+estimated_hours: 5
+workspace_dir: html-css
+prerequisites: [wie-das-internet-funktioniert]
+learning_goals:
+  - Du baust ein vollständiges HTML-Dokument mit sinnvoller Struktur, Überschriften-Hierarchie und semantischen Elementen.
+  - Du schreibst Links, Bilder mit Alternativtext, Tabellen und Formulare mit Labels und Validierung.
+  - Du erklärst, wie der Browser mit Kaskade, Spezifität und Vererbung entscheidet, welche CSS-Regel gilt.
+  - Du beherrschst Box-Modell, Einheiten, Farben und Typografie.
+  - Du baust Layouts mit Flexbox und Grid und machst sie mit Media Queries responsiv (Mobile First).
+  - Du nutzt CSS-Variablen und prefers-color-scheme für einen Dark Mode.
+  - Du richtest Tailwind CSS 4 mit dem CLI ein und arbeitest mit Utilities, Varianten, @theme und beliebigen Werten.
+references:
+  - Design-Tokens als CSS-Variablen, die Design und Entwicklung gemeinsam pflegen
+  - Barrierefreiheit als Abnahmekriterium in Frontend-Teams (Tastaturbedienung, Kontrast, Labels)
+  - Utility-first-CSS mit Tailwind in React- und Laravel-Projekten

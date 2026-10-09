@@ -1,0 +1,409 @@
+- slug: attribut
+  term: Attribut
+  short: 'Eine Zusatzinformation im Start-Tag eines HTML-Elements in der Form name="wert".'
+  explanation: 'Attribute steuern, wie sich ein Element verhält oder was es bedeutet. href gibt einem Link sein Ziel, src einem Bild die Datei, lang dem Dokument die Sprache. Manche Attribute wie required kommen ohne Wert aus.'
+  example: '`<img src="foto.jpg" alt="Porträt">` hat die Attribute src und alt.'
+  category: html
+  aliases: [Attribute, HTML-Attribut]
+  related: [html-tag, html]
+  lesson: html-css-tailwind/das-html-dokument
+
+- slug: doctype
+  term: Doctype
+  short: 'Die erste Zeile einer HTML-Datei, die den Browser in den modernen Standardmodus schaltet.'
+  explanation: 'Ohne Doctype rendert der Browser im „Quirks Mode“, der alte Fehler früherer Browser nachahmt – Layouts verhalten sich dann anders als erwartet. Für HTML genügt die kurze Form <!DOCTYPE html>.'
+  example: '`<!DOCTYPE html>` steht ganz oben in jeder HTML-Datei.'
+  category: html
+  aliases: [DOCTYPE, Dokumenttyp]
+  related: [html]
+  lesson: html-css-tailwind/das-html-dokument
+
+- slug: semantisches-html
+  term: Semantisches HTML
+  short: 'HTML, bei dem jedes Element nach der Bedeutung seines Inhalts gewählt wird.'
+  explanation: 'Statt neutraler div-Kästen nutzt du Elemente wie header, nav, main oder article. Screenreader, Suchmaschinen und Kolleg:innen erkennen dadurch, welche Rolle ein Bereich hat. Semantik ist die Grundlage der Barrierefreiheit.'
+  example: '`<nav>` statt `<div class="menue">` für die Hauptnavigation.'
+  category: html
+  aliases: [Semantik, semantische Elemente]
+  related: [landmark, barrierefreiheit, html-tag]
+  lesson: html-css-tailwind/semantik-links-bilder
+
+- slug: landmark
+  term: Landmarke
+  short: 'Ein Bereich der Seite mit fester Rolle, zu dem Hilfstechnologien direkt springen können.'
+  explanation: 'Die Elemente header, nav, main, aside und footer bilden Landmarken. Screenreader listen sie auf, sodass Nutzer:innen zum Beispiel sofort zum Hauptinhalt springen können, ohne die ganze Navigation anzuhören.'
+  example: '`<main>` ist die Landmarke für den Hauptinhalt und kommt genau einmal vor.'
+  category: html
+  aliases: [Landmarken, Landmark, Landmarks]
+  related: [semantisches-html, screenreader]
+  lesson: html-css-tailwind/semantik-links-bilder
+
+- slug: screenreader
+  term: Screenreader
+  short: 'Ein Programm, das Bildschirminhalte vorliest oder als Braille ausgibt.'
+  explanation: 'Blinde und sehbehinderte Menschen bedienen damit Computer und Webseiten. Screenreader verlassen sich auf die Struktur des HTML: Überschriften, Landmarken, Labels und Alternativtexte. Bekannte Beispiele sind NVDA, JAWS und VoiceOver.'
+  example: 'VoiceOver liest bei `<img alt="Startseite">` den Text „Startseite, Bild“ vor.'
+  category: barrierefreiheit
+  aliases: [Bildschirmleser, Screenreadern]
+  related: [barrierefreiheit, alt-text, landmark]
+  lesson: html-css-tailwind/semantik-links-bilder
+
+- slug: barrierefreiheit
+  term: Barrierefreiheit
+  short: 'Die Eigenschaft einer Webseite, von allen Menschen genutzt werden zu können – auch mit Behinderungen.'
+  explanation: 'Dazu gehören Bedienbarkeit per Tastatur, ausreichender Kontrast, Alternativtexte, verständliche Formulare und eine saubere Struktur für Screenreader. Die Richtlinien dafür heißen WCAG. In der EU ist Barrierefreiheit für viele Angebote gesetzlich vorgeschrieben.'
+  example: 'Ein Formular, das sich vollständig mit Tab und Enter ausfüllen lässt, ist ein Baustein der Barrierefreiheit.'
+  category: barrierefreiheit
+  aliases: [Accessibility, a11y, barrierearm, Zugänglichkeit]
+  related: [screenreader, kontrast, fokus, semantisches-html]
+  lesson: html-css-tailwind/semantik-links-bilder
+
+- slug: ueberschriften-hierarchie
+  term: Überschriften-Hierarchie
+  short: 'Die logische Gliederung einer Seite durch Überschriften der Ebenen h1 bis h6.'
+  explanation: 'Eine Seite hat genau eine h1, darunter folgen h2, h3 und so weiter, ohne Ebenen zu überspringen. Die Ebene richtet sich nach der Gliederung, nicht nach der gewünschten Schriftgröße. Screenreader nutzen die Hierarchie als Inhaltsverzeichnis.'
+  example: 'h1 „Blog“ → h2 „Neue Artikel“ → h3 „Flexbox verstehen“.'
+  category: html
+  aliases: [Überschriftenhierarchie, Überschriften-Ebenen]
+  related: [semantisches-html, screenreader]
+  lesson: html-css-tailwind/semantik-links-bilder
+
+- slug: alt-text
+  term: Alternativtext
+  short: 'Der Text im alt-Attribut eines Bildes, der das Bild für alle ersetzt, die es nicht sehen.'
+  explanation: 'Screenreader lesen ihn vor, Browser zeigen ihn bei Ladefehlern an, Suchmaschinen werten ihn aus. Er beschreibt den Inhalt oder – bei verlinkten Bildern – das Linkziel. Rein dekorative Bilder bekommen ein leeres alt="".'
+  example: '`<img src="team.jpg" alt="Das Team arbeitet am Whiteboard">`'
+  category: barrierefreiheit
+  aliases: [alt, alt-Attribut, Alt-Text]
+  related: [attribut, screenreader, barrierefreiheit]
+  lesson: html-css-tailwind/semantik-links-bilder
+
+- slug: formular
+  term: Formular
+  short: 'Ein HTML-Bereich, der Eingaben sammelt und an einen Server schickt.'
+  explanation: 'Das form-Element legt mit action fest, wohin die Daten gehen, und mit method, ob sie per GET oder POST gesendet werden. Jedes Feld braucht ein name-Attribut, sonst wird sein Wert nicht mitgeschickt.'
+  example: '`<form action="/kontakt" method="post">…</form>`'
+  category: html
+  aliases: [Formulare, Webformular, form]
+  related: [label-element, formularvalidierung]
+  lesson: html-css-tailwind/tabellen-und-formulare
+
+- slug: label-element
+  term: Label
+  short: 'Die Beschriftung eines Formularfelds, verknüpft über for und id.'
+  explanation: 'Ein label nennt den Zweck eines Feldes. Stimmt sein for-Attribut mit der id des Feldes überein, liest ein Screenreader die Beschriftung vor, und ein Klick auf den Text setzt den Cursor ins Feld. Ein placeholder ersetzt kein Label.'
+  example: '`<label for="email">E-Mail</label>` gehört zu `<input id="email">`.'
+  category: html
+  aliases: [Labels, label]
+  related: [formular, barrierefreiheit]
+  lesson: html-css-tailwind/tabellen-und-formulare
+
+- slug: formularvalidierung
+  term: Formularvalidierung
+  short: 'Die Prüfung von Formulareingaben auf Vollständigkeit und richtiges Format.'
+  explanation: 'Der Browser prüft eingebaut, wenn Felder Attribute wie required, minlength, pattern oder einen Typ wie email haben. Das ist Komfort für Nutzer:innen. Der Server muss jede Eingabe trotzdem noch einmal selbst prüfen, weil sich Browser-Prüfungen umgehen lassen.'
+  example: '`<input type="email" required>` verhindert das Absenden ohne gültige E-Mail-Adresse.'
+  category: html
+  aliases: [Validierung, Eingabeprüfung]
+  related: [formular, attribut]
+  lesson: html-css-tailwind/tabellen-und-formulare
+
+- slug: fokus
+  term: Fokus
+  short: 'Der Zustand des Elements, das gerade Tastatureingaben empfängt.'
+  explanation: 'Mit der Tab-Taste wandert der Fokus von Link zu Feld zu Button. Browser zeigen ihn mit einem Rahmen an, den du nie ersatzlos entfernen solltest. In CSS gestaltest du ihn mit den Pseudoklassen :focus und :focus-visible.'
+  example: '`a:focus-visible { outline: 3px solid #e11d48; }` macht den Tastaturfokus gut sichtbar.'
+  category: barrierefreiheit
+  aliases: [Tastaturfokus, focus, fokussiert]
+  related: [barrierefreiheit, pseudoklasse]
+  lesson: html-css-tailwind/tabellen-und-formulare
+
+- slug: kontrast
+  term: Kontrast
+  short: 'Der Helligkeitsunterschied zwischen Text- und Hintergrundfarbe.'
+  explanation: 'Zu wenig Kontrast macht Text für viele Menschen unlesbar, besonders bei Sehschwäche oder Sonnenlicht. Die WCAG verlangen für normalen Text ein Verhältnis von mindestens 4,5 zu 1, für großen Text 3 zu 1. Die Browser-DevTools zeigen das Verhältnis im Farbwähler an.'
+  example: 'Schwarz auf Weiß hat das Kontrastverhältnis 21 : 1, hellgrau auf weiß oft unter 3 : 1.'
+  category: barrierefreiheit
+  aliases: [Kontrastverhältnis, Farbkontrast]
+  related: [barrierefreiheit]
+  lesson: html-css-tailwind/tabellen-und-formulare
+
+- slug: css-regel
+  term: CSS-Regel
+  short: 'Ein Selektor mit einem Block aus Deklarationen, die für die ausgewählten Elemente gelten.'
+  explanation: 'Jede Deklaration besteht aus Eigenschaft und Wert, getrennt durch einen Doppelpunkt und abgeschlossen mit einem Semikolon. Ein Stylesheet ist eine Liste solcher Regeln.'
+  example: '`h1 { color: #e11d48; font-size: 2rem; }`'
+  category: css
+  aliases: [Regel, CSS-Regeln, Deklarationsblock]
+  related: [selektor, css]
+  lesson: html-css-tailwind/selektoren-und-spezifitaet
+
+- slug: selektor
+  term: Selektor
+  short: 'Der Teil einer CSS-Regel, der festlegt, welche Elemente gestaltet werden.'
+  explanation: 'Es gibt Typ-Selektoren (p), Klassen (.karte), IDs (#kontakt), Attribut-Selektoren ([type="email"]) und Kombinatoren wie das Leerzeichen für „irgendwo darin“. Selektoren lassen sich kombinieren, etwa nav a.aktiv.'
+  example: '`.karte.aktiv` wählt Elemente, die beide Klassen tragen.'
+  category: css
+  aliases: [Selektoren, CSS-Selektor]
+  related: [spezifitaet, pseudoklasse, css-regel]
+  lesson: html-css-tailwind/selektoren-und-spezifitaet
+
+- slug: pseudoklasse
+  term: Pseudoklasse
+  short: 'Ein Selektor-Zusatz mit Doppelpunkt, der einen Zustand oder eine Position beschreibt.'
+  explanation: 'Pseudoklassen wählen Elemente nach Zuständen wie :hover (Maus darüber), :focus-visible (Tastaturfokus) oder :disabled und nach Positionen wie :first-child. In der Spezifität zählen sie wie Klassen.'
+  example: '`a:hover { text-decoration: underline; }`'
+  category: css
+  aliases: [Pseudoklassen, ":hover", ":focus-visible"]
+  related: [selektor, fokus, tailwind-variante]
+  lesson: html-css-tailwind/selektoren-und-spezifitaet
+
+- slug: spezifitaet
+  term: Spezifität
+  short: 'Das Gewicht eines Selektors, mit dem der Browser entscheidet, welche Regel bei einem Konflikt gewinnt.'
+  explanation: 'Gezählt wird in drei Spalten: IDs, dann Klassen/Attribute/Pseudoklassen, dann Typen/Pseudoelemente. Verglichen wird spaltenweise von links, eine ID schlägt also beliebig viele Klassen. Bei Gleichstand gewinnt die spätere Regel.'
+  example: '`#start` hat (1,0,0) und schlägt `p.intro` mit (0,1,1).'
+  category: css
+  aliases: [Specificity, spezifisch]
+  related: [selektor, kaskade]
+  lesson: html-css-tailwind/selektoren-und-spezifitaet
+
+- slug: kaskade
+  term: Kaskade
+  short: 'Das Verfahren, mit dem der Browser aus allen passenden Deklarationen den einen gültigen Wert pro Eigenschaft wählt.'
+  explanation: 'Geprüft werden nacheinander Herkunft und Wichtigkeit (Browser, eigenes CSS, !important), dann die Spezifität und zuletzt die Reihenfolge im Code. Die Kaskade gibt Cascading Style Sheets ihren Namen.'
+  example: 'Dein `p { color: gray }` schlägt den Browser-Standard, `.hinweis { color: orange }` schlägt deine p-Regel.'
+  category: css
+  aliases: [Cascade, CSS-Kaskade]
+  related: [spezifitaet, css-vererbung]
+  lesson: html-css-tailwind/kaskade-und-vererbung
+
+- slug: css-vererbung
+  term: Vererbung (CSS)
+  short: 'Die Weitergabe bestimmter CSS-Werte vom Eltern- an die Kindelemente.'
+  explanation: 'Text-Eigenschaften wie color, font-family und line-height werden vererbt, Box-Eigenschaften wie margin, padding oder border nicht. Eine eigene Regel für ein Element schlägt immer den geerbten Wert. Mit inherit, initial und unset steuerst du Vererbung gezielt.'
+  example: '`body { font-family: system-ui; }` gilt dank Vererbung für alle Texte der Seite.'
+  category: css
+  aliases: [Vererbung, inherit, geerbt]
+  related: [kaskade, custom-property]
+  lesson: html-css-tailwind/kaskade-und-vererbung
+
+- slug: box-modell
+  term: Box-Modell
+  short: 'Das Modell, nach dem jedes Element eine Box aus Inhalt, padding, border und margin ist.'
+  explanation: 'Der Inhalt ist von einem Innenabstand (padding), einem Rahmen (border) und einem Außenabstand (margin) umgeben. Mit box-sizing border-box zählen padding und border zur angegebenen Breite, was Layouts viel vorhersehbarer macht.'
+  example: '`.karte { padding: 1rem; border: 1px solid; margin: 1rem 0; }`'
+  category: css
+  aliases: [Boxmodell, Box Model, box-sizing, padding, margin]
+  related: [css-einheit]
+  lesson: html-css-tailwind/box-modell-einheiten-typografie
+
+- slug: css-einheit
+  term: CSS-Einheit
+  short: 'Die Maßangabe hinter einem Zahlenwert in CSS, z. B. px, rem, % oder vw.'
+  explanation: 'Absolute Einheiten wie px sind fest, relative Einheiten beziehen sich auf etwas anderes: rem auf die Schriftgröße des html-Elements, % auf das Elternelement, vw auf die Breite des Viewports. Relative Einheiten machen Seiten flexibel und zugänglich.'
+  example: '`font-size: 1.25rem; width: 50%; height: 100vh;`'
+  category: css
+  aliases: [Einheiten, Einheit, px, vw, em]
+  related: [rem, viewport, box-modell]
+  lesson: html-css-tailwind/box-modell-einheiten-typografie
+
+- slug: rem
+  term: rem
+  short: 'Eine CSS-Einheit, die ein Vielfaches der Schriftgröße des html-Elements ist.'
+  explanation: 'Standardmäßig ist 1rem gleich 16px. Stellt jemand im Browser eine größere Grundschrift ein, wachsen alle rem-Werte mit. Deshalb nimmt man rem für Schriftgrößen, Abstände und Breakpoints.'
+  example: '`h1 { font-size: 2rem; }` ergibt 32px bei Standardeinstellung.'
+  category: css
+  aliases: [root em]
+  related: [css-einheit]
+  lesson: html-css-tailwind/box-modell-einheiten-typografie
+
+- slug: viewport
+  term: Viewport
+  short: 'Der sichtbare Bereich einer Webseite im Browserfenster oder auf dem Bildschirm.'
+  explanation: 'Media Queries und Einheiten wie vw beziehen sich auf den Viewport. Auf Smartphones braucht jede Seite das Viewport-Meta-Tag, sonst simuliert der Browser einen breiten Desktop-Bildschirm und verkleinert die Seite.'
+  example: '`<meta name="viewport" content="width=device-width, initial-scale=1">`'
+  category: css
+  aliases: [Viewports, Ansichtsbereich, Viewport-Meta-Tag]
+  related: [responsive-design, media-query, css-einheit]
+  lesson: html-css-tailwind/responsive-design
+
+- slug: flexbox
+  term: Flexbox
+  short: 'Ein CSS-Layoutmodell, das Elemente in einer Reihe oder Spalte anordnet und verteilt.'
+  explanation: 'Mit display flex wird ein Element zum Flex-Container, seine direkten Kinder zu Flex-Items. justify-content verteilt sie entlang der Hauptachse, align-items richtet sie auf der Querachse aus. Flexbox eignet sich für eindimensionale Layouts wie Navigationsleisten.'
+  example: '`header { display: flex; justify-content: space-between; align-items: center; }`'
+  category: css
+  aliases: [Flex, Flexbox-Layout, display flex]
+  related: [css-grid, responsive-design]
+  lesson: html-css-tailwind/flexbox
+
+- slug: css-grid
+  term: CSS Grid
+  short: 'Ein CSS-Layoutmodell für zweidimensionale Raster aus Zeilen und Spalten.'
+  explanation: 'Mit display grid und grid-template-columns legst du Spalten fest, Zeilen entstehen automatisch. Die Einheit fr verteilt freien Platz, grid-template-areas beschreibt Layouts mit benannten Bereichen. Grid eignet sich für Seitenlayouts und Galerien.'
+  example: '`.galerie { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }`'
+  category: css
+  aliases: [Grid, Grid-Layout, display grid]
+  related: [flexbox, fr-einheit]
+  lesson: html-css-tailwind/grid
+
+- slug: fr-einheit
+  term: fr (Einheit)
+  short: 'Eine Grid-Einheit, die den freien Platz anteilig auf Spalten oder Zeilen verteilt.'
+  explanation: 'fr steht für fraction, also Anteil. Der Browser zieht zuerst feste Breiten und Lücken ab und verteilt den Rest im Verhältnis der fr-Werte. Bei 1fr 2fr bekommt die zweite Spalte doppelt so viel Platz wie die erste.'
+  example: '`grid-template-columns: 200px 1fr;` – die zweite Spalte nimmt allen restlichen Platz.'
+  category: css
+  aliases: [fr, Fraction]
+  related: [css-grid]
+  lesson: html-css-tailwind/grid
+
+- slug: responsive-design
+  term: Responsive Design
+  short: 'Ein Ansatz, bei dem sich eine einzige Webseite an jede Bildschirmgröße anpasst.'
+  explanation: 'Flexible Layouts mit Flexbox und Grid, relative Einheiten und Media Queries sorgen dafür, dass eine Seite auf Smartphone, Tablet und Monitor gut nutzbar ist. Grundlage ist das Viewport-Meta-Tag.'
+  example: 'Auf dem Handy stehen Karten untereinander, ab 48rem Breite nebeneinander.'
+  category: css
+  aliases: [responsiv, Responsive Webdesign, responsive]
+  related: [mobile-first, media-query, viewport]
+  lesson: html-css-tailwind/responsive-design
+
+- slug: media-query
+  term: Media Query
+  short: 'Eine CSS-Bedingung, unter der bestimmte Regeln gelten, z. B. ab einer Mindestbreite.'
+  explanation: 'Mit @media fragst du Eigenschaften des Geräts ab: Breite, Ausrichtung, Druckausgabe oder den bevorzugten Farbmodus. Media Queries erhöhen die Spezifität nicht – die normale Kaskade gilt weiter.'
+  example: '`@media (min-width: 48rem) { .karten { grid-template-columns: repeat(3, 1fr); } }`'
+  category: css
+  aliases: [Media Queries, "@media", Medienabfrage]
+  related: [css-breakpoint, mobile-first, responsive-design]
+  lesson: html-css-tailwind/responsive-design
+
+- slug: css-breakpoint
+  term: Breakpoint (CSS)
+  short: 'Die Bildschirmbreite, ab der sich ein responsives Layout ändert.'
+  explanation: 'Breakpoints legst du dort fest, wo dein Inhalt es braucht, nicht nach Gerätemodellen. Tailwind bringt die Breakpoints sm, md, lg, xl und 2xl mit, die du im Theme anpassen kannst.'
+  example: 'Ab dem Breakpoint md (48rem) wird aus einer Spalte ein dreispaltiges Raster.'
+  category: css
+  aliases: [Breakpoints, Umbruchpunkt]
+  related: [media-query, mobile-first]
+  lesson: html-css-tailwind/responsive-design
+
+- slug: mobile-first
+  term: Mobile First
+  short: 'Eine Arbeitsweise, bei der zuerst die Styles für schmale Bildschirme entstehen und breitere per min-width ergänzt werden.'
+  explanation: 'Die Grundregeln ohne Media Query gelten für das Smartphone. Für größere Bildschirme fügst du mit min-width-Media-Queries Schritt für Schritt Regeln hinzu. Das ergibt einfacheren Code; auch Tailwind arbeitet so.'
+  example: '`.karten { grid-template-columns: 1fr; }` und danach `@media (min-width: 48rem) { … repeat(3, 1fr) … }`'
+  category: css
+  aliases: [Mobile-First]
+  related: [responsive-design, media-query, css-breakpoint]
+  lesson: html-css-tailwind/responsive-design
+
+- slug: container-query
+  term: Container Query
+  short: 'Eine CSS-Bedingung, die auf die Größe eines Elternelements statt auf den Viewport reagiert.'
+  explanation: 'Ein Element wird mit container-type inline-size zum Container. Mit @container passen sich Komponenten dann an den Platz an, den sie tatsächlich bekommen – etwa schmal in einer Seitenleiste und breit im Hauptbereich.'
+  example: '`@container (min-width: 30rem) { .karte { display: flex; } }`'
+  category: css
+  aliases: [Container Queries, "@container"]
+  related: [media-query, responsive-design]
+  lesson: html-css-tailwind/responsive-design
+
+- slug: custom-property
+  term: Custom Property
+  short: 'Eine selbst definierte CSS-Eigenschaft mit zwei Bindestrichen, die per var() gelesen wird – umgangssprachlich CSS-Variable.'
+  explanation: 'Custom Properties nehmen an Kaskade und Vererbung teil und können sich zur Laufzeit ändern, etwa in einer Media Query für den Dark Mode. Globale Werte stehen meist in :root.'
+  example: '`:root { --farbe-akzent: #e11d48; }` und `a { color: var(--farbe-akzent); }`'
+  category: css
+  aliases: [Custom Properties, CSS-Variable, CSS-Variablen, "var()"]
+  related: [design-token, dark-mode, theme-variable]
+  lesson: html-css-tailwind/variablen-und-dark-mode
+
+- slug: design-token
+  term: Design-Token
+  short: 'Ein benannter, zentral gepflegter Gestaltungswert wie eine Farbe, ein Abstand oder eine Schriftgröße.'
+  explanation: 'Design und Entwicklung benutzen dieselben Namen, etwa farbe-akzent oder abstand-m. Im Code werden Tokens meist als CSS-Variablen oder als Tailwind-Theme-Variablen abgelegt. Ändert sich ein Token, ändert sich die ganze Oberfläche einheitlich.'
+  example: '`--color-marke: #e11d48;` im @theme-Block ist ein Design-Token.'
+  category: css
+  aliases: [Design-Tokens, Token, Tokens]
+  related: [custom-property, theme-variable]
+  lesson: html-css-tailwind/variablen-und-dark-mode
+
+- slug: dark-mode
+  term: Dark Mode
+  short: 'Eine dunkle Farbvariante einer Oberfläche, oft passend zur Systemeinstellung.'
+  explanation: 'Mit der Media Query prefers-color-scheme dark fragst du ab, ob das Betriebssystem auf dunkel steht, und setzt dann z. B. andere Werte für CSS-Variablen. color-scheme light dark lässt auch Scrollbalken und Formularfelder mitwechseln.'
+  example: '`@media (prefers-color-scheme: dark) { :root { --hintergrund: #0f172a; } }`'
+  category: css
+  aliases: [Dunkelmodus, prefers-color-scheme, dunkles Design]
+  related: [custom-property, media-query]
+  lesson: html-css-tailwind/variablen-und-dark-mode
+
+- slug: tailwind-css
+  term: Tailwind CSS
+  short: 'Ein CSS-Framework aus Utility-Klassen, das nur das CSS für tatsächlich benutzte Klassen erzeugt.'
+  explanation: 'Statt eigene Klassen mit CSS zu füllen, schreibst du kleine Klassen wie p-4 oder md:flex-row direkt ins HTML. Ein Build-Werkzeug durchsucht deine Dateien und erzeugt daraus eine CSS-Datei. Ab Version 4 wird es direkt im CSS mit @import "tailwindcss" und @theme konfiguriert.'
+  example: '`<button class="bg-rose-600 px-4 py-2 text-white">Speichern</button>`'
+  category: css
+  aliases: [Tailwind, TailwindCSS, Tailwind CSS 4]
+  related: [utility-klasse, build-schritt, tailwind-variante]
+  lesson: html-css-tailwind/tailwind-einrichten
+
+- slug: utility-klasse
+  term: Utility-Klasse
+  short: 'Eine CSS-Klasse, die genau eine Gestaltungsaufgabe erfüllt.'
+  explanation: 'Utility-Klassen wie p-4 (padding 1rem) oder text-center (text-align center) werden direkt im HTML kombiniert. Dieser Ansatz heißt Utility-first. Er vermeidet erfundene Klassennamen, toten CSS-Code und Spezifitätskonflikte.'
+  example: '`class="flex items-center gap-4"` kombiniert drei Utility-Klassen.'
+  category: css
+  aliases: [Utility-Klassen, Utilities, Utility, Utility-first]
+  related: [tailwind-css]
+  lesson: html-css-tailwind/tailwind-einrichten
+
+- slug: build-schritt
+  term: Build-Schritt
+  short: 'Ein Arbeitsschritt, in dem ein Werkzeug Quelldateien in die fertigen Dateien für den Browser umwandelt.'
+  explanation: 'Beim Tailwind CLI liest der Build die input.css, durchsucht HTML- und Code-Dateien nach Klassen und schreibt die output.css. Nach jeder Änderung muss neu gebaut werden – oder ein Watch-Modus erledigt das automatisch.'
+  example: '`npx @tailwindcss/cli -i input.css -o output.css` ist ein Build-Schritt.'
+  category: werkzeuge
+  aliases: [Build, Build-Prozess, bauen]
+  related: [tailwind-css, minifizierung]
+  lesson: html-css-tailwind/tailwind-einrichten
+
+- slug: tailwind-variante
+  term: Variante (Tailwind)
+  short: 'Ein Präfix vor einer Tailwind-Klasse, das sie nur unter einer Bedingung anwendet.'
+  explanation: 'Varianten wie hover:, focus-visible:, md: oder dark: entsprechen Pseudoklassen und Media Queries in normalem CSS. Sie lassen sich stapeln, etwa md:hover:underline. Breakpoint-Varianten gelten Mobile First ab einer Mindestbreite.'
+  example: '`class="flex-col md:flex-row"` – untereinander, ab 48rem nebeneinander.'
+  category: css
+  aliases: [Varianten, Variant, Präfix]
+  related: [tailwind-css, pseudoklasse, css-breakpoint]
+  lesson: html-css-tailwind/varianten-und-theme
+
+- slug: arbitrary-value
+  term: Beliebiger Wert (Tailwind)
+  short: 'Ein frei gewählter CSS-Wert in eckigen Klammern hinter einer Tailwind-Klasse.'
+  explanation: 'Wenn kein Wert der Skala passt, schreibst du ihn direkt in eckige Klammern, etwa max-w-[42rem]. Leerzeichen sind verboten und werden durch Unterstriche ersetzt. Kommt ein Wert öfter vor, gehört er besser ins Theme.'
+  example: '`p-[13px]` oder `grid-cols-[200px_1fr]`'
+  category: css
+  aliases: [beliebige Werte, Arbitrary Values, Arbitrary Value]
+  related: [tailwind-css, theme-variable]
+  lesson: html-css-tailwind/varianten-und-theme
+
+- slug: theme-variable
+  term: Theme-Variable
+  short: 'Eine CSS-Variable im @theme-Block von Tailwind, aus der zusätzlich Utility-Klassen entstehen.'
+  explanation: 'Der Namensraum bestimmt, welche Klassen erzeugt werden: --color-* für Farben, --font-* für Schriften, --breakpoint-* für Breakpoint-Varianten. Jede Theme-Variable steht außerdem als normale Custom Property in :root bereit.'
+  example: '`@theme { --color-marke: #e11d48; }` erzeugt bg-marke, text-marke und var(--color-marke).'
+  category: css
+  aliases: [Theme-Variablen, "@theme", Theme]
+  related: [design-token, custom-property, tailwind-css]
+  lesson: html-css-tailwind/varianten-und-theme
+
+- slug: apply-direktive
+  term: "@apply"
+  short: 'Eine Tailwind-Direktive, die Utility-Klassen in eine eigene CSS-Regel übernimmt.'
+  explanation: 'Mit @apply bündelst du Utilities unter einem eigenen Klassennamen. Das bringt aber die Nachteile klassischen CSS zurück und sollte nur in Ausnahmen eingesetzt werden, etwa für HTML, das du nicht selbst schreibst. Wiederverwendet werden besser Komponenten.'
+  example: '`.prose a { @apply text-marke underline; }`'
+  category: css
+  aliases: [apply, Direktive @apply]
+  related: [tailwind-css, utility-klasse]
+  lesson: html-css-tailwind/varianten-und-theme

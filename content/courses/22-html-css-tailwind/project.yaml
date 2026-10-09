@@ -1,0 +1,422 @@
+title: Deine Profilseite mit Tailwind
+description: |
+  In diesem Projekt baust du deine eigene Profil- bzw. Portfolio-Seite – so, wie du sie später auch
+  veröffentlichen könntest. Du verbindest alles aus dem Kurs: semantisches, barrierearmes HTML, ein
+  responsives Layout, einen Dunkelmodus und ein eigenes Design-Theme mit Tailwind CSS 4, gebaut mit dem
+  Tailwind CLI.
+
+  Alles passiert im Ordner `projekt` in deinem Workspace `html-css`. Öffne das Übungs-Terminal, lege den
+  Ordner mit `mkdir -p projekt` an und wechsle mit `cd projekt` hinein. Nach jedem Schritt prüft Stacklab
+  deine Dateien und die von Tailwind erzeugte `output.css`.
+
+  Die Schritte bauen aufeinander auf. Baue nach jeder Änderung an HTML oder `input.css` mit `npm run build`
+  neu, sonst fehlen neue Klassen in `output.css`. Verwende nur Platzhalter-Daten (z. B. `du@example.com`),
+  keine echten persönlichen Daten.
+goal: >
+  Ein Ordner `projekt` mit `package.json` (Tailwind als devDependency und einem build-Script), einer
+  `input.css` mit eigenem `@theme`, einer semantischen, barrierearmen `index.html` mit Kopfbereich,
+  Navigation, Projekt-Raster, Kontaktformular und Fußbereich sowie einer minifizierten `output.css`, die
+  responsive Varianten, Dark Mode und sichtbare Fokuszustände enthält.
+workdir: projekt
+steps:
+  - id: projekt-anlegen
+    title: Projekt anlegen und Tailwind installieren
+    description: |
+      Jedes Frontend-Projekt beginnt mit einer `package.json` – dort stehen die Werkzeuge, die du zum Bauen brauchst.
+
+      1. `mkdir -p projekt && cd projekt`
+      2. `npm init -y`
+      3. Installiere `tailwindcss` und `@tailwindcss/cli` als Entwicklungsabhängigkeiten.
+      4. Lege ein npm-Script `build` an, das `tailwindcss -i input.css -o output.css --minify` ausführt.
+    checklist:
+      - package.json angelegt
+      - tailwindcss und @tailwindcss/cli unter devDependencies
+      - Script build mit --minify
+    hints:
+      - "`npm install -D tailwindcss @tailwindcss/cli`"
+      - "`npm pkg set scripts.build=\"tailwindcss -i input.css -o output.css --minify\"` schreibt das Script in die package.json."
+    checks:
+      - type: command
+        run: jq -r '.devDependencies | has("tailwindcss") and has("@tailwindcss/cli")' package.json
+        stdout_equals: "true"
+        message: tailwindcss und @tailwindcss/cli fehlen unter devDependencies.
+      - type: dir_exists
+        path: node_modules/@tailwindcss/cli
+        message: Die Pakete sind noch nicht installiert – führe npm install -D … aus.
+      - type: command
+        run: jq -r '.scripts.build // ""' package.json
+        stdout_matches: "^tailwindcss\\s.*input\\.css.*output\\.css.*--minify"
+        message: "Das Script build soll `tailwindcss -i input.css -o output.css --minify` ausführen."
+    solution: |
+      ```bash
+      mkdir -p projekt && cd projekt
+      npm init -y
+      npm install -D tailwindcss @tailwindcss/cli
+      npm pkg set scripts.build="tailwindcss -i input.css -o output.css --minify"
+      ```
+  - id: theme-anlegen
+    title: Eingabe-CSS und eigenes Theme
+    description: |
+      Lege `input.css` an. Sie lädt Tailwind und definiert deine Design-Tokens.
+
+      1. Erste Zeile: `@import "tailwindcss";`
+      2. Ein `@theme`-Block mit mindestens:
+         - `--color-marke` (deine Akzentfarbe),
+         - `--color-marke-dunkel` (eine dunklere Variante für hover),
+         - `--font-display` (eine Schriftliste für Überschriften, die mit `sans-serif` endet).
+    checklist:
+      - "input.css beginnt mit @import \"tailwindcss\";"
+      - "@theme mit --color-marke, --color-marke-dunkel und --font-display"
+    hints:
+      - Theme-Variablen im Namensraum --color-* erzeugen Klassen wie bg-marke und bg-marke-dunkel.
+      - "Beispiel: `--color-marke: #e11d48; --color-marke-dunkel: #be123c; --font-display: \"Inter\", system-ui, sans-serif;`"
+    checks:
+      - type: file_contains
+        path: input.css
+        pattern: "^@import\\s+[\"']tailwindcss[\"'];"
+        message: input.css muss mit `@import "tailwindcss";` beginnen.
+      - type: file_contains
+        path: input.css
+        pattern: "@theme\\s*\\{(?=[^}]*--color-marke\\s*:)(?=[^}]*--color-marke-dunkel\\s*:)(?=[^}]*--font-display\\s*:[^;}]*sans-serif)[^}]*\\}"
+        message: Der @theme-Block braucht --color-marke, --color-marke-dunkel und --font-display (mit sans-serif am Ende).
+    solution: |
+      ```bash
+      cat > input.css <<'EOF'
+      @import "tailwindcss";
+
+      @theme {
+        --color-marke: #e11d48;
+        --color-marke-dunkel: #be123c;
+        --font-display: "Inter", system-ui, sans-serif;
+      }
+      EOF
+      ```
+  - id: grundgeruest
+    title: Das HTML-Grundgerüst
+    description: |
+      Lege `index.html` mit einem vollständigen Grundgerüst an:
+
+      1. `<!DOCTYPE html>` und `<html lang="de">`
+      2. Im head: `<meta charset="utf-8">`, das Viewport-Meta-Tag, einen aussagekräftigen `<title>` und `<link rel="stylesheet" href="output.css">`.
+      3. Im body: `<header>`, `<main>` und `<footer>` – vorerst gern leer.
+      4. Baue einmal mit `npm run build`, damit `output.css` entsteht.
+    checklist:
+      - Doctype, lang, charset, viewport, title
+      - output.css eingebunden
+      - header, main, footer vorhanden
+      - Erster Build gelaufen
+    hints:
+      - Das Grundgerüst kennst du aus der ersten Lektion – plus Viewport-Tag aus dem Responsive-Kapitel.
+      - "Achte darauf, `output.css` einzubinden, nicht `input.css`."
+    checks:
+      - type: command
+        run: head -n 1 index.html | tr 'A-Z' 'a-z'
+        stdout_matches: "^\\s*<!doctype html>\\s*$"
+        message: index.html fehlt oder beginnt nicht mit `<!DOCTYPE html>`.
+      - type: file_contains
+        path: index.html
+        pattern: "<html[^>]*lang=\"de\""
+        message: Das html-Element braucht lang="de".
+      - type: file_contains
+        path: index.html
+        pattern: "<meta(?=[^>]*name=\"viewport\")(?=[^>]*width=device-width)[^>]*>"
+        message: Es fehlt das Viewport-Meta-Tag.
+      - type: file_contains
+        path: index.html
+        pattern: "<title>[^<]{3,}</title>"
+        message: Es fehlt ein aussagekräftiger title.
+      - type: file_contains
+        path: index.html
+        pattern: "<link(?=[^>]*rel=\"stylesheet\")(?=[^>]*href=\"(\\./)?output\\.css\")[^>]*>"
+        message: Binde output.css mit `<link rel="stylesheet" href="output.css">` ein.
+      - type: file_contains
+        path: index.html
+        pattern: "<header[\\s>][\\s\\S]*</header>\\s*<main[\\s>][\\s\\S]*</main>\\s*<footer[\\s>][\\s\\S]*</footer>"
+        message: Der body braucht header, main und footer in dieser Reihenfolge.
+      - type: file_exists
+        path: output.css
+        message: output.css fehlt – führe `npm run build` aus.
+    solution: |
+      ```html
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Ada Beispiel – Webentwicklerin</title>
+          <link rel="stylesheet" href="output.css">
+        </head>
+        <body>
+          <header></header>
+          <main></main>
+          <footer></footer>
+        </body>
+      </html>
+      ```
+  - id: kopfbereich
+    title: Kopfbereich mit Navigation
+    description: |
+      Fülle den `<header>`:
+
+      1. Genau eine `<h1>` mit deinem (Platzhalter-)Namen, gestaltet mit `font-display` und `text-marke`.
+      2. Eine `<nav>` mit einer `<ul>` und mindestens drei Links zu Sprungmarken auf der Seite (`#projekte`, `#ueber-mich`, `#kontakt`).
+      3. Mobile First: Der header ist zunächst `flex flex-col`, ab `md:` eine Zeile mit `md:flex-row`, `md:justify-between` und `md:items-center`.
+      4. Baue neu.
+    checklist:
+      - Eine h1 mit font-display und text-marke
+      - nav mit ul und drei Sprunglinks
+      - header responsiv mit md:flex-row
+    hints:
+      - "`<header class=\"flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between\">`"
+      - "Die Liste: `<ul class=\"flex gap-4\">` mit `<li><a href=\"#projekte\">Projekte</a></li>` usw."
+    checks:
+      - type: command
+        run: grep -o "<h1" index.html | wc -l
+        stdout_matches: "^\\s*1\\s*$"
+        message: Die Seite braucht genau eine h1.
+      - type: file_contains
+        path: index.html
+        pattern: "<h1[^>]*class=\"(?=[^\"]*font-display)(?=[^\"]*text-marke)[^\"]*\""
+        message: Die h1 braucht die Klassen font-display und text-marke.
+      - type: file_contains
+        path: index.html
+        pattern: "<header[^>]*class=\"(?=[^\"]*\\bflex\\b)(?=[^\"]*md:flex-row)[^\"]*\"[\\s\\S]*<nav[\\s>][\\s\\S]*<ul[\\s>][\\s\\S]*</ul>[\\s\\S]*</nav>[\\s\\S]*</header>"
+        message: Der header braucht die Klassen flex und md:flex-row und eine nav mit ul.
+      - type: command
+        run: for a in projekte ueber-mich kontakt; do grep -q "href=\"#$a\"" index.html || echo "$a"; done
+        stdout_equals: ""
+        message: "Es fehlen Sprunglinks: #projekte, #ueber-mich und #kontakt."
+      - type: command
+        run: for c in 'md\\:flex-row' '\.text-marke' '\.font-display'; do grep -q "$c" output.css || echo "$c"; done
+        stdout_equals: ""
+        message: In output.css fehlen md:flex-row, text-marke oder font-display – baue mit npm run build neu.
+    solution: |
+      ```html
+      <header class="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+        <h1 class="font-display text-3xl font-bold text-marke">Ada Beispiel</h1>
+        <nav aria-label="Hauptnavigation">
+          <ul class="flex flex-wrap gap-4">
+            <li><a href="#ueber-mich" class="hover:underline">Über mich</a></li>
+            <li><a href="#projekte" class="hover:underline">Projekte</a></li>
+            <li><a href="#kontakt" class="hover:underline">Kontakt</a></li>
+          </ul>
+        </nav>
+      </header>
+      ```
+  - id: ueber-mich
+    title: Über mich mit Bild und Fähigkeiten
+    description: |
+      Lege im `<main>` eine `<section id="ueber-mich">` an:
+
+      1. Eine `<h2>` als Überschrift.
+      2. Ein Profilbild `<img>` mit aussagekräftigem `alt`-Text sowie `width` und `height` (die Datei selbst muss nicht existieren).
+      3. Einen kurzen Absatz und eine `<ul>` mit mindestens drei Fähigkeiten.
+      4. Begrenze die Textbreite mit einem beliebigen Wert, z. B. `max-w-[65ch]`.
+      5. Baue neu.
+    checklist:
+      - section mit id="ueber-mich" und h2
+      - Bild mit alt, width und height
+      - Liste mit mindestens drei Fähigkeiten
+      - Beliebiger Wert für die Textbreite
+    hints:
+      - "Ein guter alt-Text beschreibt das Bild: „Porträt von Ada Beispiel vor einem Bücherregal“."
+      - "Beliebige Werte stehen in eckigen Klammern: `max-w-[65ch]`."
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<section[^>]*id=\"ueber-mich\"[^>]*>\\s*<h2[\\s>]"
+        message: Es fehlt `<section id="ueber-mich">`, die mit einer h2 beginnt.
+      - type: file_contains
+        path: index.html
+        pattern: "<img(?=[^>]*alt=\"[^\"]{10,}\")(?=[^>]*width=\"\\d+\")(?=[^>]*height=\"\\d+\")[^>]*>"
+        message: Das Bild braucht einen aussagekräftigen alt-Text sowie width und height.
+      - type: command
+        run: tr '\n' ' ' < index.html | grep -oE 'id="ueber-mich".*</section>' | sed 's#</section>.*##' | grep -o "<li" | wc -l
+        stdout_matches: "^\\s*([3-9]|[1-9][0-9])\\s*$"
+        message: In der Über-mich-Section fehlt eine Liste mit mindestens drei Fähigkeiten.
+      - type: file_contains
+        path: output.css
+        pattern: "-\\\\\\[[^\\]]+\\\\\\]"
+        message: In output.css fehlt eine Klasse mit beliebigem Wert (z. B. max-w-[65ch]) – benutze sie und baue neu.
+    solution: |
+      ```html
+      <section id="ueber-mich" class="p-6">
+        <h2 class="font-display text-2xl font-bold">Über mich</h2>
+        <img src="profil.jpg" alt="Porträt von Ada Beispiel vor einem Bücherregal" width="160" height="160" class="mt-4 rounded-full">
+        <p class="mt-4 max-w-[65ch]">Ich baue barrierearme Webseiten mit HTML, CSS und Tailwind.</p>
+        <ul class="mt-4 list-disc pl-6">
+          <li>Semantisches HTML</li>
+          <li>Responsive Layouts mit Grid und Flexbox</li>
+          <li>Tailwind CSS 4</li>
+        </ul>
+      </section>
+      ```
+  - id: projekte-raster
+    title: Projekte als responsives Raster
+    description: |
+      Zeige deine Projekte als Karten:
+
+      1. Eine `<section id="projekte">` mit `<h2>`.
+      2. Darin ein Container mit `grid`, `grid-cols-1`, `md:grid-cols-2` und `lg:grid-cols-3` sowie einem `gap-…`.
+      3. Mindestens drei `<article>`-Karten, jede mit `<h3>`, kurzem Text und einem Link.
+      4. Die Karten bekommen einen Hover-Effekt (z. B. `hover:shadow-lg`).
+      5. Baue neu.
+    checklist:
+      - section id="projekte" mit h2
+      - Grid mit 1 / 2 / 3 Spalten
+      - Mindestens drei article mit h3
+      - Hover-Effekt
+    hints:
+      - "`<div class=\"grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3\">` als Raster."
+      - Die Überschriften-Hierarchie lautet h1 → h2 (Section) → h3 (Karte).
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<section[^>]*id=\"projekte\"[^>]*>\\s*<h2[\\s>]"
+        message: Es fehlt `<section id="projekte">`, die mit einer h2 beginnt.
+      - type: file_contains
+        path: index.html
+        pattern: "class=\"(?=[^\"]*\\bgrid\\b)(?=[^\"]*\\bgrid-cols-1\\b)(?=[^\"]*md:grid-cols-2)(?=[^\"]*lg:grid-cols-3)(?=[^\"]*\\bgap-)[^\"]*\""
+        message: Das Raster braucht grid, grid-cols-1, md:grid-cols-2, lg:grid-cols-3 und einen gap.
+      - type: command
+        run: tr '\n' ' ' < index.html | grep -oE '<article[^>]*>\s*<h3' | wc -l
+        stdout_matches: "^\\s*([3-9]|[1-9][0-9])\\s*$"
+        message: Es fehlen Projektkarten – mindestens drei article, die jeweils mit einer h3 beginnen.
+      - type: command
+        run: for c in 'md\\:grid-cols-2' 'lg\\:grid-cols-3' 'hover\\:'; do grep -q "$c" output.css || echo "$c"; done
+        stdout_equals: ""
+        message: In output.css fehlen md:grid-cols-2, lg:grid-cols-3 oder eine hover:-Klasse – baue neu.
+    solution: |
+      ```html
+      <section id="projekte" class="p-6">
+        <h2 class="font-display text-2xl font-bold">Projekte</h2>
+        <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+            <h3 class="text-lg font-semibold">Wetter-Widget</h3>
+            <p class="mt-2">Zeigt das Wetter für eine Stadt.</p>
+            <a href="/projekte/wetter" class="mt-2 inline-block text-marke underline">Ansehen</a>
+          </article>
+          <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+            <h3 class="text-lg font-semibold">Rezeptbuch</h3>
+            <p class="mt-2">Rezepte suchen und filtern.</p>
+            <a href="/projekte/rezepte" class="mt-2 inline-block text-marke underline">Ansehen</a>
+          </article>
+          <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+            <h3 class="text-lg font-semibold">Lauftreff-Seite</h3>
+            <p class="mt-2">Website für einen Sportverein.</p>
+            <a href="/projekte/lauftreff" class="mt-2 inline-block text-marke underline">Ansehen</a>
+          </article>
+        </div>
+      </section>
+      ```
+  - id: kontaktformular
+    title: Ein barrierearmes Kontaktformular
+    description: |
+      Lege eine `<section id="kontakt">` mit `<h2>` und einem Formular an:
+
+      1. `<form>` mit `action="/kontakt"` und `method="post"`.
+      2. Felder für Name (`type="text"`), E-Mail (`type="email"`) und Nachricht (`<textarea>`), Name und E-Mail mit `required`.
+      3. Jedes Feld hat ein `<label for="…">`, das exakt zu seiner `id` passt.
+      4. Ein `<button type="submit">` mit `bg-marke`, `hover:bg-marke-dunkel` und einem sichtbaren Fokus (`focus-visible:outline-…`).
+      5. Baue neu.
+    checklist:
+      - Formular mit action und method post
+      - Drei Felder mit passenden Labels
+      - Pflichtfelder mit required
+      - Button mit Theme-Farben und Fokus-Stil
+    hints:
+      - "`<label for=\"email\">E-Mail</label>` + `<input type=\"email\" id=\"email\" name=\"email\" required>`"
+      - "hover:bg-marke-dunkel funktioniert nur, wenn --color-marke-dunkel im @theme steht."
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<section[^>]*id=\"kontakt\"[^>]*>\\s*<h2[\\s>]"
+        message: Es fehlt `<section id="kontakt">`, die mit einer h2 beginnt.
+      - type: file_contains
+        path: index.html
+        pattern: "<form(?=[^>]*action=\"/kontakt\")(?=[^>]*method=\"post\")[^>]*>"
+        message: Das Formular braucht action="/kontakt" und method="post".
+      - type: command
+        run: for t in text email; do id=$(grep -oE "<input[^>]*type=\"$t\"[^>]*>" index.html | grep required | grep -oE 'id="[^"]+"' | head -n 1 | cut -d'"' -f2); [ -n "$id" ] && grep -q "<label[^>]*for=\"$id\"" index.html || echo "$t"; done
+        stdout_equals: ""
+        message: Name (type="text") und E-Mail (type="email") brauchen required, eine id und ein passendes label.
+      - type: command
+        run: id=$(grep -oE '<textarea[^>]*>' index.html | grep -oE 'id="[^"]+"' | head -n 1 | cut -d'"' -f2); [ -n "$id" ] && grep -q "<label[^>]*for=\"$id\"" index.html && echo ok
+        stdout_equals: ok
+        message: Die textarea braucht eine id und ein passendes label.
+      - type: file_contains
+        path: index.html
+        pattern: "<button(?=[^>]*type=\"submit\")(?=[^>]*\\bbg-marke\\b)(?=[^>]*hover:bg-marke-dunkel)(?=[^>]*focus-visible:outline)[^>]*>"
+        message: Der Button braucht type="submit", bg-marke, hover:bg-marke-dunkel und eine focus-visible:outline-Klasse.
+      - type: command
+        run: for c in '\.bg-marke' 'hover\\:bg-marke-dunkel' 'focus-visible\\:outline'; do grep -q "$c" output.css || echo "$c"; done
+        stdout_equals: ""
+        message: In output.css fehlen bg-marke, hover:bg-marke-dunkel oder focus-visible:outline – baue neu.
+    solution: |
+      ```html
+      <section id="kontakt" class="p-6">
+        <h2 class="font-display text-2xl font-bold">Kontakt</h2>
+        <form action="/kontakt" method="post" class="mt-4 grid max-w-[40rem] gap-3">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" autocomplete="name" required class="rounded border p-2">
+          <label for="email">E-Mail</label>
+          <input type="email" id="email" name="email" autocomplete="email" required class="rounded border p-2">
+          <label for="nachricht">Nachricht</label>
+          <textarea id="nachricht" name="nachricht" rows="4" class="rounded border p-2"></textarea>
+          <button type="submit" class="rounded-lg bg-marke px-4 py-2 text-white hover:bg-marke-dunkel focus-visible:outline-2 focus-visible:outline-offset-2">Senden</button>
+        </form>
+      </section>
+      ```
+  - id: dark-mode-und-footer
+    title: Dark Mode, Footer und finaler Build
+    description: |
+      Zum Schluss bekommt die Seite einen Dunkelmodus und einen Fußbereich.
+
+      1. Der `<body>` bekommt helle Grundfarben und `dark:`-Varianten für Hintergrund und Text (z. B. `bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100`).
+      2. Der `<footer>` enthält einen Link zum Impressum und eine E-Mail-Adresse als `mailto:`-Link (Platzhalter `du@example.com`).
+      3. Baue final mit `npm run build` – die `output.css` ist dann minifiziert.
+      4. Teste: Gibt es noch ein `<div>`, das eigentlich ein semantisches Element sein sollte? (Das Projekt-Raster darf ein div bleiben.)
+    checklist:
+      - body mit dark:-Hintergrund und dark:-Textfarbe
+      - footer mit Impressum- und mailto-Link
+      - Minifizierte output.css mit Dark-Mode-Media-Query
+    hints:
+      - Die dark:-Variante erzeugt eine Media Query mit prefers-color-scheme.
+      - "`<a href=\"mailto:du@example.com\">du@example.com</a>`"
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<body[^>]*class=\"(?=[^\"]*dark:bg-)(?=[^\"]*dark:text-)[^\"]*\""
+        message: Der body braucht eine dark:bg-…- und eine dark:text-…-Klasse.
+      - type: file_contains
+        path: index.html
+        pattern: "<footer[\\s>](?=[\\s\\S]*?href=\"mailto:[^\"]+@example\\.(com|org|net)\")[\\s\\S]*?</footer>"
+        message: Im footer fehlt ein mailto-Link mit einer Platzhalter-Adresse (z. B. du@example.com).
+      - type: file_contains
+        path: index.html
+        pattern: "<footer[\\s>][\\s\\S]*?href=\"[^\"]*impressum[^\"]*\"[\\s\\S]*?</footer>"
+        message: Im footer fehlt ein Link zum Impressum.
+      - type: file_contains
+        path: output.css
+        pattern: "prefers-color-scheme:\\s*dark"
+        message: output.css enthält noch keinen Dark Mode – nutze dark:-Klassen und baue neu.
+      - type: command
+        run: wc -l < output.css
+        stdout_matches: "^\\s*[1-9]\\s*$"
+        message: output.css ist nicht minifiziert – baue mit `npm run build`.
+    solution: |
+      ```html
+      <body class="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        …
+        <footer class="border-t border-slate-200 p-6 text-sm">
+          <p>
+            <a href="mailto:du@example.com" class="underline">du@example.com</a> ·
+            <a href="/impressum" class="underline">Impressum</a>
+          </p>
+        </footer>
+      </body>
+      ```
+
+      ```bash
+      npm run build
+      ```

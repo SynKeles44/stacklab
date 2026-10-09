@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="40" y="30" width="720" height="450" rx="12" fill="#f59e0b" fill-opacity=".12" stroke="#f59e0b" stroke-width="2" stroke-dasharray="10 6"/>
+<rect x="100" y="95" width="600" height="340" rx="6" fill="#f87171" fill-opacity=".18" stroke="#f87171" stroke-width="10"/>
+<rect x="140" y="160" width="520" height="240" fill="#34d399" fill-opacity=".16" stroke="#34d399" stroke-width="2"/>
+<rect x="220" y="240" width="360" height="110" fill="#22d3ee" fill-opacity=".22" stroke="#22d3ee" stroke-width="2"/>
+</svg>

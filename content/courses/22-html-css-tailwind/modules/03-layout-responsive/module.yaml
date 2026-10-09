@@ -1,0 +1,146 @@
+title: Layout und Responsive Design
+description: Flexbox und Grid, Mobile First mit Media Queries, Container Queries, CSS-Variablen und Dark Mode.
+exercise:
+  id: modul-uebung-cafe
+  type: terminal
+  title: Die responsive Café-Seite
+  description: |
+    Im Ordner `cafe` liegt die Seite eines kleinen Cafés: ein `<header>` mit Logo und `<nav>`, ein `<main>` mit
+    einer Speisekarte (`<ul class="karte">`) und ein `<footer>`. Schreibe die komplette `style.css`
+    (sie ist schon eingebunden, aber leer).
+
+    1. Design-Tokens: In `:root` mindestens `--farbe-hintergrund`, `--farbe-text` und `--farbe-akzent`, außerdem `color-scheme: light dark`.
+    2. Dark Mode: `@media (prefers-color-scheme: dark)` setzt in `:root` mindestens `--farbe-hintergrund` und `--farbe-text` neu.
+    3. `body` liest Hintergrund und Textfarbe aus den Variablen.
+    4. `header` ist ein Flex-Container mit `justify-content: space-between` und `align-items: center`.
+    5. `.karte` ist ein Grid mit einer Spalte (`grid-template-columns: 1fr`), einem `gap` und ohne Aufzählungspunkte (`list-style: none`).
+    6. Ab `@media (min-width: 48rem)` hat `.karte` drei Spalten (`repeat(3, 1fr)`). Die Grundregel steht vor der Media Query.
+    7. Kein `!important`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: cafe
+  setup: |
+    cat > index.html <<'EOF'
+    <!DOCTYPE html>
+    <html lang="de">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Café Bohne</title>
+        <link rel="stylesheet" href="style.css">
+      </head>
+      <body>
+        <header>
+          <a href="/" class="logo">Café Bohne</a>
+          <nav>
+            <a href="#karte">Speisekarte</a>
+            <a href="#kontakt">Kontakt</a>
+          </nav>
+        </header>
+        <main>
+          <h1 id="karte">Speisekarte</h1>
+          <ul class="karte">
+            <li><h2>Espresso</h2><p>2,20 €</p></li>
+            <li><h2>Cappuccino</h2><p>3,40 €</p></li>
+            <li><h2>Apfelkuchen</h2><p>3,90 €</p></li>
+          </ul>
+        </main>
+        <footer id="kontakt"><p>Kontakt: hallo@example.com</p></footer>
+      </body>
+    </html>
+    EOF
+    : > style.css
+  checks:
+    - type: command
+      run: for v in --farbe-hintergrund --farbe-text --farbe-akzent; do tr '\n' ' ' < style.css | grep -oE '(^|[ }]):root\s*\{[^}]*\}' | head -n 1 | grep -q -- "$v\s*:" || echo "$v"; done
+      stdout_equals: ""
+      message: "In der ersten :root-Regel fehlen Variablen. Nötig sind --farbe-hintergrund, --farbe-text und --farbe-akzent."
+    - type: file_contains
+      path: style.css
+      pattern: ":root\\s*\\{[^}]*color-scheme\\s*:\\s*light\\s+dark"
+      message: "Setze in :root `color-scheme: light dark`."
+    - type: file_contains
+      path: style.css
+      pattern: "@media\\s*\\(\\s*prefers-color-scheme\\s*:\\s*dark\\s*\\)\\s*\\{\\s*:root\\s*\\{(?=[^}]*--farbe-hintergrund\\s*:)(?=[^}]*--farbe-text\\s*:)[^}]*\\}"
+      message: Im Dark-Mode-Block muss :root --farbe-hintergrund und --farbe-text neu setzen.
+    - type: file_contains
+      path: style.css
+      pattern: "body\\s*\\{(?=[^}]*background(-color)?\\s*:\\s*var\\(\\s*--farbe-hintergrund)(?=[^}]*[^-]color\\s*:\\s*var\\(\\s*--farbe-text)[^}]*\\}"
+      message: body soll Hintergrund und Textfarbe aus var(--farbe-hintergrund) und var(--farbe-text) lesen.
+    - type: file_contains
+      path: style.css
+      pattern: "(^|[\\s,}])header\\s*\\{(?=[^}]*display\\s*:\\s*flex)(?=[^}]*justify-content\\s*:\\s*space-between)(?=[^}]*align-items\\s*:\\s*center)[^}]*\\}"
+      message: "header braucht display: flex, justify-content: space-between und align-items: center."
+    - type: file_contains
+      path: style.css
+      pattern: "^\\.karte\\s*\\{(?=[^}]*display\\s*:\\s*grid)(?=[^}]*grid-template-columns\\s*:\\s*1fr\\s*;)(?=[^}]*gap\\s*:)(?=[^}]*list-style(-type)?\\s*:\\s*none)[^}]*\\}"
+      message: "Die Grundregel für .karte (am Zeilenanfang, außerhalb einer Media Query) braucht display: grid, grid-template-columns: 1fr, einen gap und list-style: none."
+    - type: file_contains
+      path: style.css
+      pattern: "@media\\s*\\(\\s*min-width\\s*:\\s*48rem\\s*\\)\\s*\\{\\s*\\.karte\\s*\\{[^}]*grid-template-columns\\s*:\\s*repeat\\(\\s*3\\s*,\\s*1fr\\s*\\)"
+      message: "Es fehlt `@media (min-width: 48rem) { .karte { grid-template-columns: repeat(3, 1fr); } }`."
+    - type: command
+      run: tr '\n' ' ' < style.css | grep -oE '^.*@media\s*\(\s*min-width\s*:\s*48rem' | grep -qE '\.karte\s*\{[^}]*display\s*:\s*grid' && echo ok
+      stdout_equals: ok
+      message: Die Grundregel für .karte muss vor der Media Query stehen.
+    - type: command
+      run: grep -c "!important" style.css
+      expect_exit: 1
+      stdout_matches: "^0$"
+      message: Bitte ohne !important.
+  hints:
+    - "Gliedere die Datei von oben nach unten: :root, Dark-Mode-Block, body, header, .karte, Media Query."
+    - "Die Grundregel: `.karte { display: grid; grid-template-columns: 1fr; gap: 1rem; list-style: none; padding: 0; }` – am Zeilenanfang, nicht eingerückt."
+    - Vergleiche mit den Lösungen der Lektionen zu Flexbox, Responsive Design und Dark Mode.
+  solution: |
+    ```bash
+    cd cafe
+    cat > style.css <<'EOF'
+    :root {
+      --farbe-hintergrund: #fffbf5;
+      --farbe-text: #1e1b3a;
+      --farbe-akzent: #b45309;
+      color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --farbe-hintergrund: #1c1917;
+        --farbe-text: #f5f5f4;
+        --farbe-akzent: #fbbf24;
+      }
+    }
+
+    body {
+      background: var(--farbe-hintergrund);
+      color: var(--farbe-text);
+      font-family: system-ui, sans-serif;
+      margin: 0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    a {
+      color: var(--farbe-akzent);
+    }
+
+    .karte {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      list-style: none;
+      padding: 0;
+    }
+
+    @media (min-width: 48rem) {
+      .karte {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    EOF
+    ```

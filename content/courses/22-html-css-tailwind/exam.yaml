@@ -1,0 +1,384 @@
+title: Abschlussprüfung HTML & CSS inkl. Tailwind
+description: |
+  Diese Prüfung deckt alle vier Module ab: HTML-Grundlagen, CSS-Grundlagen, Layout und Responsive Design sowie
+  Tailwind CSS. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben – zwei im echten
+  Übungs-Terminal und eine als Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast, und kannst
+  gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- HTML-Grundlagen ---
+  - module: html-grundlagen
+    type: single
+    question: Wozu dient das Attribut `lang="de"` am html-Element?
+    options:
+      - Es übersetzt die Seite automatisch ins Deutsche.
+      - Es teilt Browsern, Screenreadern und Suchmaschinen die Sprache des Inhalts mit.
+      - Es legt die Zeichenkodierung fest.
+      - Es ist nur für Formulare wichtig.
+    answer: 1
+    explanation: Screenreader wählen damit die richtige Aussprache, Browser bieten passende Übersetzungen an. Die Kodierung regelt `<meta charset>`.
+  - module: html-grundlagen
+    type: match
+    question: Ordne jedem Inhalt das passende semantische Element zu.
+    pairs:
+      - { left: "Hauptnavigation", right: "<nav>" }
+      - { left: "Einzigartiger Hauptinhalt der Seite", right: "<main>" }
+      - { left: "Eigenständiger Blogbeitrag", right: "<article>" }
+      - { left: "Impressum und Copyright", right: "<footer>" }
+    explanation: Semantische Elemente beschreiben die Rolle eines Bereichs. Screenreader nutzen sie als Sprungmarken.
+  - module: html-grundlagen
+    type: multiple
+    question: Welche Regeln gelten für eine gute Überschriften-Hierarchie?
+    options:
+      - Genau eine h1 pro Seite
+      - Keine Ebene überspringen
+      - Die Ebene nach der gewünschten Schriftgröße wählen
+      - Überschriften gliedern den Inhalt wie ein Inhaltsverzeichnis
+    answers: [0, 1, 3]
+    explanation: Die Ebene folgt der Gliederung, die Größe regelt CSS.
+  - module: html-grundlagen
+    type: find-bug
+    question: Das Logo ist ein Link zur Startseite. Welche Zeile ist für Screenreader-Nutzer:innen problematisch?
+    language: html
+    code: |
+      <header>
+        <a href="/">
+          <img src="logo.svg" alt="logo.svg">
+        </a>
+      </header>
+    bug_line: 3
+    explanation: Der Alternativtext eines verlinkten Bildes beschreibt das Linkziel, z. B. `alt="Startseite"`. Ein Dateiname hilft niemandem.
+  - module: html-grundlagen
+    type: cloze
+    text: "Ein Label wird über das Attribut ___ mit der ___ eines Eingabefelds verknüpft."
+    blanks:
+      - [for]
+      - [id]
+    explanation: "`<label for=\"email\">` gehört zu `<input id=\"email\">`. Dann liest der Screenreader den Namen vor, und ein Klick auf den Text fokussiert das Feld."
+  # --- CSS-Grundlagen ---
+  - module: css-grundlagen
+    type: single
+    question: "Welcher Selektor hat die höchste Spezifität?"
+    options:
+      - "`nav ul li a`"
+      - "`.menu .eintrag`"
+      - "`#menu`"
+      - "`a:hover`"
+    answer: 2
+    explanation: "#menu = (1,0,0). Die anderen: (0,0,4), (0,2,0) und (0,1,1). Eine ID schlägt beliebig viele Klassen und Typen."
+  - module: css-grundlagen
+    type: single
+    question: In welcher Reihenfolge prüft die Kaskade, welche Deklaration gewinnt?
+    options:
+      - Reihenfolge im Code → Spezifität → Herkunft
+      - Herkunft und Wichtigkeit → Spezifität → Reihenfolge im Code
+      - Spezifität → Herkunft → Reihenfolge im Code
+      - Nur die Reihenfolge im Code zählt
+    answer: 1
+    explanation: Erst zählt, woher eine Regel stammt (und ob sie !important ist), dann die Spezifität. Die Position im Code entscheidet nur bei Gleichstand.
+  - module: css-grundlagen
+    type: multiple
+    question: Welche Eigenschaften werden an Kindelemente vererbt?
+    options:
+      - font-family
+      - margin
+      - color
+      - border
+      - line-height
+    answers: [0, 2, 4]
+    explanation: Text-Eigenschaften werden vererbt, Box-Eigenschaften wie margin und border nicht.
+  - module: css-grundlagen
+    type: single
+    question: "`.box { box-sizing: border-box; width: 300px; padding: 20px; border: 5px solid; margin: 10px; }` – wie breit ist die sichtbare Box (inklusive Rahmen, ohne margin)?"
+    options:
+      - 300px
+      - 350px
+      - 370px
+      - 250px
+    answer: 0
+    explanation: Bei border-box enthält width bereits padding und border. Nur margin kommt außen dazu.
+  - module: css-grundlagen
+    type: match
+    question: Ordne jede Einheit ihrem Bezug zu.
+    pairs:
+      - { left: "rem", right: "Schriftgröße des html-Elements" }
+      - { left: "%", right: "Größe des Elternelements" }
+      - { left: "vw", right: "Breite des Viewports" }
+      - { left: "px", right: "Fester CSS-Pixel" }
+    explanation: rem eignet sich für Schrift und Abstände, weil es mit der Grundschrift des Browsers wächst.
+  # --- Layout und Responsive ---
+  - module: layout-responsive
+    type: single
+    question: "Ein Flex-Container hat `flex-direction: row`. Welche Eigenschaft zentriert die Kinder vertikal?"
+    options:
+      - justify-content
+      - align-items
+      - flex-wrap
+      - gap
+    answer: 1
+    explanation: Bei row ist die Hauptachse waagerecht. align-items wirkt auf der Querachse, also vertikal.
+  - module: layout-responsive
+    type: single
+    question: "Ein Grid ist 1240px breit und hat `grid-template-columns: repeat(3, 1fr); gap: 20px;`. Wie breit ist jede Spalte?"
+    options:
+      - 400px
+      - 413px
+      - 420px
+      - 380px
+    answer: 0
+    explanation: "Zwei Lücken = 40px. 1240 − 40 = 1200px, geteilt durch 3 = 400px."
+  - module: layout-responsive
+    type: find-bug
+    question: Mobile First – ab 48rem sollen die Karten zweispaltig sein. Welche Zeile verhindert das?
+    language: css
+    code: |
+      .karten {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      @media (max-width: 48rem) {
+        .karten { grid-template-columns: 1fr 1fr; }
+      }
+    bug_line: 5
+    explanation: "max-width trifft auf schmale Bildschirme zu – genau umgekehrt. Mobile First nutzt `@media (min-width: 48rem)`."
+  - module: layout-responsive
+    type: cloze
+    text: "Ohne `<meta name=\"viewport\" content=\"width=___, initial-scale=1\">` verkleinern Smartphones die Seite. Eine CSS-Variable liest du mit `___(--name)`."
+    blanks:
+      - [device-width]
+      - [var]
+    explanation: Das Viewport-Tag ist Pflicht für responsive Seiten. Custom Properties werden mit var() gelesen.
+  - module: layout-responsive
+    type: multiple
+    question: Welche Aussagen zum Dark Mode mit CSS-Variablen stimmen?
+    options:
+      - "`@media (prefers-color-scheme: dark)` fragt die Systemeinstellung ab."
+      - Im Dark-Mode-Block werden die Variablen in :root neu gesetzt; die übrigen Regeln bleiben gleich.
+      - Die Seite muss neu geladen werden, damit der Wechsel wirkt.
+      - "`color-scheme: light dark` lässt auch Scrollbalken und Formularfelder mitwechseln."
+    answers: [0, 1, 3]
+    explanation: Custom Properties ändern sich zur Laufzeit, der Wechsel wirkt sofort.
+  # --- Tailwind ---
+  - module: tailwind
+    type: single
+    question: Welche Zeile lädt Tailwind CSS 4 in der Eingabe-CSS-Datei?
+    options:
+      - "`@tailwind utilities;`"
+      - "`@import \"tailwindcss\";`"
+      - "`@use tailwind;`"
+      - "`<script src=\"tailwind.js\">`"
+    answer: 1
+    explanation: Seit Version 4 genügt `@import "tailwindcss";`. Konfiguriert wird mit @theme direkt im CSS.
+  - module: tailwind
+    type: match
+    question: Ordne jede Klasse ihrer Wirkung zu.
+    pairs:
+      - { left: "md:flex-row", right: "Ab 48rem Breite nebeneinander" }
+      - { left: "hover:underline", right: "Unterstrichen beim Drüberfahren" }
+      - { left: "dark:bg-slate-900", right: "Dunkler Hintergrund im Dunkelmodus" }
+      - { left: "max-w-[42rem]", right: "Beliebiger Wert für die maximale Breite" }
+    explanation: Präfixe sind Varianten, eckige Klammern beliebige Werte.
+  - module: tailwind
+    type: single
+    question: "`@theme { --color-marke: #e11d48; }` – was entsteht dadurch?"
+    options:
+      - Nur eine CSS-Variable, keine Klassen
+      - Klassen wie bg-marke und text-marke sowie die CSS-Variable --color-marke
+      - Eine neue Datei tailwind.config.js
+      - Gar nichts, weil @theme nur in Version 3 funktioniert
+    answer: 1
+    explanation: Theme-Variablen im Namensraum --color-* erzeugen Farb-Utilities und landen zusätzlich als Custom Property in :root.
+  - module: tailwind
+    type: find-bug
+    question: Die Textfarbe soll je nach Variable `status` wechseln, erscheint aber nie. Welche Zeile ist das Problem?
+    language: js
+    code: |
+      const status = fehler ? "rose" : "emerald";
+      const klasse = "text-" + status + "-600";
+      element.className = klasse;
+    bug_line: 2
+    explanation: >-
+      Tailwind findet nur vollständig ausgeschriebene Klassennamen im Code. Schreibe beide Klassen komplett aus, z. B. `fehler ? "text-rose-600" : "text-emerald-600"`.
+tasks:
+  - module: css-grundlagen
+    id: pruefung-kontrast
+    type: code
+    language: js
+    title: Kontrast prüfen
+    description: |
+      Das Kontrastverhältnis zweier Farben berechnet sich aus ihren relativen Helligkeiten (Luminanz, Werte von 0 bis 1):
+      `(heller + 0.05) / (dunkler + 0.05)`. Dabei ist `heller` immer der größere der beiden Werte.
+
+      1. Schreibe `kontrast(l1, l2)`, die das Verhältnis auf **zwei Nachkommastellen gerundet** als Zahl zurückgibt – egal in welcher Reihenfolge die Werte kommen.
+      2. Schreibe `bestehtAA(l1, l2)`, die `true` liefert, wenn das Verhältnis mindestens 4,5 beträgt (Anforderung für normalen Text).
+    starter: |
+      function kontrast(l1, l2) {
+        // Dein Code
+      }
+
+      function bestehtAA(l1, l2) {
+        // Dein Code
+      }
+    tests:
+      - name: Weiß auf Schwarz
+        code: assertEqual(kontrast(1, 0), 21)
+      - name: Reihenfolge egal
+        code: assertEqual(kontrast(0, 1), 21)
+      - name: gleiche Farbe
+        code: assertEqual(kontrast(0.5, 0.5), 1)
+      - name: knapp bestanden
+        code: assertTrue(bestehtAA(1, 0.18))
+      - name: knapp durchgefallen
+        code: assertEqual(bestehtAA(0.2, 1), false)
+    hints:
+      - "`Math.max` und `Math.min` finden den helleren und dunkleren Wert."
+      - "Runden auf zwei Stellen: `Math.round(wert * 100) / 100`."
+    solution: |
+      function kontrast(l1, l2) {
+        const heller = Math.max(l1, l2);
+        const dunkler = Math.min(l1, l2);
+        return Math.round(((heller + 0.05) / (dunkler + 0.05)) * 100) / 100;
+      }
+
+      function bestehtAA(l1, l2) {
+        return kontrast(l1, l2) >= 4.5;
+      }
+  - module: html-grundlagen
+    id: pruefung-newsletter
+    type: terminal
+    title: Ein semantischer Newsletter-Bereich
+    description: |
+      Im Ordner `pruefung-newsletter` liegt eine `index.html` mit einem `<main>`, in dem ein ungestalteter, nicht
+      barrierefreier Newsletter-Bereich aus `<div>`s steht.
+
+      1. Ersetze `<div class="newsletter">` durch eine `<section>`, die mit einer `<h2>` beginnt (aus `<div class="titel">` wird diese h2).
+      2. Mach aus dem Eingabebereich ein `<form>` mit `method="post"` und `action="/newsletter"`.
+      3. Das E-Mail-Feld bekommt `type="email"`, `required`, `id="newsletter-email"`, `name="email"` und ein `<label for="newsletter-email">`.
+      4. Aus `<div class="knopf">Anmelden</div>` wird ein `<button type="submit">`.
+      5. Am Ende darf kein `<div` mehr in der Datei stehen.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-newsletter
+    setup: |
+      cat > index.html <<'EOF'
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <title>Newsletter</title>
+        </head>
+        <body>
+          <main>
+            <h1>Neuigkeiten</h1>
+            <div class="newsletter">
+              <div class="titel">Newsletter abonnieren</div>
+              <input placeholder="E-Mail">
+              <div class="knopf">Anmelden</div>
+            </div>
+          </main>
+        </body>
+      </html>
+      EOF
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<section[^>]*>\\s*<h2[\\s>][^<]*Newsletter"
+        message: Der Bereich soll eine section sein, die mit der h2 „Newsletter abonnieren“ beginnt.
+      - type: file_contains
+        path: index.html
+        pattern: "<form(?=[^>]*method=\"post\")(?=[^>]*action=\"/newsletter\")[^>]*>"
+        message: Es fehlt ein form mit method="post" und action="/newsletter".
+      - type: file_contains
+        path: index.html
+        pattern: "<input(?=[^>]*type=\"email\")(?=[^>]*\\srequired)(?=[^>]*id=\"newsletter-email\")(?=[^>]*name=\"email\")[^>]*>"
+        message: Das Feld braucht type="email", required, id="newsletter-email" und name="email".
+      - type: file_contains
+        path: index.html
+        pattern: "<label[^>]*for=\"newsletter-email\""
+        message: Es fehlt ein label mit for="newsletter-email".
+      - type: file_contains
+        path: index.html
+        pattern: "<form[\\s\\S]*<button[^>]*type=\"submit\"[\\s\\S]*</form>"
+        message: Im Formular fehlt ein button mit type="submit".
+      - type: command
+        run: grep -c "<div" index.html
+        expect_exit: 1
+        stdout_matches: "^0$"
+        message: Es stehen noch div-Elemente in der Datei.
+    hints:
+      - Arbeite von außen nach innen und ersetze immer Start- und End-Tag zusammen.
+      - "Das Feld: `<label for=\"newsletter-email\">E-Mail</label>` + `<input type=\"email\" id=\"newsletter-email\" name=\"email\" required>`."
+    solution: |
+      ```html
+      <main>
+        <h1>Neuigkeiten</h1>
+        <section>
+          <h2>Newsletter abonnieren</h2>
+          <form method="post" action="/newsletter">
+            <label for="newsletter-email">E-Mail</label>
+            <input type="email" id="newsletter-email" name="email" required>
+            <button type="submit">Anmelden</button>
+          </form>
+        </section>
+      </main>
+      ```
+  - module: tailwind
+    id: pruefung-tailwind
+    type: terminal
+    title: Tailwind-Build für eine Hinweisbox
+    description: |
+      Im Ordner `pruefung-tailwind` ist Tailwind installiert und `input.css` enthält `@import "tailwindcss";`.
+
+      1. Ergänze in `input.css` einen `@theme`-Block mit `--color-hinweis`.
+      2. Lege `index.html` an, die `output.css` einbindet und eine `<aside>`-Hinweisbox mit den Klassen
+         `bg-hinweis`, `p-4`, `rounded-lg`, `md:p-8` und `dark:text-white` enthält.
+      3. Baue mit `npx @tailwindcss/cli -i input.css -o output.css`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten** – die Installation dauert ein paar Sekunden.
+    workdir: pruefung-tailwind
+    setup: |
+      npm init -y > /dev/null
+      npm install -D --no-audit --no-fund --silent tailwindcss @tailwindcss/cli
+      printf '@import "tailwindcss";\n' > input.css
+    checks:
+      - type: file_contains
+        path: input.css
+        pattern: "@theme\\s*\\{[^}]*--color-hinweis\\s*:"
+        message: In input.css fehlt @theme mit --color-hinweis.
+      - type: file_contains
+        path: index.html
+        pattern: "<link[^>]*href=\"(\\./)?output\\.css\""
+        message: index.html soll output.css einbinden.
+      - type: file_contains
+        path: index.html
+        pattern: "<aside[^>]*class=\"(?=[^\"]*bg-hinweis)(?=[^\"]*\\bp-4\\b)(?=[^\"]*rounded-lg)(?=[^\"]*md:p-8)(?=[^\"]*dark:text-white)[^\"]*\""
+        message: Die aside braucht bg-hinweis, p-4, rounded-lg, md:p-8 und dark:text-white.
+      - type: command
+        run: for c in '\.bg-hinweis' '\.p-4' '\.rounded-lg' 'md\\:p-8' 'dark\\:text-white'; do grep -q "$c" output.css || echo "$c"; done
+        stdout_equals: ""
+        message: In output.css fehlen Klassen – baue nach dem Schreiben des HTML neu.
+    hints:
+      - "`@theme { --color-hinweis: #fef3c7; }` unter dem @import."
+      - "Bauen: `npx @tailwindcss/cli -i input.css -o output.css`."
+    solution: |
+      ```bash
+      cd pruefung-tailwind
+      printf '@import "tailwindcss";\n\n@theme {\n  --color-hinweis: #fef3c7;\n}\n' > input.css
+      cat > index.html <<'EOF'
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <title>Hinweis</title>
+          <link rel="stylesheet" href="output.css">
+        </head>
+        <body>
+          <aside class="bg-hinweis p-4 rounded-lg md:p-8 dark:text-white">Wartung am Sonntag ab 22 Uhr.</aside>
+        </body>
+      </html>
+      EOF
+      npx @tailwindcss/cli -i input.css -o output.css
+      ```

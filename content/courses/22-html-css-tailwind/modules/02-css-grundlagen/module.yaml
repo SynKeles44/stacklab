@@ -1,0 +1,136 @@
+title: CSS-Grundlagen
+description: Selektoren und Spezifität, Kaskade und Vererbung, Box-Modell, Einheiten, Farben und Typografie.
+exercise:
+  id: modul-uebung-kurskarten
+  type: terminal
+  title: Kurskarten gestalten
+  description: |
+    Im Ordner `kurskarten` liegt eine `index.html` mit drei Kurskarten (`<article class="karte">`). Sie ist noch
+    völlig ungestaltet. Schreibe dazu eine `style.css`.
+
+    1. Binde `style.css` im `<head>` ein.
+    2. Setze für alle Elemente (`*`, `*::before`, `*::after`) `box-sizing: border-box`.
+    3. Gib `body` eine `font-family`-Liste, die mit `sans-serif` endet, und eine `line-height` **ohne Einheit** (z. B. `1.6`).
+    4. Gestalte `.karte` mit einem `padding` in `rem`, einem `border`, einem `border-radius` und einem `margin`.
+    5. Gib `.karte h2` eine `font-size` in `rem`.
+    6. Mach den Tastaturfokus der Links gut sichtbar: eine Regel mit `a:focus-visible` und einer `outline`.
+    7. Kein `!important` und keine ID-Selektoren (`#…`) im CSS.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: kurskarten
+  setup: |
+    cat > index.html <<'EOF'
+    <!DOCTYPE html>
+    <html lang="de">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Kurse</title>
+      </head>
+      <body>
+        <main>
+          <h1>Unsere Kurse</h1>
+          <article class="karte">
+            <h2>HTML</h2>
+            <p>Struktur und Semantik.</p>
+            <a href="/kurse/html">Zum Kurs</a>
+          </article>
+          <article class="karte">
+            <h2>CSS</h2>
+            <p>Gestaltung und Layout.</p>
+            <a href="/kurse/css">Zum Kurs</a>
+          </article>
+          <article class="karte">
+            <h2>Tailwind</h2>
+            <p>Utility-first-CSS.</p>
+            <a href="/kurse/tailwind">Zum Kurs</a>
+          </article>
+        </main>
+      </body>
+    </html>
+    EOF
+  checks:
+    - type: file_contains
+      path: index.html
+      pattern: "<head>[\\s\\S]*<link(?=[^>]*rel=\"stylesheet\")(?=[^>]*href=\"(\\./)?style\\.css\")[^>]*>[\\s\\S]*</head>"
+      message: Binde style.css im head mit `<link rel="stylesheet" href="style.css">` ein.
+    - type: file_contains
+      path: style.css
+      pattern: "\\*[^{]*\\{[^}]*box-sizing\\s*:\\s*border-box"
+      message: "Es fehlt eine Regel für * mit `box-sizing: border-box`."
+    - type: file_contains
+      path: style.css
+      pattern: "body\\s*\\{[^}]*font-family\\s*:[^;}]*sans-serif"
+      message: body braucht eine font-family-Liste, die mit sans-serif endet.
+    - type: file_contains
+      path: style.css
+      pattern: "body\\s*\\{[^}]*line-height\\s*:\\s*[0-9.]+\\s*(;|\\})"
+      message: body braucht eine line-height ohne Einheit, z. B. 1.6.
+    - type: file_contains
+      path: style.css
+      pattern: "\\.karte\\s*\\{[^}]*padding\\s*:[^;}]*rem"
+      message: .karte braucht ein padding in rem.
+    - type: file_contains
+      path: style.css
+      pattern: "\\.karte\\s*\\{[^}]*border\\s*:[^;}]+"
+      message: .karte braucht einen border.
+    - type: file_contains
+      path: style.css
+      pattern: "\\.karte\\s*\\{[^}]*border-radius\\s*:"
+      message: .karte braucht einen border-radius.
+    - type: file_contains
+      path: style.css
+      pattern: "\\.karte\\s*\\{[^}]*margin(-[a-z]+)?\\s*:"
+      message: .karte braucht einen margin, damit die Karten Abstand zueinander haben.
+    - type: file_contains
+      path: style.css
+      pattern: "\\.karte\\s+h2\\s*\\{[^}]*font-size\\s*:[^;}]*rem"
+      message: ".karte h2 braucht eine font-size in rem."
+    - type: file_contains
+      path: style.css
+      pattern: "a:focus-visible\\s*\\{[^}]*outline\\s*:[^;}]+"
+      message: "Es fehlt eine Regel `a:focus-visible { outline: … }`."
+    - type: command
+      run: grep -cE '!important|#[a-zA-Z_-][a-zA-Z0-9_-]*[^;{}]*\{' style.css
+      expect_exit: 1
+      stdout_matches: "^0$"
+      message: Bitte kein !important und keine ID-Selektoren im CSS.
+  hints:
+    - "Beginne mit `*, *::before, *::after { box-sizing: border-box; }` – das steht in fast jedem Projekt ganz oben."
+    - "Für die Karte: `.karte { padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 0.75rem; margin: 1rem 0; }`."
+    - "Der Fokus: `a:focus-visible { outline: 3px solid #e11d48; outline-offset: 2px; }`."
+  solution: |
+    ```bash
+    cd kurskarten
+    sed -i 's|<title>Kurse</title>|<title>Kurse</title>\n    <link rel="stylesheet" href="style.css">|' index.html
+    cat > style.css <<'EOF'
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      line-height: 1.6;
+      color: #1e1b3a;
+    }
+
+    .karte {
+      max-width: 32rem;
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      margin: 1rem 0;
+    }
+
+    .karte h2 {
+      font-size: 1.5rem;
+    }
+
+    a:focus-visible {
+      outline: 3px solid #e11d48;
+      outline-offset: 2px;
+    }
+    EOF
+    ```

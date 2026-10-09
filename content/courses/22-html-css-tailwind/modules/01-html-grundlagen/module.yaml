@@ -1,0 +1,128 @@
+title: HTML-Grundlagen
+description: Aufbau eines HTML-Dokuments, semantische Elemente, Links, Bilder, Tabellen, Formulare und die Grundlagen der Barrierefreiheit.
+exercise:
+  id: modul-uebung-vereinsseite
+  type: terminal
+  title: Die Seite des Lauftreffs
+  description: |
+    Ein kleiner Lauftreff braucht eine Webseite. Baue im Ordner `vereinsseite` die Datei `index.html` komplett
+    selbst – mit allem, was du in diesem Modul gelernt hast.
+
+    1. Vollständiges Grundgerüst: Doctype, `<html lang="de">`, `charset`, `viewport`-Meta-Tag und `<title>`.
+    2. Ein `<header>` mit genau einer `<h1>` und einer `<nav>`, die mindestens zwei Links (`<a href="…">`) in einer `<ul>` enthält.
+    3. Ein `<main>` mit zwei `<section>`-Abschnitten, die jeweils mit einer `<h2>` beginnen.
+    4. Im ersten Abschnitt: eine Tabelle der Trainingszeiten mit `<caption>`, `<thead>`, Kopfzellen `<th scope="col">` und mindestens einer Datenzeile mit `<td>`.
+    5. Im zweiten Abschnitt: ein Anmeldeformular (`method="post"`) mit einem E-Mail-Feld (`type="email"`, `required`, passendem `<label for>`) und einem Button `type="submit"`.
+    6. Ein Bild mit aussagekräftigem `alt`-Text.
+    7. Ein `<footer>` mit einem Link zum Impressum.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit der leere Ordner angelegt wird.
+  workdir: vereinsseite
+  setup: |
+    true
+  checks:
+    - type: command
+      run: head -n 1 index.html | tr 'A-Z' 'a-z'
+      stdout_matches: "^\\s*<!doctype html>\\s*$"
+      message: index.html fehlt oder beginnt nicht mit `<!DOCTYPE html>`.
+    - type: file_contains
+      path: index.html
+      pattern: "<html[^>]*lang=\"de\""
+      message: Das html-Element braucht lang="de".
+    - type: file_contains
+      path: index.html
+      pattern: "<meta[^>]*name=\"viewport\"[^>]*width=device-width"
+      message: Es fehlt das viewport-Meta-Tag mit width=device-width.
+    - type: command
+      run: grep -o "<h1" index.html | wc -l
+      stdout_matches: "^\\s*1\\s*$"
+      message: Die Seite braucht genau eine h1.
+    - type: file_contains
+      path: index.html
+      pattern: "<header>[\\s\\S]*<nav>[\\s\\S]*<ul>[\\s\\S]*<a href=[\\s\\S]*<a href=[\\s\\S]*</ul>[\\s\\S]*</nav>[\\s\\S]*</header>"
+      message: Im header fehlt eine nav mit einer ul, die mindestens zwei Links enthält.
+    - type: command
+      run: grep -o "<section" index.html | wc -l
+      stdout_matches: "^\\s*([2-9])\\s*$"
+      message: Der Hauptinhalt braucht mindestens zwei section-Abschnitte.
+    - type: file_contains
+      path: index.html
+      pattern: "<section[^>]*>\\s*<h2[\\s>]"
+      message: Jede section soll direkt mit einer h2 beginnen.
+    - type: file_contains
+      path: index.html
+      pattern: "<table>[\\s\\S]*<caption>[\\s\\S]*<thead>[\\s\\S]*<th scope=\"col\">[\\s\\S]*<td>[\\s\\S]*</table>"
+      message: Die Tabelle braucht caption, thead, Kopfzellen mit scope="col" und mindestens eine td.
+    - type: file_contains
+      path: index.html
+      pattern: "<form[^>]*method=\"post\""
+      message: Es fehlt ein Formular mit method="post".
+    - type: command
+      run: id=$(grep -oE '<input[^>]*type="email"[^>]*>' index.html | grep 'required' | grep -oE 'id="[^"]+"' | head -n 1 | cut -d'"' -f2); [ -n "$id" ] && grep -q "<label[^>]*for=\"$id\"" index.html && echo ok
+      stdout_equals: ok
+      message: Das E-Mail-Feld braucht type="email", required, eine id und ein label, dessen for genau zu dieser id passt.
+    - type: file_contains
+      path: index.html
+      pattern: "<button[^>]*type=\"submit\""
+      message: Im Formular fehlt ein Button mit type="submit".
+    - type: file_contains
+      path: index.html
+      pattern: "<img[^>]*alt=\"[^\"]{8,}\""
+      message: Es fehlt ein Bild mit aussagekräftigem alt-Text.
+    - type: file_contains
+      path: index.html
+      pattern: "<main>[\\s\\S]*</main>\\s*<footer>[\\s\\S]*<a href=[\\s\\S]*</footer>"
+      message: Nach dem main soll ein footer mit einem Link (z. B. zum Impressum) folgen.
+  hints:
+    - Beginne mit dem Grundgerüst aus Lektion 1 und ergänze dann header, main und footer als leere Hüllen.
+    - "Die Tabelle: `<table><caption>Trainingszeiten</caption><thead><tr><th scope=\"col\">Tag</th><th scope=\"col\">Uhrzeit</th></tr></thead><tbody><tr><td>Dienstag</td><td>18:30</td></tr></tbody></table>`."
+    - "Das Feld: `<label for=\"email\">E-Mail</label>` und `<input type=\"email\" id=\"email\" name=\"email\" required>`."
+  solution: |
+    ```html
+    <!DOCTYPE html>
+    <html lang="de">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Lauftreff am See</title>
+      </head>
+      <body>
+        <header>
+          <h1>Lauftreff am See</h1>
+          <nav>
+            <ul>
+              <li><a href="#zeiten">Trainingszeiten</a></li>
+              <li><a href="#anmeldung">Anmeldung</a></li>
+            </ul>
+          </nav>
+        </header>
+        <main>
+          <section>
+            <h2 id="zeiten">Trainingszeiten</h2>
+            <img src="gruppe.jpg" alt="Laufgruppe beim Start am Seeufer">
+            <table>
+              <caption>Unsere Trainingszeiten</caption>
+              <thead>
+                <tr><th scope="col">Tag</th><th scope="col">Uhrzeit</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Dienstag</td><td>18:30</td></tr>
+                <tr><td>Samstag</td><td>9:00</td></tr>
+              </tbody>
+            </table>
+          </section>
+          <section>
+            <h2 id="anmeldung">Anmeldung</h2>
+            <form action="/anmeldung" method="post">
+              <label for="email">E-Mail</label>
+              <input type="email" id="email" name="email" required>
+              <button type="submit">Anmelden</button>
+            </form>
+          </section>
+        </main>
+        <footer>
+          <p><a href="/impressum">Impressum</a></p>
+        </footer>
+      </body>
+    </html>
+    ```

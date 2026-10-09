@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Typischer Seitenaufbau mit Landmarken</text>
+<rect x="40" y="55" width="720" height="90" rx="12" fill="#22d3ee" fill-opacity=".15" stroke="#22d3ee" stroke-width="3"/>
+<text x="64" y="86" font-size="18" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">&lt;header&gt;</text>
+<text x="64" y="110" font-size="13" fill="#475569">Logo, Seitentitel</text>
+<rect x="400" y="72" width="340" height="56" rx="10" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="3"/>
+<text x="424" y="98" font-size="17" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">&lt;nav&gt;</text>
+<text x="424" y="117" font-size="13" fill="#475569">Hauptmenü mit Links</text>
+<rect x="40" y="165" width="720" height="250" rx="12" fill="#34d399" fill-opacity=".12" stroke="#34d399" stroke-width="3"/>
+<text x="64" y="194" font-size="18" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">&lt;main&gt;</text>
+<text x="160" y="194" font-size="13" fill="#475569">genau einmal pro Seite</text>
+<rect x="64" y="210" width="440" height="185" rx="10" fill="#ffffff" stroke="#34d399" stroke-width="2"/>
+<text x="86" y="238" font-size="17" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">&lt;article&gt;</text>
+<text x="86" y="258" font-size="13" fill="#475569">eigenständiger Inhalt, z. B. Blogbeitrag</text>
+<rect x="86" y="272" width="396" height="48" rx="8" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="2"/>
+<text x="104" y="302" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">&lt;section&gt;</text>
+<text x="210" y="302" font-size="13" fill="#475569">Kapitel mit eigener Überschrift</text>
+<rect x="86" y="330" width="396" height="48" rx="8" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="2"/>
+<text x="104" y="360" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">&lt;section&gt;</text>
+<text x="210" y="360" font-size="13" fill="#475569">nächstes Kapitel</text>
+<rect x="524" y="210" width="212" height="185" rx="10" fill="#ffffff" stroke="#34d399" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="544" y="238" font-size="17" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">&lt;aside&gt;</text>
+<text x="544" y="258" font-size="13" fill="#475569">Ergänzendes:</text>
+<text x="544" y="276" font-size="13" fill="#475569">Infokasten,</text>
+<text x="544" y="294" font-size="13" fill="#475569">verwandte Links</text>
+<rect x="40" y="435" width="720" height="60" rx="12" fill="#f87171" fill-opacity=".14" stroke="#f87171" stroke-width="3"/>
+<text x="64" y="471" font-size="18" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">&lt;footer&gt;</text>
+<text x="180" y="471" font-size="13" fill="#475569">Kontakt, Impressum, Copyright</text>
+</svg>
