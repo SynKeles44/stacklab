@@ -1,0 +1,76 @@
+title: JSON im Detail
+description: Die Syntax von JSON bis ins letzte Komma, JSON in JavaScript und PHP sowie das Filtern und Umformen von JSON im Terminal mit jq.
+exercise:
+  id: modul-uebung-bestellungen
+  type: terminal
+  title: Bestellungen reparieren und auswerten
+  description: |
+    Im Ordner `json-uebung` liegt `bestellungen.json` – der Export aus einem kleinen Online-Shop. Jemand hat
+    die Datei von Hand bearbeitet, und jetzt meldet jeder Parser einen Fehler. Deine Aufgabe:
+
+    1. Repariere `bestellungen.json`, sodass `jq . bestellungen.json` ohne Fehler durchläuft. Es müssen alle
+       **vier** Bestellungen mit ihren Werten erhalten bleiben (eine Testbestellung ist nur auskommentiert,
+       nicht gelöscht – JSON kennt aber keine Kommentare).
+    2. Schreibe mit jq alle Bestellungen mit dem Status `offen` als JSON-Array in die Datei `offen.json`.
+    3. Schreibe die Summe aller Bestellungen, die **nicht** `storniert` sind, als nackte Zahl in `umsatz.txt`.
+    4. Schreibe alle Kunden-E-Mail-Adressen ohne Duplikate, alphabetisch sortiert und **ohne**
+       Anführungszeichen in `kunden.txt` – eine Adresse pro Zeile.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Datei angelegt wird.
+  workdir: json-uebung
+  setup: |
+    cat > bestellungen.json <<'JSON'
+    [
+      {"id": 1001, "kunde": "ada@example.com", "status": "bezahlt", "summe": 49.9, "artikel": ["Tasse", "Poster"]},
+      {"id": 1002, "kunde": "linus@example.com", "status": 'offen', "summe": 120, "artikel": ["Tastatur"]},
+      {"id": 1003, "kunde": "ada@example.com", "status": "offen", "summe": 15.5, "artikel": ["Sticker",]},
+      // Testbestellung, bitte drin lassen
+      {"id": 1004, "kunde": "grace@example.com", "status": "storniert", summe: 80, "artikel": ["Lampe", "Kabel"]}
+    ]
+    JSON
+  checks:
+    - type: command
+      run: jq -e . bestellungen.json > /dev/null && echo ok
+      stdout_equals: ok
+      message: bestellungen.json ist noch kein gültiges JSON. Führe `jq . bestellungen.json` aus und lies die Fehlermeldung mit Zeilennummer.
+    - type: command
+      run: jq -c '[length, (map(.id) | add), (map(.summe) | add)]' bestellungen.json
+      stdout_equals: "[4,4010,265.4]"
+      message: In bestellungen.json müssen alle vier Bestellungen mit ihren ursprünglichen IDs und Summen stehen bleiben – auch die Testbestellung 1004.
+    - type: command
+      run: jq -r '.[1].status, .[2].artikel[0]' bestellungen.json | tr '\n' ' '
+      stdout_matches: "^offen Sticker\\s*$"
+      message: Prüfe Bestellung 1002 (Status offen) und 1003 (Artikel Sticker) – die Werte sollen beim Reparieren gleich bleiben.
+    - type: command
+      run: jq -r 'map(.id) | join(",")' offen.json
+      stdout_equals: "1002,1003"
+      message: offen.json soll ein Array mit genau den Bestellungen 1002 und 1003 enthalten. Tipp – map(select(.status == "offen")).
+    - type: command
+      run: tr -d '[:space:]' < umsatz.txt
+      stdout_equals: "185.4"
+      message: umsatz.txt soll nur die Zahl 185.4 enthalten – die Summe aller Bestellungen außer der stornierten.
+    - type: command
+      run: cat kunden.txt | tr '\n' ' '
+      stdout_matches: "^ada@example\\.com grace@example\\.com linus@example\\.com\\s*$"
+      message: kunden.txt soll die drei Adressen ada, grace und linus enthalten – sortiert, ohne Duplikate und ohne Anführungszeichen (jq -r).
+  hints:
+    - "Repariere einen Fehler nach dem anderen und starte nach jeder Änderung `jq . bestellungen.json` neu. Gesucht sind: einfache Anführungszeichen, ein Komma am Ende einer Liste, ein Kommentar und ein Schlüssel ohne Anführungszeichen."
+    - "Für die Auswertung: `jq 'map(select(.status == \"offen\"))' bestellungen.json > offen.json` und `map(select(.status != \"storniert\") | .summe) | add`."
+    - "Für die Kunden: `jq -r 'map(.kunde) | unique | .[]' bestellungen.json > kunden.txt` – `unique` sortiert und entfernt Duplikate."
+  solution: |
+    Repariere die Datei im Editor (z. B. `nano bestellungen.json`):
+
+    - `'offen'` → `"offen"`
+    - `["Sticker",]` → `["Sticker"]`
+    - Kommentarzeile `// Testbestellung …` löschen (die Bestellung darunter bleibt!)
+    - `summe: 80` → `"summe": 80`
+
+    Danach:
+
+    ```bash
+    cd json-uebung
+    jq . bestellungen.json
+    jq 'map(select(.status == "offen"))' bestellungen.json > offen.json
+    jq 'map(select(.status != "storniert") | .summe) | add' bestellungen.json > umsatz.txt
+    jq -r 'map(.kunde) | unique | .[]' bestellungen.json > kunden.txt
+    ```

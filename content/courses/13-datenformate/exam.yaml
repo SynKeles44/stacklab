@@ -1,0 +1,397 @@
+title: Abschlussprüfung JSON, YAML & Datenformate
+description: |
+  Diese Prüfung deckt alle vier Module ab: die Grundlagen der Serialisierung, JSON mit jq, JavaScript und PHP,
+  YAML mit seinen Fallen und die weiteren Formate CSV, XML, TOML, .env und INI. Zuerst beantwortest du Fragen,
+  danach löst du drei Praxis-Aufgaben – zwei im echten Übungs-Terminal, eine als Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  # --- Grundlagen ---
+  - module: grundlagen
+    type: single
+    question: Was bedeutet Serialisierung?
+    options:
+      - Daten verschlüsseln, damit niemand sie lesen kann
+      - Eine Datenstruktur aus dem Arbeitsspeicher in Text oder Bytes umwandeln
+      - Mehrere Dateien zu einem Archiv zusammenfassen
+      - Daten nach einem Schlüssel sortieren
+    answer: 1
+    explanation: Serialisieren macht aus Objekten eine Folge von Zeichen oder Bytes, die man speichern oder verschicken kann. Das Gegenstück ist die Deserialisierung.
+  - module: grundlagen
+    type: multiple
+    question: Welche Vorteile haben Textformate gegenüber Binärformaten?
+    options:
+      - Sie lassen sich mit jedem Editor lesen.
+      - Sie sind immer kleiner.
+      - Änderungen lassen sich mit git diff gut nachvollziehen.
+      - Sie lassen sich von Hand korrigieren.
+    answers: [0, 2, 3]
+    explanation: Textformate sind lesbar und Git-freundlich. Kleiner sind meist die Binärformate.
+  - module: grundlagen
+    type: match
+    question: Ordne jedem Wert seinen JSON-Typ zu.
+    pairs:
+      - { left: "\"42\"", right: "String" }
+      - { left: "42", right: "Number" }
+      - { left: "false", right: "Boolean" }
+      - { left: "[42]", right: "Array" }
+    explanation: Anführungszeichen machen einen String, eckige Klammern ein Array. true und false sind Booleans.
+  - module: grundlagen
+    type: single
+    question: Wie überträgt man ein Datum am besten in JSON?
+    options:
+      - Als eigener Datums-Typ, den JSON dafür vorsieht
+      - Als ISO-8601-String wie "2026-10-09T08:00:00Z"
+      - Als Text im Format "9. Oktober 2026"
+      - Gar nicht, Datumswerte sind in JSON verboten
+    answer: 1
+    explanation: JSON kennt keinen Datums-Typ. Ein ISO-8601-String ist eindeutig, sprachunabhängig und sortiert sich als Text richtig.
+  # --- JSON ---
+  - module: json
+    type: find-bug
+    question: In welcher Zeile ist dieses JSON ungültig?
+    language: json
+    code: |
+      {
+        "name": "shop",
+        "tags": ["web", "api"],
+        "debug": false,
+        // lokal auf true setzen
+        "port": 8080
+      }
+    bug_line: 5
+    explanation: JSON erlaubt keine Kommentare. Erklärungen gehören in eine Dokumentation oder in ein Format wie YAML.
+  - module: json
+    type: multiple
+    question: Welche dieser Zahlen sind in JSON gültig?
+    options:
+      - "0.5"
+      - ".5"
+      - "-12"
+      - "007"
+      - "2e3"
+    answers: [0, 2, 4]
+    explanation: Zahlen dürfen nicht mit einem Punkt beginnen und keine führenden Nullen haben. Exponenten wie 2e3 sind erlaubt.
+  - module: json
+    type: cloze
+    text: "In PHP wirft `json_decode($json, true, flags: ___)` bei kaputtem JSON eine `JsonException`. Mit `JSON.stringify(daten, null, ___)` erzeugst du in JavaScript JSON mit zwei Leerzeichen Einrückung."
+    blanks:
+      - [JSON_THROW_ON_ERROR]
+      - ["2"]
+    explanation: JSON_THROW_ON_ERROR macht Fehler sichtbar. Der dritte Parameter von JSON.stringify ist die Einrückung.
+  - module: json
+    type: single
+    question: "Was gibt `jq -r '.[] | select(.aktiv) | .name' users.json` aus?"
+    options:
+      - Ein JSON-Array mit allen Namen
+      - Die Namen aller aktiven Nutzer, je einen pro Zeile, ohne Anführungszeichen
+      - Die Anzahl der aktiven Nutzer
+      - Alle Nutzer, bei denen das Feld name existiert
+    answer: 1
+    explanation: ".[] zerlegt das Array, select lässt nur aktive Nutzer durch, .name nimmt den Namen, und -r entfernt die Anführungszeichen."
+  - module: json
+    type: single
+    question: "Was ergibt `json_encode([])` in PHP?"
+    options:
+      - "{}"
+      - "[]"
+      - "null"
+      - "\"\""
+    answer: 1
+    explanation: Ein leeres PHP-Array wird zu einem leeren JSON-Array. Für ein leeres Objekt brauchst du JSON_FORCE_OBJECT oder (object) [].
+  # --- YAML ---
+  - module: yaml
+    type: find-bug
+    question: Welche Zeile wird von einem YAML-1.1-Parser anders gelesen als gemeint?
+    language: yaml
+    code: |
+      app: shop
+      version: "2.4"
+      region: eu-central
+      newsletter: off
+      sprachen: [de, en]
+    bug_line: 4
+    explanation: off ist in YAML 1.1 der Boolean false. Ist ein Text gemeint, gehört er in Anführungszeichen; ist ein Boolean gemeint, schreibt man eindeutig false.
+  - module: yaml
+    type: single
+    question: "Was ergibt dieser Wert?\n\nbefehl: |\n  npm ci\n  npm test"
+    options:
+      - "\"npm ci npm test\""
+      - "\"npm ci\\nnpm test\\n\""
+      - "[\"npm ci\", \"npm test\"]"
+      - "\"  npm ci\\n  npm test\""
+    answer: 1
+    explanation: Der Literal-Stil | behält die Zeilenumbrüche, die gemeinsame Einrückung entfällt, und am Ende bleibt ein Zeilenumbruch.
+  - module: yaml
+    type: multiple
+    question: Welche Aussagen über YAML stimmen?
+    options:
+      - Tabs sind zur Einrückung verboten.
+      - "Ein Wert mit \": \" darin muss in Anführungszeichen stehen."
+      - Kommentare beginnen mit //.
+      - Mit &name und *name lassen sich Werte wiederverwenden.
+    answers: [0, 1, 3]
+    explanation: "Kommentare beginnen in YAML mit #. Anker (&) und Aliase (*) vermeiden Wiederholungen."
+  - module: yaml
+    type: match
+    question: Ordne den Schlüssel dem Werkzeug zu.
+    pairs:
+      - { left: "steps mit uses und run", right: "GitHub Actions" }
+      - { left: "services mit image und ports", right: "Docker Compose" }
+      - { left: "kind: Deployment", right: "Kubernetes" }
+    explanation: YAML ist nur das Format – welche Schlüssel erlaubt sind, legt das jeweilige Werkzeug fest.
+  - module: yaml
+    type: cloze
+    text: "In einer Sequenz beginnt jeder Eintrag mit einem ___. Mehrere YAML-Dokumente in einer Datei trennst du mit ___."
+    blanks:
+      - [Bindestrich, "-", Minus]
+      - ["---"]
+    explanation: "- leitet einen Listeneintrag ein, --- trennt Dokumente, etwa mehrere Kubernetes-Objekte."
+  # --- Weitere Formate ---
+  - module: weitere-formate
+    type: single
+    question: "Wie wird das Feld `Er sagte \"Hi\", dann ging er` korrekt in einer CSV-Zeile geschrieben?"
+    options:
+      - "Er sagte \"Hi\", dann ging er"
+      - "\"Er sagte \\\"Hi\\\", dann ging er\""
+      - "\"Er sagte \"\"Hi\"\", dann ging er\""
+      - "'Er sagte \"Hi\", dann ging er'"
+    answer: 2
+    explanation: Das Feld enthält ein Komma, also kommt es in Anführungszeichen. Anführungszeichen im Feld werden verdoppelt, nicht mit Backslash escaped.
+  - module: weitere-formate
+    type: multiple
+    question: Welche Probleme treten bei CSV-Exporten aus Tabellenkalkulationen häufig auf?
+    options:
+      - Semikolon statt Komma als Trennzeichen
+      - Ein BOM vor der ersten Spalte
+      - Führende Nullen gehen verloren
+      - Verschachtelte Objekte werden zu YAML
+    answers: [0, 1, 2]
+    explanation: CSV kennt keine Verschachtelung. Semikolon, BOM und verlorene Nullen sind dagegen Alltag.
+  - module: weitere-formate
+    type: match
+    question: Ordne jede Datei ihrem Format zu.
+    pairs:
+      - { left: "phpunit.xml", right: "XML" }
+      - { left: "mise.toml", right: "TOML" }
+      - { left: ".env.example", right: "Umgebungsvariablen KEY=wert" }
+      - { left: "php.ini", right: "INI" }
+    explanation: Viele Projekte kombinieren mehrere Formate – je nach Werkzeug.
+  - module: weitere-formate
+    type: single
+    question: Welches Format passt am besten für Anwendungs-Logs, an die laufend Einträge angehängt werden?
+    options:
+      - Ein großes JSON-Array
+      - JSON Lines
+      - YAML
+      - XML
+    answer: 1
+    explanation: In JSON Lines steht ein Objekt pro Zeile. Neue Einträge werden angehängt, ohne die Datei neu zu schreiben.
+  - module: weitere-formate
+    type: single
+    question: "Welchen Typ hat `DB_PORT` nach dem Einlesen aus der Zeile `DB_PORT=5432` einer .env-Datei?"
+    options:
+      - Integer
+      - String
+      - Float
+    answer: 1
+    explanation: Umgebungsvariablen sind immer Strings. Das Programm muss sie selbst in Zahlen umwandeln.
+tasks:
+  - module: json
+    id: pruefung-jq
+    type: terminal
+    title: Produktdaten mit jq auswerten
+    description: |
+      Im Ordner `pruefung-jq` liegt `produkte.json`, ein Array von Produkten mit `name`, `kategorie`, `preis`
+      und `lager` (Stückzahl).
+
+      1. Schreibe die **Namen** aller Produkte mit einem Preis **über 50**, absteigend nach Preis sortiert, ohne
+         Anführungszeichen und einen pro Zeile in `teuer.txt`.
+      2. Erzeuge `kategorien.json`: ein Objekt, das jeder Kategorie die **Anzahl** ihrer Produkte zuordnet,
+         z. B. `{"Büro": 2, …}`.
+      3. Erzeuge `nachbestellen.json`: ein Array der Produkte mit `lager` gleich 0, jedes nur mit den Feldern
+         `name` und `kategorie`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-jq
+    setup: |
+      cat > produkte.json <<'JSON'
+      [
+        {"name": "Tasse", "kategorie": "Küche", "preis": 9.5, "lager": 120},
+        {"name": "Bürostuhl", "kategorie": "Büro", "preis": 189, "lager": 4},
+        {"name": "Schreibtischlampe", "kategorie": "Büro", "preis": 59.9, "lager": 0},
+        {"name": "Wasserkocher", "kategorie": "Küche", "preis": 34, "lager": 0},
+        {"name": "Kopfhörer", "kategorie": "Technik", "preis": 79, "lager": 15}
+      ]
+      JSON
+    checks:
+      - type: command
+        run: cat teuer.txt | tr '\n' '|'
+        stdout_equals: Bürostuhl|Kopfhörer|Schreibtischlampe|
+        message: teuer.txt soll Bürostuhl, Kopfhörer und Schreibtischlampe enthalten – absteigend nach Preis, ohne Anführungszeichen.
+      - type: command
+        run: jq -c 'to_entries | sort_by(.key) | from_entries' kategorien.json
+        stdout_equals: '{"Büro":2,"Küche":2,"Technik":1}'
+        message: kategorien.json soll jeder Kategorie die Anzahl ihrer Produkte zuordnen. Tipp – group_by(.kategorie).
+      - type: command
+        run: jq -c 'map({name, kategorie})' nachbestellen.json
+        stdout_equals: '[{"name":"Schreibtischlampe","kategorie":"Büro"},{"name":"Wasserkocher","kategorie":"Küche"}]'
+        message: nachbestellen.json soll die zwei Produkte mit lager 0 enthalten.
+      - type: command
+        run: jq -c 'map(keys | length) | unique' nachbestellen.json
+        stdout_equals: "[2]"
+        message: Jedes Element in nachbestellen.json soll nur die Felder name und kategorie haben.
+    hints:
+      - "`map(select(.preis > 50)) | sort_by(.preis) | reverse | .[] | .name` mit der Option -r."
+      - "`group_by(.kategorie) | map({key: .[0].kategorie, value: length}) | from_entries`"
+      - "`map(select(.lager == 0) | {name, kategorie})`"
+    solution: |
+      ```bash
+      cd pruefung-jq
+      jq -r 'map(select(.preis > 50)) | sort_by(.preis) | reverse | .[] | .name' produkte.json > teuer.txt
+      jq 'group_by(.kategorie) | map({key: .[0].kategorie, value: length}) | from_entries' produkte.json > kategorien.json
+      jq 'map(select(.lager == 0) | {name, kategorie})' produkte.json > nachbestellen.json
+      ```
+  - module: yaml
+    id: pruefung-yaml
+    type: terminal
+    title: Ein Deployment-Manifest reparieren
+    description: |
+      Im Ordner `pruefung-yaml` liegt `deployment.yaml`, ein Kubernetes-Manifest. Es ist kaputt und enthält
+      außerdem Werte, die je nach YAML-Version anders gelesen werden. Das Paket `yaml` ist installiert; so siehst
+      du beide Lesarten:
+
+      ```bash
+      node -e 'const Y = require("yaml"), t = require("fs").readFileSync("deployment.yaml", "utf8"); for (const v of ["1.1", "1.2"]) console.log(v, JSON.stringify(Y.parse(t, { version: v })))'
+      ```
+
+      Repariere die Datei so, dass sie in **beiden** Versionen gültig ist und:
+
+      1. `spec.replicas` die Zahl 2 ist,
+      2. `metadata.labels.version` der String `1.20` ist,
+      3. `metadata.labels.land` der String `NO` ist,
+      4. der Container `web` das Image `nginx:1.29` hat und `containerPort` die Zahl 80 ist.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-yaml
+    setup: |
+      npm init -y > /dev/null
+      npm install yaml --silent --no-audit --no-fund
+      printf '%s\n' \
+        'apiVersion: apps/v1' \
+        'kind: Deployment' \
+        'metadata:' \
+        '  name: web' \
+        '  labels:' \
+        '    version: 1.20' \
+        '    land: NO' \
+        'spec:' \
+        '  replicas: 2' \
+        '	template:' \
+        '    spec:' \
+        '      containers:' \
+        '        - name: web' \
+        '          image: nginx:1.29' \
+        '          ports:' \
+        '            - containerPort: 80' > deployment.yaml
+    checks:
+      - type: command
+        run: |
+          node -e 'const Y = require("yaml"), t = require("fs").readFileSync("deployment.yaml", "utf8"); Y.parse(t, { version: "1.1" }); Y.parse(t, { version: "1.2" }); console.log("ok")'
+        stdout_equals: ok
+        message: deployment.yaml ist noch kein gültiges YAML – achte auf Tabs in der Einrückung.
+      - type: command
+        run: |
+          node -e 'const Y = require("yaml"), t = require("fs").readFileSync("deployment.yaml", "utf8"); console.log(["1.1", "1.2"].map(v => JSON.stringify(Y.parse(t, { version: v }).metadata.labels)).join(" "))'
+        stdout_equals: '{"version":"1.20","land":"NO"} {"version":"1.20","land":"NO"}'
+        message: version soll der String 1.20 und land der String NO sein – in beiden YAML-Versionen. Setze sie in Anführungszeichen.
+      - type: command
+        run: |
+          node -e 'const d = require("yaml").parse(require("fs").readFileSync("deployment.yaml", "utf8")); const c = d.spec.template.spec.containers[0]; console.log(d.spec.replicas, c.name, c.image, c.ports[0].containerPort)'
+        stdout_equals: 2 web nginx:1.29 80
+        message: spec.replicas soll 2 sein, und unter spec.template.spec.containers soll der Container web mit nginx:1.29 und containerPort 80 stehen.
+    hints:
+      - "Ersetze den Tab vor `template:` durch zwei Leerzeichen – `template` gehört wie `replicas` zu `spec`."
+      - "`version: \"1.20\"` und `land: \"NO\"` – sonst werden daraus die Zahl 1.2 und in YAML 1.1 der Boolean false."
+    solution: |
+      ```yaml
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        labels:
+          version: "1.20"
+          land: "NO"
+      spec:
+        replicas: 2
+        template:
+          spec:
+            containers:
+              - name: web
+                image: nginx:1.29
+                ports:
+                  - containerPort: 80
+      ```
+  - module: weitere-formate
+    id: pruefung-csv
+    type: code
+    language: php
+    title: Umsätze aus einer CSV summieren
+    description: |
+      Eine Kasse exportiert ihre Buchungen als CSV mit Kopfzeile, Komma als Trennzeichen und doppelten
+      Anführungszeichen um Felder mit Sonderzeichen:
+
+      ```text
+      datum,kategorie,betrag
+      2026-10-01,"Bücher, gebraucht",12.50
+      2026-10-01,Kaffee,3.20
+      ```
+
+      Schreibe `summenJeKategorie(string $csv): array`. Sie gibt ein assoziatives Array zurück, das jeder
+      Kategorie die Summe ihrer Beträge zuordnet – **nach Kategorie sortiert** und auf **zwei Nachkommastellen
+      gerundet** (als `float`). Leere Zeilen werden übersprungen. Zeilenumbrüche sind `\n`.
+    starter: |
+      function summenJeKategorie(string $csv): array
+      {
+          // Tipp: str_getcsv($zeile, ',', '"', '') zerlegt eine Zeile korrekt
+          return [];
+      }
+    tests:
+      - name: Summiert Beträge je Kategorie
+        code: |
+          $csv = "datum,kategorie,betrag\n2026-10-01,Kaffee,3.20\n2026-10-02,Kaffee,2.90\n2026-10-02,Snacks,1.50";
+          assert_same(['Kaffee' => 6.1, 'Snacks' => 1.5], summenJeKategorie($csv));
+      - name: Gequotete Kategorie mit Komma
+        code: |
+          $csv = "datum,kategorie,betrag\n2026-10-01,\"Bücher, gebraucht\",12.50\n2026-10-03,\"Bücher, gebraucht\",7.25";
+          assert_same(['Bücher, gebraucht' => 19.75], summenJeKategorie($csv));
+      - name: Ergebnis ist nach Kategorie sortiert
+        code: |
+          $csv = "datum,kategorie,betrag\n2026-10-01,Zeitschriften,4.00\n2026-10-01,Akkus,9.99\n";
+          assert_same(['Akkus', 'Zeitschriften'], array_keys(summenJeKategorie($csv)));
+      - name: Nur die Kopfzeile ergibt ein leeres Array
+        code: |
+          assert_same([], summenJeKategorie("datum,kategorie,betrag\n\n"));
+    hints:
+      - "Teile mit `explode(\"\\n\", $csv)`, überspringe die Kopfzeile und leere Zeilen."
+      - "Addiere mit `$summen[$kategorie] = ($summen[$kategorie] ?? 0) + (float) $betrag;`."
+      - "Zum Schluss `ksort($summen)` und jede Summe mit `round($summe, 2)` runden."
+    solution: |
+      ```php
+      function summenJeKategorie(string $csv): array
+      {
+          $lines = array_filter(explode("\n", $csv), fn (string $line): bool => trim($line) !== '');
+          array_shift($lines);
+
+          $sums = [];
+          foreach ($lines as $line) {
+              [, $category, $amount] = str_getcsv($line, ',', '"', '');
+              $sums[$category] = ($sums[$category] ?? 0) + (float) $amount;
+          }
+          ksort($sums);
+
+          return array_map(fn (float $sum): float => round($sum, 2), $sums);
+      }
+      ```

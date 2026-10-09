@@ -1,0 +1,343 @@
+- slug: datenformat
+  term: Datenformat
+  short: Eine feste Vereinbarung, wie Daten als Text oder Bytes aufgeschrieben werden.
+  explanation: >
+    Ein Datenformat legt fest, wie Listen, Schlüssel-Wert-Paare, Texte und Zahlen geschrieben werden und
+    welche Zeichenkodierung gilt. Weil sich Sender und Empfänger nur auf das Format einigen müssen, können
+    Programme in verschiedenen Sprachen dieselben Daten austauschen.
+  example: "JSON, YAML, CSV und XML sind Datenformate; PNG ist ein Datenformat für Bilder."
+  category: datenformate
+  aliases: [Datenformate, Format, Dateiformat]
+  related: [serialisierung, json, yaml, csv]
+  lesson: datenformate/warum-datenformate
+
+- slug: serialisierung
+  term: Serialisierung
+  short: Das Umwandeln einer Datenstruktur aus dem Arbeitsspeicher in Text oder Bytes.
+  explanation: >
+    Objekte im Arbeitsspeicher lassen sich weder speichern noch verschicken. Beim Serialisieren werden sie
+    deshalb nach den Regeln eines Datenformats in eine Folge von Zeichen oder Bytes verwandelt, die in eine
+    Datei oder über das Netzwerk passt.
+  example: "`JSON.stringify({ name: 'Ada' })` liefert den Text `{\"name\":\"Ada\"}`."
+  category: datenformate
+  aliases: [serialisieren, Serialisieren, Serialization]
+  related: [deserialisierung, datenformat]
+  lesson: datenformate/warum-datenformate
+
+- slug: deserialisierung
+  term: Deserialisierung
+  short: Das Zurückverwandeln von Text oder Bytes in eine Datenstruktur im Arbeitsspeicher.
+  explanation: >
+    Beim Deserialisieren liest ein Parser einen Text nach den Regeln seines Formats und baut daraus neue
+    Objekte, Listen und Werte. Ist der Text ungültig, bricht der Vorgang mit einem Fehler ab.
+  example: "`json_decode('{\"name\":\"Ada\"}', true)` liefert in PHP das Array `['name' => 'Ada']`."
+  category: datenformate
+  aliases: [deserialisieren, Deserialisieren, Parsen]
+  related: [serialisierung, parser]
+  lesson: datenformate/warum-datenformate
+
+- slug: arbeitsspeicher
+  term: Arbeitsspeicher
+  short: Der schnelle, flüchtige Speicher, in dem laufende Programme ihre Daten halten.
+  explanation: >
+    Variablen, Objekte und Listen eines laufenden Programms liegen im Arbeitsspeicher (RAM). Er ist schnell,
+    verliert seinen Inhalt aber beim Beenden des Programms oder Ausschalten des Rechners. Was überdauern soll,
+    muss in eine Datei oder Datenbank geschrieben werden.
+  example: Ein PHP-Array existiert nur, solange das Skript läuft – danach ist es aus dem Arbeitsspeicher verschwunden.
+  category: datenformate
+  aliases: [RAM, Hauptspeicher, Speicher]
+  related: [serialisierung]
+  lesson: datenformate/warum-datenformate
+
+- slug: textformat
+  term: Textformat
+  short: Ein Datenformat aus lesbaren Zeichen, das du mit jedem Editor öffnen kannst.
+  explanation: >
+    Textformate wie JSON, YAML oder CSV bestehen aus normalen Zeichen in einer Kodierung wie UTF-8. Sie sind
+    für Menschen lesbar und lassen sich gut mit Git vergleichen, sind aber größer und langsamer zu verarbeiten
+    als Binärformate.
+  example: "Eine `package.json` ist ein Textformat – du kannst sie direkt im Editor bearbeiten."
+  category: datenformate
+  aliases: [Textformate, menschenlesbar, menschenlesbares Format]
+  related: [binaerformat, datenformat]
+  lesson: datenformate/warum-datenformate
+
+- slug: binaerformat
+  term: Binärformat
+  short: Ein Datenformat aus rohen Bytes, das nur Programme sinnvoll lesen können.
+  explanation: >
+    Binärformate speichern Daten kompakt und schnell verarbeitbar, sind aber im Editor nur Zeichensalat.
+    Beispiele sind Bilder (PNG), Videos, Datenbankdateien oder Austauschformate wie Protocol Buffers und
+    MessagePack.
+  example: "`logo.png` und `datenbank.sqlite` sind Binärdateien."
+  category: datenformate
+  aliases: [Binärformate, binär, Protocol Buffers, MessagePack]
+  related: [textformat, datenformat]
+  lesson: datenformate/warum-datenformate
+
+- slug: skalar
+  term: Skalar
+  short: Ein einzelner, nicht weiter zerlegbarer Wert wie ein String, eine Zahl, ein Boolean oder null.
+  explanation: >
+    In Datenformaten unterscheidet man einfache Werte (Skalare) von Containern wie Listen und Objekten.
+    Skalare sind die Blätter des Datenbaums. In YAML heißen sie auch Scalars.
+  example: "`\"Ada\"`, `36`, `true` und `null` sind Skalare, `[1, 2]` nicht."
+  category: datenformate
+  aliases: [Skalare, Scalar, skalarer Wert]
+  related: [string, number, boolean, "null"]
+  lesson: datenformate/das-datenmodell
+
+- slug: schluessel-wert-paar
+  term: Schlüssel-Wert-Paar
+  short: 'Ein Name (Schlüssel) und der dazugehörige Wert, zum Beispiel `"name": "Ada"`.'
+  explanation: >
+    Objekte in JSON, Mappings in YAML und assoziative Arrays in PHP bestehen aus Schlüssel-Wert-Paaren. Über
+    den Schlüssel greifst du auf den Wert zu. Innerhalb eines Objekts sollte jeder Schlüssel nur einmal vorkommen.
+  example: "In `port: 8080` ist `port` der Schlüssel und `8080` der Wert."
+  category: datenformate
+  aliases: [Schlüssel-Wert-Paare, Key-Value-Paar, Key-Value]
+  related: [objekt, yaml-mapping, assoziatives-array]
+  lesson: datenformate/das-datenmodell
+
+- slug: verschachtelung
+  term: Verschachtelung
+  short: Container, die weitere Container enthalten – etwa ein Objekt in einem Objekt.
+  explanation: >
+    Durch Verschachtelung entstehen aus Objekten und Listen beliebig tiefe Strukturen, die man sich als Baum
+    vorstellen kann. Jeder Wert ist dann über einen Pfad wie `adresse.stadt` erreichbar. CSV kennt keine
+    Verschachtelung.
+  example: "`{\"user\": {\"adresse\": {\"stadt\": \"Musterstadt\"}}}` ist dreifach verschachtelt."
+  category: datenformate
+  aliases: [verschachtelt, Nesting, nested]
+  related: [objekt, array]
+  lesson: datenformate/das-datenmodell
+
+- slug: assoziatives-array
+  term: Assoziatives Array
+  short: Ein PHP-Array mit benannten Schlüsseln statt fortlaufender Nummern.
+  explanation: >
+    In PHP ist ein Array zugleich Liste und Wörterbuch. Hat es Text-Schlüssel wie `'name'`, spricht man vom
+    assoziativen Array – dem Gegenstück zum JSON-Objekt. `json_decode($json, true)` liefert JSON-Objekte als
+    assoziative Arrays.
+  example: "`['name' => 'Ada', 'rolle' => 'admin']` wird mit `json_encode` zu `{\"name\":\"Ada\",\"rolle\":\"admin\"}`."
+  category: datenformate
+  aliases: [assoziative Arrays, assoziativen Array]
+  related: [array, objekt, schluessel-wert-paar]
+  lesson: datenformate/das-datenmodell
+
+- slug: escaping
+  term: Escaping
+  short: Das Kennzeichnen von Sonderzeichen, damit ein Parser sie als normalen Text liest.
+  explanation: >
+    Manche Zeichen haben in einem Format eine besondere Bedeutung, etwa das Anführungszeichen in JSON oder `&`
+    in XML. Um sie trotzdem als Inhalt zu verwenden, schreibt man sie in einer Ersatzform – in JSON mit einem
+    vorangestellten Backslash, in XML als Entität.
+  example: "In JSON wird `Sie sagte \"Hallo\"` zu `\"Sie sagte \\\"Hallo\\\"\"`, in XML wird `&` zu `&amp;`."
+  category: datenformate
+  aliases: [escapen, Escape-Sequenz, Escape-Sequenzen, escaped]
+  related: [json, string]
+  lesson: datenformate/json-syntax
+
+- slug: pretty-print
+  term: Pretty-Print
+  short: Daten mit Zeilenumbrüchen und Einrückung ausgeben, damit Menschen sie gut lesen können.
+  explanation: >
+    Für Parser ist es egal, ob JSON in einer Zeile steht oder schön eingerückt ist. Pretty-Printing fügt
+    Leerzeichen und Umbrüche nur für menschliche Leser ein. Das Gegenteil ist die kompakte Ausgabe, die
+    Platz spart.
+  example: "`jq . datei.json`, `JSON.stringify(daten, null, 2)` oder `JSON_PRETTY_PRINT` in PHP."
+  category: datenformate
+  aliases: [pretty-printed, Pretty Print, formatierte Ausgabe]
+  related: [json, jq]
+  lesson: datenformate/json-syntax
+
+- slug: trailing-comma
+  term: Trailing Comma
+  short: Ein Komma nach dem letzten Element einer Liste oder eines Objekts.
+  explanation: >
+    In JavaScript, PHP-Arrays und vielen anderen Sprachen ist ein Komma nach dem letzten Element erlaubt und
+    sogar üblich. In JSON ist es verboten und macht die ganze Datei ungültig – einer der häufigsten Fehler beim
+    Bearbeiten von Hand.
+  example: "`[1, 2, 3,]` ist in JSON ungültig, `[1, 2, 3]` ist richtig."
+  category: datenformate
+  aliases: [Komma am Ende, trailing commas, abschließendes Komma]
+  related: [json, syntax]
+  lesson: datenformate/json-syntax
+
+- slug: json-schema
+  term: JSON Schema
+  short: Eine Beschreibung der erwarteten Struktur von JSON-Daten, selbst in JSON geschrieben.
+  explanation: >
+    Ein JSON Schema legt fest, welche Felder ein Objekt haben muss, welche Typen erlaubt sind und welche
+    Grenzen gelten. Bibliotheken prüfen Daten dagegen, und Editoren nutzen Schemas für Autovervollständigung
+    in Dateien wie `package.json`.
+  example: "`{\"type\": \"object\", \"required\": [\"email\"]}` verlangt ein Objekt mit dem Feld email."
+  category: datenformate
+  aliases: [JSON-Schema, Schema]
+  related: [json, parser]
+  lesson: datenformate/json-in-js-und-php
+
+- slug: yaml-mapping
+  term: Mapping (YAML)
+  short: Die YAML-Bezeichnung für eine Sammlung von Schlüssel-Wert-Paaren – das Gegenstück zum JSON-Objekt.
+  explanation: >
+    Ein Mapping schreibst du in YAML als Zeilen der Form `schluessel: wert`. Gleichrangige Schlüssel stehen
+    exakt untereinander, tiefer eingerückte Zeilen gehören zum darüberstehenden Schlüssel.
+  example: "`db:` und darunter eingerückt `host: db.example.com` und `port: 5432`."
+  category: datenformate
+  aliases: [Mapping, Mappings, YAML-Mapping]
+  related: [yaml, schluessel-wert-paar, yaml-sequenz]
+  lesson: datenformate/yaml-grundlagen
+
+- slug: yaml-sequenz
+  term: Sequenz (YAML)
+  short: Die YAML-Bezeichnung für eine geordnete Liste – das Gegenstück zum JSON-Array.
+  explanation: >
+    Jeder Eintrag einer Sequenz beginnt mit einem Bindestrich und einem Leerzeichen auf derselben Einrückung.
+    Einträge können selbst Mappings sein; das ist in Konfigurationsdateien die häufigste Form.
+  example: "`tags:` und darunter `- backend` und `- ops` ergibt `[\"backend\", \"ops\"]`."
+  category: datenformate
+  aliases: [Sequenz, Sequenzen, Sequence]
+  related: [yaml, array, yaml-mapping]
+  lesson: datenformate/yaml-grundlagen
+
+- slug: block-scalar
+  term: Block-Scalar
+  short: Ein mehrzeiliger String in YAML, eingeleitet mit `|` (Zeilen behalten) oder `>` (Zeilen falten).
+  explanation: >
+    Nach `|` bleiben alle Zeilenumbrüche erhalten – ideal für Shell-Befehle. Nach `>` werden einzelne
+    Umbrüche zu Leerzeichen – ideal für lange Fließtexte. Ein angehängtes `-` entfernt den letzten
+    Zeilenumbruch, ein `+` behält alle Leerzeilen am Ende.
+  example: "`run: |` und darunter `npm ci` und `npm test` ergibt den String `\"npm ci\\nnpm test\\n\"`."
+  category: datenformate
+  aliases: [Block-Scalars, Block Scalar, mehrzeiliger String, Literal-Stil, Folded-Stil]
+  related: [yaml, string]
+  lesson: datenformate/yaml-fallstricke
+
+- slug: anker-und-alias
+  term: Anker und Alias
+  short: YAML-Mechanismus, um einen Wert einmal zu definieren (`&name`) und mehrfach zu verwenden (`*name`).
+  explanation: >
+    Ein Anker markiert einen Knoten, ein Alias verweist später auf genau diese Daten. Mit dem Merge-Schlüssel
+    `<<: *name` übernimmst du ein Mapping und ergänzt es. So vermeidet man Wiederholungen in langen
+    Konfigurationen wie Docker-Compose-Dateien.
+  example: "`x-env: &env {TZ: Europe/Berlin}` und später `environment: *env`."
+  category: datenformate
+  aliases: [Anker, Alias, Aliase, Anchor, Merge-Schlüssel]
+  related: [yaml, docker-compose]
+  lesson: datenformate/yaml-fallstricke
+
+- slug: norway-problem
+  term: Norway-Problem
+  short: Die YAML-Falle, dass der Ländercode `NO` ohne Anführungszeichen als Boolean `false` gelesen wird.
+  explanation: >
+    Parser nach YAML 1.1 deuten Wörter wie `yes`, `no`, `on` und `off` als Boolean. Aus der Länderliste
+    `[DE, NO]` wird so `["DE", false]`. YAML 1.2 hat das behoben, viele Werkzeuge nutzen aber noch 1.1 –
+    deshalb setzt man solche Werte in Anführungszeichen.
+  example: "`- \"NO\"` statt `- NO` in einer Liste von Ländercodes."
+  category: datenformate
+  aliases: [Norwegen-Problem, Norway problem]
+  related: [yaml, boolean]
+  lesson: datenformate/yaml-fallstricke
+
+- slug: kubernetes
+  term: Kubernetes
+  short: Eine Plattform, die Container auf vielen Servern startet, verteilt und überwacht.
+  explanation: >
+    In Kubernetes beschreibst du den gewünschten Zustand – etwa „drei Instanzen dieses Containers“ – in
+    YAML-Manifesten. Jedes Manifest hat `apiVersion`, `kind`, `metadata` und `spec`. Kubernetes sorgt dann
+    dafür, dass dieser Zustand erreicht und gehalten wird.
+  example: "`kind: Deployment` mit `replicas: 3` startet drei gleiche Pods."
+  category: datenformate
+  aliases: [K8s, k8s, Manifest, Manifeste]
+  related: [container, yaml, docker-compose]
+  lesson: datenformate/yaml-in-der-praxis
+
+- slug: bom
+  term: BOM (Byte Order Mark)
+  short: Unsichtbare Bytes am Anfang einer Textdatei, die die Kodierung kennzeichnen.
+  explanation: >
+    Manche Programme, etwa Tabellenkalkulationen unter Windows, schreiben vor UTF-8-Text die drei Bytes
+    `EF BB BF`. Andere Programme lesen sie als Teil der ersten Spalte, sodass der Spaltenname plötzlich nicht
+    mehr passt. Beim Einlesen entfernt man den BOM deshalb.
+  example: "Die erste Spalte heißt scheinbar `id`, der Vergleich `$spalte === 'id'` schlägt trotzdem fehl."
+  category: datenformate
+  aliases: [Byte Order Mark, BOMs]
+  related: [zeichenkodierung, csv]
+  lesson: datenformate/csv
+
+- slug: trennzeichen
+  term: Trennzeichen
+  short: Das Zeichen, das in einer CSV-Zeile die Spalten voneinander trennt.
+  explanation: >
+    Laut Standard ist es das Komma, deutsche Tabellenkalkulationen nutzen aber meist das Semikolon, weil das
+    Komma das Dezimalzeichen ist. TSV-Dateien nutzen den Tabulator. Enthält ein Wert das Trennzeichen, muss
+    er in Anführungszeichen stehen.
+  example: "`1;\"Müller; Anna\";Musterstadt` nutzt das Semikolon als Trennzeichen."
+  category: datenformate
+  aliases: [Delimiter, Separator, Feldtrenner, TSV]
+  related: [csv]
+  lesson: datenformate/csv
+
+- slug: xml
+  term: XML
+  short: Ein Auszeichnungsformat, das Daten als Baum aus Elementen mit Start- und End-Tags beschreibt.
+  explanation: >
+    XML (Extensible Markup Language) war vor JSON das wichtigste Austauschformat. Ein wohlgeformtes Dokument
+    hat genau ein Wurzelelement, schließt jedes Element und escaped `<` und `&`. Heute steckt XML unter
+    anderem in SVG-Grafiken, Office-Dateien und `phpunit.xml`.
+  example: "`<buch sprache=\"de\"><titel>Daten verstehen</titel></buch>`"
+  category: datenformate
+  aliases: [XML-Datei, Extensible Markup Language]
+  related: [json, datenformat]
+  lesson: datenformate/xml-toml-env-ini
+
+- slug: ini-datei
+  term: INI-Datei
+  short: Eine einfache Konfigurationsdatei mit Abschnitten in eckigen Klammern und Schlüssel-Wert-Paaren.
+  explanation: >
+    INI-Dateien gliedern Einstellungen in Abschnitte wie `[PHP]`; Kommentare beginnen mit einem Semikolon.
+    Das bekannteste Beispiel ist die `php.ini`. PHP liest eigene INI-Dateien mit `parse_ini_file`.
+  example: "`[mail]` und darunter `absender = \"shop@example.com\"`."
+  category: datenformate
+  aliases: [INI, INI-Format, php.ini]
+  related: [toml, env-datei]
+  lesson: datenformate/xml-toml-env-ini
+
+- slug: frontmatter
+  term: Frontmatter
+  short: Ein Datenblock (meist YAML) am Anfang einer Markdown-Datei, eingerahmt von `---`.
+  explanation: >
+    Im Frontmatter stehen Metadaten wie Titel, Datum oder Tags, darunter folgt der eigentliche Markdown-Text.
+    Static-Site-Generatoren, Dokumentations-Werkzeuge und Lernplattformen lesen so Daten und Text aus einer
+    einzigen Datei.
+  example: "`---`, `title: Meine Seite`, `---` und danach der Markdown-Text."
+  category: datenformate
+  aliases: [Front Matter, Front-Matter]
+  related: [markdown, yaml]
+  lesson: datenformate/xml-toml-env-ini
+
+- slug: json-lines
+  term: JSON Lines
+  short: Ein Format mit genau einem vollständigen JSON-Wert pro Zeile, ideal für Logs und Datenströme.
+  explanation: >
+    Statt eines großen Arrays steht jeder Datensatz kompakt in einer eigenen Zeile. Neue Einträge hängt man
+    einfach an, und Werkzeuge können riesige Dateien Zeile für Zeile verarbeiten. Die Dateiendung ist meist
+    `.jsonl`; eine fast identische Variante heißt NDJSON.
+  example: "`jq -c '.[]' events.json > events.jsonl` wandelt ein Array in JSON Lines um."
+  category: datenformate
+  aliases: [JSONL, NDJSON, .jsonl]
+  related: [json, jq]
+  lesson: datenformate/das-richtige-format
+
+- slug: round-trip
+  term: Round-Trip
+  short: Daten in ein anderes Format umwandeln und wieder zurück – im Idealfall ohne Verlust.
+  explanation: >
+    Ein Round-Trip zeigt, ob eine Umwandlung verlustfrei ist. Oft geht unterwegs etwas verloren, etwa Kommentare
+    und Anker beim Weg YAML → JSON → YAML oder die Datentypen beim Weg über CSV.
+  example: "CSV → JSON → CSV liefert dieselbe Tabelle, YAML → JSON → YAML verliert die Kommentare."
+  category: datenformate
+  aliases: [Roundtrip, Hin- und Rückweg]
+  related: [serialisierung, datenformat]
+  lesson: datenformate/das-richtige-format

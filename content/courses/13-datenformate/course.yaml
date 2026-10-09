@@ -1,0 +1,31 @@
+title: JSON, YAML & Datenformate
+subtitle: Daten lesen, schreiben, prüfen und umwandeln – von JSON über YAML bis CSV
+description: >
+  Fast jede Datei, die du als Entwickler:in anfasst, folgt einem Datenformat: die `package.json` deines
+  Projekts, die Antwort einer API, die `compose.yaml` für Docker, die GitHub-Actions-Pipeline oder der
+  CSV-Export aus der Buchhaltung. Wer diese Formate sicher beherrscht, findet Fehler in Sekunden statt in
+  Stunden.
+
+
+  In diesem Kurs lernst du, **warum** es Datenformate gibt, wie JSON und YAML im Detail funktionieren,
+  welche Fallen sie haben (Komma am Ende, Tabs, das „Norway-Problem“) und wie du Daten mit `jq`, JavaScript
+  und PHP verarbeitest. Am Ende wandelst du einen Datensatz mit eigenen Skripten zwischen CSV, JSON und YAML
+  um und prüfst das Ergebnis automatisch.
+category: grundlagen
+level: einsteiger
+icon: braces
+color: "#eab308"
+estimated_hours: 5
+workspace_dir: datenformate
+prerequisites: [terminal-shell]
+learning_goals:
+  - Du erklärst, was Serialisierung ist und warum Programme sich auf gemeinsame Datenformate einigen.
+  - Du schreibst gültiges JSON, erkennst typische Syntaxfehler sofort und verarbeitest JSON in JavaScript und PHP.
+  - Du filterst, zählst und formst JSON-Daten im Terminal mit jq.
+  - Du liest und schreibst YAML sicher – inklusive mehrzeiliger Strings, Anker und richtigem Quoting.
+  - Du findest dich in YAML-Dateien für Docker Compose, GitHub Actions und Kubernetes zurecht.
+  - Du kennst CSV, XML, TOML, .env und INI mit ihren Stärken und Fallstricken und wählst für jede Aufgabe das passende Format.
+references:
+  - Konfigurationsdateien in Laravel- und Node-Projekten (.env, JSON-, YAML- und XML-Konfiguration nebeneinander)
+  - CSV-Importe und -Exporte aus Tabellenkalkulationen mit Semikolon und Byte Order Mark
+  - CI-Pipelines und Container-Konfiguration in YAML

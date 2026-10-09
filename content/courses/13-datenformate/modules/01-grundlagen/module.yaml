@@ -1,0 +1,78 @@
+title: Warum Datenformate?
+description: Was Serialisierung bedeutet, warum Text- und Binärformate existieren und aus welchen Bausteinen fast alle Datenformate bestehen.
+exercise:
+  id: modul-uebung-flatten
+  type: code
+  language: js
+  title: Verschachtelte Daten flach klopfen
+  description: |
+    Viele Werkzeuge können nur mit **flachen** Daten umgehen – eine Tabellenkalkulation zum Beispiel kennt
+    nur Spalten, keine verschachtelten Objekte. Schreibe deshalb die Funktion `flatten(value)`, die einen
+    beliebig tief verschachtelten Wert in ein flaches Objekt verwandelt:
+
+    - Schlüssel von Objekten werden mit einem Punkt verbunden: `{ user: { name: "Ada" } }` → `{ "user.name": "Ada" }`.
+    - Array-Elemente bekommen ihren Index als Schlüsselteil: `{ tags: ["a", "b"] }` → `{ "tags.0": "a", "tags.1": "b" }`.
+    - Skalare (String, Number, Boolean, `null`) sind Blätter und landen direkt im Ergebnis.
+    - Ein leeres Objekt oder leeres Array als Wert bleibt erhalten: `{ meta: {} }` → `{ meta: {} }`.
+    - Ist der übergebene Wert selbst schon ein Skalar, gibt `flatten` das Objekt `{ "": wert }` zurück.
+
+    Tipp: Eine **rekursive** Hilfsfunktion mit einem Präfix-Parameter macht das Ganze übersichtlich.
+  starter: |
+    function flatten(value) {
+      const result = {}
+
+      function walk(current, prefix) {
+        // Skalar? Dann ins Ergebnis schreiben.
+        // Array oder Objekt? Dann für jedes Kind walk() mit erweitertem Präfix aufrufen.
+      }
+
+      walk(value, '')
+      return result
+    }
+  tests:
+    - name: Verschachtelte Objekte werden mit Punkten verbunden
+      code: |
+        assertDeepEqual(flatten({ user: { name: 'Ada', address: { city: 'Musterstadt' } } }), { 'user.name': 'Ada', 'user.address.city': 'Musterstadt' })
+    - name: Array-Elemente bekommen ihren Index
+      code: |
+        assertDeepEqual(flatten({ tags: ['php', 'sql'] }), { 'tags.0': 'php', 'tags.1': 'sql' })
+    - name: Alle Skalar-Typen bleiben unverändert erhalten
+      code: |
+        assertDeepEqual(flatten({ a: 1, b: true, c: null, d: 'x' }), { a: 1, b: true, c: null, d: 'x' })
+    - name: Objekte in Arrays werden ebenfalls aufgelöst
+      code: |
+        assertDeepEqual(flatten({ items: [{ id: 1 }, { id: 2 }] }), { 'items.0.id': 1, 'items.1.id': 2 })
+    - name: Leere Objekte und Arrays bleiben erhalten
+      code: |
+        assertDeepEqual(flatten({ meta: {}, list: [] }), { meta: {}, list: [] })
+    - name: Ein Skalar allein ergibt einen leeren Schlüssel
+      code: |
+        assertDeepEqual(flatten(42), { '': 42 })
+  hints:
+    - "Prüfe zuerst mit `value === null || typeof value !== 'object'`, ob ein Skalar vorliegt."
+    - "`Object.entries(obj)` liefert für Objekte und Arrays Paare aus Schlüssel und Wert – bei Arrays ist der Schlüssel der Index als String."
+    - "Der neue Präfix ist `prefix === '' ? key : prefix + '.' + key`. Für leere Objekte/Arrays prüfst du `Object.keys(current).length === 0` und schreibst den Wert direkt ins Ergebnis."
+  solution: |
+    ```js
+    function flatten(value) {
+      const result = {}
+
+      function walk(current, prefix) {
+        if (current === null || typeof current !== 'object') {
+          result[prefix] = current
+          return
+        }
+        const entries = Object.entries(current)
+        if (entries.length === 0) {
+          result[prefix] = current
+          return
+        }
+        for (const [key, child] of entries) {
+          walk(child, prefix === '' ? key : prefix + '.' + key)
+        }
+      }
+
+      walk(value, '')
+      return result
+    }
+    ```

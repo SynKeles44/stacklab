@@ -1,0 +1,112 @@
+title: Weitere Formate und die richtige Wahl
+description: CSV mit all seinen Tücken, XML, TOML, .env und INI im Überblick – und wie du für jede Aufgabe das passende Format wählst und zwischen Formaten umwandelst.
+exercise:
+  id: modul-uebung-konfiguration
+  type: terminal
+  title: Konfiguration aus .env und INI zusammenführen
+  description: |
+    Im Ordner `config-uebung` liegen zwei Konfigurationsdateien einer Anwendung: `.env` mit
+    Umgebungsvariablen und `settings.ini` mit Shop-Einstellungen. Ein neues Werkzeug versteht nur JSON.
+    Schreibe deshalb ein PHP-Skript `merge.php`, das beide Dateien einliest und als **ein** JSON-Objekt
+    ausgibt:
+
+    ```json
+    {
+      "env": { "APP_NAME": "Mein Shop", "APP_DEBUG": "true", "DB_PORT": "5432", "…": "…" },
+      "ini": { "shop": { "waehrung": "EUR", "mwst": 19 }, "mail": { "absender": "shop@example.com" } }
+    }
+    ```
+
+    Regeln:
+
+    1. `env` enthält **alle** Variablen aus `.env` als Strings. Kommentarzeilen (`#`) und Leerzeilen werden
+       übersprungen, umschließende Anführungszeichen entfernt. `LEER=` ergibt den leeren String `""`.
+    2. `ini` ist das Ergebnis von `parse_ini_file` **mit** Abschnitten und typisierten Werten
+       (`INI_SCANNER_TYPED`), sodass `mwst` die Zahl 19 ist.
+    3. Die Ausgabe ist eingerückt (`JSON_PRETTY_PRINT`) und lässt Umlaute und Schrägstriche unverändert.
+    4. Schreibe das Ergebnis mit `php merge.php > config.json` in die Datei `config.json`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: config-uebung
+  setup: |
+    cat > .env <<'ENV'
+    # Lokale Einstellungen – nie committen!
+    APP_NAME="Mein Shop"
+    APP_DEBUG=true
+
+    DB_HOST=db.example.com
+    DB_PORT=5432
+    APP_URL='https://shop.example.com/'
+    LEER=
+    ENV
+    cat > settings.ini <<'INI'
+    ; Shop-Einstellungen
+    [shop]
+    waehrung = EUR
+    mwst = 19
+    beschreibung = "Tassen & Grüße"
+
+    [mail]
+    absender = "shop@example.com"
+    INI
+  checks:
+    - type: file_exists
+      path: merge.php
+      message: Lege das Skript merge.php an.
+    - type: command
+      run: php merge.php | jq -e . > /dev/null && echo ok
+      stdout_equals: ok
+      message: php merge.php soll gültiges JSON ausgeben. Prüfe mit `php merge.php | jq .`.
+    - type: command
+      run: php merge.php | jq -c '.env'
+      stdout_equals: '{"APP_NAME":"Mein Shop","APP_DEBUG":"true","DB_HOST":"db.example.com","DB_PORT":"5432","APP_URL":"https://shop.example.com/","LEER":""}'
+      message: env soll alle sechs Variablen in ihrer Reihenfolge als Strings enthalten – ohne umschließende Anführungszeichen, Kommentare und Leerzeilen.
+    - type: command
+      run: php merge.php | jq -c '.ini'
+      stdout_equals: '{"shop":{"waehrung":"EUR","mwst":19,"beschreibung":"Tassen & Grüße"},"mail":{"absender":"shop@example.com"}}'
+      message: ini soll die Abschnitte shop und mail enthalten, mwst als Zahl 19. Nutze parse_ini_file('settings.ini', true, INI_SCANNER_TYPED).
+    - type: command
+      run: php merge.php | grep -c 'Grüße\|example.com/' 
+      stdout_matches: "^\\s*2\\s*$"
+      message: Umlaute und Schrägstriche sollen unverändert in der Ausgabe stehen – nutze JSON_UNESCAPED_UNICODE und JSON_UNESCAPED_SLASHES.
+    - type: command
+      run: php merge.php | wc -l
+      stdout_matches: "^\\s*([5-9]|[1-9][0-9])\\s*$"
+      message: Die Ausgabe soll eingerückt über mehrere Zeilen gehen – nutze JSON_PRETTY_PRINT.
+    - type: command
+      run: php merge.php | diff -q - config.json > /dev/null && echo gleich
+      stdout_equals: gleich
+      message: config.json fehlt oder ist veraltet. Führe zum Schluss `php merge.php > config.json` aus.
+  hints:
+    - "Lies `.env` mit `file('.env', FILE_IGNORE_NEW_LINES)` Zeile für Zeile. Überspringe Zeilen, die nach `trim()` leer sind oder mit `#` beginnen, und teile den Rest mit `explode('=', $zeile, 2)`."
+    - "Umschließende Anführungszeichen entfernst du, wenn erstes und letztes Zeichen gleich sind und `\"` oder `'` lauten: `substr($wert, 1, -1)`."
+    - "Zum Schluss: `echo json_encode(['env' => $env, 'ini' => $ini], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), PHP_EOL;`"
+  solution: |
+    ```php
+    <?php
+
+    $env = [];
+    foreach (file('.env', FILE_IGNORE_NEW_LINES) as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+        [$key, $value] = explode('=', $line, 2);
+        $value = trim($value);
+        if (strlen($value) >= 2 && $value[0] === $value[-1] && ($value[0] === '"' || $value[0] === "'")) {
+            $value = substr($value, 1, -1);
+        }
+        $env[trim($key)] = $value;
+    }
+
+    $ini = parse_ini_file('settings.ini', true, INI_SCANNER_TYPED);
+
+    echo json_encode(
+        ['env' => $env, 'ini' => $ini],
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+    ), PHP_EOL;
+    ```
+
+    ```bash
+    php merge.php > config.json
+    ```

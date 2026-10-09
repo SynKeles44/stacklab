@@ -1,0 +1,449 @@
+title: Die Mitglieder-Pipeline
+description: |
+  Ein Sportverein pflegt seine Mitgliederliste in einer Tabellenkalkulation und exportiert sie als CSV. Die neue
+  Vereins-Website braucht die Daten als JSON, die Konfiguration des Newsletter-Werkzeugs erwartet YAML, und der
+  Vorstand will eine kleine Auswertung. Du baust dafür eine **Datenpipeline** aus kleinen Skripten:
+
+  CSV → JSON (PHP) → Prüfung (Node.js) → YAML (Node.js) → zurück zu JSON (Round-Trip) → Bericht (jq)
+
+  Am Ende startest du alles mit einem einzigen Befehl: `npm run build`.
+
+  Alles passiert im Ordner `projekt` in deinem Datenformate-Workspace. Öffne das Übungs-Terminal und lege
+  den Ordner mit `mkdir -p projekt && cd projekt` an. Nach jedem Schritt prüft Stacklab den echten Zustand
+  deiner Dateien. Die Schritte bauen aufeinander auf – lösche nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Ein Ordner `projekt` mit der Mitgliederliste als CSV, JSON und YAML, einem Prüfskript, einem
+  jq-Bericht und einem npm-Skript `build`, das die ganze Pipeline mit einem Befehl neu erzeugt.
+workdir: projekt
+steps:
+  - id: projekt-anlegen
+    title: Projekt und Rohdaten anlegen
+    description: |
+      Zuerst brauchst du die Ordnerstruktur, das npm-Paket `yaml` und den CSV-Export des Vereins.
+
+      1. Lege den Projektordner an und wechsle hinein: `mkdir -p projekt && cd projekt`.
+      2. Initialisiere ein npm-Projekt und installiere `yaml`: `npm init -y` und `npm install yaml`.
+      3. Lege die Ordner `data` und `scripts` an.
+      4. Speichere den Export als `data/mitglieder.csv` – genau mit diesem Inhalt:
+
+      ```bash
+      cat > data/mitglieder.csv <<'CSV'
+      id;name;email;stadt;aktiv;interessen
+      1;Ada Lovelace;ada@example.com;Musterstadt;ja;Schach|Mathematik
+      2;"Turing, Alan";alan@example.com;Beispielhausen;nein;Laufen
+      3;Grace Hopper;grace@example.com;Musterstadt;ja;Segeln|Programmieren|Lesen
+      4;Linus Beispiel;linus@example.com;Beispielhausen;ja;
+      CSV
+      ```
+
+      Schau dir die Datei genau an: Semikolon als Trennzeichen, ein Name mit Komma in Anführungszeichen,
+      mehrere Interessen mit `|` getrennt und bei Linus gar keine.
+    checklist:
+      - npm-Projekt mit installiertem Paket yaml
+      - Ordner data und scripts angelegt
+      - data/mitglieder.csv mit Kopfzeile und vier Mitgliedern
+    hints:
+      - "`mkdir -p data scripts` legt beide Ordner auf einmal an."
+      - "Kopiere den `cat`-Block komplett ins Terminal – inklusive der letzten Zeile `CSV`."
+    checks:
+      - type: file_exists
+        path: package.json
+        message: Es gibt noch keine package.json. Führe `npm init -y` aus.
+      - type: dir_exists
+        path: node_modules/yaml
+        message: Das Paket yaml ist noch nicht installiert. Führe `npm install yaml` aus.
+      - type: dir_exists
+        path: scripts
+        message: Lege den Ordner scripts an.
+      - type: command
+        run: head -n 1 data/mitglieder.csv
+        stdout_equals: id;name;email;stadt;aktiv;interessen
+        message: data/mitglieder.csv fehlt oder die Kopfzeile stimmt nicht.
+      - type: file_contains
+        path: data/mitglieder.csv
+        pattern: '^2;"Turing, Alan";alan@example\.com;Beispielhausen;nein;Laufen$'
+        message: Die Zeile für Alan Turing fehlt oder ist verändert – der Name muss in Anführungszeichen stehen.
+      - type: command
+        run: grep -c '@example.com' data/mitglieder.csv
+        stdout_matches: "^\\s*([4-9])\\s*$"
+        message: data/mitglieder.csv soll mindestens die vier Mitglieder aus der Vorlage enthalten.
+    solution: |
+      ```bash
+      mkdir -p projekt && cd projekt
+      npm init -y
+      npm install yaml
+      mkdir -p data scripts
+      cat > data/mitglieder.csv <<'CSV'
+      id;name;email;stadt;aktiv;interessen
+      1;Ada Lovelace;ada@example.com;Musterstadt;ja;Schach|Mathematik
+      2;"Turing, Alan";alan@example.com;Beispielhausen;nein;Laufen
+      3;Grace Hopper;grace@example.com;Musterstadt;ja;Segeln|Programmieren|Lesen
+      4;Linus Beispiel;linus@example.com;Beispielhausen;ja;
+      CSV
+      ```
+
+  - id: csv-zu-json
+    title: CSV mit PHP in JSON umwandeln
+    description: |
+      CSV kennt keine Typen. Dein erstes Skript macht daraus sauber typisiertes JSON. Schreibe
+      `scripts/csv-to-json.php`, das `data/mitglieder.csv` liest und `data/mitglieder.json` schreibt:
+
+      - ein Array mit einem Objekt pro Mitglied, Schlüssel in dieser Reihenfolge:
+        `id`, `name`, `email`, `stadt`, `aktiv`, `interessen`,
+      - `id` als **Zahl**, `aktiv` als **Boolean** (`ja` → `true`, sonst `false`),
+      - `interessen` als **Liste** von Strings (am `|` getrennt, leeres Feld → leere Liste `[]`),
+      - eingerückt (`JSON_PRETTY_PRINT`) und mit lesbaren Umlauten.
+
+      Lies die CSV mit `str_getcsv(…, ';', '"', '')` – nicht mit `explode`! Starte das Skript mit
+      `php scripts/csv-to-json.php` aus dem Projektordner.
+    checklist:
+      - scripts/csv-to-json.php liest die CSV mit str_getcsv
+      - data/mitglieder.json mit Zahlen, Booleans und Listen statt nur Strings
+    hints:
+      - "`file('data/mitglieder.csv', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)` liefert die Zeilen, `array_shift` die Kopfzeile."
+      - "`array_combine($header, str_getcsv($line, ';', '\"', ''))` macht aus einer Zeile ein assoziatives Array."
+      - "Für die Interessen: `$row['interessen'] === '' ? [] : explode('|', $row['interessen'])`."
+    checks:
+      - type: file_exists
+        path: scripts/csv-to-json.php
+        message: Lege das Skript scripts/csv-to-json.php an.
+      - type: command
+        run: php scripts/csv-to-json.php > /dev/null && jq -e . data/mitglieder.json > /dev/null && echo ok
+        stdout_equals: ok
+        message: php scripts/csv-to-json.php soll ohne Fehler laufen und gültiges JSON in data/mitglieder.json schreiben.
+      - type: command
+        run: jq -c '.[1]' data/mitglieder.json
+        stdout_equals: '{"id":2,"name":"Turing, Alan","email":"alan@example.com","stadt":"Beispielhausen","aktiv":false,"interessen":["Laufen"]}'
+        message: Der zweite Datensatz stimmt noch nicht. Prüfe Reihenfolge der Schlüssel, id als Zahl, aktiv als Boolean und interessen als Liste.
+      - type: command
+        run: jq -c '[.[2].interessen, .[3].interessen, .[0].aktiv]' data/mitglieder.json
+        stdout_equals: '[["Segeln","Programmieren","Lesen"],[],true]'
+        message: Mehrere Interessen sollen eine Liste ergeben, ein leeres Feld eine leere Liste und ja den Boolean true.
+      - type: command
+        run: wc -l < data/mitglieder.json
+        stdout_matches: "^\\s*([2-9][0-9]|[1-9][0-9]{2,})\\s*$"
+        message: data/mitglieder.json soll eingerückt sein – nutze JSON_PRETTY_PRINT.
+    solution: |
+      ```php
+      <?php
+      // scripts/csv-to-json.php
+
+      $lines = file('data/mitglieder.csv', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+      $header = str_getcsv(array_shift($lines), ';', '"', '');
+
+      $members = [];
+      foreach ($lines as $line) {
+          $row = array_combine($header, str_getcsv($line, ';', '"', ''));
+          $members[] = [
+              'id' => (int) $row['id'],
+              'name' => $row['name'],
+              'email' => $row['email'],
+              'stadt' => $row['stadt'],
+              'aktiv' => $row['aktiv'] === 'ja',
+              'interessen' => $row['interessen'] === '' ? [] : explode('|', $row['interessen']),
+          ];
+      }
+
+      file_put_contents(
+          'data/mitglieder.json',
+          json_encode($members, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . "\n"
+      );
+      ```
+
+  - id: json-pruefen
+    title: Die Daten mit einem Prüfskript absichern
+    description: |
+      Bevor die Daten weiterwandern, soll ein Skript sie prüfen – so fällt ein kaputter Export sofort auf.
+      Schreibe `scripts/validate.js`:
+
+      1. Es liest die JSON-Datei, deren Pfad als erstes Argument übergeben wird
+         (`node scripts/validate.js data/mitglieder.json`), ohne Argument `data/mitglieder.json`.
+      2. Es prüft jeden Datensatz: `id` ist eine positive Ganzzahl und **eindeutig**, `name` ist ein nicht
+         leerer String, `email` enthält ein `@`, `aktiv` ist ein Boolean und `interessen` eine Liste von Strings.
+      3. Ist alles in Ordnung, gibt es `OK: <Anzahl> Datensätze` aus und endet mit Exit-Code 0.
+      4. Sonst gibt es jeden Fehler in einer Zeile aus und endet mit Exit-Code 1 – auch bei kaputtem JSON.
+    checklist:
+      - validate.js liest den Pfad aus process.argv
+      - Prüft Typen, Pflichtfelder und doppelte IDs
+      - Exit-Code 0 bei gültigen, 1 bei ungültigen Daten
+    hints:
+      - "`process.argv[2] ?? 'data/mitglieder.json'` liefert den Pfad. `JSON.parse` packst du in try/catch."
+      - "`Number.isInteger(m.id) && m.id > 0`, `typeof m.aktiv === 'boolean'`, `Array.isArray(m.interessen) && m.interessen.every(x => typeof x === 'string')`."
+      - "Doppelte IDs findest du mit einem `Set`. Am Ende `process.exit(1)`, wenn die Fehlerliste nicht leer ist."
+    checks:
+      - type: file_exists
+        path: scripts/validate.js
+        message: Lege das Skript scripts/validate.js an.
+      - type: command
+        run: node scripts/validate.js data/mitglieder.json
+        stdout_matches: "^OK: \\d+ Datensätze"
+        message: 'Für die gültige data/mitglieder.json soll das Skript mit Exit-Code 0 enden und eine Zeile wie "OK: 4 Datensätze" ausgeben.'
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); echo '[{"id":1,"name":"","email":"kein-at","aktiv":"ja","interessen":[]}]' > "$d/kaputt.json"; node scripts/validate.js "$d/kaputt.json" > /dev/null 2>&1; ec=$?; rm -rf "$d"; exit $ec
+        expect_exit: 1
+        message: Ein Datensatz mit leerem Namen, E-Mail ohne @ und aktiv als String muss mit Exit-Code 1 abgelehnt werden.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); echo '[{"id":1,"name":"A","email":"a@example.com","aktiv":true,"interessen":[]},{"id":1,"name":"B","email":"b@example.com","aktiv":false,"interessen":["x"]}]' > "$d/doppelt.json"; node scripts/validate.js "$d/doppelt.json" > /dev/null 2>&1; ec=$?; rm -rf "$d"; exit $ec
+        expect_exit: 1
+        message: Zwei Datensätze mit derselben id müssen mit Exit-Code 1 abgelehnt werden.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); echo '[{"id": 1,}]' > "$d/syntax.json"; node scripts/validate.js "$d/syntax.json" > /dev/null 2>&1; ec=$?; rm -rf "$d"; exit $ec
+        expect_exit: 1
+        message: Kaputtes JSON muss mit Exit-Code 1 abgelehnt werden – fange den Fehler von JSON.parse ab.
+    solution: |
+      ```js
+      // scripts/validate.js
+      const fs = require('fs')
+
+      const file = process.argv[2] ?? 'data/mitglieder.json'
+      let data
+      try {
+        data = JSON.parse(fs.readFileSync(file, 'utf8'))
+      } catch (error) {
+        console.error(`Kein gültiges JSON: ${error.message}`)
+        process.exit(1)
+      }
+
+      const errors = []
+      if (!Array.isArray(data)) {
+        errors.push('Die Datei muss ein Array enthalten.')
+      } else {
+        const ids = new Set()
+        data.forEach((m, i) => {
+          const where = `Datensatz ${i + 1}`
+          if (!Number.isInteger(m.id) || m.id <= 0) errors.push(`${where}: id muss eine positive Ganzzahl sein`)
+          else if (ids.has(m.id)) errors.push(`${where}: id ${m.id} ist doppelt`)
+          else ids.add(m.id)
+          if (typeof m.name !== 'string' || m.name.trim() === '') errors.push(`${where}: name fehlt`)
+          if (typeof m.email !== 'string' || !m.email.includes('@')) errors.push(`${where}: email ist ungültig`)
+          if (typeof m.aktiv !== 'boolean') errors.push(`${where}: aktiv muss true oder false sein`)
+          if (!Array.isArray(m.interessen) || !m.interessen.every((x) => typeof x === 'string')) {
+            errors.push(`${where}: interessen muss eine Liste von Strings sein`)
+          }
+        })
+      }
+
+      if (errors.length > 0) {
+        errors.forEach((e) => console.error(e))
+        process.exit(1)
+      }
+      console.log(`OK: ${data.length} Datensätze`)
+      ```
+
+  - id: json-zu-yaml
+    title: JSON in YAML umwandeln
+    description: |
+      Das Newsletter-Werkzeug erwartet YAML. Schreibe `scripts/json-to-yaml.js`, das mit dem Paket `yaml`
+      aus `data/mitglieder.json` die Datei `data/mitglieder.yaml` erzeugt.
+
+      - Die **erste Zeile** ist ein Kommentar, der sagt, dass die Datei erzeugt wird, z. B.
+        `# Erzeugt aus mitglieder.json – nicht von Hand bearbeiten`.
+      - Darunter steht die Ausgabe von `YAML.stringify(daten)`.
+
+      Starte das Skript mit `node scripts/json-to-yaml.js` und sieh dir das Ergebnis mit `cat` an. Wie sieht der
+      Name „Turing, Alan“ aus, wie die leere Liste von Linus?
+    checklist:
+      - scripts/json-to-yaml.js nutzt require('yaml')
+      - data/mitglieder.yaml beginnt mit einem Kommentar
+      - Die YAML-Datei enthält dieselben Daten wie das JSON
+    hints:
+      - "`const YAML = require('yaml')` und `YAML.stringify(daten)` erzeugen YAML im Block-Stil."
+      - "`fs.writeFileSync('data/mitglieder.yaml', '# Erzeugt aus mitglieder.json – nicht von Hand bearbeiten\\n' + YAML.stringify(daten))`"
+    checks:
+      - type: file_exists
+        path: scripts/json-to-yaml.js
+        message: Lege das Skript scripts/json-to-yaml.js an.
+      - type: command
+        run: head -n 1 data/mitglieder.yaml
+        stdout_matches: "^#"
+        message: data/mitglieder.yaml fehlt oder beginnt nicht mit einem Kommentar (#).
+      - type: command
+        run: |
+          node -e 'const fs = require("fs"); const y = require("yaml").parse(fs.readFileSync("data/mitglieder.yaml", "utf8")); const j = JSON.parse(fs.readFileSync("data/mitglieder.json", "utf8")); console.log(require("util").isDeepStrictEqual(y, j) ? "gleich" : "anders")'
+        stdout_equals: gleich
+        message: data/mitglieder.yaml enthält nicht dieselben Daten wie data/mitglieder.json. Erzeuge sie mit YAML.stringify neu.
+      - type: command
+        run: grep -c '^- id:' data/mitglieder.yaml
+        stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+        message: data/mitglieder.yaml soll im Block-Stil geschrieben sein – jedes Mitglied beginnt mit einer Zeile „- id …“.
+    solution: |
+      ```js
+      // scripts/json-to-yaml.js
+      const fs = require('fs')
+      const YAML = require('yaml')
+
+      const data = JSON.parse(fs.readFileSync('data/mitglieder.json', 'utf8'))
+      const header = '# Erzeugt aus mitglieder.json – nicht von Hand bearbeiten\n'
+      fs.writeFileSync('data/mitglieder.yaml', header + YAML.stringify(data))
+      ```
+
+      ```bash
+      node scripts/json-to-yaml.js
+      cat data/mitglieder.yaml
+      ```
+
+  - id: round-trip
+    title: Den Round-Trip prüfen
+    description: |
+      Gehen beim Weg JSON → YAML Daten verloren? Das prüfst du mit einem Round-Trip. Schreibe
+      `scripts/yaml-to-json.js`, das `data/mitglieder.yaml` einliest und als eingerücktes JSON
+      (zwei Leerzeichen) in `data/roundtrip.json` schreibt.
+
+      Vergleiche danach beide JSON-Dateien mit jq:
+
+      ```bash
+      jq -n --slurpfile a data/mitglieder.json --slurpfile b data/roundtrip.json '$a == $b'
+      ```
+
+      Kommt `true` heraus, ist der Round-Trip verlustfrei. Nur der Kommentar aus der YAML-Datei ist unterwegs
+      verschwunden – JSON kennt keine Kommentare.
+    checklist:
+      - scripts/yaml-to-json.js liest YAML und schreibt data/roundtrip.json
+      - jq-Vergleich liefert true
+    hints:
+      - "`YAML.parse(fs.readFileSync('data/mitglieder.yaml', 'utf8'))` liest die Datei."
+      - "`JSON.stringify(daten, null, 2)` erzeugt eingerücktes JSON."
+    checks:
+      - type: file_exists
+        path: scripts/yaml-to-json.js
+        message: Lege das Skript scripts/yaml-to-json.js an.
+      - type: command
+        run: jq -n --slurpfile a data/mitglieder.json --slurpfile b data/roundtrip.json '$a == $b'
+        stdout_equals: "true"
+        message: data/roundtrip.json fehlt oder unterscheidet sich von data/mitglieder.json. Starte node scripts/yaml-to-json.js.
+      - type: command
+        run: sed -n 2p data/roundtrip.json
+        stdout_matches: "^  \\{"
+        message: data/roundtrip.json soll mit zwei Leerzeichen eingerückt sein – JSON.stringify(daten, null, 2).
+    solution: |
+      ```js
+      // scripts/yaml-to-json.js
+      const fs = require('fs')
+      const YAML = require('yaml')
+
+      const data = YAML.parse(fs.readFileSync('data/mitglieder.yaml', 'utf8'))
+      fs.writeFileSync('data/roundtrip.json', JSON.stringify(data, null, 2) + '\n')
+      ```
+
+      ```bash
+      node scripts/yaml-to-json.js
+      jq -n --slurpfile a data/mitglieder.json --slurpfile b data/roundtrip.json '$a == $b'
+      ```
+
+  - id: bericht
+    title: Einen Bericht mit jq erzeugen
+    description: |
+      Der Vorstand möchte eine kurze Auswertung. Schreibe den jq-Filter in eine eigene Datei `scripts/bericht.jq`
+      und erzeuge damit `data/bericht.json`:
+
+      ```bash
+      jq -f scripts/bericht.jq data/mitglieder.json > data/bericht.json
+      ```
+
+      Der Bericht ist ein Objekt mit vier Feldern:
+
+      | Feld | Inhalt |
+      |---|---|
+      | `anzahl` | Anzahl aller Mitglieder |
+      | `aktiv` | Anzahl der aktiven Mitglieder |
+      | `staedte` | Objekt Stadt → Anzahl Mitglieder, z. B. `{"Beispielhausen": 2, "Musterstadt": 2}` |
+      | `interessen` | alle Interessen ohne Duplikate, alphabetisch sortiert |
+    checklist:
+      - scripts/bericht.jq enthält den Filter
+      - data/bericht.json mit anzahl, aktiv, staedte und interessen
+    hints:
+      - "Ein Objekt baust du mit `{anzahl: length, aktiv: (map(select(.aktiv)) | length), …}` – Ausdrücke mit `|` gehören in Klammern."
+      - "Städte zählen: `group_by(.stadt) | map({key: .[0].stadt, value: length}) | from_entries`."
+      - "Alle Interessen: `map(.interessen[]) | unique` – unique sortiert gleich mit."
+    checks:
+      - type: file_exists
+        path: scripts/bericht.jq
+        message: Lege den Filter in der Datei scripts/bericht.jq an.
+      - type: command
+        run: |
+          jq -n --slurpfile b data/bericht.json --slurpfile m data/mitglieder.json '$m[0] as $m | $b[0] == {anzahl: ($m | length), aktiv: ($m | map(select(.aktiv)) | length), staedte: ($m | group_by(.stadt) | map({key: .[0].stadt, value: length}) | from_entries), interessen: ($m | map(.interessen[]) | unique)}'
+        stdout_equals: "true"
+        message: data/bericht.json fehlt oder stimmt nicht – es braucht genau die Felder anzahl, aktiv, staedte und interessen mit den richtigen Werten.
+      - type: command
+        run: jq -f scripts/bericht.jq data/mitglieder.json | jq -c '[.anzahl, .aktiv]'
+        stdout_matches: "^\\[\\d+,\\d+\\]$"
+        message: scripts/bericht.jq soll sich mit jq -f ausführen lassen und anzahl und aktiv als Zahlen liefern.
+    solution: |
+      ```jq
+      # scripts/bericht.jq
+      {
+        anzahl: length,
+        aktiv: (map(select(.aktiv)) | length),
+        staedte: (group_by(.stadt) | map({key: .[0].stadt, value: length}) | from_entries),
+        interessen: (map(.interessen[]) | unique)
+      }
+      ```
+
+      ```bash
+      jq -f scripts/bericht.jq data/mitglieder.json > data/bericht.json
+      jq . data/bericht.json
+      ```
+
+  - id: pipeline
+    title: Die Pipeline mit einem Befehl starten
+    description: |
+      Jetzt verbindest du alles. Lege in `package.json` unter `scripts` den Eintrag `build` an, der die
+      Schritte in dieser Reihenfolge mit `&&` verkettet:
+
+      1. `php scripts/csv-to-json.php`
+      2. `node scripts/validate.js data/mitglieder.json`
+      3. `node scripts/json-to-yaml.js`
+      4. `node scripts/yaml-to-json.js`
+      5. `jq -f scripts/bericht.jq data/mitglieder.json > data/bericht.json`
+
+      Dann der Härtetest: Ein neues Mitglied tritt ein. Hänge diese Zeile an `data/mitglieder.csv` an und
+      starte `npm run build`:
+
+      ```text
+      5;"Hamilton, Margaret";margaret@example.com;Musterstadt;ja;Raumfahrt
+      ```
+
+      Alle erzeugten Dateien – JSON, YAML, Round-Trip und Bericht – müssen danach fünf Mitglieder kennen.
+    checklist:
+      - "Skript build in package.json"
+      - Neues Mitglied in der CSV
+      - npm run build erzeugt alle Dateien neu
+    hints:
+      - "Bearbeite package.json im Editor (`nano package.json`) – oder mit jq: `jq '.scripts.build = \"…\"' package.json > p.json && mv p.json package.json`."
+      - "Durch `&&` bricht die Kette ab, sobald ein Schritt mit Exit-Code ungleich 0 endet – genau deshalb ist das Prüfskript so wertvoll."
+      - "Die neue Zeile hängst du mit `echo '5;\"Hamilton, Margaret\";margaret@example.com;Musterstadt;ja;Raumfahrt' >> data/mitglieder.csv` an."
+    checks:
+      - type: command
+        run: jq -r '.scripts.build // ""' package.json
+        stdout_matches: "csv-to-json\\.php.*validate\\.js.*json-to-yaml\\.js.*yaml-to-json\\.js.*bericht\\.jq"
+        message: In package.json fehlt das Skript build mit allen fünf Schritten in der richtigen Reihenfolge.
+      - type: command
+        run: grep -c '^5;"Hamilton, Margaret";' data/mitglieder.csv
+        stdout_matches: "^\\s*1\\s*$"
+        message: Hänge die Zeile für Margaret Hamilton genau einmal an data/mitglieder.csv an.
+      - type: command
+        run: npm run build --silent > /dev/null 2>&1 && echo ok
+        stdout_equals: ok
+        message: npm run build schlägt fehl. Starte es selbst und lies die Fehlermeldung.
+      - type: command
+        run: |
+          node -e 'const fs = require("fs"); const y = require("yaml").parse(fs.readFileSync("data/mitglieder.yaml", "utf8")); const r = JSON.parse(fs.readFileSync("data/roundtrip.json", "utf8")); const b = JSON.parse(fs.readFileSync("data/bericht.json", "utf8")); console.log(y.length, r.length, b.anzahl, y[4].name)'
+        stdout_equals: "5 5 5 Hamilton, Margaret"
+        message: Nach npm run build sollen YAML, Round-Trip und Bericht fünf Mitglieder enthalten, das fünfte ist Hamilton, Margaret.
+    solution: |
+      ```json
+      {
+        "scripts": {
+          "build": "php scripts/csv-to-json.php && node scripts/validate.js data/mitglieder.json && node scripts/json-to-yaml.js && node scripts/yaml-to-json.js && jq -f scripts/bericht.jq data/mitglieder.json > data/bericht.json"
+        }
+      }
+      ```
+
+      ```bash
+      echo '5;"Hamilton, Margaret";margaret@example.com;Musterstadt;ja;Raumfahrt' >> data/mitglieder.csv
+      npm run build
+      jq . data/bericht.json
+      ```

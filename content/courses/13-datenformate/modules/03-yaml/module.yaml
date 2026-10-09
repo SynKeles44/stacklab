@@ -1,0 +1,93 @@
+title: YAML
+description: YAML lesen und schreiben – Einrückung, Mappings, Sequenzen, mehrzeilige Strings, Anker, die typischen Fallen und YAML in Docker Compose, GitHub Actions und Kubernetes.
+exercise:
+  id: modul-uebung-pipeline
+  type: terminal
+  title: Eine kaputte CI-Pipeline reparieren
+  description: |
+    Im Ordner `yaml-uebung` liegt `.github/workflows/ci.yml`, eine GitHub-Actions-Pipeline. Ein Kollege hat sie
+    im Editor „schnell noch angepasst“ – seitdem startet die Pipeline nicht mehr. Zum Prüfen ist das npm-Paket
+    `yaml` im Ordner installiert. Mit diesem Befehl siehst du, ob die Datei gültig ist und was ein Parser liest:
+
+    ```bash
+    node -e 'console.log(JSON.stringify(require("yaml").parse(require("fs").readFileSync(".github/workflows/ci.yml", "utf8")), null, 2))'
+    ```
+
+    Repariere die Datei, sodass:
+
+    1. sie gültiges YAML ist (Achtung: Tabs, Einrückung und Doppelpunkte),
+    2. `jobs.test.runs-on` den Wert `ubuntu-latest` hat,
+    3. der Schritt `Install & Test` mit `run: |` **zwei Zeilen** ausführt: `npm ci` und `npm test`,
+    4. der letzte Schritt `Melden` genau den Befehl `echo "Tests: ok"` ausführt,
+    5. alle vier Schritte erhalten bleiben und `node-version` weiterhin 24 ist.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – dabei wird auch das Paket `yaml` installiert.
+  workdir: yaml-uebung
+  setup: |
+    npm init -y > /dev/null
+    npm install yaml --silent --no-audit --no-fund
+    mkdir -p .github/workflows
+    printf '%s\n' \
+      'name: CI' \
+      'on:' \
+      '  push:' \
+      '    branches: [main]' \
+      'jobs:' \
+      '  test:' \
+      '    runs-on:ubuntu-latest' \
+      '    steps:' \
+      '      - uses: actions/checkout@v7' \
+      '      - uses: actions/setup-node@v7' \
+      '        with:' \
+      '	  node-version: 24' \
+      '      - name: Install & Test' \
+      '        run: npm ci' \
+      '             npm test' \
+      '      - name: Melden' \
+      '       run: echo "Tests: ok"' > .github/workflows/ci.yml
+  checks:
+    - type: command
+      run: node -e 'require("yaml").parse(require("fs").readFileSync(".github/workflows/ci.yml", "utf8"))' && echo ok
+      stdout_equals: ok
+      message: ci.yml ist noch kein gültiges YAML. Starte den Prüfbefehl aus der Beschreibung und lies die Fehlermeldung mit Zeile und Spalte.
+    - type: command
+      run: node -e 'const w = require("yaml").parse(require("fs").readFileSync(".github/workflows/ci.yml", "utf8")); console.log(w.jobs.test["runs-on"])'
+      stdout_equals: ubuntu-latest
+      message: Unter jobs.test fehlt der Schlüssel runs-on mit dem Wert ubuntu-latest. Nach dem Doppelpunkt muss ein Leerzeichen stehen.
+    - type: command
+      run: node -e 'const w = require("yaml").parse(require("fs").readFileSync(".github/workflows/ci.yml", "utf8")); const s = w.jobs.test.steps; console.log(s.length, s[1].with["node-version"], JSON.stringify(w.on.push.branches))'
+      stdout_equals: 4 24 ["main"]
+      message: Es sollen vier Schritte bleiben, setup-node mit node-version 24, und die Pipeline soll weiter bei Pushes auf main starten.
+    - type: command
+      run: node -e 'const w = require("yaml").parse(require("fs").readFileSync(".github/workflows/ci.yml", "utf8")); console.log(JSON.stringify(w.jobs.test.steps[2]))'
+      stdout_equals: '{"name":"Install & Test","run":"npm ci\nnpm test\n"}'
+      message: "Der Schritt Install & Test soll mit run: | genau zwei Zeilen enthalten – npm ci und npm test, jeweils gleich eingerückt."
+    - type: command
+      run: node -e 'const w = require("yaml").parse(require("fs").readFileSync(".github/workflows/ci.yml", "utf8")); console.log(JSON.stringify(w.jobs.test.steps[3]))'
+      stdout_equals: '{"name":"Melden","run":"echo \"Tests: ok\""}'
+      message: 'Der letzte Schritt soll name Melden und run echo "Tests: ok" haben. Der Wert enthält ": " – setze ihn deshalb in Anführungszeichen, und rücke run wie name ein.'
+  hints:
+    - "Repariere einen Fehler nach dem anderen und starte nach jeder Änderung den Prüfbefehl neu. YAML erlaubt keine Tabs zur Einrückung, und nach jedem Doppelpunkt eines Schlüssels muss ein Leerzeichen folgen."
+    - "Ein Wert mit `: ` darin muss in Anführungszeichen: `run: 'echo \"Tests: ok\"'`. Gleichrangige Schlüssel (`name`, `run`) stehen exakt untereinander."
+    - "Mehrere Befehle schreibst du als Block: `run: |` und darunter beide Befehle zwei Leerzeichen tiefer eingerückt als `run`."
+  solution: |
+    ```yaml
+    name: CI
+    on:
+      push:
+        branches: [main]
+    jobs:
+      test:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v7
+          - uses: actions/setup-node@v7
+            with:
+              node-version: 24
+          - name: Install & Test
+            run: |
+              npm ci
+              npm test
+          - name: Melden
+            run: 'echo "Tests: ok"'
+    ```

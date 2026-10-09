@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="480" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Welches Format passt?</text>
+  <g font-size="14" fill="#1e1b3a" text-anchor="middle">
+    <rect x="300" y="55" width="360" height="56" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+    <text x="480" y="80" font-weight="700">Schreiben vor allem Menschen</text>
+    <text x="480" y="100" font-weight="700">die Datei (Konfiguration)?</text>
+    <rect x="40" y="170" width="300" height="56" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+    <text x="190" y="195" font-weight="700">Tief verschachtelt, viele Listen?</text>
+    <text x="190" y="215">(Pipelines, Container, Deployments)</text>
+    <rect x="620" y="170" width="300" height="56" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+    <text x="770" y="195" font-weight="700">Flache Tabelle, alle Zeilen</text>
+    <text x="770" y="215" font-weight="700">mit gleichen Spalten?</text>
+    <rect x="20" y="300" width="150" height="50" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+    <text x="95" y="331" font-weight="700">YAML</text>
+    <rect x="190" y="300" width="170" height="50" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+    <text x="275" y="322" font-weight="700">TOML / .env / INI</text>
+    <text x="275" y="340" font-size="12">flache Einstellungen</text>
+    <rect x="560" y="300" width="150" height="50" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="635" y="331" font-weight="700">CSV</text>
+    <rect x="740" y="300" width="200" height="50" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="840" y="322" font-weight="700">JSON</text>
+    <text x="840" y="340" font-size="12">APIs, Austausch, Logs (JSONL)</text>
+  </g>
+  <g stroke="#1e1b3a" stroke-width="1.8" fill="none">
+    <line x1="420" y1="111" x2="230" y2="168" marker-end="url(#p)"/>
+    <line x1="540" y1="111" x2="730" y2="168" marker-end="url(#p)"/>
+    <line x1="140" y1="226" x2="100" y2="298" marker-end="url(#p)"/>
+    <line x1="240" y1="226" x2="270" y2="298" marker-end="url(#p)"/>
+    <line x1="720" y1="226" x2="650" y2="298" marker-end="url(#p)"/>
+    <line x1="820" y1="226" x2="840" y2="298" marker-end="url(#p)"/>
+  </g>
+  <g font-size="13" font-weight="700" fill="#1e1b3a">
+    <text x="290" y="138">ja</text>
+    <text x="650" y="138">nein, Programme</text>
+    <text x="88" y="268">ja</text>
+    <text x="262" y="268">nein</text>
+    <text x="655" y="268">ja</text>
+    <text x="838" y="268">nein</text>
+  </g>
+  <text x="480" y="400" text-anchor="middle" font-size="13" fill="#1e1b3a">Sehr große Datenmengen zwischen eigenen Diensten? Dann lohnt sich ein Binärformat wie Protocol Buffers.</text>
+  <text x="480" y="422" text-anchor="middle" font-size="13" fill="#1e1b3a">Dokumente mit Auszeichnung (SVG, Office) oder alte Schnittstellen nutzen XML.</text>
+</svg>
