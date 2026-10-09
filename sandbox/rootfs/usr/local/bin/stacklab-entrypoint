@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+
+mkdir -p /workspace/.home
+if [ ! -f /workspace/.home/.bashrc ]; then
+  cat > /workspace/.home/.bashrc <<'RC'
+# Persönliche Shell-Einstellungen (liegt im Workspace und bleibt erhalten)
+RC
+fi
+
+for i in $(seq 1 30); do
+  [ -s "${SANDBOX_SECRET_FILE:-/run/stacklab/sandbox.secret}" ] && break
+  echo "Waiting for sandbox secret…"
+  sleep 1
+done
+
+exec /usr/local/bin/stacklab-node /opt/stacklab/gateway/src/index.ts
