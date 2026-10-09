@@ -5,9 +5,7 @@ exercise:
   type: terminal
   title: Ein Steckbrief für den Kiezladen
   description: |
-    Klicke zuerst auf **Aufgabe vorbereiten**. Danach liegt der Kiezladen im Ordner `kiezladen`. Diesen Ordner
-    nutzt du auch im Abschlussprojekt des Kurses – setze die Aufgabe später nur zurück, wenn du dort neu
-    anfangen willst.
+    Klicke zuerst auf **Aufgabe vorbereiten**. Danach liegt der Kiezladen im Ordner `kiezladen`.
 
     Erstelle im Ordner `kiezladen` die Datei `steckbrief.md` mit genau diesen fünf Zeilen und ergänze die
     Werte, die du im Projekt herausfindest:
