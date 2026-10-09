@@ -10,7 +10,7 @@ description: |
   baust du ein einfaches Logging mit Log-Level ein. Eine Test-Suite mit `node --test` ist schon vorhanden und
   zeigt dir, wann du fertig bist.
 
-  Alles passiert im Ordner `projekt` in deinem Debugging-Workspace. Öffne dafür das Übungs-Terminal. Nach
+  Alles passiert im Ordner `projekt` in deinem Debugging-Workspace. Klicke zuerst auf **Projekt vorbereiten / zurücksetzen** – dann legt Stacklab das Programm an – und öffne das Übungs-Terminal. Nach
   jedem Schritt prüft Stacklab den echten Zustand deiner Dateien. Die Schritte bauen aufeinander auf – lösche
   zwischendurch nichts, was ein früherer Schritt angelegt hat. **Ändere die Testdateien in `test/` nicht.**
 goal: >
@@ -18,230 +18,231 @@ goal: >
   unbekannte Buchungen sauber meldet, mit `LOG_LEVEL=debug` Debug-Meldungen auf stderr schreibt – und ein
   Fehlerprotokoll `BUGS.md`, das jeden gefundenen Fehler mit Symptom und Ursache beschreibt.
 workdir: projekt
+setup: |
+  mkdir -p src test/fixtures daten
+  cat > package.json <<'EOF'
+  {
+    "name": "kassenbuch",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+      "test": "node --test"
+    }
+  }
+  EOF
+  cat > daten/buchungen.csv <<'EOF'
+  id;datum;text;betrag;kategorie
+  1;2026-10-01;Gehalt;2450,00;einnahme
+  2;2026-10-02;Miete;-890,00;wohnen
+  3;2026-10-03;Supermarkt;-63,47;lebensmittel
+  4;2026-10-05;Bäcker;-7,80;lebensmittel
+  5;2026-10-07;Strom;-72,00;wohnen
+  6;2026-10-08;Kino;-24,50;freizeit
+  7;2026-10-09;Supermarkt;-48,13;lebensmittel
+  8;2026-10-10;Flohmarkt;35,00;einnahme
+  EOF
+  cat > test/fixtures/mini.csv <<'EOF'
+  id;datum;text;betrag;kategorie
+  1;2026-09-01;Taschengeld;50,00;einnahme
+  2;2026-09-02;Buch;-12,99;freizeit
+  3;2026-09-03;Brötchen;-3,50;lebensmittel
+  EOF
+  cat > src/betrag.js <<'EOF'
+  function parseBetrag(text) {
+    return parseInt(text, 10);
+  }
+  
+  function formatBetrag(zahl) {
+    return zahl.toFixed(2).replace('.', ',');
+  }
+  
+  module.exports = { parseBetrag, formatBetrag };
+  EOF
+  cat > src/buchungen.js <<'EOF'
+  const fs = require('node:fs/promises');
+  const { parseBetrag } = require('./betrag');
+  
+  async function ladeBuchungen(datei) {
+    const inhalt = await fs.readFile(datei, 'utf8');
+    return inhalt.trim().split('\n').slice(1).map((zeile) => {
+      const [id, datum, text, betrag, kategorie] = zeile.split(';');
+      return { id: Number(id), datum, text, betrag: parseBetrag(betrag), kategorie };
+    });
+  }
+  
+  function summe(buchungen) {
+    let ergebnis = 0;
+    for (let i = 1; i < buchungen.length; i++) {
+      ergebnis += buchungen[i].betrag;
+    }
+    return ergebnis;
+  }
+  
+  function findeBuchung(buchungen, id) {
+    return buchungen.find((buchung) => buchung.id === id);
+  }
+  
+  function nachKategorie(buchungen, kategorie) {
+    return buchungen.filter((buchung) => buchung.kategorie === kategorie);
+  }
+  
+  module.exports = { ladeBuchungen, summe, findeBuchung, nachKategorie };
+  EOF
+  cat > kassenbuch.js <<'EOF'
+  const { ladeBuchungen, summe, findeBuchung, nachKategorie } = require('./src/buchungen');
+  const { formatBetrag } = require('./src/betrag');
+  
+  async function main() {
+    const [befehl, argument] = process.argv.slice(2);
+    const datei = process.env.KASSENBUCH_DATEI ?? 'daten/buchungen.csv';
+    const buchungen = ladeBuchungen(datei);
+  
+    if (befehl === 'summe') {
+      console.log(`Summe: ${formatBetrag(summe(buchungen))} €`);
+    } else if (befehl === 'kategorie') {
+      const treffer = nachKategorie(buchungen, argument);
+      console.log(`${argument}: ${formatBetrag(summe(treffer))} € in ${treffer.length} Buchungen`);
+    } else if (befehl === 'zeige') {
+      const buchung = findeBuchung(buchungen, argument);
+      console.log(`#${buchung.id} ${buchung.datum} ${buchung.text}: ${formatBetrag(buchung.betrag)} €`);
+    } else {
+      console.error('Befehle: summe | kategorie <name> | zeige <id>');
+      process.exitCode = 2;
+    }
+  }
+  
+  main();
+  EOF
+  cat > test/betrag.test.js <<'EOF'
+  const test = require('node:test');
+  const assert = require('node:assert/strict');
+  const { parseBetrag, formatBetrag } = require('../src/betrag');
+  
+  test('parseBetrag liest Komma-Beträge', () => {
+    assert.equal(parseBetrag('12,50'), 12.5);
+    assert.equal(parseBetrag('-3,99'), -3.99);
+  });
+  
+  test('parseBetrag liest ganze Zahlen', () => {
+    assert.equal(parseBetrag('7'), 7);
+  });
+  
+  test('formatBetrag nutzt Komma und zwei Nachkommastellen', () => {
+    assert.equal(formatBetrag(1234.5), '1234,50');
+    assert.equal(formatBetrag(-0.1), '-0,10');
+  });
+  EOF
+  cat > test/buchungen.test.js <<'EOF'
+  const test = require('node:test');
+  const assert = require('node:assert/strict');
+  const path = require('node:path');
+  const { ladeBuchungen, summe, findeBuchung, nachKategorie } = require('../src/buchungen');
+  
+  const mini = path.join(__dirname, 'fixtures', 'mini.csv');
+  
+  test('summe addiert alle Buchungen', () => {
+    assert.equal(summe([{ betrag: 10 }, { betrag: -4 }, { betrag: 1.5 }]), 7.5);
+  });
+  
+  test('summe einer leeren Liste ist 0', () => {
+    assert.equal(summe([]), 0);
+  });
+  
+  test('ladeBuchungen liest alle Zeilen mit Kommabeträgen', async () => {
+    const buchungen = await ladeBuchungen(mini);
+    assert.equal(buchungen.length, 3);
+    assert.equal(buchungen[1].betrag, -12.99);
+    assert.equal(Math.round(summe(buchungen) * 100) / 100, 33.51);
+  });
+  
+  test('findeBuchung findet per Zahl und liefert sonst undefined', () => {
+    const liste = [{ id: 1 }, { id: 2 }];
+    assert.deepEqual(findeBuchung(liste, 2), { id: 2 });
+    assert.equal(findeBuchung(liste, 99), undefined);
+  });
+  
+  test('nachKategorie filtert', () => {
+    const liste = [{ kategorie: 'a' }, { kategorie: 'b' }, { kategorie: 'a' }];
+    assert.equal(nachKategorie(liste, 'a').length, 2);
+  });
+  EOF
+  cat > test/cli.test.js <<'EOF'
+  const test = require('node:test');
+  const assert = require('node:assert/strict');
+  const path = require('node:path');
+  const { spawnSync } = require('node:child_process');
+  
+  const root = path.join(__dirname, '..');
+  
+  function kassenbuch(...args) {
+    return spawnSync(process.execPath, ['kassenbuch.js', ...args], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, KASSENBUCH_DATEI: 'test/fixtures/mini.csv', LOG_LEVEL: 'error' },
+    });
+  }
+  
+  test('summe gibt die Summe aus', () => {
+    const ergebnis = kassenbuch('summe');
+    assert.equal(ergebnis.status, 0);
+    assert.equal(ergebnis.stdout.trim(), 'Summe: 33,51 €');
+  });
+  
+  test('kategorie zählt Treffer', () => {
+    const ergebnis = kassenbuch('kategorie', 'freizeit');
+    assert.equal(ergebnis.stdout.trim(), 'freizeit: -12,99 € in 1 Buchungen');
+  });
+  
+  test('zeige gibt eine Buchung aus', () => {
+    const ergebnis = kassenbuch('zeige', '2');
+    assert.equal(ergebnis.status, 0);
+    assert.equal(ergebnis.stdout.trim(), '#2 2026-09-02 Buch: -12,99 €');
+  });
+  
+  test('zeige mit unbekannter ID meldet einen Fehler', () => {
+    const ergebnis = kassenbuch('zeige', '99');
+    assert.equal(ergebnis.status, 1);
+    assert.equal(ergebnis.stdout, '');
+    assert.match(ergebnis.stderr, /Buchung 99 nicht gefunden/);
+  });
+  EOF
 steps:
   - id: projekt-anlegen
-    title: Projekt anlegen und Tests laufen lassen
+    title: Projekt vorbereiten und erkunden
     description: |
-      Kopiere den folgenden Block **komplett** ins Übungs-Terminal und drücke Enter. Er legt den Ordner
-      `projekt` mit allen Dateien an und wechselt hinein.
-
-      ```bash
-      mkdir -p projekt/src projekt/test/fixtures projekt/daten && cd projekt
-      cat > package.json <<'EOF'
-      {
-        "name": "kassenbuch",
-        "version": "1.0.0",
-        "private": true,
-        "scripts": {
-          "test": "node --test"
-        }
-      }
-      EOF
-      cat > daten/buchungen.csv <<'EOF'
-      id;datum;text;betrag;kategorie
-      1;2026-10-01;Gehalt;2450,00;einnahme
-      2;2026-10-02;Miete;-890,00;wohnen
-      3;2026-10-03;Supermarkt;-63,47;lebensmittel
-      4;2026-10-05;Bäcker;-7,80;lebensmittel
-      5;2026-10-07;Strom;-72,00;wohnen
-      6;2026-10-08;Kino;-24,50;freizeit
-      7;2026-10-09;Supermarkt;-48,13;lebensmittel
-      8;2026-10-10;Flohmarkt;35,00;einnahme
-      EOF
-      cat > test/fixtures/mini.csv <<'EOF'
-      id;datum;text;betrag;kategorie
-      1;2026-09-01;Taschengeld;50,00;einnahme
-      2;2026-09-02;Buch;-12,99;freizeit
-      3;2026-09-03;Brötchen;-3,50;lebensmittel
-      EOF
-      cat > src/betrag.js <<'EOF'
-      function parseBetrag(text) {
-        return parseInt(text, 10);
-      }
-      
-      function formatBetrag(zahl) {
-        return zahl.toFixed(2).replace('.', ',');
-      }
-      
-      module.exports = { parseBetrag, formatBetrag };
-      EOF
-      cat > src/buchungen.js <<'EOF'
-      const fs = require('node:fs/promises');
-      const { parseBetrag } = require('./betrag');
-      
-      async function ladeBuchungen(datei) {
-        const inhalt = await fs.readFile(datei, 'utf8');
-        return inhalt.trim().split('\n').slice(1).map((zeile) => {
-          const [id, datum, text, betrag, kategorie] = zeile.split(';');
-          return { id: Number(id), datum, text, betrag: parseBetrag(betrag), kategorie };
-        });
-      }
-      
-      function summe(buchungen) {
-        let ergebnis = 0;
-        for (let i = 1; i < buchungen.length; i++) {
-          ergebnis += buchungen[i].betrag;
-        }
-        return ergebnis;
-      }
-      
-      function findeBuchung(buchungen, id) {
-        return buchungen.find((buchung) => buchung.id === id);
-      }
-      
-      function nachKategorie(buchungen, kategorie) {
-        return buchungen.filter((buchung) => buchung.kategorie === kategorie);
-      }
-      
-      module.exports = { ladeBuchungen, summe, findeBuchung, nachKategorie };
-      EOF
-      cat > kassenbuch.js <<'EOF'
-      const { ladeBuchungen, summe, findeBuchung, nachKategorie } = require('./src/buchungen');
-      const { formatBetrag } = require('./src/betrag');
-      
-      async function main() {
-        const [befehl, argument] = process.argv.slice(2);
-        const datei = process.env.KASSENBUCH_DATEI ?? 'daten/buchungen.csv';
-        const buchungen = ladeBuchungen(datei);
-      
-        if (befehl === 'summe') {
-          console.log(`Summe: ${formatBetrag(summe(buchungen))} €`);
-        } else if (befehl === 'kategorie') {
-          const treffer = nachKategorie(buchungen, argument);
-          console.log(`${argument}: ${formatBetrag(summe(treffer))} € in ${treffer.length} Buchungen`);
-        } else if (befehl === 'zeige') {
-          const buchung = findeBuchung(buchungen, argument);
-          console.log(`#${buchung.id} ${buchung.datum} ${buchung.text}: ${formatBetrag(buchung.betrag)} €`);
-        } else {
-          console.error('Befehle: summe | kategorie <name> | zeige <id>');
-          process.exitCode = 2;
-        }
-      }
-      
-      main();
-      EOF
-      cat > test/betrag.test.js <<'EOF'
-      const test = require('node:test');
-      const assert = require('node:assert/strict');
-      const { parseBetrag, formatBetrag } = require('../src/betrag');
-      
-      test('parseBetrag liest Komma-Beträge', () => {
-        assert.equal(parseBetrag('12,50'), 12.5);
-        assert.equal(parseBetrag('-3,99'), -3.99);
-      });
-      
-      test('parseBetrag liest ganze Zahlen', () => {
-        assert.equal(parseBetrag('7'), 7);
-      });
-      
-      test('formatBetrag nutzt Komma und zwei Nachkommastellen', () => {
-        assert.equal(formatBetrag(1234.5), '1234,50');
-        assert.equal(formatBetrag(-0.1), '-0,10');
-      });
-      EOF
-      cat > test/buchungen.test.js <<'EOF'
-      const test = require('node:test');
-      const assert = require('node:assert/strict');
-      const path = require('node:path');
-      const { ladeBuchungen, summe, findeBuchung, nachKategorie } = require('../src/buchungen');
-      
-      const mini = path.join(__dirname, 'fixtures', 'mini.csv');
-      
-      test('summe addiert alle Buchungen', () => {
-        assert.equal(summe([{ betrag: 10 }, { betrag: -4 }, { betrag: 1.5 }]), 7.5);
-      });
-      
-      test('summe einer leeren Liste ist 0', () => {
-        assert.equal(summe([]), 0);
-      });
-      
-      test('ladeBuchungen liest alle Zeilen mit Kommabeträgen', async () => {
-        const buchungen = await ladeBuchungen(mini);
-        assert.equal(buchungen.length, 3);
-        assert.equal(buchungen[1].betrag, -12.99);
-        assert.equal(Math.round(summe(buchungen) * 100) / 100, 33.51);
-      });
-      
-      test('findeBuchung findet per Zahl und liefert sonst undefined', () => {
-        const liste = [{ id: 1 }, { id: 2 }];
-        assert.deepEqual(findeBuchung(liste, 2), { id: 2 });
-        assert.equal(findeBuchung(liste, 99), undefined);
-      });
-      
-      test('nachKategorie filtert', () => {
-        const liste = [{ kategorie: 'a' }, { kategorie: 'b' }, { kategorie: 'a' }];
-        assert.equal(nachKategorie(liste, 'a').length, 2);
-      });
-      EOF
-      cat > test/cli.test.js <<'EOF'
-      const test = require('node:test');
-      const assert = require('node:assert/strict');
-      const path = require('node:path');
-      const { spawnSync } = require('node:child_process');
-      
-      const root = path.join(__dirname, '..');
-      
-      function kassenbuch(...args) {
-        return spawnSync(process.execPath, ['kassenbuch.js', ...args], {
-          cwd: root,
-          encoding: 'utf8',
-          env: { ...process.env, KASSENBUCH_DATEI: 'test/fixtures/mini.csv', LOG_LEVEL: 'error' },
-        });
-      }
-      
-      test('summe gibt die Summe aus', () => {
-        const ergebnis = kassenbuch('summe');
-        assert.equal(ergebnis.status, 0);
-        assert.equal(ergebnis.stdout.trim(), 'Summe: 33,51 €');
-      });
-      
-      test('kategorie zählt Treffer', () => {
-        const ergebnis = kassenbuch('kategorie', 'freizeit');
-        assert.equal(ergebnis.stdout.trim(), 'freizeit: -12,99 € in 1 Buchungen');
-      });
-      
-      test('zeige gibt eine Buchung aus', () => {
-        const ergebnis = kassenbuch('zeige', '2');
-        assert.equal(ergebnis.status, 0);
-        assert.equal(ergebnis.stdout.trim(), '#2 2026-09-02 Buch: -12,99 €');
-      });
-      
-      test('zeige mit unbekannter ID meldet einen Fehler', () => {
-        const ergebnis = kassenbuch('zeige', '99');
-        assert.equal(ergebnis.status, 1);
-        assert.equal(ergebnis.stdout, '');
-        assert.match(ergebnis.stderr, /Buchung 99 nicht gefunden/);
-      });
-      EOF
-      ```
+      Klicke zuerst auf **Projekt vorbereiten / zurücksetzen**. Stacklab legt dann im Ordner `projekt` das
+      komplette Kassenbuch an: `kassenbuch.js`, den Code in `src/`, die Testdaten in `daten/` und die
+      Test-Suite in `test/`.
 
       Danach siehst du dir an, was du übernommen hast:
 
-      1. `tree -I node_modules` oder `ls -R` zeigt dir den Aufbau.
-      2. Lies `kassenbuch.js` und die beiden Dateien in `src/`.
-      3. Führe die Tests aus: `node --test`. Merke dir, wie viele Tests fehlschlagen.
+      1. Wechsle im Übungs-Terminal mit `cd projekt` in den Ordner.
+      2. `tree` oder `ls -R` zeigt dir den Aufbau.
+      3. Lies `kassenbuch.js` und die beiden Dateien in `src/`.
+      4. Führe die Tests aus: `node --test`. Lies die Fehlschläge: Welche Tests scheitern, und mit welcher
+         Assertion-Meldung? Merke dir, wie viele es sind.
     checklist:
-      - Ordner projekt mit kassenbuch.js, src/, test/ und daten/ angelegt
+      - Projekt vorbereitet, Ordner projekt mit kassenbuch.js, src/, test/ und daten/ vorhanden
       - "`node --test` ausgeführt und die Fehlschläge gelesen"
     hints:
-      - Kopiere den Block bis einschließlich der letzten `EOF`-Zeile. Fehlt etwas, lösche den Ordner mit `rm -rf projekt` und kopiere den Block erneut.
+      - Fehlen Dateien oder hast du dich vertan, klicke erneut auf **Projekt vorbereiten / zurücksetzen** – Achtung, das setzt den Ordner komplett zurück.
       - "`node --test` sucht automatisch alle Dateien, die auf `.test.js` enden."
     checks:
       - type: file_exists
         path: kassenbuch.js
-        message: kassenbuch.js fehlt. Kopiere den Block aus der Beschreibung vollständig ins Terminal.
+        message: kassenbuch.js fehlt. Klicke auf „Projekt vorbereiten / zurücksetzen“.
       - type: file_exists
         path: daten/buchungen.csv
-        message: daten/buchungen.csv fehlt. Kopiere den Block aus der Beschreibung vollständig ins Terminal.
+        message: daten/buchungen.csv fehlt. Klicke auf „Projekt vorbereiten / zurücksetzen“.
       - type: command
         run: ls test/*.test.js | wc -l
         stdout_matches: "^\\s*3\\s*$"
         message: Im Ordner test sollen die drei Testdateien betrag.test.js, buchungen.test.js und cli.test.js liegen.
     solution: |
       ```bash
-      # Block aus der Beschreibung einfügen, dann:
+      cd projekt
       ls -R
-      node --test        # mehrere Tests schlagen fehl
+      node --test        # 12 Tests, mehrere schlagen fehl
       ```
   - id: fehlerprotokoll
     title: Fehler reproduzieren und protokollieren
