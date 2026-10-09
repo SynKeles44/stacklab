@@ -169,6 +169,7 @@ Details: [CONTRIBUTING.md](CONTRIBUTING.md), [content/README.md](content/README.
 | `http://localhost:8080` lädt nicht | `docker compose ps` – laufen alle Dienste? `docker compose logs php` zeigt, ob Migration/Import noch laufen. |
 | Port 8080 ist belegt | In `.env` `STACKLAB_PORT=8090` setzen, `docker compose up -d`. |
 | Terminal zeigt „getrennt“ | `docker compose logs sandbox` prüfen; `docker compose restart sandbox`. |
+| Stacklab soll im Netzwerk erreichbar sein (z. B. Handy) | In `.env` `STACKLAB_BIND=0.0.0.0` setzen, `docker compose up -d`. Dann kann jeder im Netzwerk darauf zugreifen. |
 | `npm install` im Terminal schlägt fehl | Nur Paket-Registries sind erreichbar. Ist die Registry in `docker/proxy/allowlist`? |
 | Dateien im Workspace gehören `root` (Linux) | `STACKLAB_UID`/`STACKLAB_GID` in `.env` setzen, `docker compose build sandbox && docker compose up -d`. |
 | Frontend zeigt alte Version | `docker compose run --rm frontend` baut neu. |
