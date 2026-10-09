@@ -44,7 +44,7 @@ Aufgaben gelten. Musterlektionen:
   docs.docker.com, nginx.org, docs.aws.amazon.com, developer.mozilla.org …). Inhalte in **eigenen Worten**,
   nichts kopieren.
 - Aktuelle Versionen (Stand Oktober 2026): PHP 8.5, Laravel 13, Composer 2.10, Node.js 24 LTS, npm 11,
-  Bun 1.4, TypeScript 6, React 19, React Router 8 (wir lehren den **Data Mode**: `createBrowserRouter`,
+  Bun 1.4, TypeScript 7, React 19, React Router 8 (wir lehren den **Data Mode**: `createBrowserRouter`,
   `loader`, `action`, `RouterProvider` aus `react-router/dom`), Vite 8, Tailwind CSS 4 (CSS-first, `@import
   "tailwindcss"`, `@theme`, kein `tailwind.config.js` nötig), shadcn/ui 4 (CLI `shadcn@latest`), Zod 4,
   PostgreSQL 18, MySQL 8.4/9, Docker Compose v2 (`docker compose`, ohne Bindestrich), Git 2.47.
