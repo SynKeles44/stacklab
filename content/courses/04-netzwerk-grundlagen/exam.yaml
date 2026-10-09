@@ -1,0 +1,275 @@
+title: Abschlussprüfung Netzwerk-Grundlagen & Server-Zugang
+description: |
+  Die Prüfung deckt alle vier Module ab: IPv4 und Subnetze, Adressbereiche mit NAT und IPv6, Ports und
+  Firewalls sowie den Zugang zu Servern. Du brauchst 70 % zum Bestehen. Die Praxis-Aufgaben löst du im
+  Code-Editor und im Übungs-Terminal.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  - module: ipv4-subnetze
+    type: single
+    question: Welche Zeichenkette ist eine gültige IPv4-Adresse?
+    options: ["198.51.100.256", "203.0.113.7", "10.0.0", "192.0.2.1.5"]
+    answer: 1
+    explanation: Genau vier Oktette mit Werten von 0 bis 255 – nur 203.0.113.7 erfüllt das.
+  - module: ipv4-subnetze
+    type: cloze
+    text: "Das Oktett `11100000` hat den Dezimalwert ___."
+    blanks:
+      - ["224"]
+    explanation: 128 + 64 + 32 = 224.
+  - module: ipv4-subnetze
+    type: single
+    question: Wie viele nutzbare Hosts hat ein /27-Netz?
+    options: ["32", "30", "27", "62"]
+    answer: 1
+    explanation: 2⁵ = 32 Adressen, minus Netz- und Broadcast-Adresse = 30.
+  - module: ipv4-subnetze
+    type: single
+    question: "Zu welchem Netz gehört der Host `10.4.9.200/22`?"
+    options: ["10.4.9.0/22", "10.4.8.0/22", "10.4.0.0/22", "10.4.12.0/22"]
+    answer: 1
+    explanation: Blockgröße im dritten Oktett ist 256 − 252 = 4. 9 liegt im Block 8–11, also 10.4.8.0/22.
+  - module: ipv4-subnetze
+    type: match
+    question: Ordne Präfix und Netzmaske zu.
+    pairs:
+      - { left: "/24", right: "255.255.255.0" }
+      - { left: "/16", right: "255.255.0.0" }
+      - { left: "/28", right: "255.255.255.240" }
+      - { left: "/30", right: "255.255.255.252" }
+    explanation: Die Präfixlänge zählt die Einsen der Maske von links.
+  - module: adressbereiche-ipv6
+    type: multiple
+    question: Welche Adressen sind privat nach RFC 1918?
+    options: ["10.20.30.40", "172.31.0.9", "172.32.0.9", "192.168.0.1", "100.64.0.1"]
+    answers: [0, 1, 3]
+    explanation: 172.32 liegt außerhalb von 172.16.0.0/12, 100.64.0.0/10 ist für Carrier-Grade-NAT reserviert, aber nicht RFC 1918.
+  - module: adressbereiche-ipv6
+    type: single
+    question: Ein Entwicklungsserver soll nur auf deinem eigenen Rechner erreichbar sein. Welche Bind-Adresse nimmst du?
+    options: ["0.0.0.0", "127.0.0.1", "192.168.178.23", "255.255.255.255"]
+    answer: 1
+    explanation: Loopback verlässt den Rechner nie. 0.0.0.0 würde auf allen Schnittstellen lauschen.
+  - module: adressbereiche-ipv6
+    type: single
+    question: Woher kennt dein Laptop im WLAN sein Standard-Gateway?
+    options: [Aus dem DNS, Vom DHCP-Server, der es zusammen mit Adresse und Maske verteilt, Aus der MAC-Adresse]
+    answer: 1
+    explanation: DHCP liefert Adresse, Netzmaske, Gateway und DNS-Server.
+  - module: adressbereiche-ipv6
+    type: single
+    question: Was ist die empfohlene Kurzform von `2001:0db8:0000:0001:0000:0000:0000:0001`?
+    options: ["2001:db8::1::1", "2001:db8:0:1::1", "2001:db8::1:0:0:0:1", "2001:db8:1::1"]
+    answer: 1
+    explanation: "Führende Nullen weg, dann den längsten Null-Block (drei Gruppen) einmal durch :: ersetzen."
+  - module: adressbereiche-ipv6
+    type: find-bug
+    question: Ein Kollege dokumentiert den Ablauf von NAT. Welche Zeile ist falsch?
+    language: text
+    code: |
+      1. Laptop 192.168.178.23:50123 sendet an 198.51.100.80:443
+      2. Router ersetzt die Quelle durch 203.0.113.7:61001
+      3. Router merkt sich die Zuordnung in der NAT-Tabelle
+      4. Server antwortet direkt an 192.168.178.23:50123
+      5. Router setzt das ursprüngliche Ziel wieder ein
+    bug_line: 4
+    explanation: Der Server kennt die private Adresse gar nicht. Er antwortet an 203.0.113.7:61001, der Router übersetzt zurück.
+  - module: ports-firewalls
+    type: match
+    question: Ordne Port und Dienst zu.
+    pairs:
+      - { left: "22", right: SSH }
+      - { left: "443", right: HTTPS }
+      - { left: "5432", right: PostgreSQL }
+      - { left: "6379", right: Redis }
+    explanation: Diese Standardports solltest du sicher kennen.
+  - module: ports-firewalls
+    type: single
+    question: "`ss -tln` zeigt `LISTEN 0 511 0.0.0.0:3000 0.0.0.0:*`. Was bedeutet das?"
+    options:
+      - Ein Dienst lauscht auf Port 3000 auf allen IPv4-Schnittstellen.
+      - Port 3000 ist nur für den eigenen Rechner erreichbar.
+      - Es besteht eine Verbindung zu 0.0.0.0.
+    answer: 0
+    explanation: 0.0.0.0 als lokale Adresse heißt – auf allen Schnittstellen lauschen.
+  - module: ports-firewalls
+    type: single
+    question: Warum braucht eine stateful Firewall keine eigene Regel für die Antworten auf ausgehende Anfragen?
+    options:
+      - Weil Antworten immer über Port 443 kommen
+      - Weil sie sich die Verbindung merkt und zugehörige Pakete automatisch durchlässt
+      - Weil Antworten nicht gefiltert werden können
+    answer: 1
+    explanation: Die Zustandstabelle ordnet Antworten bestehenden, erlaubten Verbindungen zu.
+  - module: ports-firewalls
+    type: cloze
+    text: "Bevor du `sudo ufw enable` ausführst, musst du ___ erlauben, sonst sperrst du dich womöglich aus."
+    blanks:
+      - [SSH, "22", Port 22, "22/tcp"]
+    explanation: Mit default deny incoming wäre sonst auch deine SSH-Verbindung blockiert.
+  - module: server-zugang
+    type: multiple
+    question: Welche Regeln passen zu einer sauber geschichteten Cloud-Umgebung?
+    options:
+      - "Load Balancer: 443/tcp von 0.0.0.0/0"
+      - "Datenbank: 5432/tcp von der Security Group der App-Server"
+      - "Datenbank: 5432/tcp von 0.0.0.0/0"
+      - "App-Server: 22/tcp nur von der Security Group des Bastion-Hosts"
+    answers: [0, 1, 3]
+    explanation: Nur der Load Balancer ist für alle offen. Jede Schicht erlaubt nur Verkehr von der Schicht davor.
+  - module: server-zugang
+    type: single
+    question: Warum nutzt man `ssh -J` (ProxyJump) statt sich erst auf dem Bastion-Host einzuloggen und von dort weiterzuspringen?
+    options:
+      - Weil es schneller tippt
+      - Weil der private Schlüssel auf dem Laptop bleibt und nicht auf den Bastion-Host muss
+      - Weil der Bastion-Host dann keine öffentliche Adresse braucht
+    answer: 1
+    explanation: ProxyJump tunnelt die zweite Verbindung durch die erste – der Schlüssel verlässt nie deinen Laptop.
+  - module: server-zugang
+    type: single
+    question: Eine App im Docker-Netz `backend` soll die Datenbank erreichen. Was trägst du als Host ein?
+    options: ["127.0.0.1", "Den Dienstnamen, z. B. db", "0.0.0.0", "Die öffentliche Adresse des Laptops"]
+    answer: 1
+    explanation: Docker-DNS löst Dienstnamen im selben Netz auf. 127.0.0.1 wäre der App-Container selbst.
+tasks:
+  - module: ipv4-subnetze
+    id: pruefung-enthalten
+    type: code
+    language: js
+    title: Liegt die Adresse im Netz?
+    description: |
+      Schreibe `inSubnet(cidr, ip)`, die `true` liefert, wenn die IPv4-Adresse `ip` im Netz `cidr` liegt,
+      sonst `false`. Beispiel: `inSubnet("10.0.16.0/20", "10.0.31.7")` → `true`.
+    starter: |
+      function ipToInt(ip) {
+        return ip.split('.').reduce((sum, octet) => sum * 256 + Number(octet), 0)
+      }
+
+      function inSubnet(cidr, ip) {
+      }
+    tests:
+      - name: Adresse im /24
+        code: assertEqual(inSubnet('192.168.178.0/24', '192.168.178.99'), true)
+      - name: Adresse außerhalb des /24
+        code: assertEqual(inSubnet('192.168.178.0/24', '192.168.179.1'), false)
+      - name: Grenzen eines /20
+        code: |
+          assertEqual(inSubnet('10.0.16.0/20', '10.0.16.0'), true)
+          assertEqual(inSubnet('10.0.16.0/20', '10.0.31.255'), true)
+          assertEqual(inSubnet('10.0.16.0/20', '10.0.32.0'), false)
+      - name: Netz als Host-Adresse angegeben und /0
+        code: |
+          assertEqual(inSubnet('198.51.100.77/27', '198.51.100.64'), true)
+          assertEqual(inSubnet('0.0.0.0/0', '203.0.113.9'), true)
+    hints:
+      - "Netzgröße `2 ** (32 - prefix)`, Netzanfang `Math.floor(ipToInt(address) / size) * size`."
+    solution: |
+      ```js
+      function ipToInt(ip) {
+        return ip.split('.').reduce((sum, octet) => sum * 256 + Number(octet), 0)
+      }
+
+      function inSubnet(cidr, ip) {
+        const [address, prefix] = cidr.split('/')
+        const size = 2 ** (32 - Number(prefix))
+        const start = Math.floor(ipToInt(address) / size) * size
+        const n = ipToInt(ip)
+        return n >= start && n < start + size
+      }
+      ```
+  - module: adressbereiche-ipv6
+    id: pruefung-ipv6
+    type: code
+    language: js
+    title: IPv6-Typ erkennen
+    description: |
+      Schreibe `ipv6Type(addr)`. Die Eingabe ist eine IPv6-Adresse in beliebiger gültiger Schreibweise.
+      Gib zurück:
+
+      - `"loopback"` für `::1`
+      - `"link-local"` für Adressen aus `fe80::/10` (erste Gruppe `fe80` bis `febf`)
+      - `"ula"` für Adressen aus `fc00::/7` (erste Gruppe beginnt mit `fc` oder `fd`)
+      - `"multicast"` für Adressen aus `ff00::/8`
+      - `"global"` für alles andere
+    starter: |
+      function ipv6Type(addr) {
+        const text = addr.toLowerCase()
+        // Sonderfall ::1, dann die erste Gruppe als Zahl auswerten
+      }
+    tests:
+      - name: Loopback
+        code: |
+          assertEqual(ipv6Type('::1'), 'loopback')
+          assertEqual(ipv6Type('0:0:0:0:0:0:0:1'), 'loopback')
+      - name: Link-local und ULA
+        code: |
+          assertEqual(ipv6Type('fe80::1'), 'link-local')
+          assertEqual(ipv6Type('FEBF::1'), 'link-local')
+          assertEqual(ipv6Type('fd12:3456::25'), 'ula')
+      - name: Multicast und global
+        code: |
+          assertEqual(ipv6Type('ff02::1'), 'multicast')
+          assertEqual(ipv6Type('2001:db8::1'), 'global')
+          assertEqual(ipv6Type('fec0::1'), 'global')
+    hints:
+      - "Die erste Gruppe bekommst du mit `text.split(':')[0]`; ist sie leer, ist sie 0."
+      - "`parseInt(group, 16)` wandelt sie in eine Zahl. fe80 bis febf entspricht 0xfe80 bis 0xfebf."
+      - "Für Loopback: alle Gruppen bis auf die letzte sind 0 – oder einfacher, die Adresse ist `::1` bzw. ausgeschrieben `0:0:0:0:0:0:0:1`."
+    solution: |
+      ```js
+      function ipv6Type(addr) {
+        const text = addr.toLowerCase()
+        if (/^(0{1,4}:){7}0{0,3}1$|^::1$/.test(text)) return 'loopback'
+        const first = parseInt(text.split(':')[0] || '0', 16)
+        if (first >= 0xfe80 && first <= 0xfebf) return 'link-local'
+        if (first >= 0xfc00 && first <= 0xfdff) return 'ula'
+        if (first >= 0xff00) return 'multicast'
+        return 'global'
+      }
+      ```
+  - module: server-zugang
+    id: pruefung-ssh-config
+    type: terminal
+    title: Zugang zur Datenbank über den Bastion-Host
+    description: |
+      Klicke auf **Aufgabe vorbereiten** und wechsle in den Ordner `pruefung-zugang`. Lege dort eine Datei
+      `ssh_config` an:
+
+      - Host `jump`: `HostName 198.51.100.10`, `User admin`
+      - Host `db-tunnel`: `HostName 10.20.3.5`, `User admin`, Sprung über `jump`, und ein Tunnel vom
+        lokalen Port `25432` zur Datenbank `10.20.3.5:5432`.
+
+      Prüfe deine Datei mit `ssh -G -F ssh_config db-tunnel`.
+    workdir: pruefung-zugang
+    setup: |
+      echo "Lege hier ssh_config an." > LIESMICH.txt
+    checks:
+      - type: command
+        run: ssh -G -F ssh_config jump 2>/dev/null | grep -E '^(hostname|user) ' | sort | tr '\n' ' '
+        stdout_equals: "hostname 198.51.100.10 user admin"
+        message: Der Host jump braucht `HostName 198.51.100.10` und `User admin`.
+      - type: command
+        run: ssh -G -F ssh_config db-tunnel 2>/dev/null | grep -E '^(hostname|user|proxyjump) ' | sort | tr '\n' ' '
+        stdout_equals: "hostname 10.20.3.5 proxyjump jump user admin"
+        message: Der Host db-tunnel braucht `HostName 10.20.3.5`, `User admin` und `ProxyJump jump`.
+      - type: command
+        run: ssh -G -F ssh_config db-tunnel 2>/dev/null | grep -E '^localforward '
+        stdout_matches: "^localforward 25432 \\[?10\\.20\\.3\\.5\\]?:5432$"
+        message: "Es fehlt der Tunnel `LocalForward 25432 10.20.3.5:5432`."
+    hints:
+      - Zwei Blöcke, die jeweils mit `Host <name>` beginnen.
+      - "`ProxyJump jump` und `LocalForward 25432 10.20.3.5:5432` gehören in den Block db-tunnel."
+    solution: |
+      ```text title="ssh_config"
+      Host jump
+        HostName 198.51.100.10
+        User admin
+
+      Host db-tunnel
+        HostName 10.20.3.5
+        User admin
+        ProxyJump jump
+        LocalForward 25432 10.20.3.5:5432
+      ```

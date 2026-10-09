@@ -1,0 +1,352 @@
+title: Netzplan mit eigenem Subnetz-Rechner
+description: |
+  Du planst das Netz für eine kleine Web-Anwendung in der Cloud – so, wie es ein Team vor dem ersten
+  Deployment tun würde. Du legst ein privates Gesamtnetz fest, teilst es in öffentliche und private
+  Subnetze, dokumentierst Firewall-Regeln und den Zugang über einen Bastion-Host.
+
+  Damit du dich nicht verrechnest, baust du nebenbei einen eigenen **Subnetz-Rechner** in Node.js, der
+  Netzadresse, Broadcast-Adresse, Host-Bereich und Größe ausgibt und prüft, ob eine Adresse in einem Netz
+  liegt. Alle Dateien liegen im Ordner `netzplan` deines Workspaces.
+goal: |
+  Im Ordner `netzplan` liegen eine `README.md` mit der Beschreibung deines Netzes, eine `netzplan.yaml`
+  mit VPC, Subnetzen und Firewall-Regeln, ein funktionierender Rechner `subnetz.js` und eine
+  `ssh_config` für den Zugang über den Bastion-Host.
+workdir: netzplan
+steps:
+  - id: grundgeruest
+    title: README und Gesamtnetz anlegen
+    description: |
+      Lege im Ordner `netzplan` zwei Dateien an:
+
+      1. `README.md` mit der Überschrift `# Netzplan` und zwei, drei Sätzen, wofür das Netz gedacht ist.
+      2. `netzplan.yaml` mit dem Gesamtnetz der Anwendung (der VPC). Nimm einen privaten Bereich, der
+         sich nicht mit typischen Heimnetzen überschneidet: `10.0.0.0/16`.
+
+      ```yaml title="netzplan.yaml"
+      vpc:
+        name: shop-vpc
+        cidr: 10.0.0.0/16
+      ```
+    checklist:
+      - README.md mit Überschrift „# Netzplan“ angelegt
+      - netzplan.yaml enthält die VPC mit 10.0.0.0/16
+    hints:
+      - Mit `mkdir -p netzplan && cd netzplan` legst du den Ordner an, falls er fehlt.
+      - Achte in YAML auf die Einrückung mit Leerzeichen, nicht mit Tabs.
+    checks:
+      - type: file_contains
+        path: README.md
+        pattern: "^#\\s+Netzplan"
+        message: README.md braucht die Überschrift „# Netzplan“.
+      - type: file_contains
+        path: netzplan.yaml
+        pattern: "^\\s+cidr:\\s*\"?10\\.0\\.0\\.0/16\"?\\s*$"
+        message: "In netzplan.yaml fehlt unter `vpc:` die Zeile `cidr: 10.0.0.0/16`."
+    solution: |
+      ```bash
+      mkdir -p netzplan && cd netzplan
+      printf '# Netzplan\n\nPrivates Netz für den Webshop: Load Balancer öffentlich, App und Datenbank privat.\n' > README.md
+      printf 'vpc:\n  name: shop-vpc\n  cidr: 10.0.0.0/16\n' > netzplan.yaml
+      ```
+  - id: subnetze
+    title: Subnetze planen
+    description: |
+      Teile die VPC in drei /24-Subnetze und trage sie in `netzplan.yaml` ein:
+
+      | Name | CIDR | Zweck |
+      |---|---|---|
+      | `public-a` | `10.0.1.0/24` | Load Balancer, Bastion-Host |
+      | `app-a` | `10.0.11.0/24` | App-Server (privat) |
+      | `db-a` | `10.0.21.0/24` | Datenbank (privat) |
+
+      ```yaml title="netzplan.yaml (Ergänzung)"
+      subnetze:
+        - name: public-a
+          cidr: 10.0.1.0/24
+          oeffentlich: true
+        - name: app-a
+          cidr: 10.0.11.0/24
+          oeffentlich: false
+        - name: db-a
+          cidr: 10.0.21.0/24
+          oeffentlich: false
+      ```
+    checklist:
+      - Drei Subnetze mit Name, CIDR und öffentlich/privat eingetragen
+      - Nur public-a ist öffentlich
+    hints:
+      - Alle drei Subnetze liegen innerhalb von 10.0.0.0/16 und überschneiden sich nicht.
+    checks:
+      - type: file_contains
+        path: netzplan.yaml
+        pattern: "cidr:\\s*\"?10\\.0\\.1\\.0/24"
+        message: Das Subnetz public-a (10.0.1.0/24) fehlt.
+      - type: file_contains
+        path: netzplan.yaml
+        pattern: "cidr:\\s*\"?10\\.0\\.11\\.0/24"
+        message: Das Subnetz app-a (10.0.11.0/24) fehlt.
+      - type: file_contains
+        path: netzplan.yaml
+        pattern: "cidr:\\s*\"?10\\.0\\.21\\.0/24"
+        message: Das Subnetz db-a (10.0.21.0/24) fehlt.
+      - type: command
+        run: grep -c 'oeffentlich:\s*true' netzplan.yaml
+        stdout_matches: "^1$"
+        message: "Genau ein Subnetz (public-a) soll `oeffentlich: true` haben."
+    solution: |
+      Ergänze den YAML-Block aus der Beschreibung am Ende von `netzplan.yaml`.
+  - id: rechner
+    title: Den Subnetz-Rechner bauen
+    description: |
+      Schreibe `subnetz.js`. Der Aufruf `node subnetz.js 198.51.100.77/27` soll genau diese Zeilen ausgeben:
+
+      ```text
+      netz: 198.51.100.64/27
+      maske: 255.255.255.224
+      broadcast: 198.51.100.95
+      erster: 198.51.100.65
+      letzter: 198.51.100.94
+      hosts: 30
+      ```
+
+      Die Eingabe steht in `process.argv[2]`. Nutze die Rechnung aus der Lektion „CIDR und
+      Netzbereiche berechnen“ (Adresse als Zahl, auf ein Vielfaches der Netzgröße abrunden). Für /31 und
+      /32 gilt: erster = Netzadresse, letzter = Broadcast, hosts = Anzahl der Adressen.
+    checklist:
+      - subnetz.js gibt Netz, Maske, Broadcast, ersten und letzten Host und die Anzahl aus
+      - Funktioniert auch für Präfixe unter /24
+    hints:
+      - "Zerlegen: `const [address, prefixText] = process.argv[2].split('/')`."
+      - "Größe: `2 ** (32 - prefix)`, Netz: `Math.floor(ipToInt(address) / size) * size`."
+      - "Maske: die Adresse `2 ** 32 - size` mit `intToIp` umwandeln."
+    checks:
+      - type: file_exists
+        path: subnetz.js
+        message: Die Datei subnetz.js fehlt noch.
+      - type: command
+        run: node subnetz.js 198.51.100.77/27
+        stdout_equals: "netz: 198.51.100.64/27\nmaske: 255.255.255.224\nbroadcast: 198.51.100.95\nerster: 198.51.100.65\nletzter: 198.51.100.94\nhosts: 30"
+        message: Die Ausgabe für 198.51.100.77/27 stimmt noch nicht. Vergleiche Zeile für Zeile mit der Beschreibung.
+      - type: command
+        run: node subnetz.js 10.4.9.200/22 | tr '\n' ' '
+        stdout_equals: "netz: 10.4.8.0/22 maske: 255.255.252.0 broadcast: 10.4.11.255 erster: 10.4.8.1 letzter: 10.4.11.254 hosts: 1022"
+        message: Bei 10.4.9.200/22 (über Oktettgrenzen) stimmt die Ausgabe noch nicht.
+      - type: command
+        run: node subnetz.js 203.0.113.10/32 | grep -E '^(erster|letzter|hosts):' | tr '\n' ' '
+        stdout_equals: "erster: 203.0.113.10 letzter: 203.0.113.10 hosts: 1"
+        message: Für /32 sollen erster und letzter Host die Adresse selbst sein und hosts 1.
+    solution: |
+      ```js title="subnetz.js"
+      const ipToInt = (ip) => ip.split('.').reduce((sum, o) => sum * 256 + Number(o), 0)
+      const intToIp = (n) => [24, 16, 8, 0].map((s) => Math.floor(n / 2 ** s) % 256).join('.')
+
+      function info(cidr) {
+        const [address, prefixText] = cidr.split('/')
+        const prefix = Number(prefixText)
+        const size = 2 ** (32 - prefix)
+        const network = Math.floor(ipToInt(address) / size) * size
+        const broadcast = network + size - 1
+        const special = size <= 2
+        return {
+          netz: `${intToIp(network)}/${prefix}`,
+          maske: intToIp(2 ** 32 - size),
+          broadcast: intToIp(broadcast),
+          erster: intToIp(special ? network : network + 1),
+          letzter: intToIp(special ? broadcast : broadcast - 1),
+          hosts: special ? size : size - 2,
+        }
+      }
+
+      for (const [key, value] of Object.entries(info(process.argv[2]))) {
+        console.log(`${key}: ${value}`)
+      }
+      ```
+  - id: validierung
+    title: Ungültige Eingaben abfangen
+    description: |
+      Ein Werkzeug, das bei `10.0.0.300/24` fröhlich Unsinn ausrechnet, ist gefährlich. Erweitere
+      `subnetz.js`:
+
+      - Ist die Adresse keine gültige IPv4-Adresse (genau vier Oktette von 0–255) oder das Präfix keine
+        ganze Zahl von 0 bis 32, gibt das Programm `Fehler: ungültige Eingabe` auf **stderr** aus
+        (`console.error`) und beendet sich mit **Exit-Code 1** (`process.exit(1)`).
+      - Fehlt das Argument ganz, gilt dasselbe.
+    checklist:
+      - Ungültige Adressen und Präfixe führen zu Exit-Code 1
+      - Gültige Eingaben funktionieren weiterhin
+    hints:
+      - "Prüfe jedes Oktett mit `/^(0|[1-9][0-9]{0,2})$/` und `<= 255`."
+      - "Das Präfix prüfst du mit `/^(\\d|[12]\\d|3[0-2])$/`."
+    checks:
+      - type: command
+        run: node subnetz.js 10.0.0.300/24 >/dev/null 2>&1; echo $?
+        stdout_equals: "1"
+        message: Bei 10.0.0.300/24 soll das Programm mit Exit-Code 1 enden.
+      - type: command
+        run: node subnetz.js 10.0.0.0/33 >/dev/null 2>&1; echo $?
+        stdout_equals: "1"
+        message: Ein Präfix über 32 ist ungültig – Exit-Code 1 erwartet.
+      - type: command
+        run: node subnetz.js >/dev/null 2>&1; echo $?
+        stdout_equals: "1"
+        message: Ohne Argument soll das Programm ebenfalls mit Exit-Code 1 enden.
+      - type: command
+        run: node subnetz.js 10.0.0.300/24 2>&1 >/dev/null
+        stdout_matches: "Fehler: ungültige Eingabe"
+        message: "Auf stderr soll „Fehler: ungültige Eingabe“ erscheinen (console.error)."
+      - type: command
+        run: node subnetz.js 10.0.11.0/24 | grep '^hosts:'
+        stdout_equals: "hosts: 254"
+        message: Gültige Eingaben müssen weiterhin funktionieren.
+    solution: |
+      ```js title="subnetz.js (Ergänzung vor der Ausgabe)"
+      function valid(cidr) {
+        if (typeof cidr !== 'string') return false
+        const [address, prefix] = cidr.split('/')
+        if (!/^(\d|[12]\d|3[0-2])$/.test(prefix ?? '')) return false
+        const parts = address.split('.')
+        return parts.length === 4 && parts.every((p) => /^(0|[1-9][0-9]{0,2})$/.test(p) && Number(p) <= 255)
+      }
+
+      if (!valid(process.argv[2])) {
+        console.error('Fehler: ungültige Eingabe')
+        process.exit(1)
+      }
+      ```
+  - id: enthalten
+    title: Liegt eine Adresse im Netz?
+    description: |
+      Die häufigste Frage im Alltag: „Gehört diese Adresse in dieses Netz?“ Erweitere `subnetz.js` um ein
+      optionales zweites Argument. Ist es angegeben, erscheint zusätzlich als **letzte Zeile**
+      `enthalten: ja` oder `enthalten: nein`.
+
+      ```text
+      node subnetz.js 10.0.11.0/24 10.0.11.77   → … enthalten: ja
+      node subnetz.js 10.0.11.0/24 10.0.21.5    → … enthalten: nein
+      ```
+    checklist:
+      - Zweites Argument wird ausgewertet
+      - Ohne zweites Argument bleibt die Ausgabe wie bisher
+    hints:
+      - Eine Adresse liegt im Netz, wenn ihre Zahl zwischen Netzadresse und Broadcast-Adresse liegt.
+    checks:
+      - type: command
+        run: node subnetz.js 10.0.11.0/24 10.0.11.77 | tail -n 1
+        stdout_equals: "enthalten: ja"
+        message: "10.0.11.77 liegt in 10.0.11.0/24 – die letzte Zeile soll „enthalten: ja“ lauten."
+      - type: command
+        run: node subnetz.js 10.0.11.0/24 10.0.21.5 | tail -n 1
+        stdout_equals: "enthalten: nein"
+        message: "10.0.21.5 liegt nicht in 10.0.11.0/24 – erwartet wird „enthalten: nein“."
+      - type: command
+        run: node subnetz.js 10.0.16.0/20 10.0.31.7 | tail -n 1
+        stdout_equals: "enthalten: ja"
+        message: Auch bei /20 muss die Prüfung stimmen (10.0.16.0 bis 10.0.31.255).
+      - type: command
+        run: node subnetz.js 10.0.11.0/24 | grep -c '^enthalten:' || true
+        stdout_matches: "^0$"
+        message: Ohne zweites Argument soll keine Zeile „enthalten“ erscheinen.
+    solution: |
+      ```js title="subnetz.js (Ergänzung am Ende)"
+      const other = process.argv[3]
+      if (other) {
+        const { network, size } = (() => {
+          const [address, prefix] = process.argv[2].split('/')
+          const size = 2 ** (32 - Number(prefix))
+          return { network: Math.floor(ipToInt(address) / size) * size, size }
+        })()
+        const n = ipToInt(other)
+        console.log(`enthalten: ${n >= network && n < network + size ? 'ja' : 'nein'}`)
+      }
+      ```
+  - id: regeln
+    title: Firewall-Regeln dokumentieren
+    description: |
+      Ergänze in `netzplan.yaml` einen Abschnitt `regeln:` mit den eingehenden Regeln (Security Groups):
+
+      ```yaml title="netzplan.yaml (Ergänzung)"
+      regeln:
+        - ziel: load-balancer
+          port: 443
+          quelle: 0.0.0.0/0
+        - ziel: bastion
+          port: 22
+          quelle: 198.51.100.0/24
+        - ziel: app
+          port: 8080
+          quelle: 10.0.1.0/24
+        - ziel: app
+          port: 22
+          quelle: bastion
+        - ziel: datenbank
+          port: 5432
+          quelle: 10.0.11.0/24
+      ```
+
+      Prüfe mit deinem Rechner, dass die Quelle der Datenbank-Regel wirklich das App-Subnetz ist:
+      `node subnetz.js 10.0.11.0/24 10.0.11.20`.
+    checklist:
+      - HTTPS ist das Einzige, was für 0.0.0.0/0 offen ist
+      - SSH nur aus dem Admin-Netz bzw. vom Bastion-Host
+      - Die Datenbank ist nur aus dem App-Subnetz erreichbar
+    hints:
+      - "Faustregel aus dem Kurs: `0.0.0.0/0` nur für 80/443 am Load Balancer."
+    checks:
+      - type: file_contains
+        path: netzplan.yaml
+        pattern: "^regeln:"
+        message: In netzplan.yaml fehlt der Abschnitt `regeln:`.
+      - type: command
+        run: "grep -A2 -E 'port:\\s*5432' netzplan.yaml | grep -E 'quelle:' | head -n 1"
+        stdout_matches: "quelle:\\s*\"?10\\.0\\.11\\.0/24"
+        message: Die Datenbank-Regel (Port 5432) soll als Quelle das App-Subnetz 10.0.11.0/24 haben.
+      - type: command
+        run: "grep -A2 -E 'port:\\s*22$' netzplan.yaml | grep -c '0\\.0\\.0\\.0/0' || true"
+        stdout_matches: "^0$"
+        message: SSH (Port 22) darf nicht für 0.0.0.0/0 freigegeben sein.
+      - type: command
+        run: "grep -B1 -E 'quelle:\\s*\"?0\\.0\\.0\\.0/0' netzplan.yaml | grep -E 'port:' | grep -vcE 'port:\\s*(80|443)$' || true"
+        stdout_matches: "^0$"
+        message: Für 0.0.0.0/0 sollen nur die Ports 80 und 443 freigegeben sein.
+    solution: |
+      Ergänze den YAML-Block aus der Beschreibung am Ende von `netzplan.yaml` (Reihenfolge der Felder:
+      `ziel`, `port`, `quelle`).
+  - id: zugang
+    title: Zugang über den Bastion-Host
+    description: |
+      Zum Schluss dokumentierst du, wie Admins auf die privaten Server kommen.
+
+      1. Lege eine Datei `ssh_config` an: Host `bastion` mit `HostName 203.0.113.10` und `User deploy`,
+         Host `app` mit `HostName 10.0.11.20`, `User deploy` und `ProxyJump bastion`.
+      2. Prüfe sie ohne Verbindung: `ssh -G -F ssh_config app`.
+      3. Ergänze in `README.md` einen Abschnitt `## Zugang`, der in ein, zwei Sätzen erklärt, dass private
+         Server nur über den Bastion-Host erreichbar sind.
+    checklist:
+      - ssh_config mit bastion und app (ProxyJump) angelegt
+      - README.md erklärt den Zugang
+    hints:
+      - Die Lektion „SSH, Bastion-Host und VPN“ zeigt das Format der Datei.
+    checks:
+      - type: command
+        run: ssh -G -F ssh_config app 2>/dev/null | grep -E '^(hostname|user|proxyjump) ' | sort | tr '\n' ' '
+        stdout_equals: "hostname 10.0.11.20 proxyjump bastion user deploy"
+        message: Der Host app braucht `HostName 10.0.11.20`, `User deploy` und `ProxyJump bastion`.
+      - type: command
+        run: ssh -G -F ssh_config bastion 2>/dev/null | grep -E '^hostname '
+        stdout_equals: "hostname 203.0.113.10"
+        message: Der Host bastion braucht `HostName 203.0.113.10`.
+      - type: file_contains
+        path: README.md
+        pattern: "^##\\s+Zugang"
+        message: In README.md fehlt der Abschnitt „## Zugang“.
+    solution: |
+      ```text title="ssh_config"
+      Host bastion
+        HostName 203.0.113.10
+        User deploy
+
+      Host app
+        HostName 10.0.11.20
+        User deploy
+        ProxyJump bastion
+      ```

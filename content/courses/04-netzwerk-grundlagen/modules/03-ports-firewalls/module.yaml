@@ -1,0 +1,79 @@
+title: Ports, Dienste und Firewalls
+description: Was ein Port ist, welche Dienste auf welchen Ports lauschen, wie du lauschende Sockets findest und wie Firewalls und ufw den Zugriff regeln.
+exercise:
+  id: modul-uebung-firewall
+  type: terminal
+  title: Ein Firewall-Skript für einen neuen Webserver
+  description: |
+    Ein neuer Webserver soll mit `ufw` abgesichert werden. Du schreibst das Skript, das ein Kollege später
+    auf dem Server ausführt. (Im Übungs-Terminal gibt es kein `ufw` – du schreibst nur die Datei, die
+    Prüfung liest sie.)
+
+    Anforderungen:
+
+    - Eingehend ist standardmäßig alles verboten, ausgehend standardmäßig alles erlaubt.
+    - SSH (Port 22/tcp) ist **nur** aus dem Admin-Netz `198.51.100.0/24` erlaubt.
+    - HTTP (80/tcp) und HTTPS (443/tcp) sind für alle erlaubt.
+    - PostgreSQL (5432/tcp) ist **nur** aus dem App-Subnetz `10.0.2.0/24` erlaubt.
+    - Erst **ganz am Ende** wird die Firewall mit `ufw --force enable` eingeschaltet.
+
+    1. Klicke auf **Aufgabe vorbereiten** und wechsle in den Ordner `firewall`.
+    2. Ergänze die Datei `firewall.sh` (sie beginnt schon mit `#!/usr/bin/env bash` und `set -e`).
+    3. Eine Regel pro Zeile, ohne `sudo`. Prüfe die Syntax mit `bash -n firewall.sh`.
+  workdir: firewall
+  setup: |
+    printf '#!/usr/bin/env bash\nset -e\n\n# Deine ufw-Regeln:\n' > firewall.sh
+  checks:
+    - type: command
+      run: bash -n firewall.sh && echo ok
+      stdout_equals: ok
+      message: firewall.sh enthält einen Syntaxfehler. Prüfe sie mit `bash -n firewall.sh`.
+    - type: file_contains
+      path: firewall.sh
+      pattern: "^\\s*ufw\\s+default\\s+deny\\s+incoming\\s*$"
+      message: Es fehlt die Standardregel, die eingehenden Verkehr verbietet (`ufw default deny incoming`).
+    - type: file_contains
+      path: firewall.sh
+      pattern: "^\\s*ufw\\s+default\\s+allow\\s+outgoing\\s*$"
+      message: Es fehlt die Standardregel, die ausgehenden Verkehr erlaubt (`ufw default allow outgoing`).
+    - type: file_contains
+      path: firewall.sh
+      pattern: "^\\s*ufw\\s+allow\\s+from\\s+198\\.51\\.100\\.0/24\\s+to\\s+any\\s+port\\s+22(\\s+proto\\s+tcp)?\\s*$"
+      message: SSH soll nur aus 198.51.100.0/24 erlaubt sein – z. B. `ufw allow from 198.51.100.0/24 to any port 22 proto tcp`.
+    - type: command
+      run: "grep -E '^\\s*ufw\\s+allow\\s+(22|ssh|OpenSSH)(/tcp)?\\s*$' firewall.sh | wc -l"
+      stdout_matches: "^\\s*0\\s*$"
+      message: Eine Regel öffnet SSH für die ganze Welt. Erlaube Port 22 nur aus dem Admin-Netz.
+    - type: file_contains
+      path: firewall.sh
+      pattern: "^\\s*ufw\\s+allow\\s+(80/tcp|http)\\s*$"
+      message: HTTP fehlt noch (`ufw allow 80/tcp`).
+    - type: file_contains
+      path: firewall.sh
+      pattern: "^\\s*ufw\\s+allow\\s+(443/tcp|https)\\s*$"
+      message: HTTPS fehlt noch (`ufw allow 443/tcp`).
+    - type: file_contains
+      path: firewall.sh
+      pattern: "^\\s*ufw\\s+allow\\s+from\\s+10\\.0\\.2\\.0/24\\s+to\\s+any\\s+port\\s+5432(\\s+proto\\s+tcp)?\\s*$"
+      message: PostgreSQL soll nur aus 10.0.2.0/24 erreichbar sein – z. B. `ufw allow from 10.0.2.0/24 to any port 5432 proto tcp`.
+    - type: command
+      run: "grep -vE '^\\s*(#|$)' firewall.sh | tail -n 1"
+      stdout_matches: "^\\s*ufw\\s+(--force\\s+enable|enable\\s+--force)\\s*$"
+      message: Die letzte Zeile mit Inhalt soll `ufw --force enable` sein – erst Regeln, dann einschalten.
+  hints:
+    - "Die Standardregeln setzt du mit `ufw default deny incoming` und `ufw default allow outgoing`."
+    - "Eine Quelle begrenzt du mit `ufw allow from <netz> to any port <port> proto tcp`."
+    - "`--force` beim Einschalten verhindert die interaktive Rückfrage – wichtig in Skripten."
+  solution: |
+    ```bash
+    #!/usr/bin/env bash
+    set -e
+
+    ufw default deny incoming
+    ufw default allow outgoing
+    ufw allow from 198.51.100.0/24 to any port 22 proto tcp
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw allow from 10.0.2.0/24 to any port 5432 proto tcp
+    ufw --force enable
+    ```

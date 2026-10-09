@@ -1,0 +1,36 @@
+title: Netzwerk-Grundlagen & Server-Zugang
+subtitle: IP-Adressen, Subnetze, Ports und Firewalls – und wie du sicher auf einen Server kommst
+description: >
+  Früher oder später steht in jedem Ticket ein Satz wie „Die Datenbank ist nur aus dem privaten Subnetz
+  erreichbar“ oder „Öffne Port 443 in der Security Group“. Dieser Kurs sorgt dafür, dass du solche Sätze
+  wirklich verstehst – und nicht nur abnickst.
+
+
+  Du lernst IPv4 bis auf die Ebene der einzelnen Bits kennen, rechnest Subnetze mit CIDR selbst aus,
+  verstehst, warum dein Laptop eine Adresse mit `192.168` hat (NAT!), liest IPv6-Adressen sicher und
+  weißt, welcher Dienst hinter welchem Port lauscht. Danach geht es um Schutz und Zugang: Firewalls,
+  `ufw`, Security Groups in der Cloud, SSH über einen Bastion-Host, VPNs und Docker-Netzwerke als
+  Beispiel direkt auf deinem eigenen Rechner.
+
+
+  Du übst mit echten Befehlen im Übungs-Terminal, schreibst kleine JavaScript-Funktionen, die Netze
+  berechnen, und baust am Ende einen dokumentierten Netzplan samt eigenem Subnetz-Rechner.
+category: grundlagen
+level: einsteiger
+icon: network
+color: "#14b8a6"
+estimated_hours: 5
+workspace_dir: netzwerk
+prerequisites: [wie-das-internet-funktioniert, terminal-shell]
+learning_goals:
+  - Du liest und schreibst IPv4-Adressen in Dezimal- und Binärschreibweise und kennst die historischen Adressklassen.
+  - Du berechnest zu jeder CIDR-Angabe Netzmaske, Netzadresse, Broadcast-Adresse und die Zahl der nutzbaren Hosts.
+  - Du unterscheidest öffentliche, private und besondere Adressen (RFC 1918, Loopback, 0.0.0.0) und erklärst NAT und DHCP.
+  - Du liest, kürzt und erweiterst IPv6-Adressen und kennst ihre wichtigsten Typen.
+  - Du ordnest Ports den richtigen Diensten zu und findest heraus, welcher Prozess auf welchem Port lauscht.
+  - Du planst Firewall-Regeln mit ufw und Security Groups nach dem Prinzip „so wenig offen wie möglich“.
+  - Du erreichst Server in privaten Netzen über SSH mit Bastion-Host (ProxyJump) oder VPN und verstehst Docker-Netzwerke.
+references:
+  - Typische Cloud-Architektur mit öffentlichem Subnetz für Load Balancer und privaten Subnetzen für App-Server und Datenbanken
+  - Datenbank-Zugriff für Entwickler:innen über einen Bastion-Host statt über einen offenen Datenbank-Port
+  - Lokale Entwicklungsumgebungen mit Docker Compose, in denen Container sich über Dienstnamen finden

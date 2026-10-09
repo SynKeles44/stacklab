@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 330" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Netzanteil und Hostanteil: 192.168.178.23/24</text>
+<text x="30" y="88" font-size="13" font-weight="600" fill="#475569">Adresse</text>
+<g font-family="ui-monospace, Menlo, monospace" font-size="17" fill="#1e1b3a" text-anchor="middle">
+<rect x="120" y="62" width="150" height="40" rx="8" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee" stroke-width="2"/>
+<text x="195" y="88">11000000</text>
+<rect x="285" y="62" width="150" height="40" rx="8" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee" stroke-width="2"/>
+<text x="360" y="88">10101000</text>
+<rect x="450" y="62" width="150" height="40" rx="8" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee" stroke-width="2"/>
+<text x="525" y="88">10110010</text>
+<rect x="615" y="62" width="150" height="40" rx="8" fill="#34d399" fill-opacity=".18" stroke="#34d399" stroke-width="2"/>
+<text x="690" y="88">00010111</text>
+<text x="195" y="124" font-size="14" fill="#475569">192</text>
+<text x="360" y="124" font-size="14" fill="#475569">168</text>
+<text x="525" y="124" font-size="14" fill="#475569">178</text>
+<text x="690" y="124" font-size="14" fill="#475569">23</text>
+</g>
+<text x="30" y="172" font-size="13" font-weight="600" fill="#475569">Maske</text>
+<g font-family="ui-monospace, Menlo, monospace" font-size="17" fill="#1e1b3a" text-anchor="middle">
+<rect x="120" y="146" width="150" height="40" rx="8" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="2"/>
+<text x="195" y="172">11111111</text>
+<rect x="285" y="146" width="150" height="40" rx="8" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="2"/>
+<text x="360" y="172">11111111</text>
+<rect x="450" y="146" width="150" height="40" rx="8" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="2"/>
+<text x="525" y="172">11111111</text>
+<rect x="615" y="146" width="150" height="40" rx="8" fill="#ffffff" stroke="#a78bfa" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="690" y="172">00000000</text>
+<text x="360" y="208" font-size="14" fill="#475569">255.255.255.0 = 24 Einsen</text>
+</g>
+<path d="M120 232 H 600" stroke="#22d3ee" stroke-width="4"/>
+<path d="M120 224 V 240 M600 224 V 240" stroke="#22d3ee" stroke-width="4"/>
+<text x="360" y="262" text-anchor="middle" font-size="15" font-weight="700" fill="#0e7490">Netzanteil (24 Bit) – gleich für alle im Subnetz</text>
+<path d="M615 232 H 765" stroke="#34d399" stroke-width="4"/>
+<path d="M615 224 V 240 M765 224 V 240" stroke="#34d399" stroke-width="4"/>
+<text x="690" y="262" text-anchor="middle" font-size="15" font-weight="700" fill="#047857">Hostanteil (8 Bit)</text>
+<text x="400" y="306" text-anchor="middle" font-size="14" fill="#1e1b3a">Adresse UND Maske = Netzadresse <tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">192.168.178.0</tspan> · Hosts .1 bis .254</text>
+</svg>

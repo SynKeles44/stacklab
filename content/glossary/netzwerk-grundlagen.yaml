@@ -1,0 +1,529 @@
+# Begriffe aus dem Kurs „Netzwerk-Grundlagen & Server-Zugang“.
+- slug: netzwerk
+  term: Netzwerk
+  short: Mehrere Geräte, die miteinander verbunden sind und Daten austauschen können.
+  explanation: >
+    Ein Netzwerk kann so klein sein wie dein Heim-WLAN oder so groß wie das Internet, das aus vielen
+    verbundenen Netzen besteht. Geräte im Netzwerk tauschen Datenpakete aus und werden über Adressen angesprochen.
+  example: Laptop, Handy und Drucker in deinem WLAN bilden zusammen ein kleines Netzwerk.
+  category: netzwerk
+  aliases: [Netz, Netze, Netzwerke]
+  related: [ip-adresse, router]
+  lesson: netzwerk-grundlagen/ip-adressen-verstehen
+- slug: ipv4
+  term: IPv4
+  short: Version 4 des Internet Protocol mit 32 Bit langen Adressen.
+  explanation: >
+    IPv4 ist seit 1981 die Grundlage des Internets. Adressen werden als vier Zahlen von 0 bis 255 geschrieben,
+    getrennt durch Punkte. Mit 32 Bit gibt es nur rund 4,3 Milliarden Adressen – deshalb sind sie heute knapp.
+  example: "`203.0.113.42` ist eine IPv4-Adresse."
+  category: netzwerk
+  aliases: [Internet Protocol Version 4]
+  related: [ip-adresse, ipv6, oktett]
+  lesson: netzwerk-grundlagen/ip-adressen-verstehen
+- slug: host
+  term: Host
+  short: Ein Gerät im Netzwerk, das eine IP-Adresse hat und Daten senden oder empfangen kann.
+  explanation: >
+    In der Netzwerk-Sprache ist jeder Teilnehmer ein Host – egal ob Laptop, Server, Drucker oder Container.
+    Der Hostanteil einer Adresse unterscheidet die Hosts innerhalb eines Netzes.
+  example: Ein /24-Netz bietet Platz für 254 Hosts.
+  category: netzwerk
+  aliases: [Hosts]
+  related: [ip-adresse, subnetz]
+  lesson: netzwerk-grundlagen/ip-adressen-verstehen
+- slug: netzwerkschnittstelle
+  term: Netzwerkschnittstelle
+  short: Der Anschluss, über den ein Gerät mit einem Netz verbunden ist – echt oder virtuell.
+  explanation: >
+    Jede Schnittstelle (englisch interface) hat eigene Adressen. Ein Laptop hat deshalb meist mehrere,
+    etwa WLAN, Netzwerkkabel, die Loopback-Schnittstelle und virtuelle Schnittstellen für Docker oder VPN.
+  example: "`ip addr` zeigt Schnittstellen wie `lo`, `wlan0` und `docker0`."
+  category: netzwerk
+  aliases: [Schnittstelle, Interface, Netzwerkkarte]
+  related: [ip-adresse, loopback, mac-adresse]
+  lesson: netzwerk-grundlagen/ip-adressen-verstehen
+- slug: datenpaket
+  term: Datenpaket
+  short: Ein kleines Stück Daten, das mit Quell- und Zieladresse durch das Netz geschickt wird.
+  explanation: >
+    Daten werden nicht am Stück übertragen, sondern in viele Pakete zerlegt. Jedes Paket trägt im Kopf
+    die Absender- und die Zieladresse, damit Router es weiterleiten können.
+  example: Beim Laden einer Webseite fließen hunderte Datenpakete zwischen Browser und Server.
+  category: netzwerk
+  aliases: [Paket, Pakete, Datenpakete]
+  related: [ip-adresse, router]
+  lesson: netzwerk-grundlagen/ip-adressen-verstehen
+- slug: router
+  term: Router
+  short: Ein Gerät, das Datenpakete anhand ihrer Zieladresse zwischen Netzen weiterleitet.
+  explanation: >
+    Ein Router verbindet mindestens zwei Netze, etwa dein Heimnetz mit dem Internet. Er kennt nicht den
+    ganzen Weg, sondern nur den nächsten Schritt, den er in seiner Routing-Tabelle nachschlägt.
+  example: Dein WLAN-Router leitet alles, was nicht ins Heimnetz gehört, an deinen Internetanbieter weiter.
+  category: netzwerk
+  aliases: [Router]
+  related: [routing-tabelle, default-gateway, nat]
+  lesson: netzwerk-grundlagen/ip-adressen-verstehen
+- slug: routing-tabelle
+  term: Routing-Tabelle
+  short: Die Liste, in der ein Gerät nachschlägt, wohin es Pakete für ein bestimmtes Netz schickt.
+  explanation: >
+    Jeder Eintrag nennt ein Zielnetz und den nächsten Schritt dorthin. Passen mehrere Einträge, gewinnt der
+    genaueste (längstes Präfix). Die Standardroute `default` bzw. `0.0.0.0/0` gilt für alles andere.
+  example: "`ip route` zeigt z. B. `default via 192.168.178.1 dev wlan0`."
+  category: netzwerk
+  aliases: [Routingtabelle, Routen, Route]
+  related: [router, default-gateway]
+  lesson: netzwerk-grundlagen/ip-adressen-verstehen
+- slug: ping
+  term: ping
+  short: Ein Befehl, der testet, ob ein anderes Gerät erreichbar ist und wie schnell es antwortet.
+  explanation: >
+    ping schickt kleine Testpakete (ICMP Echo) und wartet auf eine Antwort. Kommt keine, kann das am Ziel,
+    am Weg oder an einer Firewall liegen, die solche Pakete verwirft.
+  example: "`ping -c 3 127.0.0.1` schickt drei Testpakete an den eigenen Rechner."
+  category: netzwerk
+  aliases: [Ping]
+  related: [ip-adresse, firewall]
+  lesson: netzwerk-grundlagen/ip-adressen-verstehen
+- slug: dns
+  term: DNS
+  short: Das Domain Name System übersetzt Namen wie example.com in IP-Adressen.
+  explanation: >
+    Menschen merken sich Namen, Computer brauchen Adressen. DNS-Server beantworten die Frage „Welche
+    Adresse hat dieser Name?“. Für IPv4 heißen die Einträge A, für IPv6 AAAA.
+  example: Dein Laptop fragt den DNS-Server nach `example.com` und bekommt eine IP-Adresse zurück.
+  category: netzwerk
+  aliases: [Domain Name System, DNS-Server, Namensauflösung]
+  related: [ip-adresse, localhost]
+  lesson: netzwerk-grundlagen/ip-adressen-verstehen
+- slug: binaersystem
+  term: Binärsystem
+  short: Ein Zahlensystem mit nur zwei Ziffern, 0 und 1.
+  explanation: >
+    Jede Stelle ist doppelt so viel wert wie die rechts daneben (…, 8, 4, 2, 1). Computer rechnen binär,
+    weil sich „an“ und „aus“ technisch zuverlässig unterscheiden lassen.
+  example: Die Dezimalzahl 172 ist binär `10101100`.
+  category: grundlagen
+  aliases: [binär, Binärzahl, Dualsystem]
+  related: [bit, hexadezimal]
+  lesson: netzwerk-grundlagen/binaer-und-netzmaske
+- slug: bit
+  term: Bit
+  short: Die kleinste Informationseinheit – eine einzelne 0 oder 1.
+  explanation: >
+    Bit steht für „binary digit“. Acht Bit ergeben ein Byte. Eine IPv4-Adresse besteht aus 32 Bit, eine
+    IPv6-Adresse aus 128 Bit.
+  example: Mit 8 Bit lassen sich 256 Werte darstellen (0 bis 255).
+  category: grundlagen
+  aliases: [Bits]
+  related: [byte, binaersystem]
+  lesson: netzwerk-grundlagen/binaer-und-netzmaske
+- slug: byte
+  term: Byte
+  short: Eine Einheit aus acht Bit.
+  explanation: >
+    Mit einem Byte kann man 256 verschiedene Werte speichern. Dateigrößen werden in Byte angegeben
+    (Kilobyte, Megabyte …). In Netzwerk-Texten sagt man für genau acht Bit oft „Oktett“.
+  example: Das Zeichen „A“ belegt in einer Textdatei ein Byte.
+  category: grundlagen
+  aliases: [Bytes]
+  related: [bit, oktett]
+  lesson: netzwerk-grundlagen/binaer-und-netzmaske
+- slug: oktett
+  term: Oktett
+  short: Eine Gruppe von genau acht Bit – in IPv4 jede der vier Zahlen einer Adresse.
+  explanation: >
+    Ein Oktett kann Werte von 0 bis 255 annehmen. Eine IPv4-Adresse besteht aus vier Oktetten, die man
+    durch Punkte getrennt schreibt.
+  example: In `192.168.1.20` ist `168` das zweite Oktett.
+  category: netzwerk
+  aliases: [Oktette]
+  related: [byte, ipv4]
+  lesson: netzwerk-grundlagen/binaer-und-netzmaske
+- slug: netzmaske
+  term: Netzmaske
+  short: Eine 32-Bit-Schablone, die festlegt, welcher Teil einer IPv4-Adresse das Netz und welcher den Host bezeichnet.
+  explanation: >
+    Einsen in der Maske markieren den Netzanteil, Nullen den Hostanteil. Ein bitweises UND von Adresse
+    und Maske ergibt die Netzadresse. Statt der Maske schreibt man heute oft die Präfixlänge.
+  example: "`255.255.255.0` entspricht `/24`."
+  category: netzwerk
+  aliases: [Subnetzmaske, Maske, Netmask]
+  related: [praefixlaenge, netzadresse, subnetz]
+  lesson: netzwerk-grundlagen/binaer-und-netzmaske
+- slug: subnetz
+  term: Subnetz
+  short: Ein zusammenhängender Adressbereich, in dem sich Geräte direkt ohne Router erreichen.
+  explanation: >
+    Alle Adressen mit gleichem Netzanteil bilden ein Subnetz. Große Netze teilt man in Subnetze, um
+    Bereiche wie Webserver und Datenbanken voneinander zu trennen.
+  example: "`10.0.11.0/24` ist ein Subnetz der VPC `10.0.0.0/16`."
+  category: netzwerk
+  aliases: [Subnetze, Subnet, Teilnetz]
+  related: [netzmaske, cidr, netzadresse]
+  lesson: netzwerk-grundlagen/binaer-und-netzmaske
+- slug: netzadresse
+  term: Netzadresse
+  short: Die erste Adresse eines Netzes, bei der alle Hostbits 0 sind – der „Name“ des Netzes.
+  explanation: >
+    Die Netzadresse bezeichnet das Netz als Ganzes, etwa in Routing-Tabellen, und wird keinem Gerät
+    gegeben. Man erhält sie durch ein bitweises UND von Adresse und Netzmaske.
+  example: "Die Netzadresse von `198.51.100.77/27` ist `198.51.100.64`."
+  category: netzwerk
+  aliases: [Netzwerkadresse, Network Address]
+  related: [broadcast-adresse, netzmaske]
+  lesson: netzwerk-grundlagen/binaer-und-netzmaske
+- slug: adressklasse
+  term: Adressklasse
+  short: Die historische Einteilung von IPv4-Adressen in Klassen A bis E anhand der ersten Bits.
+  explanation: >
+    Bis 1993 bestimmte das erste Oktett die Netzgröße – Klasse A war ein /8, B ein /16, C ein /24. Das
+    System war zu starr und wurde durch CIDR ersetzt. Im Sprachgebrauch lebt es weiter.
+  example: "„Ein Klasse-C-Netz“ meint heute meist einfach ein /24."
+  category: netzwerk
+  aliases: [Adressklassen, Klasse-C-Netz, Netzklasse]
+  related: [cidr, ipv4]
+  lesson: netzwerk-grundlagen/cidr-und-bereiche
+- slug: cidr
+  term: CIDR
+  short: Classless Inter-Domain Routing – die Schreibweise von Netzen mit Präfixlänge, z. B. 10.0.0.0/16.
+  explanation: >
+    CIDR ersetzte 1993 die starren Adressklassen. Die Zahl hinter dem Schrägstrich sagt, wie viele Bits
+    zum Netzanteil gehören. So sind Netze beliebiger Größe möglich und lassen sich zusammenfassen.
+  example: "`198.51.100.0/24` umfasst die Adressen von `.0` bis `.255`."
+  category: netzwerk
+  aliases: [CIDR-Notation, CIDR-Schreibweise]
+  related: [praefixlaenge, netzmaske, subnetz]
+  lesson: netzwerk-grundlagen/cidr-und-bereiche
+- slug: praefixlaenge
+  term: Präfixlänge
+  short: Die Zahl hinter dem Schrägstrich in CIDR – die Anzahl der Bits im Netzanteil.
+  explanation: >
+    Je größer die Präfixlänge, desto kleiner das Netz. Die Zahl der Adressen ist 2 hoch (32 minus
+    Präfixlänge). Jedes Bit mehr halbiert das Netz.
+  example: "`/26` bedeutet 26 Netzbits und 64 Adressen."
+  category: netzwerk
+  aliases: [Präfix, Prefix, Prefix Length]
+  related: [cidr, netzmaske]
+  lesson: netzwerk-grundlagen/cidr-und-bereiche
+- slug: broadcast-adresse
+  term: Broadcast-Adresse
+  short: Die letzte Adresse eines IPv4-Netzes, bei der alle Hostbits 1 sind – sie erreicht alle Geräte im Netz.
+  explanation: >
+    Ein Paket an die Broadcast-Adresse geht an jedes Gerät im Subnetz. Deshalb kann man sie keinem Gerät
+    zuweisen. IPv6 kennt keinen Broadcast mehr und nutzt Multicast.
+  example: "Die Broadcast-Adresse von `192.168.178.0/24` ist `192.168.178.255`."
+  category: netzwerk
+  aliases: [Broadcast, Broadcastadresse]
+  related: [netzadresse, dhcp]
+  lesson: netzwerk-grundlagen/cidr-und-bereiche
+- slug: vpc
+  term: VPC
+  short: Virtual Private Cloud – dein eigenes, privates Netz bei einem Cloud-Anbieter.
+  explanation: >
+    In einer VPC legst du einen privaten Adressbereich fest (oft ein /16) und teilst ihn in öffentliche und
+    private Subnetze. Routing-Tabellen und Security Groups regeln, was wohin darf.
+  example: "Eine VPC mit `10.0.0.0/16` und Subnetzen wie `10.0.1.0/24` und `10.0.11.0/24`."
+  category: cloud
+  aliases: [Virtual Private Cloud, VPCs]
+  related: [subnetz, security-group, nat-gateway]
+  lesson: netzwerk-grundlagen/cidr-und-bereiche
+- slug: oeffentliche-ip-adresse
+  term: Öffentliche IP-Adresse
+  short: Eine Adresse, die weltweit eindeutig ist und im Internet geroutet wird.
+  explanation: >
+    Öffentliche Adressen werden über Vergabestellen an Internetanbieter, Cloud-Anbieter und Firmen verteilt.
+    Nur Geräte mit öffentlicher Adresse sind aus dem Internet direkt ansprechbar.
+  example: "Dein Router hat außen eine öffentliche Adresse, z. B. `203.0.113.7`."
+  category: netzwerk
+  aliases: [öffentliche Adresse, Public IP, öffentliche IP]
+  related: [private-ip-adresse, nat]
+  lesson: netzwerk-grundlagen/oeffentlich-privat-localhost
+- slug: private-ip-adresse
+  term: Private IP-Adresse
+  short: Eine Adresse aus den Bereichen nach RFC 1918, die nur innerhalb eines lokalen Netzes gilt.
+  explanation: >
+    Private Bereiche sind 10.0.0.0/8, 172.16.0.0/12 und 192.168.0.0/16. Jeder darf sie im eigenen Netz
+    nutzen, Router im Internet leiten sie aber nicht weiter. Ins Internet kommen solche Geräte über NAT.
+  example: "`192.168.178.23` im Heim-WLAN ist eine private Adresse."
+  category: netzwerk
+  aliases: [private Adresse, Private IP, RFC 1918]
+  related: [oeffentliche-ip-adresse, nat]
+  lesson: netzwerk-grundlagen/oeffentlich-privat-localhost
+- slug: isp
+  term: ISP
+  short: Internet Service Provider – dein Internetanbieter.
+  explanation: >
+    Der ISP verbindet dein Heim- oder Firmennetz mit dem Internet und vergibt meist die öffentliche
+    Adresse deines Routers. Manche ISPs teilen eine Adresse per Carrier-Grade-NAT unter vielen Kunden.
+  example: Fällt beim ISP eine Leitung aus, ist dein ganzer Haushalt offline.
+  category: netzwerk
+  aliases: [Internetanbieter, Internet Service Provider, Provider]
+  related: [oeffentliche-ip-adresse, router]
+  lesson: netzwerk-grundlagen/oeffentlich-privat-localhost
+- slug: rfc
+  term: RFC
+  short: Request for Comments – öffentliche, nummerierte Dokumente, die Internet-Standards beschreiben.
+  explanation: >
+    Protokolle wie IP, TCP oder DHCP sind in RFCs festgelegt. Jede RFC hat eine feste Nummer und wird nicht
+    mehr geändert; Neuerungen erscheinen als neue RFC.
+  example: RFC 1918 legt die privaten IPv4-Bereiche fest.
+  category: netzwerk
+  aliases: [RFCs, Request for Comments]
+  related: [private-ip-adresse]
+  lesson: netzwerk-grundlagen/oeffentlich-privat-localhost
+- slug: loopback
+  term: Loopback
+  short: Eine virtuelle Schnittstelle, über die ein Rechner mit sich selbst spricht.
+  explanation: >
+    Pakete an eine Loopback-Adresse verlassen den Rechner nie. Für IPv4 ist der ganze Bereich 127.0.0.0/8
+    reserviert (meist 127.0.0.1), für IPv6 die Adresse ::1.
+  example: "Ein Server auf `127.0.0.1:8000` ist nur vom eigenen Rechner erreichbar."
+  category: netzwerk
+  aliases: [Loopback-Adresse, 127.0.0.1, lo]
+  related: [localhost, binden]
+  lesson: netzwerk-grundlagen/oeffentlich-privat-localhost
+- slug: localhost
+  term: localhost
+  short: Der Hostname, der auf die Loopback-Adresse des eigenen Rechners zeigt.
+  explanation: >
+    Die Zuordnung steht in der Datei /etc/hosts – meist zu 127.0.0.1 und ::1. Programme fragen deshalb
+    manchmal zuerst über IPv6 und dann über IPv4 an.
+  example: "`http://localhost:5173` öffnet den Entwicklungsserver auf deinem eigenen Rechner."
+  category: netzwerk
+  aliases: [Localhost]
+  related: [loopback, dns]
+  lesson: netzwerk-grundlagen/oeffentlich-privat-localhost
+- slug: binden
+  term: Binden (Bind-Adresse)
+  short: Ein Server legt beim Start fest, auf welcher Adresse und welchem Port er Verbindungen annimmt.
+  explanation: >
+    Die Bind-Adresse bestimmt, wer den Dienst erreicht – 127.0.0.1 nur der eigene Rechner, 0.0.0.0 alle
+    Schnittstellen. Pro Adresse, Port und Protokoll kann nur ein Programm binden.
+  example: "`php -S 0.0.0.0:8000` bindet den Server an alle Schnittstellen."
+  category: netzwerk
+  aliases: [Bind-Adresse, binden, bind]
+  related: [loopback, port, socket]
+  lesson: netzwerk-grundlagen/oeffentlich-privat-localhost
+- slug: multicast
+  term: Multicast
+  short: Ein Paket an eine Gruppen-Adresse, das alle angemeldeten Empfänger erreicht.
+  explanation: >
+    Anders als Broadcast geht Multicast nur an Geräte, die sich für die Gruppe interessieren. IPv4 nutzt
+    dafür 224.0.0.0/4, IPv6 den Bereich ff00::/8.
+  example: "`224.0.0.251` wird von mDNS genutzt, um Drucker im WLAN zu finden."
+  category: netzwerk
+  aliases: [Multicast-Adresse]
+  related: [broadcast-adresse, ipv6]
+  lesson: netzwerk-grundlagen/oeffentlich-privat-localhost
+- slug: nat
+  term: NAT
+  short: Network Address Translation – ein Router tauscht beim Weiterleiten Adressen aus.
+  explanation: >
+    Meist ersetzt der Router die private Absender-Adresse durch seine öffentliche und merkt sich die
+    Verbindung in einer Tabelle. So teilen sich viele Geräte eine öffentliche IPv4-Adresse.
+  example: Alle Geräte deines Heimnetzes erscheinen im Internet mit der Adresse deines Routers.
+  category: netzwerk
+  aliases: [Network Address Translation, PAT, NAPT]
+  related: [private-ip-adresse, port-forwarding, nat-gateway]
+  lesson: netzwerk-grundlagen/nat-und-dhcp
+- slug: dhcp
+  term: DHCP
+  short: Dynamic Host Configuration Protocol – verteilt automatisch Adresse, Maske, Gateway und DNS-Server.
+  explanation: >
+    Ein neues Gerät ruft per Broadcast nach einem DHCP-Server und bekommt eine Adresse für eine bestimmte
+    Lease-Zeit. Der Ablauf heißt DORA – Discover, Offer, Request, Acknowledge.
+  example: Dein Laptop bekommt im WLAN per DHCP die Adresse `192.168.178.23`.
+  category: netzwerk
+  aliases: [DHCP-Server, DORA]
+  related: [default-gateway, mac-adresse]
+  lesson: netzwerk-grundlagen/nat-und-dhcp
+- slug: default-gateway
+  term: Standard-Gateway
+  short: Der Router, an den ein Gerät alle Pakete schickt, deren Ziel nicht im eigenen Subnetz liegt.
+  explanation: >
+    Das Gateway steht als default-Route in der Routing-Tabelle und muss im eigenen Subnetz liegen. Ohne
+    Gateway erreicht ein Gerät nur seine direkten Nachbarn.
+  example: "`default via 192.168.178.1` – das Gateway ist der WLAN-Router."
+  category: netzwerk
+  aliases: [Gateway, Default Gateway, Standardgateway, Default-Route]
+  related: [router, routing-tabelle, dhcp]
+  lesson: netzwerk-grundlagen/nat-und-dhcp
+- slug: mac-adresse
+  term: MAC-Adresse
+  short: Die feste Hardware-Adresse einer Netzwerkkarte im lokalen Netz.
+  explanation: >
+    MAC-Adressen sind 48 Bit lang und werden hexadezimal geschrieben. Sie gelten nur im lokalen
+    Netzsegment, etwa damit der DHCP-Server ein Gerät wiedererkennt.
+  example: "`02:00:5e:10:00:01` ist eine MAC-Adresse."
+  category: netzwerk
+  aliases: [MAC, Hardware-Adresse]
+  related: [netzwerkschnittstelle, dhcp]
+  lesson: netzwerk-grundlagen/nat-und-dhcp
+- slug: ipv6
+  term: IPv6
+  short: Version 6 des Internet Protocol mit 128 Bit langen Adressen.
+  explanation: >
+    IPv6 löst die Adressknappheit von IPv4. Adressen werden hexadezimal in acht Gruppen geschrieben und
+    lassen sich mit :: kürzen. NAT ist nicht mehr nötig; Schutz kommt von der Firewall.
+  example: "`2001:db8::1` ist eine IPv6-Adresse aus dem Dokumentationsbereich."
+  category: netzwerk
+  aliases: [Internet Protocol Version 6]
+  related: [ipv4, dual-stack, hexadezimal]
+  lesson: netzwerk-grundlagen/ipv6
+- slug: dual-stack
+  term: Dual-Stack
+  short: Ein Gerät oder Netz nutzt IPv4 und IPv6 gleichzeitig.
+  explanation: >
+    Weil IPv4 und IPv6 nicht direkt miteinander sprechen, laufen heute meist beide parallel. Ein Gerät hat
+    dann Adressen beider Versionen und wählt je nach Ziel.
+  example: Dein Laptop hat `192.168.178.23` und zusätzlich eine IPv6-Adresse aus `2001:db8::/32`.
+  category: netzwerk
+  aliases: [Dual Stack, Dualstack]
+  related: [ipv4, ipv6]
+  lesson: netzwerk-grundlagen/ipv6
+- slug: hexadezimal
+  term: Hexadezimal
+  short: Ein Zahlensystem mit 16 Ziffern, 0–9 und a–f.
+  explanation: >
+    Eine Hexadezimalziffer steht für genau 4 Bit, zwei Ziffern für ein Byte. Deshalb werden IPv6-Adressen,
+    MAC-Adressen und Farbcodes hexadezimal geschrieben.
+  example: "`ff` ist hexadezimal für 255."
+  category: grundlagen
+  aliases: [Hex, Hexadezimalsystem, Hexadezimalzahl]
+  related: [binaersystem, ipv6]
+  lesson: netzwerk-grundlagen/ipv6
+- slug: link-local-adresse
+  term: Link-local-Adresse
+  short: Eine Adresse, die nur im eigenen Netzsegment gilt und nicht geroutet wird.
+  explanation: >
+    Bei IPv6 bildet jede Schnittstelle automatisch eine link-local-Adresse aus fe80::/10. Bei IPv4 nutzt ein
+    Gerät 169.254.0.0/16 nur als Notlösung, wenn kein DHCP-Server antwortet.
+  example: "`fe80::5054:ff:fe12:3456` ist eine IPv6-link-local-Adresse."
+  category: netzwerk
+  aliases: [link-local, Link-local]
+  related: [ipv6, slaac]
+  lesson: netzwerk-grundlagen/ipv6
+- slug: slaac
+  term: SLAAC
+  short: Stateless Address Autoconfiguration – IPv6-Geräte bilden ihre Adresse selbst.
+  explanation: >
+    Der Router verkündet ein /64-Präfix, das Gerät ergänzt die letzten 64 Bit selbst, meist zufällig. So
+    braucht IPv6 keinen DHCP-Server, um Adressen zu verteilen.
+  example: "Aus dem Präfix `2001:db8:4f2a:1::/64` bildet ein Laptop z. B. `2001:db8:4f2a:1:5c3e:12ff:fe34:abcd`."
+  category: netzwerk
+  aliases: [Stateless Address Autoconfiguration]
+  related: [ipv6, link-local-adresse]
+  lesson: netzwerk-grundlagen/ipv6
+- slug: tcp
+  term: TCP
+  short: Transmission Control Protocol – verbindungsorientiertes, zuverlässiges Transportprotokoll.
+  explanation: >
+    TCP baut vor dem Datenaustausch eine Verbindung auf, sendet verlorene Pakete neu und hält die
+    Reihenfolge ein. HTTP, SSH und Datenbanken nutzen TCP.
+  example: "Eine Firewall-Regel `443/tcp` betrifft HTTPS-Verbindungen."
+  category: netzwerk
+  aliases: [Transmission Control Protocol]
+  related: [udp, port]
+  lesson: netzwerk-grundlagen/ports-und-dienste
+- slug: udp
+  term: UDP
+  short: User Datagram Protocol – schnelles Transportprotokoll ohne Verbindung und ohne Zustellgarantie.
+  explanation: >
+    UDP schickt einzelne Datagramme ohne Handshake. Das ist schnell, verlorene Pakete werden aber nicht neu
+    gesendet. DNS-Anfragen, DHCP und Video-Calls nutzen oft UDP.
+  example: "DNS-Server lauschen auf `53/udp`."
+  category: netzwerk
+  aliases: [User Datagram Protocol]
+  related: [tcp, port]
+  lesson: netzwerk-grundlagen/ports-und-dienste
+- slug: dienst
+  term: Dienst
+  short: Ein Programm, das im Hintergrund läuft und auf einem Port Anfragen beantwortet.
+  explanation: >
+    Webserver, Datenbanken und SSH-Server sind Dienste. Sie laufen dauerhaft und lauschen auf einem Port.
+    Welcher Port verwendet wird, ist Konvention und lässt sich meist konfigurieren.
+  example: PostgreSQL ist ein Dienst, der standardmäßig auf Port 5432 lauscht.
+  category: netzwerk
+  aliases: [Dienste, Service, Services]
+  related: [port, prozess]
+  lesson: netzwerk-grundlagen/ports-und-dienste
+- slug: ephemerer-port
+  term: Flüchtiger Port
+  short: Ein kurzlebiger Port, den das Betriebssystem einem Client als Absender zuteilt.
+  explanation: >
+    Für jede ausgehende Verbindung wählt das System einen freien Port aus einem festen Bereich. Linux nutzt
+    standardmäßig 32768 bis 60999, die IANA empfiehlt 49152 bis 65535.
+  example: "Dein Browser spricht von `192.168.178.23:51544` aus mit `203.0.113.10:443`."
+  category: netzwerk
+  aliases: [Ephemerer Port, Ephemeral Port, flüchtige Ports, Quell-Port]
+  related: [port, socket]
+  lesson: netzwerk-grundlagen/ports-und-dienste
+- slug: stateful-firewall
+  term: Stateful Firewall
+  short: Eine Firewall, die sich aktive Verbindungen merkt und Antworten darauf automatisch durchlässt.
+  explanation: >
+    Regeln schreibt man nur für den Verbindungsaufbau. Pakete, die zu einer bereits erlaubten Verbindung
+    gehören, kommen ohne eigene Regel durch. AWS Security Groups und ufw arbeiten so.
+  example: Der Server ruft eine API auf – die Antwort kommt durch, obwohl eingehend nur 443 erlaubt ist.
+  category: sicherheit
+  aliases: [stateful, zustandsbehaftet]
+  related: [firewall, security-group]
+  lesson: netzwerk-grundlagen/firewalls-und-ufw
+- slug: ufw
+  term: ufw
+  short: Uncomplicated Firewall – ein einfaches Werkzeug, um die Linux-Firewall zu konfigurieren.
+  explanation: >
+    ufw übersetzt einfache Befehle wie `ufw allow 443/tcp` in die Paketfilter-Regeln des Kernels. Es ist
+    auf Ubuntu und Debian verbreitet. Wichtig ist, SSH vor `ufw enable` zu erlauben.
+  example: "`sudo ufw allow from 198.51.100.0/24 to any port 22 proto tcp`"
+  category: sicherheit
+  aliases: [Uncomplicated Firewall, UFW]
+  related: [firewall, stateful-firewall]
+  lesson: netzwerk-grundlagen/firewalls-und-ufw
+- slug: security-group
+  term: Security Group
+  short: Eine virtuelle, stateful Firewall um eine einzelne Cloud-Ressource bei AWS.
+  explanation: >
+    Security Groups kennen nur Erlaubnis-Regeln; eingehend ist zunächst nichts erlaubt. Als Quelle kann
+    eine andere Security Group dienen, sodass Schichten wie App und Datenbank sauber verkettet werden.
+  example: "`sg-db` erlaubt 5432/tcp nur von `sg-app`."
+  category: cloud
+  aliases: [Security Groups, Sicherheitsgruppe, SG]
+  related: [firewall, stateful-firewall, vpc]
+  lesson: netzwerk-grundlagen/security-groups
+- slug: load-balancer
+  term: Load Balancer
+  short: Ein Dienst, der eingehende Anfragen auf mehrere Server verteilt.
+  explanation: >
+    Der Load Balancer ist oft das einzige öffentlich erreichbare Element einer Anwendung. Er nimmt
+    HTTPS-Anfragen an und leitet sie an App-Server in privaten Subnetzen weiter.
+  example: Ein Application Load Balancer nimmt Anfragen auf Port 443 an und verteilt sie auf drei App-Server.
+  category: cloud
+  aliases: [Lastverteiler, ALB, Load-Balancer]
+  related: [security-group, vpc]
+  lesson: netzwerk-grundlagen/security-groups
+- slug: nat-gateway
+  term: NAT-Gateway
+  short: Ein Cloud-Dienst, der Servern in privaten Subnetzen ausgehenden Internetzugang gibt.
+  explanation: >
+    Server ohne öffentliche Adresse können über das NAT-Gateway Updates oder Pakete laden, bleiben aber
+    von außen unerreichbar. Für externe Partner ist die Adresse des NAT-Gateways die Absender-Adresse.
+  example: App-Server in `10.0.11.0/24` laden über ein NAT-Gateway Pakete aus dem Internet.
+  category: cloud
+  aliases: [NAT Gateway, NAT-Gateways]
+  related: [nat, vpc]
+  lesson: netzwerk-grundlagen/security-groups
+- slug: vpn
+  term: VPN
+  short: Virtual Private Network – ein verschlüsselter Tunnel, der dein Gerät in ein entferntes Netz holt.
+  explanation: >
+    Mit VPN bekommt dein Laptop eine virtuelle Schnittstelle mit einer Adresse im entfernten Netz und
+    erreicht dort private Adressen. Bei einem Split-Tunnel geht nur der Verkehr für dieses Netz durch den Tunnel.
+  example: Über das Firmen-VPN erreichst du das interne Wiki unter `10.0.5.20`.
+  category: sicherheit
+  aliases: [Virtual Private Network, VPNs]
+  related: [bastion-host, private-ip-adresse]
+  lesson: netzwerk-grundlagen/ssh-bastion-vpn

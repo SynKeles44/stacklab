@@ -1,0 +1,67 @@
+title: Zugang zu Servern
+description: Security Groups in der Cloud, SSH über einen Bastion-Host, VPNs und Tunnel in private Netze – und Docker-Netzwerke als Beispiel auf deinem eigenen Rechner.
+exercise:
+  id: modul-uebung-ssh-config
+  type: terminal
+  title: Eine SSH-Konfiguration für den Weg über den Bastion-Host
+  description: |
+    Dein Team betreibt einen App-Server im privaten Subnetz. Er ist nur über einen Bastion-Host
+    erreichbar. Statt jedes Mal lange Befehle zu tippen, legst du eine SSH-Konfigurationsdatei an.
+
+    | Name | Adresse | Benutzer | Besonderheit |
+    |---|---|---|---|
+    | `bastion` | `203.0.113.10` | `deploy` | öffentlich erreichbar, Schlüssel `~/.ssh/id_ed25519` |
+    | `app` | `10.0.2.15` | `deploy` | nur über `bastion` erreichbar (ProxyJump) |
+
+    Zusätzlich soll beim Verbinden mit `app` ein Tunnel entstehen: Der **lokale Port 15432** zeigt auf
+    die Datenbank `10.0.3.20:5432`.
+
+    1. Klicke auf **Aufgabe vorbereiten** und wechsle in den Ordner `ssh-konfig`.
+    2. Schreibe die Datei `ssh_config` mit zwei `Host`-Blöcken.
+    3. Prüfe sie, **ohne** zu verbinden: `ssh -G -F ssh_config app` zeigt die Einstellungen, die SSH
+       verwenden würde.
+  workdir: ssh-konfig
+  setup: |
+    echo "Lege hier die Datei ssh_config an und prüfe sie mit: ssh -G -F ssh_config app" > LIESMICH.txt
+  checks:
+    - type: file_exists
+      path: ssh_config
+      message: Die Datei ssh_config fehlt noch.
+    - type: command
+      run: ssh -G -F ssh_config bastion 2>/dev/null | grep -E '^(hostname|user) ' | sort | tr '\n' ' '
+      stdout_equals: "hostname 203.0.113.10 user deploy"
+      message: Der Host bastion braucht `HostName 203.0.113.10` und `User deploy`.
+    - type: command
+      run: ssh -G -F ssh_config bastion 2>/dev/null | grep -E '^identityfile ' | grep -c 'id_ed25519'
+      stdout_matches: "^[1-9]"
+      message: Für bastion soll der Schlüssel `~/.ssh/id_ed25519` als IdentityFile eingetragen sein.
+    - type: command
+      run: ssh -G -F ssh_config app 2>/dev/null | grep -E '^(hostname|user|proxyjump) ' | sort | tr '\n' ' '
+      stdout_equals: "hostname 10.0.2.15 proxyjump bastion user deploy"
+      message: Der Host app braucht `HostName 10.0.2.15`, `User deploy` und `ProxyJump bastion`.
+    - type: command
+      run: ssh -G -F ssh_config app 2>/dev/null | grep -E '^localforward '
+      stdout_matches: "^localforward 15432 \\[?10\\.0\\.3\\.20\\]?:5432$"
+      message: "Für app fehlt der Tunnel: `LocalForward 15432 10.0.3.20:5432`."
+  hints:
+    - "Ein Block beginnt mit `Host <name>`, darunter eingerückt die Optionen wie `HostName` und `User`."
+    - "Den Sprung über den Bastion-Host beschreibt die Option `ProxyJump bastion`."
+    - "Der Tunnel: `LocalForward 15432 10.0.3.20:5432` im Block von app."
+  solution: |
+    ```text title="ssh_config"
+    Host bastion
+      HostName 203.0.113.10
+      User deploy
+      IdentityFile ~/.ssh/id_ed25519
+
+    Host app
+      HostName 10.0.2.15
+      User deploy
+      ProxyJump bastion
+      LocalForward 15432 10.0.3.20:5432
+    ```
+
+    ```bash
+    cd ssh-konfig
+    ssh -G -F ssh_config app | grep -E '^(hostname|user|proxyjump|localforward) '
+    ```

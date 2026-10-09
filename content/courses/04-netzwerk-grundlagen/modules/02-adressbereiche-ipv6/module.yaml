@@ -1,0 +1,94 @@
+title: Adressbereiche, NAT und IPv6
+description: Öffentliche und private Adressen, Loopback und 0.0.0.0, NAT, DHCP und das Standard-Gateway – und wie IPv6 das Adressproblem grundsätzlich löst.
+exercise:
+  id: modul-uebung-adressbereiche
+  type: terminal
+  title: Ein Adress-Klassifizierer für die Kommandozeile
+  description: |
+    Baue ein kleines Node-Programm, das zu einer IPv4-Adresse sagt, zu welchem Bereich sie gehört.
+    Im Ordner `klassifizierer` liegt schon ein Gerüst `klassifiziere.js`, das die Adresse aus der
+    Kommandozeile liest.
+
+    1. Klicke auf **Aufgabe vorbereiten** und öffne `klassifiziere.js` (z. B. mit `nano`).
+    2. Ergänze die Funktion `classify(ip)`, sodass sie genau eines dieser Wörter zurückgibt:
+       - `loopback` für `127.0.0.0/8`
+       - `privat` für `10.0.0.0/8`, `172.16.0.0/12` und `192.168.0.0/16`
+       - `link-local` für `169.254.0.0/16`
+       - `dokumentation` für `192.0.2.0/24`, `198.51.100.0/24` und `203.0.113.0/24`
+       - `oeffentlich` für alle anderen gültigen Adressen
+       - `ungueltig`, wenn es keine gültige IPv4-Adresse ist
+    3. Bei `ungueltig` soll das Programm mit Exit-Code `1` enden, sonst mit `0` (das Gerüst erledigt das schon).
+    4. Teste selbst, z. B. `node klassifiziere.js 172.20.1.1`.
+  workdir: klassifizierer
+  setup: |
+    cat > klassifiziere.js <<'EOF'
+    function parse(ip) {
+      const parts = String(ip).split('.')
+      if (parts.length !== 4) return null
+      const octets = parts.map((p) => (/^(0|[1-9][0-9]{0,2})$/.test(p) ? Number(p) : NaN))
+      return octets.every((o) => o >= 0 && o <= 255) ? octets : null
+    }
+
+    function classify(ip) {
+      const o = parse(ip)
+      if (!o) return 'ungueltig'
+      // Ergänze hier die Bereiche. o[0] ist das erste Oktett, o[1] das zweite usw.
+      return 'oeffentlich'
+    }
+
+    const result = classify(process.argv[2])
+    console.log(result)
+    process.exit(result === 'ungueltig' ? 1 : 0)
+    EOF
+  checks:
+    - type: file_exists
+      path: klassifiziere.js
+      message: klassifiziere.js fehlt. Klicke auf „Aufgabe vorbereiten“.
+    - type: command
+      run: node klassifiziere.js 10.1.2.3; node klassifiziere.js 192.168.0.1; node klassifiziere.js 172.31.255.255
+      stdout_equals: "privat\nprivat\nprivat"
+      message: Die drei privaten Bereiche aus RFC 1918 (10/8, 172.16/12, 192.168/16) werden noch nicht als privat erkannt.
+    - type: command
+      run: node klassifiziere.js 172.32.0.1; node klassifiziere.js 172.15.0.1; node klassifiziere.js 192.169.0.1
+      stdout_equals: "oeffentlich\noeffentlich\noeffentlich"
+      message: Achte auf die Grenzen – 172.16.0.0/12 reicht nur von 172.16 bis 172.31, und 192.169.x ist nicht privat.
+    - type: command
+      run: node klassifiziere.js 127.0.0.1; node klassifiziere.js 127.200.0.9
+      stdout_equals: "loopback\nloopback"
+      message: Der ganze Bereich 127.0.0.0/8 ist Loopback, nicht nur 127.0.0.1.
+    - type: command
+      run: node klassifiziere.js 169.254.10.20
+      stdout_equals: link-local
+      message: 169.254.0.0/16 soll als link-local erkannt werden.
+    - type: command
+      run: node klassifiziere.js 192.0.2.1; node klassifiziere.js 198.51.100.7; node klassifiziere.js 203.0.113.250
+      stdout_equals: "dokumentation\ndokumentation\ndokumentation"
+      message: Die drei Dokumentationsbereiche (192.0.2/24, 198.51.100/24, 203.0.113/24) fehlen noch.
+    - type: command
+      run: node klassifiziere.js 198.51.101.7
+      stdout_equals: oeffentlich
+      message: 198.51.101.7 liegt knapp außerhalb von 198.51.100.0/24 und ist damit eine normale öffentliche Adresse.
+    - type: command
+      run: node klassifiziere.js 300.1.1.1; echo "exit=$?"
+      stdout_equals: "ungueltig\nexit=1"
+      message: Ungültige Adressen sollen „ungueltig“ ausgeben und mit Exit-Code 1 enden.
+  hints:
+    - "Für 172.16.0.0/12 gilt: erstes Oktett 172 **und** zweites Oktett zwischen 16 und 31."
+    - "Prüfe die engeren Bereiche (z. B. Dokumentation) mit allen drei ersten Oktetten: `o[0] === 198 && o[1] === 51 && o[2] === 100`."
+    - "Die Reihenfolge der `if`-Abfragen ist egal, solange sich die Bereiche nicht überschneiden – das tun sie hier nicht."
+  solution: |
+    ```js
+    function classify(ip) {
+      const o = parse(ip)
+      if (!o) return 'ungueltig'
+      if (o[0] === 127) return 'loopback'
+      if (o[0] === 10) return 'privat'
+      if (o[0] === 172 && o[1] >= 16 && o[1] <= 31) return 'privat'
+      if (o[0] === 192 && o[1] === 168) return 'privat'
+      if (o[0] === 169 && o[1] === 254) return 'link-local'
+      if (o[0] === 192 && o[1] === 0 && o[2] === 2) return 'dokumentation'
+      if (o[0] === 198 && o[1] === 51 && o[2] === 100) return 'dokumentation'
+      if (o[0] === 203 && o[1] === 0 && o[2] === 113) return 'dokumentation'
+      return 'oeffentlich'
+    }
+    ```

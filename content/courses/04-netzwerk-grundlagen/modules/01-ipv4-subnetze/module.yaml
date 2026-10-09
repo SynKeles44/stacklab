@@ -1,0 +1,103 @@
+title: IPv4 und Subnetze
+description: Wie eine IPv4-Adresse aus 32 Bit aufgebaut ist, was Netzmaske und CIDR bedeuten und wie du Netzbereiche berechnest und aufteilst.
+exercise:
+  id: modul-uebung-subnetze
+  type: code
+  language: js
+  title: Ein Netz für mehrere Teams aufteilen
+  description: |
+    Dein Team bekommt das Netz `10.20.0.0/24` und soll es auf mehrere Bereiche verteilen. Jeder Bereich
+    braucht eine bestimmte Anzahl nutzbarer Hosts. Schreibe `planSubnets(base, needs)`:
+
+    - `base` ist ein Netz in CIDR-Schreibweise, z. B. `"10.20.0.0/24"`.
+    - `needs` ist eine Liste von Host-Anzahlen, z. B. `[50, 20, 10]`.
+    - Für jeden Bedarf wählst du das **kleinste** Subnetz, dessen nutzbare Hosts (`2^(32-präfix) - 2`)
+      reichen.
+    - Vergib die Subnetze **lückenlos ab dem Anfang** des Basisnetzes, und zwar **größtes zuerst**
+      (bei gleicher Größe in der ursprünglichen Reihenfolge). So liegen alle Subnetze automatisch an
+      gültigen Grenzen.
+    - Gib eine Liste in der **ursprünglichen Reihenfolge** von `needs` zurück:
+      `[{ hosts: 50, cidr: "10.20.0.0/26" }, …]`
+    - Passt nicht alles ins Basisnetz, wirf einen Fehler.
+
+    Beispiel: `planSubnets("10.20.0.0/24", [50, 20, 10])` ergibt `10.20.0.0/26`, `10.20.0.64/27` und
+    `10.20.0.96/28`.
+  starter: |
+    function ipToInt(ip) {
+      return ip.split('.').reduce((sum, octet) => sum * 256 + Number(octet), 0)
+    }
+
+    function intToIp(n) {
+      return [24, 16, 8, 0].map((shift) => Math.floor(n / 2 ** shift) % 256).join('.')
+    }
+
+    function planSubnets(base, needs) {
+      // 1. Basisnetz zerlegen (Adresse und Präfix), Größe berechnen
+      // 2. Für jeden Bedarf das passende Präfix finden
+      // 3. Größtes zuerst vergeben, Ergebnis in Originalreihenfolge zurückgeben
+    }
+  tests:
+    - name: verteilt 50, 20 und 10 Hosts
+      code: |
+        assertDeepEqual(planSubnets('10.20.0.0/24', [50, 20, 10]), [
+          { hosts: 50, cidr: '10.20.0.0/26' },
+          { hosts: 20, cidr: '10.20.0.64/27' },
+          { hosts: 10, cidr: '10.20.0.96/28' },
+        ])
+    - name: behält die ursprüngliche Reihenfolge bei
+      code: |
+        assertDeepEqual(planSubnets('10.20.0.0/24', [10, 50, 20]), [
+          { hosts: 10, cidr: '10.20.0.96/28' },
+          { hosts: 50, cidr: '10.20.0.0/26' },
+          { hosts: 20, cidr: '10.20.0.64/27' },
+        ])
+    - name: nutzt genau die Grenze 62 Hosts für ein /26
+      code: |
+        assertEqual(planSubnets('192.168.10.0/24', [62])[0].cidr, '192.168.10.0/26')
+        assertEqual(planSubnets('192.168.10.0/24', [63])[0].cidr, '192.168.10.0/25')
+    - name: füllt ein Netz komplett
+      code: |
+        const plan = planSubnets('172.16.0.0/24', [100, 100])
+        assertEqual(plan[0].cidr, '172.16.0.0/25')
+        assertEqual(plan[1].cidr, '172.16.0.128/25')
+    - name: wirft, wenn der Platz nicht reicht
+      code: assertThrows(() => planSubnets('10.20.0.0/24', [200, 100]))
+    - name: liefert für eine leere Liste eine leere Liste
+      code: assertDeepEqual(planSubnets('10.20.0.0/24', []), [])
+  hints:
+    - "Das Präfix für n Hosts findest du mit einer Schleife: Beginne bei 30 und verkleinere das Präfix, solange `2 ** (32 - p) - 2 < n`."
+    - "Sortiere eine Kopie der Indizes nach Größe absteigend: `needs.map((n, i) => i).sort((a, b) => needs[b] - needs[a])`. `sort` ist in JavaScript stabil."
+    - "Merke dir einen Zeiger `next` (Ganzzahl), der nach jeder Vergabe um die Größe des Subnetzes wächst. Prüfe am Ende, ob er über `start + 2 ** (32 - basisPräfix)` hinausgeht."
+  solution: |
+    ```js
+    function ipToInt(ip) {
+      return ip.split('.').reduce((sum, octet) => sum * 256 + Number(octet), 0)
+    }
+
+    function intToIp(n) {
+      return [24, 16, 8, 0].map((shift) => Math.floor(n / 2 ** shift) % 256).join('.')
+    }
+
+    function prefixFor(hosts) {
+      let prefix = 30
+      while (prefix > 0 && 2 ** (32 - prefix) - 2 < hosts) prefix--
+      return prefix
+    }
+
+    function planSubnets(base, needs) {
+      const [address, prefixText] = base.split('/')
+      const start = ipToInt(address)
+      const end = start + 2 ** (32 - Number(prefixText))
+      const order = needs.map((_, i) => i).sort((a, b) => needs[b] - needs[a])
+      const result = new Array(needs.length)
+      let next = start
+      for (const i of order) {
+        const prefix = prefixFor(needs[i])
+        const size = 2 ** (32 - prefix)
+        if (next + size > end) throw new Error('Nicht genug Platz für ' + needs[i] + ' Hosts')
+        result[i] = { hosts: needs[i], cidr: intToIp(next) + '/' + prefix }
+        next += size
+      }
+      return result
+    }
+    ```
