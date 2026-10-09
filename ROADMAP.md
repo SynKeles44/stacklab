@@ -130,7 +130,7 @@ ein Agent pro Kurs (Laravel: zwei Agenten). Danach Validierung, Dublettenbereini
 Stichproben-Review.
 
 ## Phase 6b – Plattform-Nacharbeiten aus den Kursen
-- [ ] project.yaml: optionales `setup` + Button „Projekt zurücksetzen“ (Fremden-Code-Kurs legt das Projekt aktuell über eine Modulübung an)
+- [x] project.yaml: optionales `setup` + Button „Projekt zurücksetzen“ (Fremden-Code-Kurs legt das Projekt aktuell über eine Modulübung an)
 
 ## Phase 7 – Tests & Qualität
 - [ ] Backend-Tests (Pest)
