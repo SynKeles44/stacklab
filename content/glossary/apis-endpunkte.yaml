@@ -1,0 +1,416 @@
+- slug: web-api
+  term: Web-API
+  short: Eine API, die ein Programm über das Netzwerk per HTTP anbietet.
+  explanation: >
+    Bei einer Web-API läuft das andere Programm auf einem anderen Rechner. Dein Programm schickt einen
+    HTTP-Request an einen Endpunkt und bekommt eine Response zurück, meist mit JSON im Body.
+  example: "`GET https://api.example.com/books/2` liefert ein Buch als JSON."
+  category: web
+  aliases: [Web-APIs, HTTP-API]
+  related: [api, endpunkt, rest-api]
+  lesson: apis-endpunkte/was-ist-eine-api
+- slug: endpunkt
+  term: Endpunkt
+  short: Eine konkrete Stelle einer Web-API, bestimmt durch HTTP-Methode und Pfad.
+  explanation: >
+    Ein Endpunkt erledigt genau eine Aufgabe, z. B. „ein Buch lesen“. Derselbe Pfad mit einer anderen
+    Methode ist ein anderer Endpunkt – `GET /books/2` liest, `DELETE /books/2` löscht.
+  example: "`POST /books` ist der Endpunkt zum Anlegen eines Buchs."
+  category: web
+  aliases: [Endpunkte, Endpoint, Endpoints]
+  related: [ressource, http-methode, route]
+  lesson: apis-endpunkte/endpunkte-und-ressourcen
+- slug: ressource
+  term: Ressource
+  short: Ein fachliches „Ding“, das eine API unter einer eigenen URL anbietet.
+  explanation: >
+    Ressourcen sind z. B. Bücher, Bestellungen oder Benutzerkonten. Eine Ressource muss nicht einer
+    Datenbanktabelle entsprechen – sie ist das, was für Clients sinnvoll ist. Die Sammlung (`/books`) und
+    ein einzelnes Element (`/books/2`) sind jeweils Ressourcen.
+  example: "`/orders/7/items` ist die Ressource „Positionen der Bestellung 7“."
+  category: web
+  aliases: [Ressourcen, Resource]
+  related: [endpunkt, url, rest-api]
+  lesson: apis-endpunkte/endpunkte-und-ressourcen
+- slug: pfadparameter
+  term: Pfadparameter
+  short: Ein Platzhalter im Pfad eines Endpunkts, der beim Aufruf durch einen echten Wert ersetzt wird.
+  explanation: >
+    In der Beschreibung `/books/{id}` steht `{id}` für die ID eines Buchs. Beim Aufruf wird daraus z. B.
+    `/books/2`. Der Router liest den Wert aus und gibt ihn an den Controller weiter.
+  example: "In `/authors/1/books` hat der Pfadparameter `id` den Wert `1`."
+  category: web
+  aliases: [Pfadparameter, Path-Parameter, Routenparameter]
+  related: [endpunkt, query-string, route]
+  lesson: apis-endpunkte/endpunkte-und-ressourcen
+- slug: php-entwicklungsserver
+  term: PHP-Entwicklungsserver
+  short: Der in PHP eingebaute Webserver für die lokale Entwicklung, gestartet mit `php -S`.
+  explanation: >
+    `php -S 127.0.0.1:8080 index.php` startet einen einfachen Webserver, der jeden Request an das
+    Router-Skript `index.php` gibt. Er ist für Entwicklung und Tests gedacht, nicht für den Produktivbetrieb.
+  example: "`php -S 127.0.0.1:8080 api.php &` startet eine API im Hintergrund."
+  category: web
+  aliases: [php -S, eingebauter Webserver, Built-in Server]
+  related: [webserver, localhost, port]
+  lesson: apis-endpunkte/endpunkte-und-ressourcen
+- slug: mock-api
+  term: Mock-API
+  short: Eine nachgebaute API, die echte Antworten nur vorspielt – zum Üben und Testen.
+  explanation: >
+    Eine Mock-API verhält sich nach außen wie eine echte API, hat aber keine echte Logik oder Datenbank
+    dahinter. Teams nutzen sie, um Clients zu entwickeln, bevor die richtige API fertig ist.
+  example: Die Buch-API `api.php` im Übungs-Terminal ist eine Mock-API.
+  category: web
+  aliases: [Mock-APIs, Mock-Server]
+  related: [web-api, test-double]
+  lesson: apis-endpunkte/endpunkte-und-ressourcen
+- slug: middleware
+  term: Middleware
+  short: Code, der zwischen Router und Controller läuft und jeden Request vorab prüfen oder verändern kann.
+  explanation: >
+    Middlewares erledigen Aufgaben, die viele Endpunkte brauchen: Anmeldung prüfen, Rate Limits zählen,
+    Requests protokollieren. Sie können den Request weiterreichen oder sofort selbst antworten, z. B. mit 401.
+  example: "In Laravel begrenzt die Middleware `throttle:60,1` eine Route auf 60 Requests pro Minute."
+  category: web
+  aliases: [Middlewares]
+  related: [http-router, controller, rate-limiting]
+  lesson: apis-endpunkte/vom-request-zum-controller
+- slug: crud
+  term: CRUD
+  short: Die vier Grundoperationen Create, Read, Update, Delete – anlegen, lesen, ändern, löschen.
+  explanation: >
+    Fast jede Ressource braucht diese vier Operationen. In REST-APIs entsprechen sie den Methoden POST,
+    GET, PATCH bzw. PUT und DELETE.
+  example: "Eine Notizen-API mit `POST`, `GET`, `PATCH` und `DELETE` auf `/notes` bietet vollständiges CRUD."
+  category: web
+  related: [rest-api, http-methode]
+  lesson: apis-endpunkte/ressourcen-und-methoden
+- slug: http-body
+  term: Body (HTTP)
+  short: Der Inhalt einer HTTP-Nachricht nach den Headern, z. B. JSON-Daten.
+  explanation: >
+    Requests mit POST, PUT oder PATCH tragen die zu speichernden Daten im Body. Auch die Response hat
+    meist einen Body mit dem Ergebnis. GET-Requests haben normalerweise keinen Body.
+  example: "`{\"title\": \"Atlas\", \"year\": 2023}` als Body von `POST /books`."
+  category: web
+  aliases: [Body, Request-Body, Response-Body, Rumpf]
+  related: [http-request, response, content-type]
+  lesson: apis-endpunkte/ressourcen-und-methoden
+- slug: content-type
+  term: Content-Type
+  short: Der HTTP-Header, der angibt, in welchem Format der Body vorliegt.
+  explanation: >
+    Der Wert ist ein Medientyp wie `application/json` oder `application/problem+json`. Fehlt der Header
+    oder ist er falsch, kann der Server den Body nicht richtig lesen und antwortet oft mit 415.
+  example: "`Content-Type: application/json`"
+  category: web
+  aliases: [Medientyp, MIME-Typ, Media Type]
+  related: [http-header, http-body, json]
+  lesson: apis-endpunkte/ressourcen-und-methoden
+- slug: sichere-methode
+  term: Sichere Methode
+  short: Eine HTTP-Methode, die auf dem Server nichts verändert – GET, HEAD und OPTIONS.
+  explanation: >
+    Sichere Methoden dürfen von Browsern, Caches und Suchmaschinen jederzeit aufgerufen werden, weil sie
+    nur lesen. Deshalb darf ein Löschen oder Ändern nie hinter einem GET stecken.
+  example: "`GET /books` ist sicher, `DELETE /books/2` nicht."
+  category: web
+  aliases: [sichere Methoden, safe method]
+  related: [idempotenz, http-methode]
+  lesson: apis-endpunkte/ressourcen-und-methoden
+- slug: idempotenz
+  term: Idempotenz
+  short: Eine Operation ist idempotent, wenn sie mehrfach ausgeführt dieselbe Wirkung hat wie einmal.
+  explanation: >
+    In HTTP sind GET, HEAD, OPTIONS, PUT und DELETE idempotent, POST nicht. Idempotente Requests darf ein
+    Client nach einem Verbindungsabbruch gefahrlos wiederholen.
+  example: "Zweimal `DELETE /books/6` – das Buch ist danach genauso gelöscht wie nach einem Mal."
+  category: web
+  aliases: [idempotent]
+  related: [sichere-methode, idempotency-key, http-methode]
+  lesson: apis-endpunkte/ressourcen-und-methoden
+- slug: zustandslosigkeit
+  term: Zustandslosigkeit
+  short: Der Server merkt sich zwischen zwei Requests nichts über den Client – jeder Request ist vollständig.
+  explanation: >
+    In einer zustandslosen (stateless) API bringt jeder Request alles mit, was zum Beantworten nötig ist,
+    auch das Token. Dadurch kann jeder von mehreren Servern jeden Request bearbeiten.
+  example: "Die App schickt bei jedem Request `Authorization: Bearer <dein-token>` mit."
+  category: web
+  aliases: [zustandslos, stateless, Statelessness]
+  related: [rest-api, bearer-token, load-balancer]
+  lesson: apis-endpunkte/ressourcen-und-methoden
+- slug: location-header
+  term: Location-Header
+  short: Der HTTP-Header, der die Adresse einer neu angelegten Ressource oder ein Umleitungsziel nennt.
+  explanation: >
+    Nach `201 Created` zeigt `Location` auf die neue Ressource, damit der Client sie direkt abrufen kann.
+    Bei Umleitungen (3xx) steht dort das Ziel.
+  example: "`Location: /books/7`"
+  category: web
+  aliases: [Location]
+  related: [statuscode, http-header]
+  lesson: apis-endpunkte/statuscodes-waehlen
+- slug: paginierung
+  term: Paginierung
+  short: Das Aufteilen einer großen Sammlung in Seiten, die einzeln abgerufen werden.
+  explanation: >
+    Statt tausender Einträge auf einmal liefert eine API z. B. 20 pro Seite. Gesteuert wird das über
+    Query-Parameter wie `page` und `per_page`; die Antwort nennt Gesamtzahl und Links zur nächsten Seite.
+  example: "`GET /books?page=2&per_page=20`"
+  category: web
+  aliases: [Pagination, Seitenweise Ausgabe]
+  related: [cursor-paginierung, query-string]
+  lesson: apis-endpunkte/filtern-sortieren-paginieren
+- slug: cursor-paginierung
+  term: Cursor-Paginierung
+  short: Paginierung, die sich die Position in der Liste merkt statt einer Seitennummer.
+  explanation: >
+    Der Server gibt einen undurchsichtigen Cursor mit, den der Client für die nächste Seite zurückschickt.
+    Das ist auch bei Millionen Einträgen schnell und bleibt stabil, wenn neue Einträge dazukommen.
+  example: "`GET /orders?limit=50&cursor=eyJpZCI6MjA0OH0`"
+  category: web
+  aliases: [Cursor, Keyset-Paginierung]
+  related: [paginierung]
+  lesson: apis-endpunkte/filtern-sortieren-paginieren
+- slug: envelope
+  term: Envelope
+  short: Eine feste Hülle um die eigentlichen Daten einer API-Antwort, z. B. mit `data` und `meta`.
+  explanation: >
+    Ein Envelope schafft Platz für Zusatzinfos wie Paginierung oder Links, ohne die Form der Daten zu
+    ändern. Wichtig ist, ihn in allen Antworten einheitlich zu verwenden.
+  example: "`{\"data\": {\"id\": 2}, \"meta\": {}}`"
+  category: web
+  aliases: [Umschlag, Antwort-Hülle, Response-Envelope]
+  related: [json, api-resource]
+  lesson: apis-endpunkte/json-antworten-gestalten
+- slug: snake-case
+  term: snake_case
+  short: Eine Schreibweise für Namen mit Kleinbuchstaben und Unterstrichen zwischen den Wörtern.
+  explanation: >
+    snake_case ist in PHP-Datenbanken und vielen APIs verbreitet. Wichtig ist, sich innerhalb einer API für
+    eine Schreibweise zu entscheiden und sie nie mit camelCase zu mischen.
+  example: "`published_at`, `per_page`, `total_pages`"
+  category: programmierung
+  aliases: [Snake Case]
+  related: [camelcase, namenskonvention]
+  lesson: apis-endpunkte/json-antworten-gestalten
+- slug: iso-8601
+  term: ISO 8601
+  short: Ein internationales, eindeutiges Format für Datum und Uhrzeit, z. B. `2026-05-03T14:30:00+00:00`.
+  explanation: >
+    Das Format beginnt mit dem Jahr, ist dadurch sortierbar und enthält die Zeitzone. APIs nutzen es (bzw.
+    das Profil RFC 3339) für alle Zeitpunkte; die lesbare Darstellung übernimmt der Client.
+  example: "`2023-04-01T09:30:00+00:00` – in PHP mit `->format(DATE_ATOM)`."
+  category: web
+  aliases: [RFC 3339, ISO-Datum]
+  related: [zeitstempel, json]
+  lesson: apis-endpunkte/json-antworten-gestalten
+- slug: api-resource
+  term: API Resource
+  short: Eine Klasse oder Funktion, die interne Daten bewusst in die öffentliche API-Form umwandelt.
+  explanation: >
+    Statt Datenbankzeilen direkt auszugeben, legt eine API Resource Feld für Feld fest, was nach außen geht.
+    So werden interne Felder nicht versehentlich öffentlich. In Laravel heißen diese Klassen JsonResource.
+  example: "`BookResource` gibt `id`, `title` und `published_at` aus, aber nie `internal_note`."
+  category: web
+  aliases: [API Resources, Resource-Klasse, JsonResource]
+  related: [serialisierung, envelope]
+  lesson: apis-endpunkte/json-antworten-gestalten
+- slug: problem-details
+  term: Problem Details
+  short: Das Standardformat für Fehlerantworten von HTTP-APIs nach RFC 9457.
+  explanation: >
+    Eine Problem-Details-Antwort hat den Content-Type `application/problem+json` und die Felder `type`,
+    `title`, `status`, `detail` und `instance`. Eigene Zusatzfelder wie `errors` sind erlaubt.
+  example: "`{\"type\": \"about:blank\", \"title\": \"Not Found\", \"status\": 404, \"detail\": \"Es gibt kein Buch mit der ID 99.\"}`"
+  category: web
+  aliases: [RFC 9457, RFC 7807, application/problem+json]
+  related: [statuscode, validierung, content-type]
+  lesson: apis-endpunkte/fehler-und-validierung
+- slug: authentifizierung
+  term: Authentifizierung
+  short: Die Prüfung, wer eine Anfrage stellt – z. B. anhand eines Passworts, Schlüssels oder Tokens.
+  explanation: >
+    Eine API authentifiziert Clients meist über einen API-Key oder ein Bearer-Token im Header. Schlägt die
+    Authentifizierung fehl, antwortet sie mit 401 Unauthorized.
+  example: "Die API prüft `Authorization: Bearer <dein-token>` und weiß danach, welches Konto anfragt."
+  category: sicherheit
+  aliases: [Authentisierung, Authentication, Anmeldung]
+  related: [autorisierung, bearer-token, api-key]
+  lesson: apis-endpunkte/auth-versionen-limits
+- slug: autorisierung
+  term: Autorisierung
+  short: Die Prüfung, ob ein bekannter Client eine bestimmte Aktion ausführen darf.
+  explanation: >
+    Nach der Authentifizierung weiß die API, wer fragt. Die Autorisierung entscheidet, ob er das darf – etwa
+    nur die eigenen Bestellungen lesen. Fehlt die Berechtigung, lautet die Antwort 403 Forbidden.
+  example: Eine Nutzerin darf ihre eigene Bestellung ändern, aber nicht die einer anderen Person.
+  category: sicherheit
+  aliases: [Authorization, Berechtigungsprüfung]
+  related: [authentifizierung]
+  lesson: apis-endpunkte/auth-versionen-limits
+- slug: api-key
+  term: API-Key
+  short: Ein geheimer Schlüssel, mit dem sich ein Programm gegenüber einer API ausweist.
+  explanation: >
+    API-Keys werden meist für Server-zu-Server-Verbindungen genutzt und in einem Header mitgeschickt. Sie
+    gehören nie in URLs, öffentlichen Frontend-Code oder ein Git-Repository.
+  example: "`X-API-Key: <dein-key>`"
+  category: sicherheit
+  aliases: [API-Schlüssel, API Key, API-Keys]
+  related: [bearer-token, authentifizierung, secret]
+  lesson: apis-endpunkte/auth-versionen-limits
+- slug: bearer-token
+  term: Bearer-Token
+  short: "Ein Zugangstoken, das im Header `Authorization: Bearer …` mitgeschickt wird."
+  explanation: >
+    „Bearer“ heißt „Inhaber“: Wer das Token besitzt, bekommt Zugang. Deshalb läuft es nur über HTTPS und
+    hat meist eine begrenzte Lebensdauer. Wie Tokens ausgestellt werden, regelt z. B. OAuth 2.0.
+  example: "`Authorization: Bearer <dein-token>`"
+  category: sicherheit
+  aliases: [Bearer Token, Access-Token, Token]
+  related: [api-key, authentifizierung, https]
+  lesson: apis-endpunkte/auth-versionen-limits
+- slug: api-versionierung
+  term: API-Versionierung
+  short: Das Bereitstellen mehrerer Versionen einer API, damit Breaking Changes alte Clients nicht brechen.
+  explanation: >
+    Die Version steht meist im Pfad (`/v1/…`) oder in einem Header. Die alte Version läuft eine angekündigte
+    Übergangszeit weiter, der Header `Sunset` nennt das Abschaltdatum.
+  example: "`GET /v2/orders` neben dem alten `GET /v1/orders`"
+  category: web
+  aliases: [Versionierung, API-Version]
+  related: [breaking-change, semantic-versioning]
+  lesson: apis-endpunkte/auth-versionen-limits
+- slug: idempotency-key
+  term: Idempotency-Key
+  short: Ein vom Client erzeugter, eindeutiger Header-Wert, der wiederholte POST-Requests ungefährlich macht.
+  explanation: >
+    Der Server speichert Schlüssel und Ergebnis. Kommt derselbe Schlüssel noch einmal, führt er die Aktion
+    nicht erneut aus, sondern liefert das gespeicherte Ergebnis. Typisch bei Zahlungen und Bestellungen.
+  example: "`Idempotency-Key: 7f3c9a2e-5b1d-4c8e-9f60-2a4b8d1e3c77`"
+  category: web
+  aliases: [Idempotenz-Schlüssel]
+  related: [idempotenz, http-header]
+  lesson: apis-endpunkte/auth-versionen-limits
+- slug: rate-limiting
+  term: Rate Limiting
+  short: Die Begrenzung, wie viele Requests ein Client in einer Zeitspanne schicken darf.
+  explanation: >
+    Rate Limits schützen eine API vor Überlast und Missbrauch. Ist das Limit erreicht, antwortet sie mit
+    429 Too Many Requests und nennt im Header `Retry-After`, wann es weitergeht.
+  example: "Höchstens 60 Requests pro Minute; danach `429` mit `Retry-After: 30`."
+  category: web
+  aliases: [Rate Limit, Rate Limits, Drosselung, Throttling]
+  related: [statuscode, middleware]
+  lesson: apis-endpunkte/auth-versionen-limits
+- slug: fetch-api
+  term: Fetch API
+  short: Die eingebaute JavaScript-Schnittstelle `fetch()` für HTTP-Requests im Browser und in Node.js.
+  explanation: >
+    `fetch(url, options)` gibt ein Promise auf eine Response zurück. Es wird nur bei Netzwerkfehlern
+    abgelehnt – HTTP-Fehler wie 404 musst du selbst an `response.ok` erkennen.
+  example: "`const response = await fetch('https://api.example.com/books')`"
+  category: javascript
+  aliases: [fetch, fetch()]
+  related: [promise, async-await, abort-controller]
+  lesson: apis-endpunkte/apis-mit-javascript
+- slug: abort-controller
+  term: AbortController
+  short: Ein JavaScript-Objekt, mit dem du laufende Requests abbrechen kannst.
+  explanation: >
+    Sein `signal` übergibst du an `fetch`; `controller.abort()` bricht den Request ab. Für reine Timeouts
+    gibt es die Kurzform `AbortSignal.timeout(ms)`.
+  example: "`fetch(url, { signal: AbortSignal.timeout(5000) })`"
+  category: javascript
+  aliases: [AbortSignal]
+  related: [fetch-api, timeout]
+  lesson: apis-endpunkte/apis-mit-javascript
+- slug: timeout
+  term: Timeout
+  short: Eine Zeitgrenze, nach der ein Vorgang abgebrochen wird, wenn er noch nicht fertig ist.
+  explanation: >
+    Ohne Timeout kann ein hängender Server dein Programm beliebig lange blockieren. Jeder Aufruf eines
+    fremden Dienstes sollte deshalb einen Timeout von wenigen Sekunden haben.
+  example: "`Http::timeout(5)` in Laravel oder `AbortSignal.timeout(5000)` in JavaScript."
+  category: programmierung
+  aliases: [Zeitüberschreitung, Zeitlimit]
+  related: [abort-controller, http-client]
+  lesson: apis-endpunkte/apis-mit-javascript
+- slug: test-double
+  term: Test-Double
+  short: Ein Ersatzobjekt, das in Tests an die Stelle einer echten Abhängigkeit tritt, z. B. eine Fake-Funktion.
+  explanation: >
+    Statt echter Netzwerkaufrufe übergibt der Test eine Fälschung, die sofort eine vorbereitete Antwort
+    liefert. So laufen Tests schnell, ohne Server und immer gleich. Bekannte Arten sind Fakes, Stubs und Mocks.
+  example: "`const fake = async () => ({ ok: true, status: 200, json: async () => ({}) })`"
+  category: programmierung
+  aliases: [Fake, Stub, Mock, Testdouble]
+  related: [mock-api]
+  lesson: apis-endpunkte/apis-mit-javascript
+- slug: stream-context
+  term: Stream-Kontext
+  short: Ein PHP-Objekt mit Optionen für Datei- und Netzwerkzugriffe, z. B. HTTP-Methode und Header.
+  explanation: >
+    Mit `stream_context_create(['http' => [...]])` legst du fest, wie `file_get_contents` einen
+    HTTP-Request schickt: Methode, Header, Body, Timeout und ob Fehlerantworten gelesen werden.
+  example: "`file_get_contents($url, false, stream_context_create(['http' => ['method' => 'POST']]))`"
+  category: php
+  aliases: [Stream Context, stream_context_create]
+  related: [http-client, php]
+  lesson: apis-endpunkte/apis-mit-php-und-werkzeugen
+- slug: http-client
+  term: HTTP-Client
+  short: Eine Bibliothek oder ein Programm, das HTTP-Requests verschickt und Responses auswertet.
+  explanation: >
+    Im Code sind das z. B. `fetch` in JavaScript, die cURL-Erweiterung in PHP oder der HTTP-Client von
+    Laravel. Gute HTTP-Clients setzen Timeouts, wiederholen bei Bedarf und machen Fehler sichtbar.
+  example: "`Http::withToken($token)->timeout(5)->get('https://api.example.com/books')`"
+  category: web
+  aliases: [HTTP-Clients, HTTP Client]
+  related: [fetch-api, curl, timeout]
+  lesson: apis-endpunkte/apis-mit-php-und-werkzeugen
+- slug: httpie
+  term: HTTPie
+  short: Ein Kommandozeilenprogramm für HTTP-Requests mit kurzer Syntax und farbiger Ausgabe.
+  explanation: >
+    HTTPie wird mit dem Befehl `http` aufgerufen. `feld=wert` erzeugt JSON-Strings, `feld:=wert` rohe JSON-Werte
+    wie Zahlen, und `Name:Wert` setzt einen Header.
+  example: "`http POST api.example.com/books title=Atlas year:=2023`"
+  category: werkzeuge
+  aliases: [http (Befehl)]
+  related: [curl, postman, bruno]
+  lesson: apis-endpunkte/apis-mit-php-und-werkzeugen
+- slug: postman
+  term: Postman
+  short: Ein grafisches Werkzeug zum Erstellen, Speichern und Teilen von API-Requests.
+  explanation: >
+    In Postman legst du Requests in Sammlungen ab, nutzt Umgebungen für Basis-URL und Tokens und teilst
+    beides über Team-Arbeitsbereiche.
+  example: Eine Postman-Sammlung „Buch-API“ mit je einem Request pro Endpunkt.
+  category: werkzeuge
+  related: [bruno, httpie, curl]
+  lesson: apis-endpunkte/apis-mit-php-und-werkzeugen
+- slug: bruno
+  term: Bruno
+  short: Ein grafisches Open-Source-Werkzeug für API-Requests, das Sammlungen als Textdateien speichert.
+  explanation: >
+    Weil Bruno seine Sammlungen als Dateien ablegt, können Teams sie direkt im Git-Repository versionieren und
+    im Pull Request reviewen. Geheimnisse liegen in lokalen, nicht eingecheckten Umgebungsdateien.
+  example: Ein Ordner `bruno/` im Repository mit einer Datei pro Request.
+  category: werkzeuge
+  related: [postman, httpie]
+  lesson: apis-endpunkte/apis-mit-php-und-werkzeugen
+- slug: api-dokumentation
+  term: API-Dokumentation
+  short: Die schriftliche Beschreibung des API-Vertrags – Endpunkte, Parameter, Antworten und Fehler.
+  explanation: >
+    Gute API-Dokumentation erlaubt es anderen Teams, eine API ohne Blick in den Code zu nutzen. Häufig wird
+    sie als OpenAPI-Beschreibung geschrieben, aus der Werkzeuge lesbare Seiten erzeugen.
+  example: Eine Tabelle aller Endpunkte mit Beispiel-Requests und Fehlerantworten in der README.
+  category: web
+  aliases: [API-Doku, API-Referenz]
+  related: [api, endpunkt]
+  lesson: apis-endpunkte/api-design-review

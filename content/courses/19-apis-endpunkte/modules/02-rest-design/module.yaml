@@ -1,0 +1,147 @@
+title: REST-Design
+description: Ressourcen und Methoden nach REST, die richtigen Statuscodes und große Sammlungen mit Filtern, Sortierung und Paginierung.
+exercise:
+  id: modul-uebung-notizen-handler
+  type: code
+  language: php
+  title: Ein kompletter Endpunkt-Satz für Notizen
+  description: |
+    Schreibe `handle(string $method, string $path, array $notes, ?array $body = null): array`. Die Funktion
+    ist Router und Controller in einem und beantwortet Requests an eine Notizen-API.
+
+    `$notes` ist eine Liste wie `[['id' => 1, 'title' => 'Einkaufen']]`. Gib immer ein Array
+    `['status' => int, 'headers' => array, 'body' => ?array]` zurück:
+
+    | Request | Antwort |
+    |---|---|
+    | `GET /notes` | 200, Body `['data' => $notes]` |
+    | `POST /notes` mit gültigem `title` | 201, Header `Location` → `/notes/{neue id}`, Body `['data' => neue Notiz]` |
+    | `POST /notes` ohne nicht-leeren String in `title` | 422, Body `['errors' => ['title' => 'Der Titel ist ein Pflichtfeld.']]` |
+    | `GET /notes/{id}` | 200 mit `['data' => Notiz]` oder 404 |
+    | `DELETE /notes/{id}` | 204 mit Body `null` oder 404 |
+    | andere Methode auf `/notes` | 405, Header `Allow` → `GET, POST` |
+    | andere Methode auf `/notes/{id}` | 405, Header `Allow` → `GET, DELETE` |
+    | jeder andere Pfad | 404 |
+
+    Die neue ID ist die größte vorhandene ID plus 1 (bei leerer Liste 1). Bei 404 ist der Body
+    `['error' => 'Nicht gefunden']`, bei 405 `['error' => 'Methode nicht erlaubt']`.
+  starter: |
+    <?php
+    declare(strict_types=1);
+
+    function respond(int $status, ?array $body = null, array $headers = []): array
+    {
+        return ['status' => $status, 'headers' => $headers, 'body' => $body];
+    }
+
+    function handle(string $method, string $path, array $notes, ?array $body = null): array
+    {
+        if ($path === '/notes') {
+            // GET und POST behandeln, sonst 405
+        }
+
+        if (preg_match('#^/notes/(\d+)$#', $path, $m) === 1) {
+            $id = (int) $m[1];
+            // Notiz suchen, dann GET und DELETE behandeln, sonst 405
+        }
+
+        return respond(404, ['error' => 'Nicht gefunden']);
+    }
+  tests:
+    - name: GET /notes liefert alle Notizen
+      code: |
+        $notes = [['id' => 1, 'title' => 'Einkaufen'], ['id' => 2, 'title' => 'Sport']];
+        $r = handle('GET', '/notes', $notes);
+        assert_same(200, $r['status']);
+        assert_same(['data' => $notes], $r['body']);
+    - name: POST /notes legt eine Notiz mit neuer ID an
+      code: |
+        $r = handle('POST', '/notes', [['id' => 4, 'title' => 'A'], ['id' => 9, 'title' => 'B']], ['title' => 'Lesen']);
+        assert_same(201, $r['status']);
+        assert_same('/notes/10', $r['headers']['Location'] ?? null);
+        assert_same(['data' => ['id' => 10, 'title' => 'Lesen']], $r['body']);
+    - name: POST in eine leere Liste bekommt die ID 1
+      code: |
+        $r = handle('POST', '/notes', [], ['title' => 'Erste Notiz']);
+        assert_same(1, $r['body']['data']['id'] ?? null);
+    - name: POST ohne gültigen Titel liefert 422
+      code: |
+        assert_same(422, handle('POST', '/notes', [], ['title' => '   '])['status']);
+        assert_same(422, handle('POST', '/notes', [], null)['status']);
+        $r = handle('POST', '/notes', [], ['title' => 42]);
+        assert_same(['errors' => ['title' => 'Der Titel ist ein Pflichtfeld.']], $r['body']);
+    - name: GET und DELETE auf einzelne Notizen
+      code: |
+        $notes = [['id' => 1, 'title' => 'Einkaufen']];
+        assert_same(['data' => $notes[0]], handle('GET', '/notes/1', $notes)['body']);
+        assert_same(404, handle('GET', '/notes/2', $notes)['status']);
+        $r = handle('DELETE', '/notes/1', $notes);
+        assert_same(204, $r['status']);
+        assert_same(null, $r['body']);
+        assert_same(404, handle('DELETE', '/notes/7', $notes)['status']);
+    - name: falsche Methoden liefern 405 mit Allow
+      code: |
+        $notes = [['id' => 1, 'title' => 'Einkaufen']];
+        $r = handle('PUT', '/notes', $notes);
+        assert_same(405, $r['status']);
+        assert_same('GET, POST', $r['headers']['Allow'] ?? null);
+        assert_same('GET, DELETE', handle('PATCH', '/notes/1', $notes)['headers']['Allow'] ?? null);
+    - name: unbekannte Pfade liefern 404
+      code: |
+        assert_same(404, handle('GET', '/users', [])['status']);
+        assert_same(404, handle('GET', '/notes/abc', [])['status']);
+  hints:
+    - "Prüfe zuerst den Pfad, dann die Methode. So unterscheidest du 404 (Pfad unbekannt) von 405 (Methode falsch)."
+    - "Die neue ID: `$notes === [] ? 1 : max(array_column($notes, 'id')) + 1`."
+    - "Gültiger Titel: `is_string($body['title'] ?? null) && trim($body['title']) !== ''`."
+  solution: |
+    ```php
+    <?php
+    declare(strict_types=1);
+
+    function respond(int $status, ?array $body = null, array $headers = []): array
+    {
+        return ['status' => $status, 'headers' => $headers, 'body' => $body];
+    }
+
+    function handle(string $method, string $path, array $notes, ?array $body = null): array
+    {
+        if ($path === '/notes') {
+            if ($method === 'GET') {
+                return respond(200, ['data' => $notes]);
+            }
+            if ($method === 'POST') {
+                $title = $body['title'] ?? null;
+                if (!is_string($title) || trim($title) === '') {
+                    return respond(422, ['errors' => ['title' => 'Der Titel ist ein Pflichtfeld.']]);
+                }
+                $id = $notes === [] ? 1 : max(array_column($notes, 'id')) + 1;
+                $note = ['id' => $id, 'title' => $title];
+
+                return respond(201, ['data' => $note], ['Location' => "/notes/{$id}"]);
+            }
+
+            return respond(405, ['error' => 'Methode nicht erlaubt'], ['Allow' => 'GET, POST']);
+        }
+
+        if (preg_match('#^/notes/(\d+)$#', $path, $m) === 1) {
+            $id = (int) $m[1];
+            $found = null;
+            foreach ($notes as $note) {
+                if ($note['id'] === $id) {
+                    $found = $note;
+                }
+            }
+            if (!in_array($method, ['GET', 'DELETE'], true)) {
+                return respond(405, ['error' => 'Methode nicht erlaubt'], ['Allow' => 'GET, DELETE']);
+            }
+            if ($found === null) {
+                return respond(404, ['error' => 'Nicht gefunden']);
+            }
+
+            return $method === 'GET' ? respond(200, ['data' => $found]) : respond(204);
+        }
+
+        return respond(404, ['error' => 'Nicht gefunden']);
+    }
+    ```

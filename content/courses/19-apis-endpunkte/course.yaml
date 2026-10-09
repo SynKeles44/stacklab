@@ -1,0 +1,33 @@
+title: Endpunkte & APIs
+subtitle: Wie Programme miteinander sprechen – Web-APIs verstehen, entwerfen und nutzen
+description: >
+  Fast jede moderne Anwendung besteht aus Programmen, die über APIs miteinander reden: Die App fragt den
+  Server nach Daten, der Server fragt einen Zahlungsdienst, ein Skript lädt nachts Berichte herunter.
+  In diesem Kurs lernst du, was hinter einem **Endpunkt** steckt und wie ein Request bis zum Controller
+  findet.
+
+
+  Du entwirfst APIs nach den REST-Prinzipien, wählst passende Statuscodes, gestaltest einheitliche
+  JSON-Antworten und Fehlermeldungen (RFC 9457) und kennst Paginierung, API-Keys, Versionierung,
+  Idempotency-Keys und Rate Limits. Danach nutzt du APIs selbst – mit `curl` und `jq` im echten
+  Übungs-Terminal, mit `fetch` in JavaScript und mit PHP. Im Projekt baust du eine eigene kleine
+  Notizen-API.
+category: web
+level: einsteiger
+icon: plug
+color: "#16a34a"
+estimated_hours: 5
+workspace_dir: api
+prerequisites: [http-https]
+learning_goals:
+  - Du erklärst, was eine API ist und wie sich Web-APIs von Bibliotheks-APIs unterscheiden.
+  - Du verfolgst den Weg eines Requests von der URL über Router und Controller bis zur Response.
+  - Du entwirfst Endpunkte nach REST-Prinzipien mit passenden Methoden und Statuscodes.
+  - Du gestaltest einheitliche JSON-Antworten, Fehler nach RFC 9457 und Validierungsfehler.
+  - Du kennst API-Keys, Bearer-Tokens, Versionierung, Idempotency-Keys und Rate Limits.
+  - Du nutzt APIs mit curl, jq, fetch und PHP – inklusive sauberer Fehlerbehandlung.
+  - Du baust eine kleine REST-API selbst und prüfst sie wie ein Reviewer.
+references:
+  - Einheitliche Fehlerformate und Validierungsantworten, wie sie in großen Laravel-APIs üblich sind
+  - API-Clients mit Timeouts, Wiederholungen und zentraler Fehlerbehandlung im Frontend
+  - Design-Reviews von neuen Endpunkten vor dem Merge

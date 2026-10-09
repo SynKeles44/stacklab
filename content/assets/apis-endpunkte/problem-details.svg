@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="900" height="360" fill="#ffffff"/>
+<text x="450" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Anatomie einer Fehlerantwort (RFC 9457)</text>
+<rect x="30" y="56" width="520" height="280" rx="14" fill="#1e1b3a" fill-opacity=".04" stroke="#a78bfa" stroke-width="3"/>
+<g font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a">
+<text x="50" y="84">HTTP/1.1 422 Unprocessable Content</text>
+<text x="50" y="106">Content-Type: application/problem+json</text>
+<text x="50" y="140">{</text>
+<text x="70" y="162">"type": "https://api.example.com/probleme/validierung",</text>
+<text x="70" y="184">"title": "Ungültige Eingabe",</text>
+<text x="70" y="206">"status": 422,</text>
+<text x="70" y="228">"detail": "Mindestens ein Feld ist ungültig.",</text>
+<text x="70" y="250">"errors": [</text>
+<text x="90" y="272">{ "field": "title", "message": "Pflichtfeld" }</text>
+<text x="70" y="294">]</text>
+<text x="50" y="316">}</text>
+</g>
+<g font-size="13" fill="#1e1b3a">
+<rect x="580" y="68" width="300" height="44" rx="8" fill="#22d3ee" fill-opacity=".16"/><text x="592" y="95">Statuscode + eigener Medientyp</text>
+<rect x="580" y="148" width="300" height="28" rx="8" fill="#a78bfa" fill-opacity=".18"/><text x="592" y="167">type: Fehlerart als URI (fest)</text>
+<rect x="580" y="180" width="300" height="28" rx="8" fill="#a78bfa" fill-opacity=".18"/><text x="592" y="199">title: kurze, gleichbleibende Überschrift</text>
+<rect x="580" y="212" width="300" height="28" rx="8" fill="#a78bfa" fill-opacity=".18"/><text x="592" y="231">status/detail: dieser konkrete Fall</text>
+<rect x="580" y="252" width="300" height="44" rx="8" fill="#34d399" fill-opacity=".2"/><text x="592" y="272">errors: eigenes Zusatzfeld</text><text x="592" y="290">für Validierungsfehler pro Feld</text>
+</g>
+</svg>

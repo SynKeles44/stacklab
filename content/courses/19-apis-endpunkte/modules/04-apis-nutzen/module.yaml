@@ -1,0 +1,160 @@
+title: APIs nutzen und prüfen
+description: APIs aus JavaScript und PHP aufrufen, mit curl, jq, HTTPie und grafischen Werkzeugen erkunden und neue Endpunkte im Review prüfen.
+exercise:
+  id: modul-uebung-api-client
+  type: code
+  language: js
+  title: Ein zentraler API-Client
+  description: |
+    Baue einen kleinen API-Client, wie ihn Frontend-Projekte zentral verwenden. Schreibe
+    `createApiClient(options)` mit diesen Optionen:
+
+    | Option | Bedeutung |
+    |---|---|
+    | `baseUrl` | z. B. `'https://api.example.com/v1'` |
+    | `token` | optional; wenn gesetzt, Header `Authorization: Bearer <token>` |
+    | `fetchFn` | Standard `fetch` – die Tests übergeben eine Fälschung |
+    | `timeoutMs` | Standard `5000`; übergib `signal: AbortSignal.timeout(timeoutMs)` |
+    | `sleep` | Standard: wartet `ms` Millisekunden; die Tests übergeben eine Fälschung |
+
+    Der Client hat zwei Methoden: `get(path)` und `post(path, data)`. Beide rufen
+    `fetchFn(baseUrl + path, init)` auf, wobei `init` `method`, `headers` und `signal` enthält:
+
+    - Immer `Accept: application/json`, bei `post` zusätzlich `Content-Type: application/json` und
+      `body: JSON.stringify(data)`.
+    - Antwortet der Server mit **429**, warte `Retry-After` Sekunden (`response.headers.get('Retry-After')`)
+      mit `await sleep(sekunden * 1000)` und versuche es **genau einmal** erneut.
+    - Ist die (letzte) Antwort nicht `ok`, wirf `new ApiError(status, problem)` (Problem aus dem JSON-Body,
+      sonst `null`). Die Klasse `ApiError` ist im Starter schon fertig.
+    - Bei `204` liefere `null`, sonst das JSON.
+  starter: |
+    class ApiError extends Error {
+      constructor(status, problem) {
+        super(problem?.title ?? `HTTP ${status}`)
+        this.name = 'ApiError'
+        this.status = status
+        this.problem = problem
+      }
+    }
+
+    function createApiClient({ baseUrl, token, fetchFn = fetch, timeoutMs = 5000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
+      async function request(method, path, data) {
+        const headers = { Accept: 'application/json' }
+        // Token und Content-Type ergänzen, init bauen, fetchFn aufrufen,
+        // bei 429 einmal warten und wiederholen, Fehler in ApiError umwandeln
+      }
+
+      return {
+        get: (path) => request('GET', path),
+        post: (path, data) => request('POST', path, data),
+      }
+    }
+  tests:
+    - name: get schickt URL, Accept, Token und ein Abbruch-Signal
+      code: |
+        let seen
+        const fetchFn = async (url, init) => { seen = { url, init }; return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ data: [1, 2] }) } }
+        const api = createApiClient({ baseUrl: 'https://api.example.com/v1', token: 'abc', fetchFn })
+        assertDeepEqual(await api.get('/books'), { data: [1, 2] })
+        assertEqual(seen.url, 'https://api.example.com/v1/books')
+        assertEqual(seen.init.method, 'GET')
+        assertEqual(seen.init.headers.Accept, 'application/json')
+        assertEqual(seen.init.headers.Authorization, 'Bearer abc')
+        assertTrue(seen.init.signal instanceof AbortSignal, 'init.signal soll ein AbortSignal sein')
+    - name: ohne Token gibt es keinen Authorization-Header
+      code: |
+        let seen
+        const fetchFn = async (url, init) => { seen = init; return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({}) } }
+        await createApiClient({ baseUrl: '', fetchFn }).get('/x')
+        assertEqual(seen.headers.Authorization, undefined)
+    - name: post schickt JSON
+      code: |
+        let seen
+        const fetchFn = async (url, init) => { seen = init; return { ok: true, status: 201, headers: { get: () => null }, json: async () => ({ data: { id: 7 } }) } }
+        const api = createApiClient({ baseUrl: 'https://api.example.com', token: 't', fetchFn })
+        assertDeepEqual(await api.post('/books', { title: 'Atlas' }), { data: { id: 7 } })
+        assertEqual(seen.method, 'POST')
+        assertEqual(seen.headers['Content-Type'], 'application/json')
+        assertEqual(seen.body, '{"title":"Atlas"}')
+    - name: wartet bei 429 und wiederholt genau einmal
+      code: |
+        const waits = []
+        let calls = 0
+        const fetchFn = async () => {
+          calls++
+          if (calls === 1) return { ok: false, status: 429, headers: { get: (n) => n.toLowerCase() === 'retry-after' ? '2' : null }, json: async () => ({ title: 'Zu viele Anfragen' }) }
+          return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ data: 'ok' }) }
+        }
+        const api = createApiClient({ baseUrl: '', fetchFn, sleep: async (ms) => { waits.push(ms) } })
+        assertDeepEqual(await api.get('/limited'), { data: 'ok' })
+        assertEqual(calls, 2)
+        assertDeepEqual(waits, [2000])
+    - name: zweimal 429 führt zu einem ApiError
+      code: |
+        let calls = 0
+        const fetchFn = async () => { calls++; return { ok: false, status: 429, headers: { get: () => '1' }, json: async () => ({ title: 'Zu viele Anfragen' }) } }
+        const api = createApiClient({ baseUrl: '', fetchFn, sleep: async () => {} })
+        let error
+        try { await api.get('/limited') } catch (e) { error = e }
+        assertEqual(calls, 2)
+        assertTrue(error instanceof ApiError, 'Erwartet einen ApiError')
+        assertEqual(error.status, 429)
+    - name: Fehler und 204 werden richtig behandelt
+      code: |
+        const notFound = async () => ({ ok: false, status: 404, headers: { get: () => null }, json: async () => ({ title: 'Nicht gefunden' }) })
+        let error
+        try { await createApiClient({ baseUrl: '', fetchFn: notFound }).get('/books/99') } catch (e) { error = e }
+        assertEqual(error && error.message, 'Nicht gefunden')
+        const noContent = async () => ({ ok: true, status: 204, headers: { get: () => null }, json: async () => { throw new SyntaxError('no body') } })
+        assertEqual(await createApiClient({ baseUrl: '', fetchFn: noContent }).post('/books/6/archive', {}), null)
+  hints:
+    - "Baue `init` so: `{ method, headers, signal: AbortSignal.timeout(timeoutMs) }` und ergänze `init.body`, wenn `data !== undefined`."
+    - "Für die Wiederholung: `let response = await send()`, dann `if (response.status === 429) { await sleep(Number(response.headers.get('Retry-After') ?? 1) * 1000); response = await send() }`."
+    - "Ein neues Signal pro Versuch: Rufe `AbortSignal.timeout(timeoutMs)` in der Hilfsfunktion `send()` auf, nicht einmal vorher."
+  solution: |
+    ```js
+    class ApiError extends Error {
+      constructor(status, problem) {
+        super(problem?.title ?? `HTTP ${status}`)
+        this.name = 'ApiError'
+        this.status = status
+        this.problem = problem
+      }
+    }
+
+    function createApiClient({ baseUrl, token, fetchFn = fetch, timeoutMs = 5000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
+      async function request(method, path, data) {
+        const headers = { Accept: 'application/json' }
+        if (token) headers.Authorization = `Bearer ${token}`
+        if (data !== undefined) headers['Content-Type'] = 'application/json'
+
+        const send = () => {
+          const init = { method, headers, signal: AbortSignal.timeout(timeoutMs) }
+          if (data !== undefined) init.body = JSON.stringify(data)
+          return fetchFn(baseUrl + path, init)
+        }
+
+        let response = await send()
+        if (response.status === 429) {
+          await sleep(Number(response.headers.get('Retry-After') ?? 1) * 1000)
+          response = await send()
+        }
+        if (!response.ok) {
+          let problem = null
+          try {
+            problem = await response.json()
+          } catch {
+            problem = null
+          }
+          throw new ApiError(response.status, problem)
+        }
+        if (response.status === 204) return null
+        return response.json()
+      }
+
+      return {
+        get: (path) => request('GET', path),
+        post: (path, data) => request('POST', path, data),
+      }
+    }
+    ```

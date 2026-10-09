@@ -1,0 +1,598 @@
+title: Abschlussprüfung Endpunkte & APIs
+description: >
+  Prüfe dein Wissen über Web-APIs: Endpunkte und Ressourcen, REST-Design, Statuscodes, Antwort- und
+  Fehlerformate, Zugang, Versionierung, Idempotenz und Rate Limits sowie das Nutzen von APIs mit curl,
+  JavaScript und PHP. Zum Bestehen brauchst du 70 %.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Was legt eine API fest?
+    options:
+      - Wie das Programm intern implementiert ist
+      - Welche Anfragen erlaubt sind, was mitgeschickt werden muss und welche Antworten und Fehler zurückkommen
+      - Welche Datenbank der Server nutzt
+      - Wie die Benutzeroberfläche aussieht
+    answer: 1
+    explanation: Eine API ist ein Vertrag über das Was. Das Wie bleibt verborgen und darf sich ändern.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen über Endpunkte stimmen?
+    options:
+      - Ein Endpunkt besteht aus HTTP-Methode und Pfad.
+      - "`GET /books/{id}` und `DELETE /books/{id}` sind zwei verschiedene Endpunkte."
+      - Jeder Endpunkt braucht einen eigenen Host.
+      - "`{id}` ist ein Pfadparameter."
+    answers: [0, 1, 3]
+    explanation: Gleicher Pfad, andere Methode – anderer Endpunkt. Der Host gehört zur API, nicht zum einzelnen Endpunkt.
+  - module: grundlagen
+    type: cloze
+    text: "Der ___ einer Web-Anwendung vergleicht Methode und Pfad mit allen Routen und ruft den passenden ___ auf."
+    blanks:
+      - [Router]
+      - [Controller]
+    explanation: Router = „Wer ist zuständig?“, Controller = „Was ist zu tun?“.
+  - module: grundlagen
+    type: single
+    question: "`PUT /books` – auf der Sammlung gibt es aber nur GET und POST. Was antwortet ein sauberer Router?"
+    options: ["404 Not Found", "405 Method Not Allowed mit Allow-Header", "500 Internal Server Error", "200 OK"]
+    answer: 1
+    explanation: Der Pfad existiert, nur die Methode nicht. Der Allow-Header nennt die erlaubten Methoden.
+  - module: rest-design
+    type: match
+    question: Ordne jeder Aktion den REST-Endpunkt zu.
+    pairs:
+      - { left: "Alle Kunden auflisten", right: "GET /customers" }
+      - { left: "Neuen Kunden anlegen", right: "POST /customers" }
+      - { left: "Nur die E-Mail von Kunde 5 ändern", right: "PATCH /customers/5" }
+      - { left: "Kunde 5 löschen", right: "DELETE /customers/5" }
+    explanation: Substantive im Pfad, Verben als Methode.
+  - module: rest-design
+    type: multiple
+    question: Welche Methoden sind idempotent?
+    options: [GET, POST, PUT, DELETE, PATCH]
+    answers: [0, 2, 3]
+    explanation: GET, PUT und DELETE haben bei Wiederholung dieselbe Wirkung. POST nicht, PATCH ist nicht garantiert idempotent.
+  - module: rest-design
+    type: single
+    question: Ein Formular schickt einen Titel, aber das Pflichtfeld `year` fehlt. Welcher Statuscode passt?
+    options: ["400 Bad Request", "404 Not Found", "422 Unprocessable Content", "500 Internal Server Error"]
+    answer: 2
+    explanation: Der Request ist lesbar, aber inhaltlich ungültig – das ist 422.
+  - module: rest-design
+    type: find-bug
+    question: In welcher Zeile antwortet dieser Controller mit dem falschen Statuscode?
+    language: php
+    code: |
+      function store(array $input): array
+      {
+          $book = saveBook($input);
+          return ['status' => 200, 'headers' => ['Location' => "/books/{$book['id']}"], 'body' => ['data' => $book]];
+      }
+    bug_line: 4
+    explanation: Nach dem Anlegen einer Ressource antwortet man mit 201 Created – der Location-Header passt nur dazu.
+  - module: rest-design
+    type: single
+    question: Welcher Request liefert die dritte Seite der Fantasy-Bücher mit 20 Einträgen pro Seite?
+    options:
+      - "`GET /books/fantasy/3/20`"
+      - "`GET /books?genre=fantasy&page=3&per_page=20`"
+      - "`POST /books/page` mit `{\"page\": 3}`"
+      - "`GET /fantasyBooks?page=3`"
+    answer: 1
+    explanation: Filter und Paginierung gehören in den Query-String der Sammlung.
+  - module: antworten-und-regeln
+    type: cloze
+    text: "Fehlerantworten nach RFC 9457 nutzen den Content-Type `application/___` und enthalten u. a. die Felder `type`, `title`, `status` und ___."
+    blanks:
+      - [problem+json]
+      - [detail]
+    explanation: "`detail` beschreibt den konkreten Fall, `title` die Fehlerart allgemein."
+  - module: antworten-und-regeln
+    type: multiple
+    question: Was gehört zu einer konsistenten JSON-Antwort?
+    options:
+      - Eine einzige Namenskonvention für alle Felder
+      - Zeitpunkte im ISO-8601-Format mit Zeitzone
+      - Wahrheitswerte als `"1"` und `"0"`
+      - Die Datenbankzeile unverändert weitergeben
+    answers: [0, 1]
+    explanation: Echte JSON-Typen statt Strings und bewusst gebaute Antworten statt durchgereichter Zeilen.
+  - module: antworten-und-regeln
+    type: single
+    question: Wo gehört ein Bearer-Token hin?
+    options:
+      - "In die URL: `?token=…`"
+      - "In den Header: `Authorization: Bearer <dein-token>`"
+      - In den JSON-Body jeder Antwort
+      - In ein Cookie mit dem Namen der API
+    answer: 1
+    explanation: Header landen nicht in Logs und Browserverläufen wie URLs. Und die Verbindung läuft immer über HTTPS.
+  - module: antworten-und-regeln
+    type: match
+    question: Ordne jedem Werkzeug das Problem zu, das es löst.
+    pairs:
+      - { left: "Idempotency-Key", right: "Doppelte Bestellung bei wiederholtem POST" }
+      - { left: "Retry-After", right: "Wann darf ich nach 429 erneut fragen?" }
+      - { left: "/v2/…", right: "Breaking Change ohne alte Clients zu brechen" }
+      - { left: "per_page-Obergrenze", right: "Riesige Antworten, die den Server überlasten" }
+    explanation: Jedes dieser Werkzeuge schützt Clients oder Server vor einem typischen Fehler.
+  - module: antworten-und-regeln
+    type: single
+    question: Welche Änderung ist KEIN Breaking Change?
+    options:
+      - Feld `price` von Zahl auf String ändern
+      - Ein neues optionales Feld `subtitle` in der Antwort ergänzen
+      - Endpunkt `GET /books/{id}/reviews` entfernen
+      - Feld `title` in `name` umbenennen
+    answer: 1
+    explanation: Neue, optionale Felder brechen keinen Client. Umbenennen, Typwechsel und Entfernen schon.
+  - module: apis-nutzen
+    type: single
+    question: "`await fetch(url)` bekommt `503 Service Unavailable`. Was gilt?"
+    options:
+      - fetch wirft einen Fehler.
+      - fetch liefert eine Response mit `ok === false` und `status === 503`.
+      - fetch wiederholt automatisch.
+      - "`response.json()` ist garantiert leer."
+    answer: 1
+    explanation: fetch wirft nur bei Netzwerkfehlern. HTTP-Fehler erkennst du an `response.ok`.
+  - module: apis-nutzen
+    type: find-bug
+    question: In welcher Zeile steckt der Fehler?
+    language: js
+    code: |
+      async function updateBook(id, changes) {
+        const response = await fetch(`/books/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(changes),
+        })
+        return response.json()
+      }
+    bug_line: 7
+    explanation: Vor dem Lesen des Bodys fehlt die Prüfung von `response.ok`. Bei 422 oder 404 würde die Funktion die Fehlermeldung wie Daten zurückgeben.
+  - module: apis-nutzen
+    type: multiple
+    question: Welche Aussagen über APIs in PHP stimmen?
+    options:
+      - "`'ignore_errors' => true` im HTTP-Kontext liefert auch bei 4xx/5xx den Body."
+      - "`http_get_last_response_headers()` liefert die Header der letzten HTTP-Antwort (seit PHP 8.4)."
+      - "Laravels `Http::…->throw()` wirft bei 4xx/5xx eine Exception."
+      - Ein Timeout ist bei Aufrufen fremder APIs unnötig.
+    answers: [0, 1, 2]
+    explanation: Jeder Aufruf eines fremden Dienstes braucht einen Timeout, sonst hängt dein eigener Request mit.
+  - module: apis-nutzen
+    type: single
+    question: Ein Endpunkt `GET /orders/{id}` lädt die Bestellung nur per ID. Was ist im Review der wichtigste Befund?
+    options:
+      - Der Pfad sollte `/order/{id}` heißen.
+      - Es fehlt die Prüfung, ob die Bestellung zum angemeldeten Nutzer gehört.
+      - GET sollte durch POST ersetzt werden.
+      - Die Antwort sollte keine ID enthalten.
+    answer: 1
+    explanation: Ohne diese Prüfung kann jeder angemeldete Nutzer fremde Bestellungen lesen, indem er die ID ändert.
+tasks:
+  - module: rest-design
+    id: pruefung-paginieren
+    type: code
+    language: php
+    title: Eine Seite einer Sammlung bauen
+    description: |
+      Schreibe `paginate(array $items, int $page, int $perPage, string $path): array`. Ergebnis:
+
+      ```php
+      [
+          'data' => [/* Einträge der Seite */],
+          'meta' => ['page' => 2, 'per_page' => 2, 'total' => 5, 'total_pages' => 3],
+          'links' => ['next' => '/books?page=3&per_page=2', 'prev' => '/books?page=1&per_page=2'],
+      ]
+      ```
+
+      - `perPage` wird auf den Bereich 1 bis 50 begrenzt, `page` ist mindestens 1.
+      - `total_pages` ist mindestens 1 (auch bei leerer Liste).
+      - `next`/`prev` sind `null`, wenn es keine nächste bzw. vorherige Seite gibt.
+      - `data` ist immer eine Liste (Schlüssel ab 0).
+    starter: |
+      <?php
+      declare(strict_types=1);
+
+      function paginate(array $items, int $page, int $perPage, string $path): array
+      {
+          return [];
+      }
+    tests:
+      - name: mittlere Seite
+        code: |
+          $r = paginate([1, 2, 3, 4, 5], 2, 2, '/books');
+          assert_same([3, 4], $r['data']);
+          assert_same(['page' => 2, 'per_page' => 2, 'total' => 5, 'total_pages' => 3], $r['meta']);
+          assert_same(['next' => '/books?page=3&per_page=2', 'prev' => '/books?page=1&per_page=2'], $r['links']);
+      - name: letzte und erste Seite
+        code: |
+          assert_same(['next' => null, 'prev' => '/books?page=2&per_page=2'], paginate([1, 2, 3, 4, 5], 3, 2, '/books')['links']);
+          assert_same(null, paginate([1, 2, 3], 1, 10, '/x')['links']['prev']);
+      - name: leere Liste
+        code: |
+          $r = paginate([], 1, 10, '/notes');
+          assert_same([], $r['data']);
+          assert_same(1, $r['meta']['total_pages']);
+          assert_same(null, $r['links']['next']);
+      - name: begrenzt per_page und page
+        code: |
+          $r = paginate(range(1, 120), 0, 500, '/items');
+          assert_same(1, $r['meta']['page']);
+          assert_same(50, $r['meta']['per_page']);
+          assert_same(3, $r['meta']['total_pages']);
+          assert_same(50, count($r['data']));
+      - name: data ist immer eine Liste
+        code: |
+          $r = paginate(['a' => 1, 'b' => 2, 'c' => 3], 2, 2, '/x');
+          assert_same([3], $r['data']);
+    solution: |
+      ```php
+      <?php
+      declare(strict_types=1);
+
+      function paginate(array $items, int $page, int $perPage, string $path): array
+      {
+          $perPage = max(1, min(50, $perPage));
+          $page = max(1, $page);
+          $total = count($items);
+          $pages = max(1, (int) ceil($total / $perPage));
+          $link = fn (int $p): string => "{$path}?page={$p}&per_page={$perPage}";
+
+          return [
+              'data' => array_values(array_slice(array_values($items), ($page - 1) * $perPage, $perPage)),
+              'meta' => ['page' => $page, 'per_page' => $perPage, 'total' => $total, 'total_pages' => $pages],
+              'links' => [
+                  'next' => $page < $pages ? $link($page + 1) : null,
+                  'prev' => $page > 1 ? $link($page - 1) : null,
+              ],
+          ];
+      }
+      ```
+  - module: apis-nutzen
+    id: pruefung-alle-seiten
+    type: code
+    language: js
+    title: Alle Seiten laden
+    description: |
+      Schreibe `async function loadAll(url, fetchFn)`. Die API liefert Seiten der Form
+      `{ data: [...], links: { next: '/books?page=2' | null } }`.
+
+      - Lade die erste Seite mit `fetchFn(url)`, sammle `data` und folge `links.next`, bis es `null` ist.
+      - Ist eine Antwort nicht `ok`, wirf einen `Error` mit der Nachricht `HTTP <status>`.
+      - Lade höchstens 100 Seiten (Schutz vor Endlosschleifen) und gib dann zurück, was du hast.
+      - Gib alle Einträge als ein Array zurück.
+    starter: |
+      async function loadAll(url, fetchFn) {
+        const items = []
+        return items
+      }
+    tests:
+      - name: folgt links.next über drei Seiten
+        code: |
+          const pages = {
+            '/books?page=1': { data: [1, 2], links: { next: '/books?page=2' } },
+            '/books?page=2': { data: [3, 4], links: { next: '/books?page=3' } },
+            '/books?page=3': { data: [5], links: { next: null } },
+          }
+          const calls = []
+          const fake = async (u) => { calls.push(u); return { ok: true, status: 200, json: async () => pages[u] } }
+          assertDeepEqual(await loadAll('/books?page=1', fake), [1, 2, 3, 4, 5])
+          assertDeepEqual(calls, ['/books?page=1', '/books?page=2', '/books?page=3'])
+      - name: eine leere Seite ergibt ein leeres Array
+        code: |
+          const fake = async () => ({ ok: true, status: 200, json: async () => ({ data: [], links: { next: null } }) })
+          assertDeepEqual(await loadAll('/books', fake), [])
+      - name: wirft bei einem HTTP-Fehler
+        code: |
+          const fake = async (u) => u === '/a'
+            ? { ok: true, status: 200, json: async () => ({ data: [1], links: { next: '/b' } }) }
+            : { ok: false, status: 503, json: async () => ({}) }
+          let error
+          try { await loadAll('/a', fake) } catch (e) { error = e }
+          assertEqual(error && error.message, 'HTTP 503')
+      - name: bricht nach 100 Seiten ab
+        code: |
+          let calls = 0
+          const fake = async () => { calls++; return { ok: true, status: 200, json: async () => ({ data: [calls], links: { next: '/immer-weiter' } }) } }
+          const all = await loadAll('/start', fake)
+          assertEqual(calls, 100)
+          assertEqual(all.length, 100)
+    solution: |
+      ```js
+      async function loadAll(url, fetchFn) {
+        const items = []
+        let next = url
+        for (let page = 0; next && page < 100; page++) {
+          const response = await fetchFn(next)
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          const body = await response.json()
+          items.push(...body.data)
+          next = body.links?.next ?? null
+        }
+        return items
+      }
+      ```
+  - module: antworten-und-regeln
+    id: pruefung-terminal
+    type: terminal
+    title: Die Buch-API im Terminal bedienen
+    description: |
+      Im Ordner `pruefung-api` liegt die Buch-API `api.php` (Token `test-token`). Klicke zuerst auf
+      **Aufgabe vorbereiten** und starte sie mit `php -S 127.0.0.1:8080 api.php > server.log 2>&1 &`.
+
+      1. Lösche das Buch mit der ID 3.
+      2. Schreibe den Wert `meta.total` von `GET /books?genre=krimi` in `krimis.txt` (nur die Zahl).
+      3. Rufe `GET /books/3` auf und schreibe den `title` der Fehlerantwort (ohne Anführungszeichen) in `fehler.txt`.
+      4. Versuche, ein Buch mit dem Body `{"title": "Ohne Jahr", "genre": "krimi"}` anzulegen (mit Token).
+         Schreibe den Statuscode der Antwort in `anlegen-status.txt`.
+      5. Stoppe den Server mit `kill %1`.
+    workdir: pruefung-api
+    setup: |
+      cat > api.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      $stateFile = __DIR__ . '/.api-state.json';
+      $seed = [
+          'next_id' => 7,
+          'books' => [
+              ['id' => 1, 'title' => 'Die Wolkeninsel', 'author_id' => 1, 'genre' => 'fantasy', 'year' => 2019],
+              ['id' => 2, 'title' => 'Code im Morgengrauen', 'author_id' => 2, 'genre' => 'sachbuch', 'year' => 2021],
+              ['id' => 3, 'title' => 'Der stille Hafen', 'author_id' => 1, 'genre' => 'krimi', 'year' => 2015],
+              ['id' => 4, 'title' => 'Atlas der Funken', 'author_id' => 2, 'genre' => 'fantasy', 'year' => 2023],
+              ['id' => 5, 'title' => 'Bits und Bohnen', 'author_id' => 2, 'genre' => 'sachbuch', 'year' => 2018],
+              ['id' => 6, 'title' => 'Nebel über Nordheim', 'author_id' => 1, 'genre' => 'krimi', 'year' => 2024],
+          ],
+          'authors' => [
+              ['id' => 1, 'name' => 'Mira Sand'],
+              ['id' => 2, 'name' => 'Jonas Feld'],
+          ],
+          'idempotency' => [],
+          'limited' => [],
+      ];
+      $state = is_file($stateFile) ? json_decode((string) file_get_contents($stateFile), true) : $seed;
+      $save = static function () use (&$state, $stateFile): void {
+          file_put_contents($stateFile, json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      };
+
+      $method = $_SERVER['REQUEST_METHOD'];
+      $path = rtrim((string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+      $path = $path === '' ? '/' : $path;
+      parse_str((string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY), $query);
+      $genres = ['fantasy', 'sachbuch', 'krimi'];
+
+      function send(int $status, ?array $body = null, array $headers = []): never
+      {
+          $reasons = [422 => "Unprocessable Content", 429 => "Too Many Requests"];
+          isset($reasons[$status]) ? header("HTTP/1.1 {$status} {$reasons[$status]}") : http_response_code($status);
+          foreach ($headers as $name => $value) {
+              header("{$name}: {$value}");
+          }
+          if ($body !== null) {
+              if (!isset($headers['Content-Type'])) {
+                  header('Content-Type: application/json');
+              }
+              echo json_encode($body, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), "\n";
+          }
+          exit;
+      }
+
+      function problem(int $status, string $slug, string $title, string $detail, array $extra = [], array $headers = []): never
+      {
+          send($status, array_merge([
+              'type' => "https://api.example.com/probleme/{$slug}",
+              'title' => $title,
+              'status' => $status,
+              'detail' => $detail,
+          ], $extra), array_merge(['Content-Type' => 'application/problem+json'], $headers));
+      }
+
+      function requireToken(): void
+      {
+          $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+          if ($auth !== 'Bearer test-token') {
+              problem(401, 'nicht-angemeldet', 'Nicht angemeldet', 'Schicke den Header Authorization: Bearer test-token mit.', [], ['WWW-Authenticate' => 'Bearer']);
+          }
+      }
+
+      function readJson(): array
+      {
+          $type = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+          if (!str_starts_with(strtolower($type), 'application/json')) {
+              problem(415, 'falscher-content-type', 'Falscher Content-Type', 'Der Body muss JSON sein: Content-Type: application/json.');
+          }
+          $data = json_decode((string) file_get_contents('php://input'), true);
+          if (!is_array($data)) {
+              problem(400, 'kaputtes-json', 'Ungültiges JSON', 'Der Body konnte nicht als JSON-Objekt gelesen werden.');
+          }
+
+          return $data;
+      }
+
+      function validateBook(array $input, array $genres, bool $partial): array
+      {
+          $errors = [];
+          if (!$partial || array_key_exists('title', $input)) {
+              if (!is_string($input['title'] ?? null) || trim($input['title']) === '') {
+                  $errors[] = ['field' => 'title', 'message' => 'Der Titel ist ein Pflichtfeld.'];
+              }
+          }
+          if (!$partial || array_key_exists('genre', $input)) {
+              if (!in_array($input['genre'] ?? null, $genres, true)) {
+                  $errors[] = ['field' => 'genre', 'message' => 'Das Genre muss fantasy, sachbuch oder krimi sein.'];
+              }
+          }
+          if (!$partial || array_key_exists('year', $input)) {
+              $year = $input['year'] ?? null;
+              if (!is_int($year) || $year < 1450 || $year > 2100) {
+                  $errors[] = ['field' => 'year', 'message' => 'Das Jahr muss eine ganze Zahl zwischen 1450 und 2100 sein.'];
+              }
+          }
+          if ($errors !== []) {
+              problem(422, 'validierung', 'Ungültige Eingabe', 'Mindestens ein Feld ist ungültig.', ['errors' => $errors]);
+          }
+
+          return $input;
+      }
+
+      function findIndex(array $books, int $id): int
+      {
+          foreach ($books as $index => $book) {
+              if ($book['id'] === $id) {
+                  return $index;
+              }
+          }
+          problem(404, 'nicht-gefunden', 'Nicht gefunden', "Es gibt kein Buch mit der ID {$id}.");
+      }
+
+      if ($path === '/') {
+          send(200, ['name' => 'Buch-API', 'version' => '1', 'endpoints' => [
+              'GET /books', 'POST /books', 'GET /books/{id}', 'PATCH /books/{id}', 'DELETE /books/{id}',
+              'GET /authors/{id}/books', 'GET /limited',
+          ]]);
+      }
+
+      if ($path === '/books') {
+          if ($method === 'GET') {
+              $books = $state['books'];
+              if (isset($query['genre'])) {
+                  $books = array_values(array_filter($books, fn (array $b): bool => $b['genre'] === $query['genre']));
+              }
+              $sort = (string) ($query['sort'] ?? 'id');
+              $desc = str_starts_with($sort, '-');
+              $field = ltrim($sort, '-');
+              if (!in_array($field, ['id', 'title', 'year'], true)) {
+                  problem(400, 'ungueltiger-parameter', 'Ungültiger Parameter', "Nach '{$field}' kann nicht sortiert werden. Erlaubt: id, title, year.");
+              }
+              usort($books, fn (array $a, array $b): int => $desc ? $b[$field] <=> $a[$field] : $a[$field] <=> $b[$field]);
+              $perPage = max(1, min(50, (int) ($query['per_page'] ?? 10)));
+              $page = max(1, (int) ($query['page'] ?? 1));
+              $total = count($books);
+              $pages = max(1, (int) ceil($total / $perPage));
+              $link = function (int $p) use ($query, $perPage): string {
+                  return '/books?' . http_build_query(array_merge($query, ['page' => $p, 'per_page' => $perPage]));
+              };
+              send(200, [
+                  'data' => array_slice($books, ($page - 1) * $perPage, $perPage),
+                  'meta' => ['page' => $page, 'per_page' => $perPage, 'total' => $total, 'total_pages' => $pages],
+                  'links' => [
+                      'self' => $link($page),
+                      'next' => $page < $pages ? $link($page + 1) : null,
+                      'prev' => $page > 1 ? $link($page - 1) : null,
+                  ],
+              ]);
+          }
+          if ($method === 'POST') {
+              requireToken();
+              $key = $_SERVER['HTTP_IDEMPOTENCY_KEY'] ?? null;
+              if ($key !== null && isset($state['idempotency'][$key])) {
+                  $stored = $state['idempotency'][$key];
+                  send(201, ['data' => $stored], ['Location' => "/books/{$stored['id']}", 'Idempotent-Replayed' => 'true']);
+              }
+              $input = validateBook(readJson(), $genres, false);
+              $book = [
+                  'id' => $state['next_id']++,
+                  'title' => trim($input['title']),
+                  'author_id' => is_int($input['author_id'] ?? null) ? $input['author_id'] : null,
+                  'genre' => $input['genre'],
+                  'year' => $input['year'],
+              ];
+              $state['books'][] = $book;
+              if ($key !== null) {
+                  $state['idempotency'][$key] = $book;
+              }
+              $save();
+              send(201, ['data' => $book], ['Location' => "/books/{$book['id']}"]);
+          }
+          problem(405, 'methode-nicht-erlaubt', 'Methode nicht erlaubt', "{$method} ist auf /books nicht erlaubt.", [], ['Allow' => 'GET, POST']);
+      }
+
+      if (preg_match('#^/books/(\d+)$#', $path, $m) === 1) {
+          $index = findIndex($state['books'], (int) $m[1]);
+          if ($method === 'GET') {
+              send(200, ['data' => $state['books'][$index]]);
+          }
+          if ($method === 'PATCH') {
+              requireToken();
+              $input = validateBook(readJson(), $genres, true);
+              foreach (['title', 'genre', 'year'] as $field) {
+                  if (array_key_exists($field, $input)) {
+                      $state['books'][$index][$field] = $input[$field];
+                  }
+              }
+              $save();
+              send(200, ['data' => $state['books'][$index]]);
+          }
+          if ($method === 'DELETE') {
+              requireToken();
+              array_splice($state['books'], $index, 1);
+              $save();
+              send(204);
+          }
+          problem(405, 'methode-nicht-erlaubt', 'Methode nicht erlaubt', "{$method} ist auf {$path} nicht erlaubt.", [], ['Allow' => 'GET, PATCH, DELETE']);
+      }
+
+      if (preg_match('#^/authors/(\d+)/books$#', $path, $m) === 1 && $method === 'GET') {
+          $id = (int) $m[1];
+          if (!in_array($id, array_column($state['authors'], 'id'), true)) {
+              problem(404, 'nicht-gefunden', 'Nicht gefunden', "Es gibt keine Autorin und keinen Autor mit der ID {$id}.");
+          }
+          send(200, ['data' => array_values(array_filter($state['books'], fn (array $b): bool => $b['author_id'] === $id))]);
+      }
+
+      if ($path === '/limited' && $method === 'GET') {
+          $now = time();
+          $state['limited'] = array_values(array_filter($state['limited'], fn (int $t): bool => $t > $now - 60));
+          if (count($state['limited']) >= 3) {
+              $retry = max(1, 60 - ($now - min($state['limited'])));
+              $save();
+              problem(429, 'zu-viele-anfragen', 'Zu viele Anfragen', 'Höchstens 3 Anfragen pro Minute.', [], ['Retry-After' => (string) $retry, 'X-RateLimit-Limit' => '3', 'X-RateLimit-Remaining' => '0']);
+          }
+          $state['limited'][] = $now;
+          $save();
+          send(200, ['message' => 'Hallo!'], ['X-RateLimit-Limit' => '3', 'X-RateLimit-Remaining' => (string) (3 - count($state['limited']))]);
+      }
+
+      problem(404, 'nicht-gefunden', 'Nicht gefunden', "Den Endpunkt {$method} {$path} gibt es nicht.");
+      PHP
+    checks:
+      - type: command
+        run: jq -r '[.books[] | select(.id == 3)] | length' .api-state.json
+        stdout_equals: "0"
+        message: Das Buch mit der ID 3 existiert noch. Lösche es per DELETE /books/3 mit dem Bearer-Token.
+      - type: file_contains
+        path: krimis.txt
+        pattern: "^\\s*1\\s*$"
+        message: In krimis.txt soll nur die Zahl aus meta.total von GET /books?genre=krimi stehen (nach dem Löschen).
+      - type: file_contains
+        path: fehler.txt
+        pattern: "^\\s*Nicht gefunden\\s*$"
+        message: In fehler.txt soll der title der 404-Fehlerantwort stehen – nimm jq -r '.title'.
+      - type: file_contains
+        path: anlegen-status.txt
+        pattern: "^\\s*422\\s*$"
+        message: In anlegen-status.txt soll der Statuscode der Antwort auf den unvollständigen POST stehen.
+      - type: command
+        run: jq -r '[.books[] | select(.title == "Ohne Jahr")] | length' .api-state.json
+        stdout_equals: "0"
+        message: Das unvollständige Buch darf nicht angelegt worden sein.
+    hints:
+      - "Löschen: `curl -s -X DELETE http://127.0.0.1:8080/books/3 -H 'Authorization: Bearer test-token'`"
+      - "Zahlen aus JSON: `curl -s \"…/books?genre=krimi\" | jq -r '.meta.total' > krimis.txt`"
+      - "Statuscode: `curl -s -o /dev/null -w '%{http_code}' …`"
+    solution: |
+      ```bash
+      php -S 127.0.0.1:8080 api.php > server.log 2>&1 &
+      B=http://127.0.0.1:8080
+      curl -s -X DELETE $B/books/3 -H 'Authorization: Bearer test-token'
+      curl -s "$B/books?genre=krimi" | jq -r '.meta.total' > krimis.txt
+      curl -s $B/books/3 | jq -r '.title' > fehler.txt
+      curl -s -o /dev/null -w '%{http_code}' -X POST $B/books -H 'Authorization: Bearer test-token' \
+        -H 'Content-Type: application/json' -d '{"title": "Ohne Jahr", "genre": "krimi"}' > anlegen-status.txt
+      kill %1
+      ```

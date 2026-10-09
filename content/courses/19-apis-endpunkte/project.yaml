@@ -1,0 +1,495 @@
+title: Deine eigene Notizen-API
+description: |
+  Du baust eine kleine, aber vollständige REST-API für Notizen – nur mit PHP und dem eingebauten
+  Entwicklungsserver, ganz ohne Framework. Sie kann Notizen auflisten (mit Paginierung), anlegen, lesen,
+  ändern und löschen, prüft Eingaben und meldet Fehler einheitlich als Problem Details (RFC 9457).
+
+  Alles läuft in **einer** Datei `index.php`, die als Router-Skript für `php -S` dient. Die Notizen
+  speicherst du als JSON-Datei. Nach jedem Schritt startet Stacklab deine API in einer eigenen,
+  leeren Testumgebung und prüft sie mit `curl` und `jq` – so wie ein echter Client.
+
+  **Wichtig für die Prüfungen:** Deine API liest den Pfad der Datendatei aus der Umgebungsvariablen
+  `NOTES_FILE` und nimmt nur, wenn sie fehlt, `data/notes.json`:
+
+  ```php
+  $file = getenv('NOTES_FILE') ?: __DIR__ . '/data/notes.json';
+  ```
+
+  Zum Ausprobieren startest du die API mit `php -S 127.0.0.1:8080 index.php &` und beendest sie mit `kill %1`.
+goal: Eine lauffähige Notizen-API in `notizen-api/index.php` mit CRUD, Validierung, Problem Details, Paginierung und einer README, die alle Endpunkte beschreibt.
+workdir: notizen-api
+steps:
+  - id: grundgeruest
+    title: Grundgerüst mit Health-Endpunkt
+    description: |
+      Lege im Ordner `notizen-api` die Datei `index.php` an. Sie ist das Router-Skript für `php -S`: Jeder
+      Request landet dort.
+
+      1. Lies Methode und Pfad: `$_SERVER['REQUEST_METHOD']` und `parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)`.
+      2. Schreibe eine Hilfsfunktion `json(int $status, ?array $body, array $headers = [])`, die Statuscode,
+         Header und JSON ausgibt (Standard-Content-Type `application/json`) und dann `exit` aufruft.
+      3. Schreibe eine Hilfsfunktion `problem(int $status, string $title, string $detail, …)`, die Problem
+         Details mit `type`, `title`, `status` und `detail` und dem Content-Type `application/problem+json` ausgibt.
+      4. `GET /health` antwortet mit `200` und `{"status": "ok"}`.
+      5. Jeder unbekannte Pfad antwortet mit `404` als Problem Details.
+
+      Probiere es aus: `php -S 127.0.0.1:8080 index.php &` und `curl -i http://127.0.0.1:8080/health`.
+    checklist:
+      - index.php existiert
+      - GET /health liefert 200 und {"status":"ok"} als application/json
+      - Unbekannte Pfade liefern 404 mit application/problem+json
+    hints:
+      - "`http_response_code($status)` setzt den Status, `header('Content-Type: application/json')` den Header, `echo json_encode($body)` den Body."
+      - "Für Problem Details übergibst du `json()` einen eigenen Header: `['Content-Type' => 'application/problem+json']`. Setze den Standard-Header nur, wenn keiner übergeben wurde."
+    checks:
+      - type: file_exists
+        path: index.php
+        message: Lege die Datei index.php im Ordner notizen-api an.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          curl -s -o /dev/null -w '%{http_code} %{content_type}' "$B/health"; echo; curl -s "$B/health" | jq -r '.status'
+        stdout_matches: "^200 application/json[^\\n]*\\nok$"
+        message: GET /health soll mit 200, dem Content-Type application/json und dem Body {"status":"ok"} antworten.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          curl -s -o /dev/null -w '%{http_code} %{content_type}' "$B/gibt-es-nicht"
+        stdout_matches: "^404 application/problem\\+json"
+        message: Ein unbekannter Pfad soll mit 404 und dem Content-Type application/problem+json antworten.
+    solution: |
+      ```php
+      <?php
+      declare(strict_types=1);
+
+      function json(int $status, ?array $body = null, array $headers = []): never
+      {
+          http_response_code($status);
+          foreach ($headers as $name => $value) {
+              header("{$name}: {$value}");
+          }
+          if ($body !== null) {
+              if (!isset($headers['Content-Type'])) {
+                  header('Content-Type: application/json');
+              }
+              echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+          }
+          exit;
+      }
+
+      function problem(int $status, string $title, string $detail, array $extra = [], array $headers = []): never
+      {
+          json($status, array_merge(['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail], $extra),
+              array_merge(['Content-Type' => 'application/problem+json'], $headers));
+      }
+
+      $method = $_SERVER['REQUEST_METHOD'];
+      $path = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+      if ($path === '/health') {
+          json(200, ['status' => 'ok']);
+      }
+
+      problem(404, 'Not Found', "Den Endpunkt {$method} {$path} gibt es nicht.");
+      ```
+  - id: notizen-auflisten
+    title: Notizen aus der Datei auflisten
+    description: |
+      Die Notizen liegen als **JSON-Array** in einer Datei, z. B.:
+
+      ```json
+      [{"id": 1, "title": "Einkaufen", "body": "Milch", "created_at": "2026-10-01T08:00:00+00:00"}]
+      ```
+
+      1. Bestimme den Dateipfad mit `getenv('NOTES_FILE') ?: __DIR__ . '/data/notes.json'`.
+      2. Schreibe `loadNotes(string $file): array` – fehlt die Datei, ist das Ergebnis `[]`.
+      3. `GET /notes` antwortet mit `200` und `{"data": [ …alle Notizen… ]}`.
+    checklist:
+      - Der Dateipfad kommt aus NOTES_FILE
+      - Eine fehlende Datei ergibt eine leere Liste
+      - GET /notes liefert die Notizen im Envelope data
+    hints:
+      - "`is_file($file)` prüft, ob die Datei existiert. `json_decode(file_get_contents($file), true)` macht daraus ein Array."
+      - "Den Pfad-Vergleich `if ($path === '/notes' && $method === 'GET')` setzt du **vor** die 404-Antwort am Ende."
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          curl -s "$B/notes" | jq -c '.data'
+        stdout_equals: "[]"
+        message: Ohne Datendatei soll GET /notes mit {"data":[]} antworten. Liest du den Pfad aus NOTES_FILE?
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          echo '[{"id":1,"title":"A","body":"","created_at":"2026-10-01T08:00:00+00:00"},{"id":2,"title":"B","body":"x","created_at":"2026-10-02T08:00:00+00:00"}]' > "$d/notes.json"
+          curl -s "$B/notes" | jq -r '[.data[].title] | join(",")'
+        stdout_equals: "A,B"
+        message: GET /notes soll alle Notizen aus der Datei (Pfad aus NOTES_FILE) unter data zurückgeben.
+    solution: |
+      ```php
+      $file = getenv('NOTES_FILE') ?: __DIR__ . '/data/notes.json';
+
+      function loadNotes(string $file): array
+      {
+          if (!is_file($file)) {
+              return [];
+          }
+
+          return json_decode((string) file_get_contents($file), true) ?? [];
+      }
+
+      if ($path === '/notes' && $method === 'GET') {
+          json(200, ['data' => loadNotes($file)]);
+      }
+      ```
+  - id: notiz-anlegen
+    title: Notizen anlegen mit POST
+    description: |
+      `POST /notes` mit einem JSON-Body wie `{"title": "Einkaufen", "body": "Milch"}` legt eine Notiz an.
+
+      1. Lies den Body mit `json_decode(file_get_contents('php://input'), true)`.
+      2. Die neue ID ist die größte vorhandene ID plus 1 (bei leerer Liste 1).
+      3. Die Notiz hat `id`, `title`, `body` (Standard `""`) und `created_at` als ISO-8601-Zeitpunkt in UTC.
+      4. Speichere die Liste mit `saveNotes(string $file, array $notes)`. Lege dabei den Ordner an, falls er fehlt.
+      5. Antworte mit `201`, dem Header `Location: /notes/{id}` und `{"data": {…neue Notiz…}}`.
+    checklist:
+      - POST /notes antwortet mit 201 und Location
+      - Die Notiz hat id, title, body und created_at
+      - Die Notiz landet in der Datendatei
+    hints:
+      - "`(new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM)` liefert den Zeitstempel."
+      - "`if (!is_dir(dirname($file))) { mkdir(dirname($file), 0777, true); }` legt den Ordner an."
+      - "`json(201, ['data' => $note], ['Location' => \"/notes/{$id}\"])`"
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          curl -s -D "$d/h" -o "$d/b" -X POST "$B/notes" -H 'Content-Type: application/json' -d '{"title":"Einkaufen","body":"Milch"}'
+          head -1 "$d/h" | awk '{print $2}'; grep -i '^location:' "$d/h" | tr -d '\r' | awk '{print $2}'; jq -r '.data.id, .data.title, .data.body' "$d/b"
+        stdout_equals: "201\n/notes/1\n1\nEinkaufen\nMilch"
+        message: POST /notes soll mit 201, Location /notes/1 und der neuen Notiz (id 1, title, body) unter data antworten.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          curl -s -X POST "$B/notes" -H 'Content-Type: application/json' -d '{"title":"Eins"}' > /dev/null
+          curl -s -X POST "$B/notes" -H 'Content-Type: application/json' -d '{"title":"Zwei"}' | jq -r '.data.id, .data.body, .data.created_at'
+          jq 'length' "$d/notes.json"
+        stdout_matches: "^2\\n\\n\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})\\n2$"
+        message: Die zweite Notiz braucht die ID 2, einen leeren body als Standard, created_at im ISO-8601-Format – und beide Notizen müssen in der Datendatei stehen.
+    solution: |
+      ```php
+      function saveNotes(string $file, array $notes): void
+      {
+          if (!is_dir(dirname($file))) {
+              mkdir(dirname($file), 0777, true);
+          }
+          file_put_contents($file, json_encode(array_values($notes), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      if ($path === '/notes' && $method === 'POST') {
+          $notes = loadNotes($file);
+          $input = json_decode((string) file_get_contents('php://input'), true);
+          $id = $notes === [] ? 1 : max(array_column($notes, 'id')) + 1;
+          $note = [
+              'id' => $id,
+              'title' => trim($input['title']),
+              'body' => $input['body'] ?? '',
+              'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+          ];
+          $notes[] = $note;
+          saveNotes($file, $notes);
+          json(201, ['data' => $note], ['Location' => "/notes/{$id}"]);
+      }
+      ```
+  - id: validierung
+    title: Eingaben prüfen – 400 und 422
+    description: |
+      Jetzt wird die API robust:
+
+      1. Ist der Body kein JSON-Objekt (z. B. `kaputt`), antworte mit `400` als Problem Details.
+      2. `title` muss ein String sein, nach `trim` nicht leer und höchstens 120 Zeichen lang. `body` ist
+         optional, muss aber ein String sein, wenn er da ist.
+      3. Bei Fehlern antworte mit `422`, Content-Type `application/problem+json` und einem Feld `errors`:
+         `[{"field": "title", "message": "…"}]`. Melde **alle** ungültigen Felder.
+    checklist:
+      - Kaputtes JSON ergibt 400
+      - Fehlender oder zu langer Titel ergibt 422 mit errors
+      - Fehlerantworten nutzen application/problem+json
+    hints:
+      - "`$data = json_decode(…, true); if (!is_array($data)) { problem(400, …); }`"
+      - "Sammle Fehler in `$errors[]` und rufe am Ende einmal `problem(422, 'Ungültige Eingabe', '…', ['errors' => $errors])` auf."
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          curl -s -o "$d/b" -w '%{http_code} %{content_type}' -X POST "$B/notes" -H 'Content-Type: application/json' -d '{}'; echo; jq -r '[.errors[].field] | join(",")' "$d/b"
+        stdout_matches: "^422 application/problem\\+json[^\\n]*\\ntitle$"
+        message: POST /notes ohne Titel soll mit 422, application/problem+json und errors [{"field":"title",…}] antworten.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          curl -s -o /dev/null -w '%{http_code}' -X POST "$B/notes" -H 'Content-Type: application/json' -d "{\"title\":\"$(printf 'a%.0s' $(seq 121))\",\"body\":5}"; echo
+          curl -s -X POST "$B/notes" -H 'Content-Type: application/json' -d "{\"title\":\"$(printf 'a%.0s' $(seq 121))\",\"body\":5}" | jq -r '[.errors[].field] | join(",")'
+          curl -s -o /dev/null -w '%{http_code}' -X POST "$B/notes" -H 'Content-Type: application/json' -d 'kaputt'; echo
+          test ! -s "$d/notes.json" || jq -r 'length' "$d/notes.json"
+        stdout_equals: "422\ntitle,body\n400"
+        message: Ein Titel mit 121 Zeichen und ein body, der kein String ist, sollen 422 mit beiden Feldern ergeben, kaputtes JSON 400 – und nichts davon darf gespeichert werden.
+    solution: |
+      ```php
+      function readBody(): array
+      {
+          $data = json_decode((string) file_get_contents('php://input'), true);
+          if (!is_array($data)) {
+              problem(400, 'Bad Request', 'Der Body muss ein JSON-Objekt sein.');
+          }
+
+          return $data;
+      }
+
+      function validate(array $input, bool $partial): void
+      {
+          $errors = [];
+          if (!$partial || array_key_exists('title', $input)) {
+              $title = $input['title'] ?? null;
+              if (!is_string($title) || trim($title) === '' || mb_strlen($title) > 120) {
+                  $errors[] = ['field' => 'title', 'message' => 'Der Titel ist ein Pflichtfeld mit höchstens 120 Zeichen.'];
+              }
+          }
+          if (array_key_exists('body', $input) && !is_string($input['body'])) {
+              $errors[] = ['field' => 'body', 'message' => 'Der Text muss ein String sein.'];
+          }
+          if ($errors !== []) {
+              problem(422, 'Ungültige Eingabe', 'Mindestens ein Feld ist ungültig.', ['errors' => $errors]);
+          }
+      }
+
+      // im POST-Zweig:
+      $input = readBody();
+      validate($input, false);
+      ```
+  - id: einzelne-notizen
+    title: Lesen, ändern und löschen
+    description: |
+      Ergänze die Endpunkte für einzelne Notizen. Erkenne den Pfad mit `preg_match('#^/notes/(\d+)$#', $path, $m)`.
+
+      | Endpunkt | Antwort |
+      |---|---|
+      | `GET /notes/{id}` | `200` mit `{"data": …}` oder `404` (Problem Details) |
+      | `PATCH /notes/{id}` | ändert nur mitgeschickte Felder (`title`, `body`), validiert wie beim Anlegen, `200` |
+      | `DELETE /notes/{id}` | `204` ohne Body |
+      | jede andere Methode | `405` mit Header `Allow: GET, PATCH, DELETE` |
+
+      Auch `PATCH` und `DELETE` antworten mit `404`, wenn es die Notiz nicht gibt.
+    checklist:
+      - GET liefert eine Notiz oder 404
+      - PATCH ändert nur mitgeschickte Felder und validiert
+      - DELETE liefert 204 und entfernt die Notiz
+    hints:
+      - "`array_search($id, array_column($notes, 'id'), true)` liefert den Index der Notiz oder `false`."
+      - "Für PATCH rufst du `validate($input, true)` auf – dann prüfst du nur die Felder, die wirklich mitkommen."
+      - "Löschen: `array_splice($notes, $index, 1)`, speichern, `json(204)`."
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          echo '[{"id":1,"title":"A","body":"alt","created_at":"2026-10-01T08:00:00+00:00"},{"id":2,"title":"B","body":"","created_at":"2026-10-02T08:00:00+00:00"}]' > "$d/notes.json"
+          curl -s "$B/notes/2" | jq -r '.data.title'
+          curl -s -o /dev/null -w '%{http_code} %{content_type}\n' "$B/notes/9"
+          curl -s -X PATCH "$B/notes/1" -H 'Content-Type: application/json' -d '{"title":"Neu"}' | jq -r '"\(.data.title) \(.data.body)"'
+          curl -s -o /dev/null -w '%{http_code}\n' -X PATCH "$B/notes/1" -H 'Content-Type: application/json' -d '{"title":""}'
+        stdout_matches: "^B\\n404 application/problem\\+json[^\\n]*\\nNeu alt\\n422$"
+        message: GET /notes/2 soll die Notiz liefern, GET /notes/9 eine 404-Problem-Antwort, PATCH nur den Titel ändern (body bleibt) und ein leerer Titel beim PATCH 422 ergeben.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          echo '[{"id":1,"title":"A","body":"","created_at":"2026-10-01T08:00:00+00:00"},{"id":2,"title":"B","body":"","created_at":"2026-10-02T08:00:00+00:00"}]' > "$d/notes.json"
+          curl -s -o /dev/null -w '%{http_code} %{size_download}\n' -X DELETE "$B/notes/2"
+          curl -s -o /dev/null -w '%{http_code}\n' "$B/notes/2"
+          curl -s -o /dev/null -w '%{http_code}\n' -X DELETE "$B/notes/2"
+          curl -s -D - -o /dev/null -X PUT "$B/notes/1" | tr -d '\r' | grep -iE '^(HTTP|allow)' | sed -E 's/^HTTP\/[0-9.]+ ([0-9]+).*/\1/I; s/^allow: */Allow: /I'
+        stdout_matches: "^204 0\\n404\\n404\\n405\\nAllow: GET, PATCH, DELETE$"
+        message: DELETE /notes/2 soll 204 ohne Body liefern, danach 404 – und PUT /notes/1 soll 405 mit dem Header Allow GET, PATCH, DELETE ergeben.
+    solution: |
+      ```php
+      if (preg_match('#^/notes/(\d+)$#', $path, $m) === 1) {
+          $notes = loadNotes($file);
+          $id = (int) $m[1];
+          $index = array_search($id, array_column($notes, 'id'), true);
+          if (!in_array($method, ['GET', 'PATCH', 'DELETE'], true)) {
+              problem(405, 'Method Not Allowed', "{$method} ist hier nicht erlaubt.", [], ['Allow' => 'GET, PATCH, DELETE']);
+          }
+          if ($index === false) {
+              problem(404, 'Not Found', "Es gibt keine Notiz mit der ID {$id}.");
+          }
+          if ($method === 'GET') {
+              json(200, ['data' => $notes[$index]]);
+          }
+          if ($method === 'PATCH') {
+              $input = readBody();
+              validate($input, true);
+              foreach (['title', 'body'] as $field) {
+                  if (array_key_exists($field, $input)) {
+                      $notes[$index][$field] = $input[$field];
+                  }
+              }
+              saveNotes($file, $notes);
+              json(200, ['data' => $notes[$index]]);
+          }
+          array_splice($notes, $index, 1);
+          saveNotes($file, $notes);
+          json(204);
+      }
+      ```
+  - id: paginierung
+    title: Paginierung für die Liste
+    description: |
+      `GET /notes` liefert ab jetzt Seiten:
+
+      1. Query-Parameter `page` (Standard 1) und `per_page` (Standard 10, **höchstens 50**). Lies sie mit
+         `parse_str(parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY) ?? '', $query)`.
+      2. Die Antwort enthält `data` (nur die Notizen der Seite), `meta` mit `page`, `per_page`, `total`,
+         `total_pages` und `links` mit `next` und `prev` (fertige URLs oder `null`).
+      3. Andere Methoden als GET und POST auf `/notes` beantwortest du mit `405` und `Allow: GET, POST`.
+    checklist:
+      - page und per_page mit Standardwerten
+      - per_page ist auf 50 begrenzt
+      - meta und links stehen in der Antwort
+      - 405 mit Allow auf /notes
+    hints:
+      - "`array_slice($notes, ($page - 1) * $perPage, $perPage)` schneidet die Seite heraus."
+      - "`max(1, min(50, (int) ($query['per_page'] ?? 10)))` begrenzt die Seitengröße."
+      - "`total_pages = max(1, (int) ceil($total / $perPage))`; `next` ist `null`, wenn `$page >= $totalPages`."
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          jq -n '[range(1;6) | {id: ., title: "Notiz \(.)", body: "", created_at: "2026-10-01T08:00:00+00:00"}]' > "$d/notes.json"
+          curl -s "$B/notes?page=2&per_page=2" | jq -c '[[.data[].id], .meta.page, .meta.per_page, .meta.total, .meta.total_pages, (.links.next != null), (.links.prev != null)]'
+          curl -s "$B/notes?page=3&per_page=2" | jq -c '[[.data[].id], .links.next]'
+        stdout_equals: "[[3,4],2,2,5,3,true,true]\n[[5],null]"
+        message: GET /notes?page=2&per_page=2 soll die Notizen 3 und 4 mit passendem meta (total 5, total_pages 3) und links liefern; auf der letzten Seite ist links.next null.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); p=$((20000 + RANDOM % 20000)); trap 'kill $s 2>/dev/null; rm -rf "$d"' EXIT
+          NOTES_FILE="$d/notes.json" php -S 127.0.0.1:$p index.php >/dev/null 2>&1 & s=$!
+          for i in $(seq 30); do curl -s -o /dev/null "http://127.0.0.1:$p/" && break; sleep 0.1; done; B="http://127.0.0.1:$p"
+          jq -n '[range(1;61) | {id: ., title: "Notiz \(.)", body: "", created_at: "2026-10-01T08:00:00+00:00"}]' > "$d/notes.json"
+          curl -s "$B/notes" | jq -c '[.meta.page, .meta.per_page, (.data | length)]'
+          curl -s "$B/notes?per_page=500" | jq -c '[.meta.per_page, (.data | length)]'
+          curl -s -D - -o /dev/null -X PUT "$B/notes" | tr -d '\r' | grep -iE '^(HTTP|allow)' | sed -E 's/^HTTP\/[0-9.]+ ([0-9]+).*/\1/I; s/^allow: */Allow: /I'
+        stdout_equals: "[1,10,10]\n[50,50]\n405\nAllow: GET, POST"
+        message: Ohne Parameter gilt page 1 und per_page 10, per_page ist auf 50 begrenzt, und PUT /notes soll 405 mit Allow GET, POST liefern.
+    solution: |
+      ```php
+      parse_str((string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY), $query);
+
+      if ($path === '/notes' && $method === 'GET') {
+          $notes = loadNotes($file);
+          $perPage = max(1, min(50, (int) ($query['per_page'] ?? 10)));
+          $page = max(1, (int) ($query['page'] ?? 1));
+          $total = count($notes);
+          $pages = max(1, (int) ceil($total / $perPage));
+          $link = fn (int $p): string => "/notes?page={$p}&per_page={$perPage}";
+          json(200, [
+              'data' => array_slice($notes, ($page - 1) * $perPage, $perPage),
+              'meta' => ['page' => $page, 'per_page' => $perPage, 'total' => $total, 'total_pages' => $pages],
+              'links' => [
+                  'next' => $page < $pages ? $link($page + 1) : null,
+                  'prev' => $page > 1 ? $link($page - 1) : null,
+              ],
+          ]);
+      }
+
+      if ($path === '/notes' && !in_array($method, ['GET', 'POST'], true)) {
+          problem(405, 'Method Not Allowed', "{$method} ist auf /notes nicht erlaubt.", [], ['Allow' => 'GET, POST']);
+      }
+      ```
+  - id: dokumentation
+    title: Die API beschreiben und selbst reviewen
+    description: |
+      Zum Schluss beschreibst du deinen Vertrag – so, dass ein anderes Team ohne Blick in den Code mit der
+      API arbeiten kann. Lege `README.md` im Ordner `notizen-api` an:
+
+      1. Eine Überschrift und ein Satz, was die API tut, plus der Startbefehl (`php -S …`).
+      2. Eine Tabelle aller Endpunkte mit Methode, Pfad und möglichen Statuscodes – mindestens
+         `GET /notes`, `POST /notes`, `GET /notes/{id}`, `PATCH /notes/{id}` und `DELETE /notes/{id}`.
+      3. Ein Beispiel für eine Fehlerantwort mit `application/problem+json`.
+      4. Ein `curl`-Beispiel zum Anlegen einer Notiz.
+
+      Gehe danach die Review-Checkliste aus der letzten Lektion durch: Würde dein Entwurf das Review bestehen?
+    checklist:
+      - README.md mit Startbefehl
+      - Alle fünf Endpunkte dokumentiert
+      - Beispiel für Problem Details
+      - curl-Beispiel zum Anlegen
+      - Selbst-Review mit der Checkliste gemacht
+    hints:
+      - Schreibe die Pfade genau so wie in der API, z. B. `PATCH /notes/{id}`.
+      - Die Fehlerantwort kannst du dir mit `curl -i` von deiner laufenden API holen und hineinkopieren.
+    checks:
+      - type: file_exists
+        path: README.md
+        message: Lege die Datei README.md im Ordner notizen-api an.
+      - type: file_contains
+        path: README.md
+        pattern: "php -S"
+        message: In der README fehlt der Startbefehl mit php -S.
+      - type: command
+        run: for e in 'GET /notes' 'POST /notes' 'GET /notes/{id}' 'PATCH /notes/{id}' 'DELETE /notes/{id}'; do grep -qF "$e" README.md || echo "fehlt - $e"; done
+        stdout_equals: ""
+        message: In der README fehlt mindestens einer der fünf Endpunkte (GET /notes, POST /notes, GET /notes/{id}, PATCH /notes/{id}, DELETE /notes/{id}).
+      - type: file_contains
+        path: README.md
+        pattern: "application/problem\\+json"
+        message: In der README fehlt ein Beispiel für eine Fehlerantwort mit application/problem+json.
+      - type: file_contains
+        path: README.md
+        pattern: "curl .*-X POST|curl .*-d "
+        message: In der README fehlt ein curl-Beispiel zum Anlegen einer Notiz.
+    solution: |
+      ~~~markdown
+      # Notizen-API
+
+      Eine kleine REST-API für Notizen. Start: `php -S 127.0.0.1:8080 index.php`
+
+      | Methode | Pfad | Status |
+      |---|---|---|
+      | GET | `GET /notes?page=1&per_page=10` | 200 |
+      | POST | `POST /notes` | 201, 400, 422 |
+      | GET | `GET /notes/{id}` | 200, 404 |
+      | PATCH | `PATCH /notes/{id}` | 200, 400, 404, 422 |
+      | DELETE | `DELETE /notes/{id}` | 204, 404 |
+
+      Fehler kommen als `application/problem+json`:
+
+      ```json
+      {"type": "about:blank", "title": "Ungültige Eingabe", "status": 422, "detail": "Mindestens ein Feld ist ungültig.",
+       "errors": [{"field": "title", "message": "Der Titel ist ein Pflichtfeld mit höchstens 120 Zeichen."}]}
+      ```
+
+      ```bash
+      curl -X POST http://127.0.0.1:8080/notes -H 'Content-Type: application/json' -d '{"title": "Einkaufen"}'
+      ```
+      ~~~
