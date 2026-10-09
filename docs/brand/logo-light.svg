@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56" role="img" aria-label="Stacklab">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <path d="M28 36 6 25.5l22-10.5 22 10.5z" fill="#7c3aed" opacity=".55"/>
+  <path d="M28 28.5 6 18 28 7.5 50 18z" fill="url(#g)"/>
+  <path d="M6 33 28 43.5 50 33" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="62" y="37" font-family="Geist, 'Inter', 'Segoe UI', sans-serif" font-size="27" font-weight="700" letter-spacing="-0.5" fill="#16142b">Stack<tspan fill="#7c3aed">lab</tspan></text>
+</svg>
