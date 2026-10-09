@@ -1,0 +1,78 @@
+- slug: git
+  term: Git
+  short: Ein verteiltes Versionskontrollsystem, das die Geschichte deines Projekts speichert.
+  explanation: >
+    Git merkt sich jeden Stand deines Projekts als Commit. Es läuft lokal auf deinem Rechner, braucht kein
+    Internet und ermöglicht vielen Menschen, gleichzeitig am selben Code zu arbeiten.
+  example: "`git status` zeigt, was sich in deinem Repository geändert hat."
+  category: git
+  aliases: []
+  related: [commit, repository, github]
+  lesson: git/was-ist-versionskontrolle
+- slug: versionskontrolle
+  term: Versionskontrolle
+  short: Ein System, das Änderungen an Dateien über die Zeit speichert und nachvollziehbar macht.
+  explanation: >
+    Versionskontrolle (auch Versionsverwaltung) beantwortet die Fragen: Was wurde wann, von wem und warum
+    geändert? Und sie erlaubt, zu jedem früheren Stand zurückzukehren.
+  example: Git ist das verbreitetste Versionskontrollsystem.
+  category: git
+  aliases: [Versionsverwaltung, VCS]
+  related: [git]
+  lesson: git/was-ist-versionskontrolle
+- slug: repository
+  term: Repository
+  short: Ein Projektordner, dessen komplette Änderungsgeschichte Git verwaltet.
+  explanation: >
+    Ein Repository (kurz Repo) enthält deine Dateien und im versteckten Ordner `.git` alle Commits,
+    Branches und Einstellungen. Du legst es mit `git init` an oder kopierst ein bestehendes mit `git clone`.
+  example: "`git init` macht aus dem aktuellen Ordner ein Repository."
+  category: git
+  aliases: [Repo, Repositories, Repos]
+  related: [commit, git]
+  lesson: git/was-ist-versionskontrolle
+- slug: commit
+  term: Commit
+  short: Ein gespeicherter Schnappschuss deines Projekts mit Autor, Zeitpunkt und Nachricht.
+  explanation: >
+    Ein Commit enthält den vollständigen Stand aller vorgemerkten Dateien, einen Verweis auf den
+    vorherigen Commit und eine Nachricht, die erklärt, warum sich etwas geändert hat. Jeder Commit hat
+    eine eindeutige ID (Hash).
+  example: "`git commit -m \"fix: correct typo\"` erstellt einen Commit."
+  category: git
+  aliases: [Commits, committen]
+  related: [repository, staging-bereich]
+  lesson: git/was-ist-versionskontrolle
+- slug: arbeitsverzeichnis
+  term: Arbeitsverzeichnis
+  short: Die Dateien eines Repositorys, so wie du sie gerade im Ordner siehst und bearbeitest.
+  explanation: >
+    Das Arbeitsverzeichnis (working directory) ist einer der drei Bereiche von Git. Änderungen, die du
+    im Editor speicherst, landen zuerst nur hier.
+  example: Nach dem Speichern im Editor zeigt `git status` die Datei als „modified“.
+  category: git
+  aliases: [Working Directory, Working Tree]
+  related: [staging-bereich, repository]
+  lesson: git/die-drei-bereiche
+- slug: staging-bereich
+  term: Staging-Bereich
+  short: Die Zwischenablage für Änderungen, die in den nächsten Commit sollen.
+  explanation: >
+    Mit `git add` legst du Änderungen in den Staging-Bereich (auch Index). Ein Commit speichert genau das,
+    was dort liegt. So kannst du gezielt auswählen, welche Änderungen zusammengehören.
+  example: "`git add index.html` legt die Änderung an index.html in den Staging-Bereich."
+  category: git
+  aliases: [Index, Staging Area, Staging]
+  related: [arbeitsverzeichnis, commit]
+  lesson: git/die-drei-bereiche
+- slug: github
+  term: GitHub
+  short: Ein Online-Dienst, auf dem du Git-Repositorys speichern, teilen und gemeinsam bearbeiten kannst.
+  explanation: >
+    GitHub bietet zusätzlich zu Git Funktionen wie Pull Requests, Issues, Code-Reviews und Actions
+    (automatische Abläufe). Es ist nicht dasselbe wie Git – Git funktioniert auch komplett ohne GitHub.
+  example: Stacklab liegt auf GitHub unter github.com/SynKeles44/stacklab.
+  category: git
+  aliases: []
+  related: [git, repository]
+  lesson: git/was-ist-versionskontrolle

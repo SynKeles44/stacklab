@@ -1,0 +1,42 @@
+title: Die Grundlagen
+description: Was Versionskontrolle ist, wie du Git einrichtest und dein erstes Repository anlegst.
+exercise:
+  id: modul-uebung-grundlagen
+  type: terminal
+  title: Ein Repository für deine Notizen
+  description: |
+    Lege im Ordner `notizen` ein neues Git-Repository an. Erstelle darin eine Datei `README.md`
+    mit einer Überschrift (eine Zeile, die mit `#` beginnt) und eine Datei `ideen.txt` mit
+    mindestens einer Zeile Text. Speichere beides in **einem** Commit.
+  workdir: notizen
+  checks:
+    - type: dir_exists
+      path: .git
+      message: Im Ordner notizen gibt es noch kein Git-Repository (git init).
+    - type: file_contains
+      path: README.md
+      pattern: "^#\\s+\\S"
+      message: README.md braucht eine Überschrift, z. B. "# Meine Notizen".
+    - type: file_exists
+      path: ideen.txt
+      message: Die Datei ideen.txt fehlt noch.
+    - type: command
+      run: git log --oneline 2>/dev/null | wc -l
+      stdout_matches: "^\\s*1\\s*$"
+      message: Es sollte genau ein Commit existieren.
+    - type: command
+      run: git ls-files | sort | tr '\n' ' '
+      stdout_matches: "README\\.md ideen\\.txt"
+      message: Beide Dateien müssen im Commit enthalten sein.
+  hints:
+    - "`git init` macht aus dem aktuellen Ordner ein Repository."
+    - "Mit `git add README.md ideen.txt` merkst du beide Dateien vor."
+  solution: |
+    ```bash
+    cd notizen
+    git init
+    echo "# Meine Notizen" > README.md
+    echo "Stacklab durcharbeiten" > ideen.txt
+    git add README.md ideen.txt
+    git commit -m "docs: add readme and ideas"
+    ```

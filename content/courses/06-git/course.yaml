@@ -1,0 +1,29 @@
+title: Git
+subtitle: Versionskontrolle von null an – mit echten Befehlen in deinem eigenen Repository
+description: >
+  Git ist das Werkzeug, mit dem praktisch jedes Software-Team der Welt seine Änderungen verwaltet.
+  In diesem Kurs lernst du Git nicht durch Auswendiglernen, sondern durch Tippen: Jede Lektion hat
+  Aufgaben im echten Übungs-Terminal, und Stacklab prüft danach den echten Zustand deines Repositorys.
+
+
+  Du verstehst, **wie Git intern denkt** (Schnappschüsse, Commits, Zeiger), statt nur Befehle
+  nachzumachen. Dadurch kannst du später auch knifflige Situationen – Merge-Konflikte, verlorene
+  Commits, ein verunglückter Rebase – selbstständig lösen.
+category: grundlagen
+level: einsteiger
+icon: git-branch
+color: "#f05032"
+estimated_hours: 14
+workspace_dir: git
+prerequisites: [terminal-shell]
+learning_goals:
+  - Du erklärst, was ein Commit ist und warum Git Schnappschüsse statt Änderungen speichert.
+  - Du legst Repositorys an, stellst Änderungen gezielt zusammen und schreibst gute Commit-Messages.
+  - Du arbeitest sicher mit Branches, mergst und löst Merge-Konflikte.
+  - Du verbindest dein Repository mit einem Remote und arbeitest mit push, pull und fetch.
+  - Du machst Fehler rückgängig, ohne Arbeit zu verlieren (restore, reset, revert, reflog).
+  - Du nutzt .gitignore, Tags, Stash und Hooks im Alltag.
+references:
+  - Conventional Commits mit Ticket-Nummer als Scope, wie sie in professionellen Teams üblich sind
+  - Git-Hooks, die nach einem Branch-Wechsel automatisch Abhängigkeiten installieren (post-checkout)
+  - Pre-Push-Hooks, die Linter und Typprüfung vor dem Hochladen ausführen

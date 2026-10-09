@@ -1,0 +1,203 @@
+# Allgemeine Begriffe, die in vielen Kursen vorkommen.
+- slug: computer
+  term: Computer
+  short: Ein Gerät, das Daten nach den Anweisungen von Programmen verarbeitet.
+  explanation: >
+    Ein Computer nimmt Eingaben entgegen (Tastatur, Maus, Netzwerk), verarbeitet sie mit dem Prozessor
+    und gibt Ergebnisse aus (Bildschirm, Dateien, Netzwerk). Smartphones und Server sind auch Computer.
+  example: Dein Laptop, ein Smartphone und ein Server im Rechenzentrum sind alles Computer.
+  category: grundlagen
+  aliases: [Rechner]
+  related: [programm, betriebssystem]
+- slug: datei
+  term: Datei
+  short: Ein benannter Behälter für Daten auf einem Speichermedium.
+  explanation: >
+    Eine Datei hat einen Namen (z. B. `index.html`) und einen Inhalt. Die Endung nach dem Punkt verrät
+    meist, was drinsteckt: `.txt` für Text, `.png` für Bilder, `.php` für PHP-Code.
+  example: "`README.md` ist eine Textdatei im Markdown-Format."
+  category: grundlagen
+  aliases: [Dateien]
+  related: [ordner, dateiendung]
+- slug: dateiendung
+  term: Dateiendung
+  short: Der Teil eines Dateinamens nach dem letzten Punkt, der den Dateityp angibt.
+  explanation: >
+    Programme erkennen an der Endung, wie sie eine Datei öffnen sollen. `.js` steht für JavaScript,
+    `.json` für JSON-Daten, `.yml` oder `.yaml` für YAML. Die Endung ändert nicht den Inhalt – sie ist nur ein Hinweis.
+  example: In `style.css` ist `.css` die Dateiendung.
+  category: grundlagen
+  aliases: [Endung, Extension]
+  related: [datei]
+- slug: ordner
+  term: Ordner
+  short: Ein Behälter, der Dateien und weitere Ordner enthält.
+  explanation: >
+    Ordner (auch Verzeichnisse) bilden eine Baumstruktur. Ganz oben steht das Wurzelverzeichnis,
+    darunter beliebig viele verschachtelte Ordner. Im Terminal heißt ein Ordner meist „Verzeichnis“ (directory).
+  example: "`src/components/` ist ein Ordner im Ordner `src`."
+  category: grundlagen
+  aliases: [Verzeichnis, Verzeichnisse, Directory]
+  related: [datei, pfad]
+- slug: pfad
+  term: Pfad
+  short: Die Adresse einer Datei oder eines Ordners im Dateisystem.
+  explanation: >
+    Ein Pfad beschreibt den Weg durch die Ordnerstruktur. Ein absoluter Pfad beginnt ganz oben
+    (`/home/ada/projekt`), ein relativer Pfad geht vom aktuellen Ordner aus (`./src/app.js`).
+  example: "`/workspace/git/notizen/README.md`"
+  category: grundlagen
+  aliases: [Pfade, Path]
+  related: [ordner, datei]
+- slug: programm
+  term: Programm
+  short: Eine Folge von Anweisungen, die ein Computer ausführen kann.
+  explanation: >
+    Ein Programm ist in einer Programmiersprache geschrieben und wird vom Computer ausgeführt –
+    direkt als kompilierte Datei oder über einen Interpreter wie Node.js oder PHP.
+  example: Git, dein Browser und dein Texteditor sind Programme.
+  category: grundlagen
+  aliases: [Programme, Software, Anwendung]
+  related: [code, computer]
+- slug: code
+  term: Code
+  short: Text in einer Programmiersprache, der beschreibt, was ein Programm tun soll.
+  explanation: >
+    Code (auch Quellcode) wird von Menschen geschrieben und gelesen und vom Computer ausgeführt.
+    Er liegt in normalen Textdateien, zum Beispiel `app.js` oder `index.php`.
+  example: "`console.log('Hallo')` ist eine Zeile JavaScript-Code."
+  category: grundlagen
+  aliases: [Quellcode, Source Code]
+  related: [programm, programmiersprache]
+- slug: programmiersprache
+  term: Programmiersprache
+  short: Eine formale Sprache, mit der Menschen einem Computer Anweisungen geben.
+  explanation: >
+    Programmiersprachen haben feste Regeln (Syntax). Beispiele sind JavaScript, TypeScript, PHP,
+    Python oder SQL. Jede Sprache hat Stärken für bestimmte Aufgaben.
+  example: PHP ist eine Programmiersprache für Webserver, JavaScript läuft im Browser und mit Node.js.
+  category: grundlagen
+  aliases: [Programmiersprachen]
+  related: [code, syntax]
+- slug: syntax
+  term: Syntax
+  short: Die Schreibregeln einer Programmiersprache.
+  explanation: >
+    Die Syntax legt fest, wie Code aufgebaut sein muss – wo Klammern, Semikolons oder Einrückungen stehen.
+    Verletzt du sie, entsteht ein Syntaxfehler und das Programm startet gar nicht erst.
+  example: "In PHP endet jede Anweisung mit einem Semikolon: `echo 'Hi';`"
+  category: grundlagen
+  aliases: [Syntaxfehler]
+  related: [programmiersprache]
+- slug: betriebssystem
+  term: Betriebssystem
+  short: Die Grundsoftware, die Hardware verwaltet und Programme ausführt.
+  explanation: >
+    Das Betriebssystem (englisch Operating System, OS) startet Programme, verwaltet Speicher, Dateien und
+    Netzwerk. Bekannte Betriebssysteme sind Windows, macOS und Linux.
+  example: Server laufen meistens mit Linux.
+  category: grundlagen
+  aliases: [OS, Operating System]
+  related: [linux, computer]
+- slug: linux
+  term: Linux
+  short: Ein freies Betriebssystem, das auf den meisten Servern der Welt läuft.
+  explanation: >
+    Linux gibt es in vielen Varianten (Distributionen) wie Ubuntu, Debian oder Alpine. Fast alle
+    Docker-Container und Webserver basieren auf Linux – deshalb lohnt es sich, seine Befehle zu kennen.
+  example: Das Stacklab-Übungs-Terminal läuft in einem Debian-Linux-Container.
+  category: grundlagen
+  aliases: [Linux-Distribution]
+  related: [betriebssystem, terminal]
+- slug: terminal
+  term: Terminal
+  short: Ein Programm, in dem du dem Computer Befehle als Text eintippst.
+  explanation: >
+    Statt zu klicken, schreibst du im Terminal Befehle wie `ls` oder `git status` und drückst Enter.
+    Das Terminal zeigt die Ausgabe als Text an. Entwickler nutzen es täglich, weil es schnell,
+    automatisierbar und auf Servern oft die einzige Möglichkeit ist.
+  example: "Im Terminal zeigt `pwd` an, in welchem Ordner du gerade bist."
+  category: grundlagen
+  aliases: [Konsole, Kommandozeile, Command Line, CLI]
+  related: [befehl, shell]
+- slug: shell
+  term: Shell
+  short: Das Programm im Terminal, das deine Befehle liest und ausführt.
+  explanation: >
+    Das Terminal ist das Fenster, die Shell ist der „Dolmetscher“ darin. Bekannte Shells sind Bash
+    (Standard auf vielen Linux-Systemen) und Zsh (Standard auf macOS).
+  example: Im Stacklab-Übungs-Terminal läuft die Bash.
+  category: grundlagen
+  aliases: [Bash, Zsh]
+  related: [terminal, befehl]
+- slug: befehl
+  term: Befehl
+  short: Eine Anweisung, die du im Terminal eintippst.
+  explanation: >
+    Ein Befehl besteht aus dem Programmnamen und oft Argumenten und Optionen. In `git commit -m "Text"`
+    ist `git` das Programm, `commit` ein Unterbefehl und `-m` eine Option.
+  example: "`ls -la` listet alle Dateien mit Details auf."
+  category: grundlagen
+  aliases: [Befehle, Kommando, Command]
+  related: [terminal, shell]
+- slug: editor
+  term: Editor
+  short: Ein Programm zum Bearbeiten von Textdateien und Code.
+  explanation: >
+    Code-Editoren wie VS Code oder Zed und IDEs wie PhpStorm färben Code ein, ergänzen automatisch
+    und zeigen Fehler an. Im Terminal gibt es einfache Editoren wie nano oder vim.
+  example: Öffne deinen Workspace-Ordner in VS Code oder PhpStorm, um deine Übungsdateien zu sehen.
+  category: grundlagen
+  aliases: [Code-Editor, Texteditor]
+  related: [ide, datei]
+- slug: ide
+  term: IDE
+  short: Eine integrierte Entwicklungsumgebung – ein Editor mit vielen eingebauten Werkzeugen.
+  explanation: >
+    IDE steht für Integrated Development Environment. Neben dem Editor enthält sie Debugger,
+    Datenbank-Werkzeuge, Git-Integration und intelligente Codeanalyse. PhpStorm ist eine IDE.
+  example: PhpStorm zeigt dir direkt im Code, wo eine Methode überall aufgerufen wird.
+  category: grundlagen
+  aliases: [Entwicklungsumgebung, IDE]
+  related: [editor]
+- slug: server
+  term: Server
+  short: Ein Computer oder Programm, das anderen Rechnern Dienste anbietet.
+  explanation: >
+    Ein Server wartet auf Anfragen und beantwortet sie – zum Beispiel ein Webserver, der Webseiten
+    ausliefert, oder ein Datenbankserver. Oft meint „Server“ auch den Rechner im Rechenzentrum.
+  example: Wenn du eine Website aufrufst, antwortet dir ein Webserver.
+  category: grundlagen
+  aliases: [Server]
+  related: [client, computer]
+- slug: client
+  term: Client
+  short: Ein Programm oder Gerät, das Dienste eines Servers nutzt.
+  explanation: >
+    Der Client stellt Anfragen, der Server antwortet. Dein Browser ist ein Client, der Webseiten
+    vom Webserver anfragt. Auch eine App, die eine API aufruft, ist ein Client.
+  example: Der Browser (Client) fragt beim Webserver die Seite example.com an.
+  category: grundlagen
+  aliases: [Clients]
+  related: [server]
+- slug: open-source
+  term: Open Source
+  short: Software, deren Quellcode öffentlich ist und unter einer freien Lizenz genutzt werden darf.
+  explanation: >
+    Bei Open-Source-Software darf jeder den Code lesen, verändern und weitergeben – je nach Lizenz
+    mit bestimmten Bedingungen. Git, Linux, Laravel, React und Stacklab sind Open Source.
+  example: Stacklab steht unter der MIT-Lizenz.
+  category: grundlagen
+  aliases: [Quelloffen]
+  related: [lizenz]
+- slug: lizenz
+  term: Lizenz
+  short: Die rechtlichen Regeln, unter denen Software genutzt werden darf.
+  explanation: >
+    Eine Lizenz legt fest, was du mit Software oder Inhalten tun darfst. Die MIT-Lizenz erlaubt fast alles,
+    solange der Copyright-Hinweis erhalten bleibt. Andere Lizenzen wie die GPL verlangen, dass Änderungen
+    ebenfalls offengelegt werden.
+  example: Die Datei `LICENSE` im Repository nennt die Lizenz.
+  category: grundlagen
+  aliases: [Lizenzen, MIT-Lizenz]
+  related: [open-source]
