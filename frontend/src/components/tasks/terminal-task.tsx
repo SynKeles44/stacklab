@@ -88,7 +88,7 @@ export function TerminalTask({ task, context, onSolved, onAttempt }: { task: Tas
           {busy === 'verify' ? <Spinner /> : <ShieldCheck />} Prüfen
         </Button>
       </div>
-      {open && <RealTerminal key={terminalKey} courseSlug={context.courseSlug} startDir={task.workdir} />}
+      {open && <RealTerminal key={terminalKey} courseSlug={context.courseSlug} startDir={task.workdir} label={folder} />}
       {result && <CheckResults result={result} />}
     </div>
   )

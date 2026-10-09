@@ -181,7 +181,7 @@ export function CoursePage() {
 function ModuleItem({ course, module, index }: { course: CourseDetail; module: CourseModule; index: number }) {
   const [exerciseOpen, setExerciseOpen] = useState(false)
   const done = module.lessons.filter((lesson) => lesson.completed).length
-  const allDone = done === module.lessons.length
+  const allDone = module.lessons.length > 0 && done === module.lessons.length
 
   return (
     <AccordionItem value={module.slug} className="overflow-hidden rounded-2xl border bg-card px-0 last:border-b">

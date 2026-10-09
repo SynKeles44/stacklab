@@ -56,7 +56,14 @@ export const router = createBrowserRouter([
               return Api.examAttempt(Number(args.params.attempt), args.request.signal)
             },
           },
-          { path: 'kurse/:course/:lesson', element: <LessonPage />, loader: ({ params, request }) => Api.lesson(params.course!, params.lesson!, request.signal) },
+          {
+            path: 'kurse/:course/:lesson',
+            element: <LessonPage />,
+            loader: async ({ params, request }) => {
+              const [lesson, course] = await Promise.all([Api.lesson(params.course!, params.lesson!, request.signal), Api.course(params.course!, request.signal)])
+              return { ...lesson, outline: course.course }
+            },
+          },
           { path: 'lexikon', element: <GlossaryPage />, loader: ({ request }) => Api.glossary(request.signal) },
           { path: 'lexikon/:term', element: <TermPage />, loader: async ({ params, request }) => (await Api.term(params.term!, request.signal)).term },
           { path: 'suche', element: <SearchPage /> },

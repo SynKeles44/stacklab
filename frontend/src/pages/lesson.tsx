@@ -1,9 +1,12 @@
-import { ArrowLeft, ArrowRight, BookA, CheckCircle2, Clock, ExternalLink, ListChecks, NotebookPen } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookA, CheckCircle2, Clock, ExternalLink, ListChecks, ListTree, NotebookPen } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLoaderData } from 'react-router'
 import { toast } from 'sonner'
 import { BookmarkButton } from '@/components/common/bookmark-button'
+import { CourseOutline } from '@/components/common/course-outline'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { CourseIcon } from '@/components/common/course-icon'
 import { LessonMarkdown, slugifyHeading } from '@/components/markdown/lesson-markdown'
 import { LessonQuiz } from '@/components/quiz/lesson-quiz'
@@ -15,23 +18,26 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
-import { Api, type LessonResponse } from '@/lib/api'
+import { Api, type CourseDetail, type LessonResponse } from '@/lib/api'
 import { useSession } from '@/lib/auth'
 import { celebrateBig, celebrateSmall, originFromElement } from '@/lib/celebrate'
 import { markKnown } from '@/lib/unlocks'
 import { cn } from '@/lib/utils'
 
+type LessonData = LessonResponse & { outline: CourseDetail }
+
 export function LessonPage() {
-  const data = useLoaderData() as LessonResponse
+  const data = useLoaderData() as LessonData
   return <LessonView key={data.lesson.id} data={data} />
 }
 
-function LessonView({ data }: { data: LessonResponse }) {
+function LessonView({ data }: { data: LessonData }) {
   const { lesson, state } = data
   const user = useSession()
   const [completed, setCompleted] = useState(state?.completed ?? false)
   const [completedTasks, setCompletedTasks] = useState<string[]>(state?.completed_tasks ?? [])
   const [busy, setBusy] = useState(false)
+  const [outlineOpen, setOutlineOpen] = useState(false)
   const completeRef = useRef<HTMLButtonElement>(null)
 
   const headings = useMemo(
@@ -75,14 +81,34 @@ function LessonView({ data }: { data: LessonResponse }) {
     courseSlug: lesson.course.slug,
     workspaceDir: lesson.course.workspace_dir ?? lesson.course.slug,
     storagePrefix: `${lesson.course.slug}.${lesson.slug}`,
+    url: `/kurse/${lesson.course.slug}/${lesson.slug}`,
   }
 
   const lessonUrl = `/kurse/${lesson.course.slug}/${lesson.slug}`
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
-      <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_16rem]">
+      <div className="grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_14rem]">
+        <aside className="hidden lg:block">
+          <div className="sticky top-20">
+            <ScrollArea className="h-[calc(100svh-6rem)] pr-3">
+              <Link to={`/kurse/${lesson.course.slug}`} className="mb-4 block font-semibold hover:text-brand">{lesson.course.title}</Link>
+              <CourseOutline course={data.outline} activeSlug={lesson.slug} />
+            </ScrollArea>
+          </div>
+        </aside>
         <article className="mx-auto w-full max-w-3xl min-w-0">
+          <Sheet open={outlineOpen} onOpenChange={setOutlineOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="mb-4 lg:hidden"><ListTree /> Kursinhalt</Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80">
+              <SheetHeader><SheetTitle>{lesson.course.title}</SheetTitle></SheetHeader>
+              <ScrollArea className="h-[calc(100svh-5rem)] px-4 pb-6">
+                <CourseOutline course={data.outline} activeSlug={lesson.slug} onNavigate={() => setOutlineOpen(false)} />
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
           <Breadcrumb className="mb-5">
             <BreadcrumbList>
               <BreadcrumbItem><BreadcrumbLink asChild><Link to="/kurse">Kurse</Link></BreadcrumbLink></BreadcrumbItem>
@@ -211,7 +237,7 @@ function LessonView({ data }: { data: LessonResponse }) {
         </article>
 
         <aside className="hidden xl:block">
-          <div className="sticky top-24 space-y-6 text-sm">
+          <div className="sticky top-20 space-y-6 text-sm">
             {headings.length > 0 && (
               <div>
                 <p className="mb-2 font-semibold">Auf dieser Seite</p>

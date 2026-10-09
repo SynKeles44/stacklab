@@ -6,7 +6,7 @@ import { CourseCard } from '@/components/common/course-card'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { CourseSummary } from '@/lib/api'
-import { CATEGORY_LABELS, CATEGORY_ORDER } from '@/lib/format'
+import { CATEGORY_LABELS, CATEGORY_ORDER, pluralize } from '@/lib/format'
 
 export function CoursesPage() {
   const courses = useLoaderData() as CourseSummary[]
@@ -30,7 +30,7 @@ export function CoursesPage() {
       <header className="max-w-3xl">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Dein Lernpfad</h1>
         <p className="mt-3 text-lg text-muted-foreground">
-          {courses.length} Kurse mit {totalLessons} Lektionen – in empfohlener Reihenfolge. Fang oben an, wenn du neu bist, oder spring direkt zu dem Thema, das dich interessiert.
+          {pluralize(courses.length, 'Kurs', 'Kurse')} mit {pluralize(totalLessons, 'Lektion', 'Lektionen')} – in empfohlener Reihenfolge. Fang oben an, wenn du neu bist, oder spring direkt zu dem Thema, das dich interessiert.
         </p>
       </header>
 
@@ -54,7 +54,7 @@ export function CoursesPage() {
           <div className="mb-4 flex items-baseline gap-3">
             <span className="flex size-8 items-center justify-center rounded-full bg-brand text-sm font-bold text-primary-foreground">{CATEGORY_ORDER.indexOf(group.key) + 1}</span>
             <h2 className="text-xl font-semibold">{CATEGORY_LABELS[group.key]}</h2>
-            <span className="text-sm text-muted-foreground">{group.courses.length} Kurse</span>
+            <span className="text-sm text-muted-foreground">{pluralize(group.courses.length, 'Kurs', 'Kurse')}</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {group.courses.map((course, index) => (

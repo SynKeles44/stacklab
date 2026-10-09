@@ -239,7 +239,7 @@ function ExamTask({ task, examId, course, onUpdate }: { task: Task; examId: numb
           <p className="rounded-lg bg-muted/50 p-3 text-sm">
             Arbeite im Ordner <code className="font-mono">workspace/{context.workspaceDir}/{task.workdir}</code>. Geprüft wird beim Abgeben.
           </p>
-          <RealTerminal courseSlug={course.slug} startDir={task.workdir} />
+          <RealTerminal courseSlug={course.slug} startDir={task.workdir} label={`${context.workspaceDir}/${task.workdir}`} />
         </>
       )}
     </div>

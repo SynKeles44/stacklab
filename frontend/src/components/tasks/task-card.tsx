@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { useState, type ReactNode } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { BookmarkButton } from '@/components/common/bookmark-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -18,7 +19,23 @@ export function SmallMarkdown({ text, className }: { text: string; className?: s
   )
 }
 
-export function TaskCard({ task, icon: Icon, label, done, children, attempted }: { task: Task; icon: LucideIcon; label: string; done: boolean; children: ReactNode; attempted: boolean }) {
+export function TaskCard({
+  task,
+  icon: Icon,
+  label,
+  done,
+  children,
+  attempted,
+  bookmark,
+}: {
+  task: Task
+  icon: LucideIcon
+  label: string
+  done: boolean
+  children: ReactNode
+  attempted: boolean
+  bookmark?: { refKey: string; url: string }
+}) {
   const [hintsShown, setHintsShown] = useState(0)
   const hints = task.hints ?? []
 
@@ -36,6 +53,7 @@ export function TaskCard({ task, icon: Icon, label, done, children, attempted }:
               </Badge>
             </motion.span>
           )}
+          {bookmark && <BookmarkButton type="task" refKey={bookmark.refKey} label={task.title} url={bookmark.url} size="icon-sm" className="ml-auto" />}
         </div>
         <h3 className="text-lg font-semibold leading-snug">{task.title}</h3>
         <SmallMarkdown text={task.description} />

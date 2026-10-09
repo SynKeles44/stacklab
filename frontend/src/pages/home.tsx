@@ -11,7 +11,7 @@ import { Progress } from '@/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { CourseSummary, Dashboard } from '@/lib/api'
 import { useSession } from '@/lib/auth'
-import { CATEGORY_LABELS, CATEGORY_ORDER } from '@/lib/format'
+import { CATEGORY_LABELS, CATEGORY_ORDER, pluralize } from '@/lib/format'
 import { iconFor } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
@@ -44,7 +44,7 @@ function Landing({ courses }: { courses: CourseSummary[] }) {
             IT lernen durch <span className="text-gradient">echtes Tippen</span>.
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            Von „Was ist eine Variable?“ bis zum eigenen Projekt auf AWS Fargate: {courses.length} Kurse, {totalLessons} Lektionen, ein echtes Übungs-Terminal und alles lokal auf deinem Rechner.
+            Von „Was ist eine Variable?“ bis zum eigenen Projekt auf AWS Fargate: {pluralize(courses.length, 'Kurs', 'Kurse')}, {pluralize(totalLessons, 'Lektion', 'Lektionen')}, ein echtes Übungs-Terminal und alles lokal auf deinem Rechner.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Button asChild size="lg" className="h-11 px-6 text-base">
@@ -96,7 +96,7 @@ function Landing({ courses }: { courses: CourseSummary[] }) {
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-2 to-brand font-bold text-white">{index + 1}</span>
                   <div>
                     <p className="font-semibold">{CATEGORY_LABELS[category]}</p>
-                    <p className="text-sm text-muted-foreground">{count} Kurse</p>
+                    <p className="text-sm text-muted-foreground">{pluralize(count, 'Kurs', 'Kurse')}</p>
                   </div>
                 </li>
               )

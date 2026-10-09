@@ -10,7 +10,7 @@ import { XTERM_OPTIONS } from './xterm-theme'
 
 type Status = 'connecting' | 'open' | 'closed' | 'error'
 
-export function RealTerminal({ courseSlug, startDir, className }: { courseSlug: string; startDir?: string; className?: string }) {
+export function RealTerminal({ courseSlug, startDir, label, className }: { courseSlug: string; startDir?: string; label?: string; className?: string }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<Status>('connecting')
   const [message, setMessage] = useState<string | null>(null)
@@ -88,7 +88,7 @@ export function RealTerminal({ courseSlug, startDir, className }: { courseSlug: 
           <span className="size-2.5 rounded-full bg-amber-400/80" />
           <span className="size-2.5 rounded-full bg-emerald-400/80" />
         </span>
-        <span className="truncate font-mono">workspace/{startDir ?? ''}</span>
+        <span className="truncate font-mono">workspace/{label ?? startDir ?? ''}</span>
         <span className={cn('ml-auto flex items-center gap-1.5', status === 'open' ? 'text-emerald-300' : status === 'connecting' ? 'text-amber-300' : 'text-red-300')}>
           <span className="size-1.5 rounded-full bg-current" />
           {status === 'open' ? 'verbunden' : status === 'connecting' ? 'verbinde …' : 'getrennt'}

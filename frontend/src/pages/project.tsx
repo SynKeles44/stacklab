@@ -78,7 +78,7 @@ export function ProjectPage() {
             {!terminalOpen ? (
               <Button variant="secondary" onClick={() => setTerminalOpen(true)}><Play /> Übungs-Terminal öffnen</Button>
             ) : (
-              <RealTerminal courseSlug={project.course.slug} startDir={workdir} />
+              <RealTerminal courseSlug={project.course.slug} startDir={workdir} label={`${project.course.workspace_dir}/${workdir}`} />
             )}
           </div>
         )}

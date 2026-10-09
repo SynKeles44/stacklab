@@ -20,6 +20,8 @@ export type TaskContext = {
   courseSlug: string
   workspaceDir: string
   storagePrefix: string
+  /** Page that shows this task, used for bookmarks. */
+  url?: string
 }
 
 const META: Record<Task['type'], { label: string; icon: typeof Binary }> = {
@@ -79,7 +81,14 @@ export function TaskRenderer({ task, context, done: initiallyDone, onCompleted }
   })()
 
   return (
-    <TaskCard task={task} icon={meta.icon} label={meta.label} done={done} attempted={attempted}>
+    <TaskCard
+      task={task}
+      icon={meta.icon}
+      label={meta.label}
+      done={done}
+      attempted={attempted}
+      bookmark={context.url ? { refKey: `${context.storagePrefix}.${task.id}`, url: `${context.url}#aufgabe-${task.id}` } : undefined}
+    >
       {body}
     </TaskCard>
   )
