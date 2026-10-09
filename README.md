@@ -94,6 +94,7 @@ workspace/
 Öffne diese Ordner jederzeit mit deinem eigenen Editor (VS Code, PhpStorm …) – das Gelernte liegt als
 echtes Projekt auf deiner Platte. Den Pfad änderst du in der Oberfläche unter **Einstellungen** oder in
 der `.env` (`STACKLAB_WORKSPACE=/pfad/zu/deinem/ordner`) und startest danach neu (`docker compose up -d`).
+Bequemer geht es mit `make workspace`: Der Befehl öffnet den Ordner-Dialog deines Systems und erledigt beides.
 
 ## Architektur
 
@@ -158,6 +159,7 @@ Details: [CONTRIBUTING.md](CONTRIBUTING.md), [content/README.md](content/README.
 | `make validate` | Lerninhalte prüfen |
 | `make import` | Lerninhalte neu importieren |
 | `make shell` | Shell im Übungs-Container |
+| `make workspace` | Workspace-Ordner per Finder/Explorer-Dialog wählen (schreibt `.env`, startet neu) |
 | `make restart` | Neustart nach Änderung des Workspace-Pfads |
 
 ## Fehlerbehebung
@@ -170,6 +172,7 @@ Details: [CONTRIBUTING.md](CONTRIBUTING.md), [content/README.md](content/README.
 | `npm install` im Terminal schlägt fehl | Nur Paket-Registries sind erreichbar. Ist die Registry in `docker/proxy/allowlist`? |
 | Dateien im Workspace gehören `root` (Linux) | `STACKLAB_UID`/`STACKLAB_GID` in `.env` setzen, `docker compose build sandbox && docker compose up -d`. |
 | Frontend zeigt alte Version | `docker compose run --rm frontend` baut neu. |
+| Nur den Lernfortschritt löschen | In der App unter *Einstellungen → Fortschritt zurücksetzen*. |
 | Alles zurücksetzen | `docker compose down -v` löscht Datenbank und Fortschritt (nicht den Workspace). |
 | Windows: sehr langsam | Repository in der WSL-Distribution klonen, nicht unter `C:\`. |
 

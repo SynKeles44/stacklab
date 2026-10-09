@@ -1,17 +1,31 @@
-import { CheckCircle2, FolderCog, Palette, Save, TerminalSquare, UserRound, XCircle } from 'lucide-react'
+import { Check, CheckCircle2, Copy, FolderCog, FolderSearch, Palette, RotateCcw, Save, TerminalSquare, UserRound, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useLoaderData } from 'react-router'
+import { useLoaderData, useRevalidator } from 'react-router'
 import { toast } from 'sonner'
 import { AppearancePicker } from '@/components/common/appearance-picker'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Kbd } from '@/components/ui/kbd'
+import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Api, type SandboxStatus } from '@/lib/api'
 import { updateSessionUser, useSession } from '@/lib/auth'
+import { loadBookmarks } from '@/lib/bookmarks'
 
 type WorkspaceInfo = { path: string; writable: boolean; sandbox: SandboxStatus }
 
@@ -84,6 +98,7 @@ export function SettingsPage() {
               {saving ? <Spinner /> : <Save />} Pfad speichern
             </Button>
           </FieldGroup>
+          <FolderPickerHint />
           {!workspace.writable && (
             <p className="mt-3 text-sm text-muted-foreground">Die .env-Datei ist aus dem Container nicht beschreibbar. Trage <code className="font-mono">STACKLAB_WORKSPACE</code> von Hand in die Datei <code className="font-mono">.env</code> ein.</p>
           )}
@@ -141,6 +156,95 @@ export function SettingsPage() {
           </FieldGroup>
         </CardContent>
       </Card>
+
+      <ResetProgressCard />
     </div>
+  )
+}
+
+const PICKER_COMMAND = 'make workspace'
+
+function FolderPickerHint() {
+  const [copied, setCopied] = useState(false)
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(PICKER_COMMAND)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast.error('Kopieren nicht möglich – tippe den Befehl bitte ab.')
+    }
+  }
+
+  return (
+    <div className="mt-5 rounded-lg bg-muted/60 p-4">
+      <p className="flex items-center gap-2 text-sm font-medium"><FolderSearch className="size-4 text-primary" /> Lieber mit dem Finder auswählen?</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Aus Sicherheitsgründen darf der Browser keine Ordnerpfade deines Rechners lesen. Führe deshalb im Stacklab-Ordner diesen Befehl aus – er öffnet den
+        Ordner-Dialog deines Systems (Finder, Explorer oder Dateiauswahl), speichert die Wahl und startet das Übungs-Terminal neu.
+      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <code className="rounded-md bg-background px-3 py-1.5 font-mono text-sm shadow-card">{PICKER_COMMAND}</code>
+        <Button variant="outline" size="sm" onClick={copy}>
+          {copied ? <Check /> : <Copy />} {copied ? 'Kopiert' : 'Kopieren'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function ResetProgressCard() {
+  const revalidator = useRevalidator()
+  const [includeNotes, setIncludeNotes] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  const reset = async () => {
+    setBusy(true)
+    try {
+      await Api.resetProgress(includeNotes)
+      await loadBookmarks(true)
+      void revalidator.revalidate()
+      toast.success(includeNotes ? 'Fortschritt, Notizen und Lesezeichen gelöscht' : 'Fortschritt gelöscht')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Zurücksetzen fehlgeschlagen')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><RotateCcw className="size-5 text-destructive" /> Fortschritt zurücksetzen</CardTitle>
+        <CardDescription>
+          Löscht abgeschlossene Lektionen, Quiz- und Prüfungsergebnisse, gelöste Aufgaben, Projektschritte und freigeschaltete Lexikon-Begriffe. Die Dateien in deinem
+          Workspace-Ordner bleiben unangetastet.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" disabled={busy}>
+              {busy ? <Spinner /> : <RotateCcw />} Fortschritt zurücksetzen
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Wirklich von vorn beginnen?</AlertDialogTitle>
+              <AlertDialogDescription>Dein gesamter Lernfortschritt wird gelöscht. Das lässt sich nicht rückgängig machen.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <Checkbox id="reset-notes" checked={includeNotes} onCheckedChange={(value) => setIncludeNotes(value === true)} />
+              <Label htmlFor="reset-notes" className="font-normal">Notizen und Lesezeichen ebenfalls löschen</Label>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={reset}>Endgültig löschen</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </CardContent>
+    </Card>
   )
 }

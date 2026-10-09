@@ -308,14 +308,16 @@ export const Api = {
   runPhp: (body: { scope: 'lesson' | 'module' | 'exam'; id: number; task_id: string; code: string }) => api('/tasks/run-php', phpResultSchema, { method: 'POST', body }),
   terminalSession: (course: string) => api(`/terminal/session?course=${encodeURIComponent(course)}`, z.object({ token: z.string(), workspace_dir: z.string(), url: z.string() })),
   sandboxStatus: () => api('/sandbox/status', sandboxStatusSchema),
+  resetProgress: (includeNotesAndBookmarks: boolean) =>
+    api('/settings/progress', z.object({ deleted: z.record(z.string(), z.number()) }), { method: 'DELETE', body: { include_notes_and_bookmarks: includeNotesAndBookmarks } }),
 
   project: (course: string, signal?: AbortSignal) => api(`/courses/${course}/project`, projectSchema, { signal }),
   verifyProjectStep: (project: number, step: string) => api(`/projects/${project}/steps/${step}/verify`, checkResultSchema, { method: 'POST' }),
+  solveProjectStep: (project: number, step: string) =>
+    api(`/projects/${project}/steps/${step}/solve`, checkResultSchema.extend({ output: z.string() }), { method: 'POST' }),
   resetProject: (project: number) => api(`/projects/${project}/reset`, z.object({ ok: z.boolean(), output: z.string() }), { method: 'POST' }),
   reopenProjectStep: (project: number, step: string) => api(`/projects/${project}/steps/${step}`, ok, { method: 'DELETE' }),
 
-  solveProjectStep: (project: number, step: string) =>
-    api(`/projects/${project}/steps/${step}/solve`, checkResultSchema.extend({ output: z.string() }), { method: 'POST' }),
   exam: (course: string, signal?: AbortSignal) => api(`/courses/${course}/exam`, examInfoSchema, { signal }),
   startExam: (id: number) => api(`/exams/${id}/start`, examStartSchema, { method: 'POST' }),
   submitExam: (attempt: number, body: { answers: unknown[]; tasks: Record<string, { passed?: boolean; code?: string }> }) =>

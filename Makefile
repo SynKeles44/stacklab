@@ -18,6 +18,9 @@ up: ## Start all services
 down: ## Stop all services
 	$(COMPOSE) down
 
+workspace: ## Choose the workspace folder with the Finder / folder dialog
+	@./bin/choose-workspace.sh
+
 restart: ## Restart (e.g. after changing the workspace path)
 	$(COMPOSE) up -d --force-recreate sandbox nginx php
 
@@ -52,4 +55,4 @@ reset-db: ## Delete all progress and re-import (asks for confirmation)
 	$(COMPOSE) exec php php artisan migrate:fresh --force
 	$(COMPOSE) exec php php artisan stacklab:import
 
-.PHONY: help setup up down restart logs dev build-frontend import validate test shell artisan reset-db
+.PHONY: help setup up down workspace restart logs dev build-frontend import validate test shell artisan reset-db
