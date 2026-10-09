@@ -64,3 +64,17 @@ it('finds lessons by search', function (): void {
         ->assertOk()
         ->assertJsonPath('lessons.0.slug', 'hallo');
 });
+
+it('skips broken courses when importing with --force', function (): void {
+    $root = sys_get_temp_dir().'/stacklab-broken-'.uniqid();
+    mkdir($root.'/courses', 0777, true);
+    exec('cp -R '.escapeshellarg(__DIR__.'/../Fixtures/content/.').' '.escapeshellarg($root));
+    mkdir($root.'/courses/02-kaputt/modules/01-leer', 0777, true);
+    file_put_contents($root.'/courses/02-kaputt/course.yaml', "title: Kaputt\n");
+    config(['stacklab.content_path' => $root]);
+
+    $this->artisan('stacklab:import')->assertFailed();
+    $this->artisan('stacklab:import --force')->assertSuccessful();
+
+    expect(Course::query()->pluck('slug')->all())->toBe(['demo']);
+});

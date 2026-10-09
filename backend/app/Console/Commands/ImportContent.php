@@ -11,7 +11,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-#[Signature('stacklab:import {--force : Import even if validation reports errors}')]
+#[Signature('stacklab:import {--force : Import all valid courses and skip the ones with errors}')]
 #[Description('Import all learning content from the content directory into the database')]
 final class ImportContent extends Command
 {
@@ -36,6 +36,10 @@ final class ImportContent extends Command
             }
         }
 
+        if ($errors !== []) {
+            $content = $this->withoutBrokenContent($content, $errors);
+        }
+
         $stats = $importer->import($content);
         $this->components->info(sprintf(
             'Imported %d courses, %d modules, %d lessons, %d terms.',
@@ -46,5 +50,44 @@ final class ImportContent extends Command
         ));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Drops courses that have errors and glossary entries that cannot be imported.
+     *
+     * @param  array{courses: list<array<string, mixed>>, terms: list<array<string, mixed>>}  $content
+     * @param  list<string>  $errors
+     * @return array{courses: list<array<string, mixed>>, terms: list<array<string, mixed>>}
+     */
+    private function withoutBrokenContent(array $content, array $errors): array
+    {
+        $brokenDirs = [];
+        foreach ($errors as $error) {
+            if (preg_match('#^courses/([^/:]+)#', $error, $match) === 1) {
+                $brokenDirs[$match[1]] = true;
+            }
+        }
+
+        $courses = array_values(array_filter(
+            $content['courses'],
+            fn (array $course): bool => ! isset($brokenDirs[basename(dirname((string) $course['file']))]),
+        ));
+        foreach (array_keys($brokenDirs) as $dir) {
+            $this->components->warn("Skipped course directory {$dir} because of content errors.");
+        }
+
+        $seen = [];
+        $terms = [];
+        foreach ($content['terms'] as $term) {
+            $slug = $term['slug'] ?? null;
+            $complete = is_string($slug) && isset($term['term'], $term['short'], $term['explanation'], $term['category']);
+            if (! $complete || isset($seen[$slug])) {
+                continue;
+            }
+            $seen[$slug] = true;
+            $terms[] = $term;
+        }
+
+        return ['courses' => $courses, 'terms' => $terms];
     }
 }

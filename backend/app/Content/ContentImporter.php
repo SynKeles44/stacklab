@@ -99,6 +99,9 @@ final class ContentImporter
             $termSlugs = [];
             foreach ($content['terms'] as $termData) {
                 $lessonRef = $termData['lesson'] ?? null;
+                if (in_array($termData['slug'], $termSlugs, true)) {
+                    continue;
+                }
                 Term::query()->updateOrCreate(['slug' => $termData['slug']], [
                     'term' => $termData['term'],
                     'short' => $termData['short'],
