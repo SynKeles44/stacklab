@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="450" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Der Fork-Workflow mit drei Repositorys</text>
+<rect x="70" y="65" width="260" height="100" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="200" y="148" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">github.com/projekt/app</text>
+<rect x="570" y="65" width="260" height="100" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="700" y="148" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">github.com/du/app</text>
+<rect x="320" y="355" width="260" height="100" rx="14" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="450" y="438" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">~/code/app</text>
+<path d="M334 100 H 566" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="450" y="90" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">1 · Fork</text>
+<path d="M566 140 H 334" stroke="#f59e0b" stroke-width="3" stroke-dasharray="8 5" marker-end="url(#a)"/>
+<text x="450" y="160" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">5 · Pull Request</text>
+<path d="M680 168 L 560 352" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="690" y="250" font-size="14" font-weight="600" fill="#1e1b3a">2 · clone</text>
+<path d="M590 380 L 730 170" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="680" y="320" font-size="14" font-weight="600" fill="#1e1b3a">4 · push</text>
+<path d="M210 168 L 330 352" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="90" y="270" font-size="14" font-weight="600" fill="#1e1b3a">3 · fetch upstream</text>
+</svg>

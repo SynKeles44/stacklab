@@ -1,0 +1,69 @@
+title: GitHub kennenlernen
+description: Was GitHub von Git unterscheidet, wie du dein Konto absicherst und warum Geheimnisse nie in ein Repository gehören.
+exercise:
+  id: modul-uebung-grundlagen
+  type: terminal
+  title: Ein sicheres Portfolio-Repository
+  description: |
+    Im Ordner `portfolio` liegt ein kleines Webprojekt ohne Git-Repository. Daneben liegen eine
+    `.env` mit (erfundenen) Zugangsdaten und ein Ordner `node_modules/`.
+
+    1. Mache den Ordner zu einem Git-Repository.
+    2. Lege eine `.gitignore` an, die `.env` und `node_modules/` ignoriert.
+    3. Lege eine `.env.example` mit denselben Variablennamen wie in `.env`, aber ohne Werte an.
+    4. Lege eine `README.md` mit Überschrift und einem Abschnitt `## Installation` an.
+    5. Committe alles, was ins Repository gehört, in **einem** Commit. Setze dafür vorher lokal
+       `user.name` und `user.email`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: portfolio
+  setup: |
+    printf '<!doctype html>\n<h1>Mein Portfolio</h1>\n' > index.html
+    printf 'MAIL_USER=user@example.com\nMAIL_PASSWORD=uebung-nicht-echt\n' > .env
+    mkdir -p node_modules/serve
+    printf 'module.exports = {};\n' > node_modules/serve/index.js
+  checks:
+    - type: dir_exists
+      path: .git
+      message: Der Ordner ist noch kein Git-Repository (git init).
+    - type: file_contains
+      path: .gitignore
+      pattern: "^/?\\.env\\s*$"
+      message: In .gitignore fehlt die Zeile .env.
+    - type: file_contains
+      path: .gitignore
+      pattern: "^/?node_modules/?\\s*$"
+      message: In .gitignore fehlt node_modules/.
+    - type: file_contains
+      path: .env.example
+      pattern: "^MAIL_PASSWORD=\\s*$"
+      message: .env.example soll MAIL_PASSWORD= ohne Wert enthalten.
+    - type: file_contains
+      path: README.md
+      pattern: "^##\\s+Installation"
+      message: README.md braucht einen Abschnitt "## Installation".
+    - type: command
+      run: git log --oneline 2>/dev/null | wc -l
+      stdout_matches: "^\\s*1\\s*$"
+      message: Es sollte genau einen Commit geben.
+    - type: command
+      run: git ls-files | sort | tr '\n' ' '
+      stdout_equals: ".env.example .gitignore README.md index.html"
+      message: Im Commit sollen genau .env.example, .gitignore, README.md und index.html liegen – keine .env und kein node_modules.
+  hints:
+    - "Reihenfolge: `git init`, dann `.gitignore`, dann `git status` prüfen, erst danach `git add`."
+    - "`sed 's/=.*/=/' .env > .env.example` übernimmt nur die Namen."
+    - "Ohne globale Identität brauchst du `git config user.name \"Ada\"` und `git config user.email \"user@example.com\"`."
+  solution: |
+    ```bash
+    cd portfolio
+    git init
+    git config user.name "Ada Beispiel"
+    git config user.email "user@example.com"
+    printf '.env\nnode_modules/\n' > .gitignore
+    sed 's/=.*/=/' .env > .env.example
+    printf '# Mein Portfolio\n\nMeine erste Webseite.\n\n## Installation\n\nRepository klonen und index.html im Browser öffnen.\n' > README.md
+    git status
+    git add .
+    git commit -m "chore: initial commit"
+    ```

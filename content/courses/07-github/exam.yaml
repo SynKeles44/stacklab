@@ -1,0 +1,339 @@
+title: Abschlussprüfung GitHub
+description: |
+  Die Prüfung deckt alle vier Module ab: GitHub und sichere Anmeldung, Repositorys und Remotes, Issues
+  und Pull Requests sowie Forks, Actions und Releases. Dazu kommen praktische Aufgaben im Übungs-Terminal
+  und im Code-Editor. Du bestehst mit 70 Prozent.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Welche Aussage über Git und GitHub stimmt?
+    options:
+      - GitHub ist ein Programm, das Git ersetzt
+      - Git läuft lokal ohne Konto, GitHub ist eine Plattform, die Repositorys teilt
+      - Ohne GitHub kann Git keine Commits speichern
+    answer: 1
+    explanation: Git ist eigenständig. GitHub speichert Kopien und ergänzt Zusammenarbeit wie Issues und Pull Requests.
+  - module: grundlagen
+    type: multiple
+    question: Welche Plattformen hosten ebenfalls Git-Repositorys?
+    options: [GitLab, Bitbucket, Forgejo, npm]
+    answers: [0, 1, 2]
+    explanation: npm ist eine Paket-Registry, keine Code-Hosting-Plattform.
+  - module: grundlagen
+    type: single
+    question: Welche Datei eines SSH-Schlüsselpaars trägst du bei GitHub ein?
+    options:
+      - id_ed25519
+      - id_ed25519.pub
+      - known_hosts
+    answer: 1
+    explanation: Nur der öffentliche Schlüssel (.pub) verlässt deinen Rechner.
+  - module: grundlagen
+    type: cloze
+    text: Fine-grained Personal Access Tokens beginnen mit dem Präfix `___`. Sie sollten immer ein ___ haben.
+    blanks:
+      - [github_pat_]
+      - [Ablaufdatum, Verfallsdatum]
+    explanation: Das Präfix hilft Scannern, Tokens zu erkennen; ein Ablaufdatum begrenzt den Schaden.
+  - module: grundlagen
+    type: single
+    question: Ein echtes Token wurde in ein öffentliches Repository gepusht. Was ist der erste Schritt?
+    options:
+      - git revert
+      - Das Token widerrufen und ein neues erzeugen
+      - Das Repository umbenennen
+    answer: 1
+    explanation: Ein veröffentlichtes Geheimnis gilt als verbrannt. Nur Rotieren stoppt den Missbrauch.
+  - module: lokal-und-remote
+    type: single
+    question: Du willst ein bestehendes lokales Projekt zu GitHub bringen. Wie legst du das GitHub-Repository an?
+    options:
+      - Mit README, damit es nicht leer ist
+      - Leer, ohne README, Lizenz und .gitignore
+      - Als Fork
+    answer: 1
+    explanation: Sonst haben beide Seiten verschiedene erste Commits und der erste Push wird abgelehnt.
+  - module: lokal-und-remote
+    type: cloze
+    text: Mit `git push ___ origin main` lädst du hoch und setzt den Upstream. Ein lokales Projekt veröffentlichst du mit gh per `gh repo ___ notizen --source=. --push`.
+    blanks:
+      - [-u, --set-upstream]
+      - [create]
+    explanation: -u verknüpft main mit origin/main; gh repo create legt das Repository an und pusht.
+  - module: lokal-und-remote
+    type: single
+    question: Was gilt für ein öffentliches Repository ohne Lizenzdatei?
+    options:
+      - Jeder darf den Code frei verwenden
+      - Es gilt das Urheberrecht; ansehen und forken ja, rechtssicher weiterverwenden nein
+      - GitHub fügt automatisch die MIT-Lizenz hinzu
+    answer: 1
+    explanation: Ohne Lizenz bekommt niemand Nutzungsrechte.
+  - module: lokal-und-remote
+    type: match
+    question: Ordne die Befehle zu.
+    pairs:
+      - { left: "git remote -v", right: "Remotes mit Adressen anzeigen" }
+      - { left: "git remote set-url origin <url>", right: "Adresse eines Remotes ändern" }
+      - { left: "gh pr checkout 42", right: "Pull Request 42 lokal auschecken" }
+    explanation: remote verwaltet Adressen, gh spricht mit der Plattform.
+  - module: issues-und-pull-requests
+    type: multiple
+    question: Welche Texte schließen Issue 5 beim Merge in den Standard-Branch?
+    options: ["Fixes #5", "closes #5", "Siehe #5", "Resolves #5"]
+    answers: [0, 1, 3]
+    explanation: close, fix und resolve mit ihren Formen sind Schlüsselwörter; ein bloßer Verweis schließt nichts.
+  - module: issues-und-pull-requests
+    type: single
+    question: Du hast nach dem Öffnen eines Pull Requests noch etwas korrigiert. Was tust du?
+    options:
+      - Neuen PR öffnen
+      - Auf denselben Branch committen und pushen
+      - Den Fix direkt auf main pushen
+    answer: 1
+    explanation: Der PR zeigt immer den aktuellen Stand seines Branches.
+  - module: issues-und-pull-requests
+    type: match
+    question: Was landet nach dem Merge auf main?
+    pairs:
+      - { left: "Create a merge commit", right: "Alle Commits plus ein Merge-Commit" }
+      - { left: "Squash and merge", right: "Genau ein neuer Commit" }
+      - { left: "Rebase and merge", right: "Alle Commits einzeln, linear, ohne Merge-Commit" }
+    explanation: Der Code ist gleich, nur die Historie unterscheidet sich.
+  - module: issues-und-pull-requests
+    type: find-bug
+    question: In CODEOWNERS soll SQL vom DB-Team geprüft werden. Welche Zeile macht das zunichte?
+    language: text
+    code: |
+      *.sql  @beispiel-org/team-db
+      /docs/ @ada
+      *      @beispiel-org/team-web
+    bug_line: 3
+    explanation: Die letzte passende Zeile gewinnt – die Regel * gehört nach oben.
+  - module: issues-und-pull-requests
+    type: single
+    question: Ein Pflicht-Check heißt `test`, der Job im Workflow wurde in `tests` umbenannt. Was passiert?
+    options:
+      - Nichts, GitHub erkennt die Umbenennung
+      - Der PR wartet dauerhaft auf den Check test und kann nicht gemergt werden
+      - Der Check wird automatisch übersprungen
+    answer: 1
+    explanation: Pflicht-Checks werden über ihren Namen gefunden.
+  - module: zusammenarbeit-und-actions
+    type: match
+    question: Welcher Remote ist welcher?
+    pairs:
+      - { left: "origin", right: "Dein Fork" }
+      - { left: "upstream", right: "Das Original-Projekt" }
+    explanation: Pushen nach origin, holen von upstream.
+  - module: zusammenarbeit-und-actions
+    type: find-bug
+    question: Dieser Workflow scheitert, weil package.json auf dem Runner fehlt. Direkt unter welcher Zeile fehlt ein Step?
+    language: yaml
+    code: |
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          steps:
+            - run: npm test
+    bug_line: 4
+    explanation: 'Direkt unter steps fehlt `- uses: actions/checkout@v7`. Ohne Checkout ist der Runner leer.'
+  - module: zusammenarbeit-und-actions
+    type: single
+    question: Eine Matrix hat drei Node-Versionen und zwei Betriebssysteme. Wie viele Jobs entstehen?
+    options: ["3", "5", "6"]
+    answer: 2
+    explanation: Alle Kombinationen – 3 mal 2.
+  - module: zusammenarbeit-und-actions
+    type: cloze
+    text: Ein Secret nutzt du im Workflow über `${{ ___.API_TOKEN }}`. Release Notes erzeugt `gh release create v2.0.0 --___-notes`.
+    blanks:
+      - [secrets]
+      - [generate]
+    explanation: Secrets liegen verschlüsselt in den Einstellungen; --generate-notes sammelt gemergte PRs.
+  - module: zusammenarbeit-und-actions
+    type: single
+    question: Eine Nutzerin hat eine Frage zur Konfiguration, es gibt keinen Fehler. Wo gehört sie hin?
+    options: [Issue mit Label bug, GitHub Discussions, Pull Request]
+    answer: 1
+    explanation: Discussions für Fragen und Ideen, Issues für erledigbare Aufgaben.
+tasks:
+  - module: grundlagen
+    id: pruefung-env
+    type: terminal
+    title: Zugangsdaten aus dem Repository heraushalten
+    description: |
+      Im Ordner `pruefung-env` liegt ein Repository mit einem Commit und einer nicht committeten `.env`.
+      Sorge dafür, dass `.env` ignoriert wird, lege eine `.env.example` ohne Werte an und committe
+      `.gitignore` und `.env.example`. `.env` bleibt auf der Festplatte. Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-env
+    setup: |
+      git init -q -b main
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      echo "console.log('shop')" > app.js
+      git add app.js
+      git commit -q -m "feat: add app"
+      printf 'SMTP_PASSWORD=pruefung-nicht-echt\nSTRIPE_KEY=pruefung-key\n' > .env
+    checks:
+      - type: file_exists
+        path: .env
+        message: .env soll erhalten bleiben.
+      - type: command
+        run: git ls-files .env
+        stdout_equals: ""
+        message: .env darf nicht im Repository sein.
+      - type: command
+        run: git ls-files .gitignore .env.example | wc -l
+        stdout_matches: "^\\s*2\\s*$"
+        message: .gitignore und .env.example müssen committet sein.
+      - type: file_contains
+        path: .env.example
+        pattern: "^STRIPE_KEY=\\s*$"
+        message: .env.example soll STRIPE_KEY= ohne Wert enthalten.
+      - type: command
+        run: "! grep -q 'pruefung-' .env.example"
+        message: In .env.example stehen noch echte Werte.
+    hints:
+      - "`sed 's/=.*/=/' .env > .env.example`"
+    solution: |
+      ```bash
+      cd pruefung-env
+      echo ".env" > .gitignore
+      sed 's/=.*/=/' .env > .env.example
+      git add .gitignore .env.example
+      git commit -m "chore: ignore env file"
+      ```
+  - module: lokal-und-remote
+    id: pruefung-repo-url
+    type: code
+    language: js
+    title: Besitzer und Name aus einer Remote-Adresse lesen
+    description: |
+      Schreib `parseRemote(url)`, die aus einer GitHub-Remote-Adresse ein Objekt `{ owner, repo }` macht.
+      Unterstütze SSH (`git@github.com:du/app.git`) und HTTPS (`https://github.com/du/app.git` oder ohne `.git`).
+      Bei einer Adresse, die nicht zu github.com gehört, gib `null` zurück.
+    starter: |
+      function parseRemote(url) {
+        return null
+      }
+    tests:
+      - name: SSH-Adresse
+        code: "assertDeepEqual(parseRemote('git@github.com:du/app.git'), { owner: 'du', repo: 'app' })"
+      - name: HTTPS-Adresse ohne .git
+        code: "assertDeepEqual(parseRemote('https://github.com/beispiel-org/shop'), { owner: 'beispiel-org', repo: 'shop' })"
+      - name: HTTPS-Adresse mit .git
+        code: "assertDeepEqual(parseRemote('https://github.com/du/todo-app.git'), { owner: 'du', repo: 'todo-app' })"
+      - name: fremde Adresse
+        code: "assertEqual(parseRemote('https://gitlab.example.com/du/app.git'), null)"
+      - name: leere Eingabe
+        code: "assertEqual(parseRemote(''), null)"
+    solution: |
+      function parseRemote(url) {
+        const match = /^(?:git@github\.com:|https:\/\/github\.com\/)([^/]+)\/([^/]+?)(?:\.git)?$/.exec(url)
+        return match ? { owner: match[1], repo: match[2] } : null
+      }
+  - module: issues-und-pull-requests
+    id: pruefung-pr-vorbereiten
+    type: terminal
+    title: Einen Fix vorbereiten und squashen
+    description: |
+      Im Ordner `pruefung-pr` liegt ein Repository mit einem Commit auf `main`. Lege den Branch `fix/titel`
+      an, ändere in `index.html` die Überschrift auf `<h1>Willkommen</h1>`, committe. Übernimm den Branch
+      per Squash in `main` mit einer Nachricht, die Issue #9 schließt, und lösche den Branch.
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-pr
+    setup: |
+      git init -q -b main
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      echo "<h1>Wilkommen</h1>" > index.html
+      git add index.html
+      git commit -q -m "feat: add start page"
+    checks:
+      - type: command
+        run: git rev-list --count main
+        stdout_equals: "2"
+        message: main sollte genau zwei Commits haben.
+      - type: command
+        run: git rev-list --min-parents=2 --count main
+        stdout_equals: "0"
+        message: Es darf keinen Merge-Commit geben – nutze Squash.
+      - type: command
+        run: git show main:index.html
+        stdout_matches: "<h1>Willkommen</h1>"
+        message: Die korrigierte Überschrift ist nicht auf main.
+      - type: command
+        run: git log -1 --format=%B main
+        stdout_matches: "(?:[Cc]lose[sd]?|[Ff]ix(?:e[sd])?|[Rr]esolve[sd]?):?\\s+#9\\b"
+        message: Die Commit-Message schließt Issue #9 nicht.
+      - type: command
+        run: git branch --list fix/titel
+        stdout_equals: ""
+        message: Der Branch fix/titel existiert noch.
+    hints:
+      - "`git merge --squash fix/titel`, dann `git commit`, dann `git branch -D fix/titel`."
+    solution: |
+      ```bash
+      cd pruefung-pr
+      git switch -c fix/titel
+      echo "<h1>Willkommen</h1>" > index.html
+      git commit -am "fix: correct headline typo"
+      git switch main
+      git merge --squash fix/titel
+      git commit -m "fix: correct headline typo" -m "Fixes #9"
+      git branch -D fix/titel
+      ```
+  - module: zusammenarbeit-und-actions
+    id: pruefung-fork
+    type: terminal
+    title: Fork synchronisieren
+    description: |
+      Im Ordner `pruefung-fork` liegen `upstream.git` (Original mit neuem Commit), `origin.git` (dein
+      veralteter Fork) und `lokal/` (Klon des Forks). Richte `upstream` ein und bringe deinen lokalen
+      `main` sowie den `main` des Forks auf den Stand des Originals. Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-fork
+    setup: |
+      git init -q --bare -b main upstream.git
+      git clone -q upstream.git arbeit 2>/dev/null
+      cd arbeit
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      echo "# Lib" > README.md
+      git add README.md
+      git commit -q -m "docs: add readme"
+      git push -q origin main
+      cd ..
+      git clone -q --bare upstream.git origin.git
+      cd arbeit
+      echo "export const v = 2" > index.js
+      git add index.js
+      git commit -q -m "feat: add index"
+      git push -q origin main
+      cd ..
+      rm -rf arbeit
+      git clone -q origin.git lokal
+    checks:
+      - type: command
+        run: git -C lokal remote get-url upstream
+        stdout_matches: "upstream\\.git$"
+        message: Der Remote upstream fehlt.
+      - type: command
+        run: git -C lokal ls-tree --name-only main index.js
+        stdout_equals: index.js
+        message: Dein lokaler main ist nicht aktuell.
+      - type: command
+        run: test "$(git -C origin.git rev-parse main)" = "$(git -C upstream.git rev-parse main)"
+        message: Der main deines Forks ist nicht aktuell.
+    hints:
+      - "`git remote add upstream ../upstream.git`, `git fetch upstream`, `git merge upstream/main`, `git push origin main`"
+    solution: |
+      ```bash
+      cd pruefung-fork/lokal
+      git remote add upstream ../upstream.git
+      git fetch upstream
+      git merge upstream/main
+      git push origin main
+      ```

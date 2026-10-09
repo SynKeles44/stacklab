@@ -1,0 +1,370 @@
+title: Ein Open-Source-fertiges Repository
+description: |
+  Du baust Schritt für Schritt ein kleines Node-Projekt so auf, wie es ein gepflegtes Open-Source-Projekt
+  auf GitHub tut: mit README, Lizenz, sauberer `.gitignore`, Beitragsrichtlinien, Vorlagen für Issues
+  und Pull Requests, CODEOWNERS, einem CI-Workflow und einem ersten Release. Weil das Übungs-Terminal
+  GitHub nicht erreicht, spielt am Ende ein lokales Bare-Repository den Server.
+goal: Im Ordner `projekt` liegt ein Repository, das du so direkt auf GitHub veröffentlichen könntest – inklusive grüner Tests, CI-Workflow und Tag v1.0.0 auf dem „Server“.
+workdir: projekt
+steps:
+  - id: anlegen
+    title: Repository und README
+    description: |
+      Lege im Ordner `projekt` ein Git-Repository mit dem Branch `main` an und setze lokal `user.name`
+      und `user.email`. Schreib eine `README.md` für das Projekt **slugify** (es wandelt Texte in
+      URL-taugliche Namen um) mit:
+
+      - Überschrift `# slugify`
+      - einem Badge-Platzhalter für die CI, z. B. `![CI](https://github.com/du/slugify/actions/workflows/ci.yml/badge.svg)`
+      - den Abschnitten `## Installation`, `## Benutzung` und `## Mitmachen`
+    checklist:
+      - Repository mit Branch main angelegt
+      - Git-Identität lokal gesetzt
+      - README mit Badge und drei Abschnitten
+    hints:
+      - "`git init -b main` legt das Repository direkt mit dem Branch main an."
+      - Ein Badge ist ein Bild-Link auf eine .svg-Adresse.
+    checks:
+      - type: dir_exists
+        path: .git
+        message: Im Ordner projekt gibt es noch kein Repository.
+      - type: command
+        run: git config user.email
+        stdout_matches: "@"
+        message: Setze lokal git config user.email.
+      - type: file_contains
+        path: README.md
+        pattern: "^#\\s+slugify"
+        message: README.md braucht die Überschrift "# slugify".
+      - type: file_contains
+        path: README.md
+        pattern: "!\\[[^\\]]*\\]\\(https?://\\S+\\.svg\\)"
+        message: In der README fehlt der Badge (Bild-Link auf eine .svg).
+      - type: file_contains
+        path: README.md
+        pattern: "^##\\s+Mitmachen"
+        message: In der README fehlt der Abschnitt "## Mitmachen".
+    solution: |
+      ```bash
+      mkdir -p projekt && cd projekt
+      git init -b main
+      git config user.name "Ada Beispiel"
+      git config user.email "user@example.com"
+      cat > README.md <<'EOF'
+      # slugify
+
+      ![CI](https://github.com/du/slugify/actions/workflows/ci.yml/badge.svg)
+
+      Wandelt Texte in URL-taugliche Namen um.
+
+      ## Installation
+
+      ```bash
+      npm install
+      ```
+
+      ## Benutzung
+
+      `slugify("Hallo Welt")` ergibt `hallo-welt`.
+
+      ## Mitmachen
+
+      Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
+      EOF
+      ```
+  - id: lizenz-und-ignore
+    title: Lizenz, .gitignore und .env-Vorlage
+    description: |
+      1. Lege eine `LICENSE` mit der MIT-Lizenz an (erste Zeile `MIT License`, Copyright-Zeile mit Jahr und Name).
+      2. Lege eine `.gitignore` an, die `node_modules/`, `.env` und `*.log` ignoriert.
+      3. Lege eine `.env.example` mit der Variablen `API_TOKEN=` (ohne Wert) an.
+    checklist:
+      - LICENSE mit MIT-Text
+      - .gitignore für node_modules, .env und Logs
+      - .env.example ohne echte Werte
+    hints:
+      - Den MIT-Text findest du auf choosealicense.com.
+    checks:
+      - type: file_contains
+        path: LICENSE
+        pattern: "^MIT License"
+        message: LICENSE soll mit "MIT License" beginnen.
+      - type: file_contains
+        path: LICENSE
+        pattern: "^Copyright \\(c\\) \\d{4} \\S"
+        message: In LICENSE fehlt die Zeile "Copyright (c) <Jahr> <Name>".
+      - type: file_contains
+        path: .gitignore
+        pattern: "^/?node_modules/?\\s*$"
+        message: .gitignore soll node_modules/ ignorieren.
+      - type: file_contains
+        path: .gitignore
+        pattern: "^/?\\.env\\s*$"
+        message: .gitignore soll .env ignorieren.
+      - type: file_contains
+        path: .gitignore
+        pattern: "^\\*\\.log\\s*$"
+        message: .gitignore soll *.log ignorieren.
+      - type: file_contains
+        path: .env.example
+        pattern: "^API_TOKEN=\\s*$"
+        message: .env.example soll API_TOKEN= ohne Wert enthalten.
+    solution: |
+      ```bash
+      printf 'node_modules/\n.env\n*.log\n' > .gitignore
+      printf 'API_TOKEN=\n' > .env.example
+      nano LICENSE   # MIT-Text einfügen
+      ```
+  - id: code-und-tests
+    title: Code mit Tests
+    description: |
+      Schreib den eigentlichen Code und Tests, die ohne zusätzliche Pakete laufen:
+
+      1. `package.json` mit `"name": "slugify"`, `"type": "module"` und dem Skript `"test": "node --test"`.
+      2. `src/slugify.js` exportiert eine Funktion `slugify(text)`: Kleinbuchstaben, Leerzeichen werden zu `-`,
+         alles außer `a-z`, `0-9` und `-` fällt weg.
+      3. `test/slugify.test.js` prüft mit `node:test` mindestens zwei Fälle.
+      4. `npm test` muss grün sein.
+    checklist:
+      - package.json mit Test-Skript
+      - slugify-Funktion
+      - mindestens zwei Tests, npm test grün
+    hints:
+      - "`text.toLowerCase().trim().replace(/\\s+/g, '-').replace(/[^a-z0-9-]/g, '')`"
+      - "Im Test: `import { test } from 'node:test'` und `import assert from 'node:assert/strict'`."
+    checks:
+      - type: file_contains
+        path: package.json
+        pattern: "\"test\"\\s*:\\s*\"node --test"
+        message: In package.json fehlt das Skript "test" mit "node --test".
+      - type: file_exists
+        path: src/slugify.js
+        message: src/slugify.js fehlt.
+      - type: command
+        run: ls test/*.test.js
+        message: Im Ordner test fehlt eine Datei *.test.js.
+      - type: command
+        run: "node --input-type=module -e \"import { slugify } from './src/slugify.js'; if (slugify('Hallo Welt 2026!') !== 'hallo-welt-2026') process.exit(1)\""
+        message: slugify("Hallo Welt 2026!") sollte "hallo-welt-2026" ergeben.
+      - type: command
+        run: npm test --silent
+        message: npm test ist nicht grün.
+    solution: |
+      ```bash
+      cat > package.json <<'EOF'
+      { "name": "slugify", "version": "1.0.0", "type": "module", "scripts": { "test": "node --test" } }
+      EOF
+      mkdir -p src test
+      cat > src/slugify.js <<'EOF'
+      export function slugify(text) {
+        return text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      }
+      EOF
+      cat > test/slugify.test.js <<'EOF'
+      import { test } from 'node:test'
+      import assert from 'node:assert/strict'
+      import { slugify } from '../src/slugify.js'
+
+      test('ersetzt Leerzeichen', () => assert.equal(slugify('Hallo Welt'), 'hallo-welt'))
+      test('entfernt Sonderzeichen', () => assert.equal(slugify('Ja!'), 'ja'))
+      EOF
+      npm test
+      ```
+  - id: beitragsregeln
+    title: CONTRIBUTING und SECURITY
+    description: |
+      Lege `CONTRIBUTING.md` mit den Abschnitten `## Entwicklungsumgebung` und `## Pull Requests` an
+      (erwähne `npm test` und das Label `good first issue`). Lege `SECURITY.md` an, die vertrauliche
+      Meldungen an `security@example.com` erbittet.
+    checklist:
+      - CONTRIBUTING.md mit zwei Abschnitten
+      - SECURITY.md mit Meldeadresse
+    hints:
+      - Schau dir die Struktur in der Lektion „Forks und Open Source“ an.
+    checks:
+      - type: file_contains
+        path: CONTRIBUTING.md
+        pattern: "^##\\s+Pull Requests"
+        message: CONTRIBUTING.md braucht den Abschnitt "## Pull Requests".
+      - type: file_contains
+        path: CONTRIBUTING.md
+        pattern: "npm test"
+        message: CONTRIBUTING.md soll erklären, dass man npm test ausführt.
+      - type: file_contains
+        path: CONTRIBUTING.md
+        pattern: "good first issue"
+        message: CONTRIBUTING.md soll auf das Label good first issue hinweisen.
+      - type: file_contains
+        path: SECURITY.md
+        pattern: "security@example\\.com"
+        message: SECURITY.md soll security@example.com nennen.
+    solution: |
+      ```bash
+      cat > CONTRIBUTING.md <<'EOF'
+      # Mitmachen
+
+      Für den Einstieg eignen sich Issues mit dem Label `good first issue`.
+
+      ## Entwicklungsumgebung
+
+      Fork klonen, dann `npm test` ausführen.
+
+      ## Pull Requests
+
+      Ein Thema pro PR, Tests ergänzen, `npm test` muss grün sein, Issue mit `Closes #…` verknüpfen.
+      EOF
+      printf '# Sicherheit\n\nBitte melde Lücken vertraulich an security@example.com.\n' > SECURITY.md
+      ```
+  - id: vorlagen
+    title: Issue- und PR-Vorlagen, CODEOWNERS
+    description: |
+      1. `.github/ISSUE_TEMPLATE/bug.md` mit Frontmatter (`name`, `about`, `labels: bug`) und dem Abschnitt `## Schritte zum Nachstellen`.
+      2. `.github/pull_request_template.md` mit `## Was ändert sich?`, `## Wie wurde getestet?` und einer Checkliste `- [ ] …`.
+      3. `.github/CODEOWNERS` mit der Standardregel `* @du`.
+    checklist:
+      - Bug-Vorlage mit Frontmatter
+      - PR-Vorlage mit Checkliste
+      - CODEOWNERS mit Standardregel
+    hints:
+      - "`mkdir -p .github/ISSUE_TEMPLATE` legt beide Ordner an."
+    checks:
+      - type: file_contains
+        path: .github/ISSUE_TEMPLATE/bug.md
+        pattern: "^labels:\\s*\\[?\\s*[\"']?bug"
+        message: Die Bug-Vorlage braucht im Frontmatter labels mit bug.
+      - type: file_contains
+        path: .github/ISSUE_TEMPLATE/bug.md
+        pattern: "^##\\s+Schritte zum Nachstellen"
+        message: In der Bug-Vorlage fehlt "## Schritte zum Nachstellen".
+      - type: file_contains
+        path: .github/pull_request_template.md
+        pattern: "^##\\s+Wie wurde getestet\\?"
+        message: In der PR-Vorlage fehlt "## Wie wurde getestet?".
+      - type: file_contains
+        path: .github/pull_request_template.md
+        pattern: "^- \\[ \\] \\S"
+        message: In der PR-Vorlage fehlt eine Checkliste.
+      - type: file_contains
+        path: .github/CODEOWNERS
+        pattern: "^\\*\\s+@\\S+"
+        message: CODEOWNERS braucht die Standardregel "* @du".
+    solution: |
+      ```bash
+      mkdir -p .github/ISSUE_TEMPLATE
+      printf -- '---\nname: Fehlerbericht\nabout: Melde einen Fehler\nlabels: bug\n---\n\n## Was ist passiert?\n\n## Schritte zum Nachstellen\n' > .github/ISSUE_TEMPLATE/bug.md
+      printf '## Was ändert sich?\n\n## Wie wurde getestet?\n\n- [ ] npm test ist grün\n' > .github/pull_request_template.md
+      printf '* @du\n' > .github/CODEOWNERS
+      ```
+  - id: ci
+    title: CI-Workflow
+    description: |
+      Schreib `.github/workflows/ci.yml`: Auslöser `push` auf `main` und `pull_request`,
+      `permissions: contents: read`, ein Job `test` auf `ubuntu-latest` mit Matrix `node-version: [22, 24]`,
+      Steps `actions/checkout@v7`, `actions/setup-node@v7` (Version aus der Matrix) und `run: npm test`.
+      Nur Leerzeichen, keine Tabs.
+    checklist:
+      - Workflow-Datei am richtigen Ort
+      - Matrix mit zwei Node-Versionen
+      - Tests als letzter Step
+    hints:
+      - Vorlage aus der Lektion „GitHub Actions und CI“ – ohne Lockfile kannst du npm ci und cache weglassen.
+    checks:
+      - type: file_contains
+        path: .github/workflows/ci.yml
+        pattern: "^\\s+pull_request:"
+        message: Unter on fehlt pull_request.
+      - type: file_contains
+        path: .github/workflows/ci.yml
+        pattern: "^permissions:\\s*\\n\\s+contents:\\s*read"
+        message: Es fehlt permissions mit contents read.
+      - type: file_contains
+        path: .github/workflows/ci.yml
+        pattern: "node-version:\\s*\\[\\s*22\\s*,\\s*24\\s*\\]"
+        message: Es fehlt die Matrix node-version [22, 24].
+      - type: file_contains
+        path: .github/workflows/ci.yml
+        pattern: "uses:\\s*actions/checkout@v7"
+        message: Es fehlt actions/checkout@v7.
+      - type: file_contains
+        path: .github/workflows/ci.yml
+        pattern: "run:\\s*npm test"
+        message: Es fehlt der Step run npm test.
+      - type: command
+        run: "! grep -q \"$(printf '\\t')\" .github/workflows/ci.yml"
+        message: In ci.yml stecken Tabs.
+    solution: |
+      ```bash
+      mkdir -p .github/workflows
+      cat > .github/workflows/ci.yml <<'EOF'
+      name: CI
+
+      on:
+        push:
+          branches: [main]
+        pull_request:
+
+      permissions:
+        contents: read
+
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          strategy:
+            matrix:
+              node-version: [22, 24]
+          steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
+              with:
+                node-version: ${{ matrix.node-version }}
+            - run: npm test
+      EOF
+      ```
+  - id: commit-und-release
+    title: Committen, „hochladen“ und Version 1.0.0
+    description: |
+      1. Prüfe mit `git status`, dass weder `.env` noch `node_modules/` auftauchen, und committe alles.
+      2. Lege mit `git init --bare -b main ../projekt-server.git` einen „Server“ an und trage ihn als `origin` ein.
+      3. Pushe `main` mit Upstream.
+      4. Lege den annotierten Tag `v1.0.0` an und pushe ihn.
+    checklist:
+      - Alles committet, Arbeitsverzeichnis sauber
+      - origin eingerichtet, main gepusht
+      - Tag v1.0.0 auf dem Server
+    hints:
+      - Tags werden nicht automatisch gepusht – `git push origin v1.0.0`.
+    checks:
+      - type: command
+        run: git status --porcelain | grep -c . || true
+        stdout_matches: "^0$"
+        message: Es gibt noch nicht committete Änderungen.
+      - type: command
+        run: git ls-files | grep -cE '(^|/)\.env$|(^|/)node_modules/' || true
+        stdout_matches: "^0$"
+        message: .env oder node_modules sind im Repository gelandet.
+      - type: command
+        run: git rev-parse --abbrev-ref main@{upstream}
+        stdout_equals: origin/main
+        message: main hat keinen Upstream origin/main (git push -u origin main).
+      - type: command
+        run: test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$(git rev-parse main)"
+        message: Der Stand von main ist noch nicht auf dem Server.
+      - type: command
+        run: git ls-remote --tags origin
+        stdout_matches: "refs/tags/v1\\.0\\.0"
+        message: Der Tag v1.0.0 ist noch nicht auf dem Server.
+      - type: command
+        run: git cat-file -t v1.0.0
+        stdout_equals: tag
+        message: v1.0.0 sollte ein annotierter Tag sein (git tag -a v1.0.0 -m "…").
+    solution: |
+      ```bash
+      git status
+      git add .
+      git commit -m "chore: initial open source setup"
+      git init --bare -b main ../projekt-server.git
+      git remote add origin ../projekt-server.git
+      git push -u origin main
+      git tag -a v1.0.0 -m "Version 1.0.0"
+      git push origin v1.0.0
+      ```

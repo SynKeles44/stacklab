@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="450" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Aufbau eines GitHub-Actions-Workflows</text>
+<rect x="20" y="60" width="200" height="90" rx="12" fill="#f59e0b" fill-opacity=".16" stroke="#f59e0b" stroke-width="2.5"/>
+<text x="120" y="98" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Ereignis</text>
+<text x="120" y="124" text-anchor="middle" font-size="13" fill="#475569" font-family="ui-monospace, Menlo, monospace">on: push</text>
+<path d="M224 105 H 266" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="270" y="60" width="610" height="380" rx="16" fill="#a78bfa" fill-opacity=".08" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="575" y="88" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Workflow</text>
+<text x="575" y="110" text-anchor="middle" font-size="13" fill="#475569" font-family="ui-monospace, Menlo, monospace">.github/workflows/ci.yml</text>
+<rect x="295" y="130" width="270" height="290" rx="12" fill="#ffffff" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="430" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Job</text>
+<text x="430" y="180" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">test · runs-on: ubuntu-latest</text>
+<g font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">
+<rect x="315" y="198" width="230" height="40" rx="8" fill="#34d399" fill-opacity=".16" stroke="#34d399"/>
+<text x="430" y="223" text-anchor="middle">uses: actions/checkout@v7</text>
+<rect x="315" y="248" width="230" height="40" rx="8" fill="#34d399" fill-opacity=".16" stroke="#34d399"/>
+<text x="430" y="273" text-anchor="middle">uses: actions/setup-node@v7</text>
+<rect x="315" y="298" width="230" height="40" rx="8" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee"/>
+<text x="430" y="323" text-anchor="middle">run: npm ci</text>
+<rect x="315" y="348" width="230" height="40" rx="8" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee"/>
+<text x="430" y="373" text-anchor="middle">run: npm test</text>
+</g>
+<rect x="590" y="130" width="270" height="140" rx="12" fill="#ffffff" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="725" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Job</text>
+<text x="725" y="180" text-anchor="middle" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">lint · runs-on: ubuntu-latest</text>
+<rect x="610" y="198" width="230" height="40" rx="8" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee"/>
+<text x="725" y="223" text-anchor="middle" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">run: npm run lint</text>
+<text x="725" y="310" text-anchor="middle" font-size="13" fill="#475569">Jobs laufen parallel,</text>
+<text x="725" y="330" text-anchor="middle" font-size="13" fill="#475569">jeder auf einem eigenen Runner.</text>
+<text x="725" y="370" text-anchor="middle" font-size="13" fill="#475569">Steps laufen nacheinander:</text>
+<text x="725" y="390" text-anchor="middle" font-size="13" fill="#475569">grün = fertige Action (uses),</text>
+<text x="725" y="410" text-anchor="middle" font-size="13" fill="#475569">blau = Shell-Befehl (run)</text>
+</svg>

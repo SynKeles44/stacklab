@@ -1,0 +1,401 @@
+- slug: code-hosting
+  term: Code-Hosting-Plattform
+  short: Ein Online-Dienst, der Git-Repositorys speichert und Werkzeuge für die Zusammenarbeit anbietet.
+  explanation: >
+    Eine Code-Hosting-Plattform bewahrt Kopien deiner Repositorys auf Servern im Internet auf. Dazu kommen
+    Funktionen wie Issues, Pull Requests, Code-Reviews und Automatisierung. Bekannte Beispiele sind GitHub,
+    GitLab, Bitbucket und Forgejo.
+  example: Du pushst deine Commits zu GitHub, damit dein Team sie sehen und kommentieren kann.
+  category: github
+  aliases: [Code-Hosting, Hosting-Plattform]
+  related: [github, gitlab, bitbucket, forgejo]
+  lesson: github/was-ist-github
+- slug: gitlab
+  term: GitLab
+  short: Eine Code-Hosting-Plattform mit stark eingebauter CI/CD, die man auch selbst betreiben kann.
+  explanation: >
+    GitLab bietet ähnliche Funktionen wie GitHub. Pull Requests heißen dort Merge Requests. Viele Firmen
+    betreiben GitLab auf eigenen Servern, um volle Kontrolle über ihren Code zu behalten.
+  example: In einem GitLab-Projekt öffnest du einen Merge Request statt eines Pull Requests.
+  category: github
+  aliases: []
+  related: [code-hosting, github]
+  lesson: github/was-ist-github
+- slug: bitbucket
+  term: Bitbucket
+  short: Die Code-Hosting-Plattform von Atlassian, eng verbunden mit Jira.
+  explanation: >
+    Bitbucket speichert Git-Repositorys und bietet Pull Requests und Pipelines. Weil es zum selben Anbieter
+    wie Jira gehört, nutzen es viele Firmen, die ihre Tickets in Jira verwalten.
+  example: Ein Team verknüpft Bitbucket-Pull-Requests direkt mit Jira-Tickets.
+  category: github
+  aliases: []
+  related: [code-hosting, github]
+  lesson: github/was-ist-github
+- slug: forgejo
+  term: Forgejo
+  short: Freie, schlanke Software, mit der du eine eigene Code-Hosting-Plattform betreibst.
+  explanation: >
+    Forgejo ist Open Source und läuft auf deinem eigenen Server. Es bietet Repositorys, Issues, Pull
+    Requests und eine eigene CI. Die öffentliche Plattform Codeberg basiert auf Forgejo.
+  example: Ein Verein betreibt Forgejo auf seinem Server, statt den Code einem großen Anbieter anzuvertrauen.
+  category: github
+  aliases: []
+  related: [code-hosting, open-source]
+  lesson: github/was-ist-github
+- slug: issue
+  term: Issue
+  short: Ein nummerierter Eintrag in der Aufgabenliste eines Repositorys – für Fehler, Ideen oder Fragen.
+  explanation: >
+    Ein Issue hat einen Titel, eine Beschreibung in Markdown und einen Kommentar-Verlauf. Es ist offen oder
+    geschlossen und lässt sich über seine Nummer (#12) überall verlinken. Labels, Meilensteine und
+    Assignees helfen beim Sortieren.
+  example: "Issue #12 „Warenkorb-Button reagiert nicht“ wird durch einen Pull Request mit „Closes #12“ geschlossen."
+  category: github
+  aliases: [Issues, Ticket auf GitHub]
+  related: [label, milestone, pull-request]
+  lesson: github/issues
+- slug: label
+  term: Label
+  short: Ein farbiges Schlagwort, mit dem du Issues und Pull Requests sortierst.
+  explanation: >
+    Labels beschreiben Art, Bereich oder Priorität eines Eintrags, etwa bug, enhancement oder frontend.
+    Über Labels kannst du filtern, und manche Labels wie good first issue haben eine feste Bedeutung.
+  example: "`is:open label:bug` zeigt alle offenen Fehlerberichte."
+  category: github
+  aliases: [Labels]
+  related: [issue, milestone]
+  lesson: github/issues
+- slug: milestone
+  term: Milestone
+  short: Eine Sammlung von Issues und Pull Requests für ein gemeinsames Ziel, oft mit Fälligkeitsdatum.
+  explanation: >
+    Ein Milestone (Meilenstein) bündelt alles, was etwa für eine Version oder einen Sprint fertig werden soll.
+    GitHub zeigt an, wie viele Einträge schon erledigt sind.
+  example: Der Milestone „Version 2.0“ enthält 14 Issues, 9 davon sind geschlossen.
+  category: github
+  aliases: [Meilenstein, Milestones]
+  related: [issue, label]
+  lesson: github/issues
+- slug: issue-template
+  term: Issue-Vorlage
+  short: Eine Vorlage, die neue Issues mit festen Abschnitten und Labels vorbefüllt.
+  explanation: >
+    Issue-Vorlagen liegen im Ordner .github/ISSUE_TEMPLATE/ im Standard-Branch. Ein YAML-Frontmatter legt
+    Name, Titel-Vorgabe und Labels fest. Alternativ gibt es Issue-Formulare mit Eingabefeldern.
+  example: "`.github/ISSUE_TEMPLATE/bug.md` fragt nach Schritten zum Nachstellen und erwartetem Verhalten."
+  category: github
+  aliases: [Issue-Template, Issue-Vorlagen]
+  related: [issue, pull-request-template]
+  lesson: github/issues
+- slug: zwei-faktor-authentifizierung
+  term: Zwei-Faktor-Authentifizierung
+  short: Anmeldung mit Passwort plus einem zweiten Beweis, zum Beispiel einem Code aus einer App.
+  explanation: >
+    Bei der Zwei-Faktor-Authentifizierung (2FA) reicht ein gestohlenes Passwort nicht. Zusätzlich brauchst
+    du etwas, das du besitzt – eine Authenticator-App, einen Passkey oder einen Sicherheitsschlüssel.
+    Wiederherstellungscodes helfen, wenn das Gerät verloren geht.
+  example: Nach dem Passwort fragt GitHub nach dem sechsstelligen Code aus deiner Authenticator-App.
+  category: github
+  aliases: [2FA, Zwei-Faktor, MFA]
+  related: [passkey]
+  lesson: github/konto-und-anmeldung
+- slug: passkey
+  term: Passkey
+  short: Eine passwortlose Anmeldung über ein Schlüsselpaar, entsperrt per Fingerabdruck, Gesicht oder Geräte-PIN.
+  explanation: >
+    Ein Passkey speichert einen privaten Schlüssel sicher auf deinem Gerät. Die Website kennt nur den
+    öffentlichen Teil. Passkeys lassen sich nicht abfangen oder auf gefälschten Seiten eingeben.
+  example: Du meldest dich bei GitHub an, indem du am Laptop deinen Fingerabdruck auflegst.
+  category: github
+  aliases: [Passkeys]
+  related: [zwei-faktor-authentifizierung]
+  lesson: github/konto-und-anmeldung
+- slug: secret-scanning
+  term: Secret Scanning
+  short: Eine GitHub-Funktion, die Repositorys nach versehentlich veröffentlichten Tokens und Schlüsseln durchsucht.
+  explanation: >
+    Secret Scanning erkennt bekannte Muster, etwa GitHub-Tokens oder Cloud-Schlüssel, und warnt dich.
+    Manche Anbieter widerrufen gefundene Tokens automatisch. Selbst ausgedachte Passwörter erkennt es nicht.
+  example: GitHub meldet, dass in config.js ein Token gefunden wurde, und empfiehlt, es zu widerrufen.
+  category: github
+  aliases: []
+  related: [secret, push-protection]
+  lesson: github/geheimnisse-schuetzen
+- slug: push-protection
+  term: Push Protection
+  short: Blockiert einen Push, wenn darin ein erkanntes Geheimnis steckt.
+  explanation: >
+    Push Protection prüft deine Commits, bevor GitHub sie speichert. Findet sie ein bekanntes
+    Geheimnis-Muster, wird der ganze Push abgelehnt – du kannst den Commit lokal reparieren, bevor etwas
+    öffentlich wird.
+  example: "`git push` endet mit „Push cannot contain secrets“, weil eine .env-Datei ein Token enthält."
+  category: github
+  aliases: []
+  related: [secret-scanning, secret]
+  lesson: github/geheimnisse-schuetzen
+- slug: sichtbarkeit
+  term: Sichtbarkeit
+  short: Die Einstellung, wer ein Repository sehen darf – öffentlich, privat oder intern.
+  explanation: >
+    Öffentliche Repositorys sieht jeder im Internet, private nur eingeladene Personen, interne alle
+    Mitglieder eines Unternehmens. Schreibrechte werden unabhängig davon vergeben.
+  example: Ein Lernprojekt fürs Portfolio ist public, der Firmen-Code private.
+  category: github
+  aliases: [Visibility, public, private]
+  related: [repository]
+  lesson: github/repositorys-anlegen
+- slug: markdown
+  term: Markdown
+  short: Eine einfache Auszeichnungssprache, die Text mit wenigen Sonderzeichen formatiert.
+  explanation: >
+    In Markdown schreibst du normalen Text; Zeichen wie # für Überschriften oder - für Listen werden zu
+    Formatierungen. GitHub nutzt die Variante GitHub Flavored Markdown mit Tabellen und Aufgabenlisten.
+  example: "`## Installation` wird zu einer Überschrift zweiter Ebene."
+  category: grundlagen
+  aliases: [GFM, GitHub Flavored Markdown, .md]
+  related: [readme]
+  lesson: github/repositorys-anlegen
+- slug: rest-api
+  term: REST-API
+  short: Eine Schnittstelle, über die Programme mit HTTP-Requests auf Ressourcen wie Repositorys oder Issues zugreifen.
+  explanation: >
+    Eine REST-API stellt Ressourcen unter Adressen (Endpunkten) bereit. Mit HTTP-Methoden wie GET, POST oder
+    PUT liest, erzeugst oder änderst du sie. Die GitHub-REST-API liegt unter api.github.com.
+  example: "`POST /repos/du/shop/issues` legt ein neues Issue an."
+  category: grundlagen
+  aliases: [REST, REST-Schnittstelle]
+  related: [api, http-request]
+  lesson: github/repositorys-anlegen
+- slug: http-request
+  term: HTTP-Request
+  short: Eine Anfrage an einen Server, bestehend aus Methode, Pfad, Headern und optional einem Body.
+  explanation: >
+    Ein HTTP-Request sagt dem Server, was du willst: Die Methode (GET, POST …) nennt die Aktion, der Pfad die
+    Ressource, Header liefern Zusatzinfos wie ein Token, und der Body enthält Daten, oft als JSON.
+  example: "`POST /user/repos` mit dem Header `Authorization: Bearer <dein-token>` legt ein Repository an."
+  category: grundlagen
+  aliases: [Request, HTTP-Anfrage]
+  related: [rest-api]
+  lesson: github/repositorys-anlegen
+- slug: github-cli
+  term: GitHub CLI
+  short: Das Kommandozeilenwerkzeug gh, mit dem du GitHub-Funktionen im Terminal nutzt.
+  explanation: >
+    Mit gh legst du Repositorys an, öffnest Issues und Pull Requests oder startest Workflows, ohne den
+    Browser zu öffnen. Die Befehle folgen dem Muster gh <bereich> <aktion>. gh ergänzt Git, ersetzt es aber nicht.
+  example: "`gh pr checkout 42` holt den Branch von Pull Request 42 auf deinen Rechner."
+  category: github
+  aliases: [gh]
+  related: [github, pull-request]
+  lesson: github/github-cli
+- slug: draft-pull-request
+  term: Draft Pull Request
+  short: Ein Pull Request im Entwurfsstatus – sichtbar und kommentierbar, aber noch nicht mergebar.
+  explanation: >
+    Mit einem Draft Pull Request zeigst du früh, woran du arbeitest, und holst Feedback ein. Erst wenn du
+    ihn als bereit markierst, kann er gemergt werden.
+  example: "`gh pr create --draft` öffnet einen Entwurf, `gh pr ready` gibt ihn frei."
+  category: github
+  aliases: [Draft PR, Entwurf]
+  related: [pull-request]
+  lesson: github/pull-requests
+- slug: pull-request-template
+  term: PR-Vorlage
+  short: Eine Vorlage, die jede neue Pull-Request-Beschreibung vorbefüllt.
+  explanation: >
+    Die Datei .github/pull_request_template.md enthält Abschnitte und Checklisten, etwa „Was ändert sich?“
+    und „Wie wurde getestet?“. So sind Beschreibungen vollständig und einheitlich.
+  example: Jeder neue PR startet mit der Checkliste „Tests ergänzt“ und „Issue verknüpft“.
+  category: github
+  aliases: [Pull-Request-Vorlage, PR-Template]
+  related: [pull-request, issue-template]
+  lesson: github/pull-requests
+- slug: code-review
+  term: Code-Review
+  short: Das Prüfen von Code-Änderungen durch andere, bevor sie übernommen werden.
+  explanation: >
+    Beim Code-Review lesen Kolleg:innen die Änderungen eines Pull Requests, kommentieren einzelne Zeilen
+    und entscheiden: kommentieren, freigeben oder Änderungen anfordern. Reviews finden Fehler früh und
+    verteilen Wissen im Team.
+  example: Ada gibt deinem Pull Request ein Approve, nachdem du ihren Kommentar umgesetzt hast.
+  category: github
+  aliases: [Review, Reviews, Code Review]
+  related: [pull-request, aenderungsvorschlag]
+  lesson: github/pull-requests
+- slug: aenderungsvorschlag
+  term: Änderungsvorschlag
+  short: Ein Review-Kommentar mit fertigem Ersatz-Code, den die Autorin per Klick übernimmt.
+  explanation: >
+    In einem Review-Kommentar schreibst du einen Code-Block mit der Kennung suggestion. GitHub zeigt ihn als
+    Diff an, und die Autorin übernimmt ihn mit „Commit suggestion“ als neuen Commit.
+  example: Statt „hier fehlt const“ schlägst du direkt die korrigierte Zeile vor.
+  category: github
+  aliases: [Suggestion, Vorschlag]
+  related: [code-review]
+  lesson: github/pull-requests
+- slug: squash-merge
+  term: Squash and merge
+  short: Eine Merge-Strategie, die alle Commits eines Pull Requests zu einem einzigen Commit zusammenfasst.
+  explanation: >
+    Beim Squash entsteht auf dem Ziel-Branch genau ein neuer Commit mit allen Änderungen des Pull Requests.
+    Die Historie bleibt kurz, die Zwischenschritte verschwinden. Lokal entspricht das git merge --squash.
+  example: 'Ein PR mit fünf „wip“-Commits wird zu einem Commit „feat: add search“.'
+  category: github
+  aliases: [Squash, Squash-Merge, squashen]
+  related: [merge-commit, rebase, pull-request]
+  lesson: github/merge-und-branch-schutz
+- slug: geschuetzter-branch
+  term: Geschützter Branch
+  short: Ein Branch mit Regeln, die GitHub erzwingt – etwa Pull-Request-Pflicht und grüne Checks.
+  explanation: >
+    Über Branch-Schutz oder Rulesets legst du fest, dass Änderungen nur per Pull Request mit Freigaben und
+    erfolgreichen Status-Checks auf einen Branch kommen. Force-Pushes lassen sich verbieten.
+  example: Auf main kann niemand direkt pushen; jeder Merge braucht ein Approval und grüne Tests.
+  category: github
+  aliases: [Branch-Schutz, Protected Branch, Ruleset, Rulesets]
+  related: [status-check, codeowners, branch]
+  lesson: github/merge-und-branch-schutz
+- slug: status-check
+  term: Status-Check
+  short: Ein automatisches Prüfergebnis an einem Commit – erfolgreich, fehlgeschlagen oder laufend.
+  explanation: >
+    Status-Checks stammen meist aus CI-Workflows wie GitHub Actions. Im Pull Request erscheinen sie als
+    grüner Haken oder rotes Kreuz. Als Pflicht-Check blockieren sie den Merge, bis sie grün sind.
+  example: Der Check „test“ ist rot, deshalb bleibt der Merge-Knopf grau.
+  category: github
+  aliases: [Check, Checks, Pflicht-Check]
+  related: [geschuetzter-branch, continuous-integration]
+  lesson: github/merge-und-branch-schutz
+- slug: codeowners
+  term: CODEOWNERS
+  short: Eine Datei, die festlegt, wer für welche Dateien eines Repositorys zuständig ist.
+  explanation: >
+    Die Datei .github/CODEOWNERS ordnet Mustern wie /backend/ Personen oder Teams zu. Ändert ein Pull
+    Request passende Dateien, werden sie automatisch als Reviewer angefragt. Die letzte passende Zeile gewinnt.
+  example: "`*.sql @beispiel-org/team-db` lässt das Datenbank-Team jede SQL-Änderung prüfen."
+  category: github
+  aliases: [Code Owners, Codebesitzer]
+  related: [code-review, geschuetzter-branch]
+  lesson: github/merge-und-branch-schutz
+- slug: contributing
+  term: CONTRIBUTING.md
+  short: Eine Datei, die erklärt, wie man zu einem Projekt beiträgt.
+  explanation: >
+    CONTRIBUTING.md beschreibt die Entwicklungsumgebung, den Code-Stil und den Ablauf für Pull Requests.
+    GitHub verlinkt sie beim Öffnen neuer Issues und Pull Requests.
+  example: Laut CONTRIBUTING.md musst du vor jedem PR `npm test` ausführen und Commits signieren.
+  category: github
+  aliases: [Contributing Guide, Beitragsrichtlinien]
+  related: [open-source, fork]
+  lesson: github/forks-und-open-source
+- slug: github-actions
+  term: GitHub Actions
+  short: Die Automatisierungsplattform von GitHub, die Workflows bei Ereignissen wie Push oder Pull Request ausführt.
+  explanation: >
+    Mit GitHub Actions beschreibst du in YAML-Dateien, was automatisch passieren soll – Tests, Builds,
+    Releases. Die Jobs laufen auf Runnern, also virtuellen Maschinen von GitHub oder eigenen Servern.
+  example: Bei jedem Pull Request startet GitHub Actions den CI-Workflow mit allen Tests.
+  category: github
+  aliases: [Actions]
+  related: [workflow, job, runner, continuous-integration]
+  lesson: github/github-actions
+- slug: workflow
+  term: Workflow
+  short: Ein automatisierter Ablauf in GitHub Actions, beschrieben als YAML-Datei in .github/workflows/.
+  explanation: >
+    Ein Workflow legt fest, bei welchem Ereignis (on) welche Jobs mit welchen Schritten laufen. Ein
+    Repository kann beliebig viele Workflows haben, etwa für Tests, Releases oder nächtliche Aufgaben.
+  example: "`.github/workflows/ci.yml` ist der Workflow, der bei jedem Push die Tests startet."
+  category: github
+  aliases: [Workflows, Workflow-Datei]
+  related: [github-actions, job, yaml]
+  lesson: github/github-actions
+- slug: runner
+  term: Runner
+  short: Die Maschine, auf der ein Job von GitHub Actions ausgeführt wird.
+  explanation: >
+    GitHub stellt fertige Runner mit Linux, Windows oder macOS bereit, etwa ubuntu-latest. Jeder Job startet
+    auf einem frischen Runner. Firmen können auch eigene Runner (self-hosted) betreiben.
+  example: "`runs-on: ubuntu-latest` lässt den Job auf einem aktuellen Ubuntu-Runner laufen."
+  category: github
+  aliases: [Runners, Self-hosted Runner]
+  related: [job, github-actions]
+  lesson: github/github-actions
+- slug: action
+  term: Action
+  short: Ein wiederverwendbarer Baustein für GitHub-Actions-Workflows, eingebunden mit uses.
+  explanation: >
+    Eine Action erledigt eine typische Aufgabe, etwa den Code auschecken oder Node.js installieren. Du bindest
+    sie mit uses und einer Version ein. Tausende Actions gibt es im GitHub Marketplace.
+  example: "`uses: actions/checkout@v7` holt den Code des Repositorys auf den Runner."
+  category: github
+  aliases: [Actions-Baustein]
+  related: [workflow, github-actions]
+  lesson: github/github-actions
+- slug: continuous-integration
+  term: Continuous Integration
+  short: Das automatische Bauen und Testen jeder Änderung, sobald sie hochgeladen wird.
+  explanation: >
+    Bei Continuous Integration (CI) werden Änderungen häufig zusammengeführt und jedes Mal automatisch
+    geprüft. Fehler fallen so auf, bevor sie gemergt werden. Das Ergebnis erscheint als Status-Check.
+  example: Der CI-Workflow führt bei jedem Pull Request `npm ci` und `npm test` aus.
+  category: grundlagen
+  aliases: [CI, CI/CD]
+  related: [github-actions, status-check]
+  lesson: github/github-actions
+- slug: matrix-build
+  term: Matrix
+  short: Eine Einstellung, die denselben Job mit verschiedenen Werten mehrfach startet.
+  explanation: >
+    In einer Matrix listest du Varianten auf, etwa Node-Versionen oder Betriebssysteme. GitHub Actions
+    startet für jede Kombination einen eigenen Job und stellt die Werte über matrix.<name> bereit.
+  example: "`node-version: [22, 24]` startet den Test-Job einmal mit Node 22 und einmal mit Node 24."
+  category: github
+  aliases: [Matrix-Build, Build-Matrix, strategy.matrix]
+  related: [job, workflow]
+  lesson: github/github-actions
+- slug: cache
+  term: Cache
+  short: Ein Zwischenspeicher, der Ergebnisse aufbewahrt, damit sie beim nächsten Mal nicht neu erzeugt werden müssen.
+  explanation: >
+    Ein Cache spart Zeit, indem er Daten wiederverwendet. In GitHub Actions speichert er etwa heruntergeladene
+    npm-Pakete zwischen Läufen. Ein Schlüssel – oft ein Hash des Lockfiles – entscheidet, wann er erneuert wird.
+  example: "`cache: npm` in actions/setup-node beschleunigt `npm ci` deutlich."
+  category: grundlagen
+  aliases: [Caches, Zwischenspeicher, Caching]
+  related: [lockfile, github-actions]
+  lesson: github/github-actions
+- slug: github-pages
+  term: GitHub Pages
+  short: Ein GitHub-Dienst, der statische Webseiten direkt aus einem Repository veröffentlicht.
+  explanation: >
+    GitHub Pages liefert HTML, CSS und JavaScript aus einem Branch oder aus einem Actions-Workflow aus.
+    Projektseiten liegen unter <benutzer>.github.io/<repository>. Serverseitiger Code läuft dort nicht.
+  example: Die Doku von du/doku erscheint unter https://du.github.io/doku.
+  category: github
+  aliases: [Pages]
+  related: [github, release]
+  lesson: github/releases-pages-projects
+- slug: github-projects
+  term: GitHub Projects
+  short: Ein Planungswerkzeug, das Issues und Pull Requests als Tabelle, Board oder Roadmap anzeigt.
+  explanation: >
+    Projects sammeln Einträge aus einem oder mehreren Repositorys und ergänzen eigene Felder wie Status,
+    Priorität oder Sprint. Automatisierungen halten den Status aktuell, etwa beim Schließen eines Issues.
+  example: Das Team plant den Sprint im Board-Layout mit den Spalten Todo, In Arbeit und Fertig.
+  category: github
+  aliases: [Projects, Project-Board]
+  related: [issue, milestone]
+  lesson: github/releases-pages-projects
+- slug: github-discussions
+  term: GitHub Discussions
+  short: Ein Forum direkt im Repository für Fragen, Ideen und Austausch.
+  explanation: >
+    Discussions trennen offene Gespräche von konkreten Aufgaben. Antworten lassen sich als Lösung markieren,
+    und aus einer Discussion kann bei Bedarf ein Issue werden.
+  example: Eine Frage zur Konfiguration landet in der Kategorie Q&A statt als Bug-Issue.
+  category: github
+  aliases: [Discussions, Diskussionen]
+  related: [issue]
+  lesson: github/releases-pages-projects

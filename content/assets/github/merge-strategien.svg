@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="480" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Drei Wege, einen Pull Request zu mergen – so sieht main danach aus</text>
+<g font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">
+<rect x="20" y="60" width="290" height="270" rx="14" fill="#22d3ee" fill-opacity=".08" stroke="#22d3ee" stroke-width="2"/>
+<text x="165" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Merge-Commit</text>
+<path d="M50 230 H 280" stroke="#1e1b3a" stroke-width="3"/>
+<path d="M110 230 C 130 160, 150 160, 170 160 H 210 C 230 160, 240 200, 250 230" fill="none" stroke="#a78bfa" stroke-width="3"/>
+<circle cx="70" cy="230" r="10" fill="#1e1b3a"/><circle cx="110" cy="230" r="10" fill="#1e1b3a"/>
+<circle cx="170" cy="160" r="10" fill="#a78bfa"/><circle cx="210" cy="160" r="10" fill="#a78bfa"/>
+<circle cx="250" cy="230" r="12" fill="#34d399" stroke="#1e1b3a" stroke-width="2"/>
+<text x="250" y="262" text-anchor="middle">M</text>
+<text x="165" y="300" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Alle Commits + ein Merge-Commit</text>
+<rect x="335" y="60" width="290" height="270" rx="14" fill="#a78bfa" fill-opacity=".08" stroke="#a78bfa" stroke-width="2"/>
+<text x="480" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Squash and merge</text>
+<path d="M365 230 H 595" stroke="#1e1b3a" stroke-width="3"/>
+<circle cx="390" cy="230" r="10" fill="#1e1b3a"/><circle cx="440" cy="230" r="10" fill="#1e1b3a"/>
+<circle cx="520" cy="230" r="14" fill="#a78bfa" stroke="#1e1b3a" stroke-width="2"/>
+<text x="520" y="200" text-anchor="middle">S</text>
+<text x="480" y="300" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Alle PR-Commits zu einem verschmolzen</text>
+<rect x="650" y="60" width="290" height="270" rx="14" fill="#34d399" fill-opacity=".08" stroke="#34d399" stroke-width="2"/>
+<text x="795" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Rebase and merge</text>
+<path d="M680 230 H 910" stroke="#1e1b3a" stroke-width="3"/>
+<circle cx="700" cy="230" r="10" fill="#1e1b3a"/><circle cx="745" cy="230" r="10" fill="#1e1b3a"/>
+<circle cx="805" cy="230" r="10" fill="#a78bfa"/><circle cx="855" cy="230" r="10" fill="#a78bfa"/>
+<text x="805" y="200" text-anchor="middle">A'</text><text x="855" y="200" text-anchor="middle">B'</text>
+<text x="795" y="300" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">PR-Commits einzeln, linear angehängt</text>
+</g>
+<g font-size="12" fill="#475569"><circle cx="40" cy="348" r="6" fill="#1e1b3a"/><text x="52" y="352">Commit auf main</text><circle cx="180" cy="348" r="6" fill="#a78bfa"/><text x="192" y="352">Commit aus dem Pull Request</text></g>
+</svg>

@@ -1,0 +1,34 @@
+title: GitHub
+subtitle: Zusammenarbeit rund um Git – Repositorys, Issues, Pull Requests, Reviews und Actions
+description: >
+  Git verwaltet die Geschichte deines Projekts auf deinem Rechner. GitHub ist der Ort, an dem
+  Teams diese Geschichte teilen, besprechen und gemeinsam weiterentwickeln. In diesem Kurs lernst du
+  GitHub so kennen, wie es im Berufsalltag benutzt wird: sicher angemeldet, mit sauberen Repositorys,
+  mit Issues und Pull Requests, mit Code-Reviews und mit automatischen Tests in GitHub Actions.
+
+
+  Alles, was lokal geht, übst du im **echten Übungs-Terminal**: Du bereitest Repositorys so vor, dass
+  sie bereit für GitHub sind, schreibst Vorlagen für Issues und Pull Requests, spielst einen
+  Fork-Workflow mit lokalen Repositorys durch und schreibst einen CI-Workflow. Was nur mit einem echten
+  GitHub-Konto geht, übst du in simulierten Terminals und mit Requests an die GitHub-REST-API.
+category: grundlagen
+level: einsteiger
+icon: git-pull-request
+color: "#8b5cf6"
+estimated_hours: 5
+workspace_dir: github
+prerequisites: [git]
+learning_goals:
+  - Du erklärst den Unterschied zwischen Git und GitHub und kennst Alternativen wie GitLab, Bitbucket und Forgejo.
+  - Du sicherst dein Konto mit Zwei-Faktor-Authentifizierung ab und verbindest dich per SSH-Schlüssel oder Token.
+  - Du verhinderst, dass Geheimnisse wie Passwörter oder Tokens jemals in einem Repository landen.
+  - Du legst Repositorys mit README, Lizenz und .gitignore an und verbindest lokale Repositorys mit GitHub.
+  - Du arbeitest mit Issues, Labels, Meilensteinen und verknüpfst Commits mit Issues.
+  - Du durchläufst den kompletten Pull-Request-Ablauf inklusive Review, Merge-Strategie und Branch-Schutz.
+  - Du trägst über Forks zu fremden Projekten bei und hältst deinen Fork aktuell.
+  - Du schreibst einen GitHub-Actions-Workflow, der deine Tests automatisch ausführt.
+  - Du nutzt die GitHub CLI `gh` und die REST-API für wiederkehrende Aufgaben.
+references:
+  - Pull-Request-Vorlagen mit Checklisten für Tests, Screenshots und Ticket-Verweis, wie sie in Produktteams üblich sind
+  - Geschützte Hauptbranches mit Pflicht-Review und grünen Status-Checks vor jedem Merge
+  - CI-Workflows, die bei jedem Pull Request Linter, Typprüfung und Tests in mehreren Node-Versionen laufen lassen

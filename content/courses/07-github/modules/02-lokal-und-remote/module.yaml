@@ -1,0 +1,73 @@
+title: Repositorys auf GitHub
+description: Repositorys mit README, Lizenz und .gitignore anlegen, lokale Projekte verbinden und mit der GitHub CLI arbeiten.
+exercise:
+  id: modul-uebung-lokal-und-remote
+  type: terminal
+  title: Klonen, verzweigen, hochladen
+  description: |
+    Im Ordner `team` liegt unter `server/website.git` ein Bare-Repository, das ein Team-Projekt auf
+    GitHub darstellt. Es enthält schon zwei Commits.
+
+    1. Klone `server/website.git` in einen Ordner `website` (innerhalb von `team`).
+    2. Setze im Klon lokal `user.name` und `user.email`.
+    3. Lege einen Branch `docs/kontakt` an.
+    4. Ergänze die `README.md` um einen Abschnitt `## Kontakt` mit einem Link auf `mailto:user@example.com`.
+    5. Committe die Änderung und pushe den Branch so, dass der Upstream gesetzt ist.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: team
+  setup: |
+    git init -q --bare -b main server/website.git
+    git init -q -b main vorlage
+    cd vorlage
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    printf '# Website\n\nDie Vereins-Website.\n' > README.md
+    git add README.md
+    git commit -q -m "docs: add readme"
+    printf '<h1>Willkommen</h1>\n' > index.html
+    git add index.html
+    git commit -q -m "feat: add start page"
+    git push -q ../server/website.git main
+    cd ..
+    rm -rf vorlage
+  checks:
+    - type: dir_exists
+      path: website/.git
+      message: Es gibt noch keinen Klon im Ordner website (git clone server/website.git website).
+    - type: command
+      run: git -C website rev-parse --abbrev-ref HEAD
+      stdout_equals: docs/kontakt
+      message: Im Klon ist nicht der Branch docs/kontakt ausgecheckt.
+    - type: command
+      run: git -C server/website.git show docs/kontakt:README.md
+      stdout_matches: "^##\\s+Kontakt"
+      message: Auf dem „Server“ fehlt der Branch docs/kontakt mit dem Abschnitt "## Kontakt" in der README.
+    - type: command
+      run: git -C server/website.git show docs/kontakt:README.md
+      stdout_matches: "\\(mailto:user@example\\.com\\)"
+      message: Im Kontakt-Abschnitt fehlt der Link (mailto:user@example.com).
+    - type: command
+      run: git -C server/website.git log --oneline docs/kontakt | wc -l
+      stdout_matches: "^\\s*3\\s*$"
+      message: Der Branch docs/kontakt sollte genau einen neuen Commit über den beiden vorhandenen haben.
+    - type: command
+      run: git -C website rev-parse --abbrev-ref docs/kontakt@{upstream}
+      stdout_equals: origin/docs/kontakt
+      message: Für docs/kontakt ist kein Upstream gesetzt (git push -u origin docs/kontakt).
+  hints:
+    - "`git clone server/website.git website` – der zweite Parameter ist der Zielordner."
+    - "`git switch -c docs/kontakt` legt den Branch an und wechselt hinein."
+    - "Beim ersten Push eines Branches: `git push -u origin docs/kontakt`."
+  solution: |
+    ```bash
+    cd team
+    git clone server/website.git website
+    cd website
+    git config user.name "Ada Beispiel"
+    git config user.email "user@example.com"
+    git switch -c docs/kontakt
+    printf '\n## Kontakt\n\n[Schreib uns](mailto:user@example.com)\n' >> README.md
+    git commit -am "docs: add contact section"
+    git push -u origin docs/kontakt
+    ```

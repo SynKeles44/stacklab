@@ -1,0 +1,73 @@
+title: Issues und Pull Requests
+description: Aufgaben mit Issues organisieren, Änderungen über Pull Requests einbringen, die passende Merge-Strategie wählen und main mit Regeln schützen.
+exercise:
+  id: modul-uebung-issues-prs
+  type: terminal
+  title: Ein Issue vom Branch bis zum Squash-Merge
+  description: |
+    Im Ordner `feature-ablauf` liegt ein Repository mit einem Commit auf `main`. Issue #3 lautet:
+    „Die Website braucht ein Impressum.“ Spiel den kompletten Ablauf lokal durch:
+
+    1. Lege den Branch `fix/impressum` an.
+    2. Erstelle `impressum.html` und committe sie. Ergänze danach in `index.html` einen Link auf
+       `impressum.html` in einem **zweiten** Commit.
+    3. Wechsle auf `main` und übernimm den Branch per **Squash** (`git merge --squash`).
+    4. Committe mit einer Nachricht, deren Text Issue #3 schließt (z. B. Betreff `feat: add imprint`,
+       im Text `Closes #3`).
+    5. Lösche den Branch `fix/impressum` – er ist nach dem Squash erledigt.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: feature-ablauf
+  setup: |
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    printf '<h1>Verein</h1>\n' > index.html
+    git add index.html
+    git commit -q -m "feat: add start page"
+  checks:
+    - type: command
+      run: git rev-parse --abbrev-ref HEAD
+      stdout_equals: main
+      message: Du bist nicht auf main.
+    - type: command
+      run: git rev-list --count main
+      stdout_equals: "2"
+      message: main sollte genau zwei Commits haben – den Start-Commit und deinen Squash-Commit.
+    - type: command
+      run: git rev-list --min-parents=2 --count main
+      stdout_equals: "0"
+      message: Auf main ist ein Merge-Commit entstanden. Nutze git merge --squash.
+    - type: command
+      run: git show main:impressum.html
+      message: impressum.html ist nicht auf main angekommen.
+    - type: command
+      run: git show main:index.html
+      stdout_matches: "impressum\\.html"
+      message: Der Link auf impressum.html in index.html fehlt auf main.
+    - type: command
+      run: git log -1 --format=%B main
+      stdout_matches: "(?:[Cc]lose[sd]?|[Ff]ix(?:e[sd])?|[Rr]esolve[sd]?):?\\s+#3\\b"
+      message: Die Commit-Message auf main schließt Issue #3 noch nicht (z. B. "Closes #3").
+    - type: command
+      run: git branch --list fix/impressum
+      stdout_equals: ""
+      message: Der Branch fix/impressum existiert noch. Lösche ihn mit git branch -D fix/impressum.
+  hints:
+    - "`git switch -c fix/impressum` – dann zwei getrennte Commits."
+    - "Nach einem Squash hält Git den Branch für ungemergt. Deshalb brauchst du `git branch -D` (großes D)."
+    - "`git commit -m \"feat: add imprint\" -m \"Closes #3\"` schreibt Betreff und Text."
+  solution: |
+    ```bash
+    cd feature-ablauf
+    git switch -c fix/impressum
+    printf '<h1>Impressum</h1>\n<p>user@example.com</p>\n' > impressum.html
+    git add impressum.html
+    git commit -m "feat: add imprint page"
+    printf '<a href="impressum.html">Impressum</a>\n' >> index.html
+    git commit -am "feat: link imprint"
+    git switch main
+    git merge --squash fix/impressum
+    git commit -m "feat: add imprint" -m "Closes #3"
+    git branch -D fix/impressum
+    ```

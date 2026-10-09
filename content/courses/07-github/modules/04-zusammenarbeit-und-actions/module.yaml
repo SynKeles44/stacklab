@@ -1,0 +1,87 @@
+title: Open Source und Automatisierung
+description: Mit Forks zu fremden Projekten beitragen, Tests mit GitHub Actions automatisieren und Versionen mit Releases veröffentlichen.
+exercise:
+  id: modul-uebung-zusammenarbeit
+  type: terminal
+  title: Ein Beitrag über deinen Fork
+  description: |
+    Im Ordner `beitrag` liegt ein nachgestellter Fork-Workflow:
+
+    - `upstream.git` – das Original-Projekt (es hat einen Commit, den dein Fork noch nicht kennt)
+    - `origin.git` – dein veralteter Fork
+    - `lokal/` – dein Klon des Forks
+
+    Bereite einen Beitrag so vor, wie ihn Betreuer:innen gern sehen:
+
+    1. Trage in `lokal` das Original als Remote `upstream` ein und bringe deinen lokalen `main`
+       **und** den `main` deines Forks auf den Stand von `upstream`.
+    2. Lege von diesem aktuellen `main` den Branch `docs/beispiel` an.
+    3. Ergänze in der `README.md` einen Abschnitt `## Beispiel`.
+    4. Committe mit **Sign-off** und pushe den Branch mit Upstream zu `origin`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: beitrag
+  setup: |
+    git init -q --bare -b main upstream.git
+    git clone -q upstream.git arbeit 2>/dev/null
+    cd arbeit
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    printf '# farbrechner\n\nRechnet Farben um.\n' > README.md
+    git add README.md
+    git commit -q -m "docs: add readme"
+    git push -q origin main
+    cd ..
+    git clone -q --bare upstream.git origin.git
+    cd arbeit
+    printf 'export const toRgb = (hex) => hex\n' > index.js
+    git add index.js
+    git commit -q -m "feat: add toRgb"
+    git push -q origin main
+    cd ..
+    rm -rf arbeit
+    git clone -q origin.git lokal
+    git -C lokal config user.name "Stacklab"
+    git -C lokal config user.email "stacklab@example.com"
+  checks:
+    - type: command
+      run: git -C lokal remote get-url upstream
+      stdout_matches: "upstream\\.git$"
+      message: In lokal fehlt der Remote upstream (../upstream.git).
+    - type: command
+      run: test "$(git -C origin.git rev-parse main)" = "$(git -C upstream.git rev-parse main)"
+      message: Der main deines Forks (origin.git) ist noch nicht auf dem Stand von upstream.
+    - type: command
+      run: git -C origin.git rev-parse --verify -q docs/beispiel
+      message: Der Branch docs/beispiel ist noch nicht in deinem Fork (origin.git) angekommen.
+    - type: command
+      run: git -C origin.git merge-base --is-ancestor "$(git -C upstream.git rev-parse main)" docs/beispiel
+      message: docs/beispiel basiert nicht auf dem aktuellen main von upstream. Synchronisiere zuerst und lege den Branch danach an.
+    - type: command
+      run: git -C origin.git show docs/beispiel:README.md
+      stdout_matches: "^##\\s+Beispiel"
+      message: Im README auf docs/beispiel fehlt der Abschnitt "## Beispiel".
+    - type: command
+      run: git -C origin.git log -1 --format=%B docs/beispiel
+      stdout_matches: "^Signed-off-by: "
+      message: Dem Commit auf docs/beispiel fehlt das Sign-off (git commit -s).
+    - type: command
+      run: git -C lokal rev-parse --abbrev-ref docs/beispiel@{upstream}
+      stdout_equals: origin/docs/beispiel
+      message: Für docs/beispiel ist kein Upstream gesetzt (git push -u origin docs/beispiel).
+  hints:
+    - "Synchronisieren: `git fetch upstream`, `git merge upstream/main`, `git push origin main`."
+    - "Erst danach `git switch -c docs/beispiel` – sonst fehlt dem Branch der neue Commit."
+    - "`git commit -s -am \"docs: add example\"` committet mit Sign-off."
+  solution: |
+    ```bash
+    cd beitrag/lokal
+    git remote add upstream ../upstream.git
+    git fetch upstream
+    git merge upstream/main
+    git push origin main
+    git switch -c docs/beispiel
+    printf '\n## Beispiel\n\n`toRgb("#ff0000")`\n' >> README.md
+    git commit -s -am "docs: add usage example"
+    git push -u origin docs/beispiel
+    ```

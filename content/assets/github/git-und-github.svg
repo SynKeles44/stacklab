@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="450" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Git läuft lokal – GitHub ist ein Treffpunkt im Netz</text>
+<rect x="30" y="70" width="300" height="290" rx="16" fill="#22d3ee" fill-opacity=".12" stroke="#22d3ee" stroke-width="3"/>
+<text x="180" y="105" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Dein Rechner</text>
+<text x="180" y="130" text-anchor="middle" font-size="14" fill="#475569">Programm: Git</text>
+<rect x="60" y="150" width="240" height="70" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="180" y="180" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a">Arbeitsverzeichnis</text>
+<text x="180" y="202" text-anchor="middle" font-size="13" fill="#475569">deine Dateien</text>
+<rect x="60" y="235" width="240" height="95" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="180" y="265" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a">Lokales Repository</text>
+<text x="180" y="290" text-anchor="middle" font-size="13" fill="#475569" font-family="ui-monospace, Menlo, monospace">.git</text>
+<text x="180" y="312" text-anchor="middle" font-size="13" fill="#475569">Commits, Branches, Tags</text>
+<rect x="570" y="70" width="300" height="290" rx="16" fill="#a78bfa" fill-opacity=".12" stroke="#a78bfa" stroke-width="3"/>
+<text x="720" y="105" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">GitHub</text>
+<text x="720" y="130" text-anchor="middle" font-size="14" fill="#475569">Plattform im Internet</text>
+<rect x="600" y="150" width="240" height="70" rx="10" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+<text x="720" y="180" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a">Remote-Repository</text>
+<text x="720" y="202" text-anchor="middle" font-size="13" fill="#475569">dieselben Commits</text>
+<rect x="600" y="235" width="115" height="42" rx="8" fill="#34d399" fill-opacity=".18" stroke="#34d399"/>
+<text x="657" y="261" text-anchor="middle" font-size="13" fill="#1e1b3a">Issues</text>
+<rect x="725" y="235" width="115" height="42" rx="8" fill="#34d399" fill-opacity=".18" stroke="#34d399"/>
+<text x="782" y="261" text-anchor="middle" font-size="13" fill="#1e1b3a">Pull Requests</text>
+<rect x="600" y="287" width="115" height="42" rx="8" fill="#f59e0b" fill-opacity=".18" stroke="#f59e0b"/>
+<text x="657" y="313" text-anchor="middle" font-size="13" fill="#1e1b3a">Actions</text>
+<rect x="725" y="287" width="115" height="42" rx="8" fill="#f59e0b" fill-opacity=".18" stroke="#f59e0b"/>
+<text x="782" y="313" text-anchor="middle" font-size="13" fill="#1e1b3a">Releases, Pages</text>
+<path d="M334 170 H 566" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="450" y="160" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git push</text>
+<path d="M566 205 H 334" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="450" y="228" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git clone / pull</text>
+<text x="450" y="290" text-anchor="middle" font-size="13" fill="#475569">Git-Befehle über</text>
+<text x="450" y="310" text-anchor="middle" font-size="13" fill="#475569">SSH oder HTTPS</text>
+</svg>
