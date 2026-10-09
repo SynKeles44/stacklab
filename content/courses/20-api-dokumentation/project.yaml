@@ -198,6 +198,10 @@ steps:
       npm init -y
       npm install --save-dev @redocly/cli@2.62.1
       ```
+    solve: |
+      composer require -q --no-interaction zircote/swagger-php:^6.12
+      npm init -y > /dev/null
+      npm install --save-dev --silent --no-audit --no-fund @redocly/cli@2.62.1
   - id: api-beschreiben
     title: Die API als Ganzes beschreiben
     description: |
@@ -245,6 +249,29 @@ steps:
       {
       }
       ```
+    solve: |
+      cat > src/OpenApi.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      use OpenApi\Attributes as OA;
+
+      #[OA\OpenApi(openapi: "3.1.0", security: [["bearerAuth" => []]])]
+      #[OA\Info(
+          version: "1.0.0",
+          title: "Aufgaben-API",
+          description: "Aufgaben anlegen, auflisten und erledigen.",
+          license: new OA\License(name: "MIT", identifier: "MIT"),
+      )]
+      #[OA\Server(url: "https://api.example.com/v1")]
+      #[OA\SecurityScheme(securityScheme: "bearerAuth", type: "http", scheme: "bearer", bearerFormat: "JWT")]
+      final class OpenApi
+      {
+      }
+      PHP
   - id: schemas
     title: Task und Priority als Schemas
     description: |
@@ -303,6 +330,51 @@ steps:
           }
       }
       ```
+    solve: |
+      cat > src/Model/Priority.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Model;
+
+      use OpenApi\Attributes as OA;
+
+      #[OA\Schema(type: "string")]
+      enum Priority: string
+      {
+          case Low = 'low';
+          case Normal = 'normal';
+          case High = 'high';
+      }
+      PHP
+      cat > src/Model/Task.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Model;
+
+      use OpenApi\Attributes as OA;
+
+      #[OA\Schema(required: ["id", "title", "done", "priority"])]
+      final class Task
+      {
+          public function __construct(
+              #[OA\Property(example: 1)]
+              public int $id,
+              #[OA\Property(example: "Doku schreiben")]
+              public string $title,
+              #[OA\Property]
+              public bool $done,
+              #[OA\Property]
+              public Priority $priority,
+              #[OA\Property(format: "date")]
+              public ?string $due_date = null,
+          ) {
+          }
+      }
+      PHP
   - id: lesen
     title: Lesende Endpunkte beschreiben
     description: |
@@ -357,6 +429,80 @@ steps:
       #[OA\Response(response: 404, description: "Aufgabe nicht gefunden")]
       public function show(int $id): ?Task
       ```
+    solve: |
+      cat > src/Controller/HealthController.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Controller;
+
+      use OpenApi\Attributes as OA;
+
+      final class HealthController
+      {
+          #[OA\Get(path: "/health", operationId: "getHealth", summary: "Erreichbarkeit prüfen", tags: ["System"], security: [])]
+          #[OA\Response(response: 200, description: "Die API läuft")]
+          public function show(): array
+          {
+              return ['status' => 'ok'];
+          }
+      }
+      PHP
+      cat > src/Controller/TaskController.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Controller;
+
+      use App\Model\Priority;
+      use App\Model\Task;
+      use OpenApi\Attributes as OA;
+
+      final class TaskController
+      {
+          /** @return list<Task> */
+          #[OA\Get(path: "/tasks", operationId: "listTasks", summary: "Aufgaben auflisten", tags: ["Tasks"])]
+          #[OA\Parameter(name: "done", in: "query", required: false, schema: new OA\Schema(type: "boolean"))]
+          #[OA\Response(response: 200, description: "Liste der Aufgaben", content: new OA\JsonContent(type: "array", items: new OA\Items(ref: Task::class)))]
+          #[OA\Response(response: 401, description: "Nicht angemeldet")]
+          public function index(?bool $done = null): array
+          {
+              $tasks = [
+                  new Task(1, 'Doku schreiben', false, Priority::High, '2026-11-01'),
+                  new Task(2, 'Tests ergänzen', true, Priority::Normal),
+              ];
+
+              return $done === null ? $tasks : array_values(array_filter($tasks, fn (Task $t) => $t->done === $done));
+          }
+
+          #[OA\Get(path: "/tasks/{id}", operationId: "getTask", summary: "Eine Aufgabe laden", tags: ["Tasks"])]
+          #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+          #[OA\Response(response: 200, description: "Die Aufgabe", content: new OA\JsonContent(ref: Task::class))]
+          #[OA\Response(response: 401, description: "Nicht angemeldet")]
+          #[OA\Response(response: 404, description: "Aufgabe nicht gefunden")]
+          public function show(int $id): ?Task
+          {
+              foreach ($this->index() as $task) {
+                  if ($task->id === $id) {
+                      return $task;
+                  }
+              }
+
+              return null;
+          }
+
+          public function store(array $input): Task
+          {
+              return new Task(3, (string) ($input['title'] ?? ''), false, Priority::from($input['priority'] ?? 'normal'));
+          }
+
+          public function destroy(int $id): void
+          {
+          }
+      }
+      PHP
   - id: schreiben
     title: Schreibende Endpunkte beschreiben
     description: |
@@ -407,11 +553,86 @@ steps:
       #[OA\Response(response: 404, description: "Aufgabe nicht gefunden")]
       public function destroy(int $id): void
       ```
+    solve: |
+      cat > src/Controller/TaskController.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Controller;
+
+      use App\Model\Priority;
+      use App\Model\Task;
+      use OpenApi\Attributes as OA;
+
+      final class TaskController
+      {
+          /** @return list<Task> */
+          #[OA\Get(path: "/tasks", operationId: "listTasks", summary: "Aufgaben auflisten", tags: ["Tasks"])]
+          #[OA\Parameter(name: "done", in: "query", required: false, schema: new OA\Schema(type: "boolean"))]
+          #[OA\Response(response: 200, description: "Liste der Aufgaben", content: new OA\JsonContent(type: "array", items: new OA\Items(ref: Task::class)))]
+          #[OA\Response(response: 401, description: "Nicht angemeldet")]
+          public function index(?bool $done = null): array
+          {
+              $tasks = [
+                  new Task(1, 'Doku schreiben', false, Priority::High, '2026-11-01'),
+                  new Task(2, 'Tests ergänzen', true, Priority::Normal),
+              ];
+
+              return $done === null ? $tasks : array_values(array_filter($tasks, fn (Task $t) => $t->done === $done));
+          }
+
+          #[OA\Get(path: "/tasks/{id}", operationId: "getTask", summary: "Eine Aufgabe laden", tags: ["Tasks"])]
+          #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+          #[OA\Response(response: 200, description: "Die Aufgabe", content: new OA\JsonContent(ref: Task::class))]
+          #[OA\Response(response: 401, description: "Nicht angemeldet")]
+          #[OA\Response(response: 404, description: "Aufgabe nicht gefunden")]
+          public function show(int $id): ?Task
+          {
+              foreach ($this->index() as $task) {
+                  if ($task->id === $id) {
+                      return $task;
+                  }
+              }
+
+              return null;
+          }
+
+          #[OA\Post(path: "/tasks", operationId: "createTask", summary: "Aufgabe anlegen", tags: ["Tasks"])]
+          #[OA\RequestBody(
+              required: true,
+              content: new OA\JsonContent(
+                  required: ["title"],
+                  properties: [
+                      new OA\Property(property: "title", type: "string", example: "Doku schreiben"),
+                      new OA\Property(property: "priority", ref: Priority::class),
+                  ],
+              ),
+          )]
+          #[OA\Response(response: 201, description: "Angelegt", content: new OA\JsonContent(ref: Task::class))]
+          #[OA\Response(response: 401, description: "Nicht angemeldet")]
+          #[OA\Response(response: 422, description: "Ungültige Eingaben")]
+          public function store(array $input): Task
+          {
+              return new Task(3, (string) ($input['title'] ?? ''), false, Priority::from($input['priority'] ?? 'normal'));
+          }
+
+          #[OA\Delete(path: "/tasks/{id}", operationId: "deleteTask", summary: "Aufgabe löschen", tags: ["Tasks"])]
+          #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+          #[OA\Response(response: 204, description: "Gelöscht")]
+          #[OA\Response(response: 401, description: "Nicht angemeldet")]
+          #[OA\Response(response: 404, description: "Aufgabe nicht gefunden")]
+          public function destroy(int $id): void
+          {
+          }
+      }
+      PHP
   - id: erzeugen
     title: Die v1-Spezifikation per Composer-Skript erzeugen
     description: |
       Damit jeder im Team denselben Befehl nutzt, ergänze in `composer.json` das Skript
-      `"docs": "openapi src -o docs/v1/openapi.yaml"` unter `scripts` und führe `composer docs` aus.
+      `"docs": "openapi src -o docs/v1/openapi.yaml"` unter `scripts`. Lege den Zielordner einmal mit
+      `mkdir -p docs/v1` an – das Werkzeug erstellt ihn nicht selbst – und führe dann `composer docs` aus.
     checklist:
       - composer.json enthält das Skript docs
       - docs/v1/openapi.yaml existiert und ist aktuell
@@ -440,6 +661,10 @@ steps:
       ```bash
       composer docs
       ```
+    solve: |
+      mkdir -p docs/v1
+      composer config scripts.docs "openapi src -o docs/v1/openapi.yaml"
+      composer docs -q
   - id: linten
     title: Ohne Fehler linten
     description: |
@@ -478,6 +703,14 @@ steps:
       ```bash
       npx redocly lint docs/v1/openapi.yaml
       ```
+    solve: |
+      cat > redocly.yaml <<'YAML'
+      extends:
+        - recommended
+      rules:
+        no-server-example.com: off
+      YAML
+      npx redocly lint docs/v1/openapi.yaml > /dev/null
   - id: doku-seite
     title: Die Doku-Seite bauen
     description: |
@@ -503,3 +736,5 @@ steps:
       curl -s 127.0.0.1:8080/v1/tasks/1 | jq
       kill %1
       ```
+    solve: |
+      npx redocly build-docs docs/v1/openapi.yaml -o public/docs/index.html > /dev/null

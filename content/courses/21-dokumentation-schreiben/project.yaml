@@ -107,6 +107,30 @@ steps:
       git add .
       git commit -m "feat: add unit converter"
       ~~~
+    solve: |
+      git init -q -b main
+      git config user.name "Ada Lovelace"
+      git config user.email "ada@example.com"
+      mkdir -p src
+      cat > src/convert.js <<'EOF'
+      const FACTORS = { m: 1, km: 1000, cm: 0.01, mi: 1609.344, ft: 0.3048 }
+      const digits = Number(process.env.NACHKOMMASTELLEN ?? 2)
+
+      const [value, from, to] = process.argv.slice(2)
+      if (!(from in FACTORS) || !(to in FACTORS) || Number.isNaN(Number(value))) {
+        console.error('Aufruf: node src/convert.js <wert> <von> <nach>')
+        console.error('Einheiten: ' + Object.keys(FACTORS).join(', '))
+        process.exit(1)
+      }
+
+      const result = (Number(value) * FACTORS[from]) / FACTORS[to]
+      console.log(result.toFixed(digits))
+      EOF
+      npm init -y > /dev/null
+      npm pkg set scripts.convert="node src/convert.js"
+      printf 'node_modules/\n' > .gitignore
+      git add .
+      git commit -q -m "feat: add unit converter"
   - id: readme
     title: Die README schreiben
     description: |
@@ -200,6 +224,43 @@ steps:
       MIT
       EOF
       ~~~
+    solve: |
+      cat > README.md <<'EOF'
+      # einheiten
+
+      Ein kleines Kommandozeilen-Werkzeug, das Längen zwischen Metern, Kilometern, Zentimetern, Meilen und Fuß umrechnet.
+
+      ## Schnellstart
+
+      ```bash
+      node src/convert.js 10 km mi
+      ```
+
+      Ausgabe: `6.21`
+
+      ## Voraussetzungen
+
+      - Node.js 24 oder neuer
+
+      ## Konfiguration
+
+      | Variable | Standardwert | Bedeutung |
+      |---|---|---|
+      | NACHKOMMASTELLEN | 2 | Stellen nach dem Komma in der Ausgabe |
+
+      ## Fehlerbehebung
+
+      **`Aufruf: node src/convert.js <wert> <von> <nach>`** – Eine Einheit ist unbekannt oder der Wert ist keine Zahl.
+      Erlaubt sind `m`, `km`, `cm`, `mi` und `ft`.
+
+      ## Mitwirken
+
+      Wie du beiträgst, steht in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+      ## Lizenz
+
+      MIT
+      EOF
   - id: contributing
     title: CONTRIBUTING.md anlegen
     description: |
@@ -267,6 +328,30 @@ steps:
       Die Schritte stehen in der Anleitung [Neue Einheit hinzufügen](docs/how-to/neue-einheit.md).
       EOF
       ```
+    solve: |
+      cat > CONTRIBUTING.md <<'EOF'
+      # Mitwirken
+
+      Danke, dass du helfen willst!
+
+      ## Entwicklungsumgebung
+
+      - Umrechner ausprobieren: `npm run convert -- 10 km mi`
+      - Doku prüfen: `npm run lint:docs`
+
+      ## Commits
+
+      Wir nutzen Conventional Commits, z. B. `feat: add inch unit`.
+
+      ## Pull Requests
+
+      - Jeder Pull Request aktualisiert die passende Doku.
+      - Jeder Pull Request ergänzt einen Eintrag unter `[Unreleased]` im CHANGELOG.md.
+
+      ## Neue Einheit hinzufügen
+
+      Die Schritte stehen in der Anleitung [Neue Einheit hinzufügen](docs/how-to/neue-einheit.md).
+      EOF
   - id: changelog
     title: CHANGELOG.md nach Keep a Changelog
     description: |
@@ -337,6 +422,30 @@ steps:
       [1.0.0]: https://github.com/example/einheiten/releases/tag/v1.0.0
       EOF
       ```
+    solve: |
+      cat > CHANGELOG.md <<'EOF'
+      # Changelog
+
+      Alle wichtigen Änderungen stehen in dieser Datei. Das Format basiert auf
+      [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und das Projekt folgt
+      [Semantic Versioning](https://semver.org/lang/de/).
+
+      ## [Unreleased]
+
+      ### Added
+
+      - Dokumentation für Mitwirkende.
+
+      ## [1.0.0] - 2026-10-01
+
+      ### Added
+
+      - Umrechnung zwischen m, km, cm, mi und ft.
+      - Anzahl der Nachkommastellen über NACHKOMMASTELLEN einstellbar.
+
+      [Unreleased]: https://github.com/example/einheiten/compare/v1.0.0...HEAD
+      [1.0.0]: https://github.com/example/einheiten/releases/tag/v1.0.0
+      EOF
   - id: adr
     title: Eine Entscheidung festhalten
     description: |
@@ -398,6 +507,28 @@ steps:
       - Nachteil: Komfortfunktionen wie das Einlesen von Optionen bauen wir selbst.
       EOF
       ```
+    solve: |
+      mkdir -p docs/adr
+      cat > docs/adr/0001-keine-laufzeit-abhaengigkeiten.md <<'EOF'
+      # 1. Keine Laufzeit-Abhängigkeiten
+
+      ## Status
+
+      Akzeptiert
+
+      ## Kontext
+
+      Das Werkzeug soll auf jedem Rechner mit Node.js laufen, ohne vorher `npm install` auszuführen.
+
+      ## Entscheidung
+
+      Der Umrechner nutzt zur Laufzeit nur Funktionen von Node.js selbst und keine npm-Pakete.
+
+      ## Konsequenzen
+
+      - Vorteil: sofort startklar, keine Sicherheitslücken in fremden Paketen.
+      - Nachteil: Komfortfunktionen wie das Einlesen von Optionen bauen wir selbst.
+      EOF
   - id: how-to
     title: Eine How-to-Anleitung und ein Doku-Index
     description: |
@@ -467,6 +598,34 @@ steps:
       - [1. Keine Laufzeit-Abhängigkeiten](adr/0001-keine-laufzeit-abhaengigkeiten.md)
       EOF
       ~~~
+    solve: |
+      mkdir -p docs/how-to
+      cat > docs/how-to/neue-einheit.md <<'EOF'
+      # Neue Einheit hinzufügen
+
+      So ergänzt du den Umrechner um eine weitere Längeneinheit, hier Zoll (`in`).
+
+      1. Trage die Einheit mit ihrem Faktor in Metern in `FACTORS` in `src/convert.js` ein:
+
+         ```js
+         const FACTORS = { m: 1, km: 1000, cm: 0.01, mi: 1609.344, ft: 0.3048, in: 0.0254 }
+         ```
+
+      2. Probier sie aus: `node src/convert.js 1 ft in` gibt `12.00` aus.
+      3. Ergänze die Einheit in der README unter „Fehlerbehebung“.
+      4. Schreib einen Eintrag unter `[Unreleased]` im CHANGELOG.md.
+      EOF
+      cat > docs/README.md <<'EOF'
+      # Dokumentation
+
+      ## How-to-Anleitungen
+
+      - [Neue Einheit hinzufügen](how-to/neue-einheit.md)
+
+      ## Entscheidungen
+
+      - [1. Keine Laufzeit-Abhängigkeiten](adr/0001-keine-laufzeit-abhaengigkeiten.md)
+      EOF
   - id: lint-und-links
     title: Doku automatisch prüfen
     description: |
@@ -532,6 +691,16 @@ steps:
       npm pkg set 'scripts.lint:docs=markdownlint-cli2 "**/*.md"'
       npm run lint:docs
       ~~~
+    solve: |
+      npm install --save-dev --silent --no-audit --no-fund markdownlint-cli2@0.23.3
+      cat > .markdownlint-cli2.jsonc <<'EOF'
+      {
+        "config": { "MD013": false, "MD024": { "siblings_only": true }, "MD060": false },
+        "ignores": ["node_modules/**"]
+      }
+      EOF
+      npm pkg set 'scripts.lint:docs=markdownlint-cli2 "**/*.md"'
+      npm run --silent lint:docs > /dev/null 2>&1
   - id: commit
     title: Alles sauber committen
     description: |
@@ -573,3 +742,6 @@ steps:
       git commit -m "docs: add readme, contributing guide, changelog and adr"
       git status --porcelain
       ```
+    solve: |
+      git add .
+      git commit -q -m "docs: add readme, contributing guide, changelog and adr"

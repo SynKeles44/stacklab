@@ -76,6 +76,31 @@ steps:
 
       antworte(404, ['fehler' => 'Unbekannter Pfad']);
       ```
+    solve: |
+      cat > router.php <<'PHP'
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+      function antworte(int $status, mixed $daten = null, array $kopf = []): never
+      {
+          http_response_code($status);
+          foreach ($kopf as $name => $wert) {
+              header("$name: $wert");
+          }
+          if ($daten !== null) {
+              header('Content-Type: application/json');
+              echo json_encode($daten, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+          }
+          exit;
+      }
+
+      if ($pfad === '/status') {
+          antworte(200, ['status' => 'ok']);
+      }
+
+      antworte(404, ['fehler' => 'Unbekannter Pfad']);
+      PHP
   - id: notizen-lesen
     title: Notizen speichern und auflisten
     description: |
@@ -128,6 +153,51 @@ steps:
           antworte(200, array_values($notizen));
       }
       ```
+    solve: |
+      cat > router.php <<'PHP'
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $speicher = __DIR__ . '/daten/notizen.json';
+
+      function antworte(int $status, mixed $daten = null, array $kopf = []): never
+      {
+          http_response_code($status);
+          foreach ($kopf as $name => $wert) {
+              header("$name: $wert");
+          }
+          if ($daten !== null) {
+              header('Content-Type: application/json');
+              echo json_encode($daten, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+          }
+          exit;
+      }
+
+      function laden(string $speicher): array
+      {
+          return is_file($speicher) ? json_decode(file_get_contents($speicher), true) : [];
+      }
+
+      function speichern(string $speicher, array $notizen): void
+      {
+          if (!is_dir(dirname($speicher))) {
+              mkdir(dirname($speicher), 0777, true);
+          }
+          file_put_contents($speicher, json_encode(array_values($notizen), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      if ($pfad === '/status') {
+          antworte(200, ['status' => 'ok']);
+      }
+
+      $notizen = laden($speicher);
+
+      if ($pfad === '/notizen' && $methode === 'GET') {
+          antworte(200, array_values($notizen));
+      }
+
+      antworte(404, ['fehler' => 'Unbekannter Pfad']);
+      PHP
   - id: notiz-anlegen
     title: Notizen anlegen mit POST, 201 und Location
     description: |
@@ -199,6 +269,73 @@ steps:
           antworte(201, $neu, ['Location' => '/notizen/' . $id]);
       }
       ```
+    solve: |
+      cat > router.php <<'PHP'
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $speicher = __DIR__ . '/daten/notizen.json';
+
+      function antworte(int $status, mixed $daten = null, array $kopf = []): never
+      {
+          http_response_code($status);
+          foreach ($kopf as $name => $wert) {
+              header("$name: $wert");
+          }
+          if ($daten !== null) {
+              header('Content-Type: application/json');
+              echo json_encode($daten, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+          }
+          exit;
+      }
+
+      function laden(string $speicher): array
+      {
+          return is_file($speicher) ? json_decode(file_get_contents($speicher), true) : [];
+      }
+
+      function speichern(string $speicher, array $notizen): void
+      {
+          if (!is_dir(dirname($speicher))) {
+              mkdir(dirname($speicher), 0777, true);
+          }
+          file_put_contents($speicher, json_encode(array_values($notizen), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      function jsonBody(): array
+      {
+          $daten = json_decode(file_get_contents('php://input'), true);
+          if (!is_array($daten)) {
+              antworte(400, ['fehler' => 'Body ist kein gültiges JSON']);
+          }
+          return $daten;
+      }
+
+      if ($pfad === '/status') {
+          antworte(200, ['status' => 'ok']);
+      }
+
+      $notizen = laden($speicher);
+
+      if ($pfad === '/notizen' && $methode === 'GET') {
+          antworte(200, array_values($notizen));
+      }
+
+      if ($pfad === '/notizen' && $methode === 'POST') {
+          $daten = jsonBody();
+          $titel = trim((string) ($daten['titel'] ?? ''));
+          if ($titel === '') {
+              antworte(422, ['fehler' => 'titel ist ein Pflichtfeld']);
+          }
+          $id = $notizen === [] ? 1 : max(array_column($notizen, 'id')) + 1;
+          $neu = ['id' => $id, 'titel' => $titel, 'erledigt' => false];
+          $notizen[] = $neu;
+          speichern($speicher, $notizen);
+          antworte(201, $neu, ['Location' => '/notizen/' . $id]);
+      }
+
+      antworte(404, ['fehler' => 'Unbekannter Pfad']);
+      PHP
   - id: einzelne-notiz
     title: Eine Notiz lesen und mit PATCH ändern
     description: |
@@ -263,6 +400,99 @@ steps:
           }
       }
       ```
+    solve: |
+      cat > router.php <<'PHP'
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $speicher = __DIR__ . '/daten/notizen.json';
+
+      function antworte(int $status, mixed $daten = null, array $kopf = []): never
+      {
+          http_response_code($status);
+          foreach ($kopf as $name => $wert) {
+              header("$name: $wert");
+          }
+          if ($daten !== null) {
+              header('Content-Type: application/json');
+              echo json_encode($daten, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+          }
+          exit;
+      }
+
+      function laden(string $speicher): array
+      {
+          return is_file($speicher) ? json_decode(file_get_contents($speicher), true) : [];
+      }
+
+      function speichern(string $speicher, array $notizen): void
+      {
+          if (!is_dir(dirname($speicher))) {
+              mkdir(dirname($speicher), 0777, true);
+          }
+          file_put_contents($speicher, json_encode(array_values($notizen), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      function jsonBody(): array
+      {
+          $daten = json_decode(file_get_contents('php://input'), true);
+          if (!is_array($daten)) {
+              antworte(400, ['fehler' => 'Body ist kein gültiges JSON']);
+          }
+          return $daten;
+      }
+
+      if ($pfad === '/status') {
+          antworte(200, ['status' => 'ok']);
+      }
+
+      $notizen = laden($speicher);
+
+      if ($pfad === '/notizen' && $methode === 'GET') {
+          antworte(200, array_values($notizen));
+      }
+
+      if ($pfad === '/notizen' && $methode === 'POST') {
+          $daten = jsonBody();
+          $titel = trim((string) ($daten['titel'] ?? ''));
+          if ($titel === '') {
+              antworte(422, ['fehler' => 'titel ist ein Pflichtfeld']);
+          }
+          $id = $notizen === [] ? 1 : max(array_column($notizen, 'id')) + 1;
+          $neu = ['id' => $id, 'titel' => $titel, 'erledigt' => false];
+          $notizen[] = $neu;
+          speichern($speicher, $notizen);
+          antworte(201, $neu, ['Location' => '/notizen/' . $id]);
+      }
+
+      if (preg_match('#^/notizen/(\d+)$#', $pfad, $treffer)) {
+          $id = (int) $treffer[1];
+          $index = array_search($id, array_column($notizen, 'id'), true);
+          if ($index === false) {
+              antworte(404, ['fehler' => "Notiz $id gibt es nicht"]);
+          }
+          if ($methode === 'GET') {
+              antworte(200, $notizen[$index]);
+          }
+          if ($methode === 'PATCH') {
+              $daten = jsonBody();
+              if (array_key_exists('titel', $daten)) {
+                  $titel = trim((string) $daten['titel']);
+                  if ($titel === '') {
+                      antworte(422, ['fehler' => 'titel darf nicht leer sein']);
+                  }
+                  $notizen[$index]['titel'] = $titel;
+              }
+              if (array_key_exists('erledigt', $daten)) {
+                  $notizen[$index]['erledigt'] = (bool) $daten['erledigt'];
+              }
+              speichern($speicher, $notizen);
+              antworte(200, $notizen[$index]);
+          }
+      }
+
+      antworte(404, ['fehler' => 'Unbekannter Pfad']);
+      PHP
   - id: loeschen-und-405
     title: Löschen mit 204 und 405 für alles andere
     description: |
@@ -323,6 +553,107 @@ steps:
           antworte(204);
       }
       ```
+    solve: |
+      cat > router.php <<'PHP'
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $speicher = __DIR__ . '/daten/notizen.json';
+
+      function antworte(int $status, mixed $daten = null, array $kopf = []): never
+      {
+          http_response_code($status);
+          foreach ($kopf as $name => $wert) {
+              header("$name: $wert");
+          }
+          if ($daten !== null) {
+              header('Content-Type: application/json');
+              echo json_encode($daten, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+          }
+          exit;
+      }
+
+      function laden(string $speicher): array
+      {
+          return is_file($speicher) ? json_decode(file_get_contents($speicher), true) : [];
+      }
+
+      function speichern(string $speicher, array $notizen): void
+      {
+          if (!is_dir(dirname($speicher))) {
+              mkdir(dirname($speicher), 0777, true);
+          }
+          file_put_contents($speicher, json_encode(array_values($notizen), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      function jsonBody(): array
+      {
+          $daten = json_decode(file_get_contents('php://input'), true);
+          if (!is_array($daten)) {
+              antworte(400, ['fehler' => 'Body ist kein gültiges JSON']);
+          }
+          return $daten;
+      }
+
+      if ($pfad === '/status') {
+          antworte(200, ['status' => 'ok']);
+      }
+
+      $notizen = laden($speicher);
+
+      if ($pfad === '/notizen') {
+          if ($methode === 'GET') {
+              antworte(200, array_values($notizen));
+          }
+          if ($methode === 'POST') {
+              $daten = jsonBody();
+              $titel = trim((string) ($daten['titel'] ?? ''));
+              if ($titel === '') {
+                  antworte(422, ['fehler' => 'titel ist ein Pflichtfeld']);
+              }
+              $id = $notizen === [] ? 1 : max(array_column($notizen, 'id')) + 1;
+              $neu = ['id' => $id, 'titel' => $titel, 'erledigt' => false];
+              $notizen[] = $neu;
+              speichern($speicher, $notizen);
+              antworte(201, $neu, ['Location' => '/notizen/' . $id]);
+          }
+          antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, POST']);
+      }
+
+      if (preg_match('#^/notizen/(\d+)$#', $pfad, $treffer)) {
+          if (!in_array($methode, ['GET', 'PATCH', 'DELETE'], true)) {
+              antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, PATCH, DELETE']);
+          }
+          $id = (int) $treffer[1];
+          $index = array_search($id, array_column($notizen, 'id'), true);
+          if ($index === false) {
+              antworte(404, ['fehler' => "Notiz $id gibt es nicht"]);
+          }
+          if ($methode === 'GET') {
+              antworte(200, $notizen[$index]);
+          }
+          if ($methode === 'DELETE') {
+              array_splice($notizen, $index, 1);
+              speichern($speicher, $notizen);
+              antworte(204);
+          }
+          $daten = jsonBody();
+          if (array_key_exists('titel', $daten)) {
+              $titel = trim((string) $daten['titel']);
+              if ($titel === '') {
+                  antworte(422, ['fehler' => 'titel darf nicht leer sein']);
+              }
+              $notizen[$index]['titel'] = $titel;
+          }
+          if (array_key_exists('erledigt', $daten)) {
+              $notizen[$index]['erledigt'] = (bool) $daten['erledigt'];
+          }
+          speichern($speicher, $notizen);
+          antworte(200, $notizen[$index]);
+      }
+
+      antworte(404, ['fehler' => 'Unbekannter Pfad']);
+      PHP
   - id: etag-caching
     title: Caching mit ETag und 304
     description: |
@@ -485,6 +816,117 @@ steps:
       antworte(404, ['fehler' => 'Unbekannter Pfad']);
       PHP
       ```
+    solve: |
+      cat > router.php <<'PHP'
+      <?php
+      $methode = $_SERVER['REQUEST_METHOD'];
+      $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $header = array_change_key_case(getallheaders(), CASE_LOWER);
+      $speicher = __DIR__ . '/daten/notizen.json';
+
+      function antworte(int $status, mixed $daten = null, array $kopf = []): never
+      {
+          http_response_code($status);
+          foreach ($kopf as $name => $wert) {
+              header("$name: $wert");
+          }
+          if ($daten !== null) {
+              header('Content-Type: application/json');
+              echo json_encode($daten, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+          }
+          exit;
+      }
+
+      function laden(string $speicher): array
+      {
+          return is_file($speicher) ? json_decode(file_get_contents($speicher), true) : [];
+      }
+
+      function speichern(string $speicher, array $notizen): void
+      {
+          if (!is_dir(dirname($speicher))) {
+              mkdir(dirname($speicher), 0777, true);
+          }
+          file_put_contents($speicher, json_encode(array_values($notizen), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      function jsonBody(): array
+      {
+          $daten = json_decode(file_get_contents('php://input'), true);
+          if (!is_array($daten)) {
+              antworte(400, ['fehler' => 'Body ist kein gültiges JSON']);
+          }
+          return $daten;
+      }
+
+      if ($pfad === '/status') {
+          antworte(200, ['status' => 'ok']);
+      }
+
+      $notizen = laden($speicher);
+
+      if ($pfad === '/notizen') {
+          if ($methode === 'GET') {
+              $body = json_encode(array_values($notizen), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+              $etag = '"' . md5($body) . '"';
+              header('ETag: ' . $etag);
+              header('Cache-Control: no-cache');
+              if (($header['if-none-match'] ?? '') === $etag) {
+                  antworte(304);
+              }
+              header('Content-Type: application/json');
+              echo $body;
+              exit;
+          }
+          if ($methode === 'POST') {
+              $daten = jsonBody();
+              $titel = trim((string) ($daten['titel'] ?? ''));
+              if ($titel === '') {
+                  antworte(422, ['fehler' => 'titel ist ein Pflichtfeld']);
+              }
+              $id = $notizen === [] ? 1 : max(array_column($notizen, 'id')) + 1;
+              $neu = ['id' => $id, 'titel' => $titel, 'erledigt' => false];
+              $notizen[] = $neu;
+              speichern($speicher, $notizen);
+              antworte(201, $neu, ['Location' => '/notizen/' . $id]);
+          }
+          antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, POST']);
+      }
+
+      if (preg_match('#^/notizen/(\d+)$#', $pfad, $treffer)) {
+          if (!in_array($methode, ['GET', 'PATCH', 'DELETE'], true)) {
+              antworte(405, ['fehler' => 'Methode nicht erlaubt'], ['Allow' => 'GET, PATCH, DELETE']);
+          }
+          $id = (int) $treffer[1];
+          $index = array_search($id, array_column($notizen, 'id'), true);
+          if ($index === false) {
+              antworte(404, ['fehler' => "Notiz $id gibt es nicht"]);
+          }
+          if ($methode === 'GET') {
+              antworte(200, $notizen[$index]);
+          }
+          if ($methode === 'DELETE') {
+              array_splice($notizen, $index, 1);
+              speichern($speicher, $notizen);
+              antworte(204);
+          }
+          $daten = jsonBody();
+          if (array_key_exists('titel', $daten)) {
+              $titel = trim((string) $daten['titel']);
+              if ($titel === '') {
+                  antworte(422, ['fehler' => 'titel darf nicht leer sein']);
+              }
+              $notizen[$index]['titel'] = $titel;
+          }
+          if (array_key_exists('erledigt', $daten)) {
+              $notizen[$index]['erledigt'] = (bool) $daten['erledigt'];
+          }
+          speichern($speicher, $notizen);
+          antworte(200, $notizen[$index]);
+      }
+
+      antworte(404, ['fehler' => 'Unbekannter Pfad']);
+      PHP
   - id: protokoll
     title: Dein Testprotokoll mit curl
     description: |
@@ -537,3 +979,18 @@ steps:
       kill %1
       cat protokoll.txt
       ```
+    solve: |
+      php -S 127.0.0.1:18080 router.php > server.log 2>&1 &
+      S=$!
+      for i in $(seq 50); do curl -s -o /dev/null http://127.0.0.1:18080/status && break; sleep 0.1; done
+      U=http://127.0.0.1:18080/notizen
+      curl -s -i --json '{"titel":"Projekt abschließen"}' $U >> protokoll.txt
+      echo >> protokoll.txt
+      curl -s -i $U >> protokoll.txt
+      echo >> protokoll.txt
+      ID=$(curl -s $U | php -r '$l = json_decode(stream_get_contents(STDIN), true); echo end($l)["id"];')
+      curl -s -i -X PATCH --json '{"erledigt":true}' $U/$ID >> protokoll.txt
+      echo >> protokoll.txt
+      curl -s -i $U/999999 >> protokoll.txt
+      kill $S
+      wait $S 2>/dev/null || true

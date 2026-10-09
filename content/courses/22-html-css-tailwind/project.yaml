@@ -54,6 +54,10 @@ steps:
       npm install -D tailwindcss @tailwindcss/cli
       npm pkg set scripts.build="tailwindcss -i input.css -o output.css --minify"
       ```
+    solve: |
+      npm init -y > /dev/null
+      npm install -D --silent --no-audit --no-fund tailwindcss @tailwindcss/cli
+      npm pkg set scripts.build="tailwindcss -i input.css -o output.css --minify"
   - id: theme-anlegen
     title: Eingabe-CSS und eigenes Theme
     description: |
@@ -91,6 +95,16 @@ steps:
       }
       EOF
       ```
+    solve: |
+      cat > input.css <<'EOF'
+      @import "tailwindcss";
+
+      @theme {
+        --color-marke: #e11d48;
+        --color-marke-dunkel: #be123c;
+        --font-display: "Inter", system-ui, sans-serif;
+      }
+      EOF
   - id: grundgeruest
     title: Das HTML-Grundgerüst
     description: |
@@ -153,6 +167,24 @@ steps:
         </body>
       </html>
       ```
+    solve: |
+      cat > index.html <<'EOF'
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Ada Beispiel – Webentwicklerin</title>
+          <link rel="stylesheet" href="output.css">
+        </head>
+        <body>
+          <header></header>
+          <main></main>
+          <footer></footer>
+        </body>
+      </html>
+      EOF
+      npm run --silent build > /dev/null 2>&1
   - id: kopfbereich
     title: Kopfbereich mit Navigation
     description: |
@@ -203,6 +235,33 @@ steps:
         </nav>
       </header>
       ```
+    solve: |
+      cat > index.html <<'EOF'
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Ada Beispiel – Webentwicklerin</title>
+          <link rel="stylesheet" href="output.css">
+        </head>
+        <body>
+          <header class="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            <h1 class="font-display text-3xl font-bold text-marke">Ada Beispiel</h1>
+            <nav aria-label="Hauptnavigation">
+              <ul class="flex flex-wrap gap-4">
+                <li><a href="#ueber-mich" class="hover:underline">Über mich</a></li>
+                <li><a href="#projekte" class="hover:underline">Projekte</a></li>
+                <li><a href="#kontakt" class="hover:underline">Kontakt</a></li>
+              </ul>
+            </nav>
+          </header>
+          <main></main>
+          <footer></footer>
+        </body>
+      </html>
+      EOF
+      npm run --silent build > /dev/null 2>&1
   - id: ueber-mich
     title: Über mich mit Bild und Fähigkeiten
     description: |
@@ -251,6 +310,44 @@ steps:
         </ul>
       </section>
       ```
+    solve: |
+      cat > index.html <<'EOF'
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Ada Beispiel – Webentwicklerin</title>
+          <link rel="stylesheet" href="output.css">
+        </head>
+        <body>
+          <header class="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            <h1 class="font-display text-3xl font-bold text-marke">Ada Beispiel</h1>
+            <nav aria-label="Hauptnavigation">
+              <ul class="flex flex-wrap gap-4">
+                <li><a href="#ueber-mich" class="hover:underline">Über mich</a></li>
+                <li><a href="#projekte" class="hover:underline">Projekte</a></li>
+                <li><a href="#kontakt" class="hover:underline">Kontakt</a></li>
+              </ul>
+            </nav>
+          </header>
+          <main>
+            <section id="ueber-mich" class="p-6">
+              <h2 class="font-display text-2xl font-bold">Über mich</h2>
+              <img src="profil.jpg" alt="Porträt von Ada Beispiel vor einem Bücherregal" width="160" height="160" class="mt-4 rounded-full">
+              <p class="mt-4 max-w-[65ch]">Ich baue barrierearme Webseiten mit HTML, CSS und Tailwind.</p>
+              <ul class="mt-4 list-disc pl-6">
+                <li>Semantisches HTML</li>
+                <li>Responsive Layouts mit Grid und Flexbox</li>
+                <li>Tailwind CSS 4</li>
+              </ul>
+            </section>
+          </main>
+          <footer></footer>
+        </body>
+      </html>
+      EOF
+      npm run --silent build > /dev/null 2>&1
   - id: projekte-raster
     title: Projekte als responsives Raster
     description: |
@@ -309,6 +406,64 @@ steps:
         </div>
       </section>
       ```
+    solve: |
+      cat > index.html <<'EOF'
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Ada Beispiel – Webentwicklerin</title>
+          <link rel="stylesheet" href="output.css">
+        </head>
+        <body>
+          <header class="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            <h1 class="font-display text-3xl font-bold text-marke">Ada Beispiel</h1>
+            <nav aria-label="Hauptnavigation">
+              <ul class="flex flex-wrap gap-4">
+                <li><a href="#ueber-mich" class="hover:underline">Über mich</a></li>
+                <li><a href="#projekte" class="hover:underline">Projekte</a></li>
+                <li><a href="#kontakt" class="hover:underline">Kontakt</a></li>
+              </ul>
+            </nav>
+          </header>
+          <main>
+            <section id="ueber-mich" class="p-6">
+              <h2 class="font-display text-2xl font-bold">Über mich</h2>
+              <img src="profil.jpg" alt="Porträt von Ada Beispiel vor einem Bücherregal" width="160" height="160" class="mt-4 rounded-full">
+              <p class="mt-4 max-w-[65ch]">Ich baue barrierearme Webseiten mit HTML, CSS und Tailwind.</p>
+              <ul class="mt-4 list-disc pl-6">
+                <li>Semantisches HTML</li>
+                <li>Responsive Layouts mit Grid und Flexbox</li>
+                <li>Tailwind CSS 4</li>
+              </ul>
+            </section>
+            <section id="projekte" class="p-6">
+              <h2 class="font-display text-2xl font-bold">Projekte</h2>
+              <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+                  <h3 class="text-lg font-semibold">Wetter-Widget</h3>
+                  <p class="mt-2">Zeigt das Wetter für eine Stadt.</p>
+                  <a href="/projekte/wetter" class="mt-2 inline-block text-marke underline">Ansehen</a>
+                </article>
+                <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+                  <h3 class="text-lg font-semibold">Rezeptbuch</h3>
+                  <p class="mt-2">Rezepte suchen und filtern.</p>
+                  <a href="/projekte/rezepte" class="mt-2 inline-block text-marke underline">Ansehen</a>
+                </article>
+                <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+                  <h3 class="text-lg font-semibold">Lauftreff-Seite</h3>
+                  <p class="mt-2">Website für einen Sportverein.</p>
+                  <a href="/projekte/lauftreff" class="mt-2 inline-block text-marke underline">Ansehen</a>
+                </article>
+              </div>
+            </section>
+          </main>
+          <footer></footer>
+        </body>
+      </html>
+      EOF
+      npm run --silent build > /dev/null 2>&1
   - id: kontaktformular
     title: Ein barrierearmes Kontaktformular
     description: |
@@ -367,6 +522,76 @@ steps:
         </form>
       </section>
       ```
+    solve: |
+      cat > index.html <<'EOF'
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Ada Beispiel – Webentwicklerin</title>
+          <link rel="stylesheet" href="output.css">
+        </head>
+        <body>
+          <header class="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            <h1 class="font-display text-3xl font-bold text-marke">Ada Beispiel</h1>
+            <nav aria-label="Hauptnavigation">
+              <ul class="flex flex-wrap gap-4">
+                <li><a href="#ueber-mich" class="hover:underline">Über mich</a></li>
+                <li><a href="#projekte" class="hover:underline">Projekte</a></li>
+                <li><a href="#kontakt" class="hover:underline">Kontakt</a></li>
+              </ul>
+            </nav>
+          </header>
+          <main>
+            <section id="ueber-mich" class="p-6">
+              <h2 class="font-display text-2xl font-bold">Über mich</h2>
+              <img src="profil.jpg" alt="Porträt von Ada Beispiel vor einem Bücherregal" width="160" height="160" class="mt-4 rounded-full">
+              <p class="mt-4 max-w-[65ch]">Ich baue barrierearme Webseiten mit HTML, CSS und Tailwind.</p>
+              <ul class="mt-4 list-disc pl-6">
+                <li>Semantisches HTML</li>
+                <li>Responsive Layouts mit Grid und Flexbox</li>
+                <li>Tailwind CSS 4</li>
+              </ul>
+            </section>
+            <section id="projekte" class="p-6">
+              <h2 class="font-display text-2xl font-bold">Projekte</h2>
+              <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+                  <h3 class="text-lg font-semibold">Wetter-Widget</h3>
+                  <p class="mt-2">Zeigt das Wetter für eine Stadt.</p>
+                  <a href="/projekte/wetter" class="mt-2 inline-block text-marke underline">Ansehen</a>
+                </article>
+                <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+                  <h3 class="text-lg font-semibold">Rezeptbuch</h3>
+                  <p class="mt-2">Rezepte suchen und filtern.</p>
+                  <a href="/projekte/rezepte" class="mt-2 inline-block text-marke underline">Ansehen</a>
+                </article>
+                <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+                  <h3 class="text-lg font-semibold">Lauftreff-Seite</h3>
+                  <p class="mt-2">Website für einen Sportverein.</p>
+                  <a href="/projekte/lauftreff" class="mt-2 inline-block text-marke underline">Ansehen</a>
+                </article>
+              </div>
+            </section>
+            <section id="kontakt" class="p-6">
+              <h2 class="font-display text-2xl font-bold">Kontakt</h2>
+              <form action="/kontakt" method="post" class="mt-4 grid max-w-[40rem] gap-3">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" autocomplete="name" required class="rounded border p-2">
+                <label for="email">E-Mail</label>
+                <input type="email" id="email" name="email" autocomplete="email" required class="rounded border p-2">
+                <label for="nachricht">Nachricht</label>
+                <textarea id="nachricht" name="nachricht" rows="4" class="rounded border p-2"></textarea>
+                <button type="submit" class="rounded-lg bg-marke px-4 py-2 text-white hover:bg-marke-dunkel focus-visible:outline-2 focus-visible:outline-offset-2">Senden</button>
+              </form>
+            </section>
+          </main>
+          <footer></footer>
+        </body>
+      </html>
+      EOF
+      npm run --silent build > /dev/null 2>&1
   - id: dark-mode-und-footer
     title: Dark Mode, Footer und finaler Build
     description: |
@@ -420,3 +645,78 @@ steps:
       ```bash
       npm run build
       ```
+    solve: |
+      cat > index.html <<'EOF'
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Ada Beispiel – Webentwicklerin</title>
+          <link rel="stylesheet" href="output.css">
+        </head>
+        <body class="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+          <header class="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            <h1 class="font-display text-3xl font-bold text-marke">Ada Beispiel</h1>
+            <nav aria-label="Hauptnavigation">
+              <ul class="flex flex-wrap gap-4">
+                <li><a href="#ueber-mich" class="hover:underline">Über mich</a></li>
+                <li><a href="#projekte" class="hover:underline">Projekte</a></li>
+                <li><a href="#kontakt" class="hover:underline">Kontakt</a></li>
+              </ul>
+            </nav>
+          </header>
+          <main>
+            <section id="ueber-mich" class="p-6">
+              <h2 class="font-display text-2xl font-bold">Über mich</h2>
+              <img src="profil.jpg" alt="Porträt von Ada Beispiel vor einem Bücherregal" width="160" height="160" class="mt-4 rounded-full">
+              <p class="mt-4 max-w-[65ch]">Ich baue barrierearme Webseiten mit HTML, CSS und Tailwind.</p>
+              <ul class="mt-4 list-disc pl-6">
+                <li>Semantisches HTML</li>
+                <li>Responsive Layouts mit Grid und Flexbox</li>
+                <li>Tailwind CSS 4</li>
+              </ul>
+            </section>
+            <section id="projekte" class="p-6">
+              <h2 class="font-display text-2xl font-bold">Projekte</h2>
+              <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+                  <h3 class="text-lg font-semibold">Wetter-Widget</h3>
+                  <p class="mt-2">Zeigt das Wetter für eine Stadt.</p>
+                  <a href="/projekte/wetter" class="mt-2 inline-block text-marke underline">Ansehen</a>
+                </article>
+                <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+                  <h3 class="text-lg font-semibold">Rezeptbuch</h3>
+                  <p class="mt-2">Rezepte suchen und filtern.</p>
+                  <a href="/projekte/rezepte" class="mt-2 inline-block text-marke underline">Ansehen</a>
+                </article>
+                <article class="rounded-xl border border-slate-200 p-6 transition hover:shadow-lg">
+                  <h3 class="text-lg font-semibold">Lauftreff-Seite</h3>
+                  <p class="mt-2">Website für einen Sportverein.</p>
+                  <a href="/projekte/lauftreff" class="mt-2 inline-block text-marke underline">Ansehen</a>
+                </article>
+              </div>
+            </section>
+            <section id="kontakt" class="p-6">
+              <h2 class="font-display text-2xl font-bold">Kontakt</h2>
+              <form action="/kontakt" method="post" class="mt-4 grid max-w-[40rem] gap-3">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" autocomplete="name" required class="rounded border p-2">
+                <label for="email">E-Mail</label>
+                <input type="email" id="email" name="email" autocomplete="email" required class="rounded border p-2">
+                <label for="nachricht">Nachricht</label>
+                <textarea id="nachricht" name="nachricht" rows="4" class="rounded border p-2"></textarea>
+                <button type="submit" class="rounded-lg bg-marke px-4 py-2 text-white hover:bg-marke-dunkel focus-visible:outline-2 focus-visible:outline-offset-2">Senden</button>
+              </form>
+            </section>
+          </main>
+          <footer class="border-t border-slate-200 p-6 text-sm">
+            <p>
+              <a href="mailto:du@example.com" class="underline">du@example.com</a> ·
+              <a href="/impressum" class="underline">Impressum</a>
+            </p>
+          </footer>
+        </body>
+      </html>
+      EOF
+      npm run --silent build > /dev/null 2>&1

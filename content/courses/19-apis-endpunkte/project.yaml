@@ -96,6 +96,41 @@ steps:
 
       problem(404, 'Not Found', "Den Endpunkt {$method} {$path} gibt es nicht.");
       ```
+    solve: |
+      cat > index.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function json(int $status, ?array $body = null, array $headers = []): never
+      {
+          http_response_code($status);
+          foreach ($headers as $name => $value) {
+              header("{$name}: {$value}");
+          }
+          if ($body !== null) {
+              if (!isset($headers['Content-Type'])) {
+                  header('Content-Type: application/json');
+              }
+              echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+          }
+          exit;
+      }
+
+      function problem(int $status, string $title, string $detail, array $extra = [], array $headers = []): never
+      {
+          json($status, array_merge(['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail], $extra),
+              array_merge(['Content-Type' => 'application/problem+json'], $headers));
+      }
+
+      $method = $_SERVER['REQUEST_METHOD'];
+      $path = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+      if ($path === '/health') {
+          json(200, ['status' => 'ok']);
+      }
+
+      problem(404, 'Not Found', "Den Endpunkt {$method} {$path} gibt es nicht.");
+      PHP
   - id: notizen-auflisten
     title: Notizen aus der Datei auflisten
     description: |
@@ -150,6 +185,55 @@ steps:
           json(200, ['data' => loadNotes($file)]);
       }
       ```
+    solve: |
+      cat > index.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function json(int $status, ?array $body = null, array $headers = []): never
+      {
+          http_response_code($status);
+          foreach ($headers as $name => $value) {
+              header("{$name}: {$value}");
+          }
+          if ($body !== null) {
+              if (!isset($headers['Content-Type'])) {
+                  header('Content-Type: application/json');
+              }
+              echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+          }
+          exit;
+      }
+
+      function problem(int $status, string $title, string $detail, array $extra = [], array $headers = []): never
+      {
+          json($status, array_merge(['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail], $extra),
+              array_merge(['Content-Type' => 'application/problem+json'], $headers));
+      }
+
+      function loadNotes(string $file): array
+      {
+          if (!is_file($file)) {
+              return [];
+          }
+
+          return json_decode((string) file_get_contents($file), true) ?? [];
+      }
+
+      $method = $_SERVER['REQUEST_METHOD'];
+      $path = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $file = getenv('NOTES_FILE') ?: __DIR__ . '/data/notes.json';
+
+      if ($path === '/health') {
+          json(200, ['status' => 'ok']);
+      }
+
+      if ($path === '/notes' && $method === 'GET') {
+          json(200, ['data' => loadNotes($file)]);
+      }
+
+      problem(404, 'Not Found', "Den Endpunkt {$method} {$path} gibt es nicht.");
+      PHP
   - id: notiz-anlegen
     title: Notizen anlegen mit POST
     description: |
@@ -213,6 +297,78 @@ steps:
           json(201, ['data' => $note], ['Location' => "/notes/{$id}"]);
       }
       ```
+    solve: |
+      cat > index.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function json(int $status, ?array $body = null, array $headers = []): never
+      {
+          http_response_code($status);
+          foreach ($headers as $name => $value) {
+              header("{$name}: {$value}");
+          }
+          if ($body !== null) {
+              if (!isset($headers['Content-Type'])) {
+                  header('Content-Type: application/json');
+              }
+              echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+          }
+          exit;
+      }
+
+      function problem(int $status, string $title, string $detail, array $extra = [], array $headers = []): never
+      {
+          json($status, array_merge(['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail], $extra),
+              array_merge(['Content-Type' => 'application/problem+json'], $headers));
+      }
+
+      function loadNotes(string $file): array
+      {
+          if (!is_file($file)) {
+              return [];
+          }
+
+          return json_decode((string) file_get_contents($file), true) ?? [];
+      }
+
+      function saveNotes(string $file, array $notes): void
+      {
+          if (!is_dir(dirname($file))) {
+              mkdir(dirname($file), 0777, true);
+          }
+          file_put_contents($file, json_encode(array_values($notes), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      $method = $_SERVER['REQUEST_METHOD'];
+      $path = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $file = getenv('NOTES_FILE') ?: __DIR__ . '/data/notes.json';
+
+      if ($path === '/health') {
+          json(200, ['status' => 'ok']);
+      }
+
+      if ($path === '/notes' && $method === 'GET') {
+          json(200, ['data' => loadNotes($file)]);
+      }
+
+      if ($path === '/notes' && $method === 'POST') {
+          $notes = loadNotes($file);
+          $input = json_decode((string) file_get_contents('php://input'), true);
+          $id = $notes === [] ? 1 : max(array_column($notes, 'id')) + 1;
+          $note = [
+              'id' => $id,
+              'title' => trim($input['title']),
+              'body' => $input['body'] ?? '',
+              'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+          ];
+          $notes[] = $note;
+          saveNotes($file, $notes);
+          json(201, ['data' => $note], ['Location' => "/notes/{$id}"]);
+      }
+
+      problem(404, 'Not Found', "Den Endpunkt {$method} {$path} gibt es nicht.");
+      PHP
   - id: validierung
     title: Eingaben prüfen – 400 und 422
     description: |
@@ -283,6 +439,106 @@ steps:
       $input = readBody();
       validate($input, false);
       ```
+    solve: |
+      cat > index.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function json(int $status, ?array $body = null, array $headers = []): never
+      {
+          http_response_code($status);
+          foreach ($headers as $name => $value) {
+              header("{$name}: {$value}");
+          }
+          if ($body !== null) {
+              if (!isset($headers['Content-Type'])) {
+                  header('Content-Type: application/json');
+              }
+              echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+          }
+          exit;
+      }
+
+      function problem(int $status, string $title, string $detail, array $extra = [], array $headers = []): never
+      {
+          json($status, array_merge(['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail], $extra),
+              array_merge(['Content-Type' => 'application/problem+json'], $headers));
+      }
+
+      function loadNotes(string $file): array
+      {
+          if (!is_file($file)) {
+              return [];
+          }
+
+          return json_decode((string) file_get_contents($file), true) ?? [];
+      }
+
+      function saveNotes(string $file, array $notes): void
+      {
+          if (!is_dir(dirname($file))) {
+              mkdir(dirname($file), 0777, true);
+          }
+          file_put_contents($file, json_encode(array_values($notes), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      function readBody(): array
+      {
+          $data = json_decode((string) file_get_contents('php://input'), true);
+          if (!is_array($data)) {
+              problem(400, 'Bad Request', 'Der Body muss ein JSON-Objekt sein.');
+          }
+
+          return $data;
+      }
+
+      function validate(array $input, bool $partial): void
+      {
+          $errors = [];
+          if (!$partial || array_key_exists('title', $input)) {
+              $title = $input['title'] ?? null;
+              if (!is_string($title) || trim($title) === '' || mb_strlen($title) > 120) {
+                  $errors[] = ['field' => 'title', 'message' => 'Der Titel ist ein Pflichtfeld mit höchstens 120 Zeichen.'];
+              }
+          }
+          if (array_key_exists('body', $input) && !is_string($input['body'])) {
+              $errors[] = ['field' => 'body', 'message' => 'Der Text muss ein String sein.'];
+          }
+          if ($errors !== []) {
+              problem(422, 'Ungültige Eingabe', 'Mindestens ein Feld ist ungültig.', ['errors' => $errors]);
+          }
+      }
+
+      $method = $_SERVER['REQUEST_METHOD'];
+      $path = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $file = getenv('NOTES_FILE') ?: __DIR__ . '/data/notes.json';
+
+      if ($path === '/health') {
+          json(200, ['status' => 'ok']);
+      }
+
+      if ($path === '/notes' && $method === 'GET') {
+          json(200, ['data' => loadNotes($file)]);
+      }
+
+      if ($path === '/notes' && $method === 'POST') {
+          $notes = loadNotes($file);
+          $input = readBody();
+          validate($input, false);
+          $id = $notes === [] ? 1 : max(array_column($notes, 'id')) + 1;
+          $note = [
+              'id' => $id,
+              'title' => trim($input['title']),
+              'body' => $input['body'] ?? '',
+              'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+          ];
+          $notes[] = $note;
+          saveNotes($file, $notes);
+          json(201, ['data' => $note], ['Location' => "/notes/{$id}"]);
+      }
+
+      problem(404, 'Not Found', "Den Endpunkt {$method} {$path} gibt es nicht.");
+      PHP
   - id: einzelne-notizen
     title: Lesen, ändern und löschen
     description: |
@@ -360,6 +616,135 @@ steps:
           json(204);
       }
       ```
+    solve: |
+      cat > index.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function json(int $status, ?array $body = null, array $headers = []): never
+      {
+          http_response_code($status);
+          foreach ($headers as $name => $value) {
+              header("{$name}: {$value}");
+          }
+          if ($body !== null) {
+              if (!isset($headers['Content-Type'])) {
+                  header('Content-Type: application/json');
+              }
+              echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+          }
+          exit;
+      }
+
+      function problem(int $status, string $title, string $detail, array $extra = [], array $headers = []): never
+      {
+          json($status, array_merge(['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail], $extra),
+              array_merge(['Content-Type' => 'application/problem+json'], $headers));
+      }
+
+      function loadNotes(string $file): array
+      {
+          if (!is_file($file)) {
+              return [];
+          }
+
+          return json_decode((string) file_get_contents($file), true) ?? [];
+      }
+
+      function saveNotes(string $file, array $notes): void
+      {
+          if (!is_dir(dirname($file))) {
+              mkdir(dirname($file), 0777, true);
+          }
+          file_put_contents($file, json_encode(array_values($notes), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      function readBody(): array
+      {
+          $data = json_decode((string) file_get_contents('php://input'), true);
+          if (!is_array($data)) {
+              problem(400, 'Bad Request', 'Der Body muss ein JSON-Objekt sein.');
+          }
+
+          return $data;
+      }
+
+      function validate(array $input, bool $partial): void
+      {
+          $errors = [];
+          if (!$partial || array_key_exists('title', $input)) {
+              $title = $input['title'] ?? null;
+              if (!is_string($title) || trim($title) === '' || mb_strlen($title) > 120) {
+                  $errors[] = ['field' => 'title', 'message' => 'Der Titel ist ein Pflichtfeld mit höchstens 120 Zeichen.'];
+              }
+          }
+          if (array_key_exists('body', $input) && !is_string($input['body'])) {
+              $errors[] = ['field' => 'body', 'message' => 'Der Text muss ein String sein.'];
+          }
+          if ($errors !== []) {
+              problem(422, 'Ungültige Eingabe', 'Mindestens ein Feld ist ungültig.', ['errors' => $errors]);
+          }
+      }
+
+      $method = $_SERVER['REQUEST_METHOD'];
+      $path = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      $file = getenv('NOTES_FILE') ?: __DIR__ . '/data/notes.json';
+
+      if ($path === '/health') {
+          json(200, ['status' => 'ok']);
+      }
+
+      if ($path === '/notes' && $method === 'GET') {
+          json(200, ['data' => loadNotes($file)]);
+      }
+
+      if ($path === '/notes' && $method === 'POST') {
+          $notes = loadNotes($file);
+          $input = readBody();
+          validate($input, false);
+          $id = $notes === [] ? 1 : max(array_column($notes, 'id')) + 1;
+          $note = [
+              'id' => $id,
+              'title' => trim($input['title']),
+              'body' => $input['body'] ?? '',
+              'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+          ];
+          $notes[] = $note;
+          saveNotes($file, $notes);
+          json(201, ['data' => $note], ['Location' => "/notes/{$id}"]);
+      }
+
+      if (preg_match('#^/notes/(\d+)$#', $path, $m) === 1) {
+          $notes = loadNotes($file);
+          $id = (int) $m[1];
+          $index = array_search($id, array_column($notes, 'id'), true);
+          if (!in_array($method, ['GET', 'PATCH', 'DELETE'], true)) {
+              problem(405, 'Method Not Allowed', "{$method} ist hier nicht erlaubt.", [], ['Allow' => 'GET, PATCH, DELETE']);
+          }
+          if ($index === false) {
+              problem(404, 'Not Found', "Es gibt keine Notiz mit der ID {$id}.");
+          }
+          if ($method === 'GET') {
+              json(200, ['data' => $notes[$index]]);
+          }
+          if ($method === 'PATCH') {
+              $input = readBody();
+              validate($input, true);
+              foreach (['title', 'body'] as $field) {
+                  if (array_key_exists($field, $input)) {
+                      $notes[$index][$field] = $input[$field];
+                  }
+              }
+              saveNotes($file, $notes);
+              json(200, ['data' => $notes[$index]]);
+          }
+          array_splice($notes, $index, 1);
+          saveNotes($file, $notes);
+          json(204);
+      }
+
+      problem(404, 'Not Found', "Den Endpunkt {$method} {$path} gibt es nicht.");
+      PHP
   - id: paginierung
     title: Paginierung für die Liste
     description: |
@@ -426,6 +811,153 @@ steps:
           problem(405, 'Method Not Allowed', "{$method} ist auf /notes nicht erlaubt.", [], ['Allow' => 'GET, POST']);
       }
       ```
+    solve: |
+      cat > index.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function json(int $status, ?array $body = null, array $headers = []): never
+      {
+          http_response_code($status);
+          foreach ($headers as $name => $value) {
+              header("{$name}: {$value}");
+          }
+          if ($body !== null) {
+              if (!isset($headers['Content-Type'])) {
+                  header('Content-Type: application/json');
+              }
+              echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+          }
+          exit;
+      }
+
+      function problem(int $status, string $title, string $detail, array $extra = [], array $headers = []): never
+      {
+          json($status, array_merge(['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail], $extra),
+              array_merge(['Content-Type' => 'application/problem+json'], $headers));
+      }
+
+      function loadNotes(string $file): array
+      {
+          if (!is_file($file)) {
+              return [];
+          }
+
+          return json_decode((string) file_get_contents($file), true) ?? [];
+      }
+
+      function saveNotes(string $file, array $notes): void
+      {
+          if (!is_dir(dirname($file))) {
+              mkdir(dirname($file), 0777, true);
+          }
+          file_put_contents($file, json_encode(array_values($notes), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      }
+
+      function readBody(): array
+      {
+          $data = json_decode((string) file_get_contents('php://input'), true);
+          if (!is_array($data)) {
+              problem(400, 'Bad Request', 'Der Body muss ein JSON-Objekt sein.');
+          }
+
+          return $data;
+      }
+
+      function validate(array $input, bool $partial): void
+      {
+          $errors = [];
+          if (!$partial || array_key_exists('title', $input)) {
+              $title = $input['title'] ?? null;
+              if (!is_string($title) || trim($title) === '' || mb_strlen($title) > 120) {
+                  $errors[] = ['field' => 'title', 'message' => 'Der Titel ist ein Pflichtfeld mit höchstens 120 Zeichen.'];
+              }
+          }
+          if (array_key_exists('body', $input) && !is_string($input['body'])) {
+              $errors[] = ['field' => 'body', 'message' => 'Der Text muss ein String sein.'];
+          }
+          if ($errors !== []) {
+              problem(422, 'Ungültige Eingabe', 'Mindestens ein Feld ist ungültig.', ['errors' => $errors]);
+          }
+      }
+
+      $method = $_SERVER['REQUEST_METHOD'];
+      $path = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+      parse_str((string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY), $query);
+      $file = getenv('NOTES_FILE') ?: __DIR__ . '/data/notes.json';
+
+      if ($path === '/health') {
+          json(200, ['status' => 'ok']);
+      }
+
+      if ($path === '/notes' && $method === 'GET') {
+          $notes = loadNotes($file);
+          $perPage = max(1, min(50, (int) ($query['per_page'] ?? 10)));
+          $page = max(1, (int) ($query['page'] ?? 1));
+          $total = count($notes);
+          $pages = max(1, (int) ceil($total / $perPage));
+          $link = fn (int $p): string => "/notes?page={$p}&per_page={$perPage}";
+          json(200, [
+              'data' => array_slice($notes, ($page - 1) * $perPage, $perPage),
+              'meta' => ['page' => $page, 'per_page' => $perPage, 'total' => $total, 'total_pages' => $pages],
+              'links' => [
+                  'next' => $page < $pages ? $link($page + 1) : null,
+                  'prev' => $page > 1 ? $link($page - 1) : null,
+              ],
+          ]);
+      }
+
+      if ($path === '/notes' && $method === 'POST') {
+          $notes = loadNotes($file);
+          $input = readBody();
+          validate($input, false);
+          $id = $notes === [] ? 1 : max(array_column($notes, 'id')) + 1;
+          $note = [
+              'id' => $id,
+              'title' => trim($input['title']),
+              'body' => $input['body'] ?? '',
+              'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+          ];
+          $notes[] = $note;
+          saveNotes($file, $notes);
+          json(201, ['data' => $note], ['Location' => "/notes/{$id}"]);
+      }
+
+      if ($path === '/notes' && !in_array($method, ['GET', 'POST'], true)) {
+          problem(405, 'Method Not Allowed', "{$method} ist auf /notes nicht erlaubt.", [], ['Allow' => 'GET, POST']);
+      }
+
+      if (preg_match('#^/notes/(\d+)$#', $path, $m) === 1) {
+          $notes = loadNotes($file);
+          $id = (int) $m[1];
+          $index = array_search($id, array_column($notes, 'id'), true);
+          if (!in_array($method, ['GET', 'PATCH', 'DELETE'], true)) {
+              problem(405, 'Method Not Allowed', "{$method} ist hier nicht erlaubt.", [], ['Allow' => 'GET, PATCH, DELETE']);
+          }
+          if ($index === false) {
+              problem(404, 'Not Found', "Es gibt keine Notiz mit der ID {$id}.");
+          }
+          if ($method === 'GET') {
+              json(200, ['data' => $notes[$index]]);
+          }
+          if ($method === 'PATCH') {
+              $input = readBody();
+              validate($input, true);
+              foreach (['title', 'body'] as $field) {
+                  if (array_key_exists($field, $input)) {
+                      $notes[$index][$field] = $input[$field];
+                  }
+              }
+              saveNotes($file, $notes);
+              json(200, ['data' => $notes[$index]]);
+          }
+          array_splice($notes, $index, 1);
+          saveNotes($file, $notes);
+          json(204);
+      }
+
+      problem(404, 'Not Found', "Den Endpunkt {$method} {$path} gibt es nicht.");
+      PHP
   - id: dokumentation
     title: Die API beschreiben und selbst reviewen
     description: |
@@ -493,3 +1025,28 @@ steps:
       curl -X POST http://127.0.0.1:8080/notes -H 'Content-Type: application/json' -d '{"title": "Einkaufen"}'
       ```
       ~~~
+    solve: |
+      cat > README.md <<'MD'
+      # Notizen-API
+
+      Eine kleine REST-API für Notizen. Start: `php -S 127.0.0.1:8080 index.php`
+
+      | Methode | Pfad | Status |
+      |---|---|---|
+      | GET | `GET /notes?page=1&per_page=10` | 200 |
+      | POST | `POST /notes` | 201, 400, 422 |
+      | GET | `GET /notes/{id}` | 200, 404 |
+      | PATCH | `PATCH /notes/{id}` | 200, 400, 404, 422 |
+      | DELETE | `DELETE /notes/{id}` | 204, 404 |
+
+      Fehler kommen als `application/problem+json`:
+
+      ```json
+      {"type": "about:blank", "title": "Ungültige Eingabe", "status": 422, "detail": "Mindestens ein Feld ist ungültig.",
+       "errors": [{"field": "title", "message": "Der Titel ist ein Pflichtfeld mit höchstens 120 Zeichen."}]}
+      ```
+
+      ```bash
+      curl -X POST http://127.0.0.1:8080/notes -H 'Content-Type: application/json' -d '{"title": "Einkaufen"}'
+      ```
+      MD
