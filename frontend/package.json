@@ -1,13 +1,15 @@
 {
   "name": "stacklab-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc -b"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
@@ -61,5 +63,13 @@
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.3"
+  },
+  "author": "SynKeles44",
+  "license": "MIT",
+  "description": "Stacklab \u2013 interaktive Lernplattform f\u00fcr IT-Themen (Frontend)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SynKeles44/stacklab.git",
+    "directory": "frontend"
   }
 }
