@@ -1,0 +1,120 @@
+title: Doku im Alltag
+description: Code-Kommentare, die das Warum erklären, Docs as Code mit markdownlint und Link-Checks sowie AGENTS.md als Onboarding für KI-Assistenten.
+exercise:
+  id: modul-uebung-doku-pipeline
+  type: terminal
+  title: Eine Doku-Prüfstrecke zum Laufen bringen
+  description: |
+    Im Ordner `doku-pipeline` liegt ein Projekt mit README, einem `docs/`-Ordner, markdownlint und einem fertigen
+    Link-Prüfskript `scripts/check-links.sh`. Die Doku ist aber kaputt. Bring die Prüfstrecke auf Grün:
+
+    1. Führe `npm run lint:docs` aus und behebe alle Meldungen.
+    2. Lege das npm-Skript `check:links` an, das `bash scripts/check-links.sh` ausführt
+       (`npm pkg set 'scripts.check:links=bash scripts/check-links.sh'`).
+    3. Führe `npm run check:links` aus. Repariere jeden gemeldeten Link, sodass er auf eine existierende Datei zeigt.
+       Die Konfigurationsseite liegt in `docs/referenz/konfiguration.md` – der Link in der README darauf soll bleiben.
+       Ändere das Prüfskript selbst nicht.
+    4. Lege `AGENTS.md` an. Unter `## Befehle` stehen `npm run lint:docs` und `npm run check:links`. Auch diese Datei
+       muss den Linter bestehen.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – das Installieren von markdownlint dauert ein paar Sekunden.
+  workdir: doku-pipeline
+  setup: |
+    printf '{\n  "name": "notizen",\n  "private": true\n}\n' > package.json
+    timeout 150 npm install --no-audit --no-fund --silent --save-dev markdownlint-cli2@0.23.3
+    npm pkg set 'scripts.lint:docs=markdownlint-cli2 "**/*.md"'
+    printf '{\n  "config": {\n    "MD013": false,\n    "MD024": { "siblings_only": true },\n    "MD060": false\n  },\n  "ignores": ["node_modules/**"]\n}\n' > .markdownlint-cli2.jsonc
+    mkdir -p scripts docs/referenz
+    cat > scripts/check-links.sh <<'EOF'
+    #!/usr/bin/env bash
+    status=0
+    while IFS= read -r file; do
+      dir=$(dirname "$file")
+      while IFS= read -r link; do
+        target="${link%%#*}"
+        case "$target" in ''|http://*|https://*|mailto:*) continue ;; esac
+        if [ ! -e "$dir/$target" ]; then
+          echo "$file: Link auf $link führt ins Leere"
+          status=1
+        fi
+      done < <(grep -oE '\]\([^)]+\)' "$file" | sed -E 's/^\]\((.*)\)$/\1/')
+    done < <(find . -name '*.md' -not -path './node_modules/*')
+    [ "$status" -eq 0 ] && echo "Alle Links in Ordnung."
+    exit $status
+    EOF
+    cat > README.md <<'EOF'
+    # notizen
+
+    Eine kleine App für Notizen im Terminal.
+
+    ## Dokumentation
+
+    - [Installation](docs/installation.md)
+    - [Konfiguration](docs/konfiguration.md)
+    EOF
+    cat > docs/installation.md <<'EOF'
+    # Installation
+    1. Repository klonen
+    2. `npm install` ausführen
+    3. `npm start` ausführen
+
+    Probleme? Schau in die [FAQ](faq.md) oder zurück zur [Übersicht](../README.md).
+    EOF
+    cat > docs/referenz/konfiguration.md <<'EOF'
+    # Konfiguration
+
+    | Variable | Standardwert |
+    |---|---|
+    | PORT | 3000 |
+    EOF
+  checks:
+    - type: command
+      run: npm run --silent lint:docs
+      message: "`npm run lint:docs` meldet noch Fehler. Lies die Meldungen und behebe sie – auch in AGENTS.md."
+    - type: command
+      run: jq -r '.scripts["check:links"] // empty' package.json
+      stdout_matches: "^bash scripts/check-links\\.sh\\s*$"
+      message: "Es fehlt das npm-Skript `check:links` mit dem Befehl `bash scripts/check-links.sh`."
+    - type: command
+      run: bash scripts/check-links.sh
+      message: Das Link-Prüfskript findet noch kaputte Links. Führe `npm run check:links` aus und repariere jeden gemeldeten Link.
+    - type: command
+      run: grep -c 'case "$target" in' scripts/check-links.sh
+      stdout_equals: "1"
+      message: Das Prüfskript soll unverändert bleiben – repariere die Links, nicht das Skript.
+    - type: command
+      run: grep -c '](docs/referenz/konfiguration.md)' README.md
+      stdout_equals: "1"
+      message: "Der Link zur Konfiguration in README.md soll bleiben und auf `docs/referenz/konfiguration.md` zeigen."
+    - type: command
+      run: awk '/^## Befehle/{f=1;next} /^## /{f=0} f' AGENTS.md | grep -cE 'npm run (lint:docs|check:links)'
+      stdout_matches: "^([2-9]|[1-9][0-9])$"
+      message: "AGENTS.md braucht einen Abschnitt `## Befehle` mit `npm run lint:docs` und `npm run check:links`."
+  hints:
+    - "Der Linter bemängelt in docs/installation.md vor allem die fehlende Leerzeile nach der Überschrift."
+    - "Der Link in der README zeigt auf `docs/konfiguration.md` – die Datei liegt aber in `docs/referenz/`. Für die FAQ kannst du `docs/faq.md` anlegen oder den Link entfernen."
+    - "AGENTS.md braucht eine `#`-Überschrift in der ersten Zeile und Leerzeilen rund um Überschriften und Listen, sonst meckert der Linter."
+  solution: |
+    ~~~bash
+    cd doku-pipeline
+    npm run lint:docs
+    sed -i 's/^# Installation$/# Installation\n/' docs/installation.md
+    npm pkg set 'scripts.check:links=bash scripts/check-links.sh'
+    npm run check:links
+    sed -i 's#](docs/konfiguration.md)#](docs/referenz/konfiguration.md)#' README.md
+    printf '# FAQ\n\nHier sammeln wir häufige Fragen.\n' > docs/faq.md
+    cat > AGENTS.md <<'EOF'
+    # AGENTS.md
+
+    ## Befehle
+
+    - Markdown prüfen: `npm run lint:docs`
+    - Links prüfen: `npm run check:links`
+
+    ## Grenzen
+
+    - Ändere `scripts/check-links.sh` nur nach Rücksprache.
+    EOF
+    npm run lint:docs
+    npm run check:links
+    ~~~

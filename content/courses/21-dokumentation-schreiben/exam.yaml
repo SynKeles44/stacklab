@@ -1,0 +1,379 @@
+title: Abschlussprüfung Dokumentation schreiben
+description: |
+  Diese Prüfung deckt alle vier Module ab: Warum und für wen, Markdown, die Standarddateien im Repository und
+  Doku im Alltag. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben – zwei im echten
+  Übungs-Terminal und eine Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  # --- Grundlagen ---
+  - module: grundlagen
+    type: single
+    question: Ein Projekt hat einen Bus-Faktor von 1. Was bedeutet das?
+    options:
+      - Nur eine Person nutzt das Projekt.
+      - Fällt eine bestimmte Person aus, weiß niemand mehr, wie ein wichtiger Teil funktioniert.
+      - Das Projekt hat genau einen Branch.
+      - Es gibt genau eine Datei mit Dokumentation.
+    answer: 1
+    explanation: Der Bus-Faktor zählt, wie viele Personen ausfallen müssten, bis Wissen verloren ist. Dokumentation erhöht ihn.
+  - module: grundlagen
+    type: match
+    question: Ordne jede Seite ihrer Doku-Art nach Diátaxis zu.
+    pairs:
+      - { left: "„Deine erste App in 15 Minuten“", right: "Tutorial" }
+      - { left: "„So setzt du ein Passwort zurück“", right: "How-to-Anleitung" }
+      - { left: "„Alle Umgebungsvariablen mit Standardwert“", right: "Referenz" }
+      - { left: "„Warum wir eine Warteschlange nutzen“", right: "Erklärung" }
+    explanation: Tutorial = lernen durch Tun, How-to = Aufgabe erledigen, Referenz = nachschlagen, Erklärung = verstehen.
+  - module: grundlagen
+    type: single
+    question: Welcher Satz ist für eine Anleitung am besten formuliert?
+    options:
+      - Es sollte darauf geachtet werden, dass die Datei vorher gesichert wird.
+      - Sichere die Datei, bevor du sie änderst.
+      - Die Sicherung der Datei ist im Vorfeld eventuell sinnvoll.
+    answer: 1
+    explanation: Aktiv, kurz, Verb vorne, keine Füllwörter.
+  - module: grundlagen
+    type: multiple
+    question: Welche Regeln gelten für einheitliche Begriffe in technischer Doku?
+    options:
+      - Dasselbe Ding heißt überall gleich.
+      - Synonyme abwechseln, damit der Text lebendig bleibt.
+      - Begriffe aus der Oberfläche und dem Code genau übernehmen.
+      - Festgelegte Begriffe in einem Glossar sammeln.
+    answers: [0, 2, 3]
+    explanation: Synonyme lassen Leser:innen vermuten, es gehe um verschiedene Dinge.
+  # --- Markdown ---
+  - module: markdown
+    type: find-bug
+    question: In welcher Zeile wird keine Überschrift erzeugt?
+    language: markdown
+    code: |
+      # Notizen
+
+      ## Installation
+
+      ##Konfiguration
+
+      ## Lizenz
+    bug_line: 5
+    explanation: Nach den Rauten fehlt das Leerzeichen. `##Konfiguration` wird als normaler Text angezeigt.
+  - module: markdown
+    type: single
+    question: Wie schreibst du ein Bild mit Alt-Text in Markdown?
+    options:
+      - "[Diagramm der Architektur](docs/architektur.svg)"
+      - "![Diagramm der Architektur](docs/architektur.svg)"
+      - "!(docs/architektur.svg)[Diagramm der Architektur]"
+      - "<Diagramm der Architektur>(docs/architektur.svg)"
+    answer: 1
+    explanation: Ein Bild ist ein Link mit vorangestelltem Ausrufezeichen. Der Text in den eckigen Klammern ist der Alt-Text.
+  - module: markdown
+    type: cloze
+    text: Ein Codeblock mit Terminalbefehlen beginnt mit der Zeile ```___. Eine Tabelle braucht unter der Kopfzeile eine ___ wie `|---|---|`.
+    blanks:
+      - [bash, sh, shell]
+      - [Trennzeile, Trennlinie]
+    explanation: Die Sprachangabe schaltet die Hervorhebung ein, die Trennzeile macht aus Zeilen eine Tabelle.
+  - module: markdown
+    type: match
+    question: Ordne jede Schreibweise ihrer Wirkung auf GitHub zu.
+    pairs:
+      - { left: "> [!WARNING]", right: "Farbiger Warnkasten" }
+      - { left: "```mermaid", right: "Diagramm aus Text" }
+      - { left: "- [ ] Tests schreiben", right: "Anklickbare Checkbox" }
+      - { left: "[Lizenz](#lizenz)", right: "Sprung zu einer Überschrift" }
+    explanation: Alerts, Mermaid, Aufgabenlisten und Anker sind GitHub-Erweiterungen bzw. -Funktionen rund um Markdown.
+  - module: markdown
+    type: single
+    question: Welcher Anker gehört zur Überschrift `## Fragen & Antworten`?
+    options:
+      - "#Fragen & Antworten"
+      - "#fragen--antworten"
+      - "#fragen-antworten"
+      - "#fragen_antworten"
+    answer: 1
+    explanation: Klein schreiben, `&` entfernen, jedes Leerzeichen wird zu einem Bindestrich – also zwei Bindestriche.
+  # --- Projektdateien ---
+  - module: projektdateien
+    type: single
+    question: Was gehört direkt unter den Titel einer README?
+    options:
+      - Die Lizenz.
+      - Ein Satz, was das Projekt tut und für wen es gedacht ist.
+      - Die Liste aller Mitwirkenden.
+      - Die komplette Konfigurationsreferenz.
+    answer: 1
+    explanation: In den ersten Sekunden entscheidet sich, ob jemand weiterliest. Zuerst „Was ist das?“, dann der Schnellstart.
+  - module: projektdateien
+    type: multiple
+    question: Welche Aussagen über Keep a Changelog stimmen?
+    options:
+      - Die neueste Version steht oben.
+      - Daten stehen im Format JJJJ-MM-TT.
+      - Der Changelog ist eine vollständige Kopie von `git log`.
+      - Noch nicht veröffentlichte Änderungen stehen unter `[Unreleased]`.
+    answers: [0, 1, 3]
+    explanation: Der Changelog ist eine Auswahl für Menschen, keine Kopie der Commit-Historie.
+  - module: projektdateien
+    type: single
+    question: Eine Funktion wird in Version 3.0 entfernt, ist aber in 2.4 noch vorhanden. In welche Kategorie gehört der Eintrag für 2.4?
+    options:
+      - Removed
+      - Deprecated
+      - Changed
+      - Fixed
+    answer: 1
+    explanation: Deprecated kündigt an, dass etwas bald verschwindet. Removed kommt erst in der Version, in der es wirklich weg ist.
+  - module: projektdateien
+    type: match
+    question: Ordne jedem ADR-Abschnitt seinen Inhalt zu.
+    pairs:
+      - { left: "Kontext", right: "Problem und Rahmenbedingungen" }
+      - { left: "Entscheidung", right: "Was das Team tun wird" }
+      - { left: "Konsequenzen", right: "Was leichter und was schwerer wird" }
+      - { left: "Status", right: "Akzeptiert, abgelöst, veraltet" }
+    explanation: Kontext, Entscheidung und Konsequenzen sind der Kern jedes ADR.
+  - module: projektdateien
+    type: single
+    question: Eine akzeptierte Entscheidung aus ADR 0004 gilt nicht mehr. Was tust du?
+    options:
+      - ADR 0004 löschen.
+      - ADR 0004 umschreiben, bis er zur neuen Lösung passt.
+      - Einen neuen ADR schreiben und ADR 0004 auf „Abgelöst durch …“ setzen.
+    answer: 2
+    explanation: Akzeptierte ADRs bleiben unverändert, damit die Geschichte nachvollziehbar bleibt.
+  # --- Doku im Alltag ---
+  - module: doku-im-alltag
+    type: single
+    question: Welcher Kommentar verdient seinen Platz im Code?
+    options:
+      - "// Schleife über alle Bestellungen"
+      - "// Erst nach dem Speichern senden – sonst fehlt die Bestellnummer in der Mail."
+      - "// const alt = berechne()"
+      - "// Ende der Funktion"
+    answer: 1
+    explanation: Nur dieser Kommentar erklärt etwas, das der Code nicht zeigt – eine Bedingung für die Reihenfolge.
+  - module: doku-im-alltag
+    type: multiple
+    question: Was gehört zu Docs as Code?
+    options:
+      - Doku liegt im selben Repository wie der Code.
+      - Code und Doku werden im selben Pull Request geändert.
+      - markdownlint und Link-Checks laufen in der CI.
+      - Doku wird nur einmal im Jahr aktualisiert.
+    answers: [0, 1, 2]
+    explanation: Doku läuft durch dieselben Abläufe wie Code – deshalb veraltet sie seltener.
+  - module: doku-im-alltag
+    type: cloze
+    text: Die Konfiguration von markdownlint-cli2 steht in `.markdownlint-cli2.___`. Projektanweisungen für KI-Assistenten stehen in der Datei ___.
+    blanks:
+      - [jsonc]
+      - [AGENTS.md, CLAUDE.md, agents.md]
+    explanation: AGENTS.md ist das offene Format, CLAUDE.md die Datei von Claude Code.
+  - module: doku-im-alltag
+    type: multiple
+    question: Was gehört in eine AGENTS.md?
+    options:
+      - Die Befehle für Tests und Linter.
+      - Grenzen wie „Ändere keine ausgelieferten Migrationen“.
+      - Das Passwort der Datenbank.
+      - Konventionen wie das Commit-Format.
+    answers: [0, 1, 3]
+    explanation: Geheimnisse gehören in keine Datei im Repository.
+tasks:
+  - module: projektdateien
+    id: pruefung-readme
+    type: terminal
+    title: Eine README vervollständigen
+    description: |
+      Im Ordner `pruefung-readme` liegt ein kleines Skript `zaehle.sh`, das die Zeilen aller Dateien in einem Ordner
+      zählt. Die README besteht nur aus dem Titel.
+
+      1. Ergänze unter `# zaehle` einen Satz, was das Skript tut.
+      2. Füge `## Schnellstart` mit einem `bash`-Codeblock hinzu, der `bash zaehle.sh <ordner>` zeigt.
+      3. Füge `## Konfiguration` mit einer Tabelle hinzu, die die Umgebungsvariable aus dem Skript und ihren
+         Standardwert nennt (schau mit `cat zaehle.sh` nach).
+      4. Füge `## Lizenz` mit dem Hinweis auf MIT hinzu.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**, damit die Dateien angelegt werden.
+    workdir: pruefung-readme
+    setup: |
+      cat > zaehle.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+      muster="${MUSTER:-*.txt}"
+      find "$1" -name "$muster" -type f -exec cat {} + | wc -l
+      EOF
+      printf '# zaehle\n' > README.md
+    checks:
+      - type: command
+        run: head -n 1 README.md
+        stdout_matches: "^# zaehle\\s*$"
+        message: "Die erste Zeile soll `# zaehle` bleiben."
+      - type: command
+        run: awk 'NR>1 && NF {print; exit}' README.md
+        stdout_matches: "^[^#|`>-].{15,}"
+        message: Direkt unter dem Titel fehlt ein Satz, was das Skript tut.
+      - type: command
+        run: awk '/^## Schnellstart/{f=1;next} /^## /{f=0} f' README.md | awk '/^```bash/{c=1;next} /^```/{c=0} c' | grep -c 'bash zaehle.sh'
+        stdout_matches: "^[1-9]"
+        message: "Unter `## Schnellstart` fehlt ein ```bash-Codeblock mit `bash zaehle.sh <ordner>`."
+      - type: command
+        run: awk '/^## Konfiguration/{f=1;next} /^## /{f=0} f' README.md | grep -E '^\|' | grep -c 'MUSTER.*\*\.txt'
+        stdout_equals: "1"
+        message: "Unter `## Konfiguration` fehlt eine Tabellenzeile mit MUSTER und dem Standardwert `*.txt`."
+      - type: command
+        run: awk '/^## Lizenz/{f=1;next} /^## /{f=0} f' README.md | grep -c 'MIT'
+        stdout_matches: "^[1-9]"
+        message: "Unter `## Lizenz` fehlt der Hinweis auf MIT."
+    hints:
+      - "Die Umgebungsvariable steht in `${MUSTER:-*.txt}` – der Teil nach `:-` ist der Standardwert."
+      - "Tabellenzeile: `| MUSTER | *.txt | Welche Dateien gezählt werden |`."
+    solution: |
+      ~~~bash
+      cd pruefung-readme
+      cat > README.md <<'EOF'
+      # zaehle
+
+      Zählt die Zeilen aller passenden Dateien in einem Ordner.
+
+      ## Schnellstart
+
+      ```bash
+      bash zaehle.sh <ordner>
+      ```
+
+      ## Konfiguration
+
+      | Variable | Standardwert | Bedeutung |
+      |---|---|---|
+      | MUSTER | *.txt | Welche Dateien gezählt werden |
+
+      ## Lizenz
+
+      MIT
+      EOF
+      ~~~
+  - module: doku-im-alltag
+    id: pruefung-lint
+    type: terminal
+    title: Changelog und Linter in Ordnung bringen
+    description: |
+      Im Ordner `pruefung-lint` ist markdownlint schon eingerichtet (`npm run lint:docs`). Der `CHANGELOG.md` hat aber
+      Formfehler, und ein Eintrag fehlt.
+
+      1. Führe `npm run lint:docs` aus und behebe alle Meldungen in `CHANGELOG.md`.
+      2. Ergänze unter `## [Unreleased]` die Kategorie `### Fixed` mit dem Eintrag
+         `- Umlaute werden beim Export korrekt gespeichert.`
+      3. Lösche keine bestehenden Einträge.
+
+      Klicke zuerst auf **Aufgabe vorbereiten** – das Installieren von markdownlint dauert ein paar Sekunden.
+    workdir: pruefung-lint
+    setup: |
+      printf '{\n  "private": true\n}\n' > package.json
+      timeout 150 npm install --no-audit --no-fund --silent --save-dev markdownlint-cli2@0.23.3
+      npm pkg set 'scripts.lint:docs=markdownlint-cli2 "**/*.md"'
+      printf '{\n  "config": {\n    "MD013": false,\n    "MD024": { "siblings_only": true },\n    "MD060": false\n  },\n  "ignores": ["node_modules/**"]\n}\n' > .markdownlint-cli2.jsonc
+      cat > CHANGELOG.md <<'EOF'
+      # Changelog
+      ## [Unreleased]
+
+      ### Added
+      - Export als CSV.
+
+      ## [1.0.0] - 2026-09-01
+
+      ### Added
+
+      - Erste Version.
+      EOF
+    checks:
+      - type: command
+        run: npm run --silent lint:docs
+        message: "`npm run lint:docs` meldet noch Fehler in CHANGELOG.md."
+      - type: command
+        run: awk '/^## \[Unreleased\]/{f=1;next} /^## /{f=0} f' CHANGELOG.md | grep -A3 '^### Fixed' | grep -c 'Umlaute werden beim Export korrekt gespeichert'
+        stdout_equals: "1"
+        message: "Unter `## [Unreleased]` fehlt `### Fixed` mit dem Eintrag zu den Umlauten."
+      - type: command
+        run: grep -cE '^- (Export als CSV\.|Erste Version\.)$' CHANGELOG.md
+        stdout_equals: "2"
+        message: Die bestehenden Einträge „Export als CSV.“ und „Erste Version.“ sollen erhalten bleiben.
+    hints:
+      - Fast alle Meldungen verlangen Leerzeilen – nach Überschriften und vor Listen.
+      - "Füge nach dem Eintrag „Export als CSV.“ eine Leerzeile, `### Fixed`, eine Leerzeile und den neuen Eintrag ein."
+    solution: |
+      ```bash
+      cd pruefung-lint
+      cat > CHANGELOG.md <<'EOF'
+      # Changelog
+
+      ## [Unreleased]
+
+      ### Added
+
+      - Export als CSV.
+
+      ### Fixed
+
+      - Umlaute werden beim Export korrekt gespeichert.
+
+      ## [1.0.0] - 2026-09-01
+
+      ### Added
+
+      - Erste Version.
+      EOF
+      npm run lint:docs
+      ```
+  - module: markdown
+    id: pruefung-inhaltsverzeichnis
+    type: code
+    language: js
+    title: Ein Inhaltsverzeichnis erzeugen
+    description: |
+      Schreibe `tableOfContents(markdown)`. Die Funktion bekommt den Text einer Markdown-Datei und gibt ein
+      Inhaltsverzeichnis aller `##`-Überschriften zurück – eine Zeile pro Überschrift im Format
+      `- [Titel](#anker)`, verbunden mit `\n`.
+
+      - Nur Zeilen, die mit genau `## ` beginnen, zählen (nicht `#` und nicht `###`).
+      - Der Anker entsteht wie auf GitHub: kleinschreiben, alle Zeichen außer Buchstaben, Ziffern, Leerzeichen,
+        `-` und `_` entfernen, jedes Leerzeichen durch `-` ersetzen.
+      - Gibt es keine `##`-Überschrift, liefert die Funktion einen leeren String.
+    starter: |
+      function tableOfContents(markdown) {
+        return ''
+      }
+    tests:
+      - name: Zwei Abschnitte
+        code: |
+          assertEqual(
+            tableOfContents('# Titel\n\n## Schnellstart\n\nText\n\n## Lizenz\n'),
+            '- [Schnellstart](#schnellstart)\n- [Lizenz](#lizenz)'
+          )
+      - name: Unterüberschriften und Titel zählen nicht
+        code: assertEqual(tableOfContents('# A\n### B\n## C\n#### D'), '- [C](#c)')
+      - name: Ohne Abschnitte ein leerer String
+        code: assertEqual(tableOfContents('# Nur ein Titel\n\nText'), '')
+      - name: Sonderzeichen und Umlaute
+        code: assertEqual(tableOfContents('## Fragen & Antworten\n## Größe ändern!'), '- [Fragen & Antworten](#fragen--antworten)\n- [Größe ändern!](#größe-ändern)')
+    hints:
+      - "Zerlege den Text mit `markdown.split('\\n')` und filtere Zeilen mit `line.startsWith('## ')`."
+      - "Für den Anker: `title.toLowerCase().replace(/[^\\p{L}\\p{N} _-]/gu, '').replace(/ /g, '-')`."
+    solution: |
+      function tableOfContents(markdown) {
+        return markdown
+          .split('\n')
+          .filter((line) => line.startsWith('## '))
+          .map((line) => {
+            const title = line.slice(3).trim()
+            const anchor = title.toLowerCase().replace(/[^\p{L}\p{N} _-]/gu, '').replace(/ /g, '-')
+            return `- [${title}](#${anchor})`
+          })
+          .join('\n')
+      }

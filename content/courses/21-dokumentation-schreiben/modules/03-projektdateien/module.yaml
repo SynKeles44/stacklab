@@ -1,0 +1,125 @@
+title: Die Standarddateien im Repository
+description: README, CONTRIBUTING, CHANGELOG nach Keep a Changelog und Architecture Decision Records – die Dateien, die jedes gute Projekt mitbringt.
+exercise:
+  id: modul-uebung-repo-dateien
+  type: terminal
+  title: Ein Repository fit für Mitwirkende machen
+  description: |
+    Im Ordner `repo-dateien` liegt das Git-Repository eines kleinen Kommandozeilen-Werkzeugs. Version 1.0.0 ist
+    seit dem 2026-09-01 veröffentlicht. Es gibt eine README, aber weder Regeln für Mitwirkende noch einen Changelog.
+
+    1. Lege `CONTRIBUTING.md` an: Titel `# Mitwirken` und die Abschnitte `## Entwicklungsumgebung` (nennt `npm test`),
+       `## Commits` (nennt Conventional Commits) und `## Pull Requests` (verlangt einen Eintrag im CHANGELOG).
+    2. Ergänze in `README.md` einen Abschnitt `## Mitwirken` mit einem relativen Link `[CONTRIBUTING.md](CONTRIBUTING.md)`.
+    3. Lege `CHANGELOG.md` nach Keep a Changelog an: `# Changelog`, darunter `## [Unreleased]` mit `### Added` und dem
+       Eintrag `- Anleitung für Mitwirkende.`, danach `## [1.0.0] - 2026-09-01` mit `### Added` und mindestens einem Eintrag.
+    4. Committe alle drei Dateien in **einem** Commit mit einer Nachricht vom Typ `docs`, z. B.
+       `docs: add contributing guide and changelog`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit das Repository angelegt wird.
+  workdir: repo-dateien
+  setup: |
+    git init -q
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    printf '{\n  "name": "wortzaehler",\n  "version": "1.0.0",\n  "scripts": { "test": "node --test" }\n}\n' > package.json
+    printf '# wortzaehler\n\nZählt die Wörter in einer Textdatei.\n\n## Schnellstart\n\n```bash\nnpx wortzaehler notizen.txt\n```\n' > README.md
+    git add package.json README.md
+    git commit -q -m "feat: count words in a file"
+  checks:
+    - type: command
+      run: head -n 1 CONTRIBUTING.md
+      stdout_matches: "^# Mitwirken\\s*$"
+      message: "CONTRIBUTING.md fehlt oder beginnt nicht mit `# Mitwirken`."
+    - type: command
+      run: awk '/^## Entwicklungsumgebung/{f=1;next} /^## /{f=0} f' CONTRIBUTING.md | grep -c 'npm test'
+      stdout_matches: "^[1-9]"
+      message: "Unter `## Entwicklungsumgebung` soll stehen, wie man die Tests startet (`npm test`)."
+    - type: command
+      run: awk '/^## Commits/{f=1;next} /^## /{f=0} f' CONTRIBUTING.md | grep -ci 'conventional commits'
+      stdout_matches: "^[1-9]"
+      message: "Unter `## Commits` soll stehen, dass ihr Conventional Commits nutzt."
+    - type: command
+      run: awk '/^## Pull Requests/{f=1;next} /^## /{f=0} f' CONTRIBUTING.md | grep -ci 'changelog'
+      stdout_matches: "^[1-9]"
+      message: "Unter `## Pull Requests` soll stehen, dass jeder Pull Request einen Eintrag im CHANGELOG braucht."
+    - type: command
+      run: awk '/^## Mitwirken/{f=1;next} /^## /{f=0} f' README.md | grep -c '](CONTRIBUTING.md)'
+      stdout_matches: "^[1-9]"
+      message: "In README.md fehlt der Abschnitt `## Mitwirken` mit dem Link `[CONTRIBUTING.md](CONTRIBUTING.md)`."
+    - type: command
+      run: grep -E '^(# Changelog|## \[Unreleased\]|## \[1\.0\.0\] - 2026-09-01)\s*$' CHANGELOG.md | tr '\n' '|'
+      stdout_equals: "# Changelog|## [Unreleased]|## [1.0.0] - 2026-09-01|"
+      message: "CHANGELOG.md braucht in dieser Reihenfolge `# Changelog`, `## [Unreleased]` und `## [1.0.0] - 2026-09-01`."
+    - type: command
+      run: awk '/^## \[Unreleased\]/{f=1;next} /^## /{f=0} f' CHANGELOG.md | grep -A3 '^### Added' | grep -c 'Anleitung für Mitwirkende'
+      stdout_equals: "1"
+      message: "Unter `## [Unreleased]` fehlt `### Added` mit dem Eintrag `- Anleitung für Mitwirkende.`."
+    - type: command
+      run: awk '/^## \[1\.0\.0\]/{f=1;next} /^## /{f=0} f' CHANGELOG.md | grep -A3 '^### Added' | grep -c '^- '
+      stdout_matches: "^[1-9]"
+      message: "Version 1.0.0 braucht `### Added` mit mindestens einem Eintrag."
+    - type: command
+      run: git log --oneline | wc -l
+      stdout_matches: "^\\s*2\\s*$"
+      message: Es soll genau einen neuen Commit geben (insgesamt zwei).
+    - type: command
+      run: git log -1 --format=%s
+      stdout_matches: "^docs(\\([^)]+\\))?!?: \\S"
+      message: "Der neue Commit braucht eine Nachricht vom Typ docs, z. B. `docs: add contributing guide and changelog`."
+    - type: command
+      run: git show --name-only --format= HEAD | sort | tr '\n' ' '
+      stdout_matches: "^CHANGELOG\\.md CONTRIBUTING\\.md README\\.md\\s*$"
+      message: Der Commit soll genau CHANGELOG.md, CONTRIBUTING.md und README.md enthalten.
+  hints:
+    - "Schreib jede Datei mit `cat > DATEI <<'EOF'` … `EOF`. Die README ergänzt du mit `cat >> README.md <<'EOF'`."
+    - "Prüfe die Reihenfolge im Changelog: neueste Version oben, `[Unreleased]` ganz oben."
+    - "`git add CHANGELOG.md CONTRIBUTING.md README.md` und dann `git commit -m \"docs: add contributing guide and changelog\"`."
+  solution: |
+    ~~~bash
+    cd repo-dateien
+    cat > CONTRIBUTING.md <<'EOF'
+    # Mitwirken
+
+    Danke, dass du helfen willst!
+
+    ## Entwicklungsumgebung
+
+    1. Repository klonen.
+    2. Tests starten mit `npm test`.
+
+    ## Commits
+
+    Wir nutzen Conventional Commits, z. B. `fix: count words with umlauts`.
+
+    ## Pull Requests
+
+    - Ein Pull Request löst genau ein Problem.
+    - Jeder Pull Request ergänzt einen Eintrag unter `[Unreleased]` im CHANGELOG.md.
+    EOF
+    cat >> README.md <<'EOF'
+
+    ## Mitwirken
+
+    Wie du beiträgst, steht in [CONTRIBUTING.md](CONTRIBUTING.md).
+    EOF
+    cat > CHANGELOG.md <<'EOF'
+    # Changelog
+
+    Alle wichtigen Änderungen stehen in dieser Datei. Das Format basiert auf Keep a Changelog.
+
+    ## [Unreleased]
+
+    ### Added
+
+    - Anleitung für Mitwirkende.
+
+    ## [1.0.0] - 2026-09-01
+
+    ### Added
+
+    - Wörter in einer Textdatei zählen.
+    EOF
+    git add CHANGELOG.md CONTRIBUTING.md README.md
+    git commit -m "docs: add contributing guide and changelog"
+    ~~~

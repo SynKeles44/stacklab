@@ -1,0 +1,106 @@
+title: Markdown sicher beherrschen
+description: Überschriften, Listen, Links und Bilder, Codeblöcke mit Sprachangabe, Tabellen, Aufgabenlisten sowie GitHub-Alerts, Mermaid-Diagramme und Anker-Links.
+exercise:
+  id: modul-uebung-markdown
+  type: terminal
+  title: Eine Installationsanleitung, die der Linter liebt
+  description: |
+    Im Ordner `markdown-uebung` liegt ein Entwurf von `docs/installation.md`. Er ist inhaltlich fast fertig, aber
+    handwerklich unsauber. Außerdem ist das Werkzeug **markdownlint** schon installiert, das Markdown automatisch
+    prüft (mehr dazu im letzten Modul).
+
+    1. Lass den Linter laufen: `npx markdownlint-cli2 docs/installation.md`. Lies die Meldungen – jede nennt
+       Zeile und Regel, z. B. `MD022/blanks-around-headings`.
+    2. Mach aus der Aufzählung unter `## Voraussetzungen` eine Tabelle mit der Kopfzeile `| Werkzeug | Version |`
+       und je einer Zeile für Node.js und npm.
+    3. Gib dem Codeblock die Sprache `bash`.
+    4. Füge unter `## Schritte` einen GitHub-Hinweis `> [!NOTE]` ein, der sagt, dass die App danach unter
+       `http://localhost:3000` läuft.
+    5. Behebe alle übrigen Meldungen, bis der Linter keine Meldung mehr ausgibt (`Summary: 0 issues`). Die drei Schritte sollen eine
+       nummerierte Liste bleiben.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – das Installieren von markdownlint dauert ein paar Sekunden.
+  workdir: markdown-uebung
+  setup: |
+    printf '{\n  "private": true\n}\n' > package.json
+    timeout 150 npm install --no-audit --no-fund --silent --save-dev markdownlint-cli2@0.23.3
+    printf '{\n  "config": {\n    "MD013": false,\n    "MD060": false\n  },\n  "ignores": ["node_modules/**"]\n}\n' > .markdownlint-cli2.jsonc
+    mkdir -p docs
+    cat > docs/installation.md <<'EOF'
+    # Installation
+    Diese Anleitung zeigt, wie du die Notizen-App lokal startest.
+    ## Voraussetzungen
+    * Node.js 24
+    * npm 11
+    ## Schritte
+    1. Repository klonen
+    2. Abhängigkeiten installieren und Server starten:
+    ```
+    npm install
+    npm run dev
+    ```
+    3. Browser öffnen
+    Mehr Infos unter https://example.com/docs
+    EOF
+  checks:
+    - type: command
+      run: npx --no-install markdownlint-cli2 docs/installation.md
+      message: markdownlint meldet noch Fehler. Führe `npx markdownlint-cli2 docs/installation.md` aus und behebe jede Meldung.
+    - type: file_contains
+      path: docs/installation.md
+      pattern: "^\\|\\s*Werkzeug\\s*\\|\\s*Version\\s*\\|\\s*$"
+      message: "Unter Voraussetzungen fehlt die Tabelle mit der Kopfzeile `| Werkzeug | Version |`."
+    - type: command
+      run: grep -cE '^\|.*(Node\.js|npm)' docs/installation.md
+      stdout_equals: "2"
+      message: Die Tabelle soll je eine Zeile für Node.js und für npm haben.
+    - type: file_contains
+      path: docs/installation.md
+      pattern: "^\\s*```bash\\s*$"
+      message: "Der Codeblock braucht die Sprachangabe: ```bash."
+    - type: command
+      run: awk '/^## Schritte/{f=1;next} /^## /{f=0} f' docs/installation.md | grep -A1 -E '^> \[!NOTE\]' | grep -c 'localhost:3000'
+      stdout_equals: "1"
+      message: "Unter `## Schritte` fehlt ein Hinweis `> [!NOTE]`, dessen nächste Zeile `localhost:3000` nennt."
+    - type: command
+      run: grep -cE '^[1-3]\. ' docs/installation.md
+      stdout_equals: "3"
+      message: Die drei Schritte sollen als nummerierte Liste (1., 2., 3.) erhalten bleiben.
+  hints:
+    - "Die meisten Meldungen verlangen Leerzeilen: vor und nach Überschriften (MD022), Listen (MD032) und Codeblöcken (MD031)."
+    - "Eine nackte Adresse wie https://example.com/docs schreibst du als `<https://example.com/docs>` (MD034). Leerzeichen am Zeilenende (MD009) einfach löschen."
+    - "Damit die Nummerierung nach dem Codeblock weitergeht, rück den Codeblock um drei Leerzeichen ein – dann gehört er zu Schritt 2."
+  solution: |
+    ~~~bash
+    cd markdown-uebung
+    cat > docs/installation.md <<'EOF'
+    # Installation
+
+    Diese Anleitung zeigt, wie du die Notizen-App lokal startest.
+
+    ## Voraussetzungen
+
+    | Werkzeug | Version |
+    |---|---|
+    | Node.js | 24 |
+    | npm | 11 |
+
+    ## Schritte
+
+    > [!NOTE]
+    > Danach läuft die App unter `http://localhost:3000`.
+
+    1. Repository klonen
+    2. Abhängigkeiten installieren und Server starten:
+
+       ```bash
+       npm install
+       npm run dev
+       ```
+
+    3. Browser öffnen
+
+    Mehr Infos unter <https://example.com/docs>
+    EOF
+    npx markdownlint-cli2 docs/installation.md
+    ~~~

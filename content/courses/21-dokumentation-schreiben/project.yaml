@@ -1,0 +1,575 @@
+title: Das komplette Doku-Paket für ein kleines Projekt
+description: |
+  In diesem Projekt schreibst du die vollständige Dokumentation für ein kleines Kommandozeilen-Werkzeug:
+  `einheiten`, ein Umrechner für Längeneinheiten. Den Code bekommst du fertig – deine Aufgabe ist alles,
+  was ein gutes Repository außerdem braucht: README, CONTRIBUTING, CHANGELOG, einen Architecture Decision
+  Record, eine How-to-Anleitung im `docs/`-Ordner und eine automatische Prüfung mit markdownlint.
+
+  Alles passiert im Ordner `projekt` in deinem Doku-Workspace. Öffne dafür das Übungs-Terminal, lege den
+  Ordner mit `mkdir -p projekt` an und wechsle mit `cd projekt` hinein. Nach jedem Schritt prüft Stacklab den
+  echten Zustand deiner Dateien.
+
+  Die Schritte bauen aufeinander auf. Lösche zwischendurch nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Ein Git-Repository `projekt` mit dem Werkzeug `einheiten`, einer README mit allen wichtigen Abschnitten,
+  CONTRIBUTING.md, CHANGELOG.md nach Keep a Changelog, einem ADR in `docs/adr/`, einer How-to-Anleitung in
+  `docs/how-to/`, einem Doku-Inhaltsverzeichnis, einer markdownlint-Prüfung ohne Fehler, intakten Links und
+  einem sauberen docs-Commit.
+workdir: projekt
+steps:
+  - id: projekt-anlegen
+    title: Das Werkzeug anlegen
+    description: |
+      Zuerst brauchst du etwas, das du dokumentieren kannst. Lege das Repository und den Code an.
+
+      1. `mkdir -p projekt && cd projekt`, dann `git init` und lokal `user.name` und `user.email` setzen
+         (Platzhalter wie `du@example.com` sind in Ordnung).
+      2. Lege `src/convert.js` mit genau diesem Inhalt an:
+
+         ```js
+         const FACTORS = { m: 1, km: 1000, cm: 0.01, mi: 1609.344, ft: 0.3048 }
+         const digits = Number(process.env.NACHKOMMASTELLEN ?? 2)
+
+         const [value, from, to] = process.argv.slice(2)
+         if (!(from in FACTORS) || !(to in FACTORS) || Number.isNaN(Number(value))) {
+           console.error('Aufruf: node src/convert.js <wert> <von> <nach>')
+           console.error('Einheiten: ' + Object.keys(FACTORS).join(', '))
+           process.exit(1)
+         }
+
+         const result = (Number(value) * FACTORS[from]) / FACTORS[to]
+         console.log(result.toFixed(digits))
+         ```
+
+      3. Lege eine `package.json` an: `npm init -y`. Setze danach das Start-Skript:
+         `npm pkg set scripts.convert="node src/convert.js"`.
+      4. Lege eine `.gitignore` mit der Zeile `node_modules/` an.
+      5. Probier es aus: `node src/convert.js 10 km mi` gibt `6.21` aus.
+      6. Committe alles mit `feat: add unit converter`.
+    checklist:
+      - Repository mit lokaler Git-Identität angelegt
+      - src/convert.js rechnet 10 km in 6.21 mi um
+      - package.json und .gitignore vorhanden
+      - Erster Commit mit Conventional-Commit-Message
+    hints:
+      - "Den Code legst du am einfachsten mit `mkdir -p src && cat > src/convert.js <<'EOF'` … `EOF` an."
+      - "`git config user.name \"Ada Lovelace\"` und `git config user.email \"ada@example.com\"` – ohne `--global`."
+      - "`git add .` und `git commit -m \"feat: add unit converter\"`. Die .gitignore sorgt dafür, dass später node_modules draußen bleibt."
+    checks:
+      - type: dir_exists
+        path: .git
+        message: Im Ordner projekt gibt es noch kein Git-Repository. Führe `git init` aus.
+      - type: command
+        run: node src/convert.js 10 km mi
+        stdout_equals: "6.21"
+        message: "`node src/convert.js 10 km mi` soll 6.21 ausgeben. Prüfe, ob src/convert.js genau den Code aus der Beschreibung enthält."
+      - type: command
+        run: NACHKOMMASTELLEN=0 node src/convert.js 1500 m km
+        stdout_equals: "2"
+        message: Der Umrechner soll die Umgebungsvariable NACHKOMMASTELLEN beachten. Übernimm den Code genau.
+      - type: file_contains
+        path: .gitignore
+        pattern: "^/?node_modules/?\\s*$"
+        message: "Die .gitignore braucht die Zeile `node_modules/`."
+      - type: command
+        run: git ls-files src/convert.js package.json .gitignore | wc -l
+        stdout_matches: "^\\s*3\\s*$"
+        message: src/convert.js, package.json und .gitignore sollen committet sein.
+      - type: command
+        run: git log --reverse --format=%s | head -n 1
+        stdout_matches: "^feat(\\([^)]+\\))?!?: \\S"
+        message: "Der erste Commit braucht eine Nachricht vom Typ feat, z. B. `feat: add unit converter`."
+    solution: |
+      ~~~bash
+      mkdir -p projekt && cd projekt
+      git init
+      git config user.name "Ada Lovelace"
+      git config user.email "ada@example.com"
+      mkdir -p src
+      cat > src/convert.js <<'EOF'
+      const FACTORS = { m: 1, km: 1000, cm: 0.01, mi: 1609.344, ft: 0.3048 }
+      const digits = Number(process.env.NACHKOMMASTELLEN ?? 2)
+
+      const [value, from, to] = process.argv.slice(2)
+      if (!(from in FACTORS) || !(to in FACTORS) || Number.isNaN(Number(value))) {
+        console.error('Aufruf: node src/convert.js <wert> <von> <nach>')
+        console.error('Einheiten: ' + Object.keys(FACTORS).join(', '))
+        process.exit(1)
+      }
+
+      const result = (Number(value) * FACTORS[from]) / FACTORS[to]
+      console.log(result.toFixed(digits))
+      EOF
+      npm init -y
+      npm pkg set scripts.convert="node src/convert.js"
+      printf 'node_modules/\n' > .gitignore
+      node src/convert.js 10 km mi
+      git add .
+      git commit -m "feat: add unit converter"
+      ~~~
+  - id: readme
+    title: Die README schreiben
+    description: |
+      Schreib eine `README.md`, mit der Fremde das Werkzeug ohne Rückfrage benutzen können. Sie braucht:
+
+      1. In der ersten Zeile `# einheiten`, darunter einen Satz, was das Werkzeug tut.
+      2. `## Schnellstart` mit einem `bash`-Codeblock, der einen echten Aufruf zeigt, z. B. `node src/convert.js 10 km mi`.
+      3. `## Voraussetzungen` mit Node.js 24.
+      4. `## Konfiguration` mit einer Tabelle, die `NACHKOMMASTELLEN` und den Standardwert `2` nennt.
+      5. `## Fehlerbehebung` mit der Fehlermeldung, die bei einer unbekannten Einheit erscheint (sie beginnt mit `Aufruf:`).
+      6. `## Mitwirken` mit einem Link `[CONTRIBUTING.md](CONTRIBUTING.md)` (die Datei legst du im nächsten Schritt an).
+      7. `## Lizenz` mit dem Hinweis auf MIT.
+    checklist:
+      - Titel und Ein-Satz-Beschreibung
+      - Schnellstart mit kopierbarem Befehl
+      - Voraussetzungen, Konfiguration, Fehlerbehebung
+      - Mitwirken mit Link, Lizenz
+    hints:
+      - "Probier eine falsche Einheit aus (`node src/convert.js 1 km yard`), um die genaue Fehlermeldung zu sehen."
+      - "Die Tabelle: `| Variable | Standardwert | Bedeutung |`, `|---|---|---|`, `| NACHKOMMASTELLEN | 2 | Stellen nach dem Komma |`."
+      - Schau dir die Lektion „Die gute README“ noch einmal an – die Reihenfolge der Abschnitte ist dieselbe.
+    checks:
+      - type: command
+        run: head -n 1 README.md
+        stdout_matches: "^# einheiten\\s*$"
+        message: "README.md fehlt oder beginnt nicht mit `# einheiten`."
+      - type: command
+        run: awk 'NR>1 && NF {print; exit}' README.md
+        stdout_matches: "^[^#|`>-].{15,}"
+        message: Direkt unter dem Titel fehlt ein Satz, was das Werkzeug tut.
+      - type: command
+        run: awk '/^## Schnellstart/{f=1;next} /^## /{f=0} f' README.md | awk '/^```bash/{c=1;next} /^```/{c=0} c' | grep -c 'convert'
+        stdout_matches: "^[1-9]"
+        message: "Unter `## Schnellstart` fehlt ein ```bash-Codeblock mit einem Aufruf des Umrechners."
+      - type: command
+        run: awk '/^## Voraussetzungen/{f=1;next} /^## /{f=0} f' README.md | grep -cE 'Node(\.js)?.*24'
+        stdout_matches: "^[1-9]"
+        message: "Unter `## Voraussetzungen` soll Node.js 24 stehen."
+      - type: command
+        run: awk '/^## Konfiguration/{f=1;next} /^## /{f=0} f' README.md | grep -E '^\|' | grep -c 'NACHKOMMASTELLEN.*2'
+        stdout_equals: "1"
+        message: "Unter `## Konfiguration` fehlt eine Tabellenzeile mit NACHKOMMASTELLEN und dem Standardwert 2."
+      - type: command
+        run: awk '/^## Fehlerbehebung/{f=1;next} /^## /{f=0} f' README.md | grep -c 'Aufruf:'
+        stdout_matches: "^[1-9]"
+        message: "Unter `## Fehlerbehebung` soll die Fehlermeldung stehen, die mit `Aufruf:` beginnt."
+      - type: command
+        run: awk '/^## Mitwirken/{f=1;next} /^## /{f=0} f' README.md | grep -c '](CONTRIBUTING.md)'
+        stdout_matches: "^[1-9]"
+        message: "Unter `## Mitwirken` fehlt der Link `[CONTRIBUTING.md](CONTRIBUTING.md)`."
+      - type: command
+        run: awk '/^## Lizenz/{f=1;next} /^## /{f=0} f' README.md | grep -c 'MIT'
+        stdout_matches: "^[1-9]"
+        message: "Unter `## Lizenz` fehlt der Hinweis auf die MIT-Lizenz."
+    solution: |
+      ~~~bash
+      cat > README.md <<'EOF'
+      # einheiten
+
+      Ein kleines Kommandozeilen-Werkzeug, das Längen zwischen Metern, Kilometern, Zentimetern, Meilen und Fuß umrechnet.
+
+      ## Schnellstart
+
+      ```bash
+      node src/convert.js 10 km mi
+      ```
+
+      Ausgabe: `6.21`
+
+      ## Voraussetzungen
+
+      - Node.js 24 oder neuer
+
+      ## Konfiguration
+
+      | Variable | Standardwert | Bedeutung |
+      |---|---|---|
+      | NACHKOMMASTELLEN | 2 | Stellen nach dem Komma in der Ausgabe |
+
+      ## Fehlerbehebung
+
+      **`Aufruf: node src/convert.js <wert> <von> <nach>`** – Eine Einheit ist unbekannt oder der Wert ist keine Zahl.
+      Erlaubt sind `m`, `km`, `cm`, `mi` und `ft`.
+
+      ## Mitwirken
+
+      Wie du beiträgst, steht in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+      ## Lizenz
+
+      MIT
+      EOF
+      ~~~
+  - id: contributing
+    title: CONTRIBUTING.md anlegen
+    description: |
+      Jetzt sollen andere mithelfen können. Lege `CONTRIBUTING.md` an:
+
+      1. Titel `# Mitwirken`.
+      2. `## Entwicklungsumgebung`: wie man den Umrechner ausprobiert (`npm run convert -- 10 km mi`) und die Doku
+         prüft (`npm run lint:docs` – das Skript legst du später an).
+      3. `## Commits`: Commit-Messages nach Conventional Commits.
+      4. `## Pull Requests`: Jeder Pull Request ergänzt die Doku und einen Eintrag unter `[Unreleased]` im CHANGELOG.
+      5. `## Neue Einheit hinzufügen`: ein Satz mit Link auf die How-to-Anleitung
+         `[Neue Einheit hinzufügen](docs/how-to/neue-einheit.md)` (die Datei folgt in Schritt 6).
+    checklist:
+      - Titel und vier Abschnitte
+      - Befehle zum Ausprobieren und Prüfen
+      - Regeln für Commits und Pull Requests
+      - Link auf die How-to-Anleitung
+    hints:
+      - Halte jeden Abschnitt kurz – zwei bis drei Zeilen reichen.
+      - "Der Link ist relativ zur CONTRIBUTING.md im Hauptordner: `docs/how-to/neue-einheit.md`."
+    checks:
+      - type: command
+        run: head -n 1 CONTRIBUTING.md
+        stdout_matches: "^# Mitwirken\\s*$"
+        message: "CONTRIBUTING.md fehlt oder beginnt nicht mit `# Mitwirken`."
+      - type: command
+        run: awk '/^## Entwicklungsumgebung/{f=1;next} /^## /{f=0} f' CONTRIBUTING.md | grep -cE 'npm run (convert|lint:docs)'
+        stdout_matches: "^([2-9]|[1-9][0-9])$"
+        message: "Unter `## Entwicklungsumgebung` sollen `npm run convert …` und `npm run lint:docs` stehen."
+      - type: command
+        run: awk '/^## Commits/{f=1;next} /^## /{f=0} f' CONTRIBUTING.md | grep -ci 'conventional commits'
+        stdout_matches: "^[1-9]"
+        message: "Unter `## Commits` fehlt der Hinweis auf Conventional Commits."
+      - type: command
+        run: awk '/^## Pull Requests/{f=1;next} /^## /{f=0} f' CONTRIBUTING.md | grep -c 'Unreleased'
+        stdout_matches: "^[1-9]"
+        message: "Unter `## Pull Requests` soll stehen, dass ein Eintrag unter `[Unreleased]` im CHANGELOG nötig ist."
+      - type: command
+        run: grep -c '](docs/how-to/neue-einheit.md)' CONTRIBUTING.md
+        stdout_matches: "^[1-9]"
+        message: "Es fehlt der Link `[Neue Einheit hinzufügen](docs/how-to/neue-einheit.md)`."
+    solution: |
+      ```bash
+      cat > CONTRIBUTING.md <<'EOF'
+      # Mitwirken
+
+      Danke, dass du helfen willst!
+
+      ## Entwicklungsumgebung
+
+      - Umrechner ausprobieren: `npm run convert -- 10 km mi`
+      - Doku prüfen: `npm run lint:docs`
+
+      ## Commits
+
+      Wir nutzen Conventional Commits, z. B. `feat: add inch unit`.
+
+      ## Pull Requests
+
+      - Jeder Pull Request aktualisiert die passende Doku.
+      - Jeder Pull Request ergänzt einen Eintrag unter `[Unreleased]` im CHANGELOG.md.
+
+      ## Neue Einheit hinzufügen
+
+      Die Schritte stehen in der Anleitung [Neue Einheit hinzufügen](docs/how-to/neue-einheit.md).
+      EOF
+      ```
+  - id: changelog
+    title: CHANGELOG.md nach Keep a Changelog
+    description: |
+      Version 1.0.0 des Umrechners erscheint am 2026-10-01. Lege `CHANGELOG.md` an:
+
+      1. Titel `# Changelog` und ein Satz, dass das Format auf Keep a Changelog basiert und das Projekt Semantic
+         Versioning folgt.
+      2. `## [Unreleased]` mit `### Added` und dem Eintrag `- Dokumentation für Mitwirkende.`
+      3. `## [1.0.0] - 2026-10-01` mit `### Added` und mindestens zwei Einträgen (z. B. Umrechnung, Umgebungsvariable).
+      4. Am Ende die Vergleichslinks:
+         `[Unreleased]: https://github.com/example/einheiten/compare/v1.0.0...HEAD` und
+         `[1.0.0]: https://github.com/example/einheiten/releases/tag/v1.0.0`.
+    checklist:
+      - Unreleased-Abschnitt ganz oben
+      - Version 1.0.0 mit Datum und Kategorie Added
+      - Vergleichslinks am Ende
+    hints:
+      - Neueste Version oben, älteste unten.
+      - "Die Einträge beschreiben, was Nutzer:innen davon haben – z. B. `- Umrechnung zwischen m, km, cm, mi und ft.`"
+    checks:
+      - type: command
+        run: grep -E '^(# Changelog|## \[Unreleased\]|## \[1\.0\.0\] - 2026-10-01)\s*$' CHANGELOG.md | tr '\n' '|'
+        stdout_equals: "# Changelog|## [Unreleased]|## [1.0.0] - 2026-10-01|"
+        message: "CHANGELOG.md braucht in dieser Reihenfolge `# Changelog`, `## [Unreleased]` und `## [1.0.0] - 2026-10-01`."
+      - type: file_contains
+        path: CHANGELOG.md
+        pattern: "Keep a Changelog"
+        message: Erwähne unter dem Titel, dass das Format auf Keep a Changelog basiert.
+      - type: command
+        run: awk '/^## \[Unreleased\]/{f=1;next} /^## /{f=0} f' CHANGELOG.md | grep -A3 '^### Added' | grep -c 'Dokumentation für Mitwirkende'
+        stdout_equals: "1"
+        message: "Unter `## [Unreleased]` fehlt `### Added` mit dem Eintrag `- Dokumentation für Mitwirkende.`."
+      - type: command
+        run: awk '/^## \[1\.0\.0\]/{f=1;next} /^## /{f=0} f' CHANGELOG.md | grep -A8 '^### Added' | grep -c '^- '
+        stdout_matches: "^([2-9]|[1-9][0-9])$"
+        message: "Version 1.0.0 braucht `### Added` mit mindestens zwei Einträgen."
+      - type: file_contains
+        path: CHANGELOG.md
+        pattern: "^\\[Unreleased\\]: https://github\\.com/example/einheiten/compare/v1\\.0\\.0\\.\\.\\.HEAD\\s*$"
+        message: "Es fehlt der Link `[Unreleased]: https://github.com/example/einheiten/compare/v1.0.0...HEAD`."
+      - type: file_contains
+        path: CHANGELOG.md
+        pattern: "^\\[1\\.0\\.0\\]: https://github\\.com/example/einheiten/releases/tag/v1\\.0\\.0\\s*$"
+        message: "Es fehlt der Link `[1.0.0]: https://github.com/example/einheiten/releases/tag/v1.0.0`."
+    solution: |
+      ```bash
+      cat > CHANGELOG.md <<'EOF'
+      # Changelog
+
+      Alle wichtigen Änderungen stehen in dieser Datei. Das Format basiert auf
+      [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und das Projekt folgt
+      [Semantic Versioning](https://semver.org/lang/de/).
+
+      ## [Unreleased]
+
+      ### Added
+
+      - Dokumentation für Mitwirkende.
+
+      ## [1.0.0] - 2026-10-01
+
+      ### Added
+
+      - Umrechnung zwischen m, km, cm, mi und ft.
+      - Anzahl der Nachkommastellen über NACHKOMMASTELLEN einstellbar.
+
+      [Unreleased]: https://github.com/example/einheiten/compare/v1.0.0...HEAD
+      [1.0.0]: https://github.com/example/einheiten/releases/tag/v1.0.0
+      EOF
+      ```
+  - id: adr
+    title: Eine Entscheidung festhalten
+    description: |
+      Der Umrechner kommt bewusst ohne npm-Abhängigkeiten aus. Halte diese Entscheidung als ADR fest.
+
+      1. Lege `docs/adr/0001-keine-laufzeit-abhaengigkeiten.md` an. Erste Zeile: `# 1. Keine Laufzeit-Abhängigkeiten`.
+      2. Er braucht `## Status` (Akzeptiert), `## Kontext`, `## Entscheidung` und `## Konsequenzen` – jeweils mit Text.
+      3. In den Konsequenzen steht mindestens ein Vorteil **und** ein Nachteil.
+    checklist:
+      - ADR mit Nummer im Dateinamen und im Titel
+      - Status, Kontext, Entscheidung, Konsequenzen
+      - Vor- und Nachteile genannt
+    hints:
+      - "Kontext: Das Werkzeug soll überall laufen, wo Node.js installiert ist – ohne `npm install`."
+      - "Konsequenzen: Vorteil – sofort startklar, keine Sicherheitslücken in Fremdpaketen. Nachteil – Funktionen wie das Einlesen von Optionen bauen wir selbst."
+    checks:
+      - type: command
+        run: head -n 1 docs/adr/0001-keine-laufzeit-abhaengigkeiten.md
+        stdout_matches: "^# 1\\. Keine Laufzeit-Abhängigkeiten\\s*$"
+        message: "docs/adr/0001-keine-laufzeit-abhaengigkeiten.md fehlt oder beginnt nicht mit `# 1. Keine Laufzeit-Abhängigkeiten`."
+      - type: command
+        run: |
+          f=docs/adr/0001-keine-laufzeit-abhaengigkeiten.md
+          for s in Status Kontext Entscheidung Konsequenzen; do
+            n=$(awk -v s="## $s" '$0 ~ "^"s"[[:space:]]*$" {f=1;next} /^## /{f=0} f && NF' "$f" | wc -l)
+            [ "$n" -ge 1 ] || echo "leer oder fehlt: $s"
+          done
+        stdout_equals: ""
+        message: "Der ADR braucht `## Status`, `## Kontext`, `## Entscheidung` und `## Konsequenzen` – jeweils mit Text."
+      - type: command
+        run: awk '/^## Status/{f=1;next} /^## /{f=0} f' docs/adr/0001-keine-laufzeit-abhaengigkeiten.md | grep -ciE 'akzeptiert|accepted'
+        stdout_matches: "^[1-9]"
+        message: Der Status des ADR soll „Akzeptiert“ sein.
+      - type: command
+        run: awk '/^## Konsequenzen/{f=1;next} /^## /{f=0} f' docs/adr/0001-keine-laufzeit-abhaengigkeiten.md | grep -c '\S'
+        stdout_matches: "^([2-9]|[1-9][0-9])$"
+        message: Nenne in den Konsequenzen mindestens einen Vorteil und einen Nachteil – also mindestens zwei Zeilen.
+    solution: |
+      ```bash
+      mkdir -p docs/adr
+      cat > docs/adr/0001-keine-laufzeit-abhaengigkeiten.md <<'EOF'
+      # 1. Keine Laufzeit-Abhängigkeiten
+
+      ## Status
+
+      Akzeptiert
+
+      ## Kontext
+
+      Das Werkzeug soll auf jedem Rechner mit Node.js laufen, ohne vorher `npm install` auszuführen.
+
+      ## Entscheidung
+
+      Der Umrechner nutzt zur Laufzeit nur Funktionen von Node.js selbst und keine npm-Pakete.
+
+      ## Konsequenzen
+
+      - Vorteil: sofort startklar, keine Sicherheitslücken in fremden Paketen.
+      - Nachteil: Komfortfunktionen wie das Einlesen von Optionen bauen wir selbst.
+      EOF
+      ```
+  - id: how-to
+    title: Eine How-to-Anleitung und ein Doku-Index
+    description: |
+      Wer eine neue Einheit ergänzen will, braucht eine kurze Anleitung. Leg sie nach Diátaxis in `docs/how-to/` ab.
+
+      1. Lege `docs/how-to/neue-einheit.md` an. Titel: `# Neue Einheit hinzufügen`.
+      2. Darunter nummerierte Schritte (mindestens drei), z. B. Faktor eintragen, ausprobieren, Doku und Changelog ergänzen.
+      3. Ein `js`-Codeblock zeigt, wie die neue Einheit in `FACTORS` eingetragen wird, z. B. `in: 0.0254`.
+      4. Lege `docs/README.md` als Inhaltsverzeichnis an: `# Dokumentation`, darunter `## How-to-Anleitungen` mit dem
+         Link `[Neue Einheit hinzufügen](how-to/neue-einheit.md)` und `## Entscheidungen` mit dem Link auf deinen ADR
+         `(adr/0001-keine-laufzeit-abhaengigkeiten.md)`.
+    checklist:
+      - How-to mit nummerierten Schritten
+      - Codeblock mit Sprachangabe js
+      - Inhaltsverzeichnis docs/README.md mit relativen Links
+    hints:
+      - Eine How-to-Anleitung erklärt keine Grundlagen – sie führt direkt zum Ziel.
+      - "Die Links in docs/README.md sind relativ zu docs/ – also `how-to/…` und `adr/…`, ohne `docs/` davor."
+    checks:
+      - type: command
+        run: head -n 1 docs/how-to/neue-einheit.md
+        stdout_matches: "^# Neue Einheit hinzufügen\\s*$"
+        message: "docs/how-to/neue-einheit.md fehlt oder beginnt nicht mit `# Neue Einheit hinzufügen`."
+      - type: command
+        run: grep -cE '^[0-9]+\. ' docs/how-to/neue-einheit.md
+        stdout_matches: "^([3-9]|[1-9][0-9])$"
+        message: Die Anleitung braucht mindestens drei nummerierte Schritte.
+      - type: command
+        run: awk '/^ *```js/{c=1;next} /^ *```/{c=0} c' docs/how-to/neue-einheit.md | grep -cE '[a-z]+:\s*[0-9.]+'
+        stdout_matches: "^[1-9]"
+        message: "Es fehlt ein ```js-Codeblock, der eine Einheit mit Faktor zeigt, z. B. `in: 0.0254`."
+      - type: command
+        run: grep -E '^(# Dokumentation|## How-to-Anleitungen|## Entscheidungen)\s*$' docs/README.md | tr '\n' '|'
+        stdout_equals: "# Dokumentation|## How-to-Anleitungen|## Entscheidungen|"
+        message: "docs/README.md braucht `# Dokumentation`, `## How-to-Anleitungen` und `## Entscheidungen` in dieser Reihenfolge."
+      - type: command
+        run: grep -c '](how-to/neue-einheit.md)\|](adr/0001-keine-laufzeit-abhaengigkeiten.md)' docs/README.md
+        stdout_equals: "2"
+        message: docs/README.md soll mit relativen Links auf die How-to-Anleitung und den ADR verweisen.
+    solution: |
+      ~~~bash
+      mkdir -p docs/how-to
+      cat > docs/how-to/neue-einheit.md <<'EOF'
+      # Neue Einheit hinzufügen
+
+      So ergänzt du den Umrechner um eine weitere Längeneinheit, hier Zoll (`in`).
+
+      1. Trage die Einheit mit ihrem Faktor in Metern in `FACTORS` in `src/convert.js` ein:
+
+         ```js
+         const FACTORS = { m: 1, km: 1000, cm: 0.01, mi: 1609.344, ft: 0.3048, in: 0.0254 }
+         ```
+
+      2. Probier sie aus: `node src/convert.js 1 ft in` gibt `12.00` aus.
+      3. Ergänze die Einheit in der README unter „Fehlerbehebung“.
+      4. Schreib einen Eintrag unter `[Unreleased]` im CHANGELOG.md.
+      EOF
+      cat > docs/README.md <<'EOF'
+      # Dokumentation
+
+      ## How-to-Anleitungen
+
+      - [Neue Einheit hinzufügen](how-to/neue-einheit.md)
+
+      ## Entscheidungen
+
+      - [1. Keine Laufzeit-Abhängigkeiten](adr/0001-keine-laufzeit-abhaengigkeiten.md)
+      EOF
+      ~~~
+  - id: lint-und-links
+    title: Doku automatisch prüfen
+    description: |
+      Jetzt sorgst du dafür, dass die Doku sauber bleibt. Richte markdownlint ein und prüfe alle Links.
+
+      1. `npm install --save-dev markdownlint-cli2@0.23.3`
+      2. Lege `.markdownlint-cli2.jsonc` an:
+
+         ```json
+         {
+           "config": { "MD013": false, "MD024": { "siblings_only": true }, "MD060": false },
+           "ignores": ["node_modules/**"]
+         }
+         ```
+
+      3. `npm pkg set 'scripts.lint:docs=markdownlint-cli2 "**/*.md"'`
+      4. Führe `npm run lint:docs` aus und behebe alle Meldungen in deinen Markdown-Dateien.
+      5. Stacklab prüft zusätzlich, ob jeder relative Link in deinen Markdown-Dateien auf eine existierende Datei zeigt.
+    checklist:
+      - markdownlint-cli2 als devDependency installiert
+      - Konfiguration und npm-Skript lint:docs angelegt
+      - npm run lint:docs läuft ohne Fehler
+      - Alle relativen Links zeigen auf existierende Dateien
+    hints:
+      - "Die meisten Meldungen betreffen fehlende Leerzeilen um Überschriften, Listen und Codeblöcke."
+      - "Prüfe die Links selbst: `grep -oE '\\]\\([^)]+\\)' -r --include='*.md' --exclude-dir=node_modules .` zeigt alle Linkziele."
+    checks:
+      - type: command
+        run: jq -r '.devDependencies["markdownlint-cli2"] // empty' package.json
+        stdout_matches: "\\d"
+        message: markdownlint-cli2 fehlt in den devDependencies.
+      - type: command
+        run: jq -r '.scripts["lint:docs"] // empty' package.json
+        stdout_matches: "^markdownlint-cli2\\s"
+        message: Es fehlt das npm-Skript `lint:docs`.
+      - type: command
+        run: npm run --silent lint:docs
+        message: "`npm run lint:docs` meldet noch Fehler. Behebe jede Meldung."
+      - type: command
+        run: npx --no-install markdownlint-cli2 README.md CONTRIBUTING.md CHANGELOG.md "docs/**/*.md"
+        message: Die Doku-Dateien dürfen nicht über `ignores` vom Linter ausgeschlossen werden.
+      - type: command
+        run: |
+          find . -name '*.md' -not -path './node_modules/*' | while read -r f; do
+            d=$(dirname "$f")
+            grep -oE '\]\([^)]+\)' "$f" | sed -E 's/^\]\((.*)\)$/\1/' | while read -r l; do
+              t="${l%%#*}"
+              case "$t" in ''|http://*|https://*|mailto:*) continue ;; esac
+              [ -e "$d/$t" ] || echo "$f -> $l"
+            done
+          done
+        stdout_equals: ""
+        message: Mindestens ein relativer Link zeigt ins Leere. Die Ausgabe zeigt Datei und Linkziel.
+    solution: |
+      ~~~bash
+      npm install --save-dev markdownlint-cli2@0.23.3
+      cat > .markdownlint-cli2.jsonc <<'EOF'
+      {
+        "config": { "MD013": false, "MD024": { "siblings_only": true }, "MD060": false },
+        "ignores": ["node_modules/**"]
+      }
+      EOF
+      npm pkg set 'scripts.lint:docs=markdownlint-cli2 "**/*.md"'
+      npm run lint:docs
+      ~~~
+  - id: commit
+    title: Alles sauber committen
+    description: |
+      Zum Schluss landet die Doku im Repository – als eigener, sauberer Commit.
+
+      1. Prüf mit `git status`, was neu ist. `node_modules/` darf **nicht** auftauchen (dafür sorgt die .gitignore).
+      2. Committe alle neuen und geänderten Dateien in **einem** Commit vom Typ `docs`, z. B.
+         `docs: add readme, contributing guide, changelog and adr`.
+      3. Am Ende ist das Arbeitsverzeichnis sauber: `git status --porcelain` gibt nichts aus.
+    checklist:
+      - Ein docs-Commit mit der kompletten Doku
+      - package.json und package-lock.json mit committet
+      - Keine Dateien aus node_modules im Repository
+      - Arbeitsverzeichnis sauber
+    hints:
+      - "`git add .` ist hier in Ordnung, weil die .gitignore node_modules ausschließt – prüf trotzdem vorher `git status`."
+      - "Auch `package-lock.json` gehört in den Commit, damit alle dieselbe Linter-Version bekommen."
+    checks:
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen. Committe alles mit einem docs-Commit.
+      - type: command
+        run: git log -1 --format=%s
+        stdout_matches: "^docs(\\([^)]+\\))?!?: \\S"
+        message: "Der letzte Commit braucht eine Nachricht vom Typ docs."
+      - type: command
+        run: git ls-files README.md CONTRIBUTING.md CHANGELOG.md docs/README.md docs/how-to/neue-einheit.md docs/adr/0001-keine-laufzeit-abhaengigkeiten.md .markdownlint-cli2.jsonc package-lock.json | wc -l
+        stdout_matches: "^\\s*8\\s*$"
+        message: Nicht alle Doku-Dateien sind committet. Prüfe README, CONTRIBUTING, CHANGELOG, docs/, die Linter-Konfiguration und package-lock.json.
+      - type: command
+        run: git ls-files | grep -c '^node_modules/' || true
+        stdout_equals: "0"
+        message: node_modules gehört nicht ins Repository. Entferne es mit `git rm -r --cached node_modules` und prüfe die .gitignore.
+    solution: |
+      ```bash
+      git status
+      git add .
+      git commit -m "docs: add readme, contributing guide, changelog and adr"
+      git status --porcelain
+      ```

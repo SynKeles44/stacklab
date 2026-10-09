@@ -1,0 +1,314 @@
+- slug: dokumentation
+  term: Dokumentation
+  short: Texte, die Menschen helfen, Software zu benutzen, zu verstehen oder zu ändern.
+  explanation: >
+    Zur Dokumentation gehören README, Anleitungen, Nachschlagewerke, Erklärungen von Entscheidungen, Changelogs
+    und Kommentare im Code. Sie beantwortet vor allem das Warum und Wie, das der Code selbst nicht zeigt.
+  example: Die README erklärt, wie man ein Projekt startet; ein ADR erklärt, warum es PostgreSQL nutzt.
+  category: dokumentation
+  aliases: [Doku, Dokumentationen, Docs]
+  related: [readme, changelog, adr]
+  lesson: dokumentation-schreiben/warum-dokumentation
+- slug: bus-faktor
+  term: Bus-Faktor
+  short: Die Zahl der Personen, die ausfallen müssten, bis niemand mehr weiß, wie ein Projekt funktioniert.
+  explanation: >
+    Ein Bus-Faktor von 1 bedeutet, dass das Wissen über einen wichtigen Teil nur in einem Kopf steckt. Fällt diese
+    Person aus, steht das Team still. Dokumentation und geteiltes Wissen erhöhen den Bus-Faktor.
+  example: Nur eine Kollegin kennt das Deployment – der Bus-Faktor ist 1.
+  category: dokumentation
+  aliases: [Busfaktor, Bus Factor, Truck-Faktor]
+  related: [dokumentation, onboarding]
+  lesson: dokumentation-schreiben/warum-dokumentation
+- slug: zielgruppe
+  term: Zielgruppe
+  short: Die Menschen, für die ein Text geschrieben ist.
+  explanation: >
+    In der Software-Doku sind typische Zielgruppen Nutzer:innen, neue Teammitglieder, erfahrene Entwickler:innen und
+    der Betrieb. Jede Gruppe will etwas anderes wissen. Eine Seite funktioniert am besten, wenn sie für genau eine
+    Zielgruppe geschrieben ist.
+  example: Eine Installationsanleitung für Einsteiger:innen erklärt jeden Schritt; eine Referenz für Profis nicht.
+  category: dokumentation
+  aliases: [Zielgruppen, Leserschaft]
+  related: [diataxis]
+  lesson: dokumentation-schreiben/zielgruppen-und-doku-arten
+- slug: diataxis
+  term: Diátaxis
+  short: Ein Modell, das Dokumentation in vier Arten einteilt – Tutorial, How-to-Anleitung, Referenz und Erklärung.
+  explanation: >
+    Diátaxis ordnet jede Doku-Seite nach zwei Fragen ein: Geht es ums Tun oder ums Verstehen, und liest die Person
+    beim Lernen oder beim Arbeiten? Aus den Kombinationen entstehen die vier Arten. Wer sie trennt, bekommt
+    übersichtlichere Doku.
+  example: "Ein Ordner `docs/` mit den Unterordnern `tutorials/`, `how-to/`, `reference/` und `explanation/`."
+  category: dokumentation
+  aliases: [Diataxis, Diátaxis-Modell]
+  related: [tutorial, how-to-anleitung, referenzdokumentation, erklaerung-doku]
+  lesson: dokumentation-schreiben/zielgruppen-und-doku-arten
+- slug: tutorial
+  term: Tutorial
+  short: Eine Lern-Anleitung, die Anfänger:innen an einem sicheren Beispiel Schritt für Schritt an die Hand nimmt.
+  explanation: >
+    Ein Tutorial ist lernorientiert: Es führt durch ein kleines Beispiel, das garantiert funktioniert, und sorgt für
+    ein Erfolgserlebnis. Vollständigkeit und Sonderfälle sind hier unwichtig.
+  example: '„Baue in 15 Minuten deine erste Notiz-App“'
+  category: dokumentation
+  aliases: [Tutorials, Lernanleitung]
+  related: [diataxis, how-to-anleitung]
+  lesson: dokumentation-schreiben/zielgruppen-und-doku-arten
+- slug: how-to-anleitung
+  term: How-to-Anleitung
+  short: Eine Anleitung, die eine konkrete Aufgabe in nummerierten Schritten löst.
+  explanation: >
+    How-to-Anleitungen richten sich an Leute, die schon mit dem Projekt arbeiten können. Sie erklären keine
+    Grundlagen, sondern führen direkt zum Ziel – zum Beispiel zum Ändern eines Ports.
+  example: '„So stellst du die Datenbank auf PostgreSQL um“ mit drei nummerierten Schritten.'
+  category: dokumentation
+  aliases: [How-to, How-to-Guide, How-to-Anleitungen, Anleitung]
+  related: [diataxis, tutorial]
+  lesson: dokumentation-schreiben/zielgruppen-und-doku-arten
+- slug: referenzdokumentation
+  term: Referenzdokumentation
+  short: Nüchterne, vollständige Doku zum Nachschlagen, etwa alle Optionen oder Endpunkte.
+  explanation: >
+    Eine Referenz ist wie ein Wörterbuch: gleich aufgebaut, vollständig und ohne Geschichten. Sie beschreibt jede
+    Option, jeden Befehl oder jeden API-Endpunkt mit Typ, Standardwert und Beispiel.
+  example: Eine Tabelle aller Umgebungsvariablen mit Standardwert und Bedeutung.
+  category: dokumentation
+  aliases: [Referenz-Doku, Referenz (Doku), Reference]
+  related: [diataxis, erklaerung-doku]
+  lesson: dokumentation-schreiben/zielgruppen-und-doku-arten
+- slug: erklaerung-doku
+  term: Erklärung (Doku-Art)
+  short: Eine Doku-Seite, die Hintergründe, Zusammenhänge und das Warum hinter Entscheidungen beschreibt.
+  explanation: >
+    Erklärungen sind verständnisorientiert. Sie dürfen Alternativen abwägen und Meinungen enthalten – anders als eine
+    Referenz. Architecture Decision Records sind ein typisches Beispiel.
+  example: '„Warum wir für E-Mails eine Warteschlange nutzen“'
+  category: dokumentation
+  aliases: [Erklärung, Explanation, Hintergrund-Doku]
+  related: [diataxis, adr]
+  lesson: dokumentation-schreiben/zielgruppen-und-doku-arten
+- slug: glossar
+  term: Glossar
+  short: Eine Liste festgelegter Fachbegriffe mit ihrer Bedeutung.
+  explanation: >
+    Ein Glossar sorgt dafür, dass alle im Team für dieselbe Sache dasselbe Wort benutzen. Es kann auch verbotene
+    Synonyme nennen, etwa „Konto, nicht Account“.
+  example: '„Nutzer – eine Person mit Konto. Nicht: User, Anwender, Benutzer.“'
+  category: dokumentation
+  aliases: [Glossare, Begriffsliste]
+  related: [styleguide]
+  lesson: dokumentation-schreiben/verstaendlich-schreiben
+- slug: rendern
+  term: Rendern
+  short: Das Umwandeln von Quelltext wie Markdown in eine fertig formatierte Darstellung.
+  explanation: >
+    Markdown ist reiner Text mit Sonderzeichen. Ein Programm wie GitHub oder ein Editor rendert ihn zu HTML, sodass
+    aus `# Titel` eine große Überschrift wird. Auch Browser rendern HTML zu sichtbaren Seiten.
+  example: GitHub rendert die README.md automatisch unter der Dateiliste.
+  category: dokumentation
+  aliases: [gerendert, Rendering, rendert]
+  related: [markdown, html]
+  lesson: dokumentation-schreiben/markdown-grundlagen
+- slug: commonmark
+  term: CommonMark
+  short: Eine genaue Spezifikation der Markdown-Grundsyntax.
+  explanation: >
+    Das ursprüngliche Markdown war an vielen Stellen ungenau, deshalb verhielten sich Programme unterschiedlich.
+    CommonMark legt genau fest, wie jede Schreibweise gemeint ist. Viele Markdown-Varianten bauen darauf auf.
+  example: Nach CommonMark ist `##Titel` ohne Leerzeichen keine Überschrift.
+  category: dokumentation
+  aliases: [Common Mark]
+  related: [markdown, gfm]
+  lesson: dokumentation-schreiben/markdown-grundlagen
+- slug: gfm
+  term: GitHub Flavored Markdown
+  short: Die Markdown-Variante von GitHub mit Tabellen, Aufgabenlisten und weiteren Erweiterungen.
+  explanation: >
+    GitHub Flavored Markdown (GFM) erweitert CommonMark um Tabellen, Aufgabenlisten, durchgestrichenen Text und
+    automatische Links. GitHub nutzt es für READMEs, Issues und Pull Requests.
+  example: "`- [ ] Tests schreiben` wird in GFM zu einer anklickbaren Checkbox."
+  category: dokumentation
+  aliases: [GFM, GitHub-Markdown]
+  related: [commonmark, markdown]
+  lesson: dokumentation-schreiben/markdown-grundlagen
+- slug: relativer-link
+  term: Relativer Link
+  short: Ein Link auf eine Datei im selben Repository, angegeben ausgehend vom Ordner der aktuellen Datei.
+  explanation: >
+    Relative Links enthalten keine Domain, sondern nur einen Pfad wie `docs/installation.md`. Sie funktionieren auf
+    GitHub, im Editor und in jeder Kopie des Repositorys. Zeigt der Pfad auf eine nicht vorhandene Datei, ist der
+    Link kaputt.
+  example: "`[Installation](docs/installation.md)` in der README im Hauptordner."
+  category: dokumentation
+  aliases: [relative Links, relativen Link]
+  related: [hyperlink, link-checker]
+  lesson: dokumentation-schreiben/markdown-grundlagen
+- slug: code-fence
+  term: Codeblock (Markdown)
+  short: Ein Block zwischen drei Backticks, in dem Code oder Befehle unverändert angezeigt werden.
+  explanation: >
+    Ein Codeblock beginnt mit einer Zeile aus drei Backticks und optional der Sprache, etwa `bash`, und endet mit drei
+    Backticks. Alles dazwischen erscheint in Festbreitenschrift. Die Sprachangabe schaltet die Syntax-Hervorhebung ein.
+  example: "Eine Zeile ```bash, darunter `npm install`, dann eine Zeile ```."
+  category: dokumentation
+  aliases: [Codeblöcke, Fenced Code Block, Code-Fence, Codeblock in Markdown]
+  related: [markdown, syntax-hervorhebung]
+  lesson: dokumentation-schreiben/codebloecke-und-tabellen
+- slug: syntax-hervorhebung
+  term: Syntax-Hervorhebung
+  short: Das farbige Darstellen von Code, damit Schlüsselwörter, Strings und Kommentare leichter erkennbar sind.
+  explanation: >
+    Editoren und Plattformen wie GitHub färben Code nach seiner Sprache ein. In Markdown erfährt das Programm die
+    Sprache aus der Angabe hinter den öffnenden Backticks eines Codeblocks.
+  example: "Hinter ```json werden Schlüssel und Werte unterschiedlich gefärbt."
+  category: dokumentation
+  aliases: [Syntax Highlighting, Syntaxhervorhebung]
+  related: [code-fence]
+  lesson: dokumentation-schreiben/codebloecke-und-tabellen
+- slug: aufgabenliste
+  term: Aufgabenliste
+  short: Eine Markdown-Liste mit Kästchen, die man abhaken kann.
+  explanation: >
+    Eine Aufgabenliste schreibst du mit `- [ ]` für offene und `- [x]` für erledigte Punkte. GitHub zeigt daraus
+    anklickbare Checkboxen und zählt in Issues und Pull Requests mit, wie viel erledigt ist.
+  example: "`- [x] Tests geschrieben` und `- [ ] Doku aktualisiert`"
+  category: dokumentation
+  aliases: [Aufgabenlisten, Task List, Checkliste]
+  related: [gfm]
+  lesson: dokumentation-schreiben/codebloecke-und-tabellen
+- slug: github-alert
+  term: GitHub-Alert
+  short: Ein farbiger Hinweiskasten in GitHub-Markdown, geschrieben als Zitat mit einem Typ wie [!WARNING].
+  explanation: >
+    GitHub kennt fünf Typen: NOTE, TIP, IMPORTANT, WARNING und CAUTION. Die erste Zeile des Zitats nennt den Typ, die
+    folgenden Zeilen den Text. Unbekannte Typen erscheinen als normales Zitat.
+  example: "`> [!WARNING]` und darunter `> Erstelle vorher ein Backup.`"
+  category: dokumentation
+  aliases: [GitHub-Alerts, Alert, Alerts, Hinweiskasten]
+  related: [gfm, markdown]
+  lesson: dokumentation-schreiben/github-markdown
+- slug: mermaid
+  term: Mermaid
+  short: Eine Sprache, mit der du Diagramme als Text beschreibst, die dann gezeichnet werden.
+  explanation: >
+    Mermaid-Diagramme stehen in einem Codeblock mit der Sprache `mermaid`. GitHub und viele Doku-Werkzeuge zeichnen
+    daraus Ablauf-, Sequenz- und andere Diagramme. Weil das Diagramm Text ist, lässt es sich mit Git versionieren
+    und im Diff prüfen.
+  example: "`flowchart LR` und darunter `A[Build] --> B[Tests]`"
+  category: dokumentation
+  aliases: [Mermaid-Diagramm, Mermaid-Diagramme]
+  related: [gfm, diff]
+  lesson: dokumentation-schreiben/github-markdown
+- slug: anker-link
+  term: Anker-Link
+  short: Ein Link auf eine bestimmte Überschrift innerhalb einer Seite, geschrieben mit #.
+  explanation: >
+    GitHub erzeugt aus jeder Überschrift automatisch einen Anker: alles klein, Satzzeichen entfernt, Leerzeichen zu
+    Bindestrichen. Mit `#anker` springst du direkt zu dieser Stelle – praktisch für Inhaltsverzeichnisse.
+  example: "`[Lizenz](#lizenz)` springt zur Überschrift `## Lizenz`."
+  category: dokumentation
+  aliases: [Anker, Sprungmarke, Anker-Links]
+  related: [hyperlink, relativer-link]
+  lesson: dokumentation-schreiben/github-markdown
+- slug: badge
+  term: Badge
+  short: Ein kleines Bild in der README, das einen Status wie Build-Ergebnis, Version oder Lizenz anzeigt.
+  explanation: >
+    Badges sind technisch Markdown-Bilder, deren Grafik ein Dienst erzeugt, etwa Shields.io oder GitHub Actions.
+    Sie zeigen auf einen Blick, ob der letzte Build grün ist oder welche Lizenz gilt.
+  example: "`![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue)`"
+  category: dokumentation
+  aliases: [Badges, Status-Badge, Abzeichen]
+  related: [readme]
+  lesson: dokumentation-schreiben/die-gute-readme
+- slug: keep-a-changelog
+  term: Keep a Changelog
+  short: Ein verbreitetes Format für Changelogs mit Unreleased-Abschnitt, Datum pro Version und sechs Kategorien.
+  explanation: >
+    Nach Keep a Changelog steht die neueste Version oben, jede Version hat ein Datum im Format JJJJ-MM-TT, und
+    Änderungen sind in Added, Changed, Deprecated, Removed, Fixed und Security gruppiert. Unter `[Unreleased]`
+    sammeln sich Änderungen bis zum nächsten Release.
+  example: "`## [1.2.0] - 2026-10-01` mit `### Added` und `### Fixed`"
+  category: dokumentation
+  aliases: [Keep-a-Changelog]
+  related: [changelog, semantic-versioning]
+  lesson: dokumentation-schreiben/contributing-und-changelog
+- slug: docblock
+  term: Docblock
+  short: Ein strukturierter Kommentar über einer Funktion oder Klasse, den Werkzeuge auswerten.
+  explanation: >
+    In PHP beginnt ein Docblock mit `/**` und enthält Tags wie `@param` und `@return`. IDEs und Analysewerkzeuge wie
+    PHPStan lesen daraus Typinformationen. Er lohnt sich, wenn er genauer ist als die Signatur, etwa bei `list<Order>`.
+  example: "`/** @param list<Order> $orders */` über `function count(array $orders)`"
+  category: dokumentation
+  aliases: [Docblocks, PHPDoc, Doc-Kommentar]
+  related: [kommentar, jsdoc]
+  lesson: dokumentation-schreiben/code-kommentare
+- slug: jsdoc
+  term: JSDoc
+  short: Eine Schreibweise für strukturierte Kommentare in JavaScript, die Typen und Beschreibungen liefert.
+  explanation: >
+    JSDoc-Kommentare stehen in `/** … */` über Funktionen und nutzen Tags wie `@param {number} preis`. Editoren und
+    TypeScript lesen sie aus und geben so auch in reinem JavaScript Typ-Hinweise.
+  example: "`/** @param {number} netto */ function brutto(netto) { … }`"
+  category: dokumentation
+  aliases: [JS-Doc]
+  related: [docblock, typescript]
+  lesson: dokumentation-schreiben/code-kommentare
+- slug: docs-as-code
+  term: Docs as Code
+  short: Der Ansatz, Dokumentation mit denselben Werkzeugen und Abläufen wie Code zu pflegen.
+  explanation: >
+    Bei Docs as Code liegt die Doku als Textdatei im Repository, wird im selben Pull Request wie der Code geändert,
+    im Review geprüft und in der CI automatisch kontrolliert. Dadurch veraltet sie seltener als in einem separaten Wiki.
+  example: Ein Pull Request ändert `src/export.js` und gleichzeitig die README und den CHANGELOG.
+  category: dokumentation
+  aliases: [Docs-as-Code, Doku als Code]
+  related: [markdownlint, link-checker, pull-request]
+  lesson: dokumentation-schreiben/docs-as-code
+- slug: markdownlint
+  term: markdownlint
+  short: Ein Linter, der Markdown-Dateien auf Form- und Stilfehler prüft.
+  explanation: >
+    markdownlint kennt nummerierte Regeln wie MD022 (Leerzeilen um Überschriften) oder MD040 (Sprache am Codeblock).
+    Über das npm-Paket `markdownlint-cli2` läuft es im Terminal und in der CI; Einstellungen stehen in
+    `.markdownlint-cli2.jsonc`.
+  example: "`npx markdownlint-cli2 \"**/*.md\"`"
+  category: dokumentation
+  aliases: [markdownlint-cli2, Markdown-Linter]
+  related: [linter, docs-as-code]
+  lesson: dokumentation-schreiben/docs-as-code
+- slug: link-checker
+  term: Link-Checker
+  short: Ein Werkzeug, das prüft, ob alle Links in der Doku auf existierende Ziele zeigen.
+  explanation: >
+    Link-Checker finden Verweise auf gelöschte Dateien, umbenannte Überschriften oder Webseiten, die es nicht mehr gibt.
+    Sie laufen meist in der CI. Ein verbreitetes Werkzeug ist lychee.
+  example: "Ein Link auf `docs/konfiguration.md`, obwohl die Datei in `docs/referenz/` liegt, wird gemeldet."
+  category: dokumentation
+  aliases: [Linkchecker, Link-Prüfung, Link-Check]
+  related: [relativer-link, docs-as-code]
+  lesson: dokumentation-schreiben/docs-as-code
+- slug: claude-md
+  term: CLAUDE.md
+  short: Die Datei mit Projekt-Anweisungen, die Claude Code zu Beginn einer Sitzung liest.
+  explanation: >
+    In der CLAUDE.md stehen Befehle, Konventionen und Grenzen eines Projekts für Claude Code. Gibt es keine CLAUDE.md,
+    liest Claude Code eine vorhandene AGENTS.md. Mit der Zeile `@AGENTS.md` kann die CLAUDE.md die gemeinsame Datei einbinden.
+  example: "Eine CLAUDE.md, die nur `@AGENTS.md` und zwei Claude-spezifische Hinweise enthält."
+  category: dokumentation
+  aliases: [Claude.md]
+  related: [agents-md, ki-assistent]
+  lesson: dokumentation-schreiben/doku-fuer-ki-assistenten
+- slug: wiki
+  term: Wiki
+  short: Eine Sammlung von Webseiten, die mehrere Personen direkt im Browser bearbeiten können.
+  explanation: >
+    Viele Teams nutzen Wikis für Doku. Weil ein Wiki außerhalb des Repositorys liegt, wird es bei Code-Änderungen leicht
+    vergessen und veraltet. Docs as Code holt die Doku deshalb ins Repository.
+  example: Eine Installationsanleitung im Firmen-Wiki, die seit einem Jahr niemand angepasst hat.
+  category: dokumentation
+  aliases: [Wikis]
+  related: [docs-as-code, dokumentation]
+  lesson: dokumentation-schreiben/docs-as-code

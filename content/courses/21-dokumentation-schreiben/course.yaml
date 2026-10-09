@@ -1,0 +1,32 @@
+title: Dokumentation schreiben
+subtitle: README, Changelog, ADRs und Markdown – Doku, die Menschen (und KI-Assistenten) wirklich lesen
+description: >
+  Code erklärt, **was** ein Programm tut. Dokumentation erklärt, **warum** es so gebaut ist, **wie** man es
+  startet und **wo** man nachschlägt. In diesem Kurs lernst du, gute Dokumentation zu schreiben – nicht als
+  lästige Pflicht am Ende, sondern als Teil deiner täglichen Arbeit.
+
+
+  Du lernst die vier Doku-Arten nach Diátaxis kennen, schreibst sauberes Markdown mit Tabellen, Codeblöcken,
+  GitHub-Hinweisen und Mermaid-Diagrammen und baust die Standarddateien eines Repositorys: README,
+  CONTRIBUTING, CHANGELOG und Architecture Decision Records. Zum Schluss behandelst du Doku wie Code –
+  im Repository, im Pull Request geprüft und automatisch mit markdownlint kontrolliert. Fast jede Lektion
+  hat eine Aufgabe im echten Übungs-Terminal.
+category: web
+level: einsteiger
+icon: book-open-text
+color: "#78716c"
+estimated_hours: 4
+workspace_dir: doku
+prerequisites: [git]
+learning_goals:
+  - Du erklärst, warum Dokumentation Onboarding beschleunigt und den Bus-Faktor eines Teams senkt.
+  - Du ordnest jeden Text einer der vier Doku-Arten nach Diátaxis zu und schreibst für eine klare Zielgruppe.
+  - Du schreibst Markdown sicher – inklusive Codeblöcken, Tabellen, Aufgabenlisten, GitHub-Hinweisen und Mermaid.
+  - Du schreibst eine README, mit der Fremde ohne Rückfrage starten können.
+  - Du pflegst CONTRIBUTING, CHANGELOG nach Keep a Changelog und Architecture Decision Records.
+  - Du schreibst Code-Kommentare, die das Warum erklären, und prüfst Doku automatisch mit markdownlint.
+  - Du schreibst eine AGENTS.md, damit KI-Assistenten dein Projekt richtig verstehen.
+references:
+  - Doku-Ordner nach Diátaxis in größeren Webprojekten (tutorials, how-to, reference, explanation)
+  - Architecture Decision Records im Ordner docs/adr, die im Pull Request gemeinsam mit dem Code reviewt werden
+  - AGENTS.md als gemeinsame Anweisungsdatei für mehrere KI-Assistenten in einem Repository

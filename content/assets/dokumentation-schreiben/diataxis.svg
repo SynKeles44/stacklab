@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="460" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Die vier Doku-Arten nach Diátaxis</text>
+  <rect x="140" y="70" width="310" height="160" rx="14" fill="#22d3ee" fill-opacity="0.18" stroke="#22d3ee" stroke-width="3"/>
+  <text x="295" y="125" text-anchor="middle" font-size="26" font-weight="700" fill="#1e1b3a">Tutorial</text>
+  <text x="295" y="165" text-anchor="middle" font-size="17" fill="#1e1b3a">lernorientiert: an die Hand nehmen</text>
+  <text x="295" y="198" text-anchor="middle" font-size="15" font-style="italic" fill="#4b4766">„Baue deine erste Notiz-App“</text>
+  <rect x="470" y="70" width="310" height="160" rx="14" fill="#34d399" fill-opacity="0.18" stroke="#34d399" stroke-width="3"/>
+  <text x="625" y="125" text-anchor="middle" font-size="26" font-weight="700" fill="#1e1b3a">How-to-Anleitung</text>
+  <text x="625" y="165" text-anchor="middle" font-size="17" fill="#1e1b3a">zielorientiert: ein Problem lösen</text>
+  <text x="625" y="198" text-anchor="middle" font-size="15" font-style="italic" fill="#4b4766">„So änderst du den Port“</text>
+  <rect x="140" y="250" width="310" height="160" rx="14" fill="#a78bfa" fill-opacity="0.18" stroke="#a78bfa" stroke-width="3"/>
+  <text x="295" y="305" text-anchor="middle" font-size="26" font-weight="700" fill="#1e1b3a">Erklärung</text>
+  <text x="295" y="345" text-anchor="middle" font-size="17" fill="#1e1b3a">verständnisorientiert: das Warum</text>
+  <text x="295" y="378" text-anchor="middle" font-size="15" font-style="italic" fill="#4b4766">„Warum wir Queues nutzen“</text>
+  <rect x="470" y="250" width="310" height="160" rx="14" fill="#f59e0b" fill-opacity="0.18" stroke="#f59e0b" stroke-width="3"/>
+  <text x="625" y="305" text-anchor="middle" font-size="26" font-weight="700" fill="#1e1b3a">Referenz</text>
+  <text x="625" y="345" text-anchor="middle" font-size="17" fill="#1e1b3a">informationsorientiert: nachschlagen</text>
+  <text x="625" y="378" text-anchor="middle" font-size="15" font-style="italic" fill="#4b4766">„Alle Optionen der CLI“</text>
+  <text x="70" y="150" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a" transform="rotate(-90 70 150)">Tun (Praxis)</text>
+  <text x="70" y="330" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a" transform="rotate(-90 70 330)">Verstehen (Theorie)</text>
+  <text x="295" y="450" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">beim Lernen</text>
+  <text x="625" y="450" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">beim Arbeiten</text>
+  <line x1="140" y1="475" x2="780" y2="475" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="460" y="494" text-anchor="middle" font-size="14" fill="#4b4766">Wer liest gerade – und mit welchem Ziel?</text>
+</svg>

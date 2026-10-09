@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 560" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="410" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Aufbau einer guten README</text>
+  <rect x="40" y="56" width="380" height="480" rx="12" fill="#f8fafc" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="60" y="84" font-size="14" fill="#4b4766" font-family="ui-monospace, Menlo, monospace">README.md</text>
+  <line x1="40" y1="94" x2="420" y2="94" stroke="#1e1b3a" stroke-width="1"/>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#1e1b3a">
+    <rect x="56" y="104" width="348" height="52" rx="6" fill="#22d3ee" fill-opacity="0.2" stroke="#22d3ee"/>
+    <text x="66" y="125" font-weight="700"># hallo-server</text>
+    <text x="66" y="146" font-size="13">Ein Satz: was es ist und für wen</text>
+    <rect x="56" y="162" width="348" height="30" rx="6" fill="#22d3ee" fill-opacity="0.12" stroke="#22d3ee"/>
+    <text x="66" y="182" font-size="13">[build passing] [license MIT]</text>
+    <rect x="56" y="198" width="348" height="70" rx="6" fill="#34d399" fill-opacity="0.2" stroke="#34d399"/>
+    <text x="66" y="220" font-weight="700">## Schnellstart</text>
+    <text x="66" y="242" font-size="13">npm install</text>
+    <text x="66" y="259" font-size="13">npm start</text>
+    <rect x="56" y="274" width="348" height="40" rx="6" fill="#34d399" fill-opacity="0.12" stroke="#34d399"/>
+    <text x="66" y="299" font-weight="700">## Voraussetzungen</text>
+    <rect x="56" y="320" width="348" height="40" rx="6" fill="#a78bfa" fill-opacity="0.18" stroke="#a78bfa"/>
+    <text x="66" y="345" font-weight="700">## Konfiguration</text>
+    <rect x="56" y="366" width="348" height="40" rx="6" fill="#f59e0b" fill-opacity="0.18" stroke="#f59e0b"/>
+    <text x="66" y="391" font-weight="700">## Fehlerbehebung</text>
+    <rect x="56" y="412" width="348" height="40" rx="6" fill="#f87171" fill-opacity="0.15" stroke="#f87171"/>
+    <text x="66" y="437" font-weight="700">## Mitwirken</text>
+    <rect x="56" y="458" width="348" height="40" rx="6" fill="#f87171" fill-opacity="0.1" stroke="#f87171"/>
+    <text x="66" y="483" font-weight="700">## Lizenz</text>
+  </g>
+  <g font-size="16" fill="#1e1b3a">
+    <line x1="410" y1="130" x2="470" y2="130" stroke="#1e1b3a" stroke-width="1.5"/>
+    <text x="480" y="125" font-weight="700">Was ist das?</text>
+    <text x="480" y="145" font-size="14" fill="#4b4766">Titel, Zweck, Zielgruppe, Badges</text>
+    <line x1="410" y1="245" x2="470" y2="245" stroke="#1e1b3a" stroke-width="1.5"/>
+    <text x="480" y="240" font-weight="700">Wie starte ich?</text>
+    <text x="480" y="260" font-size="14" fill="#4b4766">Kopierbare Befehle, die sofort laufen</text>
+    <line x1="410" y1="294" x2="470" y2="294" stroke="#1e1b3a" stroke-width="1.5"/>
+    <text x="480" y="299" font-size="14" fill="#4b4766">Was muss installiert sein – mit Version?</text>
+    <line x1="410" y1="340" x2="470" y2="340" stroke="#1e1b3a" stroke-width="1.5"/>
+    <text x="480" y="345" font-size="14" fill="#4b4766">Welche Einstellungen gibt es?</text>
+    <line x1="410" y1="386" x2="470" y2="386" stroke="#1e1b3a" stroke-width="1.5"/>
+    <text x="480" y="391" font-size="14" fill="#4b4766">Was tun, wenn es nicht klappt?</text>
+    <line x1="410" y1="455" x2="470" y2="455" stroke="#1e1b3a" stroke-width="1.5"/>
+    <text x="480" y="450" font-weight="700">Darf ich mitmachen?</text>
+    <text x="480" y="470" font-size="14" fill="#4b4766">Link auf CONTRIBUTING.md und LICENSE</text>
+  </g>
+</svg>

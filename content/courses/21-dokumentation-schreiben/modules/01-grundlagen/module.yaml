@@ -1,0 +1,108 @@
+title: Warum und für wen
+description: Welche Probleme Dokumentation löst, für wen du schreibst, die vier Doku-Arten nach Diátaxis und die Regeln für verständliche Texte.
+exercise:
+  id: modul-uebung-diataxis
+  type: terminal
+  title: Einen Doku-Ordner nach Diátaxis aufräumen
+  description: |
+    Im Ordner `doku-aufraeumen` liegt ein Projekt, dessen Doku-Seiten alle durcheinander in `docs/` liegen.
+    Lies jede Seite kurz an (`head docs/*.md`) und räume auf:
+
+    1. Lege in `docs/` die vier Ordner `tutorials`, `how-to`, `reference` und `explanation` an.
+    2. Verschiebe jede der sieben Seiten mit `mv` in den passenden Ordner. Die Dateinamen bleiben gleich.
+    3. Lege `docs/README.md` als Inhaltsverzeichnis an: eine Überschrift `# Dokumentation` und darunter die vier
+       Abschnitte `## Tutorials`, `## How-to-Anleitungen`, `## Referenz` und `## Erklärungen`.
+    4. Verlinke unter jedem Abschnitt die passenden Seiten mit relativen Links, z. B.
+       `- [Port ändern](how-to/port-aendern.md)`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Seiten angelegt werden.
+  workdir: doku-aufraeumen
+  setup: |
+    mkdir -p docs
+    printf '# Erste Schritte\n\nIn diesem Tutorial baust du in 15 Minuten deine erste Notiz und lernst dabei die App kennen.\n\n1. Installiere die App.\n2. Lege deine erste Notiz an.\n' > docs/erste-schritte.md
+    printf '# Port ändern\n\nSo startest du den Server auf einem anderen Port.\n\n1. Öffne `.env`.\n2. Setze `PORT=8080`.\n3. Starte den Server neu.\n' > docs/port-aendern.md
+    printf '# Datenbank wechseln\n\nSo stellst du die App von SQLite auf PostgreSQL um.\n\n1. Setze `DB_DRIVER=pgsql`.\n2. Führe die Migrationen aus.\n' > docs/datenbank-wechseln.md
+    printf '# Konfiguration\n\nAlle Umgebungsvariablen im Überblick.\n\n| Variable | Standardwert | Bedeutung |\n|---|---|---|\n| PORT | 3000 | Port des Servers |\n| DB_DRIVER | sqlite | Datenbanktreiber |\n' > docs/konfiguration.md
+    printf '# CLI-Befehle\n\nAlle Befehle der Kommandozeile mit ihren Optionen.\n\n- `notes add <text>` legt eine Notiz an.\n- `notes list` zeigt alle Notizen.\n' > docs/cli-befehle.md
+    printf '# Architektur\n\nWarum die App aus einem Server und einem Hintergrund-Worker besteht und wie beide zusammenspielen.\n' > docs/architektur.md
+    printf '# Warum SQLite?\n\nWir haben uns für SQLite entschieden, weil die App auf einem Rechner läuft und keinen eigenen Datenbankserver braucht.\n' > docs/warum-sqlite.md
+  checks:
+    - type: file_exists
+      path: docs/tutorials/erste-schritte.md
+      message: erste-schritte.md ist ein Tutorial und gehört nach docs/tutorials/.
+    - type: file_exists
+      path: docs/how-to/port-aendern.md
+      message: port-aendern.md löst eine konkrete Aufgabe – verschiebe sie nach docs/how-to/.
+    - type: file_exists
+      path: docs/how-to/datenbank-wechseln.md
+      message: datenbank-wechseln.md ist ebenfalls eine How-to-Anleitung und gehört nach docs/how-to/.
+    - type: file_exists
+      path: docs/reference/konfiguration.md
+      message: konfiguration.md ist zum Nachschlagen da und gehört nach docs/reference/.
+    - type: file_exists
+      path: docs/reference/cli-befehle.md
+      message: cli-befehle.md listet alle Befehle auf – das ist Referenz (docs/reference/).
+    - type: file_exists
+      path: docs/explanation/architektur.md
+      message: architektur.md erklärt das Warum – verschiebe sie nach docs/explanation/.
+    - type: file_exists
+      path: docs/explanation/warum-sqlite.md
+      message: warum-sqlite.md begründet eine Entscheidung und gehört nach docs/explanation/.
+    - type: command
+      run: ls docs/*.md 2>/dev/null | grep -v '^docs/README.md$' | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: Direkt in docs/ liegen noch Seiten. Außer README.md soll alles in den vier Unterordnern liegen.
+    - type: file_contains
+      path: docs/README.md
+      pattern: "^# Dokumentation"
+      message: "docs/README.md braucht die Überschrift `# Dokumentation`."
+    - type: command
+      run: grep -cE '^## (Tutorials|How-to-Anleitungen|Referenz|Erklärungen)\s*$' docs/README.md
+      stdout_equals: "4"
+      message: "docs/README.md braucht genau die vier Abschnitte `## Tutorials`, `## How-to-Anleitungen`, `## Referenz` und `## Erklärungen`."
+    - type: command
+      run: |
+        cd docs
+        n=0
+        for link in $(grep -oE '\]\([^)]+\.md\)' README.md | sed -E 's/^\]\((.*)\)$/\1/'); do
+          [ -f "$link" ] || { echo "kaputt: $link"; exit 1; }
+          n=$((n+1))
+        done
+        echo "$n"
+      stdout_matches: "^[7-9]$|^[1-9][0-9]$"
+      message: Verlinke alle sieben Seiten mit relativen Links wie `[Port ändern](how-to/port-aendern.md)` – jeder Link muss auf eine existierende Datei zeigen.
+  hints:
+    - "Leg die Ordner in einem Rutsch an: `mkdir docs/tutorials docs/how-to docs/reference docs/explanation`."
+    - "Verschieben geht mit `mv docs/port-aendern.md docs/how-to/`. Frag dich bei jeder Seite: lernen, erledigen, nachschlagen oder verstehen?"
+    - "Ein Link im Inhaltsverzeichnis sieht so aus: `- [Konfiguration](reference/konfiguration.md)`. Der Pfad ist relativ zu docs/README.md."
+  solution: |
+    ```bash
+    cd doku-aufraeumen
+    mkdir docs/tutorials docs/how-to docs/reference docs/explanation
+    mv docs/erste-schritte.md docs/tutorials/
+    mv docs/port-aendern.md docs/datenbank-wechseln.md docs/how-to/
+    mv docs/konfiguration.md docs/cli-befehle.md docs/reference/
+    mv docs/architektur.md docs/warum-sqlite.md docs/explanation/
+    cat > docs/README.md <<'EOF'
+    # Dokumentation
+
+    ## Tutorials
+
+    - [Erste Schritte](tutorials/erste-schritte.md)
+
+    ## How-to-Anleitungen
+
+    - [Port ändern](how-to/port-aendern.md)
+    - [Datenbank wechseln](how-to/datenbank-wechseln.md)
+
+    ## Referenz
+
+    - [Konfiguration](reference/konfiguration.md)
+    - [CLI-Befehle](reference/cli-befehle.md)
+
+    ## Erklärungen
+
+    - [Architektur](explanation/architektur.md)
+    - [Warum SQLite?](explanation/warum-sqlite.md)
+    EOF
+    ```
