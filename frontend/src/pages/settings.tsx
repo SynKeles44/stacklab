@@ -1,7 +1,8 @@
-import { CheckCircle2, FolderCog, Save, TerminalSquare, UserRound, XCircle } from 'lucide-react'
+import { CheckCircle2, FolderCog, Palette, Save, TerminalSquare, UserRound, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLoaderData } from 'react-router'
 import { toast } from 'sonner'
+import { AppearancePicker } from '@/components/common/appearance-picker'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -53,11 +54,21 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-12">
-      <h1 className="text-3xl font-bold tracking-tight">Einstellungen</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Einstellungen</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><FolderCog className="size-5 text-brand" /> Workspace-Ordner</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Palette className="size-5 text-primary" /> Darstellung</CardTitle>
+          <CardDescription>Wähle das Design der Oberfläche. Deine Wahl wird in deinem Konto gespeichert.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AppearancePicker />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><FolderCog className="size-5 text-primary" /> Workspace-Ordner</CardTitle>
           <CardDescription>
             Hier legt das Übungs-Terminal alles ab, was du baust – pro Kurs ein eigener Unterordner. Du kannst den Ordner jederzeit mit deinem Editor öffnen.
           </CardDescription>
@@ -90,7 +101,7 @@ export function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><TerminalSquare className="size-5 text-brand" /> Übungs-Terminal</CardTitle>
+          <CardTitle className="flex items-center gap-2"><TerminalSquare className="size-5 text-primary" /> Übungs-Terminal</CardTitle>
           <CardDescription>Status des Sandbox-Containers und der installierten Werkzeuge.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -113,7 +124,7 @@ export function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><UserRound className="size-5 text-brand" /> Profil</CardTitle>
+          <CardTitle className="flex items-center gap-2"><UserRound className="size-5 text-primary" /> Profil</CardTitle>
           <CardDescription>Dein Name erscheint auf deinen Zertifikaten.</CardDescription>
         </CardHeader>
         <CardContent>

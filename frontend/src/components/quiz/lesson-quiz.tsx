@@ -1,12 +1,11 @@
 import { ArrowRight, CheckCircle2, RotateCcw, Trophy, XCircle } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
-import { celebrateSmall, originFromElement } from '@/lib/celebrate'
 import type { Question } from '@/lib/content-schemas'
 import { emptyAnswer, isAnswered, isCorrect, toPublic, type Answer } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
@@ -21,7 +20,6 @@ export function LessonQuiz({ lessonId, questions, best, onFinished }: Props) {
   const [answers, setAnswers] = useState<Answer[]>(() => publicQuestions.map(emptyAnswer))
   const [checked, setChecked] = useState<boolean[]>(() => questions.map(() => false))
   const [finished, setFinished] = useState(false)
-  const resultRef = useRef<HTMLDivElement>(null)
 
   const question = questions[index]!
   const view = publicQuestions[index]!
@@ -41,9 +39,6 @@ export function LessonQuiz({ lessonId, questions, best, onFinished }: Props) {
     }
     setFinished(true)
     onFinished?.(score, questions.length)
-    if (score / questions.length >= 0.8) {
-      window.setTimeout(() => celebrateSmall(originFromElement(resultRef.current)), 150)
-    }
     if (getToken()) {
       await Api.submitQuiz(lessonId, { score, max_score: questions.length, answers }).catch(() => undefined)
     }
@@ -73,7 +68,7 @@ export function LessonQuiz({ lessonId, questions, best, onFinished }: Props) {
       <CardContent>
         <AnimatePresence mode="wait">
           {finished ? (
-            <motion.div key="result" ref={resultRef} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="py-6 text-center">
+            <motion.div key="result" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="py-6 text-center">
               <Trophy className={cn('mx-auto size-12', score / questions.length >= 0.8 ? 'text-warning' : 'text-muted-foreground')} />
               <p className="mt-3 text-3xl font-bold">
                 {score} / {questions.length}

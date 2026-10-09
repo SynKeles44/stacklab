@@ -1,5 +1,4 @@
 import { ArrowRight, Award, BookOpen, CheckCircle2, Circle, Clock, Dumbbell, FolderGit2, Hammer, Layers, Target, Wrench } from 'lucide-react'
-import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import Markdown from 'react-markdown'
 import { Link, useLoaderData } from 'react-router'
@@ -13,11 +12,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
 import type { CourseDetail, CourseModule } from '@/lib/api'
+import { useUiVariant } from '@/lib/ui-variant'
 import { CATEGORY_LABELS, LEVEL_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 export function CoursePage() {
   const course = useLoaderData() as CourseDetail
+  const apple = useUiVariant() === 'apple'
   const lessons = course.modules.flatMap((module) => module.lessons)
   const completed = lessons.filter((lesson) => lesson.completed).length
   const percent = lessons.length ? Math.round((completed / lessons.length) * 100) : 0
@@ -31,64 +32,52 @@ export function CoursePage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden border-b">
-        <div className="absolute inset-0 bg-grid opacity-40 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
-        <div className="absolute inset-0" style={{ background: `radial-gradient(70% 90% at 10% 0%, color-mix(in oklab, ${course.color ?? 'var(--brand)'} 22%, transparent), transparent 70%)` }} />
-        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end">
-            <div className="flex-1">
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{CATEGORY_LABELS[course.category] ?? course.category}</Badge>
-                <Badge variant="outline">{LEVEL_LABELS[course.level] ?? course.level}</Badge>
-                <span className="text-sm text-muted-foreground">Kurs {course.position}</span>
-              </div>
-              <div className="flex items-start gap-4">
-                <CourseIcon icon={course.icon} color={course.color} size="lg" />
-                <div className="min-w-0">
-                  <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-3xl font-bold tracking-tight text-balance sm:text-5xl">
-                    {course.title}
-                  </motion.h1>
-                  {course.subtitle && <p className="mt-2 text-lg text-muted-foreground">{course.subtitle}</p>}
-                </div>
-              </div>
-              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5"><Layers className="size-4" /> {course.modules.length} Module</span>
-                <span className="inline-flex items-center gap-1.5"><BookOpen className="size-4" /> {lessons.length} Lektionen</span>
-                {course.estimated_hours > 0 && <span className="inline-flex items-center gap-1.5"><Clock className="size-4" /> ca. {course.estimated_hours} Stunden</span>}
-                {course.project && <span className="inline-flex items-center gap-1.5"><Hammer className="size-4" /> Begleitetes Projekt</span>}
-                {course.exam && <span className="inline-flex items-center gap-1.5"><Award className="size-4" /> Prüfung mit Zertifikat</span>}
+      <section className="mx-auto max-w-6xl px-4 pt-8 pb-6 sm:px-6 sm:pt-12">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end">
+          <div className="flex-1">
+            <p className="text-sm text-muted-foreground">
+              Kurs {course.position} · {CATEGORY_LABELS[course.category] ?? course.category} · {LEVEL_LABELS[course.level] ?? course.level}
+            </p>
+            <div className="mt-3 flex items-start gap-4">
+              <CourseIcon icon={course.icon} color={course.color} />
+              <div className="min-w-0">
+                <h1 className={cn('tracking-tight', apple ? 'text-4xl font-bold sm:text-5xl' : 'text-3xl font-semibold sm:text-4xl')}>{course.title}</h1>
+                {course.subtitle && <p className="mt-2 text-lg text-muted-foreground">{course.subtitle}</p>}
               </div>
             </div>
-            <Card className="w-full lg:w-80">
-              <CardContent className="space-y-3 pt-6">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">Dein Fortschritt</span>
-                  <span className="tabular-nums text-muted-foreground">{completed} / {lessons.length}</span>
-                </div>
-                <Progress value={percent} />
-                {target ? (
-                  <Button asChild className="w-full" size="lg">
-                    <Link to={`/kurse/${course.slug}/${target.slug}`}>
-                      {completed === 0 ? 'Kurs starten' : 'Weiterlernen'} <ArrowRight />
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button asChild className="w-full" size="lg" variant={course.exam ? 'default' : 'secondary'}>
-                    <Link to={course.exam ? `/kurse/${course.slug}/pruefung` : `/kurse/${course.slug}/${firstLesson?.slug ?? ''}`}>
-                      {course.exam ? 'Zur Prüfung' : 'Wiederholen'} <ArrowRight />
-                    </Link>
-                  </Button>
-                )}
-                <div className="flex justify-center">
-                  <BookmarkButton type="course" refKey={course.slug} label={course.title} url={`/kurse/${course.slug}`} />
-                </div>
-              </CardContent>
-            </Card>
+            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5"><Layers className="size-4" /> {course.modules.length} Module</span>
+              <span className="inline-flex items-center gap-1.5"><BookOpen className="size-4" /> {lessons.length} Lektionen</span>
+              {course.estimated_hours > 0 && <span className="inline-flex items-center gap-1.5"><Clock className="size-4" /> ca. {course.estimated_hours} Stunden</span>}
+              {course.project && <span className="inline-flex items-center gap-1.5"><Hammer className="size-4" /> Projekt</span>}
+              {course.exam && <span className="inline-flex items-center gap-1.5"><Award className="size-4" /> Prüfung</span>}
+            </div>
+          </div>
+          <div className="w-full space-y-3 rounded-xl bg-card p-4 shadow-card lg:w-72">
+            <div className="flex items-center justify-between text-sm">
+              <span>Fortschritt</span>
+              <span className="text-muted-foreground tabular-nums">{completed} / {lessons.length}</span>
+            </div>
+            <Progress value={percent} className="h-1.5" />
+            <div className="flex gap-2">
+              {target ? (
+                <Button asChild className="flex-1">
+                  <Link to={`/kurse/${course.slug}/${target.slug}`}>{completed === 0 ? 'Kurs starten' : 'Weiterlernen'} <ArrowRight /></Link>
+                </Button>
+              ) : (
+                <Button asChild className="flex-1" variant={course.exam ? 'default' : 'secondary'}>
+                  <Link to={course.exam ? `/kurse/${course.slug}/pruefung` : `/kurse/${course.slug}/${firstLesson?.slug ?? ''}`}>
+                    {course.exam ? 'Zur Prüfung' : 'Wiederholen'} <ArrowRight />
+                  </Link>
+                </Button>
+              )}
+              <BookmarkButton type="course" refKey={course.slug} label={course.title} url={`/kurse/${course.slug}`} />
+            </div>
           </div>
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0 space-y-10">
           <section className="lesson-prose">
             <Markdown>{course.description}</Markdown>
@@ -184,11 +173,11 @@ function ModuleItem({ course, module, index }: { course: CourseDetail; module: C
   const allDone = module.lessons.length > 0 && done === module.lessons.length
 
   return (
-    <AccordionItem value={module.slug} className="overflow-hidden rounded-2xl border bg-card px-0 last:border-b">
+    <AccordionItem value={module.slug} className="overflow-hidden rounded-xl border-0 bg-card px-0 shadow-card">
       <div className="flex items-center gap-2 pr-3">
         <AccordionTrigger className="flex-1 px-5 py-4 hover:no-underline">
           <div className="flex items-center gap-4 text-left">
-            <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold', allDone && 'border-success bg-success text-white')}>
+            <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium tabular-nums', allDone && 'bg-success text-white')}>
               {allDone ? <CheckCircle2 className="size-5" /> : index + 1}
             </span>
             <div>

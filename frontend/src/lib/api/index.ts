@@ -6,7 +6,7 @@ export { ApiError } from './client'
 
 const nullableString = z.string().nullable()
 
-const userSchema = z.object({ id: z.number(), name: z.string(), email: z.string() })
+const userSchema = z.object({ id: z.number(), name: z.string(), email: z.string(), ui_variant: z.enum(['standard', 'apple']).optional() })
 const sessionSchema = z.object({ token: z.string(), user: userSchema })
 
 const progressSchema = z.object({ completed: z.number(), total: z.number(), percent: z.number() })
@@ -263,7 +263,7 @@ export const Api = {
   login: (body: { email: string; password: string }) => api('/auth/login', sessionSchema, { method: 'POST', body }),
   logout: () => api('/auth/logout', ok, { method: 'POST' }),
   me: () => api('/me', z.object({ user: userSchema })),
-  updateMe: (body: { name?: string; password?: string }) => api('/me', z.object({ user: userSchema }), { method: 'PATCH', body }),
+  updateMe: (body: { name?: string; password?: string; ui_variant?: 'standard' | 'apple' }) => api('/me', z.object({ user: userSchema }), { method: 'PATCH', body }),
 
   courses: (signal?: AbortSignal) => api('/courses', z.object({ courses: z.array(courseSummarySchema) }), { signal }),
   course: (slug: string, signal?: AbortSignal) => api(`/courses/${slug}`, z.object({ course: courseDetailSchema }), { signal }),

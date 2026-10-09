@@ -34,19 +34,18 @@ export function ExamResultPage() {
 
       {attempt.passed && (
         <motion.section
-          initial={{ opacity: 0, scale: 0.95, rotateX: 12 }}
-          animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-          transition={{ type: 'spring', stiffness: 120, damping: 16 }}
-          className="relative mt-6 overflow-hidden rounded-3xl border-2 border-brand/40 bg-card p-8 text-center shadow-xl sm:p-12 print:border-black print:shadow-none"
+          initial={{ opacity: 0, transform: 'scale(0.97)' }}
+          animate={{ opacity: 1, transform: 'scale(1)' }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.45 }}
+          className="mt-6 rounded-2xl bg-card p-8 text-center shadow-raised outline outline-1 outline-offset-[-10px] outline-border sm:p-12 print:shadow-none"
         >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,color-mix(in_oklab,var(--brand)_18%,transparent),transparent_60%)]" />
-          <div className="relative">
+          <div>
             <LogoMark className="mx-auto h-12" />
             <p className="mt-4 text-sm font-semibold tracking-[0.3em] text-muted-foreground uppercase">Zertifikat</p>
             <p className="mt-6 text-muted-foreground">Hiermit wird bestätigt, dass</p>
             <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{attempt.user_name ?? user?.name ?? 'Lernende:r'}</p>
             <p className="mt-4 text-muted-foreground">die Abschlussprüfung des Kurses</p>
-            <p className="mt-1 text-2xl font-semibold text-gradient">{exam.course.title}</p>
+            <p className="mt-1 text-2xl font-semibold">{exam.course.title}</p>
             <p className="mt-4 text-muted-foreground">mit <strong className="text-foreground">{percent} %</strong> erfolgreich bestanden hat.</p>
             <div className="mt-8 flex items-center justify-center gap-6 text-sm text-muted-foreground">
               <span>{formatDate(attempt.finished_at)}</span>

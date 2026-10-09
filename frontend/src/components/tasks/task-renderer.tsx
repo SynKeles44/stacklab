@@ -3,7 +3,6 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { Api } from '@/lib/api'
 import { getToken } from '@/lib/auth'
-import { celebrateSmall } from '@/lib/celebrate'
 import type { Task } from '@/lib/content-schemas'
 import { CodeTask } from './code-task'
 import { DiagramTask } from './diagram-task'
@@ -44,7 +43,6 @@ export function TaskRenderer({ task, context, done: initiallyDone, onCompleted }
 
   const onSolved = useCallback(async () => {
     const serverGraded = task.type === 'terminal' || (task.type === 'code' && task.language === 'php')
-    if (!done) celebrateSmall()
     setDone(true)
     onCompleted?.(task.id)
     if (!serverGraded && getToken()) {

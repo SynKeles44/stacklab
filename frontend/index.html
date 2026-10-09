@@ -7,6 +7,9 @@
     <meta name="description" content="Stacklab – interaktive Lernplattform für IT-Themen. Lernen durch echtes Tippen." />
     <meta name="theme-color" content="#0f0d1f" />
     <title>Stacklab</title>
+    <script>
+      try { document.documentElement.dataset.ui = localStorage.getItem('stacklab.ui') === 'apple' ? 'apple' : 'standard' } catch { document.documentElement.dataset.ui = 'standard' }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -57,12 +57,11 @@ function useAuthForm<T extends z.ZodType>(schema: T, submit: (data: z.infer<T>) 
 
 function AuthLayout({ title, description, children, footer }: { title: string; description: string; children: React.ReactNode; footer: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-[calc(100svh-3.5rem)] items-center justify-center px-4 py-12">
-      <div className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
-      <Card className="relative w-full max-w-md shadow-xl">
+    <div className="flex min-h-[calc(100svh-3.5rem)] items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
-          <LogoMark className="mx-auto h-10" />
-          <CardTitle className="mt-2 text-2xl">{title}</CardTitle>
+          <LogoMark className="mx-auto h-8" />
+          <CardTitle className="mt-3 text-xl">{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>

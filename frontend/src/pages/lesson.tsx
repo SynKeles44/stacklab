@@ -20,8 +20,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Api, type CourseDetail, type LessonResponse } from '@/lib/api'
 import { useSession } from '@/lib/auth'
-import { celebrateBig, celebrateSmall, originFromElement } from '@/lib/celebrate'
+import { celebrateBig } from '@/lib/celebrate'
 import { buildPages, type LessonPage as Page } from '@/lib/lesson-pages'
+import { useUiVariant } from '@/lib/ui-variant'
 import { markKnown } from '@/lib/unlocks'
 import { cn } from '@/lib/utils'
 
@@ -35,11 +36,12 @@ export function LessonPage() {
 function LessonView({ data }: { data: LessonData }) {
   const { lesson, state } = data
   const user = useSession()
+  const apple = useUiVariant() === 'apple'
   const [params, setParams] = useSearchParams()
   const [completed, setCompleted] = useState(state?.completed ?? false)
   const [completedTasks, setCompletedTasks] = useState<string[]>(state?.completed_tasks ?? [])
   const [outlineOpen, setOutlineOpen] = useState(false)
-  const [direction, setDirection] = useState(1)
+  const [animated, setAnimated] = useState(false)
   const topRef = useRef<HTMLDivElement>(null)
 
   const pages = useMemo(() => buildPages(lesson.body, lesson.tasks.map((task) => task.title), lesson.quiz.length > 0), [lesson])
@@ -48,9 +50,9 @@ function LessonView({ data }: { data: LessonData }) {
   const page = pages[index]!
 
   const goTo = useCallback(
-    (next: number) => {
+    (next: number, viaKeyboard = false) => {
       if (next < 0 || next >= pages.length || next === index) return
-      setDirection(next > index ? 1 : -1)
+      setAnimated(!viaKeyboard)
       setParams(next === 0 ? {} : { seite: String(next + 1) }, { replace: true, preventScrollReset: true })
       topRef.current?.scrollIntoView({ block: 'start' })
     },
@@ -67,8 +69,8 @@ function LessonView({ data }: { data: LessonData }) {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement
       if (target.closest('input, textarea, select, [contenteditable="true"], .cm-editor, .xterm, [role="dialog"]')) return
-      if (event.key === 'ArrowRight') goTo(index + 1)
-      if (event.key === 'ArrowLeft') goTo(index - 1)
+      if (event.key === 'ArrowRight') goTo(index + 1, true)
+      if (event.key === 'ArrowLeft') goTo(index - 1, true)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -129,10 +131,10 @@ function LessonView({ data }: { data: LessonData }) {
         <AnimatePresence mode="wait" initial={false}>
           <motion.section
             key={index}
-            initial={{ opacity: 0, x: direction * 32 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -32 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
+            initial={animated ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            exit={animated ? { opacity: 0, transition: { duration: 0.08 } } : undefined}
+            transition={{ duration: 0.14, ease: [0.23, 1, 0.32, 1] }}
             aria-label={`Seite ${index + 1} von ${pages.length}: ${page.title}`}
           >
             {page.kind === 'text' && <LessonMarkdown body={page.markdown} terms={lesson.terms} />}
@@ -154,7 +156,10 @@ function LessonView({ data }: { data: LessonData }) {
       </div>
 
       <nav
-        className="sticky bottom-0 z-20 -mx-4 mt-8 flex items-center gap-2 border-t bg-background/90 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none"
+        className={cn(
+          'sticky z-20 -mx-4 mt-8 flex items-center gap-2 px-4 py-3 sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:shadow-none sm:backdrop-blur-none',
+          apple ? 'material bottom-[calc(3.5rem+env(safe-area-inset-bottom))] shadow-[0_-0.5px_0_var(--border)] md:bottom-0' : 'bottom-0 border-t bg-background/90 backdrop-blur sm:border-0',
+        )}
         aria-label="Blättern"
       >
         <Button variant="outline" onClick={() => goTo(index - 1)} disabled={index === 0} aria-label="Vorherige Seite">
@@ -236,7 +241,6 @@ function FinishPage({ data, completed, completedTasks, onCompleted }: { data: Le
         celebrateBig()
         toast.success('Kurs abgeschlossen!', { description: `Du hast alle Lektionen von „${lesson.course.title}“ geschafft. Zeit für die Prüfung!` })
       } else if (result.newly_completed) {
-        celebrateSmall(originFromElement(buttonRef.current))
         toast.success('Lektion abgeschlossen', { description: result.course_progress ? `Kursfortschritt: ${result.course_progress.percent} %` : undefined })
       }
     } finally {

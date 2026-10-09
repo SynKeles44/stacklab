@@ -1,44 +1,49 @@
-import { BookOpen, Clock } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
-import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import type { CourseSummary } from '@/lib/api'
 import { LEVEL_LABELS } from '@/lib/format'
-import { CourseIcon } from './course-icon'
 import { BookmarkButton } from './bookmark-button'
+import { CourseIcon } from './course-icon'
 
 export function CourseCard({ course }: { course: CourseSummary }) {
+  const started = Boolean(course.progress && course.progress.completed > 0)
   return (
-    <Link
-      to={`/kurse/${course.slug}`}
-      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-brand/50 hover:shadow-lg"
-    >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-60 transition-opacity group-hover:opacity-100"
-        style={{ background: `radial-gradient(120% 100% at 0% 0%, color-mix(in oklab, ${course.color ?? 'var(--brand)'} 18%, transparent), transparent 70%)` }}
-      />
-      <div className="relative flex items-start gap-3">
-        <CourseIcon icon={course.icon} color={course.color} />
+    <Link to={`/kurse/${course.slug}`} className="pressable group flex h-full flex-col rounded-xl bg-card p-5 shadow-card transition-shadow hover:shadow-raised">
+      <div className="flex items-start gap-3">
+        <CourseIcon icon={course.icon} color={course.color} size="sm" />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-muted-foreground">Kurs {course.position}</p>
-          <h3 className="font-semibold leading-snug group-hover:text-brand">{course.title}</h3>
+          <h3 className="font-medium leading-snug">{course.title}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {LEVEL_LABELS[course.level] ?? course.level} · {course.lessons_count} Lektionen
+            {course.estimated_hours > 0 && ` · ~${course.estimated_hours} h`}
+          </p>
         </div>
-        <BookmarkButton type="course" refKey={course.slug} label={course.title} url={`/kurse/${course.slug}`} size="icon-sm" className="-mt-1 -mr-2" />
+        <BookmarkButton type="course" refKey={course.slug} label={course.title} url={`/kurse/${course.slug}`} size="icon-sm" className="-mt-1 -mr-2 opacity-60 group-hover:opacity-100" />
       </div>
-      {course.subtitle && <p className="relative mt-3 line-clamp-2 text-sm text-muted-foreground">{course.subtitle}</p>}
-      <div className="relative mt-auto pt-4">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <Badge variant="outline">{LEVEL_LABELS[course.level] ?? course.level}</Badge>
-          <span className="inline-flex items-center gap-1"><BookOpen className="size-3.5" /> {course.lessons_count} Lektionen</span>
-          {course.estimated_hours > 0 && <span className="inline-flex items-center gap-1"><Clock className="size-3.5" /> ~{course.estimated_hours} h</span>}
+      {course.subtitle && <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{course.subtitle}</p>}
+      {started && (
+        <div className="mt-auto flex items-center gap-2 pt-4">
+          <Progress value={course.progress!.percent} className="h-1" />
+          <span className="text-xs text-muted-foreground tabular-nums">{course.progress!.percent} %</span>
         </div>
-        {course.progress && course.progress.completed > 0 && (
-          <div className="mt-3 flex items-center gap-2">
-            <Progress value={course.progress.percent} className="h-1.5" />
-            <span className="text-xs font-medium tabular-nums">{course.progress.percent} %</span>
-          </div>
-        )}
+      )}
+    </Link>
+  )
+}
+
+/** Inset-grouped list row used by the Apple variant. */
+export function CourseRow({ course }: { course: CourseSummary }) {
+  const started = Boolean(course.progress && course.progress.completed > 0)
+  return (
+    <Link to={`/kurse/${course.slug}`} className="flex items-center gap-3 px-4 py-3 transition-colors active:bg-foreground/[0.06] hover:bg-foreground/[0.03]">
+      <CourseIcon icon={course.icon} color={course.color} size="sm" className="rounded-[0.55rem]" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{course.title}</p>
+        <p className="truncate text-sm text-muted-foreground">{course.subtitle ?? `${course.lessons_count} Lektionen`}</p>
       </div>
+      {started && <span className="text-sm text-muted-foreground tabular-nums">{course.progress!.percent} %</span>}
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground/50" />
     </Link>
   )
 }

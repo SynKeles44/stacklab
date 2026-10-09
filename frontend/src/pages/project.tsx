@@ -15,7 +15,7 @@ import { Progress } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
 import { Api, type CheckResult, type Project } from '@/lib/api'
 import { useSession } from '@/lib/auth'
-import { celebrateBig, celebrateSmall } from '@/lib/celebrate'
+import { celebrateBig } from '@/lib/celebrate'
 import { cn } from '@/lib/utils'
 
 type ProjectData = { project: Project; completed_steps: string[] }
@@ -39,8 +39,6 @@ export function ProjectPage() {
     if (next.length === project.steps.length) {
       celebrateBig()
       toast.success('Projekt fertig gebaut!', { description: 'Alles liegt jetzt als echtes Projekt in deinem Workspace.' })
-    } else {
-      celebrateSmall()
     }
   }
 
