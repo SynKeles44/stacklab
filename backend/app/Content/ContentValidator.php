@@ -408,6 +408,11 @@ final class ContentValidator
             if (isset($step['checks'])) {
                 $this->validateChecks((array) $step['checks'], $file, $where);
             }
+            if (array_key_exists('solve', $step) && (! is_string($step['solve']) || trim($step['solve']) === '')) {
+                $this->error($file, "{$where}: solve must be a non-empty shell script");
+            } elseif (! isset($step['solve'])) {
+                $this->warning($file, "{$where}: no solve script – learners cannot let Stacklab do this step");
+            }
         }
     }
 

@@ -36,7 +36,10 @@ final class ProjectController extends Controller
                 'goal' => $project->goal,
                 'workdir' => $project->workdir,
                 'has_setup' => $project->setup !== null,
-                'steps' => $project->steps,
+                'steps' => array_map(
+                    static fn (array $step): array => [...array_diff_key($step, ['solve' => true]), 'can_solve' => Project::solveScript($step) !== null],
+                    $project->steps,
+                ),
                 'course' => $course->only(['id', 'slug', 'title', 'color', 'icon', 'workspace_dir']),
             ],
             'completed_steps' => $user !== null
@@ -56,12 +59,35 @@ final class ProjectController extends Controller
             return response()->json(['passed' => true, 'results' => []]);
         }
 
-        $result = $this->sandbox->check((string) $project->course->workspace_dir, (string) ($definition['workdir'] ?? 'projekt'), $checks);
+        $result = $this->sandbox->check((string) $project->course->workspace_dir, $project->stepWorkdir($definition), $checks);
         if ($result['passed']) {
             $this->markDone($request, $project, $step);
         }
 
         return response()->json($result);
+    }
+
+    public function solve(Request $request, Project $project, string $step): JsonResponse
+    {
+        $definition = $project->findStep($step) ?? throw new ModelNotFoundException;
+        $script = Project::solveScript($definition) ?? abort(422, 'Für diesen Schritt gibt es keine automatische Lösung.');
+        $workdir = $project->stepWorkdir($definition);
+
+        $run = $this->sandbox->run((string) $project->course->workspace_dir, $workdir, $script);
+        if (! $run['ok']) {
+            return response()->json(['passed' => false, 'output' => $run['output'], 'results' => []]);
+        }
+
+        $checks = (array) ($definition['checks'] ?? []);
+        $result = $checks === []
+            ? ['passed' => true, 'results' => []]
+            : $this->sandbox->check((string) $project->course->workspace_dir, $workdir, $checks);
+
+        if ($result['passed']) {
+            $this->markDone($request, $project, $step);
+        }
+
+        return response()->json([...$result, 'output' => $run['output']]);
     }
 
     public function reset(Project $project): JsonResponse

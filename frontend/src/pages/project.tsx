@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, ChevronDown, Circle, FolderOpen, Lightbulb, ListChecks, Play, RotateCcw, ScrollText, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Wand2, CheckCircle2, ChevronDown, Circle, FolderOpen, Lightbulb, ListChecks, Play, RotateCcw, ScrollText, ShieldCheck } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Link, useLoaderData } from 'react-router'
@@ -156,6 +156,7 @@ function ProjectStep({ index, step, projectId, done, active, loggedIn, onDone, o
   const [hints, setHints] = useState(0)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<CheckResult | null>(null)
+  const [solveOutput, setSolveOutput] = useState<string | null>(null)
   const hasChecks = (step.checks?.length ?? 0) > 0
   const checklistDone = checklist.every(Boolean)
 
@@ -167,6 +168,26 @@ function ProjectStep({ index, step, projectId, done, active, loggedIn, onDone, o
       if (response.passed) onDone()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Prüfung fehlgeschlagen')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const solve = async () => {
+    setBusy(true)
+    try {
+      const response = await Api.solveProjectStep(projectId, step.id)
+      setResult(response.results.length ? response : null)
+      setSolveOutput(response.output || null)
+      if (response.passed) {
+        setChecklist((previous) => previous.map(() => true))
+        onDone()
+        toast.success('Schritt erledigt')
+      } else {
+        toast.error('Die Lösung ließ sich nicht vollständig automatisch ausführen. Sieh dir die Ausgabe an.')
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Ausführen fehlgeschlagen')
     } finally {
       setBusy(false)
     }
@@ -212,6 +233,9 @@ function ProjectStep({ index, step, projectId, done, active, loggedIn, onDone, o
                 </ul>
               )}
               {result && <CheckResults result={result} />}
+              {solveOutput && (
+                <pre className="max-h-60 overflow-auto rounded-lg bg-muted/60 p-3 font-mono text-xs whitespace-pre-wrap">{solveOutput}</pre>
+              )}
               <div className="flex flex-wrap gap-2">
                 {!done && loggedIn && (
                   <Button onClick={verify} disabled={busy || (!hasChecks && !checklistDone)}>
@@ -221,6 +245,26 @@ function ProjectStep({ index, step, projectId, done, active, loggedIn, onDone, o
                 {!loggedIn && <Button asChild><Link to="/anmelden">Anmelden, um Fortschritt zu speichern</Link></Button>}
                 {(step.hints?.length ?? 0) > hints && (
                   <Button variant="outline" onClick={() => setHints(hints + 1)}><Lightbulb /> Tipp</Button>
+                )}
+                {!done && loggedIn && step.can_solve && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" disabled={busy}><Wand2 /> Für mich erledigen</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Schritt automatisch erledigen?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Stacklab führt die Befehle aus dem Lösungsweg im Übungs-Terminal für dich aus und prüft den Schritt danach. Am meisten lernst du, wenn du es
+                          selbst versuchst – nutze das, wenn du feststeckst oder schnell weiterkommen willst.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Selbst versuchen</AlertDialogCancel>
+                        <AlertDialogAction onClick={solve}>Erledigen</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
                 {done && (
                   <Button

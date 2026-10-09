@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/terminal/session', [TerminalController::class, 'session']);
 
     Route::post('/projects/{project}/steps/{step}/verify', [ProjectController::class, 'verify']);
+    Route::post('/projects/{project}/steps/{step}/solve', [ProjectController::class, 'solve'])->middleware('throttle:30,1');
     Route::delete('/projects/{project}/steps/{step}', [ProjectController::class, 'reopen']);
     Route::post('/projects/{project}/reset', [ProjectController::class, 'reset'])->middleware('throttle:30,1');
 
@@ -67,5 +68,5 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('/settings/workspace', [SettingsController::class, 'workspace']);
     Route::put('/settings/workspace', [SettingsController::class, 'updateWorkspace']);
-});
     Route::delete('/settings/progress', [SettingsController::class, 'resetProgress'])->middleware('throttle:10,1');
+});

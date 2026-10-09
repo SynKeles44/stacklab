@@ -141,6 +141,7 @@ const projectSchema = z.object({
         checks: z.array(z.unknown()).optional(),
         solution: z.string().optional(),
         workdir: z.string().optional(),
+        can_solve: z.boolean().optional(),
       }),
     ),
     course: courseRefSchema,
@@ -313,6 +314,8 @@ export const Api = {
   resetProject: (project: number) => api(`/projects/${project}/reset`, z.object({ ok: z.boolean(), output: z.string() }), { method: 'POST' }),
   reopenProjectStep: (project: number, step: string) => api(`/projects/${project}/steps/${step}`, ok, { method: 'DELETE' }),
 
+  solveProjectStep: (project: number, step: string) =>
+    api(`/projects/${project}/steps/${step}/solve`, checkResultSchema.extend({ output: z.string() }), { method: 'POST' }),
   exam: (course: string, signal?: AbortSignal) => api(`/courses/${course}/exam`, examInfoSchema, { signal }),
   startExam: (id: number) => api(`/exams/${id}/start`, examStartSchema, { method: 'POST' }),
   submitExam: (attempt: number, body: { answers: unknown[]; tasks: Record<string, { passed?: boolean; code?: string }> }) =>

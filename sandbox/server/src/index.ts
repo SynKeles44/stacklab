@@ -51,6 +51,16 @@ const routes: Record<string, (body: Record<string, unknown>) => Promise<unknown>
     const result = await runBash(`set -e\n${setup}`, cwd, SETUP_TIMEOUT_MS);
     return { ok: result.code === 0 && !result.timedOut, output: (result.stdout + result.stderr).trim() };
   },
+  '/api/run': async (body) => {
+    const cwd = taskDir(WORKSPACE_ROOT, String(body.workspace_dir), String(body.workdir));
+    mkdirSync(cwd, { recursive: true });
+    const script = typeof body.script === 'string' ? body.script : '';
+    if (script.trim() === '') {
+      return { ok: false, output: '' };
+    }
+    const result = await runBash(`set -e\n${script}`, cwd, SETUP_TIMEOUT_MS);
+    return { ok: result.code === 0 && !result.timedOut, output: (result.stdout + result.stderr).trim() };
+  },
   '/api/run-php': async (body) => {
     courseDir(WORKSPACE_ROOT, String(body.workspace_dir));
     return runPhp(String(body.code ?? ''), (body.tests as PhpTest[]) ?? [], COMMAND_TIMEOUT_MS);

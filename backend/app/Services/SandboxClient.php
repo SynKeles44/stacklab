@@ -54,6 +54,12 @@ final class SandboxClient
         return $this->post('/api/reset', ['workspace_dir' => $workspaceDir, 'workdir' => $workdir, 'setup' => $setup]);
     }
 
+    /** @return array{ok: bool, output: string} */
+    public function run(string $workspaceDir, string $workdir, string $script): array
+    {
+        return $this->post('/api/run', ['workspace_dir' => $workspaceDir, 'workdir' => $workdir, 'script' => $script]);
+    }
+
     /**
      * @param  list<array<string, mixed>>  $tests
      * @return array{passed: bool, output: string, results: list<array{name: string, passed: bool, message: string}>}

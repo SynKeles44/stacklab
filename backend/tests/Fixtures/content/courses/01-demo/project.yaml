@@ -12,6 +12,8 @@ steps:
   - id: fertig
     title: Fertig
     description: Fertig machen.
+    solution: Lege die Datei `fertig.txt` an.
+    solve: touch fertig.txt
     checks:
       - type: file_exists
         path: fertig.txt

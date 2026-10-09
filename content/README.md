@@ -305,8 +305,16 @@ steps:
     checklist: [README angelegt, Erster Commit erstellt]
     hints: […]
     checks: […]              # optional, gleiche Check-Typen wie bei terminal-Aufgaben
-    solution: …
+    solution: …              # Markdown, wird Lernenden angezeigt
+    solve: |                 # Bash, Button „Für mich erledigen“; läuft im workdir
+      git init -q -b main
 ```
+
+`solve` ist ein nicht-interaktives Bash-Skript (läuft mit `set -e`, ohne Terminal, im Ordner `workdir`),
+das den Zustand herstellt, den die `checks` des Schritts erwarten. Die Schritte laufen nacheinander auf dem
+Ergebnis der vorigen Schritte auf, beginnend mit `setup`. Kein `nano`/`vim`, keine Platzhalter, keine
+Dauerprozesse (`npm run dev`) – Dateien mit `cat > datei <<'EOF'` schreiben. Prüfen mit
+`php artisan stacklab:solve-check <kurs-slug> --require-all`.
 
 ## exam.yaml – Prüfung
 

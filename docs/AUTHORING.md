@@ -129,6 +129,8 @@ Bildbreite/-höhe.
 
 - `project.yaml`: ein echtes Projekt, das Lernende **selbst** bauen, 5–10 Schritte, jeder mit
   Checkliste, Tipps und – wo möglich – automatischen `checks` im Workspace.
+- Jeder Projektschritt bekommt ein `solve`-Skript für den Button „Für mich erledigen“ (Vertrag in
+  `content/README.md`). `php artisan stacklab:solve-check <kurs> --require-all` muss grün sein.
 - `exam.yaml`: mindestens 15 Fragen über alle Module (Feld `module`!), 2–4 Praxis-Aufgaben
   (`code` oder `terminal`), `pass_percent: 70`, Zeitlimit passend zum Umfang.
 
@@ -136,6 +138,7 @@ Bildbreite/-höhe.
 
 ```bash
 cd backend && php artisan stacklab:validate --path=../content --warnings
+docker compose exec php php artisan stacklab:solve-check <kurs-slug> --require-all
 ```
 
 Fehler in deinen Dateien müssen weg. Warnungen zu kurzen Texten oder fehlenden Übungen ernst nehmen.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Exam;
 use App\Models\Lesson;
+use App\Models\LessonCompletion;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;

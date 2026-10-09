@@ -45,4 +45,18 @@ class Project extends Model
 
         return null;
     }
+
+    /** @param  array<string, mixed>  $step */
+    public function stepWorkdir(array $step): string
+    {
+        return is_string($step['workdir'] ?? null) && $step['workdir'] !== '' ? $step['workdir'] : $this->workdir;
+    }
+
+    /** @param  array<string, mixed>  $step */
+    public static function solveScript(array $step): ?string
+    {
+        $script = is_string($step['solve'] ?? null) ? trim($step['solve']) : '';
+
+        return $script === '' ? null : $script;
+    }
 }
