@@ -1,0 +1,367 @@
+title: Die Reise einer Anfrage
+description: |
+  Du baust eine eigene, kommentierte Webseite, die Schritt für Schritt erklärt, was passiert, wenn jemand
+  `https://shop.example.com/` in den Browser tippt – von der URL über DNS, TCP und TLS bis zu HTTP und Rendering.
+
+  Das Besondere: Du erklärst nicht nur, du **belegst**. Zu jeder Station legst du im Ordner `belege/` echte
+  Ausgaben aus dem Übungs-Terminal ab – eine curl-Unterhaltung, ein Zertifikat, eine Zeitmessung. Am Ende
+  lieferst du deine Seite mit einem eigenen Webserver aus.
+goal: |
+  Im Ordner `reise-einer-anfrage` liegt eine Website (`index.html` + `style.css`) mit je einem Abschnitt für URL,
+  DNS, Verbindung (TCP/TLS), HTTP und Rendering, dazu ein Ordner `belege/` mit echten Terminal-Ausgaben.
+workdir: reise-einer-anfrage
+steps:
+  - id: grundgeruest
+    title: Das Grundgerüst anlegen
+    description: |
+      Lege im Ordner `reise-einer-anfrage` (im Workspace unter `internet/`) folgende Struktur an:
+
+      ```text
+      reise-einer-anfrage/
+      ├── index.html
+      ├── style.css
+      └── belege/
+      ```
+
+      `index.html` bekommt `<!doctype html>`, `<meta charset="utf-8">`, den Titel `Die Reise einer Anfrage`, eine
+      Überschrift `<h1>` und bindet `style.css` im `<head>` ein. In `style.css` schreibst du mindestens eine Regel.
+    checklist:
+      - Ordner reise-einer-anfrage und belege angelegt
+      - index.html mit doctype, charset, title und h1
+      - style.css angelegt und im head eingebunden
+    hints:
+      - "`mkdir -p reise-einer-anfrage/belege` legt beide Ordner auf einmal an."
+      - Die Aufgabe „Baue eine Seite mit vorgegebenem DOM“ ist ein gutes Vorbild für das Grundgerüst.
+    checks:
+      - type: dir_exists
+        path: belege
+        message: Der Ordner belege fehlt noch.
+      - type: file_contains
+        path: index.html
+        pattern: "<title>Die Reise einer Anfrage</title>"
+        message: "index.html fehlt oder hat noch nicht den Titel `Die Reise einer Anfrage`."
+      - type: file_contains
+        path: index.html
+        pattern: "<link[^>]*href=\"style\\.css\""
+        message: style.css ist noch nicht per <link> in index.html eingebunden.
+      - type: file_contains
+        path: style.css
+        pattern: "\\{[^}]*:[^}]*\\}"
+        message: style.css braucht mindestens eine CSS-Regel.
+    solution: |
+      ```bash
+      mkdir -p reise-einer-anfrage/belege && cd reise-einer-anfrage
+      cat > index.html <<'EOF'
+      <!doctype html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <title>Die Reise einer Anfrage</title>
+          <link rel="stylesheet" href="style.css">
+        </head>
+        <body>
+          <h1>Die Reise einer Anfrage</h1>
+        </body>
+      </html>
+      EOF
+      printf 'body { font-family: sans-serif; max-width: 48rem; margin: 2rem auto; }\n' > style.css
+      ```
+  - id: url-abschnitt
+    title: Station 1 – die URL zerlegen
+    description: |
+      Füge in `index.html` einen Abschnitt `<section id="url">` hinzu. Zerlege darin die Beispiel-URL
+      `https://shop.example.com:8443/produkte?farbe=rot#bewertungen` in ihre Teile – zum Beispiel als Tabelle oder
+      Liste. Nenne für jeden Teil, **wer** ihn auswertet (Browser, DNS, TCP, Server).
+
+      Verwende die Begriffe **Schema**, **Host**, **Port**, **Pfad**, **Query** und **Fragment**.
+    checklist:
+      - Abschnitt mit id="url" vorhanden
+      - Alle sechs Teile der URL benannt
+      - Zu jedem Teil steht, wer ihn auswertet
+    hints:
+      - "Eine HTML-Tabelle: `<table><tr><th>Teil</th><th>Wert</th><th>Wer?</th></tr>…</table>`"
+      - Das Fragment wertet nur der Browser aus – es geht nie an den Server.
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<section id=\"url\">"
+        message: Der Abschnitt <section id="url"> fehlt noch.
+      - type: command
+        run: for w in Schema Host Port Pfad Query Fragment; do grep -qi "$w" index.html || echo "fehlt $w"; done
+        stdout_equals: ""
+        message: Im URL-Abschnitt fehlen noch Begriffe – benenne Schema, Host, Port, Pfad, Query und Fragment.
+      - type: file_contains
+        path: index.html
+        pattern: "shop\\.example\\.com:8443/produkte\\?farbe=rot#bewertungen"
+        message: Die Beispiel-URL https://shop.example.com:8443/produkte?farbe=rot#bewertungen sollte im Abschnitt stehen.
+    solution: |
+      ```html
+      <section id="url">
+        <h2>1. Die URL</h2>
+        <p><code>https://shop.example.com:8443/produkte?farbe=rot#bewertungen</code></p>
+        <table>
+          <tr><th>Teil</th><th>Wert</th><th>Wer wertet ihn aus?</th></tr>
+          <tr><td>Schema</td><td>https</td><td>Browser (Protokoll wählen)</td></tr>
+          <tr><td>Host</td><td>shop.example.com</td><td>DNS</td></tr>
+          <tr><td>Port</td><td>8443</td><td>TCP</td></tr>
+          <tr><td>Pfad</td><td>/produkte</td><td>Server</td></tr>
+          <tr><td>Query</td><td>farbe=rot</td><td>Server</td></tr>
+          <tr><td>Fragment</td><td>bewertungen</td><td>nur der Browser</td></tr>
+        </table>
+      </section>
+      ```
+  - id: dns-abschnitt
+    title: Station 2 – DNS erklären und belegen
+    description: |
+      Füge einen Abschnitt `<section id="dns">` hinzu. Erkläre in eigenen Worten, wie ein **Resolver** über
+      **Root**-, **TLD**- und **autoritative** Nameserver die IP-Adresse findet und welche Rolle die **TTL** spielt.
+
+      Lege außerdem die Datei `belege/dns-eintraege.txt` an: einen kleinen Zonenausschnitt mit einem A-Eintrag
+      (`shop.example.com.` → `192.0.2.10`) und einem CNAME (`www.shop.example.com.` → `shop.example.com.`).
+    checklist:
+      - Abschnitt mit id="dns" erklärt Resolver, Root, TLD, autoritativ und TTL
+      - belege/dns-eintraege.txt mit A-Eintrag und CNAME
+    hints:
+      - Das Bild aus der Lektion „So wird ein Name aufgelöst“ zeigt die acht Schritte.
+      - "Format eines Eintrags: `name  IN  TYP  wert` – vollständige Namen enden mit einem Punkt."
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<section id=\"dns\">"
+        message: Der Abschnitt <section id="dns"> fehlt noch.
+      - type: command
+        run: for w in Resolver Root TLD autoritativ TTL; do grep -qi "$w" index.html || echo "fehlt $w"; done
+        stdout_equals: ""
+        message: Im DNS-Abschnitt fehlen noch Begriffe – erkläre Resolver, Root, TLD, autoritativ und TTL.
+      - type: file_contains
+        path: belege/dns-eintraege.txt
+        pattern: "^shop\\.example\\.com\\.\\s+(\\d+\\s+)?IN\\s+A\\s+192\\.0\\.2\\.10"
+        message: In belege/dns-eintraege.txt fehlt der A-Eintrag für shop.example.com. auf 192.0.2.10.
+      - type: file_contains
+        path: belege/dns-eintraege.txt
+        pattern: "^www\\.shop\\.example\\.com\\.\\s+(\\d+\\s+)?IN\\s+CNAME\\s+shop\\.example\\.com\\."
+        message: In belege/dns-eintraege.txt fehlt der CNAME von www.shop.example.com. auf shop.example.com.
+    solution: |
+      ```bash
+      printf 'shop.example.com.      3600 IN A     192.0.2.10\nwww.shop.example.com.  3600 IN CNAME shop.example.com.\n' > belege/dns-eintraege.txt
+      ```
+      ```html
+      <section id="dns">
+        <h2>2. DNS</h2>
+        <p>Der Browser fragt den rekursiven Resolver. Der fragt einen Root-Server, der auf die TLD-Server für .com
+        verweist. Diese nennen den autoritativen Nameserver von example.com, und der liefert 192.0.2.10.
+        Die Antwort bleibt so lange im Cache, wie die TTL erlaubt.</p>
+      </section>
+      ```
+  - id: verbindung-abschnitt
+    title: Station 3 – TCP- und TLS-Handshake
+    description: |
+      Füge einen Abschnitt `<section id="verbindung">` hinzu. Erkläre den TCP-Handshake mit **SYN**, **SYN-ACK** und
+      **ACK** und danach den TLS-Handshake mit **Zertifikat**.
+
+      Als Beleg erzeugst du mit OpenSSL ein selbstsigniertes Test-Zertifikat für `shop.example.test` und speicherst
+      Inhaber, Aussteller und Gültigkeit in `belege/zertifikat-info.txt`:
+
+      ```bash
+      openssl req -x509 -newkey rsa:2048 -nodes -keyout belege/test-schluessel.pem \
+        -out belege/test-zertifikat.pem -days 30 -subj "/CN=shop.example.test"
+      openssl x509 -in belege/test-zertifikat.pem -noout -subject -issuer -dates > belege/zertifikat-info.txt
+      ```
+
+      Warum sind Inhaber (`subject`) und Aussteller (`issuer`) gleich? Erkläre es in einem Satz auf deiner Seite.
+    checklist:
+      - Abschnitt mit id="verbindung" erklärt SYN, SYN-ACK, ACK und TLS
+      - belege/zertifikat-info.txt mit subject, issuer und notAfter
+    hints:
+      - "`-x509` erzeugt direkt ein selbstsigniertes Zertifikat, `-nodes` lässt den Schlüssel ohne Passwort."
+      - Lege Schlüssel und Zertifikat ruhig mit in belege/ ab – aber niemals einen echten privaten Schlüssel!
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<section id=\"verbindung\">"
+        message: Der Abschnitt <section id="verbindung"> fehlt noch.
+      - type: command
+        run: for w in SYN SYN-ACK ACK TLS Zertifikat; do grep -q "$w" index.html || echo "fehlt $w"; done
+        stdout_equals: ""
+        message: Im Verbindungs-Abschnitt fehlen noch SYN, SYN-ACK, ACK, TLS oder Zertifikat.
+      - type: file_contains
+        path: belege/zertifikat-info.txt
+        pattern: "^subject=.*CN\\s*=\\s*shop\\.example\\.test"
+        message: belege/zertifikat-info.txt fehlt oder enthält keine subject-Zeile mit CN = shop.example.test.
+      - type: file_contains
+        path: belege/zertifikat-info.txt
+        pattern: "^notAfter="
+        message: In belege/zertifikat-info.txt fehlt das Ablaufdatum (Option -dates).
+    solution: |
+      ```bash
+      openssl req -x509 -newkey rsa:2048 -nodes -keyout belege/test-schluessel.pem -out belege/test-zertifikat.pem -days 30 -subj "/CN=shop.example.test"
+      openssl x509 -in belege/test-zertifikat.pem -noout -subject -issuer -dates > belege/zertifikat-info.txt
+      ```
+      ```html
+      <section id="verbindung">
+        <h2>3. Verbindung</h2>
+        <p>TCP: Der Browser schickt SYN, der Server antwortet SYN-ACK, der Browser bestätigt mit ACK.</p>
+        <p>TLS: Client Hello, Server Hello mit Zertifikat, Prüfung, gemeinsamer Schlüssel.</p>
+      </section>
+      ```
+  - id: http-abschnitt
+    title: Station 4 – eine echte HTTP-Unterhaltung
+    description: |
+      Liefere deine eigene Seite mit `php -S 127.0.0.1:8080 &` aus und schneide die Unterhaltung mit
+      `curl -v http://127.0.0.1:8080/ 2> belege/curl-verlauf.txt` mit.
+
+      Füge dann einen Abschnitt `<section id="http">` hinzu, der die wichtigsten Zeilen aus dem Verlauf erklärt:
+      die **Anfragezeile** (`GET / HTTP/1.1`), den **Host**-Header und den **Statuscode** der Antwort.
+    checklist:
+      - belege/curl-verlauf.txt enthält Anfrage und Antwort
+      - Abschnitt mit id="http" erklärt Anfragezeile, Host-Header und Statuscode
+    hints:
+      - "Vergiss `sleep 1` nach dem Serverstart nicht – und `kill %1` am Ende."
+      - "Zeilen mit `>` hat curl gesendet, Zeilen mit `<` kamen vom Server."
+    checks:
+      - type: file_contains
+        path: belege/curl-verlauf.txt
+        pattern: "^> GET / HTTP/1\\.1"
+        message: belege/curl-verlauf.txt fehlt oder enthält nicht die Anfragezeile > GET / HTTP/1.1.
+      - type: file_contains
+        path: belege/curl-verlauf.txt
+        pattern: "^< HTTP/1\\.1 200"
+        message: In belege/curl-verlauf.txt fehlt die Antwort mit Status 200 – lief dein Server?
+      - type: file_contains
+        path: index.html
+        pattern: "<section id=\"http\">"
+        message: Der Abschnitt <section id="http"> fehlt noch.
+      - type: command
+        run: for w in GET Host Statuscode; do grep -q "$w" index.html || echo "fehlt $w"; done
+        stdout_equals: ""
+        message: Erkläre im HTTP-Abschnitt die Anfragezeile (GET), den Host-Header und den Statuscode.
+    solution: |
+      ```bash
+      php -S 127.0.0.1:8080 > server.log 2>&1 &
+      sleep 1
+      curl -v http://127.0.0.1:8080/ 2> belege/curl-verlauf.txt
+      kill %1
+      ```
+      ```html
+      <section id="http">
+        <h2>4. HTTP</h2>
+        <p><code>GET / HTTP/1.1</code> fordert die Startseite an. Der Host-Header nennt die Website.
+        Der Statuscode 200 in der Antwort heißt: alles in Ordnung.</p>
+      </section>
+      ```
+  - id: rendering-abschnitt
+    title: Station 5 – vom HTML zum Bild
+    description: |
+      Füge einen Abschnitt `<section id="rendering">` hinzu. Erkläre in der richtigen Reihenfolge, wie der Browser
+      aus der Antwort ein Bild macht: **DOM**, **CSSOM**, **Render-Tree**, **Layout** und **Paint**.
+
+      Binde außerdem ein Skript `app.js` mit `defer` ein, das per `document.querySelector` den Text eines Elements
+      ändert – und erkläre in einem Satz, warum `defer` die Darstellung nicht blockiert.
+    checklist:
+      - Abschnitt mit id="rendering" erklärt DOM, CSSOM, Render-Tree, Layout und Paint
+      - app.js mit defer eingebunden und ändert den DOM
+    hints:
+      - Das Diagramm aus der Lektion „Wie der Browser eine Seite zeichnet“ zeigt die Reihenfolge.
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<section id=\"rendering\">"
+        message: Der Abschnitt <section id="rendering"> fehlt noch.
+      - type: command
+        run: for w in DOM CSSOM Render-Tree Layout Paint defer; do grep -q "$w" index.html || echo "fehlt $w"; done
+        stdout_equals: ""
+        message: Im Rendering-Abschnitt fehlen noch Begriffe (DOM, CSSOM, Render-Tree, Layout, Paint, defer).
+      - type: file_contains
+        path: index.html
+        pattern: "<script[^>]*src=\"app\\.js\"[^>]*defer|<script[^>]*defer[^>]*src=\"app\\.js\""
+        message: app.js ist noch nicht mit defer eingebunden.
+      - type: file_contains
+        path: app.js
+        pattern: "document\\.querySelector"
+        message: app.js fehlt oder nutzt noch kein document.querySelector.
+    solution: |
+      Im `<head>`: `<script src="app.js" defer></script>`
+      ```bash
+      printf "document.querySelector('#js-status').textContent = 'JavaScript lief nach dem Parsen (defer).'\n" > app.js
+      ```
+      ```html
+      <section id="rendering">
+        <h2>5. Rendering</h2>
+        <p>Aus HTML wird der DOM, aus CSS das CSSOM. Beide ergeben den Render-Tree. Dann folgen Layout und Paint.
+        Dank defer wartet der Parser nicht auf app.js.</p>
+        <p id="js-status">JavaScript ist noch nicht gelaufen.</p>
+      </section>
+      ```
+  - id: messung
+    title: Station 6 – die Reise messen
+    description: |
+      Miss mit `curl -w` drei Anfragen an deinen laufenden Server und speichere jeweils eine Zeile in
+      `belege/messung.txt` im Format `dns=… connect=… ttfb=… total=…`. Schreibe danach in `index.html` einen Abschnitt
+      `<section id="messung">`, der die Werte deutet: Welche Phase ist bei dir am längsten, und warum ist `dns=`
+      bei `127.0.0.1` fast 0?
+    checklist:
+      - belege/messung.txt mit drei Messzeilen
+      - Abschnitt mit id="messung" deutet die Werte
+    hints:
+      - "Eine Schleife hilft: `for i in 1 2 3; do curl -s -o /dev/null -w \"…\\n\" http://127.0.0.1:8080/ >> belege/messung.txt; done`"
+    checks:
+      - type: command
+        run: grep -Ec '^dns=[0-9.]+ connect=[0-9.]+ ttfb=[0-9.]+ total=[0-9.]+' belege/messung.txt
+        stdout_matches: "^[3-9]$"
+        message: belege/messung.txt braucht mindestens drei Zeilen im Format dns=… connect=… ttfb=… total=….
+      - type: file_contains
+        path: index.html
+        pattern: "<section id=\"messung\">"
+        message: Der Abschnitt <section id="messung"> fehlt noch.
+    solution: |
+      ```bash
+      php -S 127.0.0.1:8080 > server.log 2>&1 &
+      sleep 1
+      for i in 1 2 3; do
+        curl -s -o /dev/null -w "dns=%{time_namelookup} connect=%{time_connect} ttfb=%{time_starttransfer} total=%{time_total}\n" http://127.0.0.1:8080/ >> belege/messung.txt
+      done
+      kill %1
+      ```
+  - id: abschluss
+    title: Zusammenfassung und Auslieferung
+    description: |
+      Schließe deine Seite mit einem Abschnitt `<section id="zusammenfassung">` ab. Er enthält eine nummerierte Liste
+      (`<ol>`) mit **mindestens sechs** Stationen der Reise in der richtigen Reihenfolge.
+
+      Zum Schluss prüfst du, dass dein Webserver alles korrekt ausliefert: Startseite, `style.css` und `app.js`
+      müssen mit Status 200 antworten.
+    checklist:
+      - Nummerierte Liste mit mindestens sechs Stationen
+      - Startseite, style.css und app.js antworten mit 200
+      - Seite einmal im Browser-Kopf durchgegangen – stimmt die Reihenfolge?
+    hints:
+      - "DNS → TCP → TLS → HTTP-Request → Server → Response → Rendering"
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<section id=\"zusammenfassung\">"
+        message: Der Abschnitt <section id="zusammenfassung"> fehlt noch.
+      - type: command
+        run: tr -d '\n' < index.html | grep -o '<section id="zusammenfassung">.*</section>' | grep -o '<li' | wc -l
+        stdout_matches: "^\\s*([6-9]|[1-9][0-9])\\s*$"
+        message: Die Liste in der Zusammenfassung braucht mindestens sechs <li>-Einträge.
+      - type: command
+        run: "php -S 127.0.0.1:8099 >/dev/null 2>&1 & P=$!; sleep 1; for f in / /style.css /app.js; do curl -s -o /dev/null -w '%{http_code} ' http://127.0.0.1:8099$f; done; kill $P"
+        stdout_matches: "^200 200 200$"
+        message: Startseite, style.css und app.js müssen vom Webserver mit Status 200 ausgeliefert werden.
+    solution: |
+      ```html
+      <section id="zusammenfassung">
+        <h2>Die ganze Reise</h2>
+        <ol>
+          <li>URL zerlegen</li>
+          <li>DNS: Name → IP-Adresse</li>
+          <li>TCP-Handshake</li>
+          <li>TLS-Handshake</li>
+          <li>HTTP-Request</li>
+          <li>Server erzeugt die Antwort</li>
+          <li>HTTP-Response</li>
+          <li>Rendering: DOM, CSSOM, Layout, Paint</li>
+        </ol>
+      </section>
+      ```

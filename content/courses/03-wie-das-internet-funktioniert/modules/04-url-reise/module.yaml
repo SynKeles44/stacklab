@@ -1,0 +1,58 @@
+title: Von der URL bis zum fertigen Bild
+description: URLs lesen, die komplette Reise einer Anfrage über DNS, TCP, TLS und HTTP nachvollziehen und messen, verstehen, wie der Browser Pixel zeichnet, und was Webserver, Caches und CDNs leisten.
+exercise:
+  id: modul-uebung-url-reise
+  type: terminal
+  title: Miss die Phasen einer Anfrage
+  description: |
+    Du misst mit `curl -w`, wie lange die einzelnen Phasen einer Anfrage an einen lokalen Webserver dauern, und
+    hältst das Ergebnis fest.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – dann liegt im Ordner `messung` eine kleine Seite `seite.html`.
+    (Absichtlich keine `index.html`: Die würde der PHP-Server für jeden unbekannten Pfad ausliefern.)
+
+    1. Starte im Ordner `messung` einen Webserver im Hintergrund: `php -S 127.0.0.1:8080 > server.log 2>&1 &`
+    2. Miss eine Anfrage an `http://127.0.0.1:8080/seite.html` und schreibe **eine Zeile** in `messung.txt`, die so aussieht:
+       `dns=… connect=… ttfb=… total=… code=200`
+       Nutze dafür `curl -s -o /dev/null -w "…"` mit den Variablen `%{time_namelookup}`, `%{time_connect}`,
+       `%{time_starttransfer}`, `%{time_total}` und `%{http_code}`.
+    3. Hänge mit `>>` eine zweite Messung an `messung.txt` an – für den Pfad `/fehlt`, den es nicht gibt (dort
+       soll `code=404` stehen).
+    4. Beende den Server mit `kill %1`.
+
+    Überlege dir: Warum ist `dns=` hier fast 0? (Tipp: Es gibt gar keinen Namen aufzulösen.)
+  workdir: messung
+  setup: |
+    printf '<!doctype html>\n<title>Messung</title>\n<h1>Gleich wird gemessen</h1>\n' > seite.html
+  checks:
+    - type: file_exists
+      path: messung.txt
+      message: Die Datei messung.txt fehlt noch.
+    - type: file_contains
+      path: messung.txt
+      pattern: "^dns=[0-9.]+ connect=[0-9.]+ ttfb=[0-9.]+ total=[0-9.]+ code=200\\s*$"
+      message: "In messung.txt fehlt die Zeile im Format `dns=… connect=… ttfb=… total=… code=200` (mit Zahlen, Leerzeichen dazwischen)."
+    - type: file_contains
+      path: messung.txt
+      pattern: "^dns=[0-9.]+ connect=[0-9.]+ ttfb=[0-9.]+ total=[0-9.]+ code=404\\s*$"
+      message: Die zweite Messung für /fehlt mit code=404 fehlt. Hänge sie mit >> an.
+    - type: command
+      run: wc -l < messung.txt
+      stdout_matches: "^\\s*2\\s*$"
+      message: messung.txt soll genau zwei Zeilen enthalten – vergiss das \n am Ende des -w-Formats nicht.
+  hints:
+    - "Das Format von `-w` ist ein normaler Text, in den curl die Variablen einsetzt. Ein `\\n` am Ende sorgt für den Zeilenumbruch."
+    - "`>` überschreibt eine Datei, `>>` hängt an."
+    - "Vergiss nach dem Serverstart nicht ein kurzes `sleep 1`."
+  solution: |
+    ```bash
+    cd messung
+    php -S 127.0.0.1:8080 > server.log 2>&1 &
+    sleep 1
+    FORMAT="dns=%{time_namelookup} connect=%{time_connect} ttfb=%{time_starttransfer} total=%{time_total} code=%{http_code}\n"
+    curl -s -o /dev/null -w "$FORMAT" http://127.0.0.1:8080/seite.html > messung.txt
+    curl -s -o /dev/null -w "$FORMAT" http://127.0.0.1:8080/fehlt >> messung.txt
+    cat messung.txt
+    kill %1
+    ```
+    `dns=` ist fast 0, weil `127.0.0.1` schon eine IP-Adresse ist – es muss nichts aufgelöst werden.

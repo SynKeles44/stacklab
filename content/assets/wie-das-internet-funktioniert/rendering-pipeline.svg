@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="900" height="320" fill="#ffffff"/>
+<text x="450" y="28" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Vom HTML-Text zu Pixeln: der Critical Rendering Path</text>
+<rect x="30" y="50" width="120" height="60" rx="14" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="3"/>
+<text x="90" y="86" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">HTML</text>
+<rect x="30" y="190" width="120" height="60" rx="14" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="3"/>
+<text x="90" y="226" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">CSS</text>
+<rect x="210" y="50" width="140" height="60" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<rect x="210" y="190" width="140" height="60" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<rect x="420" y="120" width="140" height="60" rx="14" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<rect x="600" y="120" width="120" height="60" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<rect x="760" y="120" width="120" height="60" rx="14" fill="#f87171" fill-opacity=".14" stroke="#f87171" stroke-width="3"/>
+<text x="280" y="86" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">DOM</text>
+<text x="280" y="226" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">CSSOM</text>
+<text x="490" y="156" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Render-Tree</text>
+<text x="660" y="156" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Layout</text>
+<text x="820" y="156" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Paint</text>
+<path d="M152 80 H 206" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M152 220 H 206" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M352 85 L 416 135" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M352 215 L 416 165" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M562 150 H 596" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M722 150 H 756" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="210" y="262" width="140" height="44" rx="10" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="280" y="290" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">JavaScript</text>
+<path d="M280 260 V 250" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#a)"/>
+<text x="280" y="130" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">parsen</text>
+<text x="280" y="175" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">parsen</text>
+<text x="660" y="205" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">Wo? Wie groß?</text>
+<text x="820" y="205" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">Pixel zeichnen</text>
+<text x="560" y="280" text-anchor="start" font-size="12" font-weight="400" fill="#475569">JavaScript kann DOM und CSSOM jederzeit ändern –</text>
+<text x="560" y="298" text-anchor="start" font-size="12" font-weight="400" fill="#475569">dann laufen Layout und Paint erneut.</text>
+</svg>

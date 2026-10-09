@@ -1,0 +1,75 @@
+title: DNS – das Telefonbuch des Internets
+description: Wie Domainnamen aufgebaut sind, wie ein Resolver sie Schritt für Schritt auflöst, welche Record-Typen es gibt und warum TTL und Caches so wichtig sind.
+exercise:
+  id: modul-uebung-dns
+  type: terminal
+  title: Schreibe eine eigene Zonendatei
+  description: |
+    Autoritative Nameserver speichern ihre Einträge oft als Textdatei im sogenannten BIND-Format. Du schreibst
+    jetzt die komplette Zone für `example.com` – mit Beispieladressen.
+
+    Lege im Ordner `zonendatei` die Datei `example.com.zone` an. Sie soll enthalten:
+
+    1. eine erste Zeile `$TTL 3600` (Standard-TTL für alle Einträge),
+    2. zwei NS-Einträge für `ns1.example.com.` und `ns2.example.com.`,
+    3. einen A-Eintrag für `example.com.` auf `192.0.2.10`,
+    4. einen AAAA-Eintrag für `example.com.` auf `2001:db8::10`,
+    5. einen CNAME, der `www.example.com.` auf `example.com.` verweisen lässt,
+    6. einen MX-Eintrag mit Priorität `10` auf `mail.example.com.`,
+    7. einen TXT-Eintrag mit dem SPF-Wert `"v=spf1 mx -all"`.
+
+    Format pro Zeile: `name  IN  TYP  wert` (z. B. `example.com.  IN  A  192.0.2.10`). Der Ordner wird beim
+    Vorbereiten angelegt – klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: zonendatei
+  setup: |
+    printf '; Zone für example.com – hier kommt deine Datei example.com.zone hin\n' > LIESMICH.txt
+  checks:
+    - type: file_exists
+      path: example.com.zone
+      message: Die Datei example.com.zone fehlt noch.
+    - type: file_contains
+      path: example.com.zone
+      pattern: "^\\$TTL\\s+3600"
+      message: "Die erste Zeile soll `$TTL 3600` sein. Tipp: In doppelten Anführungszeichen musst du `\\$TTL` schreiben – nutze lieber einfache Anführungszeichen."
+    - type: command
+      run: grep -Ec '^example\.com\.\s+([0-9]+\s+)?IN\s+NS\s+ns[12]\.example\.com\.\s*$' example.com.zone
+      stdout_matches: "^2$"
+      message: Es fehlen die zwei NS-Einträge (ns1.example.com. und ns2.example.com., jeweils mit Punkt am Ende).
+    - type: file_contains
+      path: example.com.zone
+      pattern: "^example\\.com\\.\\s+(\\d+\\s+)?IN\\s+A\\s+192\\.0\\.2\\.10\\s*$"
+      message: "Der A-Eintrag `example.com.  IN  A  192.0.2.10` fehlt."
+    - type: file_contains
+      path: example.com.zone
+      pattern: "^example\\.com\\.\\s+(\\d+\\s+)?IN\\s+AAAA\\s+2001:db8::10\\s*$"
+      message: "Der AAAA-Eintrag `example.com.  IN  AAAA  2001:db8::10` fehlt."
+    - type: file_contains
+      path: example.com.zone
+      pattern: "^www\\.example\\.com\\.\\s+(\\d+\\s+)?IN\\s+CNAME\\s+example\\.com\\.\\s*$"
+      message: "Der CNAME `www.example.com.  IN  CNAME  example.com.` fehlt."
+    - type: file_contains
+      path: example.com.zone
+      pattern: "^example\\.com\\.\\s+(\\d+\\s+)?IN\\s+MX\\s+10\\s+mail\\.example\\.com\\.\\s*$"
+      message: "Der MX-Eintrag mit Priorität 10 auf mail.example.com. fehlt."
+    - type: file_contains
+      path: example.com.zone
+      pattern: "^example\\.com\\.\\s+(\\d+\\s+)?IN\\s+TXT\\s+\"v=spf1 mx -all\"\\s*$"
+      message: "Der TXT-Eintrag mit `\"v=spf1 mx -all\"` (inklusive Anführungszeichen) fehlt."
+  hints:
+    - Jeder vollständige Name endet mit einem Punkt – auch bei NS, CNAME und MX als Wert.
+    - "Schreib die Datei am einfachsten mit `nano example.com.zone` oder mit einem Heredoc: `cat > example.com.zone <<'EOF'` … `EOF`."
+    - Bei MX steht die Priorität direkt vor dem Servernamen, bei TXT der Text in doppelten Anführungszeichen.
+  solution: |
+    ```bash
+    cd zonendatei
+    cat > example.com.zone <<'EOF'
+    $TTL 3600
+    example.com.      IN  NS     ns1.example.com.
+    example.com.      IN  NS     ns2.example.com.
+    example.com.      IN  A      192.0.2.10
+    example.com.      IN  AAAA   2001:db8::10
+    www.example.com.  IN  CNAME  example.com.
+    example.com.      IN  MX     10 mail.example.com.
+    example.com.      IN  TXT    "v=spf1 mx -all"
+    EOF
+    ```

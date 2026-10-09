@@ -1,0 +1,75 @@
+title: "Internet und Web: die Grundlagen"
+description: Was Internet und Web unterscheidet, wie Client und Server miteinander reden, wie IP-Adressen und Datenpakete funktionieren und warum Protokolle in Schichten arbeiten.
+exercise:
+  id: modul-uebung-grundlagen
+  type: terminal
+  title: Deine erste kleine Website ausliefern
+  description: |
+    Jetzt baust du eine Mini-Website mit zwei Seiten, lieferst sie mit einem eigenen Webserver aus und
+    schaust dir die Antworten des Servers als Client an. Der Ordner `modul-grundlagen` ist leer.
+
+    1. Wechsle mit `cd modul-grundlagen` in den Ordner.
+    2. Lege `index.html` an: mit einer Überschrift `<h1>…</h1>` deiner Wahl und einem Link
+       `<a href="kontakt.html">…</a>` auf die zweite Seite.
+    3. Lege `kontakt.html` an: mit der Überschrift `<h1>Kontakt</h1>` und einem Link zurück auf `index.html`.
+    4. Starte im Hintergrund einen Webserver auf Port 8080: `php -S 127.0.0.1:8080 > server.log 2>&1 &`
+    5. Rufe mit `curl -i` die Startseite (`/`) ab und speichere die komplette Antwort in `startseite.txt`.
+    6. Rufe genauso `/kontakt.html` ab und speichere die Antwort in `kontakt.txt`.
+    7. Beende den Server mit `kill %1`.
+
+    Die Option `-i` sorgt dafür, dass curl auch die Kopfzeilen der Antwort mitschreibt – also die
+    Statuszeile `HTTP/1.1 200 OK` und Angaben wie `Content-Type`.
+  workdir: modul-grundlagen
+  checks:
+    - type: file_contains
+      path: index.html
+      pattern: "<h1>[^<]+</h1>"
+      message: index.html braucht eine Überschrift wie <h1>Willkommen</h1>.
+    - type: file_contains
+      path: index.html
+      pattern: "href=\"/?kontakt\\.html\""
+      message: In index.html fehlt noch der Link <a href="kontakt.html">…</a> zur Kontaktseite.
+    - type: file_contains
+      path: kontakt.html
+      pattern: "<h1>\\s*Kontakt\\s*</h1>"
+      message: kontakt.html braucht die Überschrift <h1>Kontakt</h1>.
+    - type: file_contains
+      path: kontakt.html
+      pattern: "href=\"/?index\\.html\""
+      message: In kontakt.html fehlt noch der Link zurück auf index.html.
+    - type: command
+      run: "php -S 127.0.0.1:8095 -t . >/dev/null 2>&1 & P=$!; sleep 1; curl -s -o /dev/null -w '%{http_code} ' http://127.0.0.1:8095/ ; curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8095/kontakt.html ; kill $P"
+      stdout_matches: "^200 200$"
+      message: Ein Webserver in diesem Ordner liefert noch nicht beide Seiten mit Status 200 aus – liegen index.html und kontakt.html direkt in modul-grundlagen?
+    - type: file_contains
+      path: startseite.txt
+      pattern: "^HTTP/1\\.1 200"
+      message: startseite.txt fehlt oder beginnt nicht mit der Statuszeile HTTP/1.1 200. Hast du `curl -i` benutzt und die Ausgabe mit `> startseite.txt` gespeichert?
+    - type: file_contains
+      path: startseite.txt
+      pattern: "href=\"/?kontakt\\.html\""
+      message: In startseite.txt fehlt der HTML-Inhalt deiner Startseite. Rufe sie erneut ab, nachdem index.html fertig ist.
+    - type: file_contains
+      path: kontakt.txt
+      pattern: "^HTTP/1\\.1 200"
+      message: kontakt.txt fehlt oder enthält keine erfolgreiche Antwort (HTTP/1.1 200). Frage `/kontakt.html` mit `curl -i` ab.
+    - type: file_contains
+      path: kontakt.txt
+      pattern: "<h1>\\s*Kontakt\\s*</h1>"
+      message: In kontakt.txt fehlt die Überschrift der Kontaktseite. Hast du wirklich /kontakt.html abgerufen?
+  hints:
+    - "Kurze Dateien legst du mit `echo '<h1>Kontakt</h1><a href=\"index.html\">Startseite</a>' > kontakt.html` an – oder bequem mit `nano kontakt.html`."
+    - "Läuft der Server im Hintergrund (`&`), kannst du im selben Terminal weitertippen. Mit `jobs` siehst du, ob er noch läuft."
+    - "Abrufen und speichern in einem Schritt: `curl -i http://127.0.0.1:8080/kontakt.html > kontakt.txt`."
+  solution: |
+    ```bash
+    cd modul-grundlagen
+    echo '<h1>Willkommen auf meiner Website</h1><a href="kontakt.html">Zum Kontakt</a>' > index.html
+    echo '<h1>Kontakt</h1><p>Schreib an user@example.com</p><a href="index.html">Zur Startseite</a>' > kontakt.html
+    php -S 127.0.0.1:8080 > server.log 2>&1 &
+    sleep 1
+    curl -i http://127.0.0.1:8080/ > startseite.txt
+    curl -i http://127.0.0.1:8080/kontakt.html > kontakt.txt
+    cat startseite.txt
+    kill %1
+    ```

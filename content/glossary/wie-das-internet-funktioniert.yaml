@@ -1,0 +1,1085 @@
+# Begriffe aus dem Kurs „Wie das Internet funktioniert“.
+- slug: internet
+  term: Internet
+  short: 'Das weltweite Netz aus vielen miteinander verbundenen Netzwerken.'
+  explanation: 'Das Internet besteht aus zehntausenden Netzen, die von verschiedenen Betreibern gehören und über Router verbunden sind. Es transportiert Daten für viele Dienste: das Web, E-Mail, Videocalls, Spiele.'
+  example: 'Wenn du eine Nachricht per Messenger schickst, reist sie über das Internet.'
+  category: internet
+  aliases:
+    - 'Netz der Netze'
+  related:
+    - world-wide-web
+    - netzwerk
+    - router
+  lesson: wie-das-internet-funktioniert/internet-und-web
+- slug: world-wide-web
+  term: 'World Wide Web'
+  short: 'Der Dienst im Internet, der aus verlinkten Webseiten besteht.'
+  explanation: 'Das Web wurde 1989–1991 am CERN entwickelt. Es besteht aus Seiten in HTML, die über Hyperlinks verbunden sind und per HTTP abgerufen werden. Das Web ist nur ein Dienst von vielen, die das Internet nutzen.'
+  example: 'Jede Seite, die du im Browser über eine Adresse wie https://www.example.com öffnest, gehört zum Web.'
+  category: internet
+  aliases:
+    - Web
+    - WWW
+  related:
+    - internet
+    - http
+    - html
+  lesson: wie-das-internet-funktioniert/internet-und-web
+- slug: webseite
+  term: Webseite
+  short: 'Ein einzelnes Dokument im Web, das du im Browser unter einer Adresse aufrufst.'
+  explanation: 'Eine Webseite besteht meist aus HTML, dazu CSS für das Aussehen und JavaScript für Interaktion. Mehrere zusammengehörige Webseiten bilden eine Website.'
+  example: 'https://www.example.com/kontakt ist eine Webseite der Website example.com.'
+  category: internet
+  aliases:
+    - Webseiten
+    - Website
+    - Seite
+  related:
+    - html
+    - world-wide-web
+  lesson: wie-das-internet-funktioniert/internet-und-web
+- slug: hyperlink
+  term: Hyperlink
+  short: 'Ein anklickbarer Verweis von einer Stelle im Web zu einer anderen.'
+  explanation: 'Hyperlinks sind die Grundidee des Webs: Seiten verweisen aufeinander und bilden so ein „Gewebe“. In HTML schreibt man sie mit dem Tag a und dem Attribut href.'
+  example: '`<a href="https://www.example.com/hilfe">Hilfe</a>` ist ein Hyperlink.'
+  category: internet
+  aliases:
+    - Link
+    - Links
+  related:
+    - html
+    - world-wide-web
+  lesson: wie-das-internet-funktioniert/internet-und-web
+- slug: html
+  term: HTML
+  short: 'Die Auszeichnungssprache, mit der Webseiten aufgebaut werden.'
+  explanation: 'HTML (Hypertext Markup Language) beschreibt mit Tags, was auf einer Seite steht: Überschriften, Absätze, Links, Bilder. Der Browser baut aus dem HTML-Text den DOM und zeichnet daraus die Seite.'
+  example: '`<h1>Willkommen</h1>` ist eine Überschrift in HTML.'
+  category: internet
+  aliases:
+    - 'Hypertext Markup Language'
+  related:
+    - html-tag
+    - dom
+    - css
+  lesson: wie-das-internet-funktioniert/internet-und-web
+- slug: http
+  term: HTTP
+  short: 'Das Protokoll, mit dem Browser und Webserver Anfragen und Antworten austauschen.'
+  explanation: 'HTTP (Hypertext Transfer Protocol) ist ein Anfrage-Antwort-Protokoll: Der Client schickt eine Anfrage mit Methode und Pfad, der Server antwortet mit Statuscode, Headern und Inhalt. HTTP ist zustandslos – jede Anfrage steht für sich.'
+  example: '`GET /produkte HTTP/1.1` ist die erste Zeile einer HTTP-Anfrage.'
+  category: internet
+  aliases:
+    - 'Hypertext Transfer Protocol'
+  related:
+    - https
+    - request
+    - response
+    - statuscode
+  lesson: wie-das-internet-funktioniert/die-ganze-reise
+- slug: tcp-ip
+  term: TCP/IP
+  short: 'Die Protokollfamilie, auf der das Internet beruht – und das zugehörige Schichtenmodell.'
+  explanation: 'TCP/IP fasst die wichtigsten Protokolle des Internets zusammen, benannt nach TCP und IP. Das TCP/IP-Modell teilt die Arbeit in vier Schichten auf: Anwendung, Transport, Internet und Netzzugang. 1983 stellte das ARPANET komplett auf TCP/IP um.'
+  example: 'HTTP läuft über TCP, TCP über IP – das ist der TCP/IP-Stapel.'
+  category: internet
+  aliases:
+    - TCP/IP-Modell
+    - Internetprotokollfamilie
+  related:
+    - tcp
+    - internet-protocol
+    - schichtenmodell
+  lesson: wie-das-internet-funktioniert/ip-adressen-und-pakete
+- slug: curl
+  term: curl
+  short: 'Ein Kommandozeilenprogramm, das Anfragen an Server schickt, zum Beispiel per HTTP.'
+  explanation: 'Mit curl kannst du Webseiten und APIs im Terminal abrufen. Die Option -v zeigt die komplette Unterhaltung, -I nur die Header, -w misst Zeiten. curl ist auf fast allen Systemen vorinstalliert.'
+  example: '`curl -v http://127.0.0.1:8080/` zeigt Anfrage und Antwort im Detail.'
+  category: internet
+  related:
+    - http
+    - request
+    - response
+  lesson: wie-das-internet-funktioniert/client-und-server
+- slug: request
+  term: Request
+  short: 'Eine Anfrage, die ein Client an einen Server schickt.'
+  explanation: 'Im Web ist ein Request eine HTTP-Nachricht mit Methode, Pfad, Headern und manchmal einem Body. Der Server beantwortet jeden Request mit einer Response.'
+  example: '`GET /index.html HTTP/1.1` mit Header `Host: www.example.com` ist ein Request.'
+  category: internet
+  aliases:
+    - Anfrage
+    - Anfragen
+    - Requests
+  related:
+    - response
+    - http
+    - client
+  lesson: wie-das-internet-funktioniert/client-und-server
+- slug: response
+  term: Response
+  short: 'Die Antwort, die ein Server auf eine Anfrage zurückschickt.'
+  explanation: 'Eine HTTP-Response beginnt mit einer Statuszeile (z. B. 200 OK), gefolgt von Headern, einer Leerzeile und dem Inhalt. Am Statuscode erkennst du sofort, ob die Anfrage geklappt hat.'
+  example: '`HTTP/1.1 404 Not Found` ist die Statuszeile einer Response.'
+  category: internet
+  aliases:
+    - Antwort
+    - Antworten
+    - Responses
+  related:
+    - request
+    - statuscode
+    - http
+  lesson: wie-das-internet-funktioniert/client-und-server
+- slug: statuscode
+  term: Statuscode
+  short: 'Eine dreistellige Zahl in der HTTP-Antwort, die das Ergebnis zusammenfasst.'
+  explanation: 'Die erste Ziffer verrät die Klasse: 2xx Erfolg, 3xx Umleitung, 4xx Fehler beim Client, 5xx Fehler beim Server. Programme und Menschen erkennen daran ohne Blick auf den Inhalt, was passiert ist.'
+  example: '200 heißt OK, 404 heißt „nicht gefunden“, 500 heißt „Fehler im Server“.'
+  category: internet
+  aliases:
+    - Statuscodes
+    - HTTP-Statuscode
+    - Status
+  related:
+    - http
+    - response
+  lesson: wie-das-internet-funktioniert/die-ganze-reise
+- slug: peer-to-peer
+  term: Peer-to-Peer
+  short: 'Ein Netzwerkmodell, in dem alle Teilnehmer gleichberechtigt Daten austauschen – ohne zentralen Server.'
+  explanation: 'Bei Peer-to-Peer (P2P) ist jedes Gerät zugleich Client und Server. Das ist das Gegenmodell zum Client-Server-Prinzip und wird zum Beispiel beim Dateitausch oder bei manchen Videocalls genutzt.'
+  example: 'Beim Tausch einer großen Datei per P2P lädt jeder Teilnehmer Teile herunter und gibt gleichzeitig Teile an andere weiter.'
+  category: internet
+  aliases:
+    - P2P
+  related:
+    - client
+    - server
+  lesson: wie-das-internet-funktioniert/client-und-server
+- slug: internet-protocol
+  term: 'Internet Protocol'
+  short: 'Das Protokoll, das Datenpakete adressiert und über viele Netze zum Ziel bringt.'
+  explanation: 'IP legt fest, wie Pakete mit Absender- und Ziel-Adresse aufgebaut sind und von Routern weitergereicht werden. IP gibt keine Garantie, dass Pakete ankommen – das übernimmt bei Bedarf TCP. Es gibt die Versionen IPv4 und IPv6.'
+  example: 'Jedes Paket auf dem Weg zu 192.0.2.10 trägt einen IP-Header mit dieser Zieladresse.'
+  category: internet
+  aliases:
+    - IP
+  related:
+    - ip-adresse
+    - ipv4
+    - ipv6
+    - tcp
+  lesson: wie-das-internet-funktioniert/ip-adressen-und-pakete
+- slug: protokoll
+  term: Protokoll
+  short: 'Ein gemeinsames Regelwerk dafür, wie zwei Seiten Nachrichten austauschen.'
+  explanation: 'Ein Protokoll legt fest, welche Nachrichten es gibt, wie sie aufgebaut sind, in welcher Reihenfolge sie kommen und was bei Fehlern passiert. Weil alle Geräte dieselben offenen Protokolle sprechen, verstehen sie sich.'
+  example: 'HTTP, TCP, IP und DNS sind Protokolle.'
+  category: internet
+  aliases:
+    - Protokolle
+    - Netzwerkprotokoll
+  related:
+    - schichtenmodell
+    - http
+    - tcp
+  lesson: wie-das-internet-funktioniert/ip-adressen-und-pakete
+- slug: schichtenmodell
+  term: Schichtenmodell
+  short: 'Eine Aufteilung der Netzwerk-Kommunikation in übereinanderliegende Schichten mit klaren Aufgaben.'
+  explanation: 'Jede Schicht nutzt nur die Schicht darunter und bietet der Schicht darüber ihre Dienste an. Dadurch lassen sich Schichten austauschen, ohne die anderen zu ändern. Im Internet gilt das TCP/IP-Modell mit vier Schichten; daneben gibt es das OSI-Modell mit sieben.'
+  example: 'HTTP (Anwendung) läuft über TCP (Transport) über IP (Internet) über WLAN (Netzzugang).'
+  category: internet
+  aliases:
+    - Schichten
+    - Schicht
+    - OSI-Modell
+  related:
+    - tcp-ip
+    - datenkapselung
+    - protokoll
+  lesson: wie-das-internet-funktioniert/ip-adressen-und-pakete
+- slug: datenkapselung
+  term: Datenkapselung
+  short: 'Das Verpacken von Daten beim Senden: Jede Schicht setzt einen eigenen Header davor.'
+  explanation: 'Wie Briefe in Umschlägen in Kartons: HTTP-Daten bekommen einen TCP-Header, dann einen IP-Header, dann einen Rahmen für das lokale Netz. Beim Empfangen entfernt jede Schicht ihre Hülle wieder.'
+  example: '`[ IP-Header | TCP-Header | HTTP: GET / ]` ist eine gekapselte Anfrage.'
+  category: internet
+  aliases:
+    - Kapselung
+    - Encapsulation
+  related:
+    - schichtenmodell
+    - datenpaket
+  lesson: wie-das-internet-funktioniert/ip-adressen-und-pakete
+- slug: routing
+  term: Routing
+  short: 'Das Finden und Weiterleiten des Wegs, den ein Datenpaket durch die Netze nimmt.'
+  explanation: 'Beim Routing entscheidet jeder Router für jedes Paket, an welchen Nachbarn er es weitergibt. Netzbetreiber tauschen dafür automatisch Informationen aus, welche Adressbereiche über sie erreichbar sind.'
+  example: 'Fällt eine Leitung aus, ändert sich das Routing und Pakete nehmen einen anderen Weg.'
+  category: internet
+  related:
+    - router
+    - routing-tabelle
+    - hop
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: internetanbieter
+  term: Internetanbieter
+  short: 'Die Firma, die deinen Anschluss mit dem Internet verbindet.'
+  explanation: 'Der Internetanbieter (englisch Internet Service Provider, ISP) gibt deinem Anschluss eine öffentliche IP-Adresse und leitet deine Pakete über seine Router in die Welt. Oft betreibt er auch einen DNS-Resolver.'
+  example: 'Hop 2 und 3 bei traceroute gehören meist schon zu deinem Internetanbieter.'
+  category: internet
+  aliases:
+    - ISP
+    - Provider
+    - 'Internet Service Provider'
+  related:
+    - router
+    - internet-knoten
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: internet-knoten
+  term: Internet-Knoten
+  short: 'Ein Ort, an dem viele Netzbetreiber ihre Netze direkt zusammenschalten.'
+  explanation: 'An einem Internet-Knoten (englisch Internet Exchange Point, IXP) tauschen hunderte Netze Daten direkt aus, statt Umwege über Dritte zu nehmen. Große Knoten stehen in vielen Großstädten.'
+  example: 'Pakete von deinem Anbieter zu einem Rechenzentrum wechseln oft an einem Internet-Knoten das Netz.'
+  category: internet
+  aliases:
+    - IXP
+    - 'Internet Exchange Point'
+    - Internetknoten
+  related:
+    - internetanbieter
+    - routing
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: hop
+  term: Hop
+  short: 'Ein Zwischenschritt eines Pakets über einen Router.'
+  explanation: 'Jeder Router, den ein Paket auf dem Weg passiert, zählt als Hop. Ein Weg zu einem weit entfernten Server hat oft 10 bis 20 Hops. traceroute zeigt jeden einzelnen.'
+  example: 'Hop 1 ist fast immer dein Heimrouter.'
+  category: internet
+  aliases:
+    - Hops
+  related:
+    - router
+    - traceroute
+    - ttl
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: latenz
+  term: Latenz
+  short: 'Die Verzögerung, die Daten für einen Weg durch das Netz brauchen.'
+  explanation: 'Latenz wird in Millisekunden gemessen und hängt vor allem von der Entfernung und der Anzahl der Stationen ab. Für Webseiten ist sie oft wichtiger als die Bandbreite, weil viele kleine Anfragen nacheinander warten.'
+  example: 'Zu einem Server auf einem anderen Kontinent beträgt die Latenz schnell 80 ms und mehr.'
+  category: internet
+  aliases:
+    - Verzögerung
+  related:
+    - bandbreite
+    - round-trip-time
+    - cdn
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: bandbreite
+  term: Bandbreite
+  short: 'Die Datenmenge, die pro Sekunde durch eine Leitung passt.'
+  explanation: 'Bandbreite wird in Megabit oder Gigabit pro Sekunde angegeben. Eine hohe Bandbreite hilft bei großen Downloads, verkürzt aber nicht die Latenz zu einem weit entfernten Server.'
+  example: 'Ein 250-Mbit/s-Anschluss hat eine Bandbreite von 250 Megabit pro Sekunde.'
+  category: internet
+  aliases:
+    - Datenrate
+  related:
+    - latenz
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: icmp
+  term: ICMP
+  short: 'Das Protokoll für Kontroll- und Fehlermeldungen im Internet.'
+  explanation: 'ICMP (Internet Control Message Protocol) läuft direkt auf IP, ohne Ports. Router melden damit Fehler wie „Time Exceeded“, und ping nutzt die Nachrichten Echo Request und Echo Reply.'
+  example: 'traceroute wertet ICMP-Meldungen „Time Exceeded“ aus.'
+  category: internet
+  aliases:
+    - 'Internet Control Message Protocol'
+  related:
+    - ping
+    - traceroute
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: round-trip-time
+  term: Round-Trip-Time
+  short: 'Die Zeit, die ein Paket zum Ziel und die Antwort zurück braucht.'
+  explanation: 'Die Round-Trip-Time (RTT) ist eine wichtige Kennzahl: Jeder Handshake und jede Anfrage kostet mindestens eine RTT. ping zeigt sie bei jeder Antwort als time= an.'
+  example: '`time=24.8 ms` in der ping-Ausgabe ist die Round-Trip-Time.'
+  category: internet
+  aliases:
+    - RTT
+    - Umlaufzeit
+  related:
+    - latenz
+    - ping
+    - handshake
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: ttl
+  term: TTL
+  short: 'Time to Live – eine Lebensdauer, im IP-Paket als Hop-Zähler, im DNS als Speicherdauer in Sekunden.'
+  explanation: 'Im IP-Paket zieht jeder Router 1 von der TTL ab; bei 0 wird das Paket verworfen. Bei DNS-Einträgen gibt die TTL an, wie viele Sekunden Resolver und Caches eine Antwort speichern dürfen.'
+  example: '`www.example.com. 3600 IN A 192.0.2.10` darf eine Stunde lang zwischengespeichert werden.'
+  category: internet
+  aliases:
+    - 'Time to Live'
+    - 'Hop Limit'
+  related:
+    - traceroute
+    - cache
+    - dns
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: traceroute
+  term: traceroute
+  short: 'Ein Werkzeug, das jeden Router auf dem Weg zu einem Ziel anzeigt.'
+  explanation: 'traceroute schickt Pakete mit TTL 1, 2, 3 und so weiter. Jeder Router, bei dem die TTL abläuft, meldet sich mit „Time Exceeded“ – so wird Hop für Hop sichtbar. Unter Windows heißt das Programm tracert.'
+  example: '`traceroute example.com` zeigt alle Hops bis zum Server.'
+  category: internet
+  aliases:
+    - tracert
+  related:
+    - ttl
+    - hop
+    - icmp
+    - ping
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: paketverlust
+  term: Paketverlust
+  short: 'Wenn Datenpakete unterwegs verloren gehen und nicht ankommen.'
+  explanation: 'Überlastete Router oder Funkstörungen können Pakete verwerfen. TCP sendet verlorene Daten neu, was Zeit kostet; bei UDP fehlen sie einfach. ping zeigt den Paketverlust in Prozent an.'
+  example: '`4 packets transmitted, 3 received, 25% packet loss` bedeutet: Ein Paket ging verloren.'
+  category: internet
+  aliases:
+    - 'Packet Loss'
+  related:
+    - tcp
+    - ping
+  lesson: wie-das-internet-funktioniert/router-und-provider
+- slug: handshake
+  term: Handshake
+  short: 'Ein kurzer Austausch von Nachrichten, mit dem zwei Seiten eine Verbindung vereinbaren.'
+  explanation: 'Beim TCP-Handshake (SYN, SYN-ACK, ACK) wird die Verbindung aufgebaut. Beim TLS-Handshake handeln Browser und Server danach Verschlüsselung und Schlüssel aus und prüfen das Zertifikat.'
+  example: 'SYN → SYN-ACK → ACK ist der Drei-Wege-Handshake von TCP.'
+  category: internet
+  aliases:
+    - Drei-Wege-Handshake
+    - Handshakes
+  related:
+    - tcp
+    - tls
+  lesson: wie-das-internet-funktioniert/tcp-und-udp
+- slug: sequenznummer
+  term: Sequenznummer
+  short: 'Eine laufende Nummer, mit der TCP jedes Byte einer Verbindung kennzeichnet.'
+  explanation: 'Mit Sequenznummern kann der Empfänger Daten in die richtige Reihenfolge bringen und Lücken erkennen. Mit Bestätigungen (ACKs) teilt er mit, bis wohin er alles lückenlos erhalten hat.'
+  example: 'Fehlen die Bytes 1001–2000, bestätigt der Empfänger nur bis 1000.'
+  category: internet
+  aliases:
+    - 'Sequence Number'
+    - Sequenznummern
+  related:
+    - tcp
+    - paketverlust
+  lesson: wie-das-internet-funktioniert/tcp-und-udp
+- slug: domain
+  term: Domain
+  short: 'Ein Name im DNS-Baum, zum Beispiel example.com.'
+  explanation: 'Eine Domain ist ein Zweig im hierarchischen Namensraum des DNS. Wer eine Domain registriert, darf darunter beliebig viele Subdomains anlegen und die Einträge der Zone selbst pflegen.'
+  example: '`example.com` ist eine Domain, `shop.example.com` eine Subdomain davon.'
+  category: internet
+  aliases:
+    - Domains
+    - Domainname
+    - Domainnamen
+  related:
+    - dns
+    - subdomain
+    - top-level-domain
+  lesson: wie-das-internet-funktioniert/warum-dns
+- slug: top-level-domain
+  term: Top-Level-Domain
+  short: 'Die oberste Ebene eines Domainnamens, ganz rechts.'
+  explanation: 'Top-Level-Domains (TLDs) sind entweder generisch wie com, org, net oder Länderkennungen wie de. Jede TLD wird von einer Registry verwaltet; die Liste aller TLDs steht in der Root-Zone.'
+  example: 'In `www.example.com` ist `com` die Top-Level-Domain.'
+  category: internet
+  aliases:
+    - TLD
+    - TLDs
+    - Endung
+  related:
+    - domain
+    - root-server
+  lesson: wie-das-internet-funktioniert/warum-dns
+- slug: subdomain
+  term: Subdomain
+  short: 'Eine Unterteilung einer Domain, links davor geschrieben.'
+  explanation: 'Subdomains legt der Inhaber einer Domain selbst an, um Dienste zu trennen. Sie können auf ganz andere Server zeigen als die Domain selbst.'
+  example: '`api.example.com` und `www.example.com` sind Subdomains von example.com.'
+  category: internet
+  aliases:
+    - Subdomains
+  related:
+    - domain
+    - fqdn
+  lesson: wie-das-internet-funktioniert/warum-dns
+- slug: fqdn
+  term: FQDN
+  short: 'Ein vollständiger Domainname mit allen Ebenen bis zur Root.'
+  explanation: 'FQDN steht für Fully Qualified Domain Name. Streng genommen endet er mit einem Punkt, der für die Root steht. In Zonendateien ist dieser Punkt wichtig, im Browser lässt man ihn weg.'
+  example: '`www.example.com.` (mit Punkt am Ende) ist ein FQDN.'
+  category: internet
+  aliases:
+    - 'Fully Qualified Domain Name'
+  related:
+    - domain
+    - root-server
+  lesson: wie-das-internet-funktioniert/warum-dns
+- slug: registrar
+  term: Registrar
+  short: 'Ein Anbieter, bei dem du Domains registrierst.'
+  explanation: 'Der Registrar nimmt deine Bestellung an und trägt die Domain bei der zuständigen Registry der TLD ein. Dort hinterlegst du auch, welche Nameserver für deine Domain zuständig sind.'
+  example: 'Du registrierst example.org bei einem Registrar und trägst ns1.example.org als Nameserver ein.'
+  category: internet
+  aliases:
+    - Domain-Registrar
+    - Registry
+  related:
+    - domain
+    - top-level-domain
+  lesson: wie-das-internet-funktioniert/warum-dns
+- slug: resolver
+  term: Resolver
+  short: 'Ein Dienst, der DNS-Namen für dich auflöst.'
+  explanation: 'Der Stub-Resolver auf deinem Rechner fragt einen rekursiven Resolver, oft beim Internetanbieter. Dieser fragt sich durch Root-, TLD- und autoritative Server und speichert die Antworten im Cache.'
+  example: '`SERVER: 198.51.100.53#53` in der dig-Ausgabe ist der Resolver, der geantwortet hat.'
+  category: internet
+  aliases:
+    - 'rekursiver Resolver'
+    - Stub-Resolver
+    - DNS-Resolver
+  related:
+    - dns
+    - root-server
+    - cache
+  lesson: wie-das-internet-funktioniert/dns-aufloesung
+- slug: root-server
+  term: Root-Server
+  short: 'Die Nameserver an der Wurzel des DNS, die auf die Server der Top-Level-Domains verweisen.'
+  explanation: 'Es gibt 13 Root-Server-Namen (a bis m.root-servers.net), hinter denen weltweit über tausend Rechner stehen. Sie kennen keine einzelnen Namen, nur die Nameserver jeder TLD.'
+  example: 'Auf die Frage nach www.example.com antwortet ein Root-Server: „Frag die Server für .com.“'
+  category: internet
+  aliases:
+    - Root-Server
+    - Root-Nameserver
+    - Root
+  related:
+    - resolver
+    - top-level-domain
+  lesson: wie-das-internet-funktioniert/dns-aufloesung
+- slug: autoritativer-nameserver
+  term: 'Autoritativer Nameserver'
+  short: 'Der Nameserver, der die echten Einträge einer Zone kennt.'
+  explanation: 'Nur der autoritative Nameserver einer Zone antwortet aus erster Hand. Alle anderen verweisen weiter oder geben zwischengespeicherte Kopien heraus. Welche Server autoritativ sind, steht in den NS-Einträgen.'
+  example: '`ns1.example.com` ist autoritativ für die Zone example.com.'
+  category: internet
+  aliases:
+    - 'autoritativer Server'
+    - autoritativ
+    - Nameserver
+  related:
+    - ns-record
+    - resolver
+  lesson: wie-das-internet-funktioniert/dns-aufloesung
+- slug: dig
+  term: dig
+  short: 'Ein Kommandozeilenwerkzeug, mit dem du DNS-Anfragen von Hand stellst.'
+  explanation: 'dig zeigt Frage, Antwort, TTL und den antwortenden Server. Mit +short siehst du nur das Ergebnis, mit +trace die komplette Kette von der Root an. Den Record-Typ gibst du am Ende an.'
+  example: '`dig +short example.com MX` zeigt die Mailserver von example.com.'
+  category: internet
+  related:
+    - dns
+    - dns-record
+  lesson: wie-das-internet-funktioniert/dns-aufloesung
+- slug: hosts-datei
+  term: hosts-Datei
+  short: 'Eine lokale Datei, die Namen fest IP-Adressen zuordnet und vor DNS gefragt wird.'
+  explanation: 'Unter Linux und macOS liegt sie unter /etc/hosts. Jede Zeile enthält eine IP-Adresse und einen oder mehrere Namen. Ein Eintrag dort gewinnt gegen jede DNS-Antwort – praktisch für lokale Tests, tückisch, wenn man ihn vergisst.'
+  example: '`127.0.0.1 shop.example.test` lässt shop.example.test auf den eigenen Rechner zeigen.'
+  category: internet
+  aliases:
+    - /etc/hosts
+    - hosts
+  related:
+    - dns
+    - localhost
+  lesson: wie-das-internet-funktioniert/dns-aufloesung
+- slug: dns-record
+  term: DNS-Record
+  short: 'Ein einzelner Eintrag im DNS, zum Beispiel eine Adresse für einen Namen.'
+  explanation: 'Jeder Record besteht aus Name, TTL, Klasse, Typ und Wert. Wichtige Typen sind A, AAAA, CNAME, MX, TXT und NS. Autoritative Server speichern sie in Zonendateien.'
+  example: '`example.com. 3600 IN A 192.0.2.10` ist ein DNS-Record.'
+  category: internet
+  aliases:
+    - DNS-Eintrag
+    - DNS-Einträge
+    - Record
+    - Records
+  related:
+    - a-record
+    - cname
+    - mx-record
+  lesson: wie-das-internet-funktioniert/record-typen
+- slug: a-record
+  term: A-Record
+  short: 'Ein DNS-Eintrag, der einen Namen einer IPv4-Adresse zuordnet.'
+  explanation: 'Der A-Record ist der häufigste DNS-Eintrag. Ein Name kann mehrere A-Records haben, etwa für mehrere Server.'
+  example: '`example.com. IN A 192.0.2.10`'
+  category: internet
+  aliases:
+    - A-Eintrag
+    - A-Record
+  related:
+    - aaaa-record
+    - ipv4
+  lesson: wie-das-internet-funktioniert/record-typen
+- slug: aaaa-record
+  term: AAAA-Record
+  short: 'Ein DNS-Eintrag, der einen Namen einer IPv6-Adresse zuordnet.'
+  explanation: 'Der Name „Quad-A“ kommt daher, dass IPv6-Adressen viermal so lang sind wie IPv4-Adressen. Hat ein Name A- und AAAA-Records, bevorzugen moderne Systeme meist IPv6.'
+  example: '`example.com. IN AAAA 2001:db8::10`'
+  category: internet
+  aliases:
+    - AAAA-Eintrag
+    - Quad-A
+  related:
+    - a-record
+    - ipv6
+  lesson: wie-das-internet-funktioniert/record-typen
+- slug: cname
+  term: CNAME
+  short: 'Ein DNS-Eintrag, der einen Namen zum Alias eines anderen Namens macht.'
+  explanation: 'Bei einem CNAME folgt der Resolver dem Verweis und fragt dann nach der Adresse des Zielnamens. Ein CNAME darf nicht neben anderen Einträgen desselben Namens stehen – daher nicht auf der Domain selbst.'
+  example: '`www.example.com. IN CNAME example.com.`'
+  category: internet
+  aliases:
+    - CNAME-Eintrag
+    - 'Canonical Name'
+  related:
+    - dns-record
+    - a-record
+  lesson: wie-das-internet-funktioniert/record-typen
+- slug: ns-record
+  term: NS-Record
+  short: 'Ein DNS-Eintrag, der die zuständigen Nameserver einer Zone nennt.'
+  explanation: 'NS-Records verweisen auf die autoritativen Nameserver. Genau diese Einträge liefert der TLD-Server, wenn ein Resolver nach einer Domain fragt. Üblich sind mindestens zwei.'
+  example: '`example.com. IN NS ns1.example.com.`'
+  category: internet
+  aliases:
+    - NS-Eintrag
+    - NS
+  related:
+    - autoritativer-nameserver
+    - dns-record
+  lesson: wie-das-internet-funktioniert/record-typen
+- slug: mx-record
+  term: MX-Record
+  short: 'Ein DNS-Eintrag, der festlegt, welche Server E-Mails für eine Domain annehmen.'
+  explanation: 'Jeder MX-Record hat eine Priorität: Die kleinere Zahl wird zuerst versucht, die größeren sind Ersatz.'
+  example: '`example.com. IN MX 10 mail.example.com.`'
+  category: internet
+  aliases:
+    - MX-Eintrag
+    - 'Mail Exchanger'
+  related:
+    - e-mail
+    - dns-record
+  lesson: wie-das-internet-funktioniert/record-typen
+- slug: txt-record
+  term: TXT-Record
+  short: 'Ein DNS-Eintrag mit freiem Text.'
+  explanation: 'TXT-Records werden für viele Zwecke genutzt: SPF legt fest, welche Server Mails für die Domain senden dürfen, und Online-Dienste prüfen damit, ob dir eine Domain gehört.'
+  example: '`example.com. IN TXT "v=spf1 mx -all"`'
+  category: internet
+  aliases:
+    - TXT-Eintrag
+    - SPF
+  related:
+    - dns-record
+    - mx-record
+  lesson: wie-das-internet-funktioniert/record-typen
+- slug: url-schema
+  term: Schema
+  short: 'Der Teil einer URL vor ://, der das Protokoll angibt.'
+  explanation: 'Das Schema sagt dem Browser, wie die Ressource abgerufen wird. Für Webseiten ist es http oder https; daneben gibt es zum Beispiel mailto: oder file:. Aus dem Schema ergibt sich auch der Standardport.'
+  example: 'In `https://www.example.com/` ist `https` das Schema.'
+  category: internet
+  aliases:
+    - URL-Schema
+    - Scheme
+  related:
+    - url
+    - https
+  lesson: wie-das-internet-funktioniert/aufbau-einer-url
+- slug: query-string
+  term: Query-String
+  short: 'Der Teil einer URL nach dem Fragezeichen mit zusätzlichen Parametern.'
+  explanation: 'Ein Query-String besteht aus Schlüssel-Wert-Paaren, getrennt durch &. Er wird an den Server geschickt und oft für Suchen, Filter und Seitennummern verwendet.'
+  example: 'In `/produkte?farbe=rot&seite=2` ist `farbe=rot&seite=2` der Query-String.'
+  category: internet
+  aliases:
+    - Query
+    - Abfrageparameter
+    - Query-Parameter
+  related:
+    - url
+    - percent-encoding
+  lesson: wie-das-internet-funktioniert/aufbau-einer-url
+- slug: fragment
+  term: Fragment
+  short: 'Der Teil einer URL nach dem #, den nur der Browser auswertet.'
+  explanation: 'Das Fragment wird nicht an den Server geschickt. Der Browser springt damit zu dem Element mit der passenden id auf der Seite.'
+  example: 'Bei `/hilfe#kontakt` scrollt der Browser zum Element mit `id="kontakt"`.'
+  category: internet
+  aliases:
+    - Anker
+    - Hash
+  related:
+    - url
+    - query-string
+  lesson: wie-das-internet-funktioniert/aufbau-einer-url
+- slug: percent-encoding
+  term: Percent-Encoding
+  short: 'Die Kodierung von Sonderzeichen in URLs als % plus zwei Hex-Ziffern.'
+  explanation: 'In URLs sind nur bestimmte Zeichen erlaubt. Leerzeichen, Umlaute oder ein & innerhalb eines Werts werden Byte für Byte kodiert. Die URL-Klasse in JavaScript erledigt das automatisch.'
+  example: 'Aus „rote schuhe“ wird `rote%20schuhe`.'
+  category: internet
+  aliases:
+    - URL-Kodierung
+    - URL-Encoding
+  related:
+    - url
+    - query-string
+    - hexadezimal
+  lesson: wie-das-internet-funktioniert/aufbau-einer-url
+- slug: tls
+  term: TLS
+  short: 'Das Protokoll, das Verbindungen verschlüsselt und den Server per Zertifikat ausweist.'
+  explanation: 'TLS (Transport Layer Security) sorgt für Vertraulichkeit, Integrität und Authentizität. Nach dem TCP-Handshake folgt der TLS-Handshake; danach ist alles verschlüsselt. Der alte Name SSL taucht noch oft auf.'
+  example: 'HTTPS ist HTTP über TLS.'
+  category: internet
+  aliases:
+    - SSL
+    - SSL/TLS
+    - 'Transport Layer Security'
+  related:
+    - https
+    - zertifikat
+    - handshake
+  lesson: wie-das-internet-funktioniert/die-ganze-reise
+- slug: zertifikat
+  term: Zertifikat
+  short: 'Ein digitaler Ausweis, mit dem ein Server beweist, wer er ist.'
+  explanation: 'Ein Zertifikat enthält unter anderem den Namen des Servers, seinen öffentlichen Schlüssel, eine Gültigkeitsdauer und die Signatur einer Zertifizierungsstelle. Der Browser prüft all das beim TLS-Handshake.'
+  example: '`openssl x509 -in zertifikat.pem -noout -subject -dates` zeigt Inhaber und Gültigkeit.'
+  category: internet
+  aliases:
+    - Zertifikate
+    - TLS-Zertifikat
+    - SSL-Zertifikat
+  related:
+    - tls
+    - zertifizierungsstelle
+  lesson: wie-das-internet-funktioniert/die-ganze-reise
+- slug: zertifizierungsstelle
+  term: Zertifizierungsstelle
+  short: 'Eine Stelle, die Zertifikate prüft und signiert, damit Browser ihnen vertrauen.'
+  explanation: 'Browser und Betriebssysteme bringen eine Liste vertrauenswürdiger Zertifizierungsstellen (Certificate Authorities, CAs) mit. Endet die Signaturkette eines Zertifikats bei einer davon, wird es akzeptiert.'
+  example: 'Ein selbstsigniertes Zertifikat hat keine Zertifizierungsstelle – Browser warnen davor.'
+  category: internet
+  aliases:
+    - CA
+    - 'Certificate Authority'
+  related:
+    - zertifikat
+    - tls
+  lesson: wie-das-internet-funktioniert/die-ganze-reise
+- slug: http-methode
+  term: HTTP-Methode
+  short: 'Das Wort am Anfang einer HTTP-Anfrage, das sagt, was passieren soll.'
+  explanation: 'GET liest eine Ressource, POST schickt Daten, PUT und PATCH ändern, DELETE löscht. Beim normalen Aufruf einer Seite nutzt der Browser GET.'
+  example: 'In `POST /bestellungen HTTP/1.1` ist `POST` die Methode.'
+  category: internet
+  aliases:
+    - Methode
+    - HTTP-Methoden
+    - GET
+    - POST
+  related:
+    - http
+    - request
+  lesson: wie-das-internet-funktioniert/die-ganze-reise
+- slug: time-to-first-byte
+  term: 'Time to First Byte'
+  short: 'Die Zeit vom Abschicken einer Anfrage bis zum ersten Byte der Antwort.'
+  explanation: 'Die Time to First Byte (TTFB) umfasst Netzwerkwege, Verbindungsaufbau und die Rechenzeit des Servers. Sie ist ein wichtiger Messwert für die Ladezeit einer Seite.'
+  example: '`curl -w "%{time_starttransfer}"` gibt die TTFB in Sekunden aus.'
+  category: internet
+  aliases:
+    - TTFB
+  related:
+    - latenz
+    - http
+  lesson: wie-das-internet-funktioniert/die-ganze-reise
+- slug: html-tag
+  term: HTML-Tag
+  short: 'Eine Markierung in spitzen Klammern, die in HTML ein Element öffnet oder schließt.'
+  explanation: 'Ein Start-Tag wie <h1>, der Inhalt und das End-Tag </h1> bilden zusammen ein Element. Manche Tags wie <img> haben kein End-Tag. Tags können Attribute tragen.'
+  example: '`<a href="/hilfe">` ist ein Start-Tag mit dem Attribut href.'
+  category: internet
+  aliases:
+    - Tag
+    - Tags
+    - Element
+  related:
+    - html
+    - dom
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: parser
+  term: Parser
+  short: 'Ein Programmteil, der Text liest und daraus eine Struktur aufbaut.'
+  explanation: 'Der HTML-Parser des Browsers liest Tags und Text und baut daraus den DOM-Baum. Er ist sehr nachsichtig und repariert fehlerhaftes HTML nach festen Regeln.'
+  example: 'Fehlt ein </p>, ergänzt der Parser es selbst.'
+  category: internet
+  aliases:
+    - Parsen
+    - parsen
+  related:
+    - dom
+    - html
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: dom
+  term: DOM
+  short: 'Der Baum aus Objekten, den der Browser aus dem HTML einer Seite baut.'
+  explanation: 'DOM steht für Document Object Model. Jedes Element ist ein Knoten mit Eltern, Kindern und Geschwistern. JavaScript liest und verändert die Seite über den DOM; die DevTools zeigen ihn im Tab „Elemente“.'
+  example: '`document.querySelector("h1")` holt ein Element aus dem DOM.'
+  category: internet
+  aliases:
+    - 'Document Object Model'
+    - DOM-Baum
+  related:
+    - html
+    - cssom
+    - render-tree
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: css
+  term: CSS
+  short: 'Die Sprache, mit der das Aussehen von Webseiten beschrieben wird.'
+  explanation: 'CSS (Cascading Style Sheets) legt Farben, Schriften, Abstände und Layout fest. Regeln bestehen aus einem Selektor und Eigenschaften. Der Browser baut aus CSS das CSSOM.'
+  example: '`h1 { color: teal; }` färbt alle Hauptüberschriften.'
+  category: internet
+  aliases:
+    - 'Cascading Style Sheets'
+    - Stylesheet
+  related:
+    - cssom
+    - html
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: cssom
+  term: CSSOM
+  short: 'Die Struktur, die der Browser aus allen CSS-Regeln einer Seite baut.'
+  explanation: 'CSSOM steht für CSS Object Model. Darin steht, welche Regel welche Elemente trifft und welche Werte sie setzt. Zusammen mit dem DOM ergibt es den Render-Tree.'
+  example: 'Solange style.css noch lädt, ist das CSSOM nicht fertig und die Seite wird nicht gezeichnet.'
+  category: internet
+  aliases:
+    - 'CSS Object Model'
+  related:
+    - dom
+    - css
+    - render-tree
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: render-tree
+  term: Render-Tree
+  short: 'Die Kombination aus DOM und CSSOM mit allen sichtbaren Elementen.'
+  explanation: 'Im Render-Tree stehen nur Elemente, die tatsächlich dargestellt werden, jeweils mit ihrem berechneten Stil. Elemente mit display: none und der head-Bereich fehlen.'
+  example: 'Ein `<p>` mit `display: none` steht im DOM, aber nicht im Render-Tree.'
+  category: internet
+  aliases:
+    - Renderbaum
+  related:
+    - dom
+    - cssom
+    - layout
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: layout
+  term: Layout
+  short: 'Der Schritt, in dem der Browser Position und Größe jedes Elements berechnet.'
+  explanation: 'Beim Layout (auch Reflow) rechnet der Browser aus Fenstergröße, Schriften und Inhalten aus, wo jedes Element steht. Ändert sich eine Größe, muss das Layout neu berechnet werden.'
+  example: 'Verkleinerst du das Browserfenster, läuft das Layout erneut.'
+  category: internet
+  aliases:
+    - Reflow
+  related:
+    - render-tree
+    - paint
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: paint
+  term: Paint
+  short: 'Der Schritt, in dem der Browser Farben, Text und Bilder in Pixel umsetzt.'
+  explanation: 'Nach dem Layout zeichnet der Browser die Elemente, oft auf mehreren Ebenen, die beim Compositing übereinandergelegt werden. Eine reine Farbänderung erfordert nur einen neuen Paint.'
+  example: 'Ändert sich nur die Hintergrundfarbe eines Buttons, reicht ein neuer Paint.'
+  category: internet
+  aliases:
+    - Painting
+    - Zeichnen
+  related:
+    - layout
+    - render-tree
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: critical-rendering-path
+  term: 'Critical Rendering Path'
+  short: 'Alle Schritte vom Empfang des HTML bis zum ersten sichtbaren Bild.'
+  explanation: 'Dazu gehören DOM, CSSOM, Render-Tree, Layout und Paint. Alles, was diese Schritte aufhält – etwa render-blockierendes CSS oder parser-blockierende Skripte – verzögert die erste Darstellung.'
+  example: 'Ein Skript mit `defer` hält den Critical Rendering Path nicht auf.'
+  category: internet
+  aliases:
+    - 'kritischer Rendering-Pfad'
+  related:
+    - render-blocking
+    - dom
+    - cssom
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: render-blocking
+  term: Render-blockierend
+  short: 'Eine Ressource, ohne die der Browser die Seite nicht darstellt.'
+  explanation: 'CSS im head ist render-blockierend, weil die Seite ohne CSSOM falsch aussehen würde. Klassische Skripte ohne defer oder async blockieren zusätzlich den Parser.'
+  example: '`<link rel="stylesheet" href="style.css">` im head ist render-blockierend.'
+  category: internet
+  aliases:
+    - render-blocking
+    - Render-Blocking
+  related:
+    - critical-rendering-path
+    - css
+  lesson: wie-das-internet-funktioniert/browser-rendering
+- slug: webserver
+  term: Webserver
+  short: 'Ein Programm, das HTTP-Anfragen entgegennimmt und Antworten zurückschickt.'
+  explanation: 'Ein Webserver lauscht auf einem Port, liest Anfragen und liefert entweder Dateien aus oder reicht die Anfrage an ein Programm weiter. Bekannte Webserver sind nginx, Apache und Caddy.'
+  example: '`php -S 127.0.0.1:8080` startet einen kleinen Webserver zum Entwickeln.'
+  category: internet
+  aliases:
+    - Webserver
+    - Web-Server
+    - HTTP-Server
+  related:
+    - nginx
+    - http
+    - hosting
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: nginx
+  term: nginx
+  short: 'Ein weit verbreiteter, schneller Webserver und Reverse Proxy.'
+  explanation: 'nginx liefert statische Dateien sehr effizient aus und reicht dynamische Anfragen oft an Anwendungen im Hintergrund weiter. Über virtuelle Hosts bedient er viele Websites auf einem Server.'
+  example: 'nginx liefert Bilder direkt aus und gibt Anfragen an /api an eine PHP-Anwendung weiter.'
+  category: internet
+  aliases:
+    - Nginx
+    - 'Engine X'
+  related:
+    - webserver
+    - virtual-host
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: statische-website
+  term: 'Statische Website'
+  short: 'Eine Website aus fertigen Dateien, die der Server unverändert ausliefert.'
+  explanation: 'Bei einer statischen Website läuft pro Anfrage kein Programm – der Webserver schickt nur HTML, CSS und Bilder. Das ist schnell, günstig und lässt sich gut cachen. Dynamische Seiten erzeugen ihre Antwort dagegen pro Anfrage neu.'
+  example: 'Eine Portfolio-Seite aus index.html und style.css ist eine statische Website.'
+  category: internet
+  aliases:
+    - 'statische Seite'
+    - statisch
+    - 'Static Site'
+  related:
+    - webserver
+    - hosting
+    - cdn
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: virtual-host
+  term: 'Virtueller Host'
+  short: 'Eine Konfiguration, mit der ein Webserver mehrere Websites auf einer IP-Adresse ausliefert.'
+  explanation: 'Der Webserver erkennt am Host-Header der Anfrage (und bei HTTPS an SNI), welche Website gemeint ist, und wählt die passende Konfiguration.'
+  example: 'shop.example.com und blog.example.com laufen als zwei virtuelle Hosts auf derselben IP-Adresse.'
+  category: internet
+  aliases:
+    - 'virtuelle Hosts'
+    - 'Virtual Host'
+    - vHost
+  related:
+    - webserver
+    - nginx
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: hosting
+  term: Hosting
+  short: 'Das Bereitstellen von Rechnern, Netz und Wartung, damit eine Website erreichbar ist.'
+  explanation: 'Hosting-Arten unterscheiden sich darin, wie viel du selbst verwaltest: Static Hosting, Shared Hosting, virtuelle Server (VPS) oder Plattformen (PaaS), auf denen du nur Code oder Container lieferst.'
+  example: 'Eine statische Portfolio-Seite liegt bei einem Static-Hosting-Dienst.'
+  category: internet
+  aliases:
+    - Webhosting
+    - Hoster
+  related:
+    - webserver
+    - statische-website
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: cache-control
+  term: Cache-Control
+  short: 'Ein HTTP-Header, der festlegt, ob und wie lange eine Antwort zwischengespeichert werden darf.'
+  explanation: 'Wichtige Angaben sind max-age (Sekunden ohne Nachfrage), no-cache (vor Nutzung nachfragen), no-store (nie speichern) und immutable. Browser und CDNs richten sich danach.'
+  example: '`Cache-Control: public, max-age=86400` erlaubt einen Tag lang Caching.'
+  category: internet
+  related:
+    - cache
+    - etag
+    - cdn
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: etag
+  term: ETag
+  short: 'Ein Fingerabdruck einer Dateiversion, mit dem der Browser nachfragen kann, ob sich etwas geändert hat.'
+  explanation: 'Der Server schickt den ETag mit der Antwort. Später fragt der Browser mit If-None-Match nach; ist die Datei unverändert, antwortet der Server mit 304 Not Modified ohne Inhalt.'
+  example: '`If-None-Match: "abc123"` führt zu `304 Not Modified`, wenn sich nichts geändert hat.'
+  category: internet
+  aliases:
+    - 'Entity Tag'
+  related:
+    - cache-control
+    - cache
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: cdn
+  term: CDN
+  short: 'Ein Netz aus Servern weltweit, das Kopien von Inhalten nah an die Nutzer:innen bringt.'
+  explanation: 'CDN steht für Content Delivery Network. Edge-Server in vielen Städten speichern Kopien vom Origin-Server. Das senkt die Latenz und entlastet den Origin.'
+  example: 'Nutzer:innen in Tokio bekommen das Logo vom Edge-Server in Tokio statt aus Europa.'
+  category: internet
+  aliases:
+    - 'Content Delivery Network'
+  related:
+    - edge-server
+    - origin-server
+    - cache
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: edge-server
+  term: Edge-Server
+  short: 'Ein CDN-Server nahe bei den Nutzer:innen, der Kopien von Inhalten ausliefert.'
+  explanation: 'Liegt eine Datei schon beim Edge, ist das ein Cache-Hit. Sonst holt der Edge sie einmal vom Origin-Server (Cache-Miss) und speichert sie.'
+  example: '`x-cache: HIT` in den Antwort-Headern zeigt, dass der Edge die Datei schon hatte.'
+  category: internet
+  aliases:
+    - Edge
+    - Edge-Server
+  related:
+    - cdn
+    - origin-server
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: origin-server
+  term: Origin-Server
+  short: 'Der eigentliche Server, auf dem die Originale einer Website liegen.'
+  explanation: 'Bei einem CDN holen die Edge-Server fehlende Dateien vom Origin-Server. Der Origin bekommt dadurch viel weniger Anfragen.'
+  example: 'Nach einem Cache-Miss fragt der Edge den Origin-Server nach der neuen Datei.'
+  category: internet
+  aliases:
+    - Origin
+    - Ursprungsserver
+  related:
+    - cdn
+    - edge-server
+  lesson: wie-das-internet-funktioniert/webserver-und-cdns
+- slug: arpanet
+  term: ARPANET
+  short: 'Das Forschungsnetz aus den USA, aus dem ab 1969 das Internet entstand.'
+  explanation: |
+    Das ARPANET verband ab 1969 Rechner an Universitäten und Forschungseinrichtungen. Es war eines der ersten Netze, das Daten in Paketen statt über feste Leitungen übertrug. Am 1. Januar 1983 stellte es komplett auf TCP/IP um – damit begann das heutige Internet.
+  example: 'Die erste ARPANET-Nachricht im Oktober 1969 sollte „LOGIN“ lauten – nach „LO“ stürzte das System ab.'
+  category: internet
+  aliases:
+    - Arpanet
+  related:
+    - internet
+    - tcp-ip
+  lesson: wie-das-internet-funktioniert/internet-und-web
+- slug: e-mail
+  term: E-Mail
+  short: 'Elektronische Post – Nachrichten, die über das Internet von Postfach zu Postfach geschickt werden.'
+  explanation: |
+    E-Mail ist einer der ältesten Dienste im Internet und gehört nicht zum World Wide Web. Mail-Server reichen Nachrichten mit dem Protokoll SMTP weiter, dein Mail-Programm holt sie aus deinem Postfach ab. Eine E-Mail-Adresse besteht aus Name, @-Zeichen und Domain.
+  example: 'Eine Nachricht an `user@example.com` landet im Postfach `user` beim Mail-Server von example.com.'
+  category: internet
+  aliases:
+    - Email
+    - Mail
+    - E-Mails
+  related:
+    - smtp
+    - internet
+  lesson: wie-das-internet-funktioniert/internet-und-web
+- slug: streaming
+  term: Streaming
+  short: 'Video oder Audio abspielen, während es noch über das Netz geladen wird.'
+  explanation: |
+    Beim Streaming lädt dein Gerät die Datei nicht erst komplett herunter. Es holt laufend kleine Stücke und spielt sie sofort ab. Viele Streaming-Dienste nutzen dafür Web-Technik wie HTTP, zeigen die Inhalte aber oft in eigenen Apps an.
+  example: 'Ein Film startet nach wenigen Sekunden, obwohl er mehrere Gigabyte groß ist – das ist Streaming.'
+  category: internet
+  aliases:
+    - streamen
+    - Stream
+  related:
+    - internet
+    - http
+  lesson: wie-das-internet-funktioniert/internet-und-web
+- slug: wlan
+  term: WLAN
+  short: 'Ein drahtloses lokales Netzwerk, in dem Geräte per Funk verbunden sind.'
+  explanation: |
+    WLAN steht für „Wireless Local Area Network“. Geräte wie Laptop und Handy verbinden sich per Funk mit einem Router oder Access Point. Im TCP/IP-Modell gehört WLAN zur Netzzugangsschicht – es überträgt die Bits, ohne zu wissen, was darin steckt.
+  example: 'Dein Laptop ist per WLAN mit dem Heimrouter verbunden, der Fernseher per Netzwerkkabel – beide sind im selben lokalen Netz.'
+  category: internet
+  aliases:
+    - WiFi
+    - Wi-Fi
+    - WLANs
+  related:
+    - netzwerk
+    - router
+    - ethernet
+  lesson: wie-das-internet-funktioniert/ip-adressen-und-pakete
+- slug: smtp
+  term: SMTP
+  short: 'Das Protokoll, mit dem E-Mails von Server zu Server verschickt werden.'
+  explanation: |
+    SMTP steht für „Simple Mail Transfer Protocol“. Es gehört zur Anwendungsschicht des TCP/IP-Modells. Dein Mail-Programm übergibt eine Nachricht per SMTP an einen Mail-Server, der sie per SMTP an den Server des Empfängers weiterreicht.
+  example: 'Eine E-Mail an `user@example.com` wird per SMTP an den Mail-Server von example.com zugestellt.'
+  category: internet
+  aliases:
+    - 'Simple Mail Transfer Protocol'
+  related:
+    - e-mail
+    - protokoll
+  lesson: wie-das-internet-funktioniert/ip-adressen-und-pakete
+- slug: ethernet
+  term: Ethernet
+  short: 'Die verbreitetste Technik für kabelgebundene lokale Netzwerke.'
+  explanation: |
+    Ethernet legt fest, wie Geräte über Netzwerkkabel Daten austauschen. Die Daten werden dabei in Rahmen (Frames) verpackt, die die Hardware-Adresse des nächsten Geräts tragen. Im TCP/IP-Modell gehört Ethernet zur Netzzugangsschicht.
+  example: 'Ein Desktop-Rechner, der per Netzwerkkabel am Router hängt, nutzt Ethernet.'
+  category: internet
+  aliases:
+    - Netzwerkkabel
+    - LAN-Kabel
+  related:
+    - wlan
+    - netzwerk
+    - kapselung
+  lesson: wie-das-internet-funktioniert/ip-adressen-und-pakete

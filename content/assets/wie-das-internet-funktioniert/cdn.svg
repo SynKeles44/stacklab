@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="900" height="380" fill="#ffffff"/>
+<text x="450" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Ein CDN bringt Inhalte nah an die Nutzer</text>
+<rect x="370" y="150" width="160" height="80" rx="14" fill="#f87171" fill-opacity=".14" stroke="#f87171" stroke-width="3"/>
+<text x="450" y="186" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Origin-Server</text>
+<text x="450" y="208" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">das Original</text>
+<rect x="65" y="62" width="170" height="56" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="150" y="96" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Edge Frankfurt</text>
+<path d="M378.57142857142856 156.66666666666666 L 246.77419354838707 115.0" stroke="#64748b" stroke-width="2" stroke-dasharray="6 5"/>
+<rect x="665" y="62" width="170" height="56" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="750" y="96" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Edge New York</text>
+<path d="M521.4285714285714 156.66666666666666 L 653.2258064516129 115.0" stroke="#64748b" stroke-width="2" stroke-dasharray="6 5"/>
+<rect x="65" y="262" width="170" height="56" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="150" y="296" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Edge São Paulo</text>
+<path d="M378.57142857142856 223.33333333333334 L 246.77419354838707 265.0" stroke="#64748b" stroke-width="2" stroke-dasharray="6 5"/>
+<rect x="665" y="262" width="170" height="56" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="750" y="296" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Edge Tokio</text>
+<path d="M521.4285714285714 223.33333333333334 L 653.2258064516129 265.0" stroke="#64748b" stroke-width="2" stroke-dasharray="6 5"/>
+<circle cx="40" cy="140" r="13" fill="#22d3ee" fill-opacity=".3" stroke="#22d3ee" stroke-width="2.5"/><path d="M54 134 L 90 112" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<circle cx="860" cy="140" r="13" fill="#22d3ee" fill-opacity=".3" stroke="#22d3ee" stroke-width="2.5"/><path d="M846 134 L 810 112" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<circle cx="40" cy="340" r="13" fill="#22d3ee" fill-opacity=".3" stroke="#22d3ee" stroke-width="2.5"/><path d="M54 334 L 90 312" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<circle cx="860" cy="340" r="13" fill="#22d3ee" fill-opacity=".3" stroke="#22d3ee" stroke-width="2.5"/><path d="M846 334 L 810 312" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="450" y="345" text-anchor="middle" font-size="12" font-weight="400" fill="#475569">Gestrichelt: Der Edge holt fehlende Dateien einmal vom Origin (Cache-Miss) und merkt sie sich.</text>
+<text x="450" y="368" text-anchor="middle" font-size="13" font-weight="400" fill="#475569">Nutzer sprechen mit dem nächsten Edge-Server – kurze Wege, wenig Latenz.</text>
+</svg>

@@ -1,0 +1,341 @@
+title: Abschlussprüfung – Wie das Internet funktioniert
+description: |
+  20 Fragen aus allen fünf Modulen und drei Praxisaufgaben. Du brauchst 70 % zum Bestehen. Lies jede Frage
+  genau – oft entscheidet ein einzelnes Wort wie „nicht“ oder „zuerst“.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Welche Aussage beschreibt den Unterschied zwischen Internet und Web am besten?
+    options:
+      - Es gibt keinen, beides ist dasselbe.
+      - Das Internet ist das weltweite Netz aus Netzen, das Web ist ein Dienst darauf (Seiten, Links, HTTP).
+      - Das Web ist die Hardware, das Internet die Software.
+      - Das Internet ist nur für E-Mail, das Web für alles andere.
+    answer: 1
+    explanation: Das Internet transportiert Daten für viele Dienste – E-Mail, Videocalls, Spiele und eben das Web.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen zum Client-Server-Modell stimmen?
+    options:
+      - Der Client stellt Anfragen, der Server beantwortet sie.
+      - Ein Server kann viele Clients gleichzeitig bedienen.
+      - Ein Server ist immer ein besonders großer Computer.
+      - Ein Programm auf deinem Laptop kann ein Server sein, z. B. `php -S`.
+    answers: [0, 1, 3]
+    explanation: Server ist eine Rolle, kein Gerätetyp. Auch dein Laptop wird zum Server, sobald ein Programm auf Anfragen wartet.
+  - module: grundlagen
+    type: match
+    question: Ordne die Adressen zu.
+    pairs:
+      - { left: "192.0.2.10", right: "IPv4-Adresse" }
+      - { left: "2001:db8::10", right: "IPv6-Adresse" }
+      - { left: "127.0.0.1", right: "Der eigene Rechner (localhost)" }
+      - { left: "300.1.2.3", right: "Ungültig – ein Oktett ist größer als 255" }
+    explanation: IPv4 hat vier Zahlen von 0 bis 255, IPv6 acht Hex-Blöcke mit möglicher Kürzung durch ::.
+  - module: grundlagen
+    type: cloze
+    text: Im TCP/IP-Modell liegt HTTP in der ___schicht, TCP in der ___schicht und IP in der Internetschicht.
+    blanks:
+      - [Anwendungs, Anwendung]
+      - [Transport]
+    explanation: Beim Senden packt jede Schicht die Daten der Schicht darüber in einen eigenen Umschlag.
+  - module: datenreise
+    type: single
+    question: Woher kennt ein Router den nächsten Schritt für ein Paket?
+    options:
+      - Aus seiner Routing-Tabelle
+      - Aus dem DNS
+      - Er kennt den gesamten Weg bis zum Ziel
+      - Er fragt den Absender
+    answer: 0
+    explanation: Jeder Router vergleicht die Zieladresse mit seiner Routing-Tabelle und reicht das Paket an den passenden Nachbarn weiter.
+  - module: datenreise
+    type: single
+    question: Wie findet traceroute die Router auf dem Weg?
+    options:
+      - Es fragt jeden Router nach seinem Namen.
+      - Es erhöht die TTL Schritt für Schritt und wertet die „Time Exceeded“-Meldungen aus.
+      - Es liest die Routing-Tabelle des Internetanbieters.
+      - Es nutzt DNS-Einträge vom Typ NS.
+    answer: 1
+    explanation: Mit TTL 1 meldet sich der erste Router, mit TTL 2 der zweite und so weiter.
+  - module: datenreise
+    type: match
+    question: TCP oder UDP – ordne die Eigenschaften zu.
+    pairs:
+      - { left: "Drei-Wege-Handshake", right: "TCP" }
+      - { left: "Kein Verbindungsaufbau", right: "UDP" }
+      - { left: "Verlorene Daten werden neu gesendet", right: "TCP" }
+      - { left: "Typisch für DNS-Anfragen und Videocalls", right: "UDP" }
+    explanation: TCP ist zuverlässig und sortiert, UDP schnell und schlank ohne Garantie.
+  - module: datenreise
+    type: find-bug
+    question: Du erklärst einem Kollegen „Connection refused“. Welche Zeile ist falsch?
+    language: text
+    code: |
+      Der Rechner unter der IP-Adresse ist erreichbar.
+      Auf dem angefragten Port lauscht aber kein Programm.
+      Deshalb antwortet der Rechner mit einem RST-Paket.
+      Das bedeutet sicher, dass eine Firewall die Pakete verwirft.
+    bug_line: 4
+    explanation: Verwirft eine Firewall Pakete, gibt es keine Antwort – das führt zu einem Timeout, nicht zu „refused“.
+  - module: dns
+    type: single
+    question: Wer liefert die endgültige Antwort auf „Welche IP hat shop.example.com?“
+    options:
+      - Ein Root-Server
+      - Der TLD-Server für .com
+      - Der autoritative Nameserver der Zone example.com
+      - Der Browser-Cache
+    answer: 2
+    explanation: Root und TLD verweisen nur weiter. Aus erster Hand antwortet nur der autoritative Server.
+  - module: dns
+    type: match
+    question: Ordne die Record-Typen zu.
+    pairs:
+      - { left: "A", right: "Name → IPv4-Adresse" }
+      - { left: "AAAA", right: "Name → IPv6-Adresse" }
+      - { left: "CNAME", right: "Alias auf einen anderen Namen" }
+      - { left: "MX", right: "Mailserver der Domain" }
+      - { left: "TXT", right: "Freier Text, z. B. SPF" }
+    explanation: NS (zuständige Nameserver) und SOA (Zonenbeginn) sind die weiteren wichtigen Typen.
+  - module: dns
+    type: multiple
+    question: Du hast den A-Eintrag deiner Website geändert (TTL vorher 86400). Was stimmt?
+    options:
+      - Manche Nutzer:innen können bis zu einem Tag lang noch die alte Adresse bekommen.
+      - Der autoritative Server liefert sofort die neue Adresse.
+      - Ein Eintrag in der hosts-Datei eines Rechners kann DNS komplett überstimmen.
+      - Die Änderung muss sich erst über alle Root-Server verbreiten.
+    answers: [0, 1, 2]
+    explanation: Es verbreitet sich nichts – alte Kopien in Caches laufen nur nach und nach ab. Die Root-Server sind nicht beteiligt.
+  - module: dns
+    type: cloze
+    text: In der hosts-Datei steht zuerst die ___ und dann der Name. Unter Linux liegt sie unter `/etc/___`.
+    blanks:
+      - [IP-Adresse, IP, Adresse]
+      - [hosts]
+    explanation: "Beispiel: `127.0.0.1 shop.example.test`."
+  - module: url-reise
+    type: single
+    question: Welcher Teil von `https://example.com/hilfe?tab=2#kontakt` wird nicht an den Server geschickt?
+    options: ["https", "/hilfe", "tab=2", "kontakt"]
+    answer: 3
+    explanation: Das Fragment nach dem # wertet nur der Browser aus.
+  - module: url-reise
+    type: match
+    question: Ordne die Statuscodes zu.
+    pairs:
+      - { left: "200", right: "OK" }
+      - { left: "301", right: "Dauerhaft umgezogen" }
+      - { left: "404", right: "Nicht gefunden" }
+      - { left: "500", right: "Fehler im Server" }
+    explanation: 2xx Erfolg, 3xx Umleitung, 4xx Fehler beim Client, 5xx Fehler beim Server.
+  - module: url-reise
+    type: multiple
+    question: Was leistet TLS?
+    options:
+      - Niemand unterwegs kann die Daten lesen.
+      - Niemand kann die Daten unbemerkt verändern.
+      - Der Browser kann prüfen, ob er mit dem echten Server spricht.
+      - Es bestätigt, dass die Betreiber der Seite seriös sind.
+    answers: [0, 1, 2]
+    explanation: Vertraulichkeit, Integrität und Authentizität – ein Seriositäts-Siegel ist das Schloss-Symbol nicht.
+  - module: url-reise
+    type: find-bug
+    question: Diese Beschreibung der Reise einer Anfrage an https://www.example.com hat einen Fehler in der Reihenfolge. In welcher Zeile?
+    language: text
+    code: |
+      1. DNS-Auflösung: www.example.com → 192.0.2.10
+      2. TLS-Handshake mit Zertifikatsprüfung
+      3. TCP-Handshake: SYN, SYN-ACK, ACK
+      4. HTTP-Request GET /
+      5. Antwort 200 OK und Rendering
+    bug_line: 2
+    explanation: TLS läuft innerhalb der TCP-Verbindung. Erst TCP-Handshake, dann TLS-Handshake – Zeile 2 und 3 sind vertauscht.
+  - module: url-reise
+    type: single
+    question: Was ist der DOM?
+    options:
+      - Der HTML-Text, wie er vom Server kommt.
+      - Der Baum aus Element-Objekten, den der Browser aus dem HTML baut.
+      - Eine Datenbank im Browser.
+      - Ein HTTP-Header.
+    answer: 1
+    explanation: Der DOM kann vom ursprünglichen HTML abweichen, etwa wenn der Browser Fehler repariert oder JavaScript ihn ändert.
+  - module: url-reise
+    type: cloze
+    text: "Ein Skript mit dem Attribut ___ wird parallel geladen und erst nach dem Parsen ausgeführt. Ein Server antwortet mit Statuscode ___, wenn die zwischengespeicherte Kopie noch aktuell ist."
+    blanks:
+      - [defer]
+      - ["304"]
+    explanation: defer verhindert parser-blockierendes JavaScript; 304 Not Modified spart das erneute Übertragen.
+  - module: url-reise
+    type: multiple
+    question: Welche Aussagen über CDNs stimmen?
+    options:
+      - Edge-Server stehen nah bei den Nutzer:innen.
+      - Bei einem Cache-Miss holt der Edge die Datei vom Origin-Server.
+      - Ein CDN macht einen Origin-Server überflüssig.
+      - Ein CDN senkt die Latenz für weit entfernte Nutzer:innen.
+    answers: [0, 1, 3]
+    explanation: Das Original bleibt auf dem Origin; das CDN verteilt nur Kopien.
+  - module: url-reise
+    type: single
+    question: Wie unterscheidet ein Webserver mit einer IP-Adresse zwischen shop.example.com und blog.example.com?
+    options:
+      - Über den Host-Header (und bei HTTPS zusätzlich SNI)
+      - Über die MAC-Adresse des Clients
+      - Gar nicht, jede Website braucht eine eigene IP
+      - Über den User-Agent
+    answer: 0
+    explanation: Das Konzept heißt virtuelle Hosts.
+tasks:
+  - module: url-reise
+    id: pruefung-statuscodes
+    type: terminal
+    title: Statuscodes eines lokalen Servers prüfen
+    description: |
+      Im Ordner `pruefung-http` liegt eine Seite `start.html` (absichtlich ohne index.html).
+
+      1. Starte im Ordner einen Webserver auf Port 8080 im Hintergrund.
+      2. Schreibe in `codes.txt` zwei Zeilen: den Statuscode für `/start.html` und den für `/gibts-nicht.html`
+         (nur die Zahlen, je eine pro Zeile).
+      3. Speichere die Antwort-Header für `/start.html` (nur Header, kein Body) in `header.txt`.
+      4. Beende den Server.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-http
+    setup: |
+      printf '<!doctype html>\n<title>Start</title>\n<h1>Prüfung</h1>\n' > start.html
+    checks:
+      - type: command
+        run: tr -d ' \r' < codes.txt | grep -v '^$' | tr '\n' ' '
+        stdout_matches: "^200 404\\s*$"
+        message: codes.txt soll zwei Zeilen enthalten – zuerst 200, dann 404.
+      - type: file_contains
+        path: header.txt
+        pattern: "^HTTP/1\\.1 200"
+        message: header.txt soll die Statuszeile HTTP/1.1 200 enthalten (z. B. mit curl -I).
+      - type: file_contains
+        path: header.txt
+        pattern: "(?:^|\\n)[Cc]ontent-[Tt]ype: text/html"
+        message: In header.txt fehlt der Content-Type-Header.
+      - type: command
+        run: "! grep -q '<h1>' header.txt"
+        message: header.txt soll nur die Header enthalten, keinen HTML-Body.
+    hints:
+      - "`curl -s -o /dev/null -w \"%{http_code}\\n\" URL` gibt nur den Statuscode aus."
+      - "`curl -I URL` holt nur die Header."
+    solution: |
+      ```bash
+      cd pruefung-http
+      php -S 127.0.0.1:8080 > server.log 2>&1 &
+      sleep 1
+      curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8080/start.html > codes.txt
+      curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8080/gibts-nicht.html >> codes.txt
+      curl -sI http://127.0.0.1:8080/start.html > header.txt
+      kill %1
+      ```
+  - module: dns
+    id: pruefung-zone
+    type: terminal
+    title: Zonendatei und hosts-Einträge
+    description: |
+      Im Ordner `pruefung-dns` legst du zwei Dateien an.
+
+      1. `zone.txt` mit diesen Einträgen für die Zone `example.org.`:
+         - A-Eintrag `example.org.` → `198.51.100.20`
+         - AAAA-Eintrag `example.org.` → `2001:db8::20`
+         - CNAME `www.example.org.` → `example.org.`
+         - MX-Eintrag mit Priorität 10 → `mail.example.org.`
+      2. `hosts-test` im hosts-Format, in dem `dev.example.test` auf `127.0.0.1` zeigt.
+
+      Format in der Zone: `name  IN  TYP  wert`. Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-dns
+    setup: |
+      printf 'Lege hier zone.txt und hosts-test an.\n' > LIESMICH.txt
+    checks:
+      - type: file_contains
+        path: zone.txt
+        pattern: "^example\\.org\\.\\s+(\\d+\\s+)?IN\\s+A\\s+198\\.51\\.100\\.20\\s*$"
+        message: In zone.txt fehlt der A-Eintrag example.org. → 198.51.100.20.
+      - type: file_contains
+        path: zone.txt
+        pattern: "^example\\.org\\.\\s+(\\d+\\s+)?IN\\s+AAAA\\s+2001:db8::20\\s*$"
+        message: In zone.txt fehlt der AAAA-Eintrag example.org. → 2001:db8::20.
+      - type: file_contains
+        path: zone.txt
+        pattern: "^www\\.example\\.org\\.\\s+(\\d+\\s+)?IN\\s+CNAME\\s+example\\.org\\.\\s*$"
+        message: In zone.txt fehlt der CNAME www.example.org. → example.org.
+      - type: file_contains
+        path: zone.txt
+        pattern: "^example\\.org\\.\\s+(\\d+\\s+)?IN\\s+MX\\s+10\\s+mail\\.example\\.org\\.\\s*$"
+        message: In zone.txt fehlt der MX-Eintrag mit Priorität 10 auf mail.example.org.
+      - type: file_contains
+        path: hosts-test
+        pattern: "^127\\.0\\.0\\.1\\s+dev\\.example\\.test\\s*$"
+        message: In hosts-test fehlt die Zeile `127.0.0.1 dev.example.test` (erst IP, dann Name).
+    hints:
+      - Vollständige Namen enden mit einem Punkt.
+      - In der hosts-Datei steht die IP-Adresse vorne.
+    solution: |
+      ```bash
+      cd pruefung-dns
+      cat > zone.txt <<'EOF'
+      example.org.      IN  A      198.51.100.20
+      example.org.      IN  AAAA   2001:db8::20
+      www.example.org.  IN  CNAME  example.org.
+      example.org.      IN  MX     10 mail.example.org.
+      EOF
+      echo "127.0.0.1 dev.example.test" > hosts-test
+      ```
+  - module: url-reise
+    id: pruefung-query
+    type: code
+    language: js
+    title: Query-Parameter auslesen
+    description: |
+      Schreibe eine Funktion `infoAusUrl(text)`, die für eine URL ein Objekt zurückgibt:
+
+      - `host`: der Hostname
+      - `https`: `true`, wenn das Schema `https` ist, sonst `false`
+      - `seite`: der Query-Parameter `seite` als **Zahl**, oder `1`, wenn er fehlt
+      - `hatFragment`: `true`, wenn die URL ein Fragment hat (Teil nach `#`), sonst `false`
+
+      Beispiel: `infoAusUrl("https://shop.example.com/produkte?seite=3#oben")` →
+      `{ host: "shop.example.com", https: true, seite: 3, hatFragment: true }`
+    starter: |
+      function infoAusUrl(text) {
+        const url = new URL(text)
+        return {}
+      }
+    tests:
+      - name: vollständige URL
+        code: |
+          assertDeepEqual(infoAusUrl("https://shop.example.com/produkte?seite=3#oben"), { host: "shop.example.com", https: true, seite: 3, hatFragment: true })
+      - name: ohne seite-Parameter ergibt 1
+        code: assertEqual(infoAusUrl("https://example.com/liste").seite, 1)
+      - name: http ohne Fragment
+        code: |
+          const info = infoAusUrl("http://127.0.0.1:8080/?seite=12")
+          assertEqual(info.https, false)
+          assertEqual(info.seite, 12)
+          assertEqual(info.hatFragment, false)
+          assertEqual(info.host, "127.0.0.1")
+    hints:
+      - "`url.searchParams.get('seite')` liefert `null`, wenn der Parameter fehlt."
+      - "`url.hash` ist ein leerer String, wenn es kein Fragment gibt."
+    solution: |
+      function infoAusUrl(text) {
+        const url = new URL(text)
+        const seite = url.searchParams.get('seite')
+        return {
+          host: url.hostname,
+          https: url.protocol === 'https:',
+          seite: seite === null ? 1 : Number(seite),
+          hatFragment: url.hash !== '',
+        }
+      }

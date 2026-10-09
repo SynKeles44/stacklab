@@ -1,0 +1,70 @@
+title: Wie Daten reisen
+description: Router, Internetanbieter, ping und traceroute, TCP, UDP und Ports – so finden Datenpakete ihren Weg und kommen vollständig an.
+exercise:
+  id: modul-uebung-datenreise
+  type: simulated
+  title: Netzwerk-Diagnose – warum lädt der Shop nicht?
+  description: |
+    Eine Kollegin meldet: „Der Shop unter `shop.example.com` lädt bei mir nicht!“ Du gehst der Sache
+    systematisch nach – von unten nach oben durch die Schichten:
+
+    1. Prüfe mit `ping -c 3 shop.example.com`, ob der Server überhaupt erreichbar ist.
+    2. Verfolge mit `traceroute shop.example.com` den Weg der Pakete.
+    3. Teste mit `nc -zv shop.example.com 443`, ob auf dem HTTPS-Port ein Programm lauscht.
+    4. Teste genauso Port `80`.
+    5. Schreib dein Ergebnis auf: `echo "Port 443 offen, Port 80 geschlossen" > befund.txt`
+
+    Alle Adressen sind Beispieladressen – das Terminal ist simuliert. Tippe `tipp`, wenn du nicht weiterkommst.
+  prompt: "du@laptop:~$"
+  steps:
+    - expect: "^ping\\s+(-c\\s*3\\s+)?shop\\.example\\.com(\\s+-c\\s*3)?$"
+      output: |
+        PING shop.example.com (203.0.113.40) 56(84) bytes of data.
+        64 bytes from 203.0.113.40: icmp_seq=1 ttl=54 time=18.4 ms
+        64 bytes from 203.0.113.40: icmp_seq=2 ttl=54 time=17.9 ms
+        64 bytes from 203.0.113.40: icmp_seq=3 ttl=54 time=18.1 ms
+
+        --- shop.example.com ping statistics ---
+        3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+        rtt min/avg/max/mdev = 17.9/18.1/18.4/0.2 ms
+      hint: "Tippe `ping -c 3 shop.example.com` – `-c 3` schickt genau drei Pakete."
+    - expect: "^traceroute\\s+shop\\.example\\.com$"
+      output: |
+        traceroute to shop.example.com (203.0.113.40), 30 hops max, 60 byte packets
+         1  router.local (192.168.1.1)  1.2 ms  1.1 ms  1.0 ms
+         2  198.51.100.1 (198.51.100.1)  8.4 ms  8.1 ms  8.3 ms
+         3  198.51.100.65 (198.51.100.65)  11.0 ms  10.8 ms  11.2 ms
+         4  * * *
+         5  203.0.113.1 (203.0.113.1)  17.6 ms  17.4 ms  17.9 ms
+         6  shop.example.com (203.0.113.40)  18.2 ms  18.0 ms  18.3 ms
+      hint: "Tippe `traceroute shop.example.com`."
+    - expect: "^nc\\s+-zv\\s+shop\\.example\\.com\\s+443$"
+      output: "Connection to shop.example.com (203.0.113.40) 443 port [tcp/https] succeeded!"
+      hint: "`nc -zv shop.example.com 443` – `-z` prüft nur, ob der Port offen ist, `-v` erzählt dir das Ergebnis."
+    - expect: "^nc\\s+-zv\\s+shop\\.example\\.com\\s+80$"
+      output: "nc: connect to shop.example.com (203.0.113.40) port 80 (tcp) failed: Connection refused"
+      hint: "Gleicher Befehl, nur mit Port 80 am Ende."
+    - expect: "^echo\\s+[\"'].*443.*80.*[\"']\\s*>\\s*befund\\.txt$"
+      output: ""
+      hint: "`echo \"Port 443 offen, Port 80 geschlossen\" > befund.txt`"
+  responses:
+    - match: "^ls"
+      output: "befund.txt  notizen.md"
+    - match: "^cat\\s+befund\\.txt"
+      output: "Port 443 offen, Port 80 geschlossen"
+    - match: "^ping"
+      output: "ping: Probier es mit `ping -c 3 shop.example.com`."
+  hints:
+    - Arbeite dich von unten nach oben vor – erst Erreichbarkeit (ping), dann der Weg (traceroute), dann der Dienst (Port).
+    - Die Sternchen `* * *` in Zeile 4 sind kein Fehler – dieser Router antwortet einfach nicht auf traceroute.
+  solution: |
+    ```bash
+    ping -c 3 shop.example.com
+    traceroute shop.example.com
+    nc -zv shop.example.com 443
+    nc -zv shop.example.com 80
+    echo "Port 443 offen, Port 80 geschlossen" > befund.txt
+    ```
+    Ergebnis: Der Server ist erreichbar, der Weg ist in Ordnung, HTTPS (443) antwortet. Nur Port 80
+    (unverschlüsseltes HTTP) ist zu. Wenn die Kollegin `http://` statt `https://` tippt und keine
+    Weiterleitung eingerichtet ist, lädt die Seite nicht – das Problem liegt also beim Webserver, nicht im Netz.

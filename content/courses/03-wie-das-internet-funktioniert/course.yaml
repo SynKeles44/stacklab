@@ -1,0 +1,33 @@
+title: Wie das Internet funktioniert
+subtitle: Vom Eintippen einer Adresse bis zum fertigen Bild im Browser – Schritt für Schritt verstanden
+description: >
+  Jeden Tag tippst du Adressen in den Browser, und Sekundenbruchteile später steht eine Seite da.
+  Dazwischen passiert erstaunlich viel: Namen werden in Adressen übersetzt, Datenpakete reisen über
+  Dutzende Router, Verbindungen werden ausgehandelt und verschlüsselt, ein Server antwortet, und dein
+  Browser baut aus Text ein fertiges Bild.
+
+
+  In diesem Kurs folgst du genau dieser Reise. Du lernst, was Internet und Web unterscheidet, wie
+  IP-Adressen, Pakete, TCP und UDP zusammenspielen, wie DNS Namen auflöst und wie ein Browser HTML in
+  Pixel verwandelt. Vieles probierst du im echten Übungs-Terminal aus: Du startest eigene kleine
+  Webserver, schaust dir mit `curl` jede Zeile einer HTTP-Unterhaltung an und erzeugst ein eigenes
+  TLS-Zertifikat. Am Ende dokumentierst du die komplette Reise einer Anfrage in einem eigenen Projekt.
+category: grundlagen
+level: einsteiger
+icon: globe
+color: "#0ea5e9"
+estimated_hours: 5
+workspace_dir: internet
+prerequisites: []
+learning_goals:
+  - Du erklärst den Unterschied zwischen Internet und Web und beschreibst das Client-Server-Modell.
+  - Du verstehst IP-Adressen, Datenpakete, Router und das Schichtenmodell in Grundzügen.
+  - Du unterscheidest TCP und UDP und weißt, wofür Ports da sind.
+  - Du erklärst, wie DNS einen Namen Schritt für Schritt auflöst, und kennst die wichtigsten Record-Typen.
+  - Du zerlegst URLs in ihre Bestandteile und liest HTTP-Anfragen und -Antworten mit curl.
+  - Du beschreibst die komplette Reise einer Anfrage von DNS über TCP und TLS bis zum Rendering.
+  - Du weißt, was Webserver, Hosting, Caches und CDNs leisten.
+references:
+  - Fehlersuche bei Problemen mit DNS-Einträgen nach einem Server-Umzug (TTL, Caches)
+  - Lokale Entwicklung mit eigenen Testdomains über die hosts-Datei
+  - Ladezeit-Analyse von Webseiten (DNS, Verbindungsaufbau, Time to First Byte, Rendering)

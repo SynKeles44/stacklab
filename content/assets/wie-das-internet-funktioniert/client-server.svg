@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="800" height="360" fill="#ffffff"/>
+<text x="400" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Viele Clients, ein Server</text>
+<rect x="40" y="52" width="200" height="56" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="140" y="86" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Browser am Laptop</text>
+<rect x="40" y="142" width="200" height="56" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="140" y="176" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">App auf dem Handy</text>
+<rect x="40" y="232" width="200" height="56" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="140" y="266" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Skript mit curl</text>
+<rect x="560" y="110" width="200" height="120" rx="14" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="660" y="160" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Server</text>
+<text x="660" y="188" text-anchor="middle" font-size="13" font-weight="400" fill="#475569" font-family="ui-monospace, Menlo, monospace">192.0.2.10:443</text>
+<path d="M244 72 L 554 135.0" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M554 175.0 L 244 90" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#a)"/>
+<path d="M244 162 L 554 150.0" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M554 190.0 L 244 180" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#a)"/>
+<path d="M244 252 L 554 165.0" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M554 205.0 L 244 270" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#a)"/>
+<text x="400" y="320" text-anchor="middle" font-size="14" font-weight="400" fill="#475569">Durchgezogen: Anfrage (Request) · gestrichelt: Antwort (Response)</text>
+</svg>
