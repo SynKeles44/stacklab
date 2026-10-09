@@ -5,8 +5,8 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 
 ## Protokoll
 
-- **Zuletzt erledigt:** Repo initialisiert, Versionen geprüft, Projektanalyse gestartet.
-- **Als Nächstes:** Phase 1 (Analyse) abschließen, Phase 2 (Fundament) bauen.
+- **Zuletzt erledigt:** Fundament (Docker, Backend, Sandbox, Frontend) steht und ist Ende-zu-Ende getestet; Git-Musterlektionen; Autoren-Leitfaden.
+- **Als Nächstes:** Kursinhalte in Wellen von Autoren-Agenten schreiben lassen, danach Validierung und Review.
 
 ## Entscheidungen
 
@@ -23,43 +23,106 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 | D9 | Frontend wird bei `docker compose up` per Bun gebaut und von Nginx ausgeliefert; `make dev` für Vite-Dev-Server | „Ein Befehl“-Vorgabe, trotzdem komfortable Entwicklung |
 | D10 | Auth: Laravel Sanctum Personal Access Tokens | Einfach, lokal, ohne Cookie-/CSRF-Komplexität |
 | D11 | Begriffe im Text: explizite Syntax `[[slug]]` / `[[slug\|Anzeigetext]]` | Eindeutig, validierbar, kein falsches Auto-Linking |
+| D13 | Diagramm-Aufgabe: Antippen statt Popover pro Feld | Popover sprang bei schnellem Wechsel ans falsche Feld; Antippen funktioniert auf Touch zuverlässig |
+| D14 | PHP-FPM nicht im Sandbox-Netz; Backend erreicht Sandbox über internen Nginx-Port 8081 | Sonst könnte die Übungs-Shell per FastCGI Code im Backend-Container ausführen |
+| D15 | Editor, Terminal und Transpiler per Code-Splitting nachgeladen | Haupt-Bundle von 712 KB auf 352 KB gzip |
+| D16 | Commits als SynKeles44, Signierung nur in diesem Repo aus | Globaler Signaturschlüssel gehört zum Arbeitskonto |
 | D12 | Simulierter Terminal-Modus (SSH, AWS, DNS) als Szenario-Engine im Frontend, gleiche Terminal-Komponente | Nicht lokal echt ausführbare Themen trotzdem tippbar |
 
 ## Phase 1 – Analyse
-- [~] Projekt „javascript“ analysieren
-- [~] Arbeitsprojekte analysieren (nur Themen und Konzepte)
-- [ ] Zusätzliche Kursthemen ableiten und unten eintragen
+- [x] Projekt „javascript“ analysieren
+- [x] Arbeitsprojekte analysieren (nur Themen und Konzepte)
+- [x] Zusätzliche Kursthemen ableiten und unten eintragen (11 Kurse, Quelle A)
 
 ## Phase 2 – Fundament
-- [ ] Docker-Compose (php-fpm, nginx, postgres, frontend-build, sandbox, egress-proxy)
-- [ ] Laravel-Backend (Auth, Modelle, Migrationen, API)
-- [ ] Content-Importer + Validator
-- [ ] Frontend-Grundgerüst (Router Data Mode, shadcn, Theme, Layout, Logo)
+- [x] Docker-Compose (php-fpm, nginx, postgres, frontend-build, sandbox, egress-proxy)
+- [x] Laravel-Backend (Auth, Modelle, Migrationen, API)
+- [x] Content-Importer + Validator
+- [x] Frontend-Grundgerüst (Router Data Mode, shadcn, Theme, Layout, Logo)
 - [ ] README, CONTRIBUTING, LICENSE, .env.example
 
 ## Phase 3 – Übungs-Terminal-Sandbox
-- [ ] Sandbox-Image (git, nvm/node, bun, npm, php, composer, phpstan, pint, Linux-Tools)
-- [ ] WebSocket-Gateway (PTY pro Sitzung, Workspace-Ordner pro Kurs)
-- [ ] Check-API, Reset-API, Datei-Schreib-API für PHP-Aufgaben
-- [ ] Absicherung: non-root, cap_drop, no-new-privileges, pids/mem/cpu-Limits, Egress-Allowlist
-- [ ] Simulierter Modus
+- [x] Sandbox-Image (git, nvm/node, bun, npm, php, composer, phpstan, pint, Linux-Tools)
+- [x] WebSocket-Gateway (PTY pro Sitzung, Workspace-Ordner pro Kurs)
+- [x] Check-API, Reset-API, Datei-Schreib-API für PHP-Aufgaben
+- [x] Absicherung: non-root, cap_drop, no-new-privileges, pids/mem/cpu-Limits, Egress-Allowlist
+- [x] Simulierter Modus
 
 ## Phase 4 – Kernfunktionen
-- [ ] Kurse/Module/Lektionen-Ansicht, Markdown-Rendering, Code-Blöcke mit Copy
-- [ ] Begriffslexikon inkl. Tooltip, Freischalt-Animation, Fortschritt
-- [ ] Quizze (Multiple Choice, Lückentext, Code-Zuordnung, Finde den Fehler)
-- [ ] Interaktive Aufgaben (Terminal, simuliert, JS/TS/React, PHP, Drag&Drop, Reihenfolge, Diagramm, Request-Builder, Was-passiert-als-Nächstes)
-- [ ] Begleitete Projekte
-- [ ] Prüfungen + Schwächenanalyse + Zertifikat
-- [ ] Volltextsuche / Wiki-Modus
-- [ ] Lesezeichen, Notizen, Fortschritt, Dashboard, Streak, Badges
-- [ ] Animationen, Dark/Light, Mobile-First
+- [x] Kurse/Module/Lektionen-Ansicht, Markdown-Rendering, Code-Blöcke mit Copy
+- [x] Begriffslexikon inkl. Tooltip, Freischalt-Animation, Fortschritt
+- [x] Quizze (Multiple Choice, Lückentext, Code-Zuordnung, Finde den Fehler)
+- [x] Interaktive Aufgaben (Terminal, simuliert, JS/TS/React, PHP, Drag&Drop, Reihenfolge, Diagramm, Request-Builder, Was-passiert-als-Nächstes)
+- [x] Begleitete Projekte
+- [x] Prüfungen + Schwächenanalyse + Zertifikat
+- [x] Volltextsuche / Wiki-Modus
+- [x] Lesezeichen, Notizen, Fortschritt, Dashboard, Streak, Badges
+- [x] Animationen, Dark/Light, Mobile-First
 
 ## Phase 5 – Beispielkurs (alle Aufgabentypen)
 - [ ] Git-Kurs vollständig
 
 ## Phase 6 – Kurse
-(wird nach der Analyse mit allen Kursen befüllt)
+Legende Quelle: P = aus dem Prompt, A = aus der Analyse der eigenen Projekte abgeleitet.
+
+| Nr | Slug | Kurs | Quelle | Status |
+|---|---|---|---|---|
+| 01 | programmieren-grundlagen | Grundlagen der Programmierung | P | [ ] |
+| 02 | terminal-shell | Terminal & Shell | P | [ ] |
+| 03 | wie-das-internet-funktioniert | Wie das Internet funktioniert | P | [ ] |
+| 04 | netzwerk-grundlagen | Netzwerk-Grundlagen & Server-Zugang | P | [ ] |
+| 05 | ssh | SSH | P | [ ] |
+| 06 | git | Git (Beispielkurs, alle Aufgabentypen) | P | [~] |
+| 07 | github | GitHub | P | [ ] |
+| 08 | teamarbeit | Arbeiten im Team | P | [ ] |
+| 09 | entwicklungsumgebung | Entwicklungsumgebung & Task-Runner (mise, direnv, EditorConfig, Devcontainer, Makefile) | A | [ ] |
+| 10 | node-runtimes-paketmanager | Node.js, Runtimes & Paketmanager | P | [ ] |
+| 11 | libraries-pakete-registries | Libraries, Pakete & Registries | P | [ ] |
+| 12 | projektaufbau | Aufbau eines Projekts | P | [ ] |
+| 13 | datenformate | JSON, YAML & Datenformate | P | [ ] |
+| 14 | regex | Reguläre Ausdrücke | P | [ ] |
+| 15 | debugging-devtools | Debugging & Entwicklertools | P | [ ] |
+| 16 | fremden-code-lesen | Fremden Code lesen und verstehen | P | [ ] |
+| 17 | phpstorm-datenbank-tools | PhpStorm: Datenbank-Tools | P | [ ] |
+| 18 | http-https | HTTP & HTTPS | P | [ ] |
+| 19 | apis-endpunkte | Endpunkte & APIs | P | [ ] |
+| 20 | api-dokumentation | API-Dokumentation automatisieren (OpenAPI, swagger-php, Scramble, Redocly) | P+A | [ ] |
+| 21 | dokumentation-schreiben | Dokumentation schreiben | P | [ ] |
+| 22 | html-css-tailwind | HTML & CSS inkl. Tailwind | P | [ ] |
+| 23 | javascript | JavaScript | P | [ ] |
+| 24 | typescript | TypeScript | P | [ ] |
+| 25 | react | React | P | [ ] |
+| 26 | react-komponenten-architektur | React-Komponenten-Architektur (Atomic Design, Compound Components, Storybook) | P+A | [ ] |
+| 27 | moderner-react-stack | Moderner React-Stack (Vite, Tailwind, shadcn/ui, Zod, React Router Data Mode, Bun) | P | [ ] |
+| 28 | server-state-tanstack | Server-State mit TanStack Query & Table | A | [ ] |
+| 29 | monorepos-workspaces | Monorepos & Workspaces (Bun Workspaces, Catalogs) | A | [ ] |
+| 30 | internationalisierung | Internationalisierung (i18n) | A | [ ] |
+| 31 | php | PHP | P | [ ] |
+| 32 | datenbanken-sql | Datenbanken & SQL | P | [ ] |
+| 33 | laravel | Laravel (Hauptkurs) | P | [ ] |
+| 34 | laravel-vertieft | Laravel vertieft | P | [ ] |
+| 35 | laravel-architektur | Architektur großer Laravel-Apps (Services, DTOs, Repositories, Multi-Tenancy, modularer Monolith) | A | [ ] |
+| 36 | authentifizierung | Authentifizierung (Sessions, JWT, OAuth, Sanctum, 2FA) | P+A | [ ] |
+| 37 | websicherheit | Websicherheit | P | [ ] |
+| 38 | performance | Performance | P | [ ] |
+| 39 | testing | Testing (Pest, Architekturtests, Mutation Testing, Vitest, Playwright) | P+A | [ ] |
+| 40 | code-qualitaet | Code-Qualität automatisiert (PHPStan, Rector, ECS, Pint, Biome, Hooks) | P+A | [ ] |
+| 41 | clean-code-solid-patterns | Clean Code, SOLID & Design Patterns | P | [ ] |
+| 42 | datenstrukturen-algorithmen | Datenstrukturen & Algorithmen | P | [ ] |
+| 43 | legacy-modernisieren | Legacy-Code modernisieren (Strangler-Pattern, Illuminate standalone) | A | [ ] |
+| 44 | docker | Docker & Container | P+A | [ ] |
+| 45 | nginx-webserver | Nginx & Webserver | P | [ ] |
+| 46 | deployments-cicd | Deployments & CI/CD | P+A | [ ] |
+| 47 | projekt-live-stellen | Ein lokales Projekt live stellen | P | [ ] |
+| 48 | observability | Observability (Logs, Metriken, Grafana, Loki, Alerting) | A | [ ] |
+| 49 | aws-grundlagen | AWS-Grundlagen | P+A | [ ] |
+| 50 | aws-fargate | Container in der Cloud mit AWS Fargate | P+A | [ ] |
+| 51 | ki-assistenten | KI-Assistenten im Entwickleralltag | A | [ ] |
+| 52 | capstone | Capstone: Von null bis live | P | [ ] |
+
+Vorgehen: Die Inhalte schreiben parallele Autoren-Agenten nach [docs/AUTHORING.md](docs/AUTHORING.md),
+ein Agent pro Kurs (Laravel: zwei Agenten). Danach Validierung, Dublettenbereinigung im Lexikon,
+Stichproben-Review.
 
 ## Phase 7 – Tests & Qualität
 - [ ] Backend-Tests (Pest)
