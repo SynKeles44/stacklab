@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ResetProgressRequest;
 use App\Http\Requests\WorkspaceRequest;
+use App\Services\ProgressReset;
 use App\Services\SandboxClient;
 use Illuminate\Http\JsonResponse;
 
@@ -44,6 +46,13 @@ final class SettingsController extends Controller
             'restart_required' => true,
             'command' => 'docker compose up -d',
         ]);
+    }
+
+    public function resetProgress(ResetProgressRequest $request, ProgressReset $reset): JsonResponse
+    {
+        $deleted = $reset->reset($request->user(), $request->boolean('include_notes_and_bookmarks'));
+
+        return response()->json(['deleted' => $deleted]);
     }
 
     private function envFileWritable(): bool

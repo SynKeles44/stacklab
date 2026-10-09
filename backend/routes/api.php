@@ -68,3 +68,4 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/settings/workspace', [SettingsController::class, 'workspace']);
     Route::put('/settings/workspace', [SettingsController::class, 'updateWorkspace']);
 });
+    Route::delete('/settings/progress', [SettingsController::class, 'resetProgress'])->middleware('throttle:10,1');

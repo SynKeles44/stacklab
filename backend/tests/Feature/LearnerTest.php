@@ -154,3 +154,57 @@ it('resets a project through the sandbox', function (): void {
 
     Http::assertSent(fn ($request): bool => $request['workdir'] === 'projekt' && str_contains((string) $request['setup'], 'start.txt'));
 });
+
+it('solves a project step by running the solution script and verifying it', function (): void {
+    Sanctum::actingAs(User::factory()->create());
+    config(['stacklab.sandbox.secret' => 'test-secret']);
+    Http::fake([
+        '*/api/run' => Http::response(['ok' => true, 'output' => '']),
+        '*/api/check' => Http::response(['passed' => true, 'results' => [['passed' => true, 'message' => 'ok']]]),
+    ]);
+    $project = Project::query()->first();
+
+    $this->getJson('/api/courses/demo/project')
+        ->assertJsonPath('project.steps.0.can_solve', false)
+        ->assertJsonPath('project.steps.1.can_solve', true);
+    $this->postJson("/api/projects/{$project->id}/steps/start/solve")->assertUnprocessable();
+    $this->postJson("/api/projects/{$project->id}/steps/fertig/solve")->assertOk()->assertJsonPath('passed', true);
+    $this->getJson('/api/courses/demo/project')->assertJsonPath('completed_steps', ['fertig']);
+
+    Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/api/run') && $request['script'] === 'touch fertig.txt' && $request['workdir'] === 'projekt');
+});
+
+it('does not mark a step done when the solution script fails', function (): void {
+    Sanctum::actingAs(User::factory()->create());
+    config(['stacklab.sandbox.secret' => 'test-secret']);
+    Http::fake(['*/api/run' => Http::response(['ok' => false, 'output' => 'touch: Permission denied'])]);
+    $project = Project::query()->first();
+
+    $this->postJson("/api/projects/{$project->id}/steps/fertig/solve")->assertOk()->assertJsonPath('passed', false)->assertJsonPath('output', 'touch: Permission denied');
+    $this->getJson('/api/courses/demo/project')->assertJsonPath('completed_steps', []);
+    Http::assertNotSent(fn ($request): bool => str_ends_with($request->url(), '/api/check'));
+});
+
+it('resets only the own progress and keeps notes unless asked', function (): void {
+    $lesson = Lesson::query()->first();
+    $other = User::factory()->create();
+    Sanctum::actingAs($other);
+    $this->postJson("/api/lessons/{$lesson->id}/complete")->assertOk();
+
+    Sanctum::actingAs($user = User::factory()->create());
+    $this->postJson("/api/lessons/{$lesson->id}/complete")->assertOk();
+    $this->postJson('/api/glossary/unlock', ['slugs' => ['variable']])->assertOk();
+    $this->putJson("/api/lessons/{$lesson->id}/note", ['body' => 'Notiz'])->assertOk();
+    $this->postJson('/api/bookmarks/toggle', ['type' => 'lesson', 'ref' => 'demo/hallo', 'label' => 'Hallo', 'url' => '/kurse/demo/hallo'])->assertOk();
+
+    $this->deleteJson('/api/settings/progress')->assertOk()->assertJsonPath('deleted.lessons', 1)->assertJsonPath('deleted.terms', 1);
+    $this->getJson('/api/courses')->assertJsonPath('courses.0.progress.completed', 0);
+    $this->getJson('/api/notes')->assertJsonCount(1, 'notes');
+    $this->getJson('/api/bookmarks')->assertJsonCount(1, 'bookmarks');
+
+    $this->deleteJson('/api/settings/progress', ['include_notes_and_bookmarks' => true])->assertOk()->assertJsonPath('deleted.notes', 1);
+    $this->getJson('/api/notes')->assertJsonCount(0, 'notes');
+    $this->getJson('/api/bookmarks')->assertJsonCount(0, 'bookmarks');
+
+    expect(LessonCompletion::query()->where('user_id', $other->id)->count())->toBe(1);
+});
