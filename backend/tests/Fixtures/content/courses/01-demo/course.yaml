@@ -1,0 +1,12 @@
+title: Demo
+subtitle: Testkurs
+description: Ein Kurs nur für automatische Tests.
+category: grundlagen
+level: einsteiger
+icon: flask-conical
+color: "#3b82f6"
+estimated_hours: 1
+workspace_dir: demo
+prerequisites: []
+learning_goals: [Testen]
+references: []

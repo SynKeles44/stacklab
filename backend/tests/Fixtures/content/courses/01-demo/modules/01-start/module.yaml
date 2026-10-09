@@ -1,0 +1,8 @@
+title: Start
+description: Erstes Modul
+exercise:
+  id: modul-uebung
+  type: order
+  title: Reihenfolge
+  description: Bringe in Reihenfolge.
+  items: [Eins, Zwei, Drei]

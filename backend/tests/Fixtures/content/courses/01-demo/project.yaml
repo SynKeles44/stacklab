@@ -1,0 +1,15 @@
+title: Demo-Projekt
+description: Ein kleines Projekt.
+goal: Etwas bauen.
+workdir: projekt
+steps:
+  - id: start
+    title: Starten
+    description: Leg los.
+    checklist: [Ordner da]
+  - id: fertig
+    title: Fertig
+    description: Fertig machen.
+    checks:
+      - type: file_exists
+        path: fertig.txt

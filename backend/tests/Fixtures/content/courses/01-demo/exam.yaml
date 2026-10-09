@@ -1,0 +1,18 @@
+title: Demo-Prüfung
+pass_percent: 50
+questions:
+  - { module: start, type: single, question: "A?", options: [ja, nein], answer: 0, explanation: ja }
+  - { module: start, type: multiple, question: "B?", options: [a, b, c], answers: [0, 2], explanation: x }
+  - { module: start, type: cloze, text: "Mit git ___", blanks: [[init]], explanation: x }
+  - { module: start, type: match, question: "Ordne", pairs: [{left: a, right: "1"}, {left: b, right: "2"}], explanation: x }
+  - { module: start, type: find-bug, question: "Bug?", code: "a\nb\nc", bug_line: 3, explanation: x }
+tasks:
+  - module: start
+    id: js-aufgabe
+    type: code
+    language: js
+    title: Add
+    description: Schreibe add.
+    starter: "function add(a,b){}"
+    tests:
+      - { name: addiert, code: "assertEqual(add(1,2),3)" }

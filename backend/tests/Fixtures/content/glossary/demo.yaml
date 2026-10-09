@@ -1,0 +1,9 @@
+- slug: variable
+  term: Variable
+  short: Ein benannter Speicherplatz für einen Wert.
+  explanation: Eine Variable ist ein Name, unter dem ein Programm einen Wert ablegt.
+  example: "`let alter = 30`"
+  category: programmierung
+  aliases: [Variablen]
+  related: []
+  lesson: demo/hallo
