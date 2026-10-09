@@ -1,0 +1,70 @@
+title: Erste Muster
+description: Was reguläre Ausdrücke sind, wie Literale, Metazeichen, Zeichenklassen, Quantoren und Anker zusammenspielen – und wann du lieber keine Regex nimmst.
+exercise:
+  id: modul-uebung-bestellungen
+  type: terminal
+  title: Bestellliste prüfen
+  description: |
+    Im Ordner `bestellungen` liegt die Datei `bestellungen.txt` aus einem Export. Jede Zeile soll genau so
+    aufgebaut sein:
+
+    ```text
+    B-2026-00042;Ada;45.90 EUR
+    ```
+
+    - `B-`, dann eine vierstellige Jahreszahl, ein Bindestrich und eine **fünfstellige** Nummer
+    - ein Semikolon, dann ein Vorname nur aus Buchstaben `A–Z`/`a–z` (mindestens einer)
+    - ein Semikolon, dann ein Betrag mit Punkt und **genau zwei** Nachkommastellen, ein Leerzeichen und `EUR`
+    - davor und danach steht nichts
+
+    Einige Zeilen verletzen diese Regeln. Arbeite mit `grep -E`:
+
+    1. Schreibe alle **gültigen** Zeilen in `gueltig.txt`.
+    2. Schreibe die **Anzahl** der ungültigen Zeilen (nur die Zahl) in `ungueltig-anzahl.txt`.
+    3. Schreibe nur die **Bestellnummern** der gültigen Zeilen (z. B. `B-2026-00042`) in `nummern.txt`,
+       eine pro Zeile.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Datei angelegt wird.
+  workdir: bestellungen
+  setup: |
+    cat > bestellungen.txt <<'TXT'
+    B-2026-00042;Ada;45.90 EUR
+    B-2026-00043;Grace;120.00 EUR
+    B-2026-0044;Linus;9.99 EUR
+    B-2026-00045;Margaret;7.5 EUR
+    b-2026-00046;Alan;19.99 EUR
+    B-2026-00047;Katherine;300.00 EUR
+    B-2026-00048;Ada Lovelace;12.00 EUR
+    B-2026-00049;Barbara;0.99 EUR
+    X B-2026-00050;Edsger;5.00 EUR
+    B-2026-00051;Donald;64.00 EUR extra
+    TXT
+  checks:
+    - type: file_exists
+      path: gueltig.txt
+      message: Die Datei gueltig.txt fehlt noch.
+    - type: command
+      run: cut -d';' -f1 gueltig.txt | tr '\n' ' '
+      stdout_matches: "^B-2026-00042 B-2026-00043 B-2026-00047 B-2026-00049$"
+      message: gueltig.txt soll genau die vier gültigen Zeilen (00042, 00043, 00047, 00049) enthalten. Prüfe Anker, Quantoren und das escapte \. im Betrag.
+    - type: command
+      run: cat ungueltig-anzahl.txt
+      stdout_matches: "^\\s*6\\s*$"
+      message: In ungueltig-anzahl.txt soll nur die Zahl der ungültigen Zeilen stehen (6). grep -c zählt, grep -v kehrt die Auswahl um.
+    - type: command
+      run: cat nummern.txt | tr '\n' ' '
+      stdout_matches: "^B-2026-00042 B-2026-00043 B-2026-00047 B-2026-00049$"
+      message: nummern.txt soll nur die vier Bestellnummern der gültigen Zeilen enthalten – ohne Name und Betrag. Kombiniere zwei grep-Aufrufe mit einer Pipe und nutze -o.
+  hints:
+    - "Baue das Muster Stück für Stück: `^B-[0-9]{4}-[0-9]{5};` – teste es mit `grep -E '…' bestellungen.txt`, dann erweitere es."
+    - "Vollständig: `^B-[0-9]{4}-[0-9]{5};[A-Za-z]+;[0-9]+\\.[0-9]{2} EUR$`. Mit `-c` zählst du, mit `-v` drehst du die Auswahl um."
+    - "Für die Nummern: `grep -E 'muster' bestellungen.txt | grep -oE '^B-[0-9]{4}-[0-9]{5}' > nummern.txt`"
+  solution: |
+    ```bash
+    cd bestellungen
+    muster='^B-[0-9]{4}-[0-9]{5};[A-Za-z]+;[0-9]+\.[0-9]{2} EUR$'
+    grep -E "$muster" bestellungen.txt > gueltig.txt
+    grep -cvE "$muster" bestellungen.txt > ungueltig-anzahl.txt
+    grep -E "$muster" bestellungen.txt | grep -oE '^B-[0-9]{4}-[0-9]{5}' > nummern.txt
+    cat gueltig.txt ungueltig-anzahl.txt nummern.txt
+    ```

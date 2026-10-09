@@ -1,0 +1,30 @@
+title: Reguläre Ausdrücke
+subtitle: Textmuster lesen, schreiben und sicher einsetzen – in JavaScript, PHP und im Terminal
+description: >
+  Reguläre Ausdrücke (kurz Regex) sind eine kleine Sprache für Textmuster. Mit einer einzigen Zeile
+  findest du alle Bestellnummern in einer Logdatei, prüfst eine Postleitzahl oder baust Datumsangaben
+  um. Gleichzeitig sehen Regex für Einsteiger:innen aus wie Zeichensalat – und genau das ändert dieser Kurs.
+
+
+  Du lernst die Bausteine Schritt für Schritt: Literale, Zeichenklassen, Anker, Quantoren, Gruppen und
+  Flags. Danach setzt du sie dort ein, wo sie im Berufsalltag vorkommen: in **JavaScript**, in **PHP**
+  und mit **grep** und **sed** im Terminal. Zum Schluss baust du einen Log-Analysator, der aus einer
+  echten Logdatei eine Fehlerstatistik erzeugt – und du weißt, wann du lieber **keine** Regex nimmst.
+category: grundlagen
+level: einsteiger
+icon: regex
+color: "#f97316"
+estimated_hours: 5
+workspace_dir: regex
+prerequisites: [programmieren-grundlagen, terminal-shell]
+learning_goals:
+  - Du liest einen regulären Ausdruck Zeichen für Zeichen und erklärst, worauf er passt.
+  - Du schreibst Muster mit Zeichenklassen, Ankern, Quantoren, Gruppen und Alternativen.
+  - Du holst mit Capture-Gruppen und benannten Gruppen gezielt Teile aus einem Text heraus.
+  - Du nutzt Regex in JavaScript (test, match, matchAll, replace) und PHP (preg_match, preg_replace & Co.).
+  - Du durchsuchst und bearbeitest Dateien im Terminal mit grep -E und sed -E.
+  - Du erkennst die Grenzen von Regex, vermeidest katastrophales Backtracking und schreibst lesbare Muster.
+references:
+  - Log-Auswertung mit grep und sed bei der Fehlersuche in Produktionssystemen
+  - Eingabeprüfung in Formularen und API-Validierungsregeln mit regulären Ausdrücken
+  - Suchen und Ersetzen mit Gruppen in IDEs bei großen Umbenennungen

@@ -1,0 +1,91 @@
+title: Regex in JavaScript, PHP und im Terminal
+description: Reguläre Ausdrücke dort einsetzen, wo sie im Alltag vorkommen – mit test, match, matchAll und replace in JavaScript, mit den preg-Funktionen in PHP und mit grep und sed im Terminal.
+exercise:
+  id: modul-uebung-anonymisieren
+  type: terminal
+  title: Ein Log für den Support anonymisieren
+  description: |
+    Der Support möchte die Logdatei `app.log` im Ordner `anonymisieren` an einen externen Dienstleister
+    schicken. Vorher müssen personenbezogene Daten verschwinden. Erzeuge mit `sed -E` die Datei
+    `anonym.log`:
+
+    1. Bei jeder IP-Adresse wird der **letzte Block** durch `0` ersetzt: aus `192.0.2.15` wird `192.0.2.0`.
+    2. Jede E-Mail-Adresse wird durch `<email>` ersetzt.
+    3. Jede Benutzernummer nach `User` oder `user` wird durch `<id>` ersetzt: aus `User 1042` wird
+       `User <id>`, aus `user 1042` wird `user <id>`.
+    4. `app.log` bleibt unverändert, `anonym.log` hat genauso viele Zeilen wie `app.log`.
+
+    Prüfe dein Ergebnis zum Schluss selbst mit `grep`. Klicke zuerst auf **Aufgabe vorbereiten**, damit die
+    Logdatei angelegt wird.
+  workdir: anonymisieren
+  setup: |
+    cat > app.log <<'LOG'
+    2026-10-01 08:00:01 [INFO] auth: User 1042 logged in from 192.0.2.15
+    2026-10-01 08:00:07 [INFO] http: GET /products 200 took 87ms
+    2026-10-01 08:01:13 [WARN] cache: Miss for key product:77 took 312ms
+    2026-10-01 08:02:45 [ERROR] db: Query timeout after 5000ms
+    2026-10-01 08:03:02 [INFO] http: GET /cart 200 took 45ms
+    2026-10-01 08:03:10 [ERROR] payment: Card declined for order 5531
+    2026-10-01 08:04:22 [INFO] auth: User 2210 logged in from 198.51.100.7
+    2026-10-01 08:05:00 [WARN] http: GET /search 200 took 1450ms
+    2026-10-01 08:05:31 [ERROR] db: Query timeout after 5000ms
+    2026-10-01 08:06:12 [INFO] http: POST /orders 201 took 230ms
+    2026-10-01 08:06:13 [INFO] mail: Sent confirmation to user@example.com
+    2026-10-01 08:07:40 [ERROR] payment: Card declined for order 5540
+    2026-10-01 08:08:05 [WARN] auth: Failed login for user 1042 from 203.0.113.9
+    2026-10-01 08:08:09 [WARN] auth: Failed login for user 1042 from 203.0.113.9
+    2026-10-01 08:09:55 [ERROR] db: Query timeout after 7500ms
+    2026-10-01 08:10:30 [INFO] http: GET /products 200 took 92ms
+    2026-10-01 08:11:02 [DEBUG] cache: Warmup finished
+    2026-10-01 08:11:47 [ERROR] http: GET /checkout 500 took 3021ms
+    WARNING: disk almost full
+    2026-10-01 08:12:00 [INFO] auth: User 2210 logged out
+    LOG
+  checks:
+    - type: file_exists
+      path: anonym.log
+      message: Die Datei anonym.log fehlt noch. Leite die Ausgabe von sed mit > in die Datei um.
+    - type: command
+      run: wc -l < anonym.log
+      stdout_matches: "^\\s*20\\s*$"
+      message: anonym.log soll wie app.log genau 20 Zeilen haben.
+    - type: command
+      run: grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' anonym.log | sort -u | tr '\n' ' '
+      stdout_equals: "192.0.2.0 198.51.100.0 203.0.113.0 "
+      message: "Die IP-Adressen sind noch nicht richtig gekürzt. Erwartet: 192.0.2.0, 198.51.100.0 und 203.0.113.0 – merke dir die ersten drei Blöcke in einer Gruppe."
+    - type: command
+      run: grep -c '@' anonym.log
+      stdout_equals: "0"
+      expect_exit: 1
+      message: In anonym.log steht noch eine E-Mail-Adresse.
+    - type: command
+      run: grep -c '<email>' anonym.log
+      stdout_equals: "1"
+      message: Die E-Mail-Adresse soll durch <email> ersetzt werden.
+    - type: command
+      run: grep -cE '[Uu]ser <id>' anonym.log
+      stdout_equals: "5"
+      message: Alle fünf Benutzernummern nach User/user sollen durch <id> ersetzt sein.
+    - type: command
+      run: grep -cE 'order [0-9]+|took [0-9]+ms' anonym.log
+      stdout_equals: "9"
+      message: Bestellnummern und Antwortzeiten sollen erhalten bleiben – ersetze nur Zahlen direkt nach User/user.
+    - type: command
+      run: grep -c '192.0.2.15' app.log
+      stdout_equals: "1"
+      message: app.log wurde verändert. Stelle sie mit „Aufgabe vorbereiten“ wieder her und nutze kein -i.
+  hints:
+    - "Drei Ersetzungen, drei `-e`-Ausdrücke. Fang mit der IP an: `([0-9]+\\.[0-9]+\\.[0-9]+)\\.[0-9]+` → `\\1.0`."
+    - "E-Mail (vereinfacht): `[^ ]+@[^ ]+` → `<email>`. Benutzernummer: `([Uu]ser) [0-9]+` → `\\1 <id>`."
+    - "Teste jeden Ausdruck erst einzeln ohne Umleitung, z. B. `sed -E 's/([Uu]ser) [0-9]+/\\1 <id>/g' app.log | grep -i user`."
+  solution: |
+    ```bash
+    cd anonymisieren
+    sed -E \
+      -e 's/([0-9]+\.[0-9]+\.[0-9]+)\.[0-9]+/\1.0/g' \
+      -e 's/[^ ]+@[^ ]+/<email>/g' \
+      -e 's/([Uu]ser) [0-9]+/\1 <id>/g' \
+      app.log > anonym.log
+    grep -c '<id>' anonym.log
+    diff app.log anonym.log
+    ```

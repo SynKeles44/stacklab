@@ -1,0 +1,98 @@
+title: Muster im Alltag
+description: Bewährte Muster für E-Mails, Datumsangaben, IP-Adressen und Logzeilen, die Grenzen von Regex – und wie du Muster lesbar, getestet und sicher gegen ReDoS schreibst.
+exercise:
+  id: modul-uebung-import
+  type: code
+  language: php
+  title: Ein robuster Zeilen-Parser für einen Import
+  description: |
+    Ein Shop importiert Bestellungen aus einer Textdatei. Jede Zeile sieht so aus:
+
+    ```text
+    B-2026-00042 | 2026-10-09 | 3 x 12.99 EUR
+    ```
+
+    Schreibe `parseBestellung(string $zeile): ?array`. Für eine gültige Zeile gibt die Funktion zurück:
+
+    ```php
+    ['nummer' => 'B-2026-00042', 'datum' => '2026-10-09', 'menge' => 3, 'preis_cent' => 1299]
+    ```
+
+    Regeln:
+
+    1. Bestellnummer: `B-`, vier Ziffern, `-`, fünf Ziffern.
+    2. Zwischen den Feldern steht ` | ` (Leerzeichen, senkrechter Strich, Leerzeichen).
+    3. Datum `JJJJ-MM-TT`, das es im Kalender **wirklich** gibt (`checkdate()`).
+    4. Menge: eine ganze Zahl von 1 bis 999 ohne führende Null, dann ` x `.
+    5. Preis mit Punkt und genau zwei Nachkommastellen, dann ` EUR`.
+    6. Nichts davor oder danach – auch kein Zeilenumbruch. Zeilen über 100 Zeichen werden **vor** der Regex
+       abgelehnt.
+
+    Für jede ungültige Zeile gibt die Funktion `null` zurück. Nutze benannte Gruppen und – für die Lesbarkeit –
+    gern den Modifikator `x`.
+  starter: |
+    function parseBestellung(string $zeile): ?array
+    {
+        $muster = '/(B-\d+) \| (\S+) \| (\d+) x (\d+)\.(\d+) EUR/';
+        if (preg_match($muster, $zeile, $m) !== 1) {
+            return null;
+        }
+        return null;
+    }
+  tests:
+    - name: Eine gültige Zeile wird zerlegt
+      code: assert_same(['nummer' => 'B-2026-00042', 'datum' => '2026-10-09', 'menge' => 3, 'preis_cent' => 1299], parseBestellung('B-2026-00042 | 2026-10-09 | 3 x 12.99 EUR'));
+    - name: Kleine Preise und große Mengen
+      code: assert_same(['nummer' => 'B-2026-00043', 'datum' => '2024-02-29', 'menge' => 999, 'preis_cent' => 5], parseBestellung('B-2026-00043 | 2024-02-29 | 999 x 0.05 EUR'));
+    - name: Nicht existierendes Datum ist ungültig
+      code: assert_same(null, parseBestellung('B-2026-00042 | 2026-02-30 | 3 x 12.99 EUR'));
+    - name: Menge 0 oder mit führender Null ist ungültig
+      code: |
+        assert_same(null, parseBestellung('B-2026-00042 | 2026-10-09 | 0 x 12.99 EUR'));
+        assert_same(null, parseBestellung('B-2026-00042 | 2026-10-09 | 03 x 12.99 EUR'));
+        assert_same(null, parseBestellung('B-2026-00042 | 2026-10-09 | 1000 x 12.99 EUR'));
+    - name: Falsches Format ist ungültig
+      code: |
+        assert_same(null, parseBestellung(''));
+        assert_same(null, parseBestellung('B-2026-0042 | 2026-10-09 | 3 x 12.99 EUR'));
+        assert_same(null, parseBestellung('B-2026-00042 | 2026-10-09 | 3 x 12.9 EUR'));
+        assert_same(null, parseBestellung('B-2026-00042|2026-10-09|3 x 12.99 EUR'));
+        assert_same(null, parseBestellung("B-2026-00042 | 2026-10-09 | 3 x 12.99 EUR\n"));
+    - name: Überlange Zeilen werden abgelehnt
+      code: assert_same(null, parseBestellung('B-2026-00042 | 2026-10-09 | 3 x 12.99 EUR' . str_repeat(' ', 80)));
+  hints:
+    - "Prüfe zuerst `strlen($zeile) > 100`. Für Menge 1–999 ohne führende Null: `[1-9]\\d{0,2}`."
+    - "Der senkrechte Strich ist ein Metazeichen: `\\|`. Mit dem Modifikator `x` musst du echte Leerzeichen als `\\x20` oder `[ ]` schreiben – oder du verzichtest auf `x`."
+    - "Am Ende: `checkdate()` für das Datum, dann `(int) $m['menge']` und `(int) $m['euro'] * 100 + (int) $m['cent']`. Der Modifikator `D` verhindert den Zeilenumbruch am Ende."
+  solution: |
+    ```php
+    function parseBestellung(string $zeile): ?array
+    {
+        if (strlen($zeile) > 100) {
+            return null;
+        }
+
+        $muster = '/
+            ^(?<nummer>B-\d{4}-\d{5})
+            [ ]\|[ ]
+            (?<datum>(?<jahr>\d{4})-(?<monat>\d{2})-(?<tag>\d{2}))
+            [ ]\|[ ]
+            (?<menge>[1-9]\d{0,2})[ ]x[ ]
+            (?<euro>\d+)\.(?<cent>\d{2})[ ]EUR$
+        /xD';
+
+        if (preg_match($muster, $zeile, $m) !== 1) {
+            return null;
+        }
+        if (! checkdate((int) $m['monat'], (int) $m['tag'], (int) $m['jahr'])) {
+            return null;
+        }
+
+        return [
+            'nummer' => $m['nummer'],
+            'datum' => $m['datum'],
+            'menge' => (int) $m['menge'],
+            'preis_cent' => (int) $m['euro'] * 100 + (int) $m['cent'],
+        ];
+    }
+    ```

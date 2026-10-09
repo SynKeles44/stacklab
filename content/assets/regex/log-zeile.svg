@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" role="img" aria-label="Eine Logzeile, zerlegt in benannte Gruppen">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <rect x="137" y="40" width="108" height="40" rx="6" fill="#cffafe" stroke="#22d3ee" stroke-width="2"/>
+  <rect x="255.8" y="40" width="86.4" height="40" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <rect x="363.8" y="40" width="54" height="40" rx="6" fill="#fee2e2" stroke="#f87171" stroke-width="2"/>
+  <rect x="439.4" y="40" width="21.6" height="40" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <rect x="482.6" y="40" width="280.8" height="40" rx="6" fill="#d1fae5" stroke="#34d399" stroke-width="2"/>
+  <text x="137" y="66" textLength="626.4" lengthAdjust="spacing" font-family="ui-monospace, Menlo, monospace" font-size="18" fill="#1e1b3a">2026-10-01 08:02:45 [ERROR] db: Query timeout after 5000ms</text>
+
+  <g font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#1e1b3a" text-anchor="middle">
+    <line x1="191" y1="80" x2="191" y2="120" stroke="#22d3ee" stroke-width="2" stroke-dasharray="4 3"/>
+    <rect x="141" y="120" width="100" height="32" rx="16" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+    <text x="191" y="141">date</text>
+    <line x1="299" y1="80" x2="299" y2="172" stroke="#a78bfa" stroke-width="2" stroke-dasharray="4 3"/>
+    <rect x="249" y="172" width="100" height="32" rx="16" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+    <text x="299" y="193">time</text>
+    <line x1="391" y1="80" x2="391" y2="120" stroke="#f87171" stroke-width="2" stroke-dasharray="4 3"/>
+    <rect x="341" y="120" width="100" height="32" rx="16" fill="#ffffff" stroke="#f87171" stroke-width="2"/>
+    <text x="391" y="141">level</text>
+    <line x1="450" y1="80" x2="450" y2="172" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 3"/>
+    <rect x="400" y="172" width="100" height="32" rx="16" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+    <text x="450" y="193">source</text>
+    <line x1="623" y1="80" x2="623" y2="120" stroke="#34d399" stroke-width="2" stroke-dasharray="4 3"/>
+    <rect x="563" y="120" width="120" height="32" rx="16" fill="#ffffff" stroke="#34d399" stroke-width="2"/>
+    <text x="623" y="141">message</text>
+  </g>
+
+  <text x="450" y="244" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a" text-anchor="middle">^(?&lt;date&gt;\d{4}-\d{2}-\d{2}) (?&lt;time&gt;\d{2}:\d{2}:\d{2})</text>
+  <text x="450" y="266" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a" text-anchor="middle">\[(?&lt;level&gt;[A-Z]+)\] (?&lt;source&gt;[a-z]+): (?&lt;message&gt;.+)$</text>
+  <text x="450" y="302" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="14" fill="#1e1b3a" text-anchor="middle">Jede benannte Gruppe schneidet einen Teil der Zeile heraus – passt die Zeile nicht, gibt es keinen Treffer.</text>
+</svg>

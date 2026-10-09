@@ -1,0 +1,73 @@
+title: Gruppen, Alternativen und Flags
+description: Teile eines Musters gruppieren, Alternativen beschreiben, Treffer mit Capture-Gruppen und benannten Gruppen herausholen – plus gierige und genügsame Quantoren, Flags und Lookarounds.
+exercise:
+  id: modul-uebung-logzeile
+  type: code
+  language: js
+  title: Logzeilen zerlegen
+  description: |
+    Eine Anwendung schreibt Logzeilen in diesem Format:
+
+    ```text
+    2026-10-01 08:02:45 [ERROR] db: Query timeout after 5000ms
+    ```
+
+    Schreibe `parseLogZeile(zeile)`. Die Funktion gibt für eine gültige Zeile ein Objekt zurück:
+
+    ```js
+    { date: "2026-10-01", time: "08:02:45", level: "ERROR", source: "db", message: "Query timeout after 5000ms" }
+    ```
+
+    Regeln für eine gültige Zeile:
+
+    - Datum `JJJJ-MM-TT`, ein Leerzeichen, Uhrzeit `HH:MM:SS`, ein Leerzeichen
+    - Level in eckigen Klammern: **nur** `DEBUG`, `INFO`, `WARN` oder `ERROR`
+    - ein Leerzeichen, die Quelle aus Kleinbuchstaben, ein Doppelpunkt und ein Leerzeichen
+    - danach die Nachricht: mindestens ein beliebiges Zeichen bis zum Zeilenende
+
+    Für jede andere Zeile gibt die Funktion `null` zurück. Nutze **benannte Gruppen** und eine Alternation
+    für das Level.
+  starter: |
+    function parseLogZeile(zeile) {
+      const muster = /^(\S+) (\S+) \[(\w+)\] (\w+): (.+)$/;
+      const treffer = zeile.match(muster);
+      if (!treffer) return null;
+      return null;
+    }
+  tests:
+    - name: Eine ERROR-Zeile wird zerlegt
+      code: |
+        assertDeepEqual(
+          parseLogZeile("2026-10-01 08:02:45 [ERROR] db: Query timeout after 5000ms"),
+          { date: "2026-10-01", time: "08:02:45", level: "ERROR", source: "db", message: "Query timeout after 5000ms" }
+        )
+    - name: Doppelpunkte in der Nachricht bleiben erhalten
+      code: |
+        assertDeepEqual(
+          parseLogZeile("2026-10-01 08:01:13 [WARN] cache: Miss for key product:77"),
+          { date: "2026-10-01", time: "08:01:13", level: "WARN", source: "cache", message: "Miss for key product:77" }
+        )
+    - name: Unbekanntes Level liefert null
+      code: |
+        assertEqual(parseLogZeile("2026-10-01 08:00:00 [FATAL] db: boom"), null)
+    - name: Zeilen ohne das Format liefern null
+      code: |
+        assertEqual(parseLogZeile("WARNING: disk almost full"), null)
+        assertEqual(parseLogZeile(""), null)
+        assertEqual(parseLogZeile("2026-10-01 8:00:00 [INFO] auth: ok"), null)
+        assertEqual(parseLogZeile("2026-10-01 08:00:00 [INFO] Auth: ok"), null)
+        assertEqual(parseLogZeile("2026-10-01 08:00:00 [INFO] auth: "), null)
+  hints:
+    - "Baue das Muster Teil für Teil: `^(?<date>\\d{4}-\\d{2}-\\d{2}) (?<time>\\d{2}:\\d{2}:\\d{2}) ` …"
+    - "Eckige Klammern als Literal brauchen einen Backslash: `\\[(?<level>DEBUG|INFO|WARN|ERROR)\\]`."
+    - "Quelle und Nachricht: `(?<source>[a-z]+): (?<message>.+)$`. Das Objekt bekommst du mit `{ ...treffer.groups }`."
+  solution: |
+    ```js
+    function parseLogZeile(zeile) {
+      const muster =
+        /^(?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2}) \[(?<level>DEBUG|INFO|WARN|ERROR)\] (?<source>[a-z]+): (?<message>.+)$/;
+      const treffer = zeile.match(muster);
+      if (!treffer) return null;
+      return { ...treffer.groups };
+    }
+    ```

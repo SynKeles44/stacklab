@@ -1,0 +1,383 @@
+title: Dein Log-Analysator
+description: |
+  In diesem Projekt baust du ein kleines Kommandozeilen-Werkzeug, wie es in vielen Teams für die erste
+  Fehlersuche entsteht: Ein Node.js-Skript liest eine Logdatei, zerlegt jede Zeile mit einem regulären
+  Ausdruck und erstellt daraus eine Fehlerstatistik – mit Level-Zählung, den häufigsten Fehlern, der
+  langsamsten Anfrage und einer JSON-Ausgabe für andere Programme.
+
+  Alles passiert im Ordner `log-analyse` in deinem Regex-Workspace. Öffne das Übungs-Terminal, lege den
+  Ordner mit `mkdir -p log-analyse && cd log-analyse` an und bearbeite das Skript mit `nano analyse.js`
+  (oder einem anderen Editor). Nach jedem Schritt prüft Stacklab, was dein Skript **wirklich** ausgibt –
+  auch mit einer zweiten, unbekannten Logdatei. Hart kodierte Zahlen fallen dabei auf.
+
+  Die Schritte bauen aufeinander auf: Die Ausgaben eines früheren Schritts müssen erhalten bleiben.
+goal: >
+  Ein Skript `analyse.js`, das mit `node analyse.js <datei>` eine Statistik über beliebige Logdateien im
+  Format `JJJJ-MM-TT HH:MM:SS [LEVEL] quelle: nachricht` ausgibt und mit `--json` dieselben Daten als JSON
+  liefert.
+workdir: log-analyse
+steps:
+  - id: logdatei-anlegen
+    title: Die Logdatei anlegen
+    description: |
+      Zuerst brauchst du Daten. Lege im Ordner `log-analyse` die Datei `app.log` an. Am schnellsten kopierst
+      du den folgenden Block komplett ins Terminal – `cat` mit einem *Heredoc* schreibt alles bis zur Zeile
+      `LOG` in die Datei:
+
+      ```bash
+      mkdir -p log-analyse && cd log-analyse
+      cat > app.log <<'LOG'
+      2026-10-01 08:00:01 [INFO] auth: User 1042 logged in from 192.0.2.15
+      2026-10-01 08:00:07 [INFO] http: GET /products 200 took 87ms
+      2026-10-01 08:01:13 [WARN] cache: Miss for key product:77 took 312ms
+      2026-10-01 08:02:45 [ERROR] db: Query timeout after 5000ms
+      2026-10-01 08:03:02 [INFO] http: GET /cart 200 took 45ms
+      2026-10-01 08:03:10 [ERROR] payment: Card declined for order 5531
+      2026-10-01 08:04:22 [INFO] auth: User 2210 logged in from 198.51.100.7
+      2026-10-01 08:05:00 [WARN] http: GET /search 200 took 1450ms
+      2026-10-01 08:05:31 [ERROR] db: Query timeout after 5000ms
+      2026-10-01 08:06:12 [INFO] http: POST /orders 201 took 230ms
+      2026-10-01 08:06:13 [INFO] mail: Sent confirmation to user@example.com
+      2026-10-01 08:07:40 [ERROR] payment: Card declined for order 5540
+      2026-10-01 08:08:05 [WARN] auth: Failed login for user 1042 from 203.0.113.9
+      2026-10-01 08:08:09 [WARN] auth: Failed login for user 1042 from 203.0.113.9
+      2026-10-01 08:09:55 [ERROR] db: Query timeout after 7500ms
+      2026-10-01 08:10:30 [INFO] http: GET /products 200 took 92ms
+      2026-10-01 08:11:02 [DEBUG] cache: Warmup finished
+      2026-10-01 08:11:47 [ERROR] http: GET /checkout 500 took 3021ms
+      WARNING: disk almost full
+      2026-10-01 08:12:00 [INFO] auth: User 2210 logged out
+      LOG
+      ```
+
+      Verschaffe dir mit `grep` einen ersten Überblick: Wie viele Zeilen haben das Level `[ERROR]`? Welche
+      Zeile passt nicht ins Format?
+    checklist:
+      - app.log mit 20 Zeilen angelegt
+      - Mit grep die ERROR-Zeilen gezählt
+      - Die Zeile ohne Datum entdeckt
+    hints:
+      - "Kopiere den Block inklusive der letzten Zeile `LOG` – sie beendet den Heredoc."
+      - "`grep -c '\\[ERROR\\]' app.log` zählt, `grep -vE '^[0-9]{4}-' app.log` zeigt die Ausreißer."
+    checks:
+      - type: file_exists
+        path: app.log
+        message: Die Datei app.log fehlt noch. Kopiere den Block aus der Beschreibung ins Terminal.
+      - type: command
+        run: wc -l < app.log
+        stdout_matches: "^\\s*20\\s*$"
+        message: app.log soll genau 20 Zeilen haben. Lege die Datei mit dem Block aus der Beschreibung neu an.
+      - type: command
+        run: grep -c '\[ERROR\]' app.log
+        stdout_equals: "6"
+        message: In app.log sollten 6 Zeilen mit [ERROR] stehen. Kopiere den Block noch einmal vollständig.
+    solution: |
+      ```bash
+      mkdir -p log-analyse && cd log-analyse
+      # Block aus der Beschreibung einfügen
+      grep -c '\[ERROR\]' app.log
+      grep -vE '^[0-9]{4}-' app.log
+      ```
+  - id: skript-geruest
+    title: Das Skript-Gerüst – Datei lesen und Zeilen zählen
+    description: |
+      Lege `analyse.js` an. Das Skript bekommt den Dateinamen als erstes Argument:
+      `node analyse.js app.log`.
+
+      1. Lies den Dateinamen aus `process.argv[2]`.
+      2. Lies die Datei mit `readFileSync` aus dem Kernmodul `node:fs`:
+         `const { readFileSync } = require("node:fs");`
+      3. Zerlege den Inhalt in Zeilen – mit einer Regex, die `\n` und `\r\n` gleichermaßen trennt – und
+         ignoriere leere Zeilen.
+      4. Gib die Anzahl aus, genau in dieser Form:
+
+      ```text
+      Zeilen: 20
+      ```
+    checklist:
+      - analyse.js liest den Dateinamen aus process.argv
+      - Zeilen werden mit split und einer Regex getrennt
+      - Leere Zeilen werden nicht mitgezählt
+      - "Ausgabe: Zeilen: 20"
+    hints:
+      - "`const zeilen = inhalt.split(/\\r?\\n/).filter((z) => z.trim() !== \"\");`"
+      - "Die Ausgabe: `` console.log(`Zeilen: ${zeilen.length}`); ``"
+      - "Stacklab prüft auch mit einer zweiten Datei – zähle also wirklich, statt `20` hinzuschreiben."
+    checks:
+      - type: file_exists
+        path: analyse.js
+        message: Die Datei analyse.js fehlt noch.
+      - type: command
+        run: |
+          node analyse.js app.log | grep -c '^Zeilen: 20$'
+        stdout_equals: "1"
+        message: "node analyse.js app.log soll die Zeile „Zeilen: 20“ ausgeben."
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); printf 'a\r\nb\n\nc\n' > "$d/x.log"; node analyse.js "$d/x.log" | grep -c '^Zeilen: 3$'; rm -rf "$d"
+        stdout_equals: "1"
+        message: Mit einer anderen Datei (3 Zeilen, eine Leerzeile, Windows-Zeilenenden) stimmt die Zählung nicht. Trenne mit /\r?\n/ und filtere leere Zeilen heraus.
+    solution: |
+      ```js
+      const { readFileSync } = require("node:fs");
+
+      const datei = process.argv[2];
+      const inhalt = readFileSync(datei, "utf8");
+      const zeilen = inhalt.split(/\r?\n/).filter((z) => z.trim() !== "");
+
+      console.log(`Zeilen: ${zeilen.length}`);
+      ```
+  - id: zeilen-parsen
+    title: Zeilen mit benannten Gruppen zerlegen und Level zählen
+    description: |
+      Jetzt kommt die Regex ins Spiel. Zerlege jede Zeile mit **einem** Muster mit benannten Gruppen in
+      `date`, `time`, `level`, `source` und `message`:
+
+      - Datum `JJJJ-MM-TT`, Uhrzeit `HH:MM:SS`
+      - Level in eckigen Klammern: `DEBUG`, `INFO`, `WARN` oder `ERROR`
+      - Quelle aus Kleinbuchstaben, dann `: ` und die Nachricht (mindestens ein Zeichen)
+
+      Zeilen, die nicht passen, zählst du als ungültig. Ergänze die Ausgabe direkt nach `Zeilen:` um diese
+      Zeilen – die Level **immer** in dieser Reihenfolge, auch wenn ein Level 0-mal vorkommt:
+
+      ```text
+      Zeilen: 20
+      Ungültig: 1
+      ERROR: 6
+      WARN: 4
+      INFO: 8
+      DEBUG: 1
+      ```
+    checklist:
+      - Ein Muster mit fünf benannten Gruppen
+      - Ungültige Zeilen werden gezählt statt ignoriert
+      - Alle vier Level erscheinen in fester Reihenfolge
+    hints:
+      - "Das Muster aus Modul 2 passt fast: `/^(?<date>\\d{4}-\\d{2}-\\d{2}) (?<time>\\d{2}:\\d{2}:\\d{2}) \\[(?<level>DEBUG|INFO|WARN|ERROR)\\] (?<source>[a-z]+): (?<message>.+)$/`"
+      - "Starte mit `const levels = { ERROR: 0, WARN: 0, INFO: 0, DEBUG: 0 };` und erhöhe `levels[m.groups.level]++`."
+      - "Ausgabe in fester Reihenfolge: `` for (const [name, anzahl] of Object.entries(levels)) console.log(`${name}: ${anzahl}`); ``"
+    checks:
+      - type: command
+        run: node analyse.js app.log | head -n 6 | tr '\n' ';'
+        stdout_equals: "Zeilen: 20;Ungültig: 1;ERROR: 6;WARN: 4;INFO: 8;DEBUG: 1;"
+        message: "Die ersten sechs Ausgabezeilen stimmen noch nicht. Erwartet: Zeilen: 20, Ungültig: 1, ERROR: 6, WARN: 4, INFO: 8, DEBUG: 1 – genau in dieser Reihenfolge."
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          printf '%s\n' '2026-10-02 09:00:00 [ERROR] db: Query timeout after 100ms' '2026-10-02 09:00:01 [ERROR] db: Query timeout after 200ms' '2026-10-02 09:00:02 [INFO] http: GET / 200 took 15ms' '2026-10-02 09:00:03 [FATAL] db: boom' 'kaputte zeile' > "$d/x.log"
+          node analyse.js "$d/x.log" | head -n 6 | tr '\n' ';'
+          rm -rf "$d"
+        stdout_equals: "Zeilen: 5;Ungültig: 2;ERROR: 2;WARN: 0;INFO: 1;DEBUG: 0;"
+        message: Mit einer zweiten Logdatei stimmen die Zahlen nicht. Unbekannte Level wie FATAL zählen als ungültig, fehlende Level als 0.
+    solution: |
+      ```js
+      const { readFileSync } = require("node:fs");
+
+      const LOG_ZEILE =
+        /^(?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2}) \[(?<level>DEBUG|INFO|WARN|ERROR)\] (?<source>[a-z]+): (?<message>.+)$/;
+
+      const datei = process.argv[2];
+      const zeilen = readFileSync(datei, "utf8").split(/\r?\n/).filter((z) => z.trim() !== "");
+
+      const levels = { ERROR: 0, WARN: 0, INFO: 0, DEBUG: 0 };
+      let ungueltig = 0;
+      const eintraege = [];
+
+      for (const zeile of zeilen) {
+        const m = zeile.match(LOG_ZEILE);
+        if (!m) {
+          ungueltig++;
+          continue;
+        }
+        levels[m.groups.level]++;
+        eintraege.push({ ...m.groups });
+      }
+
+      console.log(`Zeilen: ${zeilen.length}`);
+      console.log(`Ungültig: ${ungueltig}`);
+      for (const [name, anzahl] of Object.entries(levels)) {
+        console.log(`${name}: ${anzahl}`);
+      }
+      ```
+  - id: top-fehler
+    title: Fehlermeldungen normalisieren und die häufigsten finden
+    description: |
+      „Query timeout after 5000ms“ und „Query timeout after 7500ms“ sind derselbe Fehler – nur mit anderen
+      Zahlen. Damit du gleiche Fehler zählen kannst, **normalisierst** du sie:
+
+      1. Nimm nur Einträge mit Level `ERROR`.
+      2. Bilde den Text `quelle: nachricht` (z. B. `db: Query timeout after 5000ms`).
+      3. Ersetze darin **jede** Zahl durch `<n>` – mit `replace()` und dem Flag `g`.
+      4. Zähle, wie oft jeder normalisierte Text vorkommt, und gib die **drei häufigsten** aus – sortiert nach
+         Anzahl absteigend, bei Gleichstand alphabetisch.
+
+      Ergänze die Ausgabe nach den Level-Zeilen um:
+
+      ```text
+      Top-Fehler:
+      3x db: Query timeout after <n>ms
+      2x payment: Card declined for order <n>
+      1x http: GET /checkout <n> took <n>ms
+      ```
+    checklist:
+      - Zahlen werden mit replace(/\d+/g, "<n>") ersetzt
+      - Gleiche Fehler werden in einem Objekt oder einer Map gezählt
+      - Höchstens drei Einträge, richtig sortiert
+    hints:
+      - "`` const schluessel = `${e.source}: ${e.message}`.replace(/\\d+/g, \"<n>\"); ``"
+      - "Zählen mit einer Map: `zaehler.set(schluessel, (zaehler.get(schluessel) ?? 0) + 1)`."
+      - "Sortieren: `[...zaehler].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3)`"
+    checks:
+      - type: command
+        run: node analyse.js app.log | sed -n '/^Top-Fehler:$/,/^Langsamste/p' | grep -v '^Langsamste' | tr '\n' ';'
+        stdout_equals: "Top-Fehler:;3x db: Query timeout after <n>ms;2x payment: Card declined for order <n>;1x http: GET /checkout <n> took <n>ms;"
+        message: 'Der Block „Top-Fehler:“ stimmt noch nicht. Ersetze jede Zahl durch <n>, zähle gleiche Texte und gib die drei häufigsten im Format „3x quelle: nachricht“ aus.'
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          printf '%s\n' '2026-10-02 09:00:00 [ERROR] db: Query timeout after 100ms' '2026-10-02 09:00:01 [ERROR] db: Query timeout after 200ms' '2026-10-02 09:00:02 [ERROR] auth: Token 77 expired' '2026-10-02 09:00:03 [ERROR] auth: Token 81 expired' '2026-10-02 09:00:04 [ERROR] mail: Bounce 5' '2026-10-02 09:00:05 [ERROR] cache: Evicted 9 keys' '2026-10-02 09:00:06 [WARN] db: Slow query 3' > "$d/x.log"
+          node analyse.js "$d/x.log" | sed -n '/^Top-Fehler:$/,/^Langsamste/p' | grep -v '^Langsamste' | tr '\n' ';'
+          rm -rf "$d"
+        stdout_equals: "Top-Fehler:;2x auth: Token <n> expired;2x db: Query timeout after <n>ms;1x cache: Evicted <n> keys;"
+        message: Mit einer zweiten Datei stimmt die Liste nicht. Zähle nur ERROR-Zeilen, gib höchstens drei Einträge aus und sortiere bei gleicher Anzahl alphabetisch.
+    solution: |
+      ```js
+      // … nach der Level-Ausgabe aus Schritt 3
+      const zaehler = new Map();
+      for (const e of eintraege) {
+        if (e.level !== "ERROR") continue;
+        const schluessel = `${e.source}: ${e.message}`.replace(/\d+/g, "<n>");
+        zaehler.set(schluessel, (zaehler.get(schluessel) ?? 0) + 1);
+      }
+
+      console.log("Top-Fehler:");
+      const top = [...zaehler]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, 3);
+      for (const [text, anzahl] of top) {
+        console.log(`${anzahl}x ${text}`);
+      }
+      ```
+  - id: langsamste-anfrage
+    title: Die langsamste Anfrage finden
+    description: |
+      Viele Einträge enthalten eine Dauer im Format `took 312ms`. Finde mit einer Regex mit Capture-Gruppe den
+      Eintrag mit der **größten** Dauer – egal welches Level er hat – und gib nach dem Top-Fehler-Block aus:
+
+      ```text
+      Langsamste Anfrage: 3021ms (http: GET /checkout 500 took 3021ms)
+      ```
+
+      In Klammern steht `quelle: nachricht` des Eintrags. Gibt es keine Dauer im Log, gibt das Skript
+      `Langsamste Anfrage: keine` aus.
+    checklist:
+      - "Muster mit Capture-Gruppe für die Zahl, z. B. /took (\\d+)ms/"
+      - Der Wert wird als Zahl verglichen, nicht als String
+      - Sonderfall „keine“ ist abgedeckt
+    hints:
+      - "`const m = e.message.match(/\\btook (\\d+)ms\\b/);` – `m[1]` ist die Zahl als String."
+      - "Vergleiche mit `Number(m[1])`. Als String wäre \"87\" größer als \"3021\"."
+      - "Merke dir den bisher langsamsten Eintrag in einer Variablen, die mit `null` startet."
+    checks:
+      - type: command
+        run: node analyse.js app.log | grep '^Langsamste Anfrage:'
+        stdout_equals: "Langsamste Anfrage: 3021ms (http: GET /checkout 500 took 3021ms)"
+        message: "Erwartet wird „Langsamste Anfrage: 3021ms (http: GET /checkout 500 took 3021ms)“. Vergleichst du die Dauer als Zahl?"
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          printf '%s\n' '2026-10-02 09:00:00 [INFO] http: GET /a 200 took 900ms' '2026-10-02 09:00:01 [WARN] http: GET /b 200 took 1200ms' '2026-10-02 09:00:02 [INFO] http: GET /c 200 took 99ms' > "$d/x.log"
+          printf '%s\n' '2026-10-02 09:00:00 [INFO] auth: User logged in' > "$d/y.log"
+          node analyse.js "$d/x.log" | grep '^Langsamste Anfrage:'
+          node analyse.js "$d/y.log" | grep '^Langsamste Anfrage:'
+          rm -rf "$d"
+        stdout_equals: "Langsamste Anfrage: 1200ms (http: GET /b 200 took 1200ms)\nLangsamste Anfrage: keine"
+        message: Mit anderen Dateien stimmt das Ergebnis nicht. Vergleiche die Dauer als Zahl und gib „Langsamste Anfrage keine“ aus, wenn es keine Dauer gibt.
+    solution: |
+      ```js
+      let langsamste = null;
+      for (const e of eintraege) {
+        const m = e.message.match(/\btook (\d+)ms\b/);
+        if (m && (langsamste === null || Number(m[1]) > langsamste.ms)) {
+          langsamste = { ms: Number(m[1]), text: `${e.source}: ${e.message}` };
+        }
+      }
+
+      console.log(
+        langsamste === null
+          ? "Langsamste Anfrage: keine"
+          : `Langsamste Anfrage: ${langsamste.ms}ms (${langsamste.text})`,
+      );
+      ```
+  - id: json-ausgabe
+    title: Eine JSON-Ausgabe für andere Programme
+    description: |
+      Menschen lesen Text, Programme lesen JSON. Wird das Skript mit `--json` als zweitem Argument gestartet
+      (`node analyse.js app.log --json`), gibt es **nur** ein JSON-Objekt aus – ohne die Textzeilen:
+
+      ```json
+      {
+        "lines": 20,
+        "invalid": 1,
+        "levels": { "ERROR": 6, "WARN": 4, "INFO": 8, "DEBUG": 1 },
+        "topErrors": [
+          { "message": "db: Query timeout after <n>ms", "count": 3 },
+          { "message": "payment: Card declined for order <n>", "count": 2 },
+          { "message": "http: GET /checkout <n> took <n>ms", "count": 1 }
+        ],
+        "slowestMs": 3021
+      }
+      ```
+
+      Gibt es keine Dauer, ist `slowestMs` gleich `null`. Ohne `--json` bleibt die Textausgabe unverändert.
+      Teste die Ausgabe mit `jq`, z. B. `node analyse.js app.log --json | jq .levels`.
+    checklist:
+      - "--json wird in process.argv erkannt"
+      - Die Ausgabe ist gültiges JSON (JSON.stringify)
+      - Die Textausgabe ohne --json funktioniert weiterhin
+    hints:
+      - "`const alsJson = process.argv.includes(\"--json\");`"
+      - "Sammle alle Werte erst in Variablen und entscheide **am Ende**, ob du Text oder JSON ausgibst."
+      - "`console.log(JSON.stringify(ergebnis, null, 2));`"
+    checks:
+      - type: command
+        run: node analyse.js app.log --json | jq -c '[.lines, .invalid, .levels.ERROR, .levels.WARN, .levels.INFO, .levels.DEBUG, .slowestMs]'
+        stdout_equals: "[20,1,6,4,8,1,3021]"
+        message: Die JSON-Felder lines, invalid, levels und slowestMs stimmen noch nicht – oder die Ausgabe ist kein reines JSON.
+      - type: command
+        run: node analyse.js app.log --json | jq -r '.topErrors[] | "\(.count)x \(.message)"' | tr '\n' ';'
+        stdout_equals: "3x db: Query timeout after <n>ms;2x payment: Card declined for order <n>;1x http: GET /checkout <n> took <n>ms;"
+        message: topErrors soll eine Liste aus Objekten mit message und count sein – die drei häufigsten Fehler wie in der Textausgabe.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); printf '%s\n' '2026-10-02 09:00:00 [INFO] auth: ok' > "$d/y.log"; node analyse.js "$d/y.log" --json | jq -c '[.slowestMs, .topErrors]'; rm -rf "$d"
+        stdout_equals: "[null,[]]"
+        message: Ohne Dauer und ohne Fehler soll slowestMs null und topErrors eine leere Liste sein.
+      - type: command
+        run: node analyse.js app.log | head -n 1
+        stdout_equals: "Zeilen: 20"
+        message: Ohne --json soll weiterhin die Textausgabe erscheinen.
+    solution: |
+      ```js
+      const alsJson = process.argv.includes("--json");
+
+      // … Zählen wie in den Schritten 3 bis 5 …
+
+      if (alsJson) {
+        console.log(
+          JSON.stringify(
+            {
+              lines: zeilen.length,
+              invalid: ungueltig,
+              levels,
+              topErrors: top.map(([message, count]) => ({ message, count })),
+              slowestMs: langsamste === null ? null : langsamste.ms,
+            },
+            null,
+            2,
+          ),
+        );
+      } else {
+        // bisherige Textausgabe
+      }
+      ```

@@ -1,0 +1,329 @@
+- slug: treffer
+  term: Treffer
+  short: Die Stelle in einem Text, an der ein Suchmuster passt.
+  explanation: >
+    Wendet eine Regex-Engine ein Muster auf einen Text an, meldet sie den passenden Textausschnitt als
+    Treffer (englisch *match*). Ohne besondere Anweisung liefert sie nur den ersten Treffer; mit dem Flag
+    `g` oder Funktionen wie `preg_match_all()` bekommst du alle.
+  example: "`/\\d+/` liefert in „Raum 42“ den Treffer „42“."
+  category: regex
+  aliases: [Match, Treffern]
+  related: [regex, regex-engine]
+  lesson: regex/was-sind-regex
+- slug: regex-engine
+  term: Regex-Engine
+  short: Der Programmteil, der ein Suchmuster Zeichen für Zeichen auf einen Text anwendet.
+  explanation: >
+    Die Engine liest den Text von links nach rechts und probiert an jeder Stelle, ob das Muster passt.
+    JavaScript, PHP (PCRE) und grep bringen jeweils eine eigene Engine mit, die sich in Details wie den
+    unterstützten Kurzschreibweisen unterscheiden.
+  example: "Die Engine von `grep -E` kennt `\\d` nicht, die von JavaScript schon."
+  category: regex
+  aliases: [Engine, Regex-Engines]
+  related: [regex, backtracking, pcre]
+  lesson: regex/was-sind-regex
+- slug: literal
+  term: Literal (Regex)
+  short: Ein Zeichen in einem Muster, das genau für sich selbst steht.
+  explanation: >
+    Buchstaben, Ziffern und die meisten Satzzeichen sind in einer Regex Literale: Ein `a` passt auf ein
+    `a`. Nur Metazeichen haben eine Sonderbedeutung und müssen escapt werden, wenn du sie wörtlich meinst.
+  example: "Im Muster `B-\\d+` sind `B` und `-` Literale."
+  category: regex
+  aliases: [Literale, Literalen]
+  related: [metazeichen, escaping]
+  lesson: regex/was-sind-regex
+- slug: metazeichen
+  term: Metazeichen
+  short: Ein Zeichen mit Sonderbedeutung in einem regulären Ausdruck, z. B. Punkt, Stern oder Klammer.
+  explanation: >
+    Die Metazeichen `. ^ $ * + ? ( ) [ ] { } | \` beschreiben Regeln statt Zeichen. Willst du eines davon
+    wörtlich finden, stellst du einen Backslash davor.
+  example: "`3.50` passt auch auf „3550“, `3\\.50` nur auf „3.50“."
+  category: regex
+  aliases: [Sonderzeichen in Regex]
+  related: [literal, escaping]
+  lesson: regex/was-sind-regex
+- slug: pcre
+  term: PCRE
+  short: "Perl Compatible Regular Expressions – die Regex-Bibliothek, die PHP verwendet."
+  explanation: >
+    PCRE ist ein weit verbreiteter Regex-Dialekt mit vielen Funktionen wie benannten Gruppen, Lookarounds
+    und Modifikatoren. In PHP nutzen alle `preg_*`-Funktionen PCRE; `grep -P` spricht einen ähnlichen Dialekt.
+  example: "`preg_match('/^\\d{5}$/', $plz)` wird von PCRE ausgewertet."
+  category: regex
+  aliases: [PCRE2, Perl-kompatible Regex]
+  related: [regex, posix-ere, regex-begrenzer]
+  lesson: regex/was-sind-regex
+- slug: posix-ere
+  term: POSIX ERE
+  short: Die erweiterte Regex-Syntax, die grep -E und sed -E verwenden.
+  explanation: >
+    ERE (Extended Regular Expressions) ist ein standardisierter Regex-Dialekt für Unix-Werkzeuge. Gruppen,
+    `+`, `?`, `|` und `{n,m}` funktionieren ohne Backslash, Kurzschreibweisen wie `\d` gibt es aber nicht.
+    Das ältere BRE verlangt für diese Zeichen einen Backslash.
+  example: "`grep -E '[0-9]{4}-[0-9]{2}' app.log` nutzt ERE."
+  category: regex
+  aliases: [ERE, BRE, Extended Regular Expressions]
+  related: [grep, sed, pcre]
+  lesson: regex/was-sind-regex
+- slug: html-parser
+  term: HTML-Parser
+  short: Ein Programmteil, der HTML-Text liest und daraus eine Baumstruktur von Elementen aufbaut.
+  explanation: >
+    Weil HTML verschachtelt ist und viele Schreibweisen erlaubt, lässt es sich mit regulären Ausdrücken nicht
+    zuverlässig zerlegen. Ein HTML-Parser versteht die Struktur und liefert Elemente und Attribute, die du
+    gezielt abfragen kannst.
+  example: "`new DOMParser().parseFromString(html, \"text/html\")` im Browser oder `Dom\\HTMLDocument` in PHP."
+  category: regex
+  aliases: [HTML-Parsers, DOM-Parser]
+  related: [parser, html]
+  lesson: regex/was-sind-regex
+- slug: validierung
+  term: Validierung
+  short: Die Prüfung, ob eine Eingabe die erwartete Form und gültige Werte hat.
+  explanation: >
+    Bevor ein Programm Daten speichert oder weiterverarbeitet, prüft es sie – zum Beispiel, ob eine
+    Postleitzahl aus fünf Ziffern besteht. Regex prüfen dabei die Form, Code prüft die Bedeutung wie
+    Wertebereiche oder Kalenderdaten.
+  example: "`/^\\d{5}$/.test(eingabe)` validiert eine deutsche Postleitzahl."
+  category: regex
+  aliases: [validieren, validiert, Eingabeprüfung]
+  related: [regex, anker]
+  lesson: regex/was-sind-regex
+- slug: zeichenklasse
+  term: Zeichenklasse
+  short: Eine Aufzählung in eckigen Klammern, welche Zeichen an einer Stelle erlaubt sind.
+  explanation: >
+    `[aeiou]` passt auf genau einen Vokal, `[^0-9]` auf jedes Zeichen außer einer Ziffer. Eine Klasse steht
+    immer für ein einziges Zeichen, egal wie viele Zeichen sie aufzählt.
+  example: "`gr[ae]y` passt auf „grey“ und „gray“."
+  category: regex
+  aliases: [Zeichenklassen, Character Class]
+  related: [zeichenbereich, kurzschreibweise]
+  lesson: regex/zeichenklassen
+- slug: zeichenbereich
+  term: Zeichenbereich
+  short: Ein Bereich wie a-z oder 0-9 innerhalb einer Zeichenklasse.
+  explanation: >
+    Ein Bindestrich zwischen zwei Zeichen in eckigen Klammern umfasst alle Zeichen dazwischen – nach ihrer
+    Reihenfolge im Zeichensatz. Deshalb liegen Umlaute nicht in `[a-z]`.
+  example: "`[0-9a-fA-F]` passt auf eine Hex-Ziffer."
+  category: regex
+  aliases: [Bereich, Bereiche, Zeichenbereiche]
+  related: [zeichenklasse]
+  lesson: regex/zeichenklassen
+- slug: kurzschreibweise
+  term: Kurzschreibweise (Regex)
+  short: "Ein Kürzel für eine häufige Zeichenklasse, z. B. \\d für Ziffern oder \\s für Leerraum."
+  explanation: >
+    `\d`, `\w` und `\s` stehen für Ziffern, Wortzeichen und Leerraum, ihre Großbuchstaben-Varianten für das
+    Gegenteil. Nicht jeder Dialekt kennt sie: In `grep -E` schreibst du `[0-9]` statt `\d`.
+  example: "`\\d{4}` passt auf vier Ziffern wie „2026“."
+  category: regex
+  aliases: [Kurzschreibweisen, Shorthand]
+  related: [zeichenklasse]
+  lesson: regex/zeichenklassen
+- slug: ziffer
+  term: Ziffer
+  short: Eines der zehn Zeichen 0 bis 9, aus denen Zahlen geschrieben werden.
+  explanation: >
+    Für ein Programm ist „7“ in einem Text zunächst ein Zeichen, keine Zahl. Regex finden Ziffern mit `\d`
+    oder `[0-9]`; erst eine Umwandlung wie `Number("7")` macht daraus einen Zahlenwert.
+  example: "Die Zahl 2026 besteht aus den Ziffern 2, 0, 2 und 6."
+  category: regex
+  aliases: [Ziffern]
+  related: [kurzschreibweise]
+  lesson: regex/zeichenklassen
+- slug: unicode
+  term: Unicode
+  short: Der weltweite Standard, der jedem Schriftzeichen eine eindeutige Nummer gibt.
+  explanation: >
+    Unicode umfasst Buchstaben aller Sprachen, Ziffern, Symbole und Emojis. UTF-8 ist die häufigste
+    Kodierung, um diese Nummern als Bytes zu speichern. In Regex brauchst du das Flag bzw. den Modifikator
+    `u`, damit Zeichen wie „ü“ als ein Zeichen zählen.
+  example: "`/\\p{L}+/u` passt auf Wörter wie „Müller“ oder „Zoë“."
+  category: regex
+  aliases: [UTF-8]
+  related: [zeichenkodierung]
+  lesson: regex/zeichenklassen
+- slug: quantor
+  term: Quantor
+  short: Ein Zeichen, das festlegt, wie oft das Element davor vorkommen darf.
+  explanation: >
+    Die Quantoren `*` (0 oder mehr), `+` (1 oder mehr), `?` (0 oder 1) und `{n,m}` (n bis m) wirken immer
+    auf das Element direkt davor – ein Zeichen, eine Klasse oder eine Gruppe.
+  example: "`colou?r` passt auf „color“ und „colour“."
+  category: regex
+  aliases: [Quantoren, Quantifier]
+  related: [gieriger-quantor, genuegsamer-quantor]
+  lesson: regex/anker-und-quantoren
+- slug: anker
+  term: Anker (Regex)
+  short: Ein Teil eines Musters, der auf eine Position statt auf ein Zeichen passt, z. B. Anfang oder Ende.
+  explanation: >
+    `^` steht für den Textanfang, `$` für das Textende. Zum Prüfen von Eingaben brauchst du beide, damit der
+    ganze Text dem Muster entspricht. Mit dem Flag `m` gelten sie für jede Zeile.
+  example: "`^\\d{5}$` passt auf „37073“, aber nicht auf „PLZ 37073“."
+  category: regex
+  aliases: [Anker, Ankern]
+  related: [wortgrenze, validierung]
+  lesson: regex/anker-und-quantoren
+- slug: wortgrenze
+  term: Wortgrenze
+  short: "Die Position zwischen einem Wortzeichen und einem Nicht-Wortzeichen, in Regex \\b."
+  explanation: >
+    `\b` passt auf keine Zeichen, sondern auf die Stelle, an der ein Wort beginnt oder endet. So findest du
+    ganze Wörter, ohne Teile längerer Wörter mitzunehmen.
+  example: "`\\bcat\\b` passt in „the cat“, aber nicht in „concatenate“."
+  category: regex
+  aliases: [Wortgrenzen, Word Boundary]
+  related: [anker]
+  lesson: regex/anker-und-quantoren
+- slug: alternation
+  term: Alternation
+  short: "Die Oder-Verknüpfung in einer Regex mit dem senkrechten Strich |."
+  explanation: >
+    `a|b` passt auf a oder b. Der senkrechte Strich bindet am schwächsten von allen Regex-Bausteinen; mit
+    runden Klammern begrenzt du, wie weit eine Alternative reicht.
+  example: "`^(jpg|png)$` passt genau auf „jpg“ oder „png“."
+  category: regex
+  aliases: [Alternative, Alternativen, Oder-Verknüpfung]
+  related: [regex-gruppe]
+  lesson: regex/gruppen-und-alternativen
+- slug: regex-gruppe
+  term: Gruppe (Regex)
+  short: Ein in runde Klammern gefasster Teil eines Musters, der wie ein einzelnes Element behandelt wird.
+  explanation: >
+    Quantoren wirken auf die ganze Gruppe, und eine Alternation bleibt innerhalb der Klammern. Normale
+    Gruppen merken sich zusätzlich ihren Treffer; `(?:…)` gruppiert nur.
+  example: "`^(ab)+$` passt auf „ab“, „abab“ und „ababab“."
+  category: regex
+  aliases: [Gruppe, Gruppen, nicht-erfassende Gruppe]
+  related: [capture-gruppe, alternation]
+  lesson: regex/gruppen-und-alternativen
+- slug: capture-gruppe
+  term: Capture-Gruppe
+  short: Eine Gruppe, die sich den Text merkt, den sie getroffen hat.
+  explanation: >
+    Jede normale runde Klammer ist eine Capture-Gruppe. Nach einem Treffer kannst du ihren Inhalt über eine
+    Nummer (ab 1) auslesen oder beim Ersetzen mit `$1` bzw. `\1` einsetzen.
+  example: "`\"2026-10\".match(/(\\d+)-(\\d+)/)[2]` liefert „10“."
+  category: regex
+  aliases: [Capture-Gruppen, erfassende Gruppe, Capturing Group]
+  related: [benannte-gruppe, rueckverweis, regex-gruppe]
+  lesson: regex/capture-gruppen
+- slug: benannte-gruppe
+  term: Benannte Gruppe
+  short: Eine Capture-Gruppe mit einem Namen statt nur einer Nummer.
+  explanation: >
+    Mit `(?<name>…)` gibst du einer Gruppe einen Namen. In JavaScript liest du sie über `match.groups.name`,
+    in PHP über `$matches['name']`. Das macht Muster selbsterklärend und robust gegen Umbauten.
+  example: "`/(?<jahr>\\d{4})/` legt das Jahr unter `groups.jahr` ab."
+  category: regex
+  aliases: [benannte Gruppen, Named Group]
+  related: [capture-gruppe]
+  lesson: regex/capture-gruppen
+- slug: rueckverweis
+  term: Rückverweis
+  short: Ein Verweis im Muster, der denselben Text verlangt, den eine Gruppe vorher getroffen hat.
+  explanation: >
+    `\1` wiederholt den Treffer von Gruppe 1, `\k<name>` den einer benannten Gruppe. Wiederholt wird der
+    gefundene Text, nicht das Muster.
+  example: "`\\b(\\w+) \\1\\b` findet doppelte Wörter wie „das das“."
+  category: regex
+  aliases: [Rückverweise, Backreference]
+  related: [capture-gruppe]
+  lesson: regex/capture-gruppen
+- slug: gieriger-quantor
+  term: Gieriger Quantor
+  short: Ein Quantor, der so viele Zeichen wie möglich nimmt – das Standardverhalten.
+  explanation: >
+    `*`, `+` und `{n,m}` sind gierig (*greedy*): Sie fressen erst so viel wie möglich und geben per
+    Backtracking Zeichen zurück, wenn der Rest des Musters nicht passt. Deshalb trifft `<.*>` oft mehr als
+    gewollt.
+  example: "`/<.*>/` trifft in „<b>x</b>“ den ganzen Text."
+  category: regex
+  aliases: [gierig, greedy]
+  related: [genuegsamer-quantor, backtracking, quantor]
+  lesson: regex/gierig-flags-lookaround
+- slug: genuegsamer-quantor
+  term: Genügsamer Quantor
+  short: Ein Quantor mit angehängtem ?, der so wenige Zeichen wie möglich nimmt.
+  explanation: >
+    `*?`, `+?` und `{n,m}?` sind genügsam (*lazy*): Nach jedem Zeichen prüfen sie, ob der Rest des Musters
+    schon passt. Oft ist eine verneinte Klasse wie `[^>]*` noch eindeutiger.
+  example: "`/<.*?>/g` trifft in „<b>x</b>“ die Tags „<b>“ und „</b>“ einzeln."
+  category: regex
+  aliases: [genügsam, lazy, nicht-gierig]
+  related: [gieriger-quantor, quantor]
+  lesson: regex/gierig-flags-lookaround
+- slug: backtracking
+  term: Backtracking
+  short: Das Zurückgehen der Regex-Engine, um eine andere Aufteilung des Textes zu probieren.
+  explanation: >
+    Passt der Rest eines Musters nicht, gibt die Engine bereits getroffene Zeichen wieder ab und versucht es
+    erneut. Bei mehrdeutigen Mustern kann die Zahl der Versuche explosionsartig wachsen.
+  example: "`/<.*>/` frisst erst den ganzen Text und geht dann zum letzten `>` zurück."
+  category: regex
+  aliases: [katastrophales Backtracking, zurückverfolgen]
+  related: [redos, gieriger-quantor]
+  lesson: regex/gierig-flags-lookaround
+- slug: regex-flag
+  term: Flag (Regex)
+  short: Ein Schalter, der das Verhalten eines ganzen Musters ändert, z. B. i, g, m, s oder u.
+  explanation: >
+    In JavaScript stehen Flags hinter dem letzten Schrägstrich, in PHP heißen sie Modifikatoren und folgen dem
+    schließenden Begrenzer. `i` ignoriert Groß-/Kleinschreibung, `m` macht `^`/`$` zeilenweise, `s` lässt `.`
+    auch Zeilenumbrüche treffen, `u` schaltet Unicode ein.
+  example: "`/error/gi` findet „Error“ und „ERROR“ überall im Text."
+  category: regex
+  aliases: [Flags, Modifikator, Modifikatoren]
+  related: [regex, unicode]
+  lesson: regex/gierig-flags-lookaround
+- slug: lookaround
+  term: Lookaround
+  short: Eine Bedingung, die prüft, was vor oder nach einer Stelle steht, ohne es in den Treffer aufzunehmen.
+  explanation: >
+    Lookahead `(?=…)` und negativer Lookahead `(?!…)` schauen nach vorn, Lookbehind `(?<=…)` und `(?<!…)`
+    nach hinten. Wie Anker passen sie auf eine Position, nicht auf Zeichen.
+  example: "`/\\d+(?=€)/` liefert in „25€“ nur „25“."
+  category: regex
+  aliases: [Lookarounds, Lookahead, Lookbehind]
+  related: [anker]
+  lesson: regex/gierig-flags-lookaround
+- slug: regex-begrenzer
+  term: Begrenzer (Regex)
+  short: Das Zeichen, das in PHP ein Muster am Anfang und Ende einschließt, z. B. / oder #.
+  explanation: >
+    In PHP ist ein Muster ein String wie `'/abc/i'`: Die Schrägstriche sind die Begrenzer (englisch
+    *delimiter*), dahinter folgen die Modifikatoren. Kommt der Begrenzer im Muster vor, wählst du einen
+    anderen, z. B. `#` für URLs.
+  example: "`preg_match('#^https://#', $url)`"
+  category: regex
+  aliases: [Begrenzer, Begrenzern, Delimiter]
+  related: [pcre, regex-flag]
+  lesson: regex/regex-in-php
+- slug: sed
+  term: sed
+  short: Ein Stream Editor im Terminal, der Text zeilenweise per Suchen und Ersetzen umbaut.
+  explanation: >
+    sed liest eine Datei oder die Standardeingabe Zeile für Zeile und wendet Befehle an – vor allem
+    `s/muster/ersatz/`. Mit `-E` versteht es erweiterte Regex, mit `-i` ändert es die Datei direkt.
+  example: "`sed -E 's/([0-9]{4})-([0-9]{2})-([0-9]{2})/\\3.\\2.\\1/' daten.csv` dreht Datumsangaben um."
+  category: regex
+  aliases: [Stream Editor, sed -E]
+  related: [grep, posix-ere, pipe]
+  lesson: regex/grep-und-sed
+- slug: redos
+  term: ReDoS
+  short: Ein Angriff, bei dem eine präparierte Eingabe eine Regex extrem lange rechnen lässt.
+  explanation: >
+    ReDoS (Regular expression Denial of Service) nutzt katastrophales Backtracking bei mehrdeutigen Mustern
+    wie `(a+)+` aus. Eine einzige Anfrage kann so einen Server blockieren. Eindeutige Muster und
+    Längenlimits schützen davor.
+  example: "`/^(a+)+$/` braucht für 40 „a“ plus „!“ Billionen Schritte."
+  category: regex
+  aliases: [Regular expression Denial of Service, katastrophales Backtracking]
+  related: [backtracking]
+  lesson: regex/lesbar-und-sicher

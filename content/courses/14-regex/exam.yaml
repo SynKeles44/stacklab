@@ -1,0 +1,322 @@
+title: Abschlussprüfung Reguläre Ausdrücke
+description: |
+  Die Prüfung deckt alle vier Module ab: Bausteine wie Zeichenklassen, Anker und Quantoren, Gruppen und
+  Flags, Regex in JavaScript, PHP und im Terminal sowie typische Muster, Grenzen und Sicherheit. Zum Schluss
+  löst du drei praktische Aufgaben – eine in JavaScript, eine in PHP und eine im Übungs-Terminal.
+  Du bestehst mit 70 %.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: "Welcher Text enthält **keinen** Treffer für `/v\\d\\.\\d/`?"
+    options: ["Version v1.2", "v9.0 ist da", "v12", "Update auf v3.5.1"]
+    answer: 2
+    explanation: "Das Muster verlangt v, eine Ziffer, einen echten Punkt und wieder eine Ziffer. In „v12“ fehlt der Punkt."
+  - module: grundlagen
+    type: multiple
+    question: "Welche Muster passen **vollständig** auf den Text `A-42`?"
+    options: ["^[A-Z]-\\d+$", "^\\w-\\d{2}$", "^[a-z]-\\d+$", "^.-..$", "^[A-Z]-\\d{3}$"]
+    answers: [0, 1, 3]
+    explanation: "`[a-z]` passt nicht auf ein großes A, und `\\d{3}` verlangt drei Ziffern. `\\w` und `.` passen auf A, `..` auf zwei beliebige Zeichen."
+  - module: grundlagen
+    type: cloze
+    text: "Der Quantor ___ bedeutet „ein- oder mehrmals“, der Quantor ___ „null- oder einmal“."
+    blanks:
+      - ["+"]
+      - ["?"]
+    explanation: "`*` steht für null oder mehr, `+` für eins oder mehr, `?` für optional."
+  - module: grundlagen
+    type: find-bug
+    question: Die Zeile soll nur Postleitzahlen aus genau fünf Ziffern akzeptieren. Wo liegt der Fehler?
+    language: js
+    code: |
+      const plz = "123456";
+      const ok = /\d{5}/.test(plz);
+      console.log(ok ? "gültig" : "ungültig");
+    bug_line: 2
+    explanation: "Ohne `^` und `$` findet das Muster fünf Ziffern irgendwo im Text. Richtig: `/^\\d{5}$/`."
+  - module: grundlagen
+    type: match
+    question: Ordne jedem Muster einen Text zu, auf den es vollständig passt.
+    pairs:
+      - { left: "^[^0-9]+$", right: "abc" }
+      - { left: "^\\d{2,3}$", right: "123" }
+      - { left: "^\\s+$", right: "drei Leerzeichen" }
+      - { left: "^[a-f0-9]{4}$", right: "be42" }
+    explanation: "`[^0-9]` verneint die Ziffern, `\\s` steht für Leerraum, `[a-f0-9]` für Hex-Zeichen."
+  - module: gruppen
+    type: single
+    question: "Was liefert `\"2026-10-09\".match(/(\\d+)-(\\d+)-(\\d+)/)[2]`?"
+    options: ["2026", "10", "09", "2026-10-09"]
+    answer: 1
+    explanation: Index 0 ist der ganze Treffer, Index 1 die erste Gruppe, Index 2 die zweite – also der Monat.
+  - module: gruppen
+    type: single
+    question: "Worauf passt `^(Mo|Di)-\\d$` – im Unterschied zu `^Mo|Di-\\d$`?"
+    options:
+      - Nur auf „Mo-1“ oder „Di-2“ – das zweite Muster passt auch auf „Montag“
+      - Beide Muster sind gleichwertig
+      - Das erste Muster passt auf „Montag“, das zweite nicht
+    answer: 0
+    explanation: "Ohne Klammern bedeutet das zweite Muster „beginnt mit Mo“ oder „endet mit Di-Ziffer“. Die Klammern begrenzen die Alternation."
+  - module: gruppen
+    type: multiple
+    question: "Was stimmt für `'<p>a</p><p>b</p>'.match(/<p>(.*?)<\\/p>/g)`?"
+    options:
+      - "Das Ergebnis ist ['<p>a</p>', '<p>b</p>']"
+      - "Der Quantor *? ist genügsam"
+      - "Ohne das ? wäre das Ergebnis ein einziger Treffer über den ganzen Text"
+      - "Das Ergebnis enthält die Gruppeninhalte a und b"
+    answers: [0, 1, 2]
+    explanation: "Mit `g` liefert match() nur die ganzen Treffer – ohne Gruppen. Für die Gruppen brauchst du matchAll()."
+  - module: gruppen
+    type: match
+    question: Ordne jedem Flag die passende Situation zu.
+    pairs:
+      - { left: "i", right: "„Error“, „ERROR“ und „error“ sollen gleich behandelt werden" }
+      - { left: "m", right: "Jede Zeile einer eingelesenen Datei soll mit ^ geprüft werden" }
+      - { left: "s", right: "Ein Block soll über Zeilenumbrüche hinweg mit . erfasst werden" }
+      - { left: "u", right: "Namen mit Umlauten sollen mit \\p{L} erkannt werden" }
+    explanation: Flags gelten für das ganze Muster. In PHP stehen sie als Modifikatoren hinter dem Begrenzer.
+  - module: werkzeuge
+    type: single
+    question: "Welcher JavaScript-Aufruf liefert **alle** Treffer **mit** ihren Gruppen?"
+    options: ["text.match(/x(\\d)/)", "text.match(/x(\\d)/g)", "text.matchAll(/x(\\d)/g)", "/x(\\d)/g.test(text)"]
+    answer: 2
+    explanation: matchAll() braucht das Flag g und liefert für jeden Treffer ein Array mit Gruppen und Index.
+  - module: werkzeuge
+    type: find-bug
+    question: "Die Funktion soll „kein Treffer“ und „kaputtes Muster“ unterscheiden. In welcher Zeile liegt der Fehler?"
+    language: php
+    code: |
+      function hatBestellnummer(string $text): bool
+      {
+          if (preg_match('/B-\d{4}/', $text) == false) {
+              return false;
+          }
+          return true;
+      }
+    bug_line: 3
+    explanation: "`== false` ist auch bei 0 (kein Treffer) wahr. preg_match() liefert 1, 0 oder false – vergleiche strikt, z. B. `=== 1`, und prüfe Fehler separat mit `=== false`."
+  - module: werkzeuge
+    type: cloze
+    text: "Mit `grep ___ 'muster' datei` gibt grep nur die Anzahl der passenden Zeilen aus. Mit `sed -E 's/a/b/___'` ersetzt sed alle Treffer pro Zeile."
+    blanks:
+      - ["-c"]
+      - [g]
+    explanation: "-c zählt passende Zeilen. Das Flag g im s-Befehl ersetzt nicht nur den ersten Treffer pro Zeile."
+  - module: werkzeuge
+    type: single
+    question: "Warum findet `grep -E '[0-9]{3}-\\d{4}' liste.txt` die Nummer „555-1234“ nicht?"
+    options:
+      - "grep -E kennt \\d nicht und sucht nach einem normalen d"
+      - "Der Bindestrich muss escapt werden"
+      - "grep braucht -o, um Zahlen zu finden"
+    answer: 0
+    explanation: "In POSIX ERE gibt es `\\d` nicht. Nutze `[0-9]` oder – bei GNU grep – `grep -P`."
+  - module: werkzeuge
+    type: match
+    question: Welche PHP-Funktion passt zu welcher Aufgabe?
+    pairs:
+      - { left: "preg_split()", right: "Eine Liste an Kommas mit beliebig vielen Leerzeichen trennen" }
+      - { left: "preg_quote()", right: "Eine Benutzereingabe sicher in ein Muster einbauen" }
+      - { left: "preg_replace_callback()", right: "Jede gefundene Zahl verdoppeln" }
+      - { left: "preg_match_all()", right: "Alle Hashtags eines Textes sammeln" }
+    explanation: Für jede Aufgabe gibt es eine passende preg-Funktion – ein g-Flag braucht PHP dabei nie.
+  - module: praxis
+    type: single
+    question: Wie prüfst du am zuverlässigsten, ob `30.02.2026` ein gültiges Datum ist?
+    options:
+      - Mit einer Regex, die alle Monatslängen kennt
+      - Format per Regex prüfen, dann checkdate() bzw. eine Datumsfunktion aufrufen
+      - Mit `\d{2}\.\d{2}\.\d{4}` – das reicht
+    answer: 1
+    explanation: Regex prüfen die Form, Code prüft die Bedeutung. Schaltjahre und Monatslängen gehören in eine Datumsfunktion.
+  - module: praxis
+    type: multiple
+    question: Welche Maßnahmen schützen vor ReDoS?
+    options:
+      - Eindeutige Muster ohne verschachtelte Quantoren
+      - Die Länge von Eingaben vor der Prüfung begrenzen
+      - Benutzereingaben nie ungeprüft mit new RegExp() als Muster verwenden
+      - Das Flag g an jedes Muster hängen
+    answers: [0, 1, 2]
+    explanation: Das Flag g ändert nichts an der Anzahl der Backtracking-Schritte. Eindeutige Muster, Längenlimits und kein ungeprüftes Muster aus Eingaben helfen.
+  - module: praxis
+    type: find-bug
+    question: In welcher Zeile steckt ein Muster, das bei langen ungültigen Eingaben katastrophal backtracken kann?
+    language: js
+    code: |
+      const plz = /^\d{5}$/;
+      const code = /^[A-Z]{3}-\d{4}$/;
+      const tags = /^([a-z]+,?)*$/;
+      const datum = /^\d{4}-\d{2}-\d{2}$/;
+    bug_line: 3
+    explanation: "`([a-z]+,?)*` ist ein verschachtelter Quantor mit optionalem Trenner – wie `(\\w+\\s?)*`. Eindeutig wäre `^[a-z]+(,[a-z]+)*$`."
+  - module: praxis
+    type: single
+    question: Welches Werkzeug nimmst du, um alle Links aus einer HTML-Seite zu lesen?
+    options:
+      - "Die Regex `/<a href=\"(.*?)\">/g`"
+      - Einen HTML-Parser wie DOMParser oder Dom\HTMLDocument
+      - "grep -oE 'href=.*'"
+    answer: 1
+    explanation: HTML ist verschachtelt und erlaubt viele Schreibweisen. Ein Parser versteht die Struktur, eine Regex nur Zeichenfolgen.
+tasks:
+  - module: gruppen
+    id: pruefung-versionen
+    type: code
+    language: js
+    title: Versionsnummern zerlegen und vergleichen
+    description: |
+      Schreibe `parseVersion(text)` für Versionen nach Semantic Versioning, optional mit `v` davor und
+      optional mit einem Vorabkennzeichen:
+
+      - `1.4.2` → `{ major: 1, minor: 4, patch: 2, pre: null }`
+      - `v2.0.0-beta.3` → `{ major: 2, minor: 0, patch: 0, pre: "beta.3" }`
+
+      Regeln: drei Zahlen ohne führende Nullen (außer der `0` selbst), getrennt durch Punkte. Das
+      Vorabkennzeichen beginnt mit `-` und besteht aus Kleinbuchstaben, Ziffern und Punkten. Der **ganze** Text
+      muss passen, sonst gibt die Funktion `null` zurück. Nutze benannte Gruppen.
+    starter: |
+      function parseVersion(text) {
+        return null;
+      }
+    tests:
+      - name: Einfache Version
+        code: |
+          assertDeepEqual(parseVersion("1.4.2"), { major: 1, minor: 4, patch: 2, pre: null })
+      - name: Mit v und Vorabkennzeichen
+        code: |
+          assertDeepEqual(parseVersion("v2.0.0-beta.3"), { major: 2, minor: 0, patch: 0, pre: "beta.3" })
+      - name: Große Zahlen
+        code: |
+          assertDeepEqual(parseVersion("10.20.300"), { major: 10, minor: 20, patch: 300, pre: null })
+      - name: Ungültige Versionen
+        code: |
+          assertEqual(parseVersion(""), null)
+          assertEqual(parseVersion("1.4"), null)
+          assertEqual(parseVersion("01.4.2"), null)
+          assertEqual(parseVersion("1.4.2-"), null)
+          assertEqual(parseVersion("1.4.2 "), null)
+          assertEqual(parseVersion("V1.4.2"), null)
+    hints:
+      - "Eine Zahl ohne führende Null: `(0|[1-9]\\d*)`."
+      - "Gesamtaufbau: `^v?(?<major>…)\\.(?<minor>…)\\.(?<patch>…)(?:-(?<pre>[a-z0-9.]+))?$`"
+      - "Nicht getroffene optionale Gruppen sind `undefined` – wandle sie mit `?? null` um."
+    solution: |
+      ```js
+      function parseVersion(text) {
+        const zahl = /(0|[1-9]\d*)/.source;
+        const muster = new RegExp(
+          `^v?(?<major>${zahl})\\.(?<minor>${zahl})\\.(?<patch>${zahl})(?:-(?<pre>[a-z0-9.]+))?$`,
+        );
+        const m = text.match(muster);
+        if (!m) return null;
+        const { major, minor, patch, pre } = m.groups;
+        return { major: Number(major), minor: Number(minor), patch: Number(patch), pre: pre ?? null };
+      }
+      ```
+  - module: werkzeuge
+    id: pruefung-maskieren
+    type: code
+    language: php
+    title: Sensible Daten in Supporttexten maskieren
+    description: |
+      Schreibe `maskiere(string $text): string`. Die Funktion ersetzt in einem Supporttext:
+
+      1. jede E-Mail-Adresse (vereinfacht: Zeichen ohne Leerzeichen und `@`, ein `@`, Zeichen ohne Leerzeichen
+         und `@`, ein Punkt, mindestens zwei Buchstaben) durch `[email]`,
+      2. jede IBAN der Form `DE` + 20 Ziffern – auch in Vierergruppen mit Leerzeichen geschrieben – durch
+         `DE** **** **** **** **** <letzte zwei Ziffern>`.
+
+      Beispiel: `Konto DE12 3456 7890 1234 5678 90, Mail an user@example.com` →
+      `Konto DE** **** **** **** **** 90, Mail an [email]`
+    starter: |
+      function maskiere(string $text): string
+      {
+          return $text;
+      }
+    tests:
+      - name: E-Mail wird maskiert
+        code: assert_same('Bitte an [email] schreiben', maskiere('Bitte an user@example.com schreiben'));
+      - name: IBAN in Vierergruppen wird maskiert
+        code: |
+          assert_same('Konto DE** **** **** **** **** 90, Mail an [email]', maskiere('Konto DE12 3456 7890 1234 5678 90, Mail an user@example.com'));
+      - name: IBAN ohne Leerzeichen wird maskiert
+        code: assert_same('IBAN DE** **** **** **** **** 07', maskiere('IBAN DE89370400440532013007'));
+      - name: Text ohne sensible Daten bleibt gleich
+        code: |
+          assert_same('Bestellung 4711 ist unterwegs', maskiere('Bestellung 4711 ist unterwegs'));
+          assert_same('', maskiere(''));
+    hints:
+      - "E-Mail: `'/[^\\s@]+@[^\\s@]+\\.[a-zA-Z]{2,}/'`."
+      - "IBAN: `DE` gefolgt von 20 Ziffern, zwischen denen optional Leerzeichen stehen: `'/\\bDE(?:\\s?\\d){18}\\s?(\\d)\\s?(\\d)\\b/'`."
+      - "Im Ersatz von preg_replace() stehen `$1` und `$2` für die Gruppen."
+    solution: |
+      ```php
+      function maskiere(string $text): string
+      {
+          $text = preg_replace('/[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}/', '[email]', $text);
+          return preg_replace('/\bDE(?:\s?\d){18}\s?(\d)\s?(\d)\b/', 'DE** **** **** **** **** $1$2', $text);
+      }
+      ```
+  - module: werkzeuge
+    id: pruefung-terminal
+    type: terminal
+    title: Zugriffslog im Terminal auswerten
+    description: |
+      Im Ordner `pruefung` liegt `access.log` – ein vereinfachtes Zugriffsprotokoll eines Webservers. Jede
+      Zeile hat die Form `IP - [Zeitpunkt] "METHODE PFAD" STATUS`.
+
+      1. Schreibe die **Anzahl** aller Zeilen mit einem Statuscode `5xx` (500–599) am Zeilenende in
+         `serverfehler.txt`.
+      2. Schreibe jede IP-Adresse, die mindestens eine Anfrage mit Status `404` hatte, **einmal** und sortiert
+         in `404-ips.txt`.
+      3. Erzeuge mit `sed -E` die Datei `pfade.txt`, die für **jede** Zeile nur `METHODE PFAD` enthält, z. B.
+         `GET /index.html`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**, damit die Logdatei angelegt wird.
+    workdir: pruefung
+    setup: |
+      cat > access.log <<'LOG'
+      192.0.2.10 - [01/Oct/2026:10:00:01] "GET /index.html" 200
+      192.0.2.11 - [01/Oct/2026:10:00:05] "GET /shop/item-42" 404
+      198.51.100.4 - [01/Oct/2026:10:00:09] "POST /api/orders" 500
+      192.0.2.10 - [01/Oct/2026:10:01:13] "GET /about" 200
+      203.0.113.7 - [01/Oct/2026:10:01:40] "GET /admin" 404
+      192.0.2.11 - [01/Oct/2026:10:02:02] "GET /shop/item-43" 404
+      198.51.100.4 - [01/Oct/2026:10:02:30] "POST /api/orders" 503
+      203.0.113.7 - [01/Oct/2026:10:03:00] "GET /status/500" 200
+      192.0.2.12 - [01/Oct/2026:10:03:15] "PUT /api/orders/7" 204
+      LOG
+    checks:
+      - type: command
+        run: cat serverfehler.txt
+        stdout_matches: "^\\s*2\\s*$"
+        message: In serverfehler.txt soll die Zahl 2 stehen. Achtung – „/status/500“ ist ein Pfad, kein Statuscode. Verankere das Muster am Zeilenende.
+      - type: command
+        run: tr '\n' ' ' < 404-ips.txt
+        stdout_equals: "192.0.2.11 203.0.113.7"
+        message: 404-ips.txt soll genau die IPs 192.0.2.11 und 203.0.113.7 enthalten – jede einmal, sortiert.
+      - type: command
+        run: wc -l < pfade.txt
+        stdout_matches: "^\\s*9\\s*$"
+        message: pfade.txt soll für jede der 9 Zeilen einen Eintrag haben.
+      - type: command
+        run: sed -n '1p;3p;9p' pfade.txt | tr '\n' '|'
+        stdout_equals: "GET /index.html|POST /api/orders|PUT /api/orders/7|"
+        message: In pfade.txt soll pro Zeile nur „METHODE PFAD“ stehen, ohne Anführungszeichen, IP oder Status.
+    hints:
+      - "Statuscode am Ende: `' 5[0-9]{2}$'` mit `grep -cE`."
+      - "Für die IPs: Zeilen mit ` 404$` filtern, mit `grep -oE '^[0-9.]+'` die IP herausschneiden, dann `sort -u`."
+      - "Für die Pfade: `sed -E 's/^.*\"([A-Z]+ [^\"]+)\".*$/\\1/' access.log > pfade.txt`"
+    solution: |
+      ```bash
+      cd pruefung
+      grep -cE ' 5[0-9]{2}$' access.log > serverfehler.txt
+      grep -E ' 404$' access.log | grep -oE '^[0-9.]+' | sort -u > 404-ips.txt
+      sed -E 's/^.*"([A-Z]+ [^"]+)".*$/\1/' access.log > pfade.txt
+      cat serverfehler.txt 404-ips.txt pfade.txt
+      ```
