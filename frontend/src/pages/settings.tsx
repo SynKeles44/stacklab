@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useLoaderData, useRevalidator } from 'react-router'
 import { toast } from 'sonner'
 import { AppearancePicker } from '@/components/common/appearance-picker'
+import { FolderPicker } from '@/components/common/folder-picker'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -27,7 +28,7 @@ import { Api, type SandboxStatus } from '@/lib/api'
 import { updateSessionUser, useSession } from '@/lib/auth'
 import { loadBookmarks } from '@/lib/bookmarks'
 
-type WorkspaceInfo = { path: string; writable: boolean; sandbox: SandboxStatus }
+type WorkspaceInfo = { path: string; writable: boolean; browse?: boolean; sandbox: SandboxStatus }
 
 export function SettingsPage() {
   const workspace = useLoaderData() as WorkspaceInfo
@@ -94,11 +95,21 @@ export function SettingsPage() {
               <Input id="workspace" value={path} onChange={(event) => setPath(event.target.value)} className="font-mono" spellCheck={false} />
               <FieldDescription>Relativ zum Stacklab-Ordner (z. B. ./workspace) oder absolut (z. B. /Users/du/lernen oder C:/Users/du/lernen).</FieldDescription>
             </Field>
-            <Button onClick={saveWorkspace} disabled={saving || !workspace.writable || path === workspace.path} className="w-fit">
-              {saving ? <Spinner /> : <Save />} Pfad speichern
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={saveWorkspace} disabled={saving || !workspace.writable || path === workspace.path} className="w-fit">
+                {saving ? <Spinner /> : <Save />} Pfad speichern
+              </Button>
+              {workspace.browse && workspace.writable && (
+                <FolderPicker
+                  onChanged={(result) => {
+                    setPath(result.path)
+                    setRestart(result.command)
+                  }}
+                />
+              )}
+            </div>
           </FieldGroup>
-          <FolderPickerHint />
+          {!workspace.browse && <FolderPickerHint />}
           {!workspace.writable && (
             <p className="mt-3 text-sm text-muted-foreground">Die .env-Datei ist aus dem Container nicht beschreibbar. Trage <code className="font-mono">STACKLAB_WORKSPACE</code> von Hand in die Datei <code className="font-mono">.env</code> ein.</p>
           )}
@@ -107,7 +118,7 @@ export function SettingsPage() {
               <TerminalSquare />
               <AlertTitle>Noch ein Schritt</AlertTitle>
               <AlertDescription>
-                Docker bindet den Ordner beim Start ein. Führe im Stacklab-Ordner <Kbd>{restart}</Kbd> aus (oder <Kbd>make restart</Kbd>), dann ist der neue Pfad aktiv.
+                Docker legt den Ordner an und bindet ihn beim Neustart ein. Führe im Stacklab-Ordner <Kbd>{restart}</Kbd> aus, dann ist der neue Pfad aktiv.
               </AlertDescription>
             </Alert>
           )}

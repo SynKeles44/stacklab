@@ -5,47 +5,63 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateWorkspaceRequest;
+use App\Http\Requests\FolderListRequest;
 use App\Http\Requests\ResetProgressRequest;
 use App\Http\Requests\WorkspaceRequest;
+use App\Services\HostFolders;
 use App\Services\ProgressReset;
 use App\Services\SandboxClient;
+use App\Services\WorkspaceLocation;
 use Illuminate\Http\JsonResponse;
 
 final class SettingsController extends Controller
 {
-    public function __construct(private readonly SandboxClient $sandbox) {}
+    public function __construct(
+        private readonly SandboxClient $sandbox,
+        private readonly WorkspaceLocation $location,
+        private readonly HostFolders $folders,
+    ) {}
 
     public function workspace(): JsonResponse
     {
         return response()->json([
             'path' => config('stacklab.workspace.host_path'),
-            'writable' => $this->envFileWritable(),
+            'writable' => $this->location->envFileWritable(),
+            'browse' => $this->folders->enabled(),
             'sandbox' => $this->sandbox->health(),
         ]);
     }
 
     public function updateWorkspace(WorkspaceRequest $request): JsonResponse
     {
-        if (! $this->envFileWritable()) {
-            return response()->json(['message' => 'Die Datei .env im Projektordner ist nicht beschreibbar. Trage STACKLAB_WORKSPACE dort von Hand ein.'], 422);
+        if (! $this->location->envFileWritable()) {
+            return $this->notWritable();
         }
 
-        $file = (string) config('stacklab.workspace.env_file');
         $path = $request->string('path')->trim()->value();
-        $contents = is_file($file) ? (string) file_get_contents($file) : '';
-        $line = 'STACKLAB_WORKSPACE="'.$path.'"';
+        $this->location->store($path);
 
-        $contents = preg_match('/^STACKLAB_WORKSPACE=.*$/m', $contents) === 1
-            ? (string) preg_replace('/^STACKLAB_WORKSPACE=.*$/m', $line, $contents)
-            : rtrim($contents).PHP_EOL.$line.PHP_EOL;
+        return $this->restartRequired($path);
+    }
 
-        file_put_contents($file, ltrim($contents));
+    public function folders(FolderListRequest $request): JsonResponse
+    {
+        abort_unless($this->folders->enabled(), 404, 'Die Ordnerauswahl ist nicht verfügbar.');
 
-        return response()->json([
-            'path' => $path,
-            'restart_required' => true,
-            'command' => 'docker compose up -d',
-        ]);
+        return response()->json($this->folders->list($request->input('path')));
+    }
+
+    public function createWorkspace(CreateWorkspaceRequest $request): JsonResponse
+    {
+        abort_unless($this->folders->enabled(), 404, 'Die Ordnerauswahl ist nicht verfügbar.');
+        if (! $this->location->envFileWritable()) {
+            return $this->notWritable();
+        }
+
+        $path = $this->location->createInside($request->string('parent')->value(), $request->string('name')->trim()->value());
+
+        return $this->restartRequired($path);
     }
 
     public function resetProgress(ResetProgressRequest $request, ProgressReset $reset): JsonResponse
@@ -55,10 +71,17 @@ final class SettingsController extends Controller
         return response()->json(['deleted' => $deleted]);
     }
 
-    private function envFileWritable(): bool
+    private function restartRequired(string $path): JsonResponse
     {
-        $file = (string) config('stacklab.workspace.env_file');
+        return response()->json([
+            'path' => $path,
+            'restart_required' => true,
+            'command' => 'make restart',
+        ]);
+    }
 
-        return is_file($file) ? is_writable($file) : is_dir(dirname($file)) && is_writable(dirname($file));
+    private function notWritable(): JsonResponse
+    {
+        return response()->json(['message' => 'Die Datei .env im Projektordner ist nicht beschreibbar. Trage STACKLAB_WORKSPACE dort von Hand ein.'], 422);
     }
 }

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 mkdir -p /workspace/.home
+[ -f /workspace/.stacklab-workspace ] || printf 'Stacklab-Workspace. Diese Datei markiert den Ordner, bitte nicht löschen.\n' > /workspace/.stacklab-workspace
 if [ ! -f /workspace/.home/.bashrc ]; then
   cat > /workspace/.home/.bashrc <<'RC'
 # Persönliche Shell-Einstellungen (liegt im Workspace und bleibt erhalten)

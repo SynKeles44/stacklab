@@ -246,6 +246,16 @@ export type Dashboard = z.infer<typeof dashboardSchema>
 const bookmarkSchema = z.object({ id: z.number(), type: z.string(), ref: z.string(), label: z.string(), url: z.string(), created_at: z.string() })
 export type Bookmark = z.infer<typeof bookmarkSchema>
 
+const workspaceChangeSchema = z.object({ path: z.string(), restart_required: z.boolean(), command: z.string() })
+
+const folderListingSchema = z.object({
+  path: z.string(),
+  label: z.string(),
+  parent: z.string().nullable(),
+  entries: z.array(z.object({ name: z.string(), path: z.string(), workspace: z.boolean() })),
+})
+export type FolderListing = z.infer<typeof folderListingSchema>
+
 const searchSchema = z.object({
   lessons: z.array(
     z.object({ slug: z.string(), title: z.string(), summary: nullableString, course_slug: z.string(), course_title: z.string(), excerpt: nullableString.optional() }),
@@ -330,7 +340,9 @@ export const Api = {
   deleteBookmark: (id: number) => api(`/bookmarks/${id}`, ok, { method: 'DELETE' }),
 
   dashboard: (signal?: AbortSignal) => api('/dashboard', dashboardSchema, { signal }),
-  workspace: () => api('/settings/workspace', z.object({ path: z.string(), writable: z.boolean(), sandbox: sandboxStatusSchema })),
-  updateWorkspace: (path: string) =>
-    api('/settings/workspace', z.object({ path: z.string(), restart_required: z.boolean(), command: z.string() }), { method: 'PUT', body: { path } }),
+  workspace: () => api('/settings/workspace', z.object({ path: z.string(), writable: z.boolean(), browse: z.boolean().optional(), sandbox: sandboxStatusSchema })),
+  updateWorkspace: (path: string) => api('/settings/workspace', workspaceChangeSchema, { method: 'PUT', body: { path } }),
+  createWorkspace: (parent: string, name: string) => api('/settings/workspace', workspaceChangeSchema, { method: 'POST', body: { parent, name } }),
+  folders: (path?: string, signal?: AbortSignal) =>
+    api(`/settings/folders${path ? `?path=${encodeURIComponent(path)}` : ''}`, folderListingSchema, { signal }),
 }

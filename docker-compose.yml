@@ -42,11 +42,13 @@ services:
       STACKLAB_SANDBOX_SECRET_FILE: /run/stacklab/sandbox.secret
       STACKLAB_WORKSPACE_HOST: ${STACKLAB_WORKSPACE:-./workspace}
       STACKLAB_ROOT_ENV_FILE: /stacklab-root/.env
+      STACKLAB_BROWSE_ROOT_HOST: ${STACKLAB_BROWSE_ROOT:-${HOME:-}}
     volumes:
       - ./backend:/var/www/backend
       - ./content:/var/www/content:ro
       - secrets:/run/stacklab
       - ./:/stacklab-root
+      - ${STACKLAB_BROWSE_ROOT:-${HOME:-./workspace}}:/host-browse:ro
     healthcheck:
       test: ["CMD-SHELL", "pgrep php-fpm > /dev/null"]
       interval: 10s

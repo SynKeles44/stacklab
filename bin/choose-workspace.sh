@@ -32,6 +32,11 @@ if [ -z "$folder" ]; then
   exit 1
 fi
 
+if [ -d "$folder" ] && [ ! -f "$folder/.stacklab-workspace" ] && [ -n "$(ls -A "$folder" 2>/dev/null | grep -v '^.DS_Store$')" ]; then
+  echo "In $folder liegen schon andere Dateien. Stacklab braucht einen eigenen, leeren Ordner – lege im Dialog einen neuen an."
+  exit 1
+fi
+
 [ -f .env ] || cp .env.example .env
 if grep -q '^STACKLAB_WORKSPACE=' .env; then
   tmp="$(mktemp)"

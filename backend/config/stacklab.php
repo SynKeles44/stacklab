@@ -15,5 +15,11 @@ return [
     'workspace' => [
         'host_path' => env('STACKLAB_WORKSPACE_HOST', './workspace'),
         'env_file' => env('STACKLAB_ROOT_ENV_FILE', '/stacklab-root/.env'),
+        'marker' => '.stacklab-workspace',
+    ],
+
+    'browse' => [
+        'host_root' => env('STACKLAB_BROWSE_ROOT_HOST', ''),
+        'container_root' => env('STACKLAB_BROWSE_ROOT_CONTAINER', '/host-browse'),
     ],
 ];

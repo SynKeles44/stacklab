@@ -94,7 +94,9 @@ workspace/
 Öffne diese Ordner jederzeit mit deinem eigenen Editor (VS Code, PhpStorm …) – das Gelernte liegt als
 echtes Projekt auf deiner Platte. Den Pfad änderst du in der Oberfläche unter **Einstellungen** oder in
 der `.env` (`STACKLAB_WORKSPACE=/pfad/zu/deinem/ordner`) und startest danach neu (`docker compose up -d`).
-Bequemer geht es mit `make workspace`: Der Befehl öffnet den Ordner-Dialog deines Systems und erledigt beides.
+Bequemer geht es in den Einstellungen mit **Ordner auswählen**: Du klickst dich zum gewünschten Ort, Stacklab legt dort
+einen neuen Ordner an (Neustart mit `make restart`). Alternativ öffnet `make workspace` den Ordner-Dialog deines Systems.
+Stacklab nimmt nur leere Ordner oder einen bestehenden Stacklab-Workspace, nie einen Ordner mit fremden Dateien.
 
 ## Architektur
 
@@ -167,9 +169,9 @@ Details: [CONTRIBUTING.md](CONTRIBUTING.md), [content/README.md](content/README.
 | Problem | Lösung |
 |---|---|
 | `http://localhost:8080` lädt nicht | `docker compose ps` – laufen alle Dienste? `docker compose logs php` zeigt, ob Migration/Import noch laufen. |
+| Stacklab soll im Netzwerk erreichbar sein (z. B. Handy) | In `.env` `STACKLAB_BIND=0.0.0.0` setzen, `docker compose up -d`. Dann kann jeder im Netzwerk darauf zugreifen. |
 | Port 8080 ist belegt | In `.env` `STACKLAB_PORT=8090` setzen, `docker compose up -d`. |
 | Terminal zeigt „getrennt“ | `docker compose logs sandbox` prüfen; `docker compose restart sandbox`. |
-| Stacklab soll im Netzwerk erreichbar sein (z. B. Handy) | In `.env` `STACKLAB_BIND=0.0.0.0` setzen, `docker compose up -d`. Dann kann jeder im Netzwerk darauf zugreifen. |
 | `npm install` im Terminal schlägt fehl | Nur Paket-Registries sind erreichbar. Ist die Registry in `docker/proxy/allowlist`? |
 | Dateien im Workspace gehören `root` (Linux) | `STACKLAB_UID`/`STACKLAB_GID` in `.env` setzen, `docker compose build sandbox && docker compose up -d`. |
 | Frontend zeigt alte Version | `docker compose run --rm frontend` baut neu. |
