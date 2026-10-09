@@ -1,0 +1,71 @@
+title: Warum Struktur zählt
+description: Warum Projekte festen Konventionen folgen, welche fünf Dateiarten es gibt und welche davon ins Repository gehören.
+exercise:
+  id: modul-uebung-sauberer-start
+  type: terminal
+  title: Ein neues Projekt sauber starten
+  description: |
+    Im Ordner `sauberer-start` liegt bisher nur eine `.env` mit einem (Platzhalter-)Geheimnis. Mach
+    daraus ein ordentlich aufgebautes Projekt, das du bedenkenlos veröffentlichen könntest.
+
+    1. Lege die Ordner `src`, `tests` und `docs` an, dazu `src/index.js` mit einer Zeile Code.
+    2. Schreibe eine `README.md`, deren erste Zeile eine Überschrift ist (beginnt mit `#`).
+    3. Lege eine `.env.example` an, die denselben Schlüssel wie die `.env` enthält, aber **ohne** Wert
+       (`API_KEY=`).
+    4. Schreibe eine `.gitignore`, die mindestens `node_modules/`, `dist/` und `.env` ignoriert.
+    5. Mache den Ordner zu einem Git-Repository, setze lokal Name und E-Mail (Platzhalter genügen) und
+       erstelle einen Commit mit allem außer der `.env`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die `.env` angelegt wird.
+  workdir: sauberer-start
+  setup: |
+    printf 'API_KEY=<dein-token>\n' > .env
+  checks:
+    - type: dir_exists
+      path: tests
+      message: Der Ordner tests fehlt noch.
+    - type: dir_exists
+      path: docs
+      message: Der Ordner docs fehlt noch.
+    - type: file_contains
+      path: src/index.js
+      pattern: "\\S"
+      message: Lege src/index.js mit mindestens einer Zeile Code an.
+    - type: file_contains
+      path: README.md
+      pattern: "^#\\s+\\S"
+      message: Die README.md braucht eine Überschrift in der ersten Zeile, z. B. "# Mein Projekt".
+    - type: file_contains
+      path: .env.example
+      pattern: "^API_KEY=\\s*$"
+      message: .env.example soll die Zeile API_KEY= ohne Wert enthalten.
+    - type: command
+      run: git check-ignore -q .env && git check-ignore -q node_modules/x.js && git check-ignore -q dist/app.js
+      message: Die .gitignore muss .env, node_modules/ und dist/ ignorieren.
+    - type: command
+      run: git log --oneline 2>/dev/null | wc -l
+      stdout_matches: "^\\s*[1-9]"
+      message: Es gibt noch keinen Commit. Führe git init, git add und git commit aus.
+    - type: command
+      run: git ls-files | LC_ALL=C sort | tr '\n' ' '
+      stdout_matches: "^\\.env\\.example \\.gitignore README\\.md src/index\\.js\\s*$"
+      message: Im Repository sollen genau .env.example, .gitignore, README.md und src/index.js liegen (leere Ordner speichert Git nicht, .env niemals).
+  hints:
+    - Leere Ordner wie tests/ und docs/ speichert Git nicht – das ist in Ordnung.
+    - "`printf 'node_modules/\\ndist/\\n.env\\n' > .gitignore` legt die Regeln an."
+    - Prüfe vor dem Commit mit `git status`, dass .env nicht auftaucht.
+  solution: |
+    ```bash
+    cd sauberer-start
+    mkdir src tests docs
+    echo 'console.log("Hallo")' > src/index.js
+    echo "# Mein Projekt" > README.md
+    echo "API_KEY=" > .env.example
+    printf 'node_modules/\ndist/\n.env\n' > .gitignore
+    git init
+    git config user.name "Ada Lovelace"
+    git config user.email "ada@example.com"
+    git add .
+    git status
+    git commit -m "chore: initial project structure"
+    ```

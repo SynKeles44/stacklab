@@ -1,0 +1,395 @@
+- slug: projektstruktur
+  term: Projektstruktur
+  short: Die Anordnung der Ordner und Dateien eines Software-Projekts und ihre Namen.
+  explanation: >
+    Die Projektstruktur legt fest, wo Quellcode, Tests, Konfiguration und Dokumentation liegen. Eine gute
+    Struktur folgt den Konventionen der verwendeten Sprache und des Frameworks, damit sich Menschen und
+    Werkzeuge ohne Erklärung zurechtfinden.
+  example: "Ein Vite-Projekt hat `index.html` in der Wurzel, den Code in `src/` und statische Dateien in `public/`."
+  category: projektaufbau
+  aliases: [Ordnerstruktur, Verzeichnisstruktur, Projektaufbau]
+  related: [konvention, projektwurzel]
+  lesson: projektaufbau/warum-projektstruktur
+- slug: konvention
+  term: Konvention
+  short: Eine allgemein übliche Absprache, wie etwas benannt oder angeordnet wird.
+  explanation: >
+    Konventionen sind keine technischen Pflichten, aber fast alle halten sich daran. Dadurch weiß jede
+    Entwicklerin sofort, wo sie suchen muss. Werkzeuge nutzen Konventionen, um Dateien ohne Konfiguration
+    zu finden.
+  example: "Tests liegen per Konvention im Ordner `tests/`, der Quellcode in `src/` oder `app/`."
+  category: projektaufbau
+  aliases: [Konventionen]
+  related: [konvention-vor-konfiguration, projektstruktur]
+  lesson: projektaufbau/warum-projektstruktur
+- slug: konvention-vor-konfiguration
+  term: Konvention vor Konfiguration
+  short: Ein Prinzip, nach dem Werkzeuge sinnvolle Standards mitbringen und du nur Abweichungen einstellst.
+  explanation: >
+    Englisch „Convention over Configuration“. Hältst du dich an die üblichen Namen und Orte, funktioniert
+    ein Werkzeug ohne zusätzliche Einstellungen. Nur wenn du davon abweichst, musst du es ausdrücklich
+    konfigurieren.
+  example: "Laravel lädt Routen aus `routes/web.php`, ohne dass du diese Datei irgendwo eintragen musst."
+  category: projektaufbau
+  aliases: [Convention over Configuration]
+  related: [konvention]
+  lesson: projektaufbau/warum-projektstruktur
+- slug: projektwurzel
+  term: Projektwurzel
+  short: Der oberste Ordner eines Projekts, in dem README, Manifeste und Konfigurationsdateien liegen.
+  explanation: >
+    Die Projektwurzel (englisch project root) ist der Ausgangspunkt für alle Pfade im Projekt. Dort
+    liegen typischerweise `package.json`, `composer.json`, `.gitignore`, `README.md` und der Ordner `.git`.
+    Befehle wie `npm install` führst du dort aus.
+  example: "`ls -a` in der Projektwurzel zeigt `.env.example`, `.gitignore`, `README.md` und `src/`."
+  category: projektaufbau
+  aliases: [Project Root, Wurzel des Projekts, Projektordner]
+  related: [projektstruktur, konfigurationsdatei]
+  lesson: projektaufbau/warum-projektstruktur
+- slug: quellcode
+  term: Quellcode
+  short: Der von Menschen geschriebene Programmtext eines Projekts.
+  explanation: >
+    Quellcode (englisch source code) ist alles, was Entwicklerinnen schreiben, damit ein Programm etwas tut:
+    Klassen, Funktionen, Komponenten, Tests. Er wird immer committet und im Code-Review geprüft. Aus ihm
+    entstehen durch Werkzeuge generierte Dateien.
+  example: "`src/App.tsx` und `app/Models/User.php` sind Quellcode."
+  category: projektaufbau
+  aliases: [Source Code, Quelltext]
+  related: [generierte-datei, konfigurationsdatei]
+  lesson: projektaufbau/warum-projektstruktur
+- slug: vite
+  term: Vite
+  short: Ein Werkzeug, das Frontend-Projekte mit schnellem Dev-Server startet und für die Auslieferung baut.
+  explanation: >
+    Vite liefert während der Entwicklung deinen Code über einen Dev-Server aus und aktualisiert den Browser
+    bei jeder Änderung. Mit `vite build` bündelt es den Code für die Produktion in den Ordner `dist/`. Der
+    Einstiegspunkt ist die `index.html` in der Projektwurzel.
+  example: "`npm create vite@latest` legt ein neues Projekt an, `npm run dev` startet den Dev-Server."
+  category: projektaufbau
+  aliases: []
+  related: [dev-server, bundler, react]
+  lesson: projektaufbau/vite-react-projekt
+- slug: dev-server
+  term: Dev-Server
+  short: Ein lokaler Server, der während der Entwicklung deine Anwendung ausliefert und bei Änderungen neu lädt.
+  explanation: >
+    Ein Dev-Server läuft nur auf deinem Rechner, meist unter `localhost` mit einem Port wie 5173. Er
+    übersetzt Code bei Bedarf und aktualisiert den Browser automatisch. Für die echte Auslieferung wird
+    stattdessen ein Build erzeugt.
+  example: "`npm run dev` startet den Dev-Server von Vite unter http://localhost:5173."
+  category: projektaufbau
+  aliases: [Entwicklungsserver, Development Server]
+  related: [vite]
+  lesson: projektaufbau/vite-react-projekt
+- slug: laravel
+  term: Laravel
+  short: Ein verbreitetes PHP-Framework für Webanwendungen und APIs.
+  explanation: >
+    Laravel bringt eine feste Ordnerstruktur und viele fertige Bausteine mit, etwa für Routing, Datenbank,
+    Authentifizierung und Mails. Alle Laravel-Projekte sind gleich aufgebaut, sodass man sich in fremden
+    Projekten schnell zurechtfindet.
+  example: "`composer create-project laravel/laravel notizen` legt ein neues Laravel-Projekt an."
+  category: projektaufbau
+  aliases: []
+  related: [framework, php, composer]
+  lesson: projektaufbau/laravel-projekt
+- slug: konfigurationsdatei
+  term: Konfigurationsdatei
+  short: Eine Datei, die festlegt, wie ein Werkzeug oder eine Anwendung arbeitet.
+  explanation: >
+    Konfigurationsdateien enthalten Einstellungen statt Programmlogik, etwa wie streng TypeScript prüft
+    oder welche Ordner getestet werden. Sie liegen meist in der Projektwurzel und werden committet, damit
+    alle im Team dieselben Einstellungen nutzen.
+  example: "`tsconfig.json`, `vite.config.ts` und `phpstan.neon` sind Konfigurationsdateien."
+  category: projektaufbau
+  aliases: [Konfigurationsdateien, Config-Datei]
+  related: [tsconfig, projektwurzel]
+  lesson: projektaufbau/die-fuenf-dateiarten
+- slug: generierte-datei
+  term: Generierte Datei
+  short: Eine Datei, die ein Werkzeug automatisch erzeugt und die du nicht von Hand schreibst.
+  explanation: >
+    Generierte Dateien entstehen aus Quellcode oder Konfiguration, etwa beim Installieren von Paketen oder
+    beim Build. Weil sie sich jederzeit neu erzeugen lassen, gehören sie in die `.gitignore`. Änderungen
+    daran gehen beim nächsten Erzeugen verloren.
+  example: "`node_modules/`, `vendor/` und `dist/` enthalten generierte Dateien."
+  category: projektaufbau
+  aliases: [generierte Dateien, Generat]
+  related: [build-artefakt, gitignore]
+  lesson: projektaufbau/die-fuenf-dateiarten
+- slug: komponente
+  term: Komponente
+  short: Ein wiederverwendbarer Baustein einer Benutzeroberfläche, etwa ein Button oder eine Kopfzeile.
+  explanation: >
+    In React ist eine Komponente eine Funktion, die beschreibt, wie ein Teil der Oberfläche aussieht.
+    Große Oberflächen setzen sich aus vielen kleinen Komponenten zusammen. Wiederverwendbare Komponenten
+    liegen üblicherweise im Ordner `src/components/`.
+  example: "`src/components/Button.tsx` enthält die Komponente `Button`."
+  category: projektaufbau
+  aliases: [Komponenten, Component]
+  related: [react]
+  lesson: projektaufbau/die-fuenf-dateiarten
+- slug: framework
+  term: Framework
+  short: Ein Grundgerüst mit Struktur und fertigen Bausteinen, in das du deinen eigenen Code einfügst.
+  explanation: >
+    Ein Framework gibt vor, wie eine Anwendung aufgebaut ist, und ruft deinen Code an festgelegten Stellen
+    auf. Dadurch musst du Standardaufgaben wie Routing oder Datenbankzugriff nicht selbst lösen. Laravel
+    ist ein Framework für PHP.
+  example: "Laravel ruft für die URL `/posts` den Controller auf, den du in `routes/web.php` einträgst."
+  category: projektaufbau
+  aliases: [Frameworks]
+  related: [laravel]
+  lesson: projektaufbau/laravel-projekt
+- slug: model
+  term: Model
+  short: Eine Klasse, die eine Datenbanktabelle und ihre Regeln im Code darstellt.
+  explanation: >
+    In Laravel steht ein Model wie `User` für die Tabelle `users`. Über das Model liest, speichert und
+    verknüpft der Code Datensätze, ohne SQL zu schreiben. Models liegen im Ordner `app/Models/`.
+  example: "`app/Models/Post.php` ist das Model für die Tabelle `posts`."
+  category: projektaufbau
+  aliases: [Models, Modell]
+  related: [migration, laravel]
+  lesson: projektaufbau/laravel-projekt
+- slug: route
+  term: Route
+  short: Eine Zuordnung von einer URL und HTTP-Methode zu dem Code, der die Anfrage beantwortet.
+  explanation: >
+    Routen legen fest, welcher Code bei welcher Adresse ausgeführt wird. In Laravel stehen sie in
+    `routes/web.php`; in einem React-Frontend ordnet ein Router URLs den Seiten zu.
+  example: "`Route::get('/posts', [PostController::class, 'index']);`"
+  category: projektaufbau
+  aliases: [Routen, Routing]
+  related: [laravel, router]
+  lesson: projektaufbau/laravel-projekt
+- slug: migration
+  term: Migration
+  short: Eine Datei, die einen Schritt zum Anlegen oder Ändern des Datenbankschemas beschreibt.
+  explanation: >
+    Migrationen machen Änderungen an Tabellen nachvollziehbar und wiederholbar. Jede Migration hat einen
+    Zeitstempel im Namen, damit sie in der richtigen Reihenfolge laufen. In Laravel liegen sie in
+    `database/migrations/` und werden mit `php artisan migrate` ausgeführt.
+  example: "`2026_10_01_000000_create_posts_table.php` legt die Tabelle `posts` an."
+  category: projektaufbau
+  aliases: [Migrationen, Datenbankmigration]
+  related: [model]
+  lesson: projektaufbau/laravel-projekt
+- slug: einstiegspunkt
+  term: Einstiegspunkt
+  short: Die Datei, bei der die Ausführung einer Anwendung beginnt.
+  explanation: >
+    Jede Anwendung hat einen Startpunkt, von dem aus alle anderen Dateien geladen werden. Werkzeuge
+    folgen von dort aus den Imports. Den Einstiegspunkt zu kennen hilft, ein fremdes Projekt zu lesen.
+  example: "Bei Laravel ist `public/index.php` der Einstiegspunkt, bei Vite die `index.html`."
+  category: projektaufbau
+  aliases: [Entry Point, Einstiegsdatei]
+  related: [document-root, vite]
+  lesson: projektaufbau/laravel-projekt
+- slug: document-root
+  term: Document Root
+  short: Der Ordner, den ein Webserver für Besucher im Internet freigibt.
+  explanation: >
+    Nur Dateien im Document Root sind über den Browser erreichbar. Bei Laravel ist das der Ordner
+    `public/`. Zeigt der Webserver auf die Projektwurzel, könnten Dateien wie `.env` öffentlich abrufbar
+    werden.
+  example: "In der Webserver-Konfiguration steht für ein Laravel-Projekt `root /var/www/notizen/public;`."
+  category: projektaufbau
+  aliases: [Webroot, Dokumentenstamm]
+  related: [einstiegspunkt]
+  lesson: projektaufbau/laravel-projekt
+- slug: phpunit
+  term: PHPUnit
+  short: Das verbreitetste Test-Framework für PHP.
+  explanation: >
+    PHPUnit führt automatische Tests aus und meldet, welche bestanden sind. Welche Ordner es prüft und
+    welche Umgebungsvariablen beim Testen gelten, steht in der Datei `phpunit.xml`.
+  example: "`vendor/bin/phpunit` oder in Laravel `php artisan test` startet alle Tests."
+  category: projektaufbau
+  aliases: [phpunit.xml]
+  related: [phpstan]
+  lesson: projektaufbau/laravel-projekt
+- slug: react
+  term: React
+  short: Eine JavaScript-Bibliothek, mit der Benutzeroberflächen aus Komponenten gebaut werden.
+  explanation: >
+    Mit React beschreibst du, wie die Oberfläche für einen bestimmten Zustand aussehen soll, und React
+    aktualisiert die Seite bei Änderungen. Neue React-Projekte entstehen meist mit Vite.
+  example: "`src/main.tsx` startet React und hängt die Komponente `App` in die Seite."
+  category: projektaufbau
+  aliases: []
+  related: [komponente, vite, react-hook]
+  lesson: projektaufbau/vite-react-projekt
+- slug: react-hook
+  term: Hook (React)
+  short: Eine Funktion, deren Name mit use beginnt und die React-Funktionen wie Zustand in Komponenten nutzbar macht.
+  explanation: >
+    React bringt eingebaute Hooks wie `useState` mit. Eigene Hooks bündeln wiederverwendbare Logik, etwa
+    das Laden von Daten oder den Login-Zustand. Sie liegen per Konvention im Ordner `src/hooks/`.
+  example: "`src/hooks/useAuth.ts` liefert in jeder Komponente den angemeldeten Benutzer."
+  category: projektaufbau
+  aliases: [Hooks, Custom Hook]
+  related: [react, komponente]
+  lesson: projektaufbau/vite-react-projekt
+- slug: build-artefakt
+  term: Build-Artefakt
+  short: Das Ergebnis eines Builds, das ausgeliefert wird, zum Beispiel der Inhalt von dist/.
+  explanation: >
+    Beim Build übersetzen und bündeln Werkzeuge den Quellcode zu fertigen Dateien. Dieses Ergebnis heißt
+    Build-Artefakt. Es wird nicht committet, sondern bei jedem Build oder in der CI neu erzeugt.
+  example: "`npm run build` erzeugt in `dist/` die gebündelten Dateien `index.html` und `assets/index-….js`."
+  category: projektaufbau
+  aliases: [Build-Ergebnis, Artefakt]
+  related: [generierte-datei, bundler]
+  lesson: projektaufbau/vite-react-projekt
+- slug: monorepo
+  term: Monorepo
+  short: Ein Repository, das mehrere zusammengehörige Projekte enthält.
+  explanation: >
+    In einem Monorepo liegen etwa Frontend, Backend und gemeinsame Bibliotheken nebeneinander in einem
+    Repository. Ausgelieferte Anwendungen stehen oft in `apps/`, geteilter Code in `packages/`.
+    Gemeinsame Änderungen passen so in einen einzigen Commit.
+  example: "`apps/web`, `apps/api` und `packages/ui` in einem Repository mit npm-Workspaces."
+  category: projektaufbau
+  aliases: [Monorepos, Mono-Repository]
+  related: [workspace, repository]
+  lesson: projektaufbau/monorepo-ueberblick
+- slug: composer-json
+  term: composer.json
+  short: Die Manifest-Datei eines PHP-Projekts mit Abhängigkeiten, Autoloading und Skripten.
+  explanation: >
+    Composer liest aus der `composer.json`, welche Pakete das Projekt braucht (`require`), welche nur
+    für die Entwicklung (`require-dev`), wie Klassen geladen werden (`autoload`) und welche Skripte es
+    gibt. Sie ist das PHP-Gegenstück zur `package.json`.
+  example: "`\"require-dev\": { \"phpstan/phpstan\": \"^2.1\" }`"
+  category: projektaufbau
+  aliases: [composer.json-Datei]
+  related: [composer, package-json, autoloading]
+  lesson: projektaufbau/manifeste-und-abhaengigkeiten
+- slug: autoloading
+  term: Autoloading
+  short: Das automatische Laden einer PHP-Klasse, sobald sie zum ersten Mal gebraucht wird.
+  explanation: >
+    Statt jede Datei mit `require` einzubinden, sagst du Composer, in welchem Ordner welcher Namensraum
+    liegt. Nach der Regel PSR-4 entspricht dann `App\Models\User` der Datei `app/Models/User.php`.
+  example: "`\"autoload\": { \"psr-4\": { \"App\\\\\": \"app/\" } }` in der composer.json."
+  category: projektaufbau
+  aliases: [Autoloader, PSR-4]
+  related: [composer-json]
+  lesson: projektaufbau/manifeste-und-abhaengigkeiten
+- slug: reproduzierbare-installation
+  term: Reproduzierbare Installation
+  short: Eine Installation, die auf jedem Rechner exakt dieselben Paketversionen ergibt.
+  explanation: >
+    Reproduzierbar installierst du, indem der Paketmanager streng nach dem committeten Lockfile arbeitet.
+    So haben Entwicklerrechner, CI und Server denselben Stand, und Fehler durch abweichende Versionen
+    entfallen.
+  example: "`npm ci` und `composer install` installieren genau die Versionen aus dem Lockfile."
+  category: projektaufbau
+  aliases: [reproduzierbare Builds, reproduzierbar installieren]
+  related: [lockfile, npm-ci]
+  lesson: projektaufbau/manifeste-und-abhaengigkeiten
+- slug: tsconfig
+  term: tsconfig.json
+  short: Die Konfigurationsdatei des TypeScript-Compilers.
+  explanation: >
+    In der `tsconfig.json` steht, welche Dateien TypeScript prüft und wie streng, zum Beispiel mit
+    `"strict": true`. Vite-Projekte teilen sie oft in `tsconfig.app.json` und `tsconfig.node.json` auf.
+  example: "`\"include\": [\"src\"]` lässt TypeScript nur den Ordner `src/` prüfen."
+  category: projektaufbau
+  aliases: [tsconfig]
+  related: [typescript, konfigurationsdatei]
+  lesson: projektaufbau/werkzeuge-konfigurieren
+- slug: plugin
+  term: Plugin
+  short: Eine Erweiterung, die einem Werkzeug zusätzliche Fähigkeiten gibt.
+  explanation: >
+    Viele Werkzeuge haben einen schlanken Kern und lassen sich über Plugins erweitern. In Vite trägst du
+    Plugins in der `vite.config.ts` unter `plugins` ein, etwa für React oder Tailwind CSS.
+  example: "`plugins: [react()]` aktiviert das React-Plugin in Vite."
+  category: projektaufbau
+  aliases: [Plugins, Erweiterung]
+  related: [vite]
+  lesson: projektaufbau/werkzeuge-konfigurieren
+- slug: statische-analyse
+  term: Statische Analyse
+  short: Das Prüfen von Code auf Fehler, ohne ihn auszuführen.
+  explanation: >
+    Werkzeuge für statische Analyse lesen den Code und finden zum Beispiel falsche Typen, nicht
+    existierende Methoden oder unerreichbaren Code. So fallen Fehler auf, bevor ein Test oder eine Nutzerin
+    sie bemerkt.
+  example: "`phpstan analyse` prüft PHP-Code, `tsc --noEmit` prüft TypeScript-Code."
+  category: projektaufbau
+  aliases: [statische Codeanalyse]
+  related: [phpstan, linter]
+  lesson: projektaufbau/werkzeuge-konfigurieren
+- slug: phpstan
+  term: PHPStan
+  short: Ein Werkzeug zur statischen Analyse von PHP-Code.
+  explanation: >
+    PHPStan findet Fehler in PHP-Code, ohne ihn auszuführen. Die Strenge stellst du mit einem Level
+    ein, die geprüften Ordner unter `paths` – beides in der Datei `phpstan.neon`.
+  example: "`parameters: level: 6, paths: [app]` in der phpstan.neon prüft den Ordner app mit Level 6."
+  category: projektaufbau
+  aliases: [phpstan.neon]
+  related: [statische-analyse, phpunit]
+  lesson: projektaufbau/werkzeuge-konfigurieren
+- slug: twelve-factor-app
+  term: Twelve-Factor App
+  short: Eine Sammlung von zwölf Regeln für moderne, gut betreibbare Anwendungen.
+  explanation: >
+    Eine der bekanntesten Regeln lautet: Konfiguration gehört in Umgebungsvariablen, getrennt vom Code.
+    So läuft derselbe Code unverändert in jeder Umgebung, und Geheimnisse landen nicht im Repository.
+  example: "Statt das Datenbank-Passwort in den Code zu schreiben, liest die App `DB_PASSWORD` aus der Umgebung."
+  category: projektaufbau
+  aliases: [12-Factor App, Zwölf-Faktoren-App]
+  related: [umgebungsvariable, umgebung]
+  lesson: projektaufbau/env-und-env-example
+- slug: env-example
+  term: .env.example
+  short: Die committete Vorlage einer .env-Datei mit allen Schlüsseln, aber ohne Geheimnisse.
+  explanation: >
+    Die `.env.example` zeigt allen im Team, welche Umgebungsvariablen das Projekt braucht. Geheime Werte
+    bleiben darin leer. Nach dem Klonen kopiert man sie nach `.env` und trägt die eigenen Werte ein.
+  example: "`cp .env.example .env` erzeugt die lokale Konfiguration aus der Vorlage."
+  category: projektaufbau
+  aliases: [env.example, Env-Vorlage]
+  related: [env-datei, secret, gitignore]
+  lesson: projektaufbau/env-und-env-example
+- slug: umgebung
+  term: Umgebung
+  short: Ein Ort, an dem eine Anwendung läuft, mit eigener Konfiguration – etwa local, staging oder production.
+  explanation: >
+    Derselbe Code läuft in mehreren Umgebungen (englisch environments). Sie unterscheiden sich nur in
+    ihren Einstellungen, etwa Datenbank, Debug-Modus oder Mailversand. In Laravel steht der Name der
+    Umgebung in `APP_ENV`.
+  example: "`APP_ENV=local` auf dem Laptop, `APP_ENV=production` auf dem Server."
+  category: projektaufbau
+  aliases: [Environment, Umgebungen]
+  related: [staging-umgebung, produktionsumgebung, umgebungsvariable]
+  lesson: projektaufbau/konfiguration-pro-umgebung
+- slug: staging-umgebung
+  term: Staging-Umgebung
+  short: Eine produktionsähnliche Testumgebung für die letzte Probe vor der Veröffentlichung.
+  explanation: >
+    Auf Staging läuft die Anwendung unter fast denselben Bedingungen wie in Produktion, aber mit
+    Testdaten. Fehler, die nur auf einem Server auftreten, fallen hier auf, bevor echte Nutzerinnen sie
+    sehen.
+  example: "Nach dem Merge wird automatisch auf Staging deployt, nach der Abnahme auf Produktion."
+  category: projektaufbau
+  aliases: [Staging, Staging-Server]
+  related: [umgebung, produktionsumgebung]
+  lesson: projektaufbau/konfiguration-pro-umgebung
+- slug: produktionsumgebung
+  term: Produktionsumgebung
+  short: Die Umgebung, in der die echte Anwendung für echte Nutzerinnen und Nutzer läuft.
+  explanation: >
+    In Produktion (englisch production) zählen Sicherheit und Stabilität am meisten. Debug-Ausgaben sind
+    aus, Entwicklungswerkzeuge werden nicht installiert, und Geheimnisse kommen aus einem sicheren
+    Speicher.
+  example: "In Produktion gilt `APP_DEBUG=false`, installiert wird mit `composer install --no-dev`."
+  category: projektaufbau
+  aliases: [Produktion, Production, Prod]
+  related: [umgebung, staging-umgebung]
+  lesson: projektaufbau/konfiguration-pro-umgebung

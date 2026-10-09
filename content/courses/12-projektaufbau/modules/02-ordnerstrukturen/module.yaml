@@ -1,0 +1,87 @@
+title: Typische Ordnerstrukturen
+description: Wie ein Laravel-Backend, ein Vite-React-Frontend und ein Monorepo aufgebaut sind – und wie du ein unordentliches Projekt aufräumst.
+exercise:
+  id: modul-uebung-chaos-aufraeumen
+  type: terminal
+  title: Ein chaotisches Projekt aufräumen
+  description: |
+    Im Ordner `chaos` liegt ein React-Projekt, bei dem alles schiefgelaufen ist: Alle Quelldateien
+    liegen in der Wurzel, eine Architektur-Notiz liegt herum, und der Build-Ordner `dist/` wurde
+    sogar committet. Räume das Projekt auf – so, dass die Historie sauber weitergeht.
+
+    1. Lies zuerst `git status`, `git ls-files` und `cat index.html`.
+    2. Verschiebe `main.tsx` und `App.tsx` nach `src/`, `Button.tsx` nach `src/components/`,
+       `useCart.ts` nach `src/hooks/` und `formatPrice.ts` nach `src/lib/`. Nutze am besten `git mv`.
+    3. Verschiebe `architektur.md` nach `docs/`.
+    4. Lege eine `.gitignore` an, die `node_modules/` und `dist/` ignoriert, und nimm `dist/` aus der
+       Versionskontrolle (die Dateien dürfen lokal liegen bleiben).
+    5. Committe alles. Danach soll `git status` keine offenen Änderungen mehr zeigen.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: chaos
+  setup: |
+    git init -q
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    mkdir -p dist/assets
+    for f in main.tsx App.tsx Button.tsx useCart.ts formatPrice.ts; do echo "// $f" > "$f"; done
+    printf '# Architektur\nFrontend mit React und Vite.\n' > architektur.md
+    printf '<!doctype html>\n<div id="root"></div>\n<script type="module" src="/src/main.tsx"></script>\n' > index.html
+    echo '{ "name": "chaos", "private": true, "scripts": { "build": "vite build" } }' > package.json
+    echo 'console.log("gebaut")' > dist/assets/index.js
+    git add .
+    git commit -q -m "chore: initial commit"
+  checks:
+    - type: command
+      run: test -f src/main.tsx && test -f src/App.tsx
+      message: main.tsx und App.tsx gehören nach src/ (index.html lädt /src/main.tsx).
+    - type: file_exists
+      path: src/components/Button.tsx
+      message: Button.tsx gehört nach src/components/.
+    - type: file_exists
+      path: src/hooks/useCart.ts
+      message: useCart.ts gehört nach src/hooks/.
+    - type: file_exists
+      path: src/lib/formatPrice.ts
+      message: formatPrice.ts gehört nach src/lib/.
+    - type: file_exists
+      path: docs/architektur.md
+      message: architektur.md gehört nach docs/.
+    - type: command
+      run: git check-ignore -q dist/assets/index.js && git check-ignore -q node_modules/x.js
+      message: Die .gitignore muss dist/ und node_modules/ ignorieren.
+    - type: command
+      run: git ls-files dist | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: dist/ ist noch versioniert. Nimm es mit git rm -r --cached dist aus Git.
+    - type: command
+      run: git ls-files | grep -c -E '^[^/]+\.(tsx|ts)$' || true
+      stdout_matches: "^0$"
+      message: Im Repository liegen noch .ts- oder .tsx-Dateien direkt in der Wurzel.
+    - type: command
+      run: git status --porcelain | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: Es gibt noch nicht committete Änderungen. Committe deine Aufräumarbeit.
+    - type: command
+      run: git log --oneline | wc -l
+      stdout_matches: "^\\s*[2-9]"
+      message: Es fehlt noch ein neuer Commit mit der Aufräumarbeit.
+  hints:
+    - "`git mv alt neu` verschiebt eine Datei und merkt die Verschiebung direkt für Git vor."
+    - Lege die Zielordner vorher mit `mkdir -p src/components src/hooks src/lib docs` an.
+    - "`git rm -r --cached dist` nimmt dist/ aus Git, lässt die Dateien aber auf der Festplatte."
+  solution: |
+    ```bash
+    cd chaos
+    mkdir -p src/components src/hooks src/lib docs
+    git mv main.tsx App.tsx src/
+    git mv Button.tsx src/components/
+    git mv useCart.ts src/hooks/
+    git mv formatPrice.ts src/lib/
+    git mv architektur.md docs/
+    printf 'node_modules/\ndist/\n' > .gitignore
+    git rm -r --cached dist
+    git add .gitignore
+    git commit -m "refactor: restructure project layout"
+    git status
+    ```

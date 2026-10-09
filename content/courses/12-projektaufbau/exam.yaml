@@ -1,0 +1,307 @@
+title: Abschlussprüfung Aufbau eines Projekts
+description: |
+  Diese Prüfung deckt alle vier Module ab: warum Struktur zählt, typische Ordnerstrukturen,
+  Konfigurationsdateien sowie Umgebung und Onboarding. Zuerst beantwortest du Fragen, danach löst du
+  drei Praxis-Aufgaben – zwei im echten Übungs-Terminal und eine als Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast,
+  und kannst gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  # --- Warum Struktur zählt ---
+  - module: warum-struktur
+    type: single
+    question: Was bedeutet „Konvention vor Konfiguration“?
+    options:
+      - Jede Einstellung muss in einer Konfigurationsdatei stehen.
+      - Werkzeuge bringen sinnvolle Standards mit; du konfigurierst nur Abweichungen.
+      - Konventionen sind wichtiger als funktionierender Code.
+      - Konfigurationsdateien dürfen nicht committet werden.
+    answer: 1
+    explanation: Hältst du dich an übliche Namen und Orte, funktionieren Werkzeuge ohne zusätzliche Einstellungen.
+  - module: warum-struktur
+    type: match
+    question: Ordne jede Datei ihrer Dateiart zu.
+    pairs:
+      - { left: "src/App.tsx", right: "Quellcode" }
+      - { left: "tsconfig.json", right: "Konfiguration" }
+      - { left: "dist/", right: "Generiert" }
+      - { left: ".env", right: "Geheim" }
+      - { left: "CHANGELOG.md", right: "Dokumentation" }
+    explanation: Die Dateiart entscheidet, ob eine Datei committet, ignoriert oder geschützt wird.
+  - module: warum-struktur
+    type: find-bug
+    question: Mit dieser .gitignore wird die Vorlage `.env.example` nicht mehr committet. Welche Zeile ist schuld?
+    language: bash
+    code: |
+      node_modules/
+      vendor/
+      .env*
+      *.log
+    bug_line: 3
+    explanation: "`.env*` passt auch auf `.env.example`. Richtig ist `.env`."
+  - module: warum-struktur
+    type: cloze
+    text: Ein bereits committeter Ordner wird mit `git rm -r ___ node_modules` aus Git entfernt, ohne ihn zu löschen. Ob eine Regel greift, zeigt `git ___ -v pfad`.
+    blanks:
+      - [--cached]
+      - [check-ignore]
+    explanation: Die .gitignore wirkt nur auf unversionierte Dateien. check-ignore ist das Diagnosewerkzeug.
+  # --- Ordnerstrukturen ---
+  - module: ordnerstrukturen
+    type: single
+    question: In welchem Laravel-Ordner liegen die Migrationen?
+    options: [app/Migrations/, database/migrations/, config/database/, storage/migrations/]
+    answer: 1
+    explanation: database/ enthält migrations/, factories/ und seeders/.
+  - module: ordnerstrukturen
+    type: multiple
+    question: Welche Aussagen über `public/` stimmen – in Laravel und in Vite?
+    options:
+      - In Laravel ist public/ das Document Root mit index.php.
+      - In Vite werden Dateien aus public/ unverändert ausgeliefert.
+      - In beiden Fällen gehört der Quellcode dorthin.
+      - public/ wird nie committet.
+    answers: [0, 1]
+    explanation: public/ enthält, was direkt erreichbar sein soll. Quellcode liegt in app/ bzw. src/, und public/ selbst wird committet.
+  - module: ordnerstrukturen
+    type: match
+    question: Wohin gehört die Datei in einem Vite-React-Projekt?
+    pairs:
+      - { left: "useCart.ts", right: "src/hooks/" }
+      - { left: "Dialog.tsx", right: "src/components/" }
+      - { left: "CheckoutPage.tsx", right: "src/pages/" }
+      - { left: "formatPrice.ts", right: "src/lib/" }
+    explanation: Hooks, Komponenten, Seiten und Hilfsfunktionen bekommen je einen eigenen Ordner.
+  - module: ordnerstrukturen
+    type: single
+    question: Wo installierst du in einem Monorepo mit npm-Workspaces die Abhängigkeiten?
+    options:
+      - In jedem Teilprojekt einzeln
+      - In der Projektwurzel – es gibt ein gemeinsames Lockfile
+      - Nur in packages/
+      - Gar nicht, Workspaces brauchen keine Pakete
+    answer: 1
+    explanation: Ein npm install in der Wurzel installiert alle Teilprojekte und verlinkt sie miteinander.
+  # --- Konfigurationsdateien ---
+  - module: konfigurationsdateien
+    type: multiple
+    question: Welche Pakete gehören in die devDependencies bzw. require-dev?
+    options: [vitest, react, phpstan/phpstan, laravel/framework, typescript]
+    answers: [0, 2, 4]
+    explanation: Test-, Analyse- und Build-Werkzeuge braucht die laufende Anwendung nicht.
+  - module: konfigurationsdateien
+    type: single
+    question: Warum nutzt man in der CI `npm ci` statt `npm install`?
+    options:
+      - npm ci ist die einzige Variante, die Skripte ausführt.
+      - npm ci installiert exakt die Versionen aus dem Lockfile und bricht bei Widersprüchen ab.
+      - npm ci installiert immer die neuesten Versionen.
+      - npm ci braucht keine package.json.
+    answer: 1
+    explanation: So sind Installationen reproduzierbar – die CI testet genau, was im Lockfile steht.
+  - module: konfigurationsdateien
+    type: match
+    question: Welche Datei konfiguriert welches Werkzeug?
+    pairs:
+      - { left: "phpstan.neon", right: "Statische Analyse von PHP" }
+      - { left: "phpunit.xml", right: "PHP-Tests" }
+      - { left: "vite.config.ts", right: "Frontend-Build und Dev-Server" }
+      - { left: ".editorconfig", right: "Einrückung und Zeilenenden im Editor" }
+      - { left: "docker-compose.yml", right: "Dienste wie die Datenbank in Containern" }
+    explanation: Am Dateinamen erkennst du fast immer das Werkzeug.
+  - module: konfigurationsdateien
+    type: cloze
+    text: In npm-Skripten ist `node_modules/___` im Suchpfad, deshalb findet `vite` auch ohne globale Installation. Ein Skript namens `___test` läuft automatisch vor `test`.
+    blanks:
+      - [.bin, bin]
+      - [pre]
+    explanation: Lokal installierte Werkzeuge sind in Skripten direkt aufrufbar. pre- und post-Skripte laufen automatisch.
+  # --- Umgebung und Onboarding ---
+  - module: umgebung-und-onboarding
+    type: single
+    question: Warum solltest du `env()` in Laravel nur in Dateien unter `config/` aufrufen?
+    options:
+      - Weil env() außerhalb von config/ verboten ist und einen Syntaxfehler auslöst.
+      - Weil nach php artisan config:cache die .env nicht mehr gelesen wird und env() dann null liefert.
+      - Weil env() langsamer ist als eine Datenbankabfrage.
+      - Weil config() nur in Controllern funktioniert.
+    answer: 1
+    explanation: Mit gecachter Konfiguration funktioniert nur config() zuverlässig.
+  - module: umgebung-und-onboarding
+    type: multiple
+    question: Welche Aussagen über Vite-Umgebungsvariablen stimmen?
+    options:
+      - Nur Variablen mit dem Präfix VITE_ landen in import.meta.env.
+      - VITE_-Werte sind im ausgelieferten JavaScript für jeden lesbar.
+      - VITE_DB_PASSWORD ist ein guter Ort für das Datenbank-Passwort.
+      - npm run build läuft im Modus production.
+    answers: [0, 1, 3]
+    explanation: Alles im Frontend ist öffentlich. Geheimnisse gehören nur ins Backend.
+  - module: umgebung-und-onboarding
+    type: find-bug
+    question: Diese Einrichtungsanleitung aus einer README scheitert. In welcher Zeile fehlt ein Schritt davor?
+    language: bash
+    code: |
+      git clone https://github.com/example/shop.git
+      cd shop
+      composer install
+      php artisan key:generate
+      npm ci
+    bug_line: 4
+    explanation: key:generate schreibt in die .env – die muss vorher mit cp .env.example .env angelegt werden.
+  - module: umgebung-und-onboarding
+    type: single
+    question: Was gehört NICHT in eine README?
+    options:
+      - Voraussetzungen wie Node.js- und PHP-Version
+      - Befehle zum Einrichten und Testen
+      - Das API-Token für den Produktiv-Mailversand
+      - Ein kurzer Überblick über die Projektstruktur
+    answer: 2
+    explanation: Geheimnisse haben im Repository nichts zu suchen – auch nicht in der README.
+tasks:
+  - module: warum-struktur
+    id: pruefung-gitignore
+    type: terminal
+    title: Ein Laravel-Repository richtig ignorieren
+    description: |
+      Im Ordner `pruefung-ignore` liegt ein Repository ohne Commit mit Dateien eines Laravel-Projekts:
+      Quellcode, Manifeste, aber auch `vendor/`, eine `.env`, Log-Dateien in `storage/logs/` und die
+      Vorlage `.env.example`.
+
+      1. Schreibe eine `.gitignore`, die `vendor/`, `node_modules/`, `.env` und alle `*.log`-Dateien
+         ignoriert.
+      2. Committe alles Übrige.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-ignore
+    setup: |
+      git init -q
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      mkdir -p app/Models vendor/laravel storage/logs routes
+      echo '<?php' > app/Models/User.php
+      echo '<?php' > routes/web.php
+      echo '{ "name": "beispiel/shop" }' > composer.json
+      echo '{ "packages": [] }' > composer.lock
+      echo '<?php' > vendor/autoload.php
+      echo 'Fehler' > storage/logs/laravel.log
+      printf 'APP_KEY=base64:<dein-schluessel>\nDB_PASSWORD=lokal-geheim\n' > .env
+      printf 'APP_KEY=\nDB_PASSWORD=\n' > .env.example
+    checks:
+      - type: command
+        run: git check-ignore -q vendor/autoload.php && git check-ignore -q node_modules/x.js
+        message: vendor/ und node_modules/ werden noch nicht ignoriert.
+      - type: command
+        run: git check-ignore -q .env && ! git check-ignore -q .env.example
+        message: .env muss ignoriert werden, .env.example nicht.
+      - type: command
+        run: git check-ignore -q storage/logs/laravel.log
+        message: Log-Dateien werden noch nicht ignoriert.
+      - type: command
+        run: git ls-files | LC_ALL=C sort | tr '\n' ' '
+        stdout_matches: "^\\.env\\.example \\.gitignore app/Models/User\\.php composer\\.json composer\\.lock routes/web\\.php\\s*$"
+        message: Im Commit sollen genau .env.example, .gitignore, app/Models/User.php, composer.json, composer.lock und routes/web.php liegen.
+    hints:
+      - "`printf 'vendor/\\nnode_modules/\\n.env\\n*.log\\n' > .gitignore`"
+      - Kontrolliere vor dem Commit mit `git status`, was vorgemerkt wird.
+    solution: |
+      ```bash
+      cd pruefung-ignore
+      printf 'vendor/\nnode_modules/\n.env\n*.log\n' > .gitignore
+      git add .
+      git commit -m "chore: initial commit"
+      ```
+  - module: konfigurationsdateien
+    id: pruefung-skripte
+    type: terminal
+    title: Manifest und Skripte reparieren
+    description: |
+      Im Ordner `pruefung-skripte` liegt ein Node-Projekt mit Code in `src/` und einem Test in
+      `tests/`. Die `package.json` hat zwei Probleme: `typescript` steht unter `dependencies`, und es
+      gibt keine Skripte.
+
+      1. Verschiebe `typescript` (Version `^6.0.0`) nach `devDependencies`. `zod` bleibt, wo es ist.
+      2. Lege die Skripte `start` (`node src/index.js`) und `test` (`node --test`) an.
+      3. Prüfe mit `npm start` und `npm test`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-skripte
+    setup: |
+      mkdir -p src tests
+      printf 'export const double = (n) => n * 2\n' > src/math.js
+      printf 'import { double } from "./math.js"\nconsole.log(`Ergebnis: ${double(21)}`)\n' > src/index.js
+      printf 'import { test } from "node:test"\nimport assert from "node:assert/strict"\nimport { double } from "../src/math.js"\n\ntest("double", () => assert.equal(double(2), 4))\n' > tests/math.test.js
+      echo '{ "name": "pruefung", "version": "1.0.0", "private": true, "type": "module", "dependencies": { "typescript": "^6.0.0", "zod": "^4.1.0" } }' > package.json
+    checks:
+      - type: command
+        run: jq -r '(.dependencies | keys | join(" ")) + " | " + (.devDependencies.typescript // "fehlt")' package.json
+        stdout_equals: "zod | ^6.0.0"
+        message: typescript soll unter devDependencies stehen, unter dependencies nur noch zod.
+      - type: command
+        run: npm start --silent
+        stdout_matches: "Ergebnis: 42"
+        message: npm start soll node src/index.js ausführen.
+      - type: command
+        run: npm test 2>&1 | grep -E "pass [1-9]"
+        message: npm test soll die Tests mit node --test ausführen.
+    hints:
+      - "`npm pkg set devDependencies.typescript=^6.0.0` und `npm pkg delete dependencies.typescript`"
+      - "`npm pkg set scripts.start=\"node src/index.js\" scripts.test=\"node --test\"`"
+    solution: |
+      ```bash
+      cd pruefung-skripte
+      npm pkg set devDependencies.typescript=^6.0.0
+      npm pkg delete dependencies.typescript
+      npm pkg set scripts.start="node src/index.js" scripts.test="node --test"
+      npm start
+      npm test
+      ```
+  - module: umgebung-und-onboarding
+    id: pruefung-fehlende-variablen
+    type: code
+    language: ts
+    title: Fehlende Umgebungsvariablen finden
+    description: |
+      Schreibe `missingKeys(example, env)`. Beide Parameter sind der Text einer Datei im
+      `.env`-Format. Die Funktion gibt alle Schlüssel zurück, die in der Vorlage `example` stehen, in
+      `env` aber fehlen – in der Reihenfolge der Vorlage.
+
+      - Eine Zeile hat die Form `SCHLUESSEL=wert`; der Schlüssel ist alles vor dem ersten `=`.
+      - Leere Zeilen und Zeilen, die mit `#` beginnen, werden ignoriert.
+      - Ein Schlüssel mit leerem Wert (`DB_PASSWORD=`) gilt als vorhanden.
+    starter: |
+      function missingKeys(example: string, env: string): string[] {
+        // dein Code
+      }
+    tests:
+      - name: findet fehlende Schlüssel in Vorlagen-Reihenfolge
+        code: assertDeepEqual(missingKeys('APP_NAME=a\nDB_HOST=b\nMAIL_KEY=\n', 'APP_NAME=x\n'), ['DB_HOST', 'MAIL_KEY'])
+      - name: leere Werte zählen als vorhanden
+        code: assertDeepEqual(missingKeys('DB_PASSWORD=\n', 'DB_PASSWORD=\n'), [])
+      - name: Kommentare und Leerzeilen werden ignoriert
+        code: assertDeepEqual(missingKeys('# Datenbank\n\nDB_HOST=\n', '# alt\nDB_HOST=127.0.0.1'), [])
+      - name: leere Vorlage ergibt keine fehlenden Schlüssel
+        code: assertDeepEqual(missingKeys('', 'APP_NAME=x'), [])
+      - name: Werte mit Gleichheitszeichen werden korrekt gelesen
+        code: assertDeepEqual(missingKeys('TOKEN=a=b\nURL=\n', 'TOKEN=c=d'), ['URL'])
+    hints:
+      - Schreibe eine Hilfsfunktion, die aus einem Text die Liste der Schlüssel macht – `split('\n')`, `trim()` und `indexOf('=')` helfen.
+      - Mit einem `Set` der Schlüssel aus `env` prüfst du schnell, ob ein Schlüssel vorhanden ist.
+    solution: |
+      ```ts
+      function keysOf(text: string): string[] {
+        return text
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line !== '' && !line.startsWith('#') && line.includes('='))
+          .map((line) => line.slice(0, line.indexOf('=')).trim())
+      }
+
+      function missingKeys(example: string, env: string): string[] {
+        const present = new Set(keysOf(env))
+        return keysOf(example).filter((key) => !present.has(key))
+      }
+      ```

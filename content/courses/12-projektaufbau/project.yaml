@@ -1,0 +1,438 @@
+title: Ein sauberes Full-Stack-Gerüst
+description: |
+  In diesem Projekt baust du von Grund auf das Gerüst für eine Full-Stack-Anwendung „notizen“: ein
+  Node-Frontend in `frontend/`, ein PHP-Backend in `backend/` und Dokumentation in `docs/`. Du wendest
+  alles aus dem Kurs an – Struktur, `.gitignore`, Manifeste, Konfigurationsdateien, `.env.example`,
+  Skripte, Makefile und README.
+
+  Alles passiert im Ordner `projekt` in deinem Workspace. Öffne das Übungs-Terminal, lege den Ordner
+  mit `mkdir projekt` an und wechsle mit `cd projekt` hinein. Nach jedem Schritt prüft Stacklab den
+  echten Zustand deiner Dateien. Die Schritte bauen aufeinander auf – lösche nichts, was ein früherer
+  Schritt angelegt hat.
+
+  Du brauchst keine Pakete zu installieren: Tests laufen mit dem eingebauten Test-Runner von Node.js,
+  und PHPStan ist im Übungs-Terminal bereits vorhanden.
+goal: >
+  Ein Git-Repository `projekt` mit `frontend/`, `backend/` und `docs/`, einer `.gitignore`,
+  `.env.example`-Vorlagen, gültiger `package.json` und `composer.json`, einer `phpstan.neon`, einem
+  `Makefile` mit `setup` und `test`, einer vollständigen README und einem sauberen Commit ohne
+  Geheimnisse.
+workdir: projekt
+steps:
+  - id: grundgeruest
+    title: Grundgerüst und Repository
+    description: |
+      Lege die drei Hauptordner an und mache das Projekt zu einem Git-Repository.
+
+      1. Lege `frontend/src`, `frontend/tests`, `backend/app` und `docs` an.
+      2. Führe `git init` aus.
+      3. Setze **lokal** einen Namen und eine E-Mail-Adresse (Platzhalter wie `du@example.com` genügen).
+    checklist:
+      - Ordner frontend/src, frontend/tests, backend/app und docs existieren
+      - Git-Repository angelegt
+      - Lokale Git-Identität gesetzt
+    hints:
+      - "`mkdir -p frontend/src frontend/tests backend/app docs` legt alles auf einmal an."
+      - "`git config user.name \"Ada Lovelace\"` und `git config user.email \"ada@example.com\"` setzen die Identität nur für dieses Repository."
+    checks:
+      - type: command
+        run: test -d frontend/src && test -d frontend/tests && test -d backend/app && test -d docs
+        message: Es fehlen noch Ordner – frontend/src, frontend/tests, backend/app und docs.
+      - type: dir_exists
+        path: .git
+        message: Das Projekt ist noch kein Git-Repository (git init).
+      - type: command
+        run: git config --local --get user.email
+        stdout_matches: "^\\S+@\\S+$"
+        message: Setze lokal eine E-Mail-Adresse mit git config user.email.
+    solution: |
+      ```bash
+      mkdir -p projekt && cd projekt
+      mkdir -p frontend/src frontend/tests backend/app docs
+      git init
+      git config user.name "Ada Lovelace"
+      git config user.email "ada@example.com"
+      ```
+  - id: gitignore
+    title: Eine .gitignore für beide Welten
+    description: |
+      Frontend und Backend erzeugen unterschiedliche Dateien, die nicht ins Repository gehören. Schreibe
+      **eine** `.gitignore` in der Projektwurzel, die für beide Teile gilt:
+
+      - `node_modules/`, `vendor/` und `dist/` in allen Ordnern,
+      - jede `.env`, egal in welchem Ordner,
+      - alle `*.log`-Dateien.
+
+      Die `.env.example`-Dateien müssen sichtbar bleiben. Prüfe mit `git check-ignore -v`, z. B.
+      `git check-ignore -v backend/vendor/autoload.php frontend/.env`.
+    checklist:
+      - Abhängigkeiten und Build-Ergebnisse werden ignoriert
+      - Alle .env-Dateien werden ignoriert, die Vorlagen nicht
+      - Log-Dateien werden ignoriert
+    hints:
+      - Muster ohne Schrägstrich in der Mitte gelten in allen Unterordnern.
+      - "`printf 'node_modules/\\nvendor/\\ndist/\\n.env\\n*.log\\n' > .gitignore`"
+    checks:
+      - type: command
+        run: git check-ignore -q frontend/node_modules/x/index.js && git check-ignore -q backend/vendor/autoload.php && git check-ignore -q frontend/dist/index.html
+        message: node_modules/, vendor/ oder dist/ werden in den Unterordnern noch nicht ignoriert.
+      - type: command
+        run: git check-ignore -q backend/.env && git check-ignore -q frontend/.env
+        message: .env-Dateien in backend/ und frontend/ werden noch nicht ignoriert.
+      - type: command
+        run: git check-ignore -q backend/storage/logs/app.log
+        message: Log-Dateien werden noch nicht ignoriert.
+      - type: command
+        run: "! git check-ignore -q backend/.env.example && ! git check-ignore -q frontend/.env.example"
+        message: Die .env.example-Vorlagen dürfen nicht ignoriert werden.
+    solution: |
+      ```bash
+      printf 'node_modules/\nvendor/\ndist/\n.env\n*.log\n' > .gitignore
+      git check-ignore -v backend/vendor/autoload.php frontend/.env backend/.env.example
+      ```
+  - id: frontend
+    title: Das Frontend einrichten
+    description: |
+      Richte das Frontend als Node-Projekt ein.
+
+      1. Lege `frontend/package.json` an mit `"name": "notizen-frontend"`, `"private": true`,
+         `"type": "module"` und den Skripten `start` (`node src/main.js`) und `test` (`node --test`).
+      2. Schreibe `frontend/src/greeting.js` mit einer exportierten Funktion
+         `greeting(name)`, die `Hallo, <name>!` zurückgibt.
+      3. Schreibe `frontend/src/main.js`, das `greeting("Stacklab")` mit `console.log` ausgibt.
+      4. Schreibe in `frontend/tests/greeting.test.js` mindestens einen Test mit `node:test`.
+      5. Lege `frontend/.env.example` mit `VITE_API_URL=http://localhost:8000` an.
+      6. Prüfe mit `npm test --prefix frontend` und `npm start --prefix frontend`.
+    checklist:
+      - package.json mit Namen, private, type module und zwei Skripten
+      - greeting.js, main.js und ein Test
+      - frontend/.env.example mit VITE_API_URL
+    hints:
+      - "`cd frontend && echo '{}' > package.json && npm pkg set name=notizen-frontend private=true type=module --json` – oder schreibe die Datei mit nano."
+      - "Ein Test sieht so aus: `test(\"grüßt\", () => assert.equal(greeting(\"Ada\"), \"Hallo, Ada!\"))` mit Imports aus `node:test` und `node:assert/strict`."
+      - "Skripte setzt du mit `npm pkg set scripts.start=\"node src/main.js\" scripts.test=\"node --test\"`."
+    checks:
+      - type: command
+        run: jq -r '[.name, .private, .type] | map(tostring) | join(" ")' frontend/package.json
+        stdout_equals: notizen-frontend true module
+        message: frontend/package.json braucht name notizen-frontend, private true und type module.
+      - type: command
+        run: npm start --silent --prefix frontend
+        stdout_matches: "Hallo, Stacklab!"
+        message: npm start im Frontend soll "Hallo, Stacklab!" ausgeben.
+      - type: command
+        run: npm test --prefix frontend 2>&1 | grep -E "pass [1-9]"
+        message: npm test im Frontend führt noch keinen bestandenen Test aus.
+      - type: command
+        run: npm test --prefix frontend >/dev/null 2>&1
+        message: Mindestens ein Frontend-Test schlägt fehl.
+      - type: file_contains
+        path: frontend/.env.example
+        pattern: "^VITE_API_URL=http://localhost:8000\\s*$"
+        message: Lege frontend/.env.example mit VITE_API_URL=http://localhost:8000 an.
+    solution: |
+      ```bash
+      cat > frontend/package.json <<'EOF'
+      {
+        "name": "notizen-frontend",
+        "private": true,
+        "type": "module",
+        "scripts": {
+          "start": "node src/main.js",
+          "test": "node --test"
+        }
+      }
+      EOF
+      printf 'export function greeting(name) {\n  return `Hallo, ${name}!`\n}\n' > frontend/src/greeting.js
+      printf 'import { greeting } from "./greeting.js"\nconsole.log(greeting("Stacklab"))\n' > frontend/src/main.js
+      printf 'import { test } from "node:test"\nimport assert from "node:assert/strict"\nimport { greeting } from "../src/greeting.js"\n\ntest("greets by name", () => {\n  assert.equal(greeting("Ada"), "Hallo, Ada!")\n})\n' > frontend/tests/greeting.test.js
+      echo "VITE_API_URL=http://localhost:8000" > frontend/.env.example
+      npm test --prefix frontend
+      npm start --prefix frontend
+      ```
+  - id: backend
+    title: Das Backend einrichten
+    description: |
+      Richte das Backend als Composer-Projekt mit statischer Analyse ein.
+
+      1. Lege `backend/composer.json` an mit `"name": "beispiel/notizen-backend"`, `require` → `"php": "^8.4"`,
+         `require-dev` → `"phpstan/phpstan": "^2.1"`, `autoload` → `psr-4` → `"App\\": "app/"` und
+         einem Skript `analyse` mit `phpstan analyse --no-progress`.
+      2. Lege `backend/app/Greeter.php` an: eine Klasse `Greeter` im Namensraum `App` mit einer
+         Methode `greet(string $name): string`.
+      3. Lege `backend/phpstan.neon` an (Level 6, Pfad `app`).
+      4. Lege `backend/.env.example` mit den Zeilen `APP_NAME=notizen` und `DB_PASSWORD=` an.
+      5. Prüfe mit `composer validate --no-check-publish --no-check-lock --working-dir=backend` und
+         `composer analyse --working-dir=backend`.
+    checklist:
+      - composer.json mit require, require-dev, autoload und Skript
+      - Greeter-Klasse im Namensraum App
+      - phpstan.neon und backend/.env.example
+      - PHPStan meldet keine Fehler
+    hints:
+      - Denk an `declare(strict_types=1);` und `namespace App;` am Anfang der PHP-Datei.
+      - Der Backslash in `"App\\"` muss in JSON doppelt stehen.
+      - "`--working-dir=backend` lässt Composer im Unterordner arbeiten, ohne dass du hineinwechselst."
+    checks:
+      - type: command
+        run: composer validate --no-check-publish --no-check-lock --no-ansi --working-dir=backend
+        message: backend/composer.json fehlt oder ist ungültig.
+      - type: command
+        run: jq -r '."require-dev"."phpstan/phpstan" // "fehlt"' backend/composer.json
+        stdout_matches: "^\\^2"
+        message: phpstan/phpstan gehört unter require-dev.
+      - type: command
+        run: jq -r '.autoload."psr-4"."App\\"' backend/composer.json
+        stdout_matches: "^app/?$"
+        message: In autoload.psr-4 fehlt die Zuordnung App\\ → app/.
+      - type: file_contains
+        path: backend/app/Greeter.php
+        pattern: "^namespace App;"
+        message: Greeter.php braucht die Zeile namespace App;
+      - type: file_contains
+        path: backend/phpstan.neon
+        pattern: "^\\s+level:\\s*6"
+        message: backend/phpstan.neon braucht level 6.
+      - type: command
+        run: composer analyse --no-ansi --working-dir=backend
+        message: composer analyse im Backend schlägt fehl (Skript vorhanden? phpstan.neon gültig? PHP-Fehler?).
+      - type: file_contains
+        path: backend/.env.example
+        pattern: "^DB_PASSWORD=\\s*$"
+        message: backend/.env.example soll DB_PASSWORD= ohne Wert enthalten.
+    solution: |
+      ```bash
+      cat > backend/composer.json <<'EOF'
+      {
+          "name": "beispiel/notizen-backend",
+          "type": "project",
+          "require": { "php": "^8.4" },
+          "require-dev": { "phpstan/phpstan": "^2.1" },
+          "autoload": { "psr-4": { "App\\": "app/" } },
+          "scripts": { "analyse": "phpstan analyse --no-progress" }
+      }
+      EOF
+      cat > backend/app/Greeter.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final class Greeter
+      {
+          public function greet(string $name): string
+          {
+              return 'Hallo, ' . $name . '!';
+          }
+      }
+      EOF
+      printf 'parameters:\n    level: 6\n    paths:\n        - app\n' > backend/phpstan.neon
+      printf 'APP_NAME=notizen\nDB_PASSWORD=\n' > backend/.env.example
+      composer validate --no-check-publish --no-check-lock --working-dir=backend
+      composer analyse --working-dir=backend
+      ```
+  - id: makefile
+    title: Ein Makefile als Bedienoberfläche
+    description: |
+      Lege in der Projektwurzel ein `Makefile` an, damit niemand die Befehle der einzelnen Teile kennen
+      muss:
+
+      - `setup` kopiert `backend/.env.example` → `backend/.env` und `frontend/.env.example` →
+        `frontend/.env`, jeweils nur, wenn die Ziel-Datei fehlt.
+      - `test` führt die Frontend-Tests **und** die Backend-Analyse aus.
+      - Beide Targets stehen unter `.PHONY`.
+
+      Probiere `make setup` und `make test` aus.
+    checklist:
+      - make setup legt beide .env-Dateien an, ohne vorhandene zu überschreiben
+      - make test prüft Frontend und Backend
+      - .PHONY ist gesetzt
+    hints:
+      - Befehlszeilen unter einem Target beginnen mit einem Tab.
+      - "`test -f backend/.env || cp backend/.env.example backend/.env`"
+      - Für test brauchst du zwei Zeilen – `npm test --prefix frontend` und `composer analyse --working-dir=backend`.
+    checks:
+      - type: file_contains
+        path: Makefile
+        pattern: "^\\.PHONY:.*\\bsetup\\b"
+        message: Trage die Targets unter .PHONY ein.
+      - type: command
+        run: t=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$t/backend" "$t/frontend"; cp Makefile "$t/"; cp backend/.env.example "$t/backend/"; cp frontend/.env.example "$t/frontend/"; (cd "$t" && make setup >/dev/null 2>&1 && test -f backend/.env && test -f frontend/.env); r=$?; rm -rf "$t"; exit $r
+        message: make setup legt backend/.env und frontend/.env noch nicht an.
+      - type: command
+        run: t=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$t/backend" "$t/frontend"; cp Makefile "$t/"; cp backend/.env.example "$t/backend/"; cp frontend/.env.example "$t/frontend/"; echo SCHON-DA > "$t/frontend/.env"; (cd "$t" && make setup >/dev/null 2>&1; grep -qx SCHON-DA frontend/.env); r=$?; rm -rf "$t"; exit $r
+        message: make setup überschreibt eine vorhandene .env – kopiere nur, wenn sie fehlt.
+      - type: command
+        run: make -s test 2>&1 | grep -E "pass [1-9]" && make -s test 2>&1 | grep -E "No errors"
+        message: make test soll die Frontend-Tests und die PHPStan-Analyse des Backends ausführen.
+    solution: |
+      ```bash
+      printf '.PHONY: setup test\n\nsetup:\n\ttest -f backend/.env || cp backend/.env.example backend/.env\n\ttest -f frontend/.env || cp frontend/.env.example frontend/.env\n\ntest:\n\tnpm test --prefix frontend\n\tcomposer analyse --working-dir=backend\n' > Makefile
+      make setup
+      make test
+      ```
+  - id: readme
+    title: Die README schreiben
+    description: |
+      Schreibe eine `README.md` in der Projektwurzel, mit der eine neue Kollegin ohne Rückfrage startet:
+
+      - erste Zeile `# notizen`, darunter ein Satz zum Zweck,
+      - `## Voraussetzungen` (Node.js und PHP mit Composer),
+      - `## Einrichtung` mit `make setup`,
+      - `## Tests` mit `make test`,
+      - `## Projektstruktur`, die `frontend/`, `backend/` und `docs/` erklärt.
+
+      Jeder `make`-Befehl in der README muss im Makefile existieren.
+    checklist:
+      - Titel und Beschreibung
+      - Voraussetzungen, Einrichtung, Tests, Projektstruktur
+      - Alle genannten make-Befehle existieren
+    hints:
+      - Schreibe die Datei mit `nano README.md`.
+      - Befehle stehen am besten in einem Code-Block, damit man sie kopieren kann.
+    checks:
+      - type: command
+        run: head -n 1 README.md
+        stdout_matches: "^#\\s+notizen\\s*$"
+        message: "Die erste Zeile der README.md soll # notizen lauten."
+      - type: command
+        run: for h in Voraussetzungen Einrichtung Tests Projektstruktur; do grep -qE "^##\s+$h" README.md || { echo "Abschnitt $h fehlt"; exit 1; }; done
+        message: Es fehlt mindestens einer der Abschnitte Voraussetzungen, Einrichtung, Tests oder Projektstruktur.
+      - type: command
+        run: grep -q 'frontend/' README.md && grep -q 'backend/' README.md && grep -q 'docs/' README.md
+        message: Erkläre unter Projektstruktur frontend/, backend/ und docs/.
+      - type: command
+        run: grep -q 'make setup' README.md && grep -q 'make test' README.md
+        message: Die README soll make setup und make test nennen.
+      - type: command
+        run: for t in $(grep -oE 'make [a-z][a-z-]*' README.md | awk '{print $2}' | sort -u); do make -n "$t" >/dev/null 2>&1 || { echo "make $t gibt es nicht"; exit 1; }; done
+        message: Die README nennt einen make-Befehl, den es im Makefile nicht gibt.
+    solution: |
+      ````bash
+      cat > README.md <<'EOF'
+      # notizen
+
+      Eine Notiz-App mit Node-Frontend und PHP-Backend.
+
+      ## Voraussetzungen
+
+      - Node.js 24 und npm
+      - PHP 8.5 und Composer
+
+      ## Einrichtung
+
+      ```bash
+      make setup
+      ```
+
+      ## Tests
+
+      ```bash
+      make test
+      ```
+
+      ## Projektstruktur
+
+      - `frontend/` – Frontend (Node), Konfiguration in `frontend/.env`
+      - `backend/` – Backend (PHP), Konfiguration in `backend/.env`
+      - `docs/` – Architektur und Entscheidungen
+      EOF
+      ````
+  - id: architektur-doku
+    title: Die Architektur dokumentieren
+    description: |
+      Ausführliches gehört nicht in die README, sondern nach `docs/`. Schreibe `docs/architektur.md`:
+
+      - eine Überschrift (Zeile beginnt mit `#`),
+      - einen Abschnitt `## Aufbau`, der Frontend und Backend beschreibt,
+      - einen Abschnitt `## Konfiguration`, der erklärt, dass Werte aus `.env` kommen und
+        `.env.example` die Vorlage ist.
+
+      Verlinke die Datei anschließend in der README, z. B. mit `[Architektur](docs/architektur.md)`.
+    checklist:
+      - docs/architektur.md mit Aufbau und Konfiguration
+      - Link aus der README
+    hints:
+      - Ein Markdown-Link hat die Form `[Text](pfad/zur/datei.md)`.
+    checks:
+      - type: file_contains
+        path: docs/architektur.md
+        pattern: "^#\\s+\\S"
+        message: docs/architektur.md braucht eine Überschrift.
+      - type: file_contains
+        path: docs/architektur.md
+        pattern: "^##\\s+Aufbau"
+        message: Es fehlt der Abschnitt ## Aufbau.
+      - type: file_contains
+        path: docs/architektur.md
+        pattern: "^##\\s+Konfiguration"
+        message: Es fehlt der Abschnitt ## Konfiguration.
+      - type: file_contains
+        path: docs/architektur.md
+        pattern: "\\.env\\.example"
+        message: Erkläre im Abschnitt Konfiguration die Rolle der .env.example.
+      - type: file_contains
+        path: README.md
+        pattern: "\\]\\(\\.?/?docs/architektur\\.md\\)"
+        message: Verlinke docs/architektur.md in der README.
+    solution: |
+      ```bash
+      cat > docs/architektur.md <<'EOF'
+      # Architektur von notizen
+
+      ## Aufbau
+
+      Das Frontend in `frontend/` ist ein Node-Projekt und spricht per HTTP mit dem Backend.
+      Das Backend in `backend/` ist ein PHP-Projekt mit Composer und PHPStan.
+
+      ## Konfiguration
+
+      Beide Teile lesen ihre Einstellungen aus einer `.env`. Die `.env.example` ist die
+      committete Vorlage; `make setup` kopiert sie beim ersten Start.
+      EOF
+      printf '\nMehr Details: [Architektur](docs/architektur.md)\n' >> README.md
+      ```
+  - id: committen
+    title: Alles sauber committen
+    description: |
+      Zum Schluss landet das Gerüst im Repository – ohne Geheimnisse und ohne generierte Dateien.
+
+      1. Prüfe mit `git status`, dass keine `.env` auftaucht.
+      2. Merke alles vor und committe mit einer Conventional-Commit-Message, z. B.
+         `chore: set up project skeleton`.
+      3. `git status` soll danach keine offenen Änderungen mehr zeigen.
+    checklist:
+      - Mindestens ein Commit mit Conventional-Commit-Message
+      - Keine .env, kein vendor/, kein node_modules/ im Repository
+      - Arbeitsverzeichnis sauber
+    hints:
+      - "`git add .` ist hier sicher, weil deine .gitignore die gefährlichen Dateien abfängt – prüfe trotzdem vorher mit `git status`."
+    checks:
+      - type: command
+        run: git log --oneline 2>/dev/null | wc -l
+        stdout_matches: "^\\s*[1-9]"
+        message: Es gibt noch keinen Commit.
+      - type: command
+        run: git log -1 --format=%s
+        stdout_matches: "^(feat|fix|chore|docs|build|refactor)(\\(.+\\))?!?: \\S"
+        message: Die letzte Commit-Message folgt noch nicht dem Format Typ Doppelpunkt Beschreibung (z. B. chore - set up project skeleton).
+      - type: command
+        run: git ls-files | grep -cE '(^|/)\.env$|(^|/)(node_modules|vendor)/' || true
+        stdout_matches: "^0$"
+        message: Im Repository liegen .env-Dateien, vendor/ oder node_modules/. Nimm sie mit git rm --cached heraus.
+      - type: command
+        run: git ls-files | grep -cE '^(README\.md|Makefile|\.gitignore|frontend/package\.json|backend/composer\.json|backend/\.env\.example|frontend/\.env\.example|docs/architektur\.md)$'
+        stdout_matches: "^8$"
+        message: Es fehlen noch wichtige Dateien im Commit (README, Makefile, .gitignore, Manifeste, Vorlagen, Doku).
+      - type: command
+        run: git status --porcelain | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: Es gibt noch nicht committete Änderungen.
+    solution: |
+      ```bash
+      git status
+      git add .
+      git commit -m "chore: set up project skeleton"
+      git status
+      ```

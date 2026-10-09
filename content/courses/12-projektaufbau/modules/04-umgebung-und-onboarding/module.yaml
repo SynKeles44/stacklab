@@ -1,0 +1,93 @@
+title: Umgebung und Onboarding
+description: Konfiguration mit .env und .env.example, Einstellungen pro Umgebung in Laravel und Vite und eine README, mit der Neue sofort starten können.
+exercise:
+  id: modul-uebung-onboarding
+  type: terminal
+  title: Ein Projekt onboarding-fertig machen
+  description: |
+    Im Ordner `onboarding` liegt ein Repository mit `backend/` (PHP, mit `backend/.env.example`) und
+    `frontend/` (Node, mit Tests). Neue Teammitglieder sollen es mit **zwei Befehlen** starten können:
+    `make setup` und `make test`.
+
+    1. Lege `frontend/.env.example` mit der Zeile `VITE_API_URL=http://localhost:8000` an.
+    2. Schreibe eine `.gitignore` in der Wurzel, die alle `.env`-Dateien (auch in Unterordnern)
+       ignoriert, die Vorlagen aber nicht.
+    3. Schreibe ein `Makefile` mit
+       - `setup`: kopiert `backend/.env.example` nach `backend/.env` und `frontend/.env.example` nach
+         `frontend/.env` – aber nur, wenn die Ziel-Datei noch nicht existiert,
+       - `test`: führt im Ordner `frontend` die npm-Tests aus (`npm test --prefix frontend`),
+       - beide Targets unter `.PHONY`.
+    4. Schreibe eine `README.md` mit einer Überschrift und einem Abschnitt `## Einrichtung`, der
+       `make setup` und `make test` nennt.
+    5. Führe `make setup` und `make test` aus und committe alles (die `.env`-Dateien natürlich nicht).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: onboarding
+  setup: |
+    git init -q
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    mkdir -p backend/app frontend/src frontend/tests
+    printf 'APP_NAME=notizen\nDB_PASSWORD=\n' > backend/.env.example
+    echo '<?php echo "API";' > backend/app/index.php
+    printf 'export const add = (a, b) => a + b\n' > frontend/src/math.js
+    printf 'import { test } from "node:test"\nimport assert from "node:assert/strict"\nimport { add } from "../src/math.js"\n\ntest("add", () => assert.equal(add(1, 2), 3))\n' > frontend/tests/math.test.js
+    echo '{ "name": "frontend", "private": true, "type": "module", "scripts": { "test": "node --test" } }' > frontend/package.json
+    git add .
+    git commit -q -m "chore: initial commit"
+  checks:
+    - type: file_contains
+      path: frontend/.env.example
+      pattern: "^VITE_API_URL=http://localhost:8000\\s*$"
+      message: Lege frontend/.env.example mit VITE_API_URL=http://localhost:8000 an.
+    - type: command
+      run: git check-ignore -q backend/.env && git check-ignore -q frontend/.env && git check-ignore -q .env
+      message: Die .gitignore muss .env-Dateien in allen Ordnern ignorieren.
+    - type: command
+      run: "! git check-ignore -q backend/.env.example && ! git check-ignore -q frontend/.env.example"
+      message: Die .env.example-Dateien dürfen nicht ignoriert werden.
+    - type: file_contains
+      path: Makefile
+      pattern: "^\\.PHONY:.*\\bsetup\\b.*\\btest\\b|^\\.PHONY:.*\\btest\\b.*\\bsetup\\b"
+      message: Trage setup und test im Makefile unter .PHONY ein.
+    - type: command
+      run: t=$(mktemp -d "$PWD/.pruefung-XXXXXX"); git archive HEAD | tar -x -C "$t" 2>/dev/null; cp Makefile "$t/" 2>/dev/null; cp -r backend frontend "$t/"; rm -f "$t/backend/.env" "$t/frontend/.env"; (cd "$t" && make setup >/dev/null 2>&1 && test -f backend/.env && test -f frontend/.env && grep -q VITE_API_URL frontend/.env); r=$?; rm -rf "$t"; exit $r
+      message: In einem frischen Klon legt make setup noch nicht backend/.env und frontend/.env an.
+    - type: command
+      run: t=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp Makefile "$t/"; mkdir -p "$t/backend" "$t/frontend"; echo SCHON-DA > "$t/backend/.env"; cp backend/.env.example "$t/backend/"; cp frontend/.env.example "$t/frontend/"; (cd "$t" && make setup >/dev/null 2>&1; grep -qx SCHON-DA backend/.env); r=$?; rm -rf "$t"; exit $r
+      message: make setup überschreibt eine vorhandene .env. Kopiere nur, wenn die Datei noch fehlt (test -f … || cp …).
+    - type: command
+      run: make -s test 2>&1 | grep -E "pass [1-9]"
+      message: make test führt die Frontend-Tests noch nicht erfolgreich aus.
+    - type: file_contains
+      path: README.md
+      pattern: "^##\\s+Einrichtung"
+      message: Die README braucht einen Abschnitt ## Einrichtung.
+    - type: command
+      run: grep -q 'make setup' README.md && grep -q 'make test' README.md
+      message: Die README soll make setup und make test nennen.
+    - type: command
+      run: git ls-files | grep -E '(^|/)\.env$' | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: Eine .env-Datei ist im Repository gelandet. Nimm sie mit git rm --cached wieder heraus.
+    - type: command
+      run: git status --porcelain | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: Es gibt noch nicht committete Änderungen.
+  hints:
+    - "Die Zeile `.env` in der .gitignore gilt in allen Unterordnern, weil sie keinen Schrägstrich enthält."
+    - "Ein Rezept für setup: `test -f backend/.env || cp backend/.env.example backend/.env` – und dasselbe für frontend. Jede Befehlszeile beginnt mit einem Tab."
+    - Prüfe mit `git status` vor dem Commit, dass keine .env-Datei vorgemerkt ist.
+  solution: |
+    ```bash
+    cd onboarding
+    echo "VITE_API_URL=http://localhost:8000" > frontend/.env.example
+    echo ".env" > .gitignore
+    printf '.PHONY: setup test\n\nsetup:\n\ttest -f backend/.env || cp backend/.env.example backend/.env\n\ttest -f frontend/.env || cp frontend/.env.example frontend/.env\n\ntest:\n\tnpm test --prefix frontend\n' > Makefile
+    printf '# notizen\n\nNotiz-App mit PHP-Backend und Node-Frontend.\n\n## Einrichtung\n\n    make setup\n    make test\n' > README.md
+    make setup
+    make test
+    git add .
+    git status
+    git commit -m "chore: add onboarding setup"
+    ```

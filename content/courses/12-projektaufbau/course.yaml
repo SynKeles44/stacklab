@@ -1,0 +1,31 @@
+title: Aufbau eines Projekts
+subtitle: Ordner, Konfigurationsdateien und .env verstehen – damit du dich in jedem Projekt sofort zurechtfindest
+description: >
+  Wenn du zum ersten Mal ein fremdes Projekt öffnest, siehst du Dutzende Ordner und Dateien:
+  `app/`, `src/`, `vendor/`, `package.json`, `tsconfig.json`, `.env.example`, `Makefile` … In diesem
+  Kurs lernst du, was hinter jedem dieser Namen steckt und **warum** Projekte so aufgebaut sind.
+
+
+  Du schaust dir typische Strukturen an (ein Laravel-Backend, ein Vite-React-Frontend, ein Monorepo),
+  liest Konfigurationsdateien, trennst Geheimnisse sauber vom Code und machst Skripte zur
+  Bedienoberfläche deines Projekts. Am Ende baust du im echten Übungs-Terminal selbst ein sauberes,
+  dokumentiertes Full-Stack-Gerüst, in dem sich neue Teammitglieder in Minuten zurechtfinden.
+category: grundlagen
+level: einsteiger
+icon: folder-tree
+color: "#0891b2"
+estimated_hours: 5
+workspace_dir: projektaufbau
+prerequisites: [node-runtimes-paketmanager, git]
+learning_goals:
+  - Du erklärst, warum Projekte festen Konventionen folgen und welche fünf Dateiarten es gibt.
+  - Du findest dich in einem Laravel-Projekt, einem Vite-React-Projekt und einem Monorepo zurecht.
+  - Du liest package.json, composer.json, tsconfig.json, vite.config.ts, phpunit.xml, phpstan.neon und docker-compose.yml.
+  - Du trennst Laufzeit- und Entwicklungsabhängigkeiten und weißt, warum Lockfiles committet werden.
+  - Du verwaltest Konfiguration mit .env und .env.example, ohne je ein Geheimnis zu committen.
+  - Du machst npm-Skripte, Composer-Skripte und Makefile-Targets zur Bedienoberfläche deines Projekts.
+  - Du schreibst eine README, mit der neue Teammitglieder das Projekt in wenigen Minuten starten.
+references:
+  - Full-Stack-Projekte mit getrenntem Laravel-Backend und React-Frontend in einem Repository
+  - Makefile-Targets wie `make setup` und `make test` als einheitlicher Einstieg für das ganze Team
+  - Konfiguration über Umgebungsvariablen nach dem Twelve-Factor-Prinzip in Container-Deployments

@@ -1,0 +1,106 @@
+title: Konfigurationsdateien
+description: Manifeste, Abhängigkeiten und Lockfiles, die Konfiguration der wichtigsten Werkzeuge und Skripte als Bedienoberfläche des Projekts.
+exercise:
+  id: modul-uebung-backend-konfigurieren
+  type: terminal
+  title: Ein PHP-Backend fertig konfigurieren
+  description: |
+    Im Ordner `backend-konfig` liegt die Klasse `app/Greeter.php` im Namensraum `App` – aber noch
+    keine einzige Konfigurationsdatei. Richte das Projekt so ein, wie du es in einem echten Team tun
+    würdest.
+
+    1. Lege eine `composer.json` an mit:
+       - `"name": "beispiel/backend"` und `"type": "project"`,
+       - unter `require` die Zeile `"php": "^8.4"`,
+       - unter `require-dev` das Paket `"phpstan/phpstan": "^2.1"`,
+       - unter `autoload` → `psr-4` die Zuordnung `"App\\": "app/"`,
+       - unter `scripts` ein Skript `analyse` mit dem Befehl `phpstan analyse --no-progress`.
+    2. Prüfe die Datei mit `composer validate --no-check-publish --no-check-lock`.
+    3. Lege eine `phpstan.neon` an, die mit Level 6 den Ordner `app` prüft.
+    4. Lege eine `.gitignore` an, die `vendor/` und `.env` ignoriert.
+    5. Führe `composer analyse` aus – PHPStan soll keine Fehler finden.
+
+    Du musst nichts installieren: PHPStan ist im Übungs-Terminal bereits vorhanden. Klicke zuerst auf
+    **Aufgabe vorbereiten**.
+  workdir: backend-konfig
+  setup: |
+    mkdir -p app
+    cat > app/Greeter.php <<'PHP'
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App;
+
+    final class Greeter
+    {
+        public function greet(string $name): string
+        {
+            return 'Hallo ' . $name;
+        }
+    }
+    PHP
+  checks:
+    - type: command
+      run: composer validate --no-check-publish --no-check-lock --no-ansi
+      message: composer validate meldet Fehler. Prüfe Kommas, Klammern und Anführungszeichen in composer.json.
+    - type: command
+      run: jq -r '.name + " " + .type' composer.json
+      stdout_equals: beispiel/backend project
+      message: In composer.json fehlen "name" beispiel/backend oder "type" project.
+    - type: command
+      run: jq -r '.require.php' composer.json
+      stdout_equals: ^8.4
+      message: Unter require fehlt "php" mit ^8.4.
+    - type: command
+      run: jq -r '."require-dev"."phpstan/phpstan"' composer.json
+      stdout_matches: "^\\^2"
+      message: phpstan/phpstan gehört unter require-dev (Version ^2.1).
+    - type: command
+      run: jq -r '.require | has("phpstan/phpstan")' composer.json
+      stdout_equals: "false"
+      message: phpstan/phpstan ist ein Entwicklungswerkzeug und gehört nicht unter require.
+    - type: command
+      run: jq -r '.autoload."psr-4"."App\\"' composer.json
+      stdout_matches: "^app/?$"
+      message: Unter autoload.psr-4 fehlt die Zuordnung "App\\" auf "app/".
+    - type: file_contains
+      path: phpstan.neon
+      pattern: "^\\s+level:\\s*6\\s*$"
+      message: phpstan.neon braucht level 6.
+    - type: command
+      run: t=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp .gitignore "$t/" && cd "$t" && git init -q && git check-ignore -q vendor/autoload.php && git check-ignore -q .env; r=$?; rm -rf "$t"; exit $r
+      message: Die .gitignore muss vendor/ und .env ignorieren.
+    - type: command
+      run: composer analyse --no-ansi
+      message: composer analyse schlägt fehl. Gibt es das Skript analyse und eine gültige phpstan.neon?
+  hints:
+    - 'Ein Backslash muss in JSON verdoppelt werden – deshalb steht dort `"App\\": "app/"`.'
+    - Schreibe die composer.json am einfachsten mit `nano` oder mit einem `cat > composer.json <<'EOF'`-Block.
+    - "`printf 'parameters:\\n    level: 6\\n    paths:\\n        - app\\n' > phpstan.neon`"
+  solution: |
+    ```bash
+    cd backend-konfig
+    cat > composer.json <<'EOF'
+    {
+        "name": "beispiel/backend",
+        "type": "project",
+        "require": {
+            "php": "^8.4"
+        },
+        "require-dev": {
+            "phpstan/phpstan": "^2.1"
+        },
+        "autoload": {
+            "psr-4": { "App\\": "app/" }
+        },
+        "scripts": {
+            "analyse": "phpstan analyse --no-progress"
+        }
+    }
+    EOF
+    composer validate --no-check-publish --no-check-lock
+    printf 'parameters:\n    level: 6\n    paths:\n        - app\n' > phpstan.neon
+    printf 'vendor/\n.env\n' > .gitignore
+    composer analyse
+    ```
