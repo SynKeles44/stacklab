@@ -6,9 +6,46 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 ## Protokoll
 
 - **Zuletzt erledigt (2026-10-10):** Fundament komplett und getestet; Lektionen seitenweise (Blättern); zwei UI-Varianten (Standard + Apple, wählbar unter Einstellungen → Darstellung, gespeichert in users.ui_variant); Kursdauer wird aus Lektionsdauern berechnet; Kurs-Größenregel 10–12 Lektionen / 4–6 h (Laravel bis 10 h) in docs/AUTHORING.md.
-- **Kursstand:** fertig: 02 terminal-shell, 05 ssh, 06 git (werden gerade auf 10–12 bzw. ~9 Lektionen gekürzt). In Arbeit (Autoren-Agenten): 01, 03, 04, 07, 08, 09, 10, 11, 12. Offen: 13–52.
+- **Kursstand:** siehe Abschnitt „Abbruchstand 2026-10-10“.
 - **Als Nächstes:** nach Abschluss der laufenden Autoren `make validate` + Import; restliche Kurse 13–52 mit der Größenregel schreiben (Brief: docs/AUTHORING.md + content/README.md); Lexikon-Dubletten prüfen; Testkonten test@example.com und ui-test@example.com löschen; MISSING_SCREENSHOTS.md (PhpStorm-Kurs); GitHub-Repo SynKeles44/stacklab anlegen und pushen (Commits als SynKeles44, Signierung nur in diesem Repo aus); Abschlusszusammenfassung.
 - **Hinweise für Autoren:** Sandbox /tmp ist noexec; kein man/sudo/zsh/python3/rsync; `nvm install` höchstens einmal mit `timeout 300` (Prozesslimit 512).
+
+## Abbruchstand 2026-10-10 (alle Autoren-Agenten gestoppt) – HIER WEITERMACHEN
+
+Wiederaufnahme: neue Sitzung im Ordner `stacklab`, dann „Mach mit der Roadmap weiter“. Für neue Autoren-Agenten
+den Brief `.wip/agent-brief.md` verwenden (lokal, nicht im Git) – er ergänzt `docs/AUTHORING.md` um Sandbox-Regeln.
+Entwürfe/Hilfsskripte der gestoppten Autoren liegen unter `.wip/scratchpad/<kurs>/` (ohne vendor/node_modules).
+Unfertige Kurse liegen **unversioniert** im Arbeitsverzeichnis (`git status`), damit CI grün bleibt; der Import überspringt sie.
+
+**Fertig und committet (23 Kurse):** 01–16 (alle), 17 phpstorm-datenbank-tools, 18 http-https, 19 apis-endpunkte,
+20 api-dokumentation, 21 dokumentation-schreiben, 22 html-css-tailwind.
+- Bei 17, 18, 20, 21, 22 sowie beim Projekt von 16 (neues `setup`, workdir `kiezladen-projekt`) fehlt nur der
+  **abschließende Sandbox-Testlauf** (Validator: 0 Fehler, 0 Warnungen). Nächster Schritt: Terminal-Aufgaben,
+  Projektschritte und Prüfungsaufgaben je Kurs einmal durchspielen (setup → Lösung → Checks).
+
+**Unfertig (unversioniert):**
+
+| Kurs | Vorhanden | Fehlt / nächster Schritt |
+|---|---|---|
+| 23 javascript | course.yaml, 4 module.yaml, 12 Lektionen, project.yaml, exam.yaml | Lexikon `content/glossary/javascript.yaml` fehlt komplett (45 Validator-Fehler = unbekannte Begriffe); SVGs fehlen; Sandbox-Tests |
+| 24 typescript | course.yaml, 4 module.yaml, 11 Lektionen, Lexikon (43 Begriffe) | project.yaml, exam.yaml; Sandbox-Tests (tsc-Aufgaben) |
+| 25 react | course.yaml, 3 module.yaml, 11 Lektionen (Modul 04 hat nur 2 Lektionen, kein module.yaml) | modules/04-effekte-und-praxis/module.yaml, ggf. 1 Lektion, Lexikon `react.yaml`, project.yaml, exam.yaml, Tests der jsx-Aufgaben |
+| 26 react-komponenten-architektur | nur 3 Lektionen in modules/01-struktur | fast alles: course.yaml, module.yaml, Module 02–04, Lexikon, Projekt, Prüfung |
+| 31 php | course.yaml, 2 module.yaml, 9 Lektionen (Module 01–02 komplett, 03-oop hat 3 Lektionen ohne module.yaml) | module.yaml für 03-oop, Modul 04 (Fehler/Composer/PSR-4, Projekt-App), Lexikon `php.yaml`, project.yaml, exam.yaml |
+| 32 datenbanken-sql | course.yaml, 3 module.yaml, 10 Lektionen (04 hat 1 Lektion: transaktionen) | Modul 04 (indizes/explain, sql-injection), module.yaml 04, Lexikon `datenbanken-sql.yaml`, project.yaml, exam.yaml |
+| 33 laravel | **nichts im content-Ordner** | komplett. Vorarbeit in `.wip/scratchpad/laravel/` (Setup-Skripte `setup-basis.sh`, `snippet-*.sh`, Referenz-App `ref/`, Worker-Notizen w1–w3) |
+
+**Noch nicht begonnen:** 27 moderner-react-stack, 28 server-state-tanstack, 29 monorepos-workspaces,
+30 internationalisierung, 34 laravel-vertieft, 35 laravel-architektur, 36 authentifizierung, 37 websicherheit,
+38 performance, 39 testing, 40 code-qualitaet, 41 clean-code-solid-patterns, 42 datenstrukturen-algorithmen,
+43 legacy-modernisieren, 44 docker, 45 nginx-webserver, 46 deployments-cicd, 47 projekt-live-stellen,
+48 observability, 49 aws-grundlagen, 50 aws-fargate, 51 ki-assistenten, 52 capstone.
+
+**Betriebs-Hinweise für die Autoren-Phase:**
+- Höchstens ca. 8 Autoren gleichzeitig: Die Sandbox (Prozesslimit 512) lief zweimal voll. Bei
+  „fork: Resource temporarily unavailable“: `docker compose restart sandbox`.
+- Jeder Autor nutzt einen eigenen Hilfsordner; nie fremde Skripte ausführen.
+- Vor Abschluss: `grep -rh "^- slug:" content/glossary | sort | uniq -d` muss leer sein.
 
 ## Entscheidungen
 
@@ -72,39 +109,39 @@ Legende Quelle: P = aus dem Prompt, A = aus der Analyse der eigenen Projekte abg
 
 | Nr | Slug | Kurs | Quelle | Status |
 |---|---|---|---|---|
-| 01 | programmieren-grundlagen | Grundlagen der Programmierung | P | [ ] |
-| 02 | terminal-shell | Terminal & Shell | P | [ ] |
-| 03 | wie-das-internet-funktioniert | Wie das Internet funktioniert | P | [ ] |
-| 04 | netzwerk-grundlagen | Netzwerk-Grundlagen & Server-Zugang | P | [ ] |
-| 05 | ssh | SSH | P | [ ] |
-| 06 | git | Git (Beispielkurs, alle Aufgabentypen) | P | [~] |
-| 07 | github | GitHub | P | [ ] |
-| 08 | teamarbeit | Arbeiten im Team | P | [ ] |
-| 09 | entwicklungsumgebung | Entwicklungsumgebung & Task-Runner (mise, direnv, EditorConfig, Devcontainer, Makefile) | A | [ ] |
-| 10 | node-runtimes-paketmanager | Node.js, Runtimes & Paketmanager | P | [ ] |
-| 11 | libraries-pakete-registries | Libraries, Pakete & Registries | P | [ ] |
-| 12 | projektaufbau | Aufbau eines Projekts | P | [ ] |
-| 13 | datenformate | JSON, YAML & Datenformate | P | [ ] |
-| 14 | regex | Reguläre Ausdrücke | P | [ ] |
-| 15 | debugging-devtools | Debugging & Entwicklertools | P | [ ] |
-| 16 | fremden-code-lesen | Fremden Code lesen und verstehen | P | [ ] |
-| 17 | phpstorm-datenbank-tools | PhpStorm: Datenbank-Tools | P | [ ] |
-| 18 | http-https | HTTP & HTTPS | P | [ ] |
-| 19 | apis-endpunkte | Endpunkte & APIs | P | [ ] |
-| 20 | api-dokumentation | API-Dokumentation automatisieren (OpenAPI, swagger-php, Scramble, Redocly) | P+A | [ ] |
-| 21 | dokumentation-schreiben | Dokumentation schreiben | P | [ ] |
-| 22 | html-css-tailwind | HTML & CSS inkl. Tailwind | P | [ ] |
-| 23 | javascript | JavaScript | P | [ ] |
-| 24 | typescript | TypeScript | P | [ ] |
-| 25 | react | React | P | [ ] |
-| 26 | react-komponenten-architektur | React-Komponenten-Architektur (Atomic Design, Compound Components, Storybook) | P+A | [ ] |
+| 01 | programmieren-grundlagen | Grundlagen der Programmierung | P | [x] |
+| 02 | terminal-shell | Terminal & Shell | P | [x] |
+| 03 | wie-das-internet-funktioniert | Wie das Internet funktioniert | P | [x] |
+| 04 | netzwerk-grundlagen | Netzwerk-Grundlagen & Server-Zugang | P | [x] |
+| 05 | ssh | SSH | P | [x] |
+| 06 | git | Git (Beispielkurs, alle Aufgabentypen) | P | [x] |
+| 07 | github | GitHub | P | [x] |
+| 08 | teamarbeit | Arbeiten im Team | P | [x] |
+| 09 | entwicklungsumgebung | Entwicklungsumgebung & Task-Runner (mise, direnv, EditorConfig, Devcontainer, Makefile) | A | [x] |
+| 10 | node-runtimes-paketmanager | Node.js, Runtimes & Paketmanager | P | [x] |
+| 11 | libraries-pakete-registries | Libraries, Pakete & Registries | P | [x] |
+| 12 | projektaufbau | Aufbau eines Projekts | P | [x] |
+| 13 | datenformate | JSON, YAML & Datenformate | P | [x] |
+| 14 | regex | Reguläre Ausdrücke | P | [x] |
+| 15 | debugging-devtools | Debugging & Entwicklertools | P | [x] |
+| 16 | fremden-code-lesen | Fremden Code lesen und verstehen | P | [x] |
+| 17 | phpstorm-datenbank-tools | PhpStorm: Datenbank-Tools | P | [x] |
+| 18 | http-https | HTTP & HTTPS | P | [x] |
+| 19 | apis-endpunkte | Endpunkte & APIs | P | [x] |
+| 20 | api-dokumentation | API-Dokumentation automatisieren (OpenAPI, swagger-php, Scramble, Redocly) | P+A | [x] |
+| 21 | dokumentation-schreiben | Dokumentation schreiben | P | [x] |
+| 22 | html-css-tailwind | HTML & CSS inkl. Tailwind | P | [x] |
+| 23 | javascript | JavaScript | P | [~] |
+| 24 | typescript | TypeScript | P | [~] |
+| 25 | react | React | P | [~] |
+| 26 | react-komponenten-architektur | React-Komponenten-Architektur (Atomic Design, Compound Components, Storybook) | P+A | [~] |
 | 27 | moderner-react-stack | Moderner React-Stack (Vite, Tailwind, shadcn/ui, Zod, React Router Data Mode, Bun) | P | [ ] |
 | 28 | server-state-tanstack | Server-State mit TanStack Query & Table | A | [ ] |
 | 29 | monorepos-workspaces | Monorepos & Workspaces (Bun Workspaces, Catalogs) | A | [ ] |
 | 30 | internationalisierung | Internationalisierung (i18n) | A | [ ] |
-| 31 | php | PHP | P | [ ] |
-| 32 | datenbanken-sql | Datenbanken & SQL | P | [ ] |
-| 33 | laravel | Laravel (Hauptkurs) | P | [ ] |
+| 31 | php | PHP | P | [~] |
+| 32 | datenbanken-sql | Datenbanken & SQL | P | [~] |
+| 33 | laravel | Laravel (Hauptkurs) | P | [~] |
 | 34 | laravel-vertieft | Laravel vertieft | P | [ ] |
 | 35 | laravel-architektur | Architektur großer Laravel-Apps (Services, DTOs, Repositories, Multi-Tenancy, modularer Monolith) | A | [ ] |
 | 36 | authentifizierung | Authentifizierung (Sessions, JWT, OAuth, Sanctum, 2FA) | P+A | [ ] |
