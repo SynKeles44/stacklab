@@ -1,0 +1,713 @@
+title: Pipeline und Zero-Downtime-Deployment für einen Mini-Shop
+description: |
+  In diesem Projekt baust du für einen kleinen PHP-Shop die komplette Auslieferungskette – so, wie ein Team sie
+  im Alltag nutzt: ein CI-Skript, das lokal und in GitHub Actions gleich läuft, einen CI-Workflow mit Matrix,
+  ein versioniertes Build-Artefakt mit Prüfsumme, einen Deploy-Workflow mit Environment und Freigabe sowie ein
+  Deploy-Skript mit Release-Ordnern, atomarem Symlink-Wechsel und Rollback.
+
+  GitHub selbst ist im Übungs-Terminal nicht erreichbar. Deshalb prüft Stacklab deine Workflows mit einem
+  YAML-Parser, und der „Server“ ist der Ordner `server/` in deinem Projekt. Die Skripte, die du schreibst,
+  funktionieren auf einem echten Server genauso.
+
+  Klicke zuerst auf **Projekt vorbereiten**. Dabei entsteht im Ordner `projekt` ein Git-Repository mit dem
+  Shop-Code, einem Test und dem nachgebauten Server. Öffne dann das Übungs-Terminal und wechsle mit `cd projekt`
+  hinein. Die Schritte bauen aufeinander auf – lösche nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Ein Repository mit `scripts/ci.sh`, `scripts/build.sh`, `scripts/deploy.sh` und `scripts/rollback.sh`, den
+  Workflows `.github/workflows/ci.yml` und `.github/workflows/deploy.yml`, einem Changelog und dem annotierten
+  Tag `v1.0.0` – und einem Server-Ordner, auf dem Version 1.0.0 per Symlink aktiv ist.
+workdir: projekt
+setup: |
+  git init -q -b main
+  git config user.name "Stacklab"
+  git config user.email "stacklab@example.com"
+  mkdir -p src public tests server/shared/storage/logs server/releases
+  cat > src/Cart.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  /** @param list<array{price: int, qty: int}> $items */
+  function cartTotalCents(array $items): int
+  {
+      return array_sum(array_map(fn (array $item): int => $item['price'] * $item['qty'], $items));
+  }
+  EOF
+  cat > public/index.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  require __DIR__ . '/../src/Cart.php';
+
+  echo 'Mini-Shop – Warenkorb: ' . cartTotalCents([['price' => 1999, 'qty' => 2]]) . ' Cent';
+  EOF
+  cat > tests/run.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  require __DIR__ . '/../src/Cart.php';
+
+  $ok = cartTotalCents([]) === 0
+      && cartTotalCents([['price' => 1999, 'qty' => 2], ['price' => 500, 'qty' => 1]]) === 4498;
+
+  echo $ok ? "ok\n" : "FAIL\n";
+  exit($ok ? 0 : 1);
+  EOF
+  printf 'dist/\nserver/\n.env\n' > .gitignore
+  printf 'APP_ENV=\nAPP_DEBUG=\n' > .env.example
+  printf 'APP_ENV=production\nAPP_DEBUG=false\n' > server/shared/.env
+  git add .
+  git commit -q -m "feat: add mini shop"
+steps:
+  - id: ci-skript
+    title: Das CI-Skript
+    description: |
+      Die Pipeline beginnt mit einem Skript, das du lokal genauso startest wie später in GitHub Actions.
+
+      1. Lege `scripts/ci.sh` an (`#!/usr/bin/env bash`, `set -euo pipefail`).
+      2. Stufe `==> Lint`: jede PHP-Datei in `src`, `public` und `tests` mit `php -l` prüfen.
+      3. Stufe `==> Test`: `php tests/run.php` ausführen.
+      4. Mach das Skript ausführbar, starte es und committe es (`ci: add ci script`).
+    checklist:
+      - "`scripts/ci.sh` ist ausführbar und streng (`set -euo pipefail`)"
+      - Lint und Test laufen grün
+      - Das Skript ist committet
+    hints:
+      - "Schleife über alle Dateien: `for f in src/*.php public/*.php tests/*.php; do php -l \"$f\" > /dev/null; done`"
+      - "Vergiss `chmod +x scripts/ci.sh` nicht – Git speichert das Ausführrecht mit."
+    checks:
+      - type: command
+        run: test -x scripts/ci.sh && grep -q "set -euo pipefail" scripts/ci.sh
+        message: scripts/ci.sh fehlt, ist nicht ausführbar oder hat kein set -euo pipefail.
+      - type: command
+        run: scripts/ci.sh 2>&1 | tr '\n' ' '
+        stdout_matches: "==> Lint.*==> Test"
+        message: scripts/ci.sh soll grün durchlaufen und "==> Lint" vor "==> Test" ausgeben.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp -r src public tests scripts "$d"/
+          (cd "$d" && sed -i 's/\$item\[.qty.\]/1/' src/Cart.php && scripts/ci.sh > /dev/null 2>&1); rc=$?
+          rm -rf "$d"; [ "$rc" -ne 0 ]
+        message: Bei einem roten Test muss scripts/ci.sh mit einem Fehler-Code enden.
+      - type: command
+        run: git ls-files scripts/ci.sh
+        stdout_equals: scripts/ci.sh
+        message: scripts/ci.sh ist noch nicht committet.
+    solution: |
+      ```bash
+      mkdir -p scripts
+      cat > scripts/ci.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      echo "==> Lint"
+      for f in src/*.php public/*.php tests/*.php; do
+        php -l "$f" > /dev/null
+      done
+
+      echo "==> Test"
+      php tests/run.php
+      EOF
+      chmod +x scripts/ci.sh
+      scripts/ci.sh
+      git add scripts/ci.sh
+      git commit -m "ci: add ci script"
+      ```
+    solve: |
+      mkdir -p scripts
+      cat > scripts/ci.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      echo "==> Lint"
+      for f in src/*.php public/*.php tests/*.php; do
+        php -l "$f" > /dev/null
+      done
+
+      echo "==> Test"
+      php tests/run.php
+      EOF
+      chmod +x scripts/ci.sh
+      scripts/ci.sh > /dev/null
+      git add scripts/ci.sh
+      git commit -q -m "ci: add ci script"
+
+  - id: ci-workflow
+    title: Der CI-Workflow
+    description: |
+      Jetzt läuft das Skript bei jedem Push und Pull Request in GitHub Actions. Schreib `.github/workflows/ci.yml`:
+
+      1. `name: CI`, Trigger `push` auf `main` und `pull_request`.
+      2. `permissions` mit `contents: read` und `concurrency` mit der Gruppe `ci-${{ github.ref }}` und
+         `cancel-in-progress: true`.
+      3. Job `test` auf `ubuntu-latest` mit einer Matrix `php: ['8.4', '8.5']`.
+      4. Steps: `actions/checkout@v7`, `shivammathur/setup-php@v2` mit `php-version: ${{ matrix.php }}`,
+         `run: scripts/ci.sh`.
+      5. Committe den Workflow (`ci: add github actions workflow`).
+    checklist:
+      - Trigger, Rechte und Concurrency gesetzt
+      - Matrix für PHP 8.4 und 8.5
+      - Workflow ruft dasselbe Skript auf wie du lokal
+      - Workflow ist committet
+    hints:
+      - "Prüfe die Struktur: `bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(\".github/workflows/ci.yml\").text())))' | jq .`"
+      - "Versionen in der Matrix immer in Anführungszeichen: `php: ['8.4', '8.5']`."
+    checks:
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/ci.yml").text())))' | jq -e '.name == "CI" and .on.push.branches == ["main"] and (.on | has("pull_request")) and .permissions.contents == "read"'
+        message: "ci.yml fehlt, ist kein gültiges YAML oder es fehlen name: CI, push auf main, pull_request oder permissions contents: read."
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/ci.yml").text())))' | jq -e '(.concurrency.group | test("^ci-\\$\\{\\{\\s*github\\.ref\\s*\\}\\}$")) and .concurrency["cancel-in-progress"] == true'
+        message: concurrency braucht group "ci-${{ github.ref }}" und cancel-in-progress true.
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/ci.yml").text())))' | jq -e '.jobs.test | .["runs-on"] == "ubuntu-latest" and ((.strategy.matrix.php | map(tostring) | sort) == ["8.4","8.5"]) and (.steps | map(.uses // "") | index("actions/checkout@v7") != null) and (.steps | map(select((.uses // "") | startswith("shivammathur/setup-php@v2"))) | .[0].with["php-version"] | test("matrix\\.php")) and (.steps | map(.run // "") | any(test("scripts/ci\\.sh")))'
+        message: "Job test braucht runs-on ubuntu-latest, die Matrix php ['8.4', '8.5'], Checkout, setup-php mit matrix.php und run: scripts/ci.sh."
+      - type: command
+        run: git ls-files .github/workflows/ci.yml
+        stdout_equals: .github/workflows/ci.yml
+        message: ci.yml ist noch nicht committet.
+    solution: |
+      ```bash
+      mkdir -p .github/workflows
+      cat > .github/workflows/ci.yml <<'EOF'
+      name: CI
+
+      on:
+        push:
+          branches: [main]
+        pull_request:
+
+      permissions:
+        contents: read
+
+      concurrency:
+        group: ci-${{ github.ref }}
+        cancel-in-progress: true
+
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          strategy:
+            matrix:
+              php: ['8.4', '8.5']
+          steps:
+            - uses: actions/checkout@v7
+            - uses: shivammathur/setup-php@v2
+              with:
+                php-version: ${{ matrix.php }}
+            - run: scripts/ci.sh
+      EOF
+      git add .github/workflows/ci.yml
+      git commit -m "ci: add github actions workflow"
+      ```
+    solve: |
+      mkdir -p .github/workflows
+      cat > .github/workflows/ci.yml <<'EOF'
+      name: CI
+
+      on:
+        push:
+          branches: [main]
+        pull_request:
+
+      permissions:
+        contents: read
+
+      concurrency:
+        group: ci-${{ github.ref }}
+        cancel-in-progress: true
+
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          strategy:
+            matrix:
+              php: ['8.4', '8.5']
+          steps:
+            - uses: actions/checkout@v7
+            - uses: shivammathur/setup-php@v2
+              with:
+                php-version: ${{ matrix.php }}
+            - run: scripts/ci.sh
+      EOF
+      git add .github/workflows/ci.yml
+      git commit -q -m "ci: add github actions workflow"
+
+  - id: build-artefakt
+    title: Das Build-Artefakt
+    description: |
+      Ausgeliefert wird ein Paket, das genau einem Commit entspricht – ohne Tests und ohne CI-Dateien.
+
+      1. Lege `.gitattributes` mit `tests export-ignore` und `.github export-ignore` an.
+      2. Schreib `scripts/build.sh` (ausführbar, `set -euo pipefail`): Es erzeugt mit `git archive` die Datei
+         `dist/app-<kurzer-hash>.tar.gz` und daneben `dist/app-<kurzer-hash>.tar.gz.sha256` (mit `sha256sum`
+         im Ordner `dist` erstellt).
+      3. Committe beides (`build: add build script`) und führe danach `scripts/build.sh` aus.
+    checklist:
+      - "`.gitattributes` schließt tests und .github aus"
+      - Artefakt passt zum aktuellen Commit
+      - Prüfsumme lässt sich mit `sha256sum -c` bestätigen
+    hints:
+      - "`SHA=$(git rev-parse --short HEAD)` und `git archive --format=tar.gz -o \"dist/app-$SHA.tar.gz\" HEAD`."
+      - "Erst committen, dann bauen – sonst gehört das Artefakt zu einem älteren Commit."
+    checks:
+      - type: command
+        run: git ls-files .gitattributes scripts/build.sh | sort | tr '\n' ' '
+        stdout_matches: "^\\.gitattributes scripts/build\\.sh\\s*$"
+        message: .gitattributes und scripts/build.sh müssen committet sein.
+      - type: command
+        run: test -x scripts/build.sh && grep -q "set -euo pipefail" scripts/build.sh
+        message: scripts/build.sh ist nicht ausführbar oder hat kein set -euo pipefail.
+      - type: command
+        run: test -f "dist/app-$(git rev-parse --short HEAD).tar.gz"
+        message: Zum aktuellen Commit gibt es kein dist/app-<hash>.tar.gz. Führe scripts/build.sh nach dem Commit aus.
+      - type: command
+        run: cd dist && sha256sum -c "app-$(git rev-parse --short HEAD).tar.gz.sha256"
+        message: Die Prüfsummen-Datei fehlt oder passt nicht zum Artefakt.
+      - type: command
+        run: |
+          f="dist/app-$(git rev-parse --short HEAD).tar.gz"
+          tar -tzf "$f" | grep -q "public/index.php" && ! tar -tzf "$f" | grep -Eq "(^|/)(tests|\.github)/"
+        message: Das Artefakt soll public/index.php enthalten, aber weder tests/ noch .github/.
+    solution: |
+      ```bash
+      printf 'tests export-ignore\n.github export-ignore\n' > .gitattributes
+      cat > scripts/build.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      SHA=$(git rev-parse --short HEAD)
+      mkdir -p dist
+      git archive --format=tar.gz -o "dist/app-$SHA.tar.gz" HEAD
+      (cd dist && sha256sum "app-$SHA.tar.gz" > "app-$SHA.tar.gz.sha256")
+      echo "dist/app-$SHA.tar.gz"
+      EOF
+      chmod +x scripts/build.sh
+      git add .gitattributes scripts/build.sh
+      git commit -m "build: add build script"
+      scripts/build.sh
+      ```
+    solve: |
+      printf 'tests export-ignore\n.github export-ignore\n' > .gitattributes
+      cat > scripts/build.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      SHA=$(git rev-parse --short HEAD)
+      mkdir -p dist
+      git archive --format=tar.gz -o "dist/app-$SHA.tar.gz" HEAD
+      (cd dist && sha256sum "app-$SHA.tar.gz" > "app-$SHA.tar.gz.sha256")
+      echo "dist/app-$SHA.tar.gz"
+      EOF
+      chmod +x scripts/build.sh
+      git add .gitattributes scripts/build.sh
+      git commit -q -m "build: add build script"
+      scripts/build.sh > /dev/null
+
+  - id: deploy-workflow
+    title: Der Deploy-Workflow
+    description: |
+      Der Deploy-Workflow baut einmal und liefert genau dieses Artefakt aus. Schreib `.github/workflows/deploy.yml`:
+
+      1. `name: Deploy`, Trigger `push` auf `main` und `workflow_dispatch`, oben `permissions` mit `contents: read`.
+      2. Job `build`: `ubuntu-latest`, `actions/checkout@v7`, `shivammathur/setup-php@v2` mit `php-version: '8.5'`,
+         `run: scripts/ci.sh`, `run: scripts/build.sh`, dann `actions/upload-artifact@v7` mit `name: app` und
+         `path: dist/`.
+      3. Job `production` (braucht `build`): `environment` mit `name: production` und
+         `url: https://shop.example.com`, `concurrency` mit der Gruppe `production` und `cancel-in-progress: false`,
+         Checkout, `actions/download-artifact@v8` mit `name: app` und `path: dist/`, dann ein `run`-Step, der
+         `scripts/deploy.sh` aufruft (das Skript schreibst du im nächsten Schritt).
+      4. Committe den Workflow (`ci: add deploy workflow`).
+
+      Die Freigabe durch Pflicht-Reviewer stellst du später in GitHub unter **Settings → Environments** ein.
+    checklist:
+      - Build-Job prüft, baut und lädt das Artefakt hoch
+      - Deploy-Job nutzt Environment und Concurrency
+      - Deploy-Job lädt das Artefakt herunter statt neu zu bauen
+    hints:
+      - "Im Deploy-Job checkst du nur aus, um an `scripts/deploy.sh` zu kommen – gebaut wird dort nichts."
+      - "Ein möglicher Deploy-Step: `run: scripts/deploy.sh dist/app-*.tar.gz \"${{ github.run_number }}\"`."
+    checks:
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '.name == "Deploy" and .on.push.branches == ["main"] and (.on | has("workflow_dispatch")) and .permissions.contents == "read"'
+        message: "deploy.yml fehlt, ist kein gültiges YAML oder es fehlen name: Deploy, push auf main, workflow_dispatch oder permissions contents: read."
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '.jobs.build.steps | (map(.run // "") | (any(test("scripts/ci\\.sh")) and any(test("scripts/build\\.sh")))) and (map(select(.uses == "actions/upload-artifact@v7")) | .[0].with | .name == "app" and (.path | test("^dist/?$")))'
+        message: Job build braucht run scripts/ci.sh, run scripts/build.sh und actions/upload-artifact@v7 mit name app und path dist/.
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '.jobs.production | ([.needs] | flatten) == ["build"] and .environment.name == "production" and .environment.url == "https://shop.example.com" and .concurrency.group == "production" and .concurrency["cancel-in-progress"] == false'
+        message: Job production braucht needs build, environment mit name production und url https://shop.example.com sowie concurrency production mit cancel-in-progress false.
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '.jobs.production.steps | (map(select(.uses == "actions/download-artifact@v8")) | .[0].with.name == "app") and (map(.run // "") | any(test("scripts/deploy\\.sh"))) and (map(.run // "") | any(test("build\\.sh")) | not)'
+        message: Job production soll das Artefakt mit actions/download-artifact@v8 (name app) holen, scripts/deploy.sh aufrufen und nicht neu bauen.
+      - type: command
+        run: git ls-files .github/workflows/deploy.yml
+        stdout_equals: .github/workflows/deploy.yml
+        message: deploy.yml ist noch nicht committet.
+    solution: |
+      ```bash
+      cat > .github/workflows/deploy.yml <<'EOF'
+      name: Deploy
+
+      on:
+        push:
+          branches: [main]
+        workflow_dispatch:
+
+      permissions:
+        contents: read
+
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v7
+            - uses: shivammathur/setup-php@v2
+              with:
+                php-version: '8.5'
+            - run: scripts/ci.sh
+            - run: scripts/build.sh
+            - uses: actions/upload-artifact@v7
+              with:
+                name: app
+                path: dist/
+
+        production:
+          needs: build
+          runs-on: ubuntu-latest
+          environment:
+            name: production
+            url: https://shop.example.com
+          concurrency:
+            group: production
+            cancel-in-progress: false
+          steps:
+            - uses: actions/checkout@v7
+            - uses: actions/download-artifact@v8
+              with:
+                name: app
+                path: dist/
+            - run: scripts/deploy.sh dist/app-*.tar.gz "${{ github.run_number }}"
+      EOF
+      git add .github/workflows/deploy.yml
+      git commit -m "ci: add deploy workflow"
+      ```
+    solve: |
+      cat > .github/workflows/deploy.yml <<'EOF'
+      name: Deploy
+
+      on:
+        push:
+          branches: [main]
+        workflow_dispatch:
+
+      permissions:
+        contents: read
+
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v7
+            - uses: shivammathur/setup-php@v2
+              with:
+                php-version: '8.5'
+            - run: scripts/ci.sh
+            - run: scripts/build.sh
+            - uses: actions/upload-artifact@v7
+              with:
+                name: app
+                path: dist/
+
+        production:
+          needs: build
+          runs-on: ubuntu-latest
+          environment:
+            name: production
+            url: https://shop.example.com
+          concurrency:
+            group: production
+            cancel-in-progress: false
+          steps:
+            - uses: actions/checkout@v7
+            - uses: actions/download-artifact@v8
+              with:
+                name: app
+                path: dist/
+            - run: scripts/deploy.sh dist/app-*.tar.gz "${{ github.run_number }}"
+      EOF
+      git add .github/workflows/deploy.yml
+      git commit -q -m "ci: add deploy workflow"
+
+  - id: deploy-skript
+    title: Das Deploy-Skript mit Symlink-Wechsel
+    description: |
+      Jetzt kommt das Herzstück: `scripts/deploy.sh <artefakt> <release-name>`. Als Server dient der Ordner
+      `server/` (mit `server/shared/.env` und `server/shared/storage`).
+
+      1. Prüfe die Prüfsumme mit `sha256sum -c` im Ordner des Artefakts und brich bei einem Fehler ab.
+      2. Entpacke nach `server/releases/<release-name>` und verlinke `.env` und `storage` auf `server/shared`.
+      3. Schalte `server/current` atomar um (`current.tmp` + `mv -T`).
+      4. Behalte nur die drei neuesten Releases (nach Namen sortiert).
+      5. Mach das Skript ausführbar, committe es (`feat: add deploy script`) und liefere einmal aus:
+         `scripts/build.sh` und danach `scripts/deploy.sh dist/app-$(git rev-parse --short HEAD).tar.gz 0001`.
+    checklist:
+      - Prüfsumme wird vor dem Entpacken kontrolliert
+      - Release-Ordner mit Links auf shared
+      - Atomarer Wechsel und Aufräumen
+      - Erstes Release ist aktiv
+    hints:
+      - Den Aufbau kennst du aus der Modul-Übung „Deploy- und Rollback-Skript“.
+      - "Aufräumen: `ls -1 server/releases | sort | head -n -3` liefert alles außer den drei neuesten Releases."
+    checks:
+      - type: command
+        run: test -x scripts/deploy.sh && grep -q "set -euo pipefail" scripts/deploy.sh && git ls-files --error-unmatch scripts/deploy.sh > /dev/null
+        message: scripts/deploy.sh fehlt, ist nicht ausführbar, hat kein set -euo pipefail oder ist nicht committet.
+      - type: command
+        run: test -L server/current && test -f server/current/public/index.php && test "$(readlink -f server/current/.env)" = "$(readlink -f server/shared/.env)"
+        message: server/current zeigt noch auf kein Release mit public/index.php und verlinkter .env. Liefere einmal mit scripts/deploy.sh aus.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/scripts" "$d/server/shared/storage" "$d/server/releases"
+          cp scripts/deploy.sh "$d/scripts/"; printf 'APP_ENV=production\n' > "$d/server/shared/.env"
+          for i in 1 2 3 4; do mkdir -p "$d/b$i/public"; printf 'v%s' "$i" > "$d/b$i/public/index.php"; tar -czf "$d/a$i.tar.gz" -C "$d/b$i" .; (cd "$d" && sha256sum "a$i.tar.gz" > "a$i.tar.gz.sha256"); done
+          (cd "$d" && for i in 1 2 3 4; do scripts/deploy.sh "a$i.tar.gz" "r$i"; done) > /dev/null 2>&1
+          list=$(ls "$d/server/releases" | tr '\n' ' '); cur=$(cat "$d/server/current/public/index.php" 2>/dev/null)
+          env=$(readlink -f "$d/server/current/storage"); want=$(readlink -f "$d/server/shared/storage"); tmp=$([ -e "$d/server/current.tmp" ] && echo ja || echo nein)
+          rm -rf "$d"; [ "$list" = "r2 r3 r4 " ] && [ "$cur" = "v4" ] && [ "$env" = "$want" ] && [ "$tmp" = nein ]
+        message: Nach vier Deployments (r1 bis r4) soll current Version 4 ausliefern, storage auf shared verlinken, nur r2 bis r4 übrig sein und kein current.tmp herumliegen.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/scripts" "$d/server/shared/storage" "$d/server/releases" "$d/b/public"
+          cp scripts/deploy.sh "$d/scripts/"; printf 'APP_ENV=production\n' > "$d/server/shared/.env"
+          printf 'x' > "$d/b/public/index.php"; tar -czf "$d/a.tar.gz" -C "$d/b" .; echo "0000000000000000000000000000000000000000000000000000000000000000  a.tar.gz" > "$d/a.tar.gz.sha256"
+          (cd "$d" && scripts/deploy.sh a.tar.gz r1) > /dev/null 2>&1; rc=$?
+          n=$(ls "$d/server/releases" | wc -l); rm -rf "$d"; [ "$rc" -ne 0 ] && [ "$n" -eq 0 ]
+        message: Bei falscher Prüfsumme muss scripts/deploy.sh abbrechen, bevor ein Release-Ordner entsteht.
+    solution: |
+      ```bash
+      cat > scripts/deploy.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      artifact="${1:?Aufruf: scripts/deploy.sh <artefakt> <release-name>}"
+      name="${2:?Release-Name fehlt}"
+      base=server
+
+      (cd "$(dirname "$artifact")" && sha256sum -c --quiet "$(basename "$artifact").sha256")
+
+      release="$base/releases/$name"
+      mkdir -p "$base/releases"
+      mkdir "$release"
+      tar -xzf "$artifact" -C "$release"
+      ln -s ../../shared/.env "$release/.env"
+      ln -s ../../shared/storage "$release/storage"
+
+      ln -sfn "releases/$name" "$base/current.tmp"
+      mv -T "$base/current.tmp" "$base/current"
+
+      ls -1 "$base/releases" | sort | head -n -3 | while read -r old; do
+        rm -rf "${base:?}/releases/$old"
+      done
+      echo "Aktiv: $name"
+      EOF
+      chmod +x scripts/deploy.sh
+      git add scripts/deploy.sh
+      git commit -m "feat: add deploy script"
+      scripts/build.sh
+      scripts/deploy.sh "dist/app-$(git rev-parse --short HEAD).tar.gz" 0001
+      cat server/current/public/index.php
+      ```
+    solve: |
+      cat > scripts/deploy.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      artifact="${1:?Aufruf: scripts/deploy.sh <artefakt> <release-name>}"
+      name="${2:?Release-Name fehlt}"
+      base=server
+
+      (cd "$(dirname "$artifact")" && sha256sum -c --quiet "$(basename "$artifact").sha256")
+
+      release="$base/releases/$name"
+      mkdir -p "$base/releases"
+      mkdir "$release"
+      tar -xzf "$artifact" -C "$release"
+      ln -s ../../shared/.env "$release/.env"
+      ln -s ../../shared/storage "$release/storage"
+
+      ln -sfn "releases/$name" "$base/current.tmp"
+      mv -T "$base/current.tmp" "$base/current"
+
+      ls -1 "$base/releases" | sort | head -n -3 | while read -r old; do
+        rm -rf "${base:?}/releases/$old"
+      done
+      echo "Aktiv: $name"
+      EOF
+      chmod +x scripts/deploy.sh
+      git add scripts/deploy.sh
+      git commit -q -m "feat: add deploy script"
+      scripts/build.sh > /dev/null
+      if [ ! -e server/releases/0001 ]; then
+        scripts/deploy.sh "dist/app-$(git rev-parse --short HEAD).tar.gz" 0001 > /dev/null
+      fi
+
+  - id: rollback-skript
+    title: Rollback in Sekunden
+    description: |
+      Ein Deployment ist nur so gut wie sein Rückweg. Schreib `scripts/rollback.sh`:
+
+      1. Es ermittelt das aktive Release aus `server/current`.
+      2. Es schaltet `server/current` atomar auf das Release, das nach Namen sortiert **direkt davor** liegt.
+      3. Gibt es kein älteres Release, bricht es mit einer Meldung auf der Standardfehlerausgabe und Exit-Code 1 ab –
+         ohne `current` zu verändern.
+      4. Mach es ausführbar und committe es (`feat: add rollback script`).
+    checklist:
+      - Vorgänger wird korrekt ermittelt
+      - Umschalten ist atomar
+      - Kein älteres Release → Fehler, current bleibt
+    hints:
+      - "`current=$(basename \"$(readlink server/current)\")` liefert den Namen des aktiven Releases."
+      - "`ls -1 server/releases | sort | grep -B1 -x \"$current\" | head -n 1` liefert den Vorgänger – oder das aktive Release selbst, wenn es keinen gibt."
+    checks:
+      - type: command
+        run: test -x scripts/rollback.sh && grep -q "set -euo pipefail" scripts/rollback.sh && git ls-files --error-unmatch scripts/rollback.sh > /dev/null
+        message: scripts/rollback.sh fehlt, ist nicht ausführbar, hat kein set -euo pipefail oder ist nicht committet.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/scripts" "$d/server/releases/r1" "$d/server/releases/r2" "$d/server/releases/r3"
+          cp scripts/rollback.sh "$d/scripts/"; ln -s releases/r3 "$d/server/current"
+          (cd "$d" && scripts/rollback.sh) > /dev/null 2>&1; a=$(basename "$(readlink -f "$d/server/current")")
+          (cd "$d" && scripts/rollback.sh) > /dev/null 2>&1; b=$(basename "$(readlink -f "$d/server/current")")
+          (cd "$d" && scripts/rollback.sh) > /dev/null 2>&1; rc=$?; c=$(basename "$(readlink -f "$d/server/current")")
+          tmp=$([ -e "$d/server/current.tmp" ] && echo ja || echo nein); rm -rf "$d"
+          [ "$a" = r2 ] && [ "$b" = r1 ] && [ "$rc" -ne 0 ] && [ "$c" = r1 ] && [ "$tmp" = nein ]
+        message: rollback.sh soll current von r3 auf r2, dann auf r1 setzen und beim ältesten Release mit Fehler abbrechen, ohne current zu verändern.
+    solution: |
+      ```bash
+      cat > scripts/rollback.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      base=server
+      current=$(basename "$(readlink "$base/current")")
+      previous=$(ls -1 "$base/releases" | sort | grep -B1 -x "$current" | head -n 1)
+
+      if [ -z "$previous" ] || [ "$previous" = "$current" ]; then
+        echo "Kein älteres Release vorhanden" >&2
+        exit 1
+      fi
+
+      ln -sfn "releases/$previous" "$base/current.tmp"
+      mv -T "$base/current.tmp" "$base/current"
+      echo "Zurück auf: $previous"
+      EOF
+      chmod +x scripts/rollback.sh
+      git add scripts/rollback.sh
+      git commit -m "feat: add rollback script"
+      ```
+    solve: |
+      cat > scripts/rollback.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      base=server
+      current=$(basename "$(readlink "$base/current")")
+      previous=$(ls -1 "$base/releases" | sort | grep -B1 -x "$current" | head -n 1)
+
+      if [ -z "$previous" ] || [ "$previous" = "$current" ]; then
+        echo "Kein älteres Release vorhanden" >&2
+        exit 1
+      fi
+
+      ln -sfn "releases/$previous" "$base/current.tmp"
+      mv -T "$base/current.tmp" "$base/current"
+      echo "Zurück auf: $previous"
+      EOF
+      chmod +x scripts/rollback.sh
+      git add scripts/rollback.sh
+      git commit -q -m "feat: add rollback script"
+
+  - id: release-1-0-0
+    title: Release 1.0.0 ausliefern
+    description: |
+      Zum Abschluss veröffentlichst du die erste Version – mit Changelog, Tag und Deployment genau dieses Stands.
+
+      1. Lege `CHANGELOG.md` mit einem Abschnitt `## [1.0.0]` und einer Unterüberschrift `### Added` an
+         (ein paar Stichpunkte: Warenkorb, CI, Deployment mit Rollback).
+      2. Committe ihn (`chore(release): 1.0.0`) und setze darauf den **annotierten** Tag `v1.0.0`.
+      3. Baue das Artefakt für diesen Commit und liefere es als Release `0002` aus.
+    checklist:
+      - Changelog mit Version 1.0.0
+      - Annotierter Tag v1.0.0 auf dem letzten Commit
+      - Release 0002 mit dem getaggten Stand ist aktiv
+      - Keine offenen Änderungen im Repository
+    hints:
+      - "`git tag -a v1.0.0 -m \"Release 1.0.0\"` legt einen annotierten Tag an."
+      - "Danach `scripts/build.sh` und `scripts/deploy.sh \"dist/app-$(git rev-parse --short HEAD).tar.gz\" 0002`."
+    checks:
+      - type: file_contains
+        path: CHANGELOG.md
+        pattern: "## \\[1\\.0\\.0\\][\\s\\S]*### Added"
+        message: In CHANGELOG.md fehlt ein Abschnitt "## [1.0.0]" mit "### Added".
+      - type: command
+        run: git cat-file -t v1.0.0
+        stdout_equals: tag
+        message: Es gibt keinen annotierten Tag v1.0.0.
+      - type: command
+        run: test "$(git rev-parse v1.0.0^{commit})" = "$(git rev-parse HEAD)" && git show --name-only --format= HEAD | grep -qx CHANGELOG.md
+        message: Der Tag v1.0.0 soll auf den letzten Commit zeigen, und dieser Commit soll CHANGELOG.md enthalten.
+      - type: command
+        run: test -z "$(git status --porcelain)"
+        message: Es gibt noch nicht committete Änderungen im Repository.
+      - type: command
+        run: test "$(basename "$(readlink -f server/current)")" = 0002 && test -f server/current/CHANGELOG.md
+        message: server/current soll auf das Release 0002 zeigen, das den Stand mit CHANGELOG.md enthält.
+    solution: |
+      ```bash
+      cat > CHANGELOG.md <<'EOF'
+      # Changelog
+
+      ## [1.0.0] - 2026-10-10
+
+      ### Added
+
+      - Warenkorb mit Summenberechnung.
+      - CI mit GitHub Actions und lokalem CI-Skript.
+      - Deployment mit Release-Ordnern, atomarem Symlink-Wechsel und Rollback.
+      EOF
+      git add CHANGELOG.md
+      git commit -m "chore(release): 1.0.0"
+      git tag -a v1.0.0 -m "Release 1.0.0"
+      scripts/build.sh
+      scripts/deploy.sh "dist/app-$(git rev-parse --short HEAD).tar.gz" 0002
+      readlink server/current
+      ```
+    solve: |
+      cat > CHANGELOG.md <<'EOF'
+      # Changelog
+
+      ## [1.0.0] - 2026-10-10
+
+      ### Added
+
+      - Warenkorb mit Summenberechnung.
+      - CI mit GitHub Actions und lokalem CI-Skript.
+      - Deployment mit Release-Ordnern, atomarem Symlink-Wechsel und Rollback.
+      EOF
+      git add CHANGELOG.md
+      git commit -q -m "chore(release): 1.0.0"
+      git tag -a v1.0.0 -m "Release 1.0.0"
+      scripts/build.sh > /dev/null
+      if [ ! -e server/releases/0002 ]; then
+        scripts/deploy.sh "dist/app-$(git rev-parse --short HEAD).tar.gz" 0002 > /dev/null
+      fi

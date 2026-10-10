@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="500" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">OIDC: Zugang zur Cloud ohne gespeicherten Schlüssel</text>
+<rect x="60" y="60" width="220" height="56" rx="10" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="170" y="94" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Deploy-Job</text>
+<rect x="390" y="60" width="220" height="56" rx="10" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="500" y="94" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">GitHub OIDC-Provider</text>
+<rect x="720" y="60" width="220" height="56" rx="10" fill="#f59e0b" fill-opacity=".18" stroke="#f59e0b" stroke-width="2.5"/>
+<text x="830" y="94" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Cloud-Anbieter</text>
+<path d="M170 118 V480 M500 118 V480 M830 118 V480" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6 6"/>
+<path d="M172 160 H496" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="334" y="150" text-anchor="middle" font-size="13" fill="#1e1b3a">1. Token anfordern (id-token: write)</text>
+<path d="M498 215 H174" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="334" y="205" text-anchor="middle" font-size="13" fill="#1e1b3a">2. signiertes JWT, nur für diesen Job</text>
+<rect x="190" y="225" width="300" height="34" rx="6" fill="#f8fafc" stroke="#94a3b8"/>
+<text x="340" y="247" text-anchor="middle" font-size="11" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">sub: repo:example-org/shop:environment:production</text>
+<path d="M172 300 H826" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="500" y="290" text-anchor="middle" font-size="13" fill="#1e1b3a">3. JWT vorzeigen und eine Rolle anfragen</text>
+<rect x="850" y="320" width="140" height="70" rx="8" fill="#f59e0b" fill-opacity=".1" stroke="#f59e0b"/>
+<text x="920" y="345" text-anchor="middle" font-size="12" fill="#1e1b3a">4. prüft Signatur</text>
+<text x="920" y="362" text-anchor="middle" font-size="12" fill="#1e1b3a">und Trust Policy</text>
+<text x="920" y="379" text-anchor="middle" font-size="12" fill="#1e1b3a">(passt sub?)</text>
+<path d="M828 425 H174" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="500" y="415" text-anchor="middle" font-size="13" fill="#1e1b3a">5. kurzlebige Zugangsdaten, z. B. 1 Stunde gültig</text>
+<text x="500" y="470" text-anchor="middle" font-size="13" fill="#1e1b3a">Kein Schlüssel liegt in GitHub. Läuft der Job ab, sind auch die Zugangsdaten wertlos.</text>
+</svg>

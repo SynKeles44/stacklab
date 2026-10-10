@@ -1,0 +1,107 @@
+title: CI/CD verstehen
+description: Was Continuous Integration, Delivery und Deployment bedeuten, wie eine Pipeline aus Stufen aufgebaut ist und warum du einmal baust und überall auslieferst.
+exercise:
+  id: modul-uebung-pipeline
+  type: terminal
+  title: Eine komplette Pipeline als Skript
+  description: |
+    Im Ordner `pipeline-uebung` liegt das Git-Repository einer kleinen PHP-App mit einem Test in `tests/run.php`.
+    Bau die Pipeline, die später auch in GitHub Actions laufen soll – zuerst als lokales Skript.
+
+    1. Schreib ein ausführbares Skript `pipeline.sh` mit `set -euo pipefail` und drei Stufen in dieser Reihenfolge:
+       - `==> Lint`: jede PHP-Datei in `src` und `tests` mit `php -l` prüfen,
+       - `==> Test`: `php tests/run.php` ausführen,
+       - `==> Build`: mit `git archive` das Artefakt `dist/app-<kurzer-hash>.tar.gz` bauen und daneben die
+         Prüfsumme `dist/app-<kurzer-hash>.tar.gz.sha256` schreiben.
+    2. Committe `pipeline.sh` (die `.gitignore` schließt `dist/` schon aus).
+    3. Führe `./pipeline.sh` aus – das Artefakt muss zum **aktuellen** Commit gehören.
+
+    Stacklab prüft zusätzlich, dass bei einem roten Test **kein** Artefakt entsteht.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: pipeline-uebung
+  setup: |
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    mkdir -p src tests public
+    cat > src/Shipping.php <<'PHP'
+    <?php
+
+    declare(strict_types=1);
+
+    function shippingCents(int $cartCents): int
+    {
+        return $cartCents >= 5000 ? 0 : 495;
+    }
+    PHP
+    cat > tests/run.php <<'PHP'
+    <?php
+
+    declare(strict_types=1);
+
+    require __DIR__ . '/../src/Shipping.php';
+
+    $ok = shippingCents(4999) === 495 && shippingCents(5000) === 0;
+    echo $ok ? "ok\n" : "FAIL\n";
+    exit($ok ? 0 : 1);
+    PHP
+    printf '<?php\n\nrequire __DIR__ . "/../src/Shipping.php";\n\necho shippingCents(1200);\n' > public/index.php
+    printf 'dist/\n' > .gitignore
+    git add .
+    git commit -q -m "feat: add shipping costs"
+  checks:
+    - type: command
+      run: test -x pipeline.sh && grep -q "set -euo pipefail" pipeline.sh
+      message: pipeline.sh fehlt, ist nicht ausführbar oder hat kein set -euo pipefail.
+    - type: command
+      run: git ls-files pipeline.sh
+      stdout_equals: pipeline.sh
+      message: pipeline.sh ist noch nicht committet.
+    - type: command
+      run: ./pipeline.sh 2>&1 | grep "==>" | tr '\n' ' '
+      stdout_matches: "==> Lint.*==> Test.*==> Build"
+      message: Die Stufen sollen in der Reihenfolge Lint, Test, Build laufen und "==> Lint", "==> Test", "==> Build" ausgeben.
+    - type: command
+      run: test -f "dist/app-$(git rev-parse --short HEAD).tar.gz"
+      message: Zum aktuellen Commit gibt es kein dist/app-<hash>.tar.gz. Führe ./pipeline.sh nach dem Commit aus.
+    - type: command
+      run: cd dist && sha256sum -c "app-$(git rev-parse --short HEAD).tar.gz.sha256"
+      message: Die Prüfsummen-Datei fehlt oder passt nicht zum Archiv.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp -r .git src tests public pipeline.sh .gitignore "$d"/
+        (cd "$d" && sed -i 's/495/500/' src/Shipping.php && ./pipeline.sh > out.txt 2>&1); rc=$?
+        n=$(ls "$d"/dist/*.tar.gz 2>/dev/null | wc -l); rm -rf "$d"
+        [ "$rc" -ne 0 ] && [ "$n" -eq 0 ]
+      message: Bei einem roten Test muss pipeline.sh mit Fehler abbrechen, bevor ein Artefakt entsteht.
+  hints:
+    - Fang mit dem CI-Skript aus der Lektion „Pipeline-Stufen“ an und hänge die Build-Stufe aus der Artefakt-Lektion an.
+    - "`set -e` sorgt dafür, dass die Build-Stufe nach einem roten Test gar nicht erst startet."
+    - "Reihenfolge: Skript schreiben → `chmod +x` → `git add pipeline.sh && git commit` → `./pipeline.sh`."
+  solution: |
+    ```bash
+    cd pipeline-uebung
+    cat > pipeline.sh <<'EOF'
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    echo "==> Lint"
+    for f in src/*.php tests/*.php; do
+      php -l "$f" > /dev/null
+    done
+
+    echo "==> Test"
+    php tests/run.php
+
+    echo "==> Build"
+    SHA=$(git rev-parse --short HEAD)
+    mkdir -p dist
+    git archive --format=tar.gz -o "dist/app-$SHA.tar.gz" HEAD
+    (cd dist && sha256sum "app-$SHA.tar.gz" > "app-$SHA.tar.gz.sha256")
+    EOF
+    chmod +x pipeline.sh
+    git add pipeline.sh
+    git commit -m "ci: add local pipeline script"
+    ./pipeline.sh
+    ```

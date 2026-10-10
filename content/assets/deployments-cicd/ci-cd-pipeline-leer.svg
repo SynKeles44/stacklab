@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="500" y="40" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Eine CI/CD-Pipeline vom Push bis in die Produktion</text>
+<rect x="20" y="150" width="130" height="80" rx="12" fill="#a78bfa" fill-opacity=".16" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="85" y="186" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Push</text>
+<text x="85" y="208" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git push</text>
+<path d="M152 190 H176" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="180" y="150" width="150" height="80" rx="12" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee" stroke-width="2.5"/>
+<path d="M332 190 H356" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="360" y="150" width="150" height="80" rx="12" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee" stroke-width="2.5"/>
+<path d="M512 190 H536" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="540" y="150" width="140" height="80" rx="12" fill="#34d399" fill-opacity=".16" stroke="#34d399" stroke-width="2.5"/>
+<path d="M682 190 H706" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="710" y="150" width="120" height="80" rx="12" fill="#f59e0b" fill-opacity=".16" stroke="#f59e0b" stroke-width="2.5"/>
+<path d="M832 190 H856" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="860" y="150" width="120" height="80" rx="12" fill="#f87171" fill-opacity=".16" stroke="#f87171" stroke-width="2.5"/>
+<path d="M180 262 V272 H510 V262" fill="none" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="345" y="294" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Continuous Integration: jede Änderung wird geprüft</text>
+<path d="M180 312 V322 H830 V312" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+<text x="505" y="344" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Continuous Delivery: immer auslieferbar – Produktion per Freigabe</text>
+<path d="M180 362 V372 H980 V362" fill="none" stroke="#f87171" stroke-width="2.5"/>
+<text x="580" y="394" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Continuous Deployment: ohne Freigabe automatisch bis in die Produktion</text>
+<text x="500" y="110" text-anchor="middle" font-size="14" fill="#1e1b3a">Schlägt eine Stufe fehl, stoppt die Pipeline – nichts Kaputtes erreicht die nächste Stufe.</text>
+</svg>

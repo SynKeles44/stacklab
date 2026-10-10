@@ -1,0 +1,72 @@
+title: Releases und Strategien
+description: Versionen und Releases sauber markieren, die passende Deployment-Strategie wählen und Konfiguration so verwalten, dass dasselbe Artefakt in jeder Umgebung läuft.
+exercise:
+  id: modul-uebung-rollout
+  type: code
+  language: js
+  title: Ein schrittweiser Rollout per Feature-Flag
+  description: |
+    Canary-Releases und Feature-Flags teilen eine Idee: Erst ein Teil der Nutzer bekommt die neue Funktion.
+    Wichtig ist, dass **dieselbe** Person bei jedem Besuch dasselbe Ergebnis bekommt – sonst springt der Checkout
+    zwischen alt und neu hin und her.
+
+    Schreib zwei Funktionen:
+
+    1. `bucket(flagName, userId)` – berechnet eine Zahl von 0 bis 99:
+       - Bilde den Text `flagName + ':' + userId`.
+       - Starte mit `h = 0` und rechne für jedes Zeichen `h = (h * 31 + zeichen.charCodeAt(0)) % 1000003`.
+       - Gib `h % 100` zurück.
+    2. `isEnabled(flag, userId)` – `flag` ist ein Objekt `{ name, percent, allow }`:
+       - Steht `userId` in der Liste `allow`, ist die Funktion immer an.
+       - Sonst ist sie an, wenn `bucket(flag.name, userId) < flag.percent`.
+       - `percent: 0` heißt also „für niemanden außer allow“, `percent: 100` „für alle“.
+  starter: |
+    function bucket(flagName, userId) {
+      let h = 0
+      return h % 100
+    }
+
+    function isEnabled(flag, userId) {
+      return false
+    }
+  tests:
+    - name: bucket ist reproduzierbar und liegt zwischen 0 und 99
+      code: |
+        const b = bucket('new-checkout', 'user-42')
+        assertEqual(b, bucket('new-checkout', 'user-42'))
+        assertTrue(b >= 0 && b < 100)
+    - name: bucket rechnet wie beschrieben
+      code: "assertEqual(bucket('a', 'b'), ((((97 * 31 + 58) * 31) + 98) % 1000003) % 100)"
+    - name: allow-Liste schaltet immer frei
+      code: "assertTrue(isEnabled({ name: 'new-checkout', percent: 0, allow: ['qa-1'] }, 'qa-1'))"
+    - name: 0 und 100 Prozent
+      code: |
+        const users = Array.from({ length: 50 }, (_, i) => 'user-' + i)
+        assertTrue(users.every((u) => !isEnabled({ name: 'x', percent: 0, allow: [] }, u)))
+        assertTrue(users.every((u) => isEnabled({ name: 'x', percent: 100, allow: [] }, u)))
+    - name: Prozentsatz grenzt über bucket ab
+      code: |
+        const flag = { name: 'search-v2', percent: 25, allow: [] }
+        for (let i = 0; i < 200; i++) {
+          const id = 'user-' + i
+          assertEqual(isEnabled(flag, id), bucket('search-v2', id) < 25)
+        }
+  solution: |
+    function bucket(flagName, userId) {
+      const text = flagName + ':' + userId
+      let h = 0
+      for (const char of text) {
+        h = (h * 31 + char.charCodeAt(0)) % 1000003
+      }
+      return h % 100
+    }
+
+    function isEnabled(flag, userId) {
+      if (flag.allow.includes(userId)) {
+        return true
+      }
+      return bucket(flag.name, userId) < flag.percent
+    }
+  hints:
+    - Eine for…of-Schleife über den Text liefert jedes Zeichen einzeln.
+    - "In isEnabled zuerst `flag.allow.includes(userId)` prüfen, danach den bucket mit percent vergleichen."

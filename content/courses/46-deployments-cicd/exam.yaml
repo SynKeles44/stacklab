@@ -1,0 +1,332 @@
+title: Abschlussprüfung Deployments & CI/CD
+description: |
+  Diese Prüfung deckt alle vier Module ab: CI/CD-Grundlagen, GitHub Actions, Releases und Strategien sowie
+  Laravel-Deployments ohne Ausfallzeit. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben –
+  einen Workflow im Übungs-Terminal, eine Programmieraufgabe und ein Rollback auf einem nachgebauten Server.
+
+  Du bestehst mit 70 Prozent. Danach siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  # --- Grundlagen ---
+  - module: grundlagen
+    type: single
+    question: Ein Team baut bei jedem Merge automatisch, testet und liefert auf Staging aus. Für Produktion klickt die Teamleitung auf „Freigeben“. Wie heißt diese Praxis?
+    options: [Continuous Integration allein, Continuous Delivery, Continuous Deployment, Recreate-Deployment]
+    answer: 1
+    explanation: >
+      Alles ist automatisch und jederzeit auslieferbar, nur der letzte Schritt braucht eine Freigabe – das ist
+      Continuous Delivery. Ohne Klick wäre es Continuous Deployment.
+  - module: grundlagen
+    type: find-bug
+    question: Dieses CI-Skript lässt einen kaputten Build durch. In welcher Zeile steckt der Fehler?
+    language: bash
+    code: |
+      #!/usr/bin/env bash
+      set -uo pipefail
+      echo "==> Lint"
+      vendor/bin/pint --test
+      echo "==> Test"
+      vendor/bin/pest
+    bug_line: 2
+    explanation: >
+      Ohne `-e` läuft das Skript nach einem fehlgeschlagenen Befehl weiter. Endet der letzte Befehl erfolgreich,
+      meldet das Skript Erfolg. Richtig: `set -euo pipefail`.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen passen zu „Build once, deploy many“?
+    options:
+      - Staging und Produktion bekommen dasselbe Artefakt.
+      - Unterschiede zwischen Umgebungen stecken in der Konfiguration.
+      - Für Produktion wird zur Sicherheit noch einmal frisch gebaut.
+      - Artefakte werden eindeutig benannt, etwa nach Commit-Hash.
+    answers: [0, 1, 3]
+    explanation: Ein Neubau für Produktion wäre ein ungetestetes Artefakt – genau das verhindert das Prinzip.
+  - module: grundlagen
+    type: single
+    question: Welcher Image-Tag eignet sich am wenigsten für ein Produktions-Deployment?
+    options: ["shop:1.4.2", "shop:3f2a9c1", "shop:latest", "shop@sha256:… (Digest)"]
+    answer: 2
+    explanation: "`latest` wandert mit jedem Build weiter. Ein Rollback darauf ist Glückssache."
+  # --- GitHub Actions ---
+  - module: github-actions
+    type: match
+    question: Ordne jedes Werkzeug seinem Zweck zu.
+    pairs:
+      - { left: "needs", right: "Job startet erst nach anderen Jobs" }
+      - { left: "concurrency", right: "verhindert parallele Läufe einer Gruppe" }
+      - { left: "actions/cache", right: "Abhängigkeiten zwischen Läufen aufheben" }
+      - { left: "actions/upload-artifact", right: "Build-Ergebnis an spätere Jobs weitergeben" }
+    explanation: Reihenfolge, Gleichzeitigkeit, Beschleunigung und Weitergabe – vier verschiedene Werkzeuge.
+  - module: github-actions
+    type: single
+    question: "Eine Matrix hat `php: ['8.4', '8.5']` und `os: [ubuntu-latest, windows-latest]`. Wie viele Jobs laufen?"
+    options: ["2", "4", "6", "8"]
+    answer: 1
+    explanation: Zwei mal zwei Kombinationen ergeben vier Jobs.
+  - module: github-actions
+    type: find-bug
+    question: Dieser Deploy-Job soll sich per OIDC bei der Cloud anmelden. Welche Zeile verhindert das?
+    language: yaml
+    code: |
+      deploy:
+        runs-on: ubuntu-latest
+        environment: production
+        permissions:
+          id-token: read
+          contents: read
+        steps:
+          - uses: aws-actions/configure-aws-credentials@v6
+    bug_line: 5
+    explanation: "Um ein OIDC-Token anzufordern, braucht der Job `id-token: write`."
+  - module: github-actions
+    type: multiple
+    question: Was gilt für Environments mit Pflicht-Reviewern?
+    options:
+      - Der Job wartet, bis eine berechtigte Person freigibt.
+      - Environment-Secrets sieht der Job erst nach der Freigabe.
+      - Mit „Prevent self-review“ darf die auslösende Person nicht selbst freigeben.
+      - Die Freigabe ersetzt die Tests.
+    answers: [0, 1, 2]
+    explanation: Die Freigabe ist ein zusätzliches Tor, kein Ersatz für automatische Prüfungen.
+  - module: github-actions
+    type: cloze
+    text: "Ein wiederverwendbarer Workflow hat den Trigger `___`. Der aufrufende Job bindet ihn mit `___: ./.github/workflows/deploy.yml` ein."
+    blanks:
+      - [workflow_call]
+      - [uses]
+    explanation: Der aufgerufene Workflow deklariert `workflow_call`, der aufrufende Job nutzt `uses`, `with` und `secrets`.
+  # --- Releases und Strategien ---
+  - module: releases-und-strategien
+    type: single
+    question: "Aktuelle Version 3.2.5. Seitdem: `fix: …`, `feat(api)!: remove v1 endpoints`. Welche Version folgt?"
+    options: ["3.2.6", "3.3.0", "4.0.0", "3.3.6"]
+    answer: 2
+    explanation: Das `!` markiert einen Breaking Change – MAJOR steigt, MINOR und PATCH werden 0.
+  - module: releases-und-strategien
+    type: match
+    question: Ordne jede Strategie ihrem größten Nachteil zu.
+    pairs:
+      - { left: "Recreate", right: "Ausfallzeit während des Wechsels" }
+      - { left: "Blue-Green", right: "doppelte Infrastruktur" }
+      - { left: "Canary", right: "braucht Monitoring und gewichtetes Routing" }
+      - { left: "Feature-Flag", right: "alte Schalter müssen aufgeräumt werden" }
+    explanation: Jede Strategie kauft Sicherheit mit einem anderen Preis.
+  - module: releases-und-strategien
+    type: find-bug
+    question: Nach `php artisan config:cache` ist die Mail-Absenderadresse leer. In welcher Zeile steckt der Fehler?
+    language: php
+    code: |
+      <?php
+
+      final class OrderMailer
+      {
+          public function from(): string
+          {
+              return (string) env('MAIL_FROM_ADDRESS');
+          }
+      }
+    bug_line: 7
+    explanation: Mit gecachter Konfiguration liefert `env()` außerhalb von `config/` null. Richtig ist `config('mail.from.address')`.
+  - module: releases-und-strategien
+    type: multiple
+    question: Welche Werte gehören NICHT ins Git-Repository?
+    options:
+      - DB_PASSWORD der Produktion
+      - .env.example mit leeren Werten
+      - APP_KEY der Produktion
+      - config/services.php mit env('PAYMENT_API_KEY')
+    answers: [0, 2]
+    explanation: Echte Geheimnisse liegen auf dem Server oder in einem Secret-Speicher. Schlüssel-Namen und Config-Dateien gehören ins Repository.
+  # --- Laravel ohne Ausfallzeit ---
+  - module: laravel-zero-downtime
+    type: single
+    question: Welche Befehlsfolge schaltet `current` atomar auf ein neues Release um?
+    options:
+      - "rm current && ln -s releases/r2 current"
+      - "ln -sfn releases/r2 current.tmp && mv -T current.tmp current"
+      - "cp -r releases/r2 current"
+      - "git pull im Ordner current"
+    answer: 1
+    explanation: Das Umbenennen mit `mv -T` ist ein einziger Schritt. Bei `rm` und `ln` gibt es einen Moment ohne Link.
+  - module: laravel-zero-downtime
+    type: single
+    question: Eine Spalte soll umbenannt werden. Was ist bei Zero-Downtime-Deployments der richtige Weg?
+    options:
+      - renameColumn in einer Migration, Code im selben Release anpassen
+      - "Expand/Contract: neue Spalte hinzufügen, Code umstellen, alte Spalte in einem späteren Release löschen"
+      - Wartungsmodus für eine Stunde
+      - Die Spalte gar nicht umbenennen, sondern die Datenbank neu aufsetzen
+    answer: 1
+    explanation: Jede Phase bleibt mit dem vorigen Release verträglich, das während der Migration noch läuft.
+  - module: laravel-zero-downtime
+    type: cloze
+    text: "Nach dem Umschalten startest du die Queue-Worker mit `php artisan queue:___` neu. Danach prüft ein ___-Test mit `curl -fsS https://shop.example.com/up`, ob die App läuft."
+    blanks:
+      - [restart]
+      - [Smoke, Smoke-]
+    explanation: Worker haben den alten Code im Speicher; der Smoke-Test entscheidet in Sekunden über Bleiben oder Rollback.
+  - module: laravel-zero-downtime
+    type: multiple
+    question: Was gehört in das shared-Verzeichnis einer Laravel-App mit Release-Ordnern?
+    options: [".env", "storage/ mit Uploads, Logs und Sessions", "vendor/", "app/"]
+    answers: [0, 1]
+    explanation: Code und Abhängigkeiten gehören zum jeweiligen Release. Nur Daten, die jedes Release überleben müssen, liegen in shared.
+tasks:
+  - module: github-actions
+    id: pruefung-workflow
+    type: terminal
+    title: Ein Deploy-Workflow mit Build und Freigabe
+    description: |
+      Im Ordner `pruefung-workflow` liegen `ci.sh`, `build.sh` (erzeugt `dist/`) und `deploy.sh`. Schreib
+      `.github/workflows/deploy.yml`:
+
+      1. Trigger `push` auf Tags `v*`; oben `permissions` mit `contents: read`.
+      2. Job `build`: `ubuntu-latest`, `actions/checkout@v7`, `run: ./ci.sh`, `run: ./build.sh`, dann
+         `actions/upload-artifact@v7` mit `name: app` und `path: dist/`.
+      3. Job `production` (braucht `build`): `environment: production`, eigene `permissions` mit
+         `id-token: write` und `contents: read`, `actions/download-artifact@v8` mit `name: app`, dann
+         ein `run`-Step mit `deploy.sh`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-workflow
+    setup: |
+      printf '#!/usr/bin/env bash\nset -euo pipefail\necho ok\n' > ci.sh
+      printf '#!/usr/bin/env bash\nset -euo pipefail\nmkdir -p dist\necho app > dist/app.txt\n' > build.sh
+      printf '#!/usr/bin/env bash\nset -euo pipefail\necho deploy\n' > deploy.sh
+      chmod +x ci.sh build.sh deploy.sh
+    checks:
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '(.on.push.tags | map(test("^v")) | any) and .permissions.contents == "read"'
+        message: "deploy.yml fehlt, ist kein gültiges YAML oder es fehlen der Trigger push mit tags ['v*'] und permissions contents: read."
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '.jobs.build.steps | (map(.uses // "") | index("actions/checkout@v7") != null) and (map(.run // "") | (any(test("ci\\.sh")) and any(test("build\\.sh")))) and (map(select(.uses == "actions/upload-artifact@v7")) | .[0].with | .name == "app" and (.path | test("^dist/?$")))'
+        message: Job build braucht Checkout, ci.sh, build.sh und actions/upload-artifact@v7 mit name app und path dist/.
+      - type: command
+        run: |
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '.jobs.production | ([.needs] | flatten) == ["build"] and (.environment == "production" or .environment.name == "production") and .permissions["id-token"] == "write" and .permissions.contents == "read" and (.steps | map(select(.uses == "actions/download-artifact@v8")) | .[0].with.name == "app") and (.steps | map(.run // "") | any(test("deploy\\.sh")))'
+        message: "Job production braucht needs build, environment production, permissions id-token: write und contents: read, actions/download-artifact@v8 mit name app und einen Step mit deploy.sh."
+    hints:
+      - "Tags filterst du mit `on:` → `push:` → `tags: ['v*']`."
+      - "Prüfe die Struktur mit `bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(\".github/workflows/deploy.yml\").text())))' | jq .`"
+    solution: |
+      ```bash
+      cd pruefung-workflow
+      mkdir -p .github/workflows
+      cat > .github/workflows/deploy.yml <<'EOF'
+      name: Deploy
+
+      on:
+        push:
+          tags: ['v*']
+
+      permissions:
+        contents: read
+
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v7
+            - run: ./ci.sh
+            - run: ./build.sh
+            - uses: actions/upload-artifact@v7
+              with:
+                name: app
+                path: dist/
+
+        production:
+          needs: build
+          runs-on: ubuntu-latest
+          environment: production
+          permissions:
+            id-token: write
+            contents: read
+          steps:
+            - uses: actions/checkout@v7
+            - uses: actions/download-artifact@v8
+              with:
+                name: app
+                path: dist/
+            - run: ./deploy.sh
+      EOF
+      ```
+  - module: releases-und-strategien
+    id: pruefung-aufraeumen
+    type: code
+    language: js
+    title: Welche Releases dürfen weg?
+    description: |
+      Schreib `releasesToDelete(releases, current, keep)`.
+
+      - `releases` ist ein Array von Release-Namen wie `'20261010-1200'` in beliebiger Reihenfolge. Nach Namen
+        sortiert sind sie auch zeitlich sortiert.
+      - Behalten werden die `keep` **neuesten** Releases **und immer** das Release `current` (nach einem Rollback
+        ist das aktive Release nicht unbedingt das neueste).
+      - Gib die zu löschenden Namen aufsteigend sortiert zurück. Das Eingabe-Array darf nicht verändert werden.
+    starter: |
+      function releasesToDelete(releases, current, keep) {
+        return []
+      }
+    tests:
+      - name: behält die drei neuesten
+        code: "assertDeepEqual(releasesToDelete(['r3', 'r1', 'r5', 'r2', 'r4'], 'r5', 3), ['r1', 'r2'])"
+      - name: aktives Release nach Rollback bleibt
+        code: "assertDeepEqual(releasesToDelete(['r1', 'r2', 'r3', 'r4', 'r5'], 'r1', 3), ['r2'])"
+      - name: zu wenige Releases
+        code: "assertDeepEqual(releasesToDelete(['r1', 'r2'], 'r2', 3), [])"
+      - name: Eingabe bleibt unverändert
+        code: |
+          const list = ['r3', 'r1', 'r2']
+          releasesToDelete(list, 'r3', 1)
+          assertDeepEqual(list, ['r3', 'r1', 'r2'])
+    solution: |
+      function releasesToDelete(releases, current, keep) {
+        const sorted = [...releases].sort()
+        const kept = new Set(sorted.slice(Math.max(sorted.length - keep, 0)))
+        kept.add(current)
+        return sorted.filter((name) => !kept.has(name))
+      }
+  - module: laravel-zero-downtime
+    id: pruefung-rollback
+    type: terminal
+    title: Ein fehlerhaftes Release zurückrollen
+    description: |
+      Im Ordner `pruefung-rollback` liegt ein nachgebauter Server. `server/current` zeigt auf das neueste Release
+      `20261010-1400` – und das ist kaputt.
+
+      1. Lass `server/current` **atomar** auf das vorige Release `20261010-1200` zeigen
+         (Hilfslink `current.tmp`, dann `mv -T`).
+      2. Lösche den kaputten Release-Ordner **nicht** – er wird noch zur Fehleranalyse gebraucht.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-rollback
+    setup: |
+      for r in 20261009-0900 20261010-1200 20261010-1400; do
+        mkdir -p "server/releases/$r/public"
+        printf '<?php echo "%s";\n' "$r" > "server/releases/$r/public/index.php"
+      done
+      printf '<?php throw new RuntimeException("kaputt");\n' > server/releases/20261010-1400/public/index.php
+      ln -s releases/20261010-1400 server/current
+    checks:
+      - type: command
+        run: test -L server/current && test "$(basename "$(readlink -f server/current)")" = 20261010-1200
+        message: server/current zeigt nicht auf releases/20261010-1200.
+      - type: file_absent
+        path: server/current.tmp
+        message: server/current.tmp liegt noch herum – benenne ihn mit mv -T in current um.
+      - type: dir_exists
+        path: server/releases/20261010-1400
+        message: Der kaputte Release-Ordner wurde gelöscht – er soll für die Fehleranalyse bleiben.
+    hints:
+      - "`ln -sfn releases/20261010-1200 server/current.tmp` legt den Hilfslink an – relativ zum Ordner server."
+      - "Dann `mv -T server/current.tmp server/current`."
+    solution: |
+      ```bash
+      cd pruefung-rollback
+      ln -sfn releases/20261010-1200 server/current.tmp
+      mv -T server/current.tmp server/current
+      cat server/current/public/index.php
+      ```

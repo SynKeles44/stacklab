@@ -1,0 +1,137 @@
+title: Laravel ohne Ausfallzeit
+description: Laravel-Apps mit Release-Ordnern, geteiltem shared-Verzeichnis und atomarem Symlink-Wechsel ausliefern, Migrationen abwärtskompatibel planen, Queue-Worker neu starten und in Sekunden zurückrollen.
+exercise:
+  id: modul-uebung-deploy
+  type: terminal
+  title: Deploy- und Rollback-Skript für Release-Ordner
+  description: |
+    Im Ordner `deploy-skript` liegt ein nachgebauter Server (`server/shared` mit `.env` und `storage/`) und fünf
+    Artefakte: `app-v1.tar.gz` bis `app-v4.tar.gz` sowie `app-kaputt.tar.gz`, jeweils mit einer Datei
+    `….tar.gz.sha256`. Die Prüfsumme von `app-kaputt` passt absichtlich nicht.
+
+    Schreib zwei ausführbare Skripte mit `set -euo pipefail`:
+
+    1. `deploy.sh <artefakt> <release-name>`
+       - prüft die Prüfsumme mit `sha256sum -c` (im Ordner des Artefakts) und bricht bei einem Fehler ab,
+       - entpackt nach `server/releases/<release-name>`,
+       - verlinkt `.env` und `storage` auf `server/shared`,
+       - schaltet `server/current` atomar um (`current.tmp` + `mv -T`),
+       - behält nur die **drei neuesten** Releases (nach Namen sortiert) und löscht ältere.
+    2. `rollback.sh` – lässt `server/current` atomar auf das Release zeigen, das (nach Namen sortiert) **direkt
+       vor** dem aktuellen liegt, und bricht mit Fehler ab, wenn es keins gibt.
+
+    Stacklab spielt mit Kopien deiner Skripte mehrere Deployments durch. Teste selbst zum Beispiel mit
+    `./deploy.sh app-v1.tar.gz 20261010-0100`. Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: deploy-skript
+  setup: |
+    mkdir -p server/shared/storage/logs server/releases
+    printf 'APP_ENV=production\n' > server/shared/.env
+    for v in 1 2 3 4; do
+      mkdir -p "build-$v/public"
+      printf '<?php echo "Version %s";\n' "$v" > "build-$v/public/index.php"
+      tar -czf "app-v$v.tar.gz" -C "build-$v" .
+      sha256sum "app-v$v.tar.gz" > "app-v$v.tar.gz.sha256"
+      rm -rf "build-$v"
+    done
+    cp app-v4.tar.gz app-kaputt.tar.gz
+    sha256sum app-v1.tar.gz | sed 's/app-v1/app-kaputt/' > app-kaputt.tar.gz.sha256
+  checks:
+    - type: command
+      run: test -x deploy.sh && test -x rollback.sh && grep -q "set -euo pipefail" deploy.sh && grep -q "set -euo pipefail" rollback.sh
+      message: deploy.sh und rollback.sh müssen existieren, ausführbar sein und set -euo pipefail enthalten.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp deploy.sh rollback.sh app-v*.tar.gz* "$d"/
+        mkdir -p "$d/server/shared/storage" "$d/server/releases"; printf 'APP_ENV=production\n' > "$d/server/shared/.env"
+        (cd "$d" && ./deploy.sh app-v1.tar.gz r1 && ./deploy.sh app-v2.tar.gz r2) > /dev/null 2>&1
+        ok=0
+        [ "$(readlink -f "$d/server/current")" = "$(readlink -f "$d/server/releases/r2")" ] || ok=1
+        grep -q "Version 2" "$d/server/current/public/index.php" || ok=1
+        [ "$(readlink -f "$d/server/releases/r2/.env")" = "$(readlink -f "$d/server/shared/.env")" ] || ok=1
+        [ "$(readlink -f "$d/server/releases/r2/storage")" = "$(readlink -f "$d/server/shared/storage")" ] || ok=1
+        [ ! -e "$d/server/current.tmp" ] || ok=1
+        rm -rf "$d"; exit $ok
+      message: Nach zwei Deployments (r1, r2) soll server/current auf releases/r2 zeigen, Version 2 ausliefern und .env sowie storage auf server/shared verlinken – ohne übrig gebliebenes current.tmp.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp deploy.sh rollback.sh app-v*.tar.gz* "$d"/
+        mkdir -p "$d/server/shared/storage" "$d/server/releases"; printf 'APP_ENV=production\n' > "$d/server/shared/.env"
+        (cd "$d" && for i in 1 2 3 4; do ./deploy.sh "app-v$i.tar.gz" "r$i"; done) > /dev/null 2>&1
+        list=$(ls "$d/server/releases" | sort | tr '\n' ' '); rm -rf "$d"
+        [ "$list" = "r2 r3 r4 " ]
+      message: Nach vier Deployments sollen nur die drei neuesten Releases (r2, r3, r4) übrig sein.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp deploy.sh rollback.sh app-v1.tar.gz* app-kaputt.tar.gz* "$d"/
+        mkdir -p "$d/server/shared/storage" "$d/server/releases"; printf 'APP_ENV=production\n' > "$d/server/shared/.env"
+        (cd "$d" && ./deploy.sh app-v1.tar.gz r1) > /dev/null 2>&1
+        (cd "$d" && ./deploy.sh app-kaputt.tar.gz r2) > /dev/null 2>&1; rc=$?
+        cur=$(readlink -f "$d/server/current"); r1=$(readlink -f "$d/server/releases/r1"); exists=$([ -e "$d/server/releases/r2" ] && echo ja || echo nein)
+        rm -rf "$d"; [ "$rc" -ne 0 ] && [ "$cur" = "$r1" ] && [ "$exists" = nein ]
+      message: Bei falscher Prüfsumme muss deploy.sh mit Fehler abbrechen, bevor ein Release-Ordner entsteht – current bleibt auf dem alten Release.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp deploy.sh rollback.sh app-v*.tar.gz* "$d"/
+        mkdir -p "$d/server/shared/storage" "$d/server/releases"; printf 'APP_ENV=production\n' > "$d/server/shared/.env"
+        (cd "$d" && for i in 1 2 3; do ./deploy.sh "app-v$i.tar.gz" "r$i"; done && ./rollback.sh) > /dev/null 2>&1
+        a=$(readlink -f "$d/server/current"); b=$(readlink -f "$d/server/releases/r2")
+        (cd "$d" && ./rollback.sh) > /dev/null 2>&1
+        c=$(readlink -f "$d/server/current"); e=$(readlink -f "$d/server/releases/r1")
+        (cd "$d" && ./rollback.sh) > /dev/null 2>&1; rc=$?
+        f=$(readlink -f "$d/server/current"); rm -rf "$d"
+        [ "$a" = "$b" ] && [ "$c" = "$e" ] && [ "$rc" -ne 0 ] && [ "$f" = "$e" ]
+      message: rollback.sh soll current schrittweise auf r2, dann r1 setzen und beim ältesten Release mit Fehler abbrechen, ohne current zu verändern.
+  hints:
+    - "Prüfsumme im Ordner des Artefakts: `(cd \"$(dirname \"$artifact\")\" && sha256sum -c \"$(basename \"$artifact\").sha256\")` – dank `set -e` bricht das Skript bei einem Fehler ab."
+    - "Aufräumen: `ls -1 server/releases | sort | head -n -3` liefert alle bis auf die drei neuesten."
+    - "Vorgänger finden: `current=$(basename \"$(readlink server/current)\")`, dann in `ls -1 server/releases | sort` die Zeile vor `$current` suchen, z. B. mit `grep -B1 -x \"$current\" | head -n 1`."
+  solution: |
+    ```bash
+    cd deploy-skript
+    cat > deploy.sh <<'EOF'
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    artifact="${1:?Aufruf: ./deploy.sh <artefakt> <release-name>}"
+    name="${2:?Release-Name fehlt}"
+    base=server
+
+    (cd "$(dirname "$artifact")" && sha256sum -c --quiet "$(basename "$artifact").sha256")
+
+    release="$base/releases/$name"
+    mkdir "$release"
+    tar -xzf "$artifact" -C "$release"
+    ln -s ../../shared/.env "$release/.env"
+    ln -s ../../shared/storage "$release/storage"
+
+    ln -sfn "releases/$name" "$base/current.tmp"
+    mv -T "$base/current.tmp" "$base/current"
+
+    ls -1 "$base/releases" | sort | head -n -3 | while read -r old; do
+      rm -rf "${base:?}/releases/$old"
+    done
+    echo "Aktiv: $name"
+    EOF
+    cat > rollback.sh <<'EOF'
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    base=server
+    current=$(basename "$(readlink "$base/current")")
+    previous=$(ls -1 "$base/releases" | sort | grep -B1 -x "$current" | head -n 1)
+
+    if [ -z "$previous" ] || [ "$previous" = "$current" ]; then
+      echo "Kein älteres Release vorhanden" >&2
+      exit 1
+    fi
+
+    ln -sfn "releases/$previous" "$base/current.tmp"
+    mv -T "$base/current.tmp" "$base/current"
+    echo "Zurück auf: $previous"
+    EOF
+    chmod +x deploy.sh rollback.sh
+    ./deploy.sh app-v1.tar.gz 20261010-0100
+    ./deploy.sh app-v2.tar.gz 20261010-0200
+    ./rollback.sh
+    cat server/current/public/index.php
+    ```

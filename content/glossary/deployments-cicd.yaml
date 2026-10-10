@@ -1,0 +1,468 @@
+- slug: continuous-delivery
+  term: Continuous Delivery
+  short: Die Praxis, jeden geprüften Stand automatisch auslieferbar zu machen und per Freigabe in Produktion zu bringen.
+  explanation: >
+    Continuous Delivery baut auf Continuous Integration auf: Jeder grüne Stand wird automatisch gebaut und meist
+    auf Staging ausgeliefert. Der letzte Schritt in die Produktion ist ein bewusster Klick. So ist die Software
+    jederzeit auslieferbar, aber ein Mensch entscheidet über den Zeitpunkt.
+  example: "Jeder Merge auf main landet automatisch auf Staging; für Produktion klickt jemand auf „Approve“."
+  category: deployment
+  aliases: [CD]
+  related: [continuous-integration, continuous-deployment, deployment-pipeline]
+  lesson: deployments-cicd/ci-und-cd
+- slug: continuous-deployment
+  term: Continuous Deployment
+  short: Die Praxis, jeden Stand, der alle Prüfungen besteht, ohne menschliche Freigabe in Produktion auszuliefern.
+  explanation: >
+    Continuous Deployment ist die konsequenteste Form von CD. Es gibt keinen Freigabe-Knopf mehr – ist die Pipeline
+    grün, geht die Änderung live. Das setzt sehr gute Tests, Monitoring und schnelle Rollbacks voraus.
+  example: "Ein Merge auf main ist zehn Minuten später für alle Nutzer online."
+  category: deployment
+  related: [continuous-delivery, continuous-integration]
+  lesson: deployments-cicd/ci-und-cd
+- slug: deployment-pipeline
+  term: Deployment-Pipeline
+  short: Die automatische Kette vom Push über Prüfung und Build bis zur Auslieferung in die Umgebungen.
+  explanation: >
+    Eine Deployment-Pipeline verbindet CI und Auslieferung zu einem Ablauf aus Stufen. Jede Stufe ist ein Filter:
+    Nur was sie besteht, kommt in die nächste. So erreicht ungeprüfter Code nie die Produktion.
+  example: "Push → Lint & Test → Build-Artefakt → Staging → Freigabe → Produktion."
+  category: deployment
+  aliases: [CI/CD-Pipeline]
+  related: [ci-pipeline, pipeline-stufe, deployment]
+  lesson: deployments-cicd/ci-und-cd
+- slug: pipeline-stufe
+  term: Pipeline-Stufe
+  short: Ein einzelner Schritt einer Pipeline, der mit seinem Exit-Code bestanden oder durchgefallen meldet.
+  explanation: >
+    Typische Stufen sind Installieren, Stil prüfen, statische Analyse, Tests, Build und Deploy. Schlägt eine Stufe
+    fehl, bricht die Pipeline ab. Schnelle, billige Stufen kommen zuerst.
+  example: "Die Stufe Test führt `vendor/bin/pest` aus und ist rot, wenn ein Test scheitert."
+  category: deployment
+  aliases: [Stage, Stufe]
+  related: [deployment-pipeline, quality-gate, exit-code]
+  lesson: deployments-cicd/pipeline-stufen
+- slug: quality-gate
+  term: Quality Gate
+  short: Eine Schranke in der Pipeline, die nur Code durchlässt, der festgelegte Qualitätsbedingungen erfüllt.
+  explanation: >
+    Ein Quality Gate fasst Bedingungen zusammen, etwa „alle Tests grün, keine PHPStan-Fehler, Code-Stil sauber“.
+    Ist eine Bedingung verletzt, darf nicht gemergt oder ausgeliefert werden. Oft ist es als Pflicht-Check im
+    Branch-Schutz eingetragen.
+  example: "Ohne grüne Tests und ohne PHPStan-Fehler lässt sich der Pull Request nicht mergen."
+  category: deployment
+  related: [pipeline-stufe, status-check, geschuetzter-branch]
+  lesson: deployments-cicd/pipeline-stufen
+- slug: build-once-deploy-many
+  term: Build once, deploy many
+  short: Das Prinzip, ein Artefakt nur einmal zu bauen und genau dieses in alle Umgebungen auszuliefern.
+  explanation: >
+    Jeder Neubau kann anders ausfallen, etwa durch neue Paketversionen. Deshalb wird das Artefakt, das auf Staging
+    getestet wurde, unverändert in Produktion ausgeliefert. Unterschiede zwischen Umgebungen stecken nur in der
+    Konfiguration.
+  example: "Der Deploy-Job lädt das Artefakt aus dem Build-Job herunter, statt den Code erneut zu bauen."
+  category: deployment
+  related: [build-artefakt, umgebungsparitaet, workflow-artefakt]
+  lesson: deployments-cicd/artefakte-und-images
+- slug: container-registry
+  term: Container-Registry
+  short: Ein Speicher, in dem Docker-Images mit ihren Tags abgelegt und von Servern heruntergeladen werden.
+  explanation: >
+    Die Pipeline baut ein Image und schiebt es mit `docker push` in die Registry. Server oder Container-Plattformen
+    holen es dort mit dem passenden Tag ab. Bekannte Registries sind die GitHub Container Registry, Docker Hub und
+    die Registries der Cloud-Anbieter.
+  example: "`docker push ghcr.io/example-org/shop:1.4.2` lädt ein Image in die GitHub Container Registry."
+  category: deployment
+  related: [registry, docker-image, image-tag]
+  lesson: deployments-cicd/artefakte-und-images
+- slug: workflow-trigger
+  term: Workflow-Trigger
+  short: Das Ereignis unter `on`, das einen GitHub-Actions-Workflow startet.
+  explanation: >
+    Trigger sind etwa `push`, `pull_request`, `workflow_dispatch` oder `schedule`. Mit Filtern wie `branches`,
+    `tags` und `paths` schränkst du ein, wann genau der Workflow läuft.
+  example: "`on: push: tags: ['v*']` startet einen Workflow nur beim Pushen von Versions-Tags."
+  category: deployment
+  aliases: [Trigger, Ereignis]
+  related: [workflow, workflow-dispatch, github-actions]
+  lesson: deployments-cicd/workflows-und-trigger
+- slug: workflow-dispatch
+  term: workflow_dispatch
+  short: Ein Trigger, mit dem du einen Workflow von Hand startest – per Knopf oder `gh workflow run`.
+  explanation: >
+    Manuelle Workflows eignen sich für Deployments oder Wartungsaufgaben. Unter `inputs` legst du Eingaben fest,
+    etwa eine Auswahl der Zielumgebung. Im Workflow liest du sie mit `inputs.<name>`.
+  example: "`gh workflow run deploy.yml -f target=staging` startet den Workflow mit einer Eingabe."
+  category: deployment
+  related: [workflow-trigger, github-cli]
+  lesson: deployments-cicd/workflows-und-trigger
+- slug: workflow-job
+  term: Job (GitHub Actions)
+  short: Eine Gruppe von Steps in einem Workflow, die zusammen auf einem eigenen Runner laufen.
+  explanation: >
+    Jobs starten standardmäßig parallel, jeder auf einer frischen Maschine. Mit `needs` legst du eine Reihenfolge
+    fest, mit `if` eine Bedingung. Dateien teilen Jobs nicht automatisch – dafür gibt es Artefakte.
+  example: "Ein Workflow mit den Jobs lint, test und deploy, wobei deploy beide anderen braucht."
+  category: deployment
+  aliases: [Job]
+  related: [workflow, workflow-step, runner, job-abhaengigkeit]
+  lesson: deployments-cicd/workflows-und-trigger
+- slug: workflow-step
+  term: Step
+  short: Ein einzelner Schritt in einem GitHub-Actions-Job – eine Action per `uses` oder ein Befehl per `run`.
+  explanation: >
+    Steps laufen nacheinander auf demselben Runner und teilen sich das Dateisystem. Scheitert ein Step, werden die
+    folgenden übersprungen und der Job ist rot.
+  example: "`- run: composer test` ist ein Step, der einen Shell-Befehl ausführt."
+  category: deployment
+  aliases: [Steps]
+  related: [workflow-job, action]
+  lesson: deployments-cicd/workflows-und-trigger
+- slug: job-abhaengigkeit
+  term: Job-Abhängigkeit (needs)
+  short: Die Angabe `needs`, mit der ein Job erst startet, wenn andere Jobs erfolgreich waren.
+  explanation: >
+    Ohne `needs` laufen alle Jobs gleichzeitig. Mit `needs: [lint, test]` wartet ein Job auf beide. Scheitert einer
+    davon, wird der abhängige Job übersprungen. Über `needs.<job>.outputs` liest er außerdem deren Ausgaben.
+  example: "`deploy: needs: build` startet das Deployment erst nach einem grünen Build."
+  category: deployment
+  aliases: [needs]
+  related: [workflow-job, job-output]
+  lesson: deployments-cicd/workflows-und-trigger
+- slug: github-kontext
+  term: Kontext (GitHub Actions)
+  short: Ein Objekt mit Informationen zum Workflow-Lauf, das du in Ausdrücken mit `${{ … }}` liest.
+  explanation: >
+    Wichtige Kontexte sind `github` (Commit, Branch, Ereignis), `inputs`, `secrets`, `vars`, `matrix`, `steps` und
+    `needs`. GitHub setzt die Werte vor dem Ausführen eines Steps ein.
+  example: "`${{ github.ref_name }}` ergibt bei einem Tag-Push zum Beispiel `v1.3.0`."
+  category: deployment
+  aliases: [Kontexte, Contexts]
+  related: [ausdruck, workflow]
+  lesson: deployments-cicd/workflows-und-trigger
+- slug: concurrency-gruppe
+  term: Concurrency
+  short: Eine Einstellung, die Workflow-Läufe oder Jobs zu einer Gruppe zusammenfasst, in der immer nur einer läuft.
+  explanation: >
+    Mit `cancel-in-progress: true` bricht GitHub ältere Läufe derselben Gruppe ab – praktisch für CI bei vielen
+    Pushes. Für Deployments setzt man `false`, damit neue Läufe warten, statt ein laufendes Deployment abzubrechen.
+  example: "`concurrency: group: ci-${{ github.ref }}` lässt pro Branch nur einen CI-Lauf zu."
+  category: deployment
+  aliases: [Concurrency-Gruppe]
+  related: [workflow, workflow-job]
+  lesson: deployments-cicd/workflows-und-trigger
+- slug: cache-schluessel
+  term: Cache-Schlüssel
+  short: Der Name, unter dem actions/cache Dateien speichert und wiederfindet.
+  explanation: >
+    Der Schlüssel enthält meist Betriebssystem, Version und einen Hash des Lockfiles. Ändert sich das Lockfile,
+    entsteht ein neuer Schlüssel. Ohne exakten Treffer sucht `actions/cache` über `restore-keys` nach dem neuesten
+    Eintrag mit passendem Präfix.
+  example: "`composer-Linux-8.5-${{ hashFiles('composer.lock') }}`"
+  category: deployment
+  aliases: [Cache-Key]
+  related: [cache, lockfile]
+  lesson: deployments-cicd/matrix-cache-artefakte
+- slug: workflow-artefakt
+  term: Workflow-Artefakt
+  short: Dateien, die ein GitHub-Actions-Job speichert, damit andere Jobs oder Menschen sie herunterladen können.
+  explanation: >
+    Mit `actions/upload-artifact` speicherst du etwa ein Build-Ergebnis, mit `actions/download-artifact` holt ein
+    späterer Job es ab. `retention-days` legt fest, wie lange GitHub es aufbewahrt. Secrets gehören nie hinein.
+  example: "Der Build-Job lädt `dist/` als Artefakt `app` hoch, der Deploy-Job lädt es herunter."
+  category: deployment
+  related: [build-artefakt, build-once-deploy-many, job-output]
+  lesson: deployments-cicd/matrix-cache-artefakte
+- slug: job-output
+  term: Job-Output
+  short: Ein kleiner Wert, den ein Job an spätere Jobs weitergibt, etwa eine Versionsnummer.
+  explanation: >
+    Ein Step schreibt `name=wert` in die Datei aus `$GITHUB_OUTPUT`. Der Job reicht den Wert über `outputs` weiter,
+    und abhängige Jobs lesen ihn mit `needs.<job>.outputs.<name>`.
+  example: "`echo \"sha=$(git rev-parse --short HEAD)\" >> \"$GITHUB_OUTPUT\"`"
+  category: deployment
+  aliases: [Outputs]
+  related: [job-abhaengigkeit, workflow-artefakt]
+  lesson: deployments-cicd/matrix-cache-artefakte
+- slug: github-token
+  term: GITHUB_TOKEN
+  short: Ein automatisch erzeugtes Token, mit dem ein Workflow-Lauf auf sein eigenes Repository zugreift.
+  explanation: >
+    Das Token gilt nur für den laufenden Workflow und läuft danach ab. Seine Rechte legst du mit `permissions` fest,
+    zum Beispiel `contents: read`. Im Workflow liest du es als `secrets.GITHUB_TOKEN` oder `github.token`.
+  example: "`GH_TOKEN: ${{ github.token }}` erlaubt der GitHub CLI im Workflow, einen Release anzulegen."
+  category: deployment
+  related: [secret, least-privilege, github-actions]
+  lesson: deployments-cicd/secrets-environments-oidc
+- slug: deployment-umgebung
+  term: Environment (GitHub)
+  short: Ein benanntes Deployment-Ziel in GitHub mit eigenen Secrets, Variablen und Schutzregeln.
+  explanation: >
+    Ein Job wählt sein Environment mit `environment`. Schutzregeln wie Pflicht-Reviewer, Wartezeit oder erlaubte
+    Branches müssen erfüllt sein, bevor der Job startet und die Environment-Secrets sieht.
+  example: "`environment: { name: production, url: https://shop.example.com }`"
+  category: deployment
+  aliases: [Environment, Environments]
+  related: [pflicht-reviewer, secret, produktionsumgebung]
+  lesson: deployments-cicd/secrets-environments-oidc
+- slug: pflicht-reviewer
+  term: Pflicht-Reviewer
+  short: Personen oder Teams, die einen Deploy-Job freigeben müssen, bevor er startet.
+  explanation: >
+    In den Schutzregeln eines Environments trägst du bis zu sechs Personen oder Teams ein. Eine Freigabe reicht.
+    Mit „Prevent self-review“ darf die Person, die den Lauf ausgelöst hat, nicht selbst freigeben.
+  example: "Der Job production wartet, bis jemand aus dem Team ops auf „Approve and deploy“ klickt."
+  category: deployment
+  aliases: [Required Reviewers]
+  related: [deployment-umgebung, continuous-delivery, approval]
+  lesson: deployments-cicd/secrets-environments-oidc
+- slug: trust-policy
+  term: Trust Policy
+  short: Die Regel in einem Cloud-Konto, welche fremde Identität eine Rolle übernehmen darf.
+  explanation: >
+    Bei OIDC legt die Trust Policy fest, welchem Token-Aussteller die Cloud vertraut und welche Angaben im Token
+    stehen müssen, etwa Repository und Environment. Nur passende Workflow-Läufe bekommen Zugangsdaten.
+  example: "Nur Tokens mit `sub` gleich `repo:example-org/shop:environment:production` dürfen die Deploy-Rolle nutzen."
+  category: deployment
+  aliases: [Vertrauensrichtlinie]
+  related: [openid-connect, kurzlebige-zugangsdaten]
+  lesson: deployments-cicd/secrets-environments-oidc
+- slug: kurzlebige-zugangsdaten
+  term: Kurzlebige Zugangsdaten
+  short: Zugangsdaten, die nur für kurze Zeit gelten und danach von selbst wertlos werden.
+  explanation: >
+    Statt eines dauerhaften Schlüssels bekommt ein Deploy-Job per OIDC Zugangsdaten, die etwa eine Stunde gelten.
+    Gelangen sie in ein Log, ist der Schaden zeitlich begrenzt, und niemand muss sie rotieren.
+  example: "configure-aws-credentials tauscht das OIDC-Token gegen Zugangsdaten für eine Stunde."
+  category: deployment
+  aliases: [Short-lived Credentials]
+  related: [openid-connect, trust-policy, secret-rotation]
+  lesson: deployments-cicd/secrets-environments-oidc
+- slug: wiederverwendbarer-workflow
+  term: Wiederverwendbarer Workflow
+  short: Ein Workflow mit dem Trigger `workflow_call`, den andere Workflows wie einen Job aufrufen.
+  explanation: >
+    Er legt mit `inputs` und `secrets` fest, was er erwartet. Der aufrufende Job nutzt `uses`, `with` und `secrets`
+    statt eigener Steps. So schreibst du Deploy-Logik einmal und nutzt sie für mehrere Umgebungen oder Projekte.
+  example: "`uses: ./.github/workflows/deploy.yml` mit `with: environment: staging`"
+  category: deployment
+  aliases: [Reusable Workflow, workflow_call]
+  related: [workflow, composite-action]
+  lesson: deployments-cicd/wiederverwendbare-workflows
+- slug: composite-action
+  term: Composite Action
+  short: Eine selbst geschriebene Action, die mehrere Steps zu einem wiederverwendbaren Step bündelt.
+  explanation: >
+    Sie steht in einer `action.yml` mit `runs: using: composite` und läuft innerhalb des aufrufenden Jobs. Im
+    Unterschied zu wiederverwendbaren Workflows teilt sie Steps, nicht ganze Jobs.
+  example: "Eine Action `setup-laravel`, die PHP einrichtet, den Composer-Cache lädt und installiert."
+  category: deployment
+  related: [action, wiederverwendbarer-workflow]
+  lesson: deployments-cicd/wiederverwendbare-workflows
+- slug: action-pinning
+  term: Action-Pinning
+  short: Das Festlegen einer Action auf einen vollen Commit-Hash statt auf einen verschiebbaren Tag.
+  explanation: >
+    Tags wie `@v2` können auf neuen Code verschoben werden. Ein Commit-Hash ist unveränderlich, sodass sich fremder
+    Code in deinem Workflow nicht unbemerkt ändert. Updates kommen dann bewusst, etwa als Pull Request von Dependabot.
+  example: "`uses: some-vendor/upload-action@8f4b7c2e9d1a3b5c7e9f0a2b4c6d8e0f1a3b5c7d # v2.4.1`"
+  category: deployment
+  aliases: [Pinning]
+  related: [action, supply-chain-angriff, commit-hash]
+  lesson: deployments-cicd/wiederverwendbare-workflows
+- slug: release-notes
+  term: Release Notes
+  short: Eine Beschreibung der Änderungen, die zu einem Release gehören.
+  explanation: >
+    Release Notes erklären Nutzerinnen und Nutzern, was neu, verbessert oder behoben ist. GitHub kann sie mit
+    `--generate-notes` aus den Pull Requests seit dem letzten Release erzeugen. Sie ergänzen den Changelog im
+    Repository.
+  example: "`gh release create v1.3.0 --generate-notes`"
+  category: deployment
+  related: [release, changelog]
+  lesson: deployments-cicd/versionierung-und-releases
+- slug: recreate-deployment
+  term: Recreate-Deployment
+  short: Eine Deployment-Strategie, bei der die alte Version gestoppt und danach die neue gestartet wird.
+  explanation: >
+    Recreate ist am einfachsten, hat aber eine Ausfallzeit zwischen Stoppen und Starten. Dafür laufen nie zwei
+    Versionen gleichzeitig. Es passt zu internen Werkzeugen oder Wartungsfenstern.
+  example: "Ein internes Tool wird nachts gestoppt, aktualisiert und neu gestartet."
+  category: deployment
+  aliases: [Recreate]
+  related: [rolling-deployment, wartungsmodus]
+  lesson: deployments-cicd/deployment-strategien
+- slug: rolling-deployment
+  term: Rolling Deployment
+  short: Eine Deployment-Strategie, bei der Instanzen nacheinander auf die neue Version umgestellt werden.
+  explanation: >
+    Hinter einem Load Balancer wird eine Instanz nach der anderen aus dem Verkehr genommen, aktualisiert und nach
+    einem erfolgreichen Health-Check wieder aufgenommen. Es braucht keine Zusatz-Server, aber alte und neue Version
+    laufen kurz gleichzeitig.
+  example: "Von zehn Containern werden immer zwei gleichzeitig ersetzt."
+  category: deployment
+  aliases: [Rolling Update, Rolling]
+  related: [load-balancer, health-endpunkt, blue-green-deployment]
+  lesson: deployments-cicd/deployment-strategien
+- slug: blue-green-deployment
+  term: Blue-Green-Deployment
+  short: Eine Deployment-Strategie mit zwei kompletten Umgebungen, zwischen denen ein Router umschaltet.
+  explanation: >
+    Die neue Version wird in der unbenutzten Umgebung vorbereitet und getestet. Dann schaltet der Router allen
+    Verkehr in einem Schritt um. Ein Rollback ist das Zurückschalten – dafür kostet die zweite Umgebung Geld.
+  example: "Blue (v1) bedient Nutzer, Green (v2) wird getestet, dann zeigt der Load Balancer auf Green."
+  category: deployment
+  aliases: [Blue-Green]
+  related: [rolling-deployment, canary-release, atomares-deployment]
+  lesson: deployments-cicd/deployment-strategien
+- slug: canary-release
+  term: Canary-Release
+  short: Eine Deployment-Strategie, bei der zunächst nur ein kleiner Teil des Verkehrs die neue Version bekommt.
+  explanation: >
+    Die neue Version bekommt etwa 5 Prozent der Anfragen. Sind Fehlerquote und Antwortzeit gut, wird der Anteil
+    schrittweise erhöht, sonst auf 0 zurückgesetzt. Canary braucht einen Router mit Gewichtung und Monitoring.
+  example: "5 % → 25 % → 50 % → 100 %, bei schlechten Messwerten zurück auf 0 %."
+  category: deployment
+  aliases: [Canary, Canary-Deployment]
+  related: [feature-flag, blue-green-deployment]
+  lesson: deployments-cicd/deployment-strategien
+- slug: health-endpunkt
+  term: Health-Endpunkt
+  short: Eine URL, über die ein Load Balancer oder Monitoring prüft, ob eine Instanz der Anwendung funktioniert.
+  explanation: >
+    Antwortet der Endpunkt mit Status 200, gilt die Instanz als gesund und bekommt Verkehr. Bei Fehlern nimmt der
+    Load Balancer sie heraus. Laravel bringt dafür standardmäßig die Route `/up` mit.
+  example: "`curl -fsS https://shop.example.com/up` liefert bei einer gesunden App Status 200."
+  category: deployment
+  aliases: [Health-Check, Health Check, Health-Check-Endpunkt]
+  related: [healthcheck, load-balancer, smoke-test]
+  lesson: deployments-cicd/deployment-strategien
+- slug: umgebungsparitaet
+  term: Umgebungsparität
+  short: Das Ziel, Entwicklungs-, Staging- und Produktionsumgebung so ähnlich wie möglich zu halten.
+  explanation: >
+    Gleiche Versionen von PHP, Datenbank und Webserver in allen Umgebungen sorgen dafür, dass Tests auf Staging
+    etwas über die Produktion aussagen. Jeder Unterschied ist ein Fehler, den Staging nicht finden kann.
+  example: "Staging nutzt wie Produktion PostgreSQL 18 statt einer SQLite-Datei."
+  category: deployment
+  aliases: [Dev/Prod-Parität]
+  related: [staging-umgebung, produktionsumgebung, twelve-factor-app]
+  lesson: deployments-cicd/umgebungen-und-konfiguration
+- slug: config-cache
+  term: Config-Cache
+  short: Eine von Laravel erzeugte Datei, die alle Konfigurationswerte zusammenfasst und die .env nicht mehr liest.
+  explanation: >
+    `php artisan config:cache` beschleunigt jede Anfrage, weil Laravel nur noch eine Datei lädt. Danach liefert
+    `env()` außerhalb der Config-Dateien `null`. Bei jedem Deployment wird der Cache neu erzeugt.
+  example: "`php artisan config:cache` – danach liest der Code Werte nur noch mit `config('app.url')`."
+  category: deployment
+  related: [env-datei, umgebungsvariable, laravel]
+  lesson: deployments-cicd/umgebungen-und-konfiguration
+- slug: zero-downtime-deployment
+  term: Zero-Downtime-Deployment
+  short: Ein Deployment, bei dem die Anwendung ohne Unterbrechung erreichbar bleibt.
+  explanation: >
+    Der neue Stand wird vollständig neben dem alten vorbereitet und dann in einem Schritt aktiviert. Datenbank und
+    Queues müssen dabei mit alter und neuer Version funktionieren. Nutzer merken vom Deployment nichts.
+  example: "Ein Release-Ordner plus atomarer Symlink-Wechsel aktualisiert einen Laravel-Shop mitten am Tag."
+  category: deployment
+  aliases: [Zero Downtime]
+  related: [atomares-deployment, blue-green-deployment, expand-contract]
+  lesson: deployments-cicd/atomare-deployments
+- slug: atomares-deployment
+  term: Atomares Deployment
+  short: Ein Deployment, bei dem der Wechsel vom alten zum neuen Stand in einem einzigen, unteilbaren Schritt passiert.
+  explanation: >
+    Auf einem Server gelingt das mit Release-Ordnern und einem Symlink `current`, der per `mv -T` umbenannt wird.
+    Jeder Request sieht entweder den alten oder den neuen Stand, nie einen Mix.
+  example: "`ln -sfn releases/20261010-1200 current.tmp && mv -T current.tmp current`"
+  category: deployment
+  aliases: [atomarer Symlink-Wechsel]
+  related: [symlink, release-verzeichnis, zero-downtime-deployment]
+  lesson: deployments-cicd/atomare-deployments
+- slug: release-verzeichnis
+  term: Release-Ordner
+  short: Ein eigener Ordner pro Deployment, der einen vollständigen, unveränderlichen Stand der Anwendung enthält.
+  explanation: >
+    Jedes Deployment entpackt sein Artefakt in einen neuen Ordner wie `releases/20261010-1200`. Der aktive Stand
+    wird über den Symlink `current` gewählt. Alte Release-Ordner bleiben für Rollbacks liegen und werden später
+    aufgeräumt.
+  example: "`/var/www/shop/releases/20261009-0900` und `/var/www/shop/releases/20261010-1200`"
+  category: deployment
+  aliases: [Release-Verzeichnis, releases]
+  related: [atomares-deployment, shared-verzeichnis]
+  lesson: deployments-cicd/atomare-deployments
+- slug: shared-verzeichnis
+  term: shared-Verzeichnis
+  short: Ein Ordner mit Daten, die jedes Release braucht und die ein Deployment überleben müssen.
+  explanation: >
+    Bei Laravel liegen dort die `.env` und `storage/` mit Uploads, Logs und Sessions. Jeder Release-Ordner
+    verlinkt diese Einträge per Symlink, statt eigene Kopien zu haben.
+  example: "`releases/20261010-1200/storage -> ../../shared/storage`"
+  category: deployment
+  aliases: [shared]
+  related: [release-verzeichnis, symlink, env-datei]
+  lesson: deployments-cicd/atomare-deployments
+- slug: deployment-rollback
+  term: Rollback (Deployment)
+  short: Das Zurückkehren zu einer vorigen, funktionierenden Version nach einem fehlerhaften Deployment.
+  explanation: >
+    Mit Release-Ordnern ist ein Rollback ein erneuter Symlink-Wechsel auf das vorige Release, mit Images das Starten
+    des vorigen Tags. Daten lassen sich dagegen kaum zurückdrehen – deshalb müssen Migrationen abwärtskompatibel sein.
+  example: "`current` zeigt wieder auf `releases/20261009-0900` statt auf das fehlerhafte neue Release."
+  category: deployment
+  aliases: [Rollback]
+  related: [rollback, atomares-deployment, expand-contract]
+  lesson: deployments-cicd/atomare-deployments
+- slug: expand-contract
+  term: Expand/Contract
+  short: Ein Vorgehen, Datenbankänderungen in mehreren abwärtskompatiblen Deployments auszuliefern.
+  explanation: >
+    Zuerst wird erweitert (neue Spalte), dann der Code umgestellt und die Daten kopiert, zum Schluss in einem
+    späteren Release aufgeräumt (alte Spalte löschen). Jeder Schritt funktioniert mit dem vorigen Release.
+  example: "full_name hinzufügen → beide Spalten schreiben → nur full_name lesen → name löschen."
+  category: deployment
+  aliases: [Parallel Change, Expand and Contract]
+  related: [migration, zero-downtime-deployment, deployment-rollback]
+  lesson: deployments-cicd/migrationen-queues-checkliste
+- slug: graceful-shutdown
+  term: Graceful Shutdown
+  short: Das geordnete Beenden eines Prozesses, der vorher seine laufende Arbeit abschließt.
+  explanation: >
+    Ein Queue-Worker bricht seinen Job nicht mitten im Ablauf ab, sondern beendet ihn und stoppt danach. Laravel löst
+    das mit `php artisan queue:restart` aus; ein Prozessmanager startet den Worker anschließend mit neuem Code.
+  example: "Nach `queue:restart` beendet jeder Worker seinen aktuellen Job und Supervisor startet ihn neu."
+  category: deployment
+  related: [queue-worker, supervisor]
+  lesson: deployments-cicd/migrationen-queues-checkliste
+- slug: wartungsmodus
+  term: Wartungsmodus
+  short: Ein Zustand, in dem eine Laravel-App allen Besuchern eine Wartungsseite statt der Anwendung zeigt.
+  explanation: >
+    `php artisan down` aktiviert ihn, `php artisan up` beendet ihn. Mit `--secret` können Eingeweihte die App über
+    eine geheime URL trotzdem prüfen. Bei Zero-Downtime-Deployments brauchst du ihn nur in Ausnahmefällen.
+  example: "`php artisan down --secret=\"<dein-geheimer-pfad>\"`"
+  category: deployment
+  aliases: [Maintenance Mode]
+  related: [recreate-deployment, zero-downtime-deployment]
+  lesson: deployments-cicd/migrationen-queues-checkliste
+- slug: smoke-test
+  term: Smoke-Test
+  short: Ein schneller Test nach dem Deployment, der prüft, ob die wichtigsten Funktionen grundsätzlich laufen.
+  explanation: >
+    Ein Smoke-Test ruft wenige zentrale Seiten oder Endpunkte auf, zum Beispiel `/up` und eine Produktseite. Er
+    dauert Sekunden und entscheidet, ob das Deployment bleibt oder sofort zurückgerollt wird.
+  example: "`curl -fsS https://shop.example.com/up` direkt nach dem Umschalten."
+  category: deployment
+  related: [health-endpunkt, deployment-rollback, deployment-checkliste]
+  lesson: deployments-cicd/migrationen-queues-checkliste
+- slug: deployment-checkliste
+  term: Deployment-Checkliste
+  short: Eine feste Liste von Prüfungen vor und nach einem Deployment.
+  explanation: >
+    Sie hält fest, was vorher erfüllt sein muss (grüne CI, abwärtskompatible Migrationen, Konfiguration) und was
+    danach geprüft wird (Smoke-Test, Monitoring, Queue-Worker). Was eine Maschine prüfen kann, wird ein Pipeline-Schritt.
+  example: "Vorher: CI grün, Rollback-Weg bekannt. Nachher: Smoke-Test grün, Fehlerquote normal."
+  category: deployment
+  related: [smoke-test, deployment-pipeline]
+  lesson: deployments-cicd/migrationen-queues-checkliste

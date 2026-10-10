@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="500" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Vier Wege, eine neue Version auszuliefern</text>
+<rect x="20" y="60" width="470" height="270" rx="14" fill="#22d3ee" fill-opacity=".06" stroke="#22d3ee" stroke-width="2"/>
+<text x="40" y="92" font-size="17" font-weight="700" fill="#1e1b3a">Rolling: Server für Server</text>
+<g font-size="14" fill="#1e1b3a" text-anchor="middle">
+<rect x="45" y="115" width="90" height="60" rx="8" fill="#34d399" fill-opacity=".3" stroke="#34d399"/><text x="90" y="150">v2</text>
+<rect x="155" y="115" width="90" height="60" rx="8" fill="#34d399" fill-opacity=".3" stroke="#34d399"/><text x="200" y="150">v2</text>
+<rect x="265" y="115" width="90" height="60" rx="8" fill="#a78bfa" fill-opacity=".25" stroke="#a78bfa"/><text x="310" y="150">v1 → v2</text>
+<rect x="375" y="115" width="90" height="60" rx="8" fill="#e2e8f0" stroke="#94a3b8"/><text x="420" y="150">v1</text>
+</g>
+<text x="40" y="215" font-size="14" fill="#1e1b3a">Immer nur ein Teil wird ausgetauscht, der Rest bedient weiter.</text>
+<text x="40" y="240" font-size="14" fill="#1e1b3a">+ keine Zusatz-Server   − kurz laufen v1 und v2 gleichzeitig</text>
+<text x="40" y="265" font-size="14" fill="#1e1b3a">Rollback: rückwärts erneut ausrollen (dauert)</text>
+<rect x="510" y="60" width="470" height="270" rx="14" fill="#a78bfa" fill-opacity=".06" stroke="#a78bfa" stroke-width="2"/>
+<text x="530" y="92" font-size="17" font-weight="700" fill="#1e1b3a">Blue-Green: zwei komplette Umgebungen</text>
+<rect x="700" y="110" width="90" height="40" rx="8" fill="#f59e0b" fill-opacity=".2" stroke="#f59e0b"/><text x="745" y="135" text-anchor="middle" font-size="14" fill="#1e1b3a">Router</text>
+<rect x="560" y="185" width="150" height="55" rx="8" fill="#22d3ee" fill-opacity=".2" stroke="#22d3ee"/><text x="635" y="218" text-anchor="middle" font-size="14" fill="#1e1b3a">Blue (v1)</text>
+<rect x="780" y="185" width="150" height="55" rx="8" fill="#34d399" fill-opacity=".25" stroke="#34d399"/><text x="855" y="218" text-anchor="middle" font-size="14" fill="#1e1b3a">Green (v2)</text>
+<path d="M730 152 L650 182" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 5"/>
+<path d="M760 152 L840 182" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="530" y="270" font-size="14" fill="#1e1b3a">Der Router schaltet in einem Schritt um.</text>
+<text x="530" y="295" font-size="14" fill="#1e1b3a">+ Rollback in Sekunden   − doppelte Infrastruktur</text>
+<rect x="20" y="350" width="470" height="270" rx="14" fill="#f59e0b" fill-opacity=".06" stroke="#f59e0b" stroke-width="2"/>
+<text x="40" y="382" font-size="17" font-weight="700" fill="#1e1b3a">Canary: erst wenige Nutzer</text>
+<rect x="45" y="410" width="420" height="34" rx="8" fill="#e2e8f0" stroke="#94a3b8"/>
+<rect x="45" y="410" width="42" height="34" rx="8" fill="#34d399" fill-opacity=".5" stroke="#34d399"/>
+<text x="66" y="432" text-anchor="middle" font-size="12" fill="#1e1b3a">5 %</text><text x="280" y="432" text-anchor="middle" font-size="13" fill="#1e1b3a">95 % bleiben auf v1</text>
+<text x="40" y="480" font-size="14" fill="#1e1b3a">Metriken gut? 5 % → 25 % → 100 %. Schlecht? zurück auf 0 %.</text>
+<text x="40" y="505" font-size="14" fill="#1e1b3a">+ Fehler treffen nur wenige   − braucht Monitoring</text>
+<text x="40" y="530" font-size="14" fill="#1e1b3a">und einen Router, der Verkehr aufteilen kann</text>
+<rect x="510" y="350" width="470" height="270" rx="14" fill="#f87171" fill-opacity=".06" stroke="#f87171" stroke-width="2"/>
+<text x="530" y="382" font-size="17" font-weight="700" fill="#1e1b3a">Feature-Flag: Code da, Funktion aus</text>
+<rect x="545" y="410" width="400" height="60" rx="8" fill="#ffffff" stroke="#94a3b8"/>
+<text x="560" y="436" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">if (Feature::active('new-checkout'))</text>
+<text x="560" y="456" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">    return newCheckout();</text>
+<text x="530" y="505" font-size="14" fill="#1e1b3a">Deployment und Freischaltung sind getrennt.</text>
+<text x="530" y="530" font-size="14" fill="#1e1b3a">+ Abschalten ohne neues Deployment</text>
+<text x="530" y="555" font-size="14" fill="#1e1b3a">− alte Flags müssen aufgeräumt werden</text>
+</svg>

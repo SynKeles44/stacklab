@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker>
+<marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#94a3b8"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="500" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Atomares Deployment mit Release-Ordnern und Symlink</text>
+<text x="40" y="72" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">/var/www/shop/</text>
+<rect x="40" y="110" width="200" height="56" rx="10" fill="#f59e0b" fill-opacity=".18" stroke="#f59e0b" stroke-width="2.5"/>
+<rect x="300" y="90" width="400" height="240" rx="14" fill="#22d3ee" fill-opacity=".06" stroke="#22d3ee" stroke-width="2"/>
+<rect x="330" y="140" width="340" height="56" rx="10" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+<text x="500" y="174" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">20261009-0900  (alt)</text>
+<rect x="330" y="230" width="340" height="80" rx="10" fill="#34d399" fill-opacity=".2" stroke="#34d399" stroke-width="2.5"/>
+<text x="500" y="258" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">20261010-1200  (neu)</text>
+<text x="500" y="282" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">app/  vendor/  .env →  storage →</text>
+<rect x="760" y="90" width="210" height="240" rx="14" fill="#a78bfa" fill-opacity=".08" stroke="#a78bfa" stroke-width="2"/>
+<rect x="785" y="150" width="160" height="46" rx="8" fill="#ffffff" stroke="#a78bfa"/>
+<text x="865" y="179" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">.env</text>
+<rect x="785" y="230" width="160" height="46" rx="8" fill="#ffffff" stroke="#a78bfa"/>
+<text x="865" y="259" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">storage/</text>
+<path d="M242 130 L326 165" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#b)"/>
+<text x="250" y="122" font-size="12" fill="#64748b">vorher</text>
+<path d="M242 150 L326 255" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="232" y="225" font-size="12" fill="#1e1b3a" text-anchor="end">jetzt</text>
+<path d="M672 262 C 720 262, 730 175, 781 174" fill="none" stroke="#a78bfa" stroke-width="2" marker-end="url(#a)"/>
+<path d="M672 285 C 720 285, 740 255, 781 254" fill="none" stroke="#a78bfa" stroke-width="2" marker-end="url(#a)"/>
+<rect x="40" y="370" width="930" height="120" rx="12" fill="#f8fafc" stroke="#94a3b8"/>
+<text x="60" y="400" font-size="14" font-weight="700" fill="#1e1b3a">Umschalten in einem einzigen Schritt</text>
+<text x="60" y="428" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">ln -sfn releases/20261010-1200 current.tmp &amp;&amp; mv -T current.tmp current</text>
+<text x="60" y="456" font-size="13" fill="#1e1b3a">Der Webserver liest immer über current. Bis zum mv sieht er den alten Release, danach den neuen – nie einen halben.</text>
+<text x="60" y="476" font-size="13" fill="#1e1b3a">Rollback = current wieder auf den alten Ordner zeigen lassen.</text>
+<text x="140" y="144" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">current</text>
+<text x="500" y="122" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">releases/</text>
+<text x="865" y="122" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">shared/</text>
+</svg>

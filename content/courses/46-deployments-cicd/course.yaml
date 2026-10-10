@@ -1,0 +1,32 @@
+title: Deployments & CI/CD
+subtitle: Vom Push bis in die Produktion – automatisch geprüft, sicher ausgeliefert, jederzeit zurückrollbar
+description: >
+  Code, der nur auf deinem Laptop läuft, hilft niemandem. In diesem Kurs lernst du, wie Teams Änderungen
+  **automatisch prüfen** und **ohne Ausfallzeit ausliefern**: mit Continuous Integration, Continuous Delivery
+  und GitHub Actions.
+
+
+  Du baust Pipelines aus Stufen, erzeugst Build-Artefakte, die einmal gebaut und überall ausgeliefert werden,
+  und schreibst GitHub-Actions-Workflows mit Triggern, Matrix, Cache, Artefakten, Environments mit Freigabe,
+  OIDC statt langlebiger Schlüssel und wiederverwendbaren Workflows. Danach geht es um Versionen und Releases,
+  Deployment-Strategien wie Blue-Green und Canary sowie um Zero-Downtime-Deployments für Laravel mit
+  atomarem Symlink-Wechsel, abwärtskompatiblen Migrationen und sauber neu gestarteten Queue-Workern.
+category: infrastruktur
+level: fortgeschritten
+icon: rocket
+color: "#22d3ee"
+estimated_hours: 5
+workspace_dir: deployments-cicd
+prerequisites: [git, github, testing, docker]
+learning_goals:
+  - Du erklärst den Unterschied zwischen Continuous Integration, Continuous Delivery und Continuous Deployment.
+  - Du baust eine Pipeline aus Stufen, die schnell scheitert und lokal genauso läuft wie in CI.
+  - Du erzeugst versionierte Build-Artefakte und Images nach dem Prinzip „einmal bauen, überall ausliefern“.
+  - Du schreibst GitHub-Actions-Workflows mit Triggern, Abhängigkeiten, Matrix, Cache, Artefakten und Concurrency.
+  - Du schützt Deployments mit Environments, Pflicht-Freigaben, minimalen Rechten und OIDC statt langlebiger Schlüssel.
+  - Du wählst eine passende Deployment-Strategie (Rolling, Blue-Green, Canary, Feature-Flags) und planst Rollbacks.
+  - Du lieferst Laravel ohne Ausfallzeit aus – mit Release-Ordnern, Symlink-Wechsel, Expand/Contract-Migrationen und Queue-Neustart.
+references:
+  - CI-Pipelines mit getrennten Jobs für Linter, statische Analyse und Tests als Pflicht-Checks vor dem Merge
+  - Laravel-Deployments mit Release-Ordnern, geteiltem storage-Verzeichnis und Symlink-Wechsel
+  - Deployments in Container-Umgebungen per GitHub Actions mit OIDC-Rolle statt gespeicherter Cloud-Schlüssel
