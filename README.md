@@ -15,7 +15,7 @@ selbst Aufgaben.
 
 ## Was Stacklab kann
 
-- **Über 50 Kurse in empfohlener Reihenfolge** – Grundlagen & Werkzeuge, Web & APIs, Frontend, Backend
+- **52 Kurse in empfohlener Reihenfolge** – Grundlagen & Werkzeuge, Web & APIs, Frontend, Backend
   (Laravel als größter Kurs), Infrastruktur & Betrieb, Capstone-Projekt.
 - **Echtes Übungs-Terminal im Browser.** Du tippst echte Befehle (git, npm, bun, composer, artisan …) in
   einem abgesicherten Container. Alles, was du baust, liegt als echtes Projekt in deinem Workspace-Ordner

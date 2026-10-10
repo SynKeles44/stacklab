@@ -6,41 +6,18 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 ## Protokoll
 
 - **Zuletzt erledigt (2026-10-10):** Fundament komplett und getestet; Lektionen seitenweise (Blättern); zwei UI-Varianten (Standard + Apple, wählbar unter Einstellungen → Darstellung, gespeichert in users.ui_variant); Kursdauer wird aus Lektionsdauern berechnet; Kurs-Größenregel 10–12 Lektionen / 4–6 h (Laravel bis 10 h) in docs/AUTHORING.md.
-- **Kursstand:** siehe Abschnitt „Abbruchstand 2026-10-10, zweite Welle“.
-- **Als Nächstes:** nach Abschluss der laufenden Autoren `make validate` + Import; restliche Kurse 13–52 mit der Größenregel schreiben (Brief: docs/AUTHORING.md + content/README.md); Lexikon-Dubletten prüfen; Testkonten test@example.com und ui-test@example.com löschen; MISSING_SCREENSHOTS.md (PhpStorm-Kurs); GitHub-Repo SynKeles44/stacklab anlegen und pushen (Commits als SynKeles44, Signierung nur in diesem Repo aus); Abschlusszusammenfassung.
+- **Kursstand:** alle 52 Kurse fertig, siehe Abschnitt „Kursstand 2026-10-10“.
+- **Als Nächstes:** lokale Commits nach GitHub pushen (nur auf Anweisung); Testkonto e2e-solve@example.com löschen; Screenshots aus MISSING_SCREENSHOTS.md ergänzen; lose Testdateien früherer Autoren im Workspace aufräumen (nur nach Rückfrage); Phase 7/8 abhaken (frischer Klon, Abschlusszusammenfassung).
 - **2026-10-10 (Nachtrag):** Tests leerten die Entwicklungs-DB (Docker-Env überschrieb phpunit.xml) – behoben, danach Neu-Import nötig (Konten waren weg). Neu: „Für mich erledigen“ bei Projektschritten (`solve:`-Skripte, Prüfwerkzeug `stacklab:solve-check --require-all`), Fortschritt zurücksetzen (Einstellungen), `make workspace` (Ordner-Dialog), Suche repariert, Module starten eingeklappt.
 - **Hinweise für Autoren:** Jeder Projektschritt braucht ein `solve`-Skript, `stacklab:solve-check <kurs> --require-all` muss grün sein. Sandbox /tmp ist noexec; kein man/sudo/zsh/python3/rsync; `nvm install` höchstens einmal mit `timeout 300` (Prozesslimit 512).
 
-## Abbruchstand 2026-10-10, zweite Welle (alle Autoren-Agenten gestoppt) – HIER WEITERMACHEN
+## Kursstand 2026-10-10 – alle 52 Kurse fertig
 
-Wiederaufnahme: neue Sitzung im Ordner `stacklab`, dann „Mach mit der Roadmap weiter“. Nur EINE Sitzung darf an den Kursen
-arbeiten (am 2026-10-10 haben zwei Sitzungen parallel dieselben Dateien bearbeitet). Brief: `.wip/agent-brief.md`
-(lokal, nicht im Git). Hilfsskripte der Autoren: `.wip/scratchpad/<kurs>/`.
+Alle 52 Kurse sind geschrieben, isoliert validiert (committeter Stand + Kurs), mit `stacklab:solve-check --require-all`
+geprüft, committet und importiert: 52 Kurse, 207 Module, 609 Lektionen, 2053 Lexikon-Begriffe.
 
-**Ablauf für den Lead pro fertigem Kurs:**
-`.wip/isolated-validate.sh <dir>:<slug> [weitere abhängige Kurse]` (prüft committeten Stand + nur diesen Kurs) →
-`docker compose exec -T php php artisan stacklab:solve-check <slug> --require-all` → commit →
-`.wip/import-committed.sh` (importiert nur den committeten Stand; `--force` würde halbfertige Kurse sichtbar machen).
-Höchstens ca. 10 Autoren gleichzeitig.
-
-**Fertig und committet (37 Kurse):** 01–33 (alle), 36 authentifizierung, 37 websicherheit, 38 performance, 39 testing.
-
-**Unfertig (unversioniert, im Arbeitsverzeichnis):**
-
-| Kurs | Vorhanden | Fehlt / nächster Schritt |
-|---|---|---|
-| 34 laravel-vertieft | course.yaml, 4 Module, 12 Lektionen, project.yaml, exam.yaml, Lexikon, 5 SVGs | 2 Fehler in exam.yaml (questions[1] match-Paare ohne left/right; questions[6] Typ „order“ gibt es bei Fragen nicht); Autor war beim Ergänzen der Lektionen 2, 6, 8, 11; solve-check + Sandbox-Tests prüfen |
-| 35 laravel-architektur | course.yaml, 4 Module, 4 Lektionen, project.yaml | 6–8 Lektionen, exam.yaml, Lexikon, SVGs, solve-check |
-| 40 code-qualitaet | course.yaml, 4 Module, 2 Lektionen, 4 SVGs | 8–10 Lektionen, project.yaml, exam.yaml, Lexikon |
-| 41 clean-code-solid-patterns | course.yaml, 4 Module, project.yaml (keine Lektionen) | alle Lektionen, exam.yaml, Lexikon, SVGs |
-| 42 datenstrukturen-algorithmen | course.yaml, 4 Module, 4 Lektionen | 6–8 Lektionen, project.yaml, exam.yaml, Lexikon, SVGs |
-| 44 docker | course.yaml, 4 Module, 4 Lektionen | 6–8 Lektionen, project.yaml, exam.yaml, Lexikon, SVGs; Sandbox hat keinen Docker-Daemon (bauen/starten nur simuliert) |
-
-**Noch nicht begonnen:** 43 legacy-modernisieren, 45 nginx-webserver, 46 deployments-cicd, 47 projekt-live-stellen,
-48 observability, 49 aws-grundlagen, 50 aws-fargate, 51 ki-assistenten, 52 capstone.
-
-**Plattform-Nacharbeit:** In der Sandbox scheitern `bunx`/`bun create`, weil /tmp noexec ist → `TMPDIR` im Sandbox-Profil
-auf einen Ordner im Workspace setzen (Sandbox-Neustart nötig, daher zwischen zwei Wellen).
+**Ablauf für spätere Kursänderungen:** `.wip/isolated-validate.sh <dir>:<slug>` → `stacklab:solve-check <slug> --require-all`
+→ commit → `.wip/import-committed.sh` (beide Skripte lokal in `.wip/`, nicht im Git). Nur EINE Sitzung arbeitet an den Kursen.
 
 ## Entscheidungen
 
@@ -167,17 +144,17 @@ Stichproben-Review.
 - [x] Projektschritte: `solve`-Skript + Button „Für mich erledigen“ + `stacklab:solve-check` (D20)
 - [x] Git-Projekt: alle 7 `solve`-Skripte grün
 - [x] `solve`-Skripte für die übrigen committeten Projekte (01–05, 07–22) – `solve-check --require-all` für alle 22 Kurse grün (2026-10-10)
-- [ ] `solve`-Skripte für die Kurse 23 ff. (Teil des Autoren-Briefs)
+- [x] `solve`-Skripte für die Kurse 23–52 (alle Projektschritte, `solve-check --require-all`)
 - [x] Fortschritt zurücksetzen (Einstellungen), `make workspace` mit nativem Ordner-Dialog
 - [x] `stacklab:solve-check` läuft in einem Wegwerf-Ordner `/workspace/solve-check-<kurs>` und räumt ihn danach weg; vorher setzte es die echten Projektordner der Lernenden zurück (2026-10-10)
 - [x] Tests dürfen die Entwicklungs-DB nicht mehr leeren (`<server force>` in phpunit.xml)
 
 ## Phase 7 – Tests & Qualität
-- [ ] Backend-Tests (Pest)
-- [ ] Frontend-Tests (Vitest)
-- [ ] Content-Validierung in CI
+- [x] Backend-Tests (Pest) – 46 Tests grün, phpstan + pint sauber
+- [x] Frontend-Tests (Vitest) – 17 Tests grün, tsc sauber
+- [x] Content-Validierung in CI – erster GitHub-Lauf grün (2026-10-10)
 - [ ] Frischer Klon: `docker compose up` getestet
-- [ ] Übungs-Terminal mit Workspace getestet
+- [x] Übungs-Terminal mit Workspace getestet – alle Terminal-Aufgaben und Projektschritte in der Sandbox durchgespielt
 
 ## Phase 8 – Doku & Abschluss
 - [ ] SOURCES.md, MISSING_SCREENSHOTS.md
