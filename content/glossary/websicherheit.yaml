@@ -1,0 +1,472 @@
+- slug: owasp
+  term: OWASP
+  short: Eine gemeinnützige, weltweite Community, die freie Ressourcen zur Sicherheit von Anwendungen veröffentlicht.
+  explanation: >
+    OWASP steht für Open Worldwide Application Security Project. Bekannt ist es vor allem für die OWASP Top 10 und
+    die Cheat Sheet Series mit konkreten Abwehrmaßnahmen. Alle Inhalte sind frei verfügbar.
+  example: "Die OWASP Cheat Sheet Series erklärt z. B., wie du Prepared Statements oder CSRF-Tokens richtig einsetzt."
+  category: sicherheit
+  aliases: [Open Worldwide Application Security Project]
+  related: [owasp-top-10]
+  lesson: websicherheit/owasp-top-10
+- slug: owasp-top-10
+  term: OWASP Top 10
+  short: Eine Liste der zehn wichtigsten Sicherheitsrisiken für Web-Anwendungen, herausgegeben von OWASP.
+  explanation: >
+    Die Liste wird alle paar Jahre anhand von Testdaten und Umfragen aktualisiert. Die aktuelle Ausgabe ist die
+    OWASP Top 10:2025, angeführt von Broken Access Control. Sie ist eine Orientierung, kein vollständiger Standard.
+  example: "A05:2025 Injection umfasst SQL-Injection, Command Injection und XSS."
+  category: sicherheit
+  aliases: [OWASP Top Ten, Top 10:2025]
+  related: [owasp, broken-access-control, injection]
+  lesson: websicherheit/owasp-top-10
+- slug: angriffsflaeche
+  term: Angriffsfläche
+  short: Alle Stellen, über die jemand von außen mit einer Anwendung interagieren kann.
+  explanation: >
+    Dazu gehören URLs, Formulare, API-Endpunkte, Uploads, Header und Cookies. Jede neue Funktion vergrößert die
+    Angriffsfläche. Wer sie klein hält und kennt, muss weniger Stellen absichern.
+  example: "Ein neuer Endpunkt `POST /api/import` vergrößert die Angriffsfläche um einen Upload."
+  category: sicherheit
+  aliases: [Attack Surface]
+  related: [vertrauensgrenze]
+  lesson: websicherheit/owasp-top-10
+- slug: vertrauensgrenze
+  term: Vertrauensgrenze
+  short: Die Linie, an der Daten aus einer nicht vertrauenswürdigen Quelle in deinen Code wechseln.
+  explanation: >
+    Alles jenseits der Grenze, etwa der Browser oder fremde APIs, kann beliebige Daten schicken. An der Grenze
+    werden Eingaben geprüft, beim Weitergeben Daten von Befehlen getrennt und Ausgaben kodiert.
+  example: "Zwischen dem Browser und deinem PHP-Controller verläuft eine Vertrauensgrenze."
+  category: sicherheit
+  aliases: [Trust Boundary]
+  related: [angriffsflaeche, validierung, output-encoding]
+  lesson: websicherheit/owasp-top-10
+- slug: defense-in-depth
+  term: Defense in Depth
+  short: Das Prinzip, mehrere unabhängige Schutzschichten hintereinander zu setzen.
+  explanation: >
+    Weil keine einzelne Maßnahme perfekt ist, sichert man wichtige Dinge mehrfach ab. Fällt eine Schicht aus,
+    begrenzt die nächste den Schaden.
+  example: "Output-Encoding gegen XSS und zusätzlich eine Content Security Policy."
+  category: sicherheit
+  aliases: [Tiefenverteidigung, mehrschichtige Verteidigung]
+  related: [least-privilege, content-security-policy]
+  lesson: websicherheit/owasp-top-10
+- slug: least-privilege
+  term: Least Privilege
+  short: Das Prinzip, jeder Person und Komponente nur die Rechte zu geben, die sie wirklich braucht.
+  explanation: >
+    Weniger Rechte bedeuten weniger Schaden, wenn ein Konto oder Dienst missbraucht wird. Das gilt für Nutzerrollen
+    ebenso wie für Datenbank-Benutzer, Dateirechte und Cloud-Berechtigungen.
+  example: "Der Datenbank-Benutzer der Web-App darf lesen und schreiben, aber keine Tabellen löschen."
+  category: sicherheit
+  aliases: [Prinzip der minimalen Rechte, Minimalprinzip]
+  related: [defense-in-depth, deny-by-default]
+  lesson: websicherheit/owasp-top-10
+- slug: denylist
+  term: Denylist
+  short: Eine Liste verbotener Werte – alles, was nicht darauf steht, wird erlaubt.
+  explanation: >
+    Denylists sind als Sicherheitsmaßnahme schwach, weil Angreifer Varianten finden, die nicht auf der Liste stehen.
+    Besser ist eine Allowlist, die nur Bekanntes erlaubt.
+  example: "Ein Filter, der nur `<script>` verbietet, lässt `<img src=x onerror=…>` durch."
+  category: sicherheit
+  aliases: [Blocklist, Blacklist, Sperrliste]
+  related: [allowlist, validierung]
+  lesson: websicherheit/eingaben-validieren
+- slug: security-header
+  term: Security-Header
+  short: Ein HTTP-Response-Header, mit dem der Server Schutzfunktionen im Browser einschaltet.
+  explanation: >
+    Beispiele sind Strict-Transport-Security, X-Content-Type-Options, Content-Security-Policy und Referrer-Policy.
+    Sie kosten eine Zeile Konfiguration und schützen jede Seite zusätzlich. Sicheren Code ersetzen sie nicht.
+  example: "`X-Content-Type-Options: nosniff` verhindert, dass der Browser den Dateityp selbst errät."
+  category: sicherheit
+  aliases: [Sicherheits-Header, Security Headers]
+  related: [hsts, content-security-policy, x-content-type-options, referrer-policy]
+  lesson: websicherheit/fehlkonfiguration-und-header
+- slug: x-content-type-options
+  term: X-Content-Type-Options
+  short: "Ein Header, der mit dem Wert `nosniff` verbietet, dass der Browser den Inhaltstyp einer Antwort errät."
+  explanation: >
+    Ohne den Header versuchen Browser manchmal, den Typ am Inhalt zu erkennen. So könnte eine hochgeladene
+    Textdatei als Skript ausgeführt werden. Mit `nosniff` gilt nur der angegebene Content-Type.
+  example: "`X-Content-Type-Options: nosniff`"
+  category: sicherheit
+  aliases: [nosniff, MIME-Sniffing]
+  related: [security-header, content-type, mime-typ]
+  lesson: websicherheit/fehlkonfiguration-und-header
+- slug: clickjacking
+  term: Clickjacking
+  short: Ein Angriff, bei dem deine Seite unsichtbar in eine fremde Seite eingebettet wird, um Klicks zu erschleichen.
+  explanation: >
+    Die fremde Seite legt deine Seite in einem transparenten iframe über einen harmlosen Knopf. Wer klickt, löst
+    unbemerkt eine Aktion in deiner App aus. Die CSP-Direktive `frame-ancestors` verbietet das Einbetten.
+  example: "`Content-Security-Policy: frame-ancestors 'none'` schützt vor Clickjacking."
+  category: sicherheit
+  aliases: [UI Redressing]
+  related: [content-security-policy, security-header]
+  lesson: websicherheit/fehlkonfiguration-und-header
+- slug: referrer-policy
+  term: Referrer-Policy
+  short: Ein Header, der steuert, wie viel von der aktuellen URL der Browser im Referer-Header an andere Seiten weitergibt.
+  explanation: >
+    URLs können IDs, Suchbegriffe oder sogar Tokens enthalten. Mit `strict-origin-when-cross-origin` sehen fremde
+    Seiten nur noch den Origin, nicht den vollständigen Pfad.
+  example: "`Referrer-Policy: strict-origin-when-cross-origin`"
+  category: sicherheit
+  aliases: [Referer-Policy]
+  related: [security-header, origin]
+  lesson: websicherheit/fehlkonfiguration-und-header
+- slug: permissions-policy
+  term: Permissions-Policy
+  short: Ein Header, der festlegt, welche Browser-Funktionen wie Kamera, Mikrofon oder Standort eine Seite nutzen darf.
+  explanation: >
+    Funktionen, die deine Seite nicht braucht, schaltest du ab. Dann kann auch eingeschleuster Code oder ein
+    eingebettetes iframe sie nicht verwenden.
+  example: "`Permissions-Policy: camera=(), microphone=(), geolocation=()`"
+  category: sicherheit
+  aliases: [Feature-Policy]
+  related: [security-header]
+  lesson: websicherheit/fehlkonfiguration-und-header
+- slug: injection
+  term: Injection
+  short: Eine Schwachstelle, bei der Daten von außen von einem Interpreter als Befehl ausgeführt werden.
+  explanation: >
+    Sie entsteht, wenn Code und Eingaben zu einem Text zusammengeklebt werden – etwa ein SQL-Befehl oder ein
+    Shell-Kommando. Die Abwehr trennt Daten und Befehle, z. B. mit Platzhaltern oder Argument-Listen.
+  example: "`\"SELECT * FROM users WHERE name = '\" . $name . \"'\"` ist anfällig für SQL-Injection."
+  category: sicherheit
+  aliases: [Injektion, Injection-Angriff]
+  related: [sql-injection, command-injection, xss, path-traversal]
+  lesson: websicherheit/injection
+- slug: command-injection
+  term: Command Injection
+  short: Eine Injection, bei der eine Eingabe als zusätzlicher Shell-Befehl ausgeführt wird.
+  explanation: >
+    Sie entsteht, wenn Werte von außen in Aufrufe wie `shell_exec()` oder `exec()` geklebt werden. Zeichen wie `;`
+    oder `&&` hängen dann eigene Befehle an. Abhilfe: ohne Shell arbeiten, Allowlists, `proc_open()` mit Array.
+  example: "`shell_exec('ping -c 1 ' . $host)` mit `$host = 'example.com; ls'` führt auch `ls` aus."
+  category: sicherheit
+  aliases: [OS Command Injection, Befehlsinjektion]
+  related: [injection, shell]
+  lesson: websicherheit/injection
+- slug: path-traversal
+  term: Path Traversal
+  short: Ein Angriff, bei dem ein Dateiname mit `../` aus dem erlaubten Ordner ausbricht.
+  explanation: >
+    Wird ein Dateiname aus dem Request an einen Pfad gehängt, kann jemand andere Dateien lesen oder überschreiben.
+    Abhilfe sind IDs statt Namen, strenge Muster oder eine `realpath()`-Prüfung gegen den Basisordner.
+  example: "`?datei=../../etc/passwd` liest eine Systemdatei statt eines Handbuchs."
+  category: sicherheit
+  aliases: [Directory Traversal, Verzeichnisdurchquerung]
+  related: [injection, allowlist]
+  lesson: websicherheit/injection
+- slug: output-encoding
+  term: Output-Encoding
+  short: Das Umwandeln von Sonderzeichen bei der Ausgabe, passend zum Kontext, in dem der Wert landet.
+  explanation: >
+    In HTML wird aus `<` ein `&lt;`, in URLs aus einem Leerzeichen `%20`. So bleibt ein Wert Text und wird nie
+    Code. Es ist die wichtigste Abwehr gegen XSS und geschieht bei der Ausgabe, nicht beim Speichern.
+  example: "`htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')`"
+  category: sicherheit
+  aliases: [Ausgabekodierung, Output Encoding, kontextabhängiges Escaping]
+  related: [escaping, xss]
+  lesson: websicherheit/xss-und-output-encoding
+- slug: reflected-xss
+  term: Reflected XSS
+  short: XSS, bei dem der Server eine Eingabe aus der aktuellen Anfrage ungefiltert in die Antwort spiegelt.
+  explanation: >
+    Das Opfer muss einen präparierten Link öffnen. Der Schadcode steckt in der URL und wird nicht gespeichert.
+  example: "`/suche?q=<script>…</script>` zeigt „Ergebnisse für <script>…“ ohne Kodierung an."
+  category: sicherheit
+  aliases: [reflektiertes XSS, nicht-persistentes XSS]
+  related: [xss, stored-xss, dom-xss]
+  lesson: websicherheit/xss-und-output-encoding
+- slug: stored-xss
+  term: Stored XSS
+  short: XSS, bei dem der Schadcode gespeichert und allen späteren Besuchern ausgeliefert wird.
+  explanation: >
+    Typische Quellen sind Kommentare, Profilfelder oder Produktbeschreibungen. Weil jeder Besucher betroffen ist,
+    auch Admins, gilt Stored XSS als besonders gefährlich.
+  example: "Ein Gästebucheintrag mit `<script>` läuft bei jedem Aufruf der Seite."
+  category: sicherheit
+  aliases: [persistentes XSS, gespeichertes XSS]
+  related: [xss, reflected-xss, dom-xss]
+  lesson: websicherheit/xss-und-output-encoding
+- slug: dom-xss
+  term: DOM-based XSS
+  short: XSS, bei dem JavaScript im Browser Daten aus URL oder Speicher ungefiltert ins DOM schreibt.
+  explanation: >
+    Der Server ist nicht beteiligt und sieht den Angriff oft gar nicht. Ursache sind gefährliche Senken wie
+    `innerHTML`. Abhilfe: `textContent` statt `innerHTML`, kein `eval`, Trusted Types.
+  example: "`el.innerHTML = new URLSearchParams(location.search).get('name')`"
+  category: sicherheit
+  aliases: [DOM-XSS, DOM-basiertes XSS]
+  related: [xss, sink, trusted-types]
+  lesson: websicherheit/xss-und-output-encoding
+- slug: sink
+  term: Sink
+  short: Eine Stelle im Code, an der Daten als HTML, Code oder Befehl interpretiert werden.
+  explanation: >
+    Gelangen Daten von außen ungeprüft in eine gefährliche Senke, entsteht eine Injection. Im Browser sind
+    `innerHTML`, `document.write` und `eval` typische Senken, auf dem Server etwa `shell_exec` oder `query`.
+  example: "`el.innerHTML = wert` ist eine Senke, `el.textContent = wert` nicht."
+  category: sicherheit
+  aliases: [Senke, gefährliche Senke]
+  related: [dom-xss, injection]
+  lesson: websicherheit/xss-und-output-encoding
+- slug: html-sanitizer
+  term: HTML-Sanitizer
+  short: Ein Werkzeug, das HTML parst und nur erlaubte Tags und Attribute übrig lässt.
+  explanation: >
+    Sanitizer braucht man, wenn Nutzer formatierten Text eingeben dürfen. Sie arbeiten mit einer Allowlist und
+    entfernen Skripte, Event-Handler und gefährliche Links. Bekannte Beispiele sind DOMPurify und HTML Purifier.
+  example: "`DOMPurify.sanitize('<b>hi</b><img src=x onerror=alert(1)>')` ergibt `<b>hi</b><img src=\"x\">`."
+  category: sicherheit
+  aliases: [Sanitizer, HTML-Bereinigung, DOMPurify]
+  related: [xss, allowlist]
+  lesson: websicherheit/xss-und-output-encoding
+- slug: content-security-policy
+  term: Content Security Policy
+  short: Ein HTTP-Header, der dem Browser vorgibt, aus welchen Quellen Skripte und andere Ressourcen kommen dürfen.
+  explanation: >
+    Die CSP ist eine zusätzliche Schutzschicht gegen XSS: Selbst eingeschleuste Skripte werden nicht ausgeführt,
+    wenn sie die Regeln verletzen. Empfohlen ist eine strikte CSP mit Nonce und `'strict-dynamic'`.
+  example: "`Content-Security-Policy: script-src 'nonce-r4nd0m' 'strict-dynamic'; object-src 'none'; base-uri 'none'`"
+  category: sicherheit
+  aliases: [CSP]
+  related: [nonce, csp-direktive, xss, security-header]
+  lesson: websicherheit/content-security-policy
+- slug: csp-direktive
+  term: CSP-Direktive
+  short: Eine einzelne Regel innerhalb einer Content Security Policy, z. B. `script-src` oder `frame-ancestors`.
+  explanation: >
+    Jede Direktive regelt einen Ressourcentyp oder ein Verhalten und nennt die erlaubten Quellen. Mehrere
+    Direktiven werden durch Semikolons getrennt.
+  example: "`object-src 'none'` verbietet Plugins über `<object>` und `<embed>`."
+  category: sicherheit
+  aliases: [Direktive, CSP-Direktiven]
+  related: [content-security-policy]
+  lesson: websicherheit/content-security-policy
+- slug: nonce
+  term: Nonce
+  short: Eine zufällige Einmalzahl, die bei jeder Antwort neu erzeugt wird.
+  explanation: >
+    In einer CSP steht die Nonce im Header und als Attribut an jedem erlaubten Script-Tag. Ein eingeschleustes
+    Skript kennt den Wert nicht und wird blockiert. Eine feste Nonce wäre wertlos.
+  example: "`<script nonce=\"r4nd0m\" src=\"/js/app.js\"></script>`"
+  category: sicherheit
+  aliases: [Nonces, Number used once]
+  related: [content-security-policy]
+  lesson: websicherheit/content-security-policy
+- slug: trusted-types
+  term: Trusted Types
+  short: Eine Browser-API, mit der gefährliche DOM-Senken nur noch geprüfte Werte statt beliebiger Strings annehmen.
+  explanation: >
+    Mit der CSP-Direktive `require-trusted-types-for 'script'` wirft z. B. `innerHTML = string` einen Fehler. Werte
+    müssen vorher durch eine definierte Policy laufen. Das verhindert DOM-based XSS strukturell.
+  example: "`Content-Security-Policy: require-trusted-types-for 'script'`"
+  category: sicherheit
+  aliases: [Trusted-Types-API]
+  related: [dom-xss, content-security-policy, sink]
+  lesson: websicherheit/content-security-policy
+- slug: broken-access-control
+  term: Broken Access Control
+  short: Fehlerhafte Zugriffskontrolle – Nutzer können Daten sehen oder Aktionen ausführen, die ihnen nicht zustehen.
+  explanation: >
+    Die Kategorie steht auf Platz 1 der OWASP Top 10:2025. Dazu gehören IDOR, fehlende Prüfungen bei einzelnen
+    HTTP-Methoden, Rechte-Ausweitung, CSRF und SSRF.
+  example: "Ein Kunde ruft `/admin/users` auf, und die Seite prüft nur, ob er eingeloggt ist."
+  category: sicherheit
+  aliases: [fehlerhafte Zugriffskontrolle, A01]
+  related: [idor, autorisierung, deny-by-default]
+  lesson: websicherheit/zugriffskontrolle-und-idor
+- slug: idor
+  term: IDOR
+  short: Insecure Direct Object Reference – ein Objekt wird per ID geladen, ohne zu prüfen, ob es der anfragenden Person gehört.
+  explanation: >
+    Wer die Zahl in `/rechnungen/1043` ändert, sieht fremde Rechnungen. Abhilfe ist eine Besitzprüfung auf dem
+    Server, z. B. `WHERE id = ? AND user_id = ?` mit der Benutzer-ID aus der Session.
+  example: "`GET /api/orders/502` liefert die Bestellung eines anderen Kunden."
+  category: sicherheit
+  aliases: [Insecure Direct Object Reference, BOLA]
+  related: [broken-access-control, autorisierung]
+  lesson: websicherheit/zugriffskontrolle-und-idor
+- slug: deny-by-default
+  term: Deny by Default
+  short: Das Prinzip, dass alles verboten ist, was nicht ausdrücklich erlaubt wurde.
+  explanation: >
+    Neue Routen, Rollen oder Aktionen sind damit zunächst gesperrt. Vergisst jemand eine Regel, entsteht keine Lücke,
+    sondern höchstens eine Fehlermeldung.
+  example: "`match ($rolle) { 'admin' => true, 'kunde' => $istBesitzer, default => false }`"
+  category: sicherheit
+  aliases: [standardmäßig verweigern, Default Deny]
+  related: [least-privilege, broken-access-control]
+  lesson: websicherheit/zugriffskontrolle-und-idor
+- slug: csrf-token
+  term: CSRF-Token
+  short: Ein zufälliger, geheimer Wert in Session und Formular, mit dem der Server echte Formulare von gefälschten unterscheidet.
+  explanation: >
+    Eine fremde Seite kennt das Token nicht und kann es nicht auslesen. Fehlt es oder stimmt es nicht, lehnt der
+    Server die Anfrage ab. Der Vergleich erfolgt zeitkonstant mit `hash_equals()`.
+  example: "`<input type=\"hidden\" name=\"_token\" value=\"…\">` – in Laravel erzeugt `@csrf` dieses Feld."
+  category: sicherheit
+  aliases: [Anti-CSRF-Token, XSRF-Token, Synchronizer Token]
+  related: [csrf, samesite, session]
+  lesson: websicherheit/csrf-und-cors
+- slug: fetch-metadata
+  term: Fetch Metadata
+  short: Request-Header wie `Sec-Fetch-Site`, mit denen der Browser mitteilt, woher eine Anfrage stammt.
+  explanation: >
+    `Sec-Fetch-Site` hat Werte wie `same-origin`, `same-site` oder `cross-site`. Der Server kann damit Anfragen von
+    fremden Seiten ablehnen – eine zusätzliche Schicht gegen CSRF.
+  example: "`Sec-Fetch-Site: cross-site` bei einem POST → Anfrage mit 403 ablehnen."
+  category: sicherheit
+  aliases: [Sec-Fetch-Site, Fetch-Metadata-Header]
+  related: [csrf, origin]
+  lesson: websicherheit/csrf-und-cors
+- slug: ssrf
+  term: SSRF
+  short: Server-Side Request Forgery – ein Angreifer bringt deinen Server dazu, Anfragen an Ziele seiner Wahl zu schicken.
+  explanation: >
+    Betroffen sind Funktionen wie „Bild per URL laden“ oder Webhooks. Der Server erreicht interne Dienste und
+    Cloud-Metadaten, die von außen gesperrt sind. Abhilfe: Allowlist, IP-Prüfung, keine Weiterleitungen.
+  example: "Die Bild-URL `http://169.254.169.254/latest/meta-data/` fragt den Metadaten-Dienst der Cloud ab."
+  category: sicherheit
+  aliases: [Server-Side Request Forgery]
+  related: [broken-access-control, cloud-metadaten-dienst, allowlist]
+  lesson: websicherheit/ssrf
+- slug: cloud-metadaten-dienst
+  term: Cloud-Metadaten-Dienst
+  short: Ein interner Dienst unter `169.254.169.254`, über den eine Cloud-Instanz Informationen über sich selbst abruft.
+  explanation: >
+    Dort liegen Konfigurationsdaten und teils temporäre Zugangsdaten. Von außen ist er nicht erreichbar, über eine
+    SSRF-Lücke aber schon. AWS schützt ihn mit IMDSv2 zusätzlich durch einen Token-Zwang.
+  example: "`http://169.254.169.254/latest/meta-data/` auf einer EC2-Instanz"
+  category: sicherheit
+  aliases: [Metadaten-Endpunkt, Instance Metadata Service, IMDS]
+  related: [ssrf, link-local-adresse]
+  lesson: websicherheit/ssrf
+- slug: dns-rebinding
+  term: DNS-Rebinding
+  short: Ein Trick, bei dem ein Hostname bei der Prüfung auf eine öffentliche und beim Abruf auf eine interne IP zeigt.
+  explanation: >
+    Der Angreifer kontrolliert den DNS-Server und ändert die Antwort zwischen zwei Abfragen. Darum verbindet sich
+    eine sichere App mit genau der IP, die sie zuvor geprüft hat.
+  example: "`bild.example.net` zeigt erst auf `203.0.113.10`, eine Sekunde später auf `127.0.0.1`."
+  category: sicherheit
+  aliases: [DNS Rebinding]
+  related: [ssrf, dns]
+  lesson: websicherheit/ssrf
+- slug: datei-upload
+  term: Datei-Upload
+  short: Das Hochladen einer Datei vom Client auf den Server, z. B. über ein Formular mit `type="file"`.
+  explanation: >
+    Name, Typ und Inhalt stammen vom Client und können bösartig sein. Sichere Uploads prüfen den echten Typ,
+    begrenzen die Größe und speichern unter zufälligem Namen außerhalb des Webroots.
+  example: "`<input type=\"file\" name=\"bild\">` landet in PHP in `$_FILES['bild']`."
+  category: sicherheit
+  aliases: [Upload, Dateiupload, Uploads]
+  related: [magic-bytes, webshell, mime-typ]
+  lesson: websicherheit/uploads-und-deserialisierung
+- slug: magic-bytes
+  term: Magic Bytes
+  short: Die typischen ersten Bytes eines Dateiformats, an denen sich der echte Dateityp erkennen lässt.
+  explanation: >
+    PNG-Dateien beginnen mit `\x89PNG`, PDF-Dateien mit `%PDF`. Die PHP-Erweiterung fileinfo liest diese Bytes, um
+    den MIME-Typ zu bestimmen – unabhängig von der Dateiendung.
+  example: "`(new finfo(FILEINFO_MIME_TYPE))->file('foto.png')` liefert `image/png` oder `text/x-php`."
+  category: sicherheit
+  aliases: [Dateisignatur, Magic Number]
+  related: [datei-upload, mime-typ]
+  lesson: websicherheit/uploads-und-deserialisierung
+- slug: webshell
+  term: Webshell
+  short: Ein hochgeladenes Skript, über das ein Angreifer per Browser Befehle auf dem Server ausführt.
+  explanation: >
+    Gelangt eine Datei wie `shell.php` in einen Ordner, den der Webserver als PHP ausführt, gehört der Server dem
+    Angreifer. Deshalb liegen Uploads außerhalb des Webroots und bekommen zufällige Namen.
+  example: "`/uploads/avatar.php?c=ls` führt `ls` auf dem Server aus."
+  category: sicherheit
+  aliases: [Web-Shell]
+  related: [datei-upload, document-root]
+  lesson: websicherheit/uploads-und-deserialisierung
+- slug: unsichere-deserialisierung
+  term: Unsichere Deserialisierung
+  short: Das Zurückverwandeln fremder Daten in Objekte, wobei ein Angreifer eigene Objekte und deren Code auslösen kann.
+  explanation: >
+    PHPs `unserialize()` erzeugt beliebige Klassen und ruft magische Methoden wie `__wakeup()` auf. Auf Daten von
+    außen nutzt du deshalb JSON. OWASP ordnet das 2025 unter A08 Software or Data Integrity Failures ein.
+  example: "`unserialize($_COOKIE['warenkorb'])` – besser `json_decode($_COOKIE['warenkorb'], true)`."
+  category: sicherheit
+  aliases: [Insecure Deserialization, PHP Object Injection]
+  related: [deserialisierung, serialisierung, hmac]
+  lesson: websicherheit/uploads-und-deserialisierung
+- slug: hmac
+  term: HMAC
+  short: Eine Prüfsumme mit geheimem Schlüssel, die beweist, dass Daten nicht verändert wurden.
+  explanation: >
+    Nur wer den Schlüssel kennt, kann eine gültige HMAC berechnen. So signiert ein Server Daten, die beim Client
+    liegen, und erkennt Manipulationen. Verglichen wird zeitkonstant mit `hash_equals()`.
+  example: "`hash_hmac('sha256', $daten, $schluessel)`"
+  category: sicherheit
+  aliases: [Hash-based Message Authentication Code, Signatur per HMAC]
+  related: [hash, unsichere-deserialisierung, secret]
+  lesson: websicherheit/uploads-und-deserialisierung
+- slug: secret-rotation
+  term: Secret-Rotation
+  short: Das Ersetzen eines Secrets durch einen neuen Wert, wobei der alte ungültig wird.
+  explanation: >
+    Ein geleaktes Secret muss sofort rotiert werden, weil es in Historie und Kopien weiterlebt. Viele Teams rotieren
+    zusätzlich regelmäßig, damit ein unbemerkt geleakter Wert nicht ewig gültig bleibt.
+  example: "Den alten API-Key im Dashboard des Anbieters widerrufen, einen neuen erzeugen und in `.env` eintragen."
+  category: sicherheit
+  aliases: [Rotation, Schlüsselrotation, rotieren]
+  related: [secret, secrets-manager]
+  lesson: websicherheit/secrets-und-abhaengigkeiten
+- slug: secrets-manager
+  term: Secrets-Manager
+  short: Ein Dienst, der Secrets zentral, verschlüsselt und mit Zugriffsrechten speichert und an Anwendungen ausgibt.
+  explanation: >
+    Statt Passwörter in Dateien zu verteilen, holt die App sie zur Laufzeit ab. Zugriffe werden protokolliert, und
+    Rotation lässt sich automatisieren. Beispiele sind AWS Secrets Manager oder HashiCorp Vault.
+  example: "Der Container bekommt `DB_PASSWORD` beim Start aus dem Secrets-Manager als Umgebungsvariable."
+  category: sicherheit
+  aliases: [Secret Manager, Tresor, Vault]
+  related: [secret, secret-rotation, umgebungsvariable]
+  lesson: websicherheit/secrets-und-abhaengigkeiten
+- slug: security-logging
+  term: Security-Logging
+  short: Das gezielte Protokollieren sicherheitsrelevanter Ereignisse wie Fehl-Logins oder abgelehnter Zugriffe.
+  explanation: >
+    Gute Security-Logs sind strukturiert, enthalten Zeit, Event, Benutzer, IP und Request-ID und niemals Passwörter
+    oder Tokens. Erst Auswertung und Alarmierung machen sie nützlich.
+  example: "`{\"zeit\":\"2026-10-10T08:01:00Z\",\"event\":\"login_failed\",\"ip\":\"203.0.113.7\",\"user\":\"admin\"}`"
+  category: sicherheit
+  aliases: [Sicherheitsprotokollierung, Security-Log, Audit-Log]
+  related: [strukturiertes-logging, alerting, log-injection]
+  lesson: websicherheit/logging-und-monitoring
+- slug: log-injection
+  term: Log-Injection
+  short: Ein Angriff, bei dem eingeschleuste Zeilenumbrüche oder Steuerzeichen gefälschte Logeinträge erzeugen.
+  explanation: >
+    Werden Eingaben ungeprüft in Textlogs geschrieben, kann jemand ganze Zeilen vortäuschen und Auswertungen
+    verwirren. Strukturierte Logs im JSON-Format kodieren Zeilenumbrüche und verhindern das.
+  example: "Benutzername `ada\\nlogin_success user=admin` erzeugt eine falsche zweite Zeile."
+  category: sicherheit
+  aliases: [Log Forging, Log-Fälschung]
+  related: [security-logging, strukturiertes-logging, injection]
+  lesson: websicherheit/logging-und-monitoring
+- slug: alerting
+  term: Alerting
+  short: Das automatische Benachrichtigen von Menschen, wenn Logs oder Metriken eine kritische Schwelle überschreiten.
+  explanation: >
+    Alarmregeln wie „mehr als 20 Fehl-Logins pro IP in 5 Minuten“ machen aus gespeicherten Logs eine echte
+    Erkennung. Gute Alarme sind selten, aber eindeutig – sonst werden sie ignoriert.
+  example: "Bei `role_changed` zu `admin` geht sofort eine Nachricht an das Team."
+  category: sicherheit
+  aliases: [Alarmierung, Alerts, Alarm]
+  related: [security-logging]
+  lesson: websicherheit/logging-und-monitoring

@@ -1,0 +1,662 @@
+title: Den Notizblock härten
+description: |
+  In diesem Projekt bekommst du eine kleine PHP-Notiz-App, die absichtlich unsicher gebaut ist. Sie läuft nur
+  lokal in deinem Übungs-Terminal – genau so, wie du später eine echte App vor einem Release prüfst. Du gehst die
+  Lücken der Reihe nach durch: erst eine Bestandsaufnahme, dann SQL-Injection, IDOR, XSS, CSRF, Security-Header
+  mit Content Security Policy, Secrets und zum Schluss ein sauberes Security-Log.
+
+  Die App liegt im Ordner `notizblock`. Klicke auf **Projekt vorbereiten**, öffne das Übungs-Terminal und wechsle
+  mit `cd notizblock` hinein. Aufbau:
+
+  | Datei | Inhalt |
+  |---|---|
+  | `public/index.php` | Front Controller – Ada (Benutzer 1) ist fest eingeloggt |
+  | `src/notizen.php` | Suchen und Laden von Notizen |
+  | `src/ansicht.php` | HTML-Ausgabe einer Notiz |
+  | `src/csrf.php` | Prüfung des CSRF-Tokens |
+  | `src/header.php` | Security-Header |
+  | `src/log.php` | Security-Log |
+  | `config.php` | Konfiguration mit einem App-Schlüssel |
+  | `notizen.db` | SQLite-Datenbank mit Notizen von Ada (1) und Bob (2) |
+
+  Starten kannst du die App jederzeit mit `php -S 127.0.0.1:8080 -t public` und sie mit `curl` ansprechen,
+  z. B. `curl -s "http://127.0.0.1:8080/?id=3"`. Bearbeite die Dateien mit `nano`. Jeder Schritt wird automatisch
+  geprüft, indem Stacklab deine Funktionen mit harmlosen und mit bösartigen Eingaben aufruft.
+goal: >
+  Eine lokale Notiz-App ohne SQL-Injection, IDOR und XSS, mit CSRF-Prüfung, Security-Headern samt strikter CSP,
+  einem App-Schlüssel außerhalb von Git und einem strukturierten Security-Log – plus eine Befundliste nach OWASP.
+workdir: notizblock
+setup: |
+  mkdir -p public src
+  sqlite3 notizen.db <<'SQL'
+  CREATE TABLE notes (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL);
+  INSERT INTO notes (id, user_id, title, body) VALUES
+    (1, 1, 'Einkaufsliste', 'Milch, Brot, Kaffee'),
+    (2, 1, 'Ideen', '<script>alert(''xss'')</script> war nur ein Test'),
+    (3, 2, 'Bobs Zugangshinweise', 'Notiz von Bob – nur für Bob'),
+    (4, 2, 'Bobs Urlaub', 'Ostsee im Juni');
+  SQL
+  cat > src/notizen.php <<'PHP'
+  <?php
+  declare(strict_types=1);
+
+  function notizenSuchen(PDO $db, int $userId, string $suche): array
+  {
+      $sql = "SELECT id, title FROM notes WHERE user_id = $userId AND title LIKE '%$suche%' ORDER BY id";
+
+      return $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  function notizLaden(PDO $db, int $id, int $userId): ?array
+  {
+      $stmt = $db->prepare('SELECT id, user_id, title, body FROM notes WHERE id = ?');
+      $stmt->execute([$id]);
+
+      return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+  }
+  PHP
+  cat > src/ansicht.php <<'PHP'
+  <?php
+  declare(strict_types=1);
+
+  function notizHtml(array $notiz): string
+  {
+      return '<article><h2>' . $notiz['title'] . '</h2><p>' . $notiz['body'] . '</p></article>';
+  }
+  PHP
+  cat > src/csrf.php <<'PHP'
+  <?php
+  declare(strict_types=1);
+
+  function pruefeCsrf(?string $sessionToken, ?string $gesendet): bool
+  {
+      return true;
+  }
+  PHP
+  cat > src/header.php <<'PHP'
+  <?php
+  declare(strict_types=1);
+
+  function securityHeaders(string $nonce): array
+  {
+      return [];
+  }
+  PHP
+  cat > src/log.php <<'PHP'
+  <?php
+  declare(strict_types=1);
+
+  function logEreignis(string $datei, string $event, array $kontext): void
+  {
+      $zeile = date('c') . ' ' . $event;
+      foreach ($kontext as $schluessel => $wert) {
+          $zeile .= " $schluessel=$wert";
+      }
+      file_put_contents($datei, $zeile . "\n", FILE_APPEND);
+  }
+  PHP
+  cat > config.php <<'PHP'
+  <?php
+  declare(strict_types=1);
+
+  return [
+      'app_key' => 'appkey-0000-entwicklung',
+      'db' => __DIR__ . '/notizen.db',
+  ];
+  PHP
+  cat > public/index.php <<'PHP'
+  <?php
+  declare(strict_types=1);
+
+  require __DIR__ . '/../src/notizen.php';
+  require __DIR__ . '/../src/ansicht.php';
+  require __DIR__ . '/../src/header.php';
+
+  $nonce = base64_encode(random_bytes(16));
+  foreach (securityHeaders($nonce) as $zeile) {
+      header($zeile);
+  }
+
+  $config = require __DIR__ . '/../config.php';
+  $db = new PDO('sqlite:' . $config['db']);
+  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+  $userId = 1; // Demo: Ada ist eingeloggt
+
+  if (isset($_GET['id'])) {
+      $notiz = notizLaden($db, (int) $_GET['id'], $userId);
+      if ($notiz === null) {
+          http_response_code(404);
+          echo 'Nicht gefunden';
+          exit;
+      }
+      echo notizHtml($notiz);
+      exit;
+  }
+
+  $suche = is_string($_GET['suche'] ?? null) ? $_GET['suche'] : '';
+  echo "<h1>Meine Notizen</h1>\n<ul>\n";
+  foreach (notizenSuchen($db, $userId, $suche) as $n) {
+      echo '<li><a href="?id=' . (int) $n['id'] . '">' . htmlspecialchars($n['title']) . "</a></li>\n";
+  }
+  echo "</ul>\n";
+  PHP
+  git init -q -b main
+  git config user.name "Stacklab"
+  git config user.email "stacklab@example.com"
+  git add .
+  git commit -q -m "chore: initial notizblock"
+steps:
+  - id: befunde
+    title: Bestandsaufnahme nach OWASP
+    description: |
+      Bevor du etwas reparierst, verschaffst du dir einen Überblick – wie bei einem echten Security-Review. Lies
+      alle Dateien (`cat src/*.php config.php public/index.php`) und probiere die App aus:
+
+      ```bash
+      php -S 127.0.0.1:8080 -t public & sleep 1
+      curl -s "http://127.0.0.1:8080/?id=3"
+      curl -s "http://127.0.0.1:8080/?suche=x%27%20OR%201=1%20OR%20title%20LIKE%20%27"
+      curl -sI "http://127.0.0.1:8080/"
+      kill %1
+      ```
+
+      Lege die Datei `befunde.md` an. Notiere **mindestens fünf** Befunde, je eine Zeile mit der OWASP-Kategorie
+      vorne, z. B. `- A05 Injection: notizenSuchen() klebt den Suchbegriff in den SQL-Text`. Mindestens ein Befund
+      gehört zu A01 und einer zu A05.
+    checklist:
+      - Alle Dateien gelesen und die App lokal ausprobiert
+      - befunde.md mit mindestens fünf Zeilen samt OWASP-Kategorie
+      - Befunde zu A01 (Zugriff) und A05 (Injection) dabei
+    hints:
+      - "Gehe die Dateien einzeln durch: Wo landen Eingaben ungeprüft in SQL oder HTML? Wo fehlt eine Besitzprüfung?"
+      - "Kategorien zur Auswahl: A01 Broken Access Control, A02 Security Misconfiguration, A05 Injection, A09 Security Logging and Alerting Failures – und Secrets im Code (A02/A04)."
+    checks:
+      - type: file_exists
+        path: befunde.md
+        message: Die Datei befunde.md fehlt noch.
+      - type: command
+        run: grep -cE 'A0[1-9]|A10' befunde.md
+        stdout_matches: "^([5-9]|[1-9][0-9]+)$"
+        message: befunde.md braucht mindestens fünf Zeilen mit einer OWASP-Kategorie wie A01 oder A05.
+      - type: command
+        run: grep -q 'A01' befunde.md && grep -q 'A05' befunde.md && echo ok
+        stdout_equals: ok
+        message: Mindestens ein Befund soll zu A01 (Broken Access Control) und einer zu A05 (Injection) gehören.
+    solution: |
+      ```markdown
+      # Befunde Notizblock
+
+      - A05 Injection: notizenSuchen() klebt den Suchbegriff in den SQL-Text (SQL-Injection).
+      - A01 Broken Access Control: notizLaden() prüft nicht, wem die Notiz gehört (IDOR, ?id=3 zeigt Bobs Notiz).
+      - A05 Injection: notizHtml() gibt Titel und Text ohne Kodierung aus (Stored XSS in Notiz 2).
+      - A01 Broken Access Control: pruefeCsrf() gibt immer true zurück (CSRF).
+      - A02 Security Misconfiguration: Es werden keine Security-Header und keine CSP gesetzt.
+      - A02 Security Misconfiguration: Der App-Schlüssel steht im Klartext in config.php und in Git.
+      - A09 Security Logging and Alerting Failures: logEreignis() schreibt Textzeilen inklusive Passwort.
+      ```
+    solve: |
+      cat > befunde.md <<'MD'
+      # Befunde Notizblock
+
+      - A05 Injection: notizenSuchen() klebt den Suchbegriff in den SQL-Text (SQL-Injection).
+      - A01 Broken Access Control: notizLaden() prüft nicht, wem die Notiz gehört (IDOR, ?id=3 zeigt Bobs Notiz).
+      - A05 Injection: notizHtml() gibt Titel und Text ohne Kodierung aus (Stored XSS in Notiz 2).
+      - A01 Broken Access Control: pruefeCsrf() gibt immer true zurück (CSRF).
+      - A02 Security Misconfiguration: Es werden keine Security-Header und keine CSP gesetzt.
+      - A02 Security Misconfiguration: Der App-Schlüssel steht im Klartext in config.php und in Git.
+      - A09 Security Logging and Alerting Failures: logEreignis() schreibt Textzeilen inklusive Passwort.
+      MD
+  - id: sql-injection
+    title: Die Suche mit Prepared Statements absichern
+    description: |
+      `notizenSuchen()` in `src/notizen.php` baut die Abfrage per String-Verkettung. Mit
+      `x' OR 1=1 OR title LIKE '` als Suchbegriff liefert sie auch Bobs Notizen.
+
+      1. Ersetze `$db->query(...)` durch `$db->prepare(...)` mit zwei Platzhaltern für `user_id` und den Suchbegriff.
+      2. Übergib die Werte per `execute([$userId, '%' . $suche . '%'])`.
+      3. Rückgabe bleibt eine Liste von Arrays mit `id` und `title`, sortiert nach `id`.
+    checklist:
+      - Kein Suchbegriff mehr im SQL-Text
+      - Zwei Platzhalter, Werte über execute()
+      - Normale Suche funktioniert weiter
+    hints:
+      - "SQL: `SELECT id, title FROM notes WHERE user_id = ? AND title LIKE ? ORDER BY id`"
+      - "Die Prozentzeichen gehören in den Wert, nicht in den SQL-Text: `'%' . $suche . '%'`."
+    checks:
+      - type: command
+        run: php -l src/notizen.php >/dev/null && echo ok
+        stdout_equals: ok
+        message: src/notizen.php enthält einen Syntaxfehler.
+      - type: command
+        run: |
+          php -r 'require "src/notizen.php"; $db = new PDO("sqlite:notizen.db"); $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+          try { $r = notizenSuchen($db, 1, "x'"'"' OR 1=1 OR title LIKE '"'"'"); echo count($r); } catch (Throwable $e) { echo "fehler"; }'
+        stdout_equals: "0"
+        message: Ein Angriff mit x' OR 1=1 OR title LIKE ' liefert noch Treffer oder bricht ab. Nutze prepare() mit Platzhaltern.
+      - type: command
+        run: |
+          php -r 'require "src/notizen.php"; $db = new PDO("sqlite:notizen.db"); $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+          echo implode(",", array_column(notizenSuchen($db, 1, ""), "id")), "|", implode(",", array_column(notizenSuchen($db, 1, "Ideen"), "title")), "|", count(notizenSuchen($db, 2, "O'"'"'Reilly"));'
+        stdout_equals: 1,2|Ideen|0
+        message: "Die Suche soll weiter funktionieren: leere Suche liefert Adas Notizen 1 und 2, „Ideen“ findet genau diese Notiz, ein Apostroph führt nicht zu einem Fehler."
+    solution: |
+      ```php
+      function notizenSuchen(PDO $db, int $userId, string $suche): array
+      {
+          $stmt = $db->prepare('SELECT id, title FROM notes WHERE user_id = ? AND title LIKE ? ORDER BY id');
+          $stmt->execute([$userId, '%' . $suche . '%']);
+
+          return $stmt->fetchAll(PDO::FETCH_ASSOC);
+      }
+      ```
+    solve: |
+      cat > src/notizen.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function notizenSuchen(PDO $db, int $userId, string $suche): array
+      {
+          $stmt = $db->prepare('SELECT id, title FROM notes WHERE user_id = ? AND title LIKE ? ORDER BY id');
+          $stmt->execute([$userId, '%' . $suche . '%']);
+
+          return $stmt->fetchAll(PDO::FETCH_ASSOC);
+      }
+
+      function notizLaden(PDO $db, int $id, int $userId): ?array
+      {
+          $stmt = $db->prepare('SELECT id, user_id, title, body FROM notes WHERE id = ?');
+          $stmt->execute([$id]);
+
+          return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+      }
+      PHP
+  - id: idor
+    title: Fremde Notizen verbergen (IDOR)
+    description: |
+      `notizLaden()` lädt jede Notiz anhand ihrer ID – Ada sieht mit `?id=3` Bobs Notiz. Der Parameter `$userId`
+      wird zwar übergeben, aber nicht genutzt.
+
+      1. Ergänze die Abfrage um `AND user_id = ?` und übergib `$userId`.
+      2. Für fremde oder unbekannte IDs liefert die Funktion `null` – `public/index.php` antwortet dann mit 404.
+    checklist:
+      - Besitzprüfung steckt in der Abfrage
+      - Fremde und unbekannte IDs ergeben null
+      - Eigene Notizen lassen sich weiter laden
+    hints:
+      - "`SELECT id, user_id, title, body FROM notes WHERE id = ? AND user_id = ?`"
+      - "Teste über den Browser-Ersatz: `curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:8080/?id=3\"` soll 404 liefern."
+    checks:
+      - type: command
+        run: |
+          php -r 'require "src/notizen.php"; $db = new PDO("sqlite:notizen.db"); $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+          var_export(notizLaden($db, 3, 1) === null); echo "|"; var_export(notizLaden($db, 99, 1) === null); echo "|"; echo notizLaden($db, 1, 1)["title"] ?? "-"; echo "|"; echo notizLaden($db, 3, 2)["title"] ?? "-";'
+        stdout_equals: true|true|Einkaufsliste|Bobs Zugangshinweise
+        message: notizLaden() soll nur Notizen des übergebenen Benutzers liefern – Bobs Notiz 3 ergibt für Ada (1) null, für Bob (2) aber die Notiz.
+      - type: command
+        run: |
+          php -r 'require "src/notizen.php"; $db = new PDO("sqlite:notizen.db"); echo count(notizenSuchen($db, 1, ""));'
+        stdout_equals: "2"
+        message: Die Suche aus dem vorigen Schritt funktioniert nicht mehr – Ada soll weiterhin ihre zwei Notizen finden.
+    solution: |
+      ```php
+      function notizLaden(PDO $db, int $id, int $userId): ?array
+      {
+          $stmt = $db->prepare('SELECT id, user_id, title, body FROM notes WHERE id = ? AND user_id = ?');
+          $stmt->execute([$id, $userId]);
+
+          return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+      }
+      ```
+    solve: |
+      cat > src/notizen.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function notizenSuchen(PDO $db, int $userId, string $suche): array
+      {
+          $stmt = $db->prepare('SELECT id, title FROM notes WHERE user_id = ? AND title LIKE ? ORDER BY id');
+          $stmt->execute([$userId, '%' . $suche . '%']);
+
+          return $stmt->fetchAll(PDO::FETCH_ASSOC);
+      }
+
+      function notizLaden(PDO $db, int $id, int $userId): ?array
+      {
+          $stmt = $db->prepare('SELECT id, user_id, title, body FROM notes WHERE id = ? AND user_id = ?');
+          $stmt->execute([$id, $userId]);
+
+          return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+      }
+      PHP
+  - id: xss
+    title: Notizen kodiert ausgeben (XSS)
+    description: |
+      Notiz 2 enthält ein `<script>`. `notizHtml()` in `src/ansicht.php` gibt Titel und Text ungefiltert aus – eine
+      Stored-XSS-Lücke.
+
+      1. Kodiere `title` und `body` mit `htmlspecialchars(…, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')`.
+      2. Das Format bleibt `<article><h2>TITEL</h2><p>TEXT</p></article>`.
+    checklist:
+      - Titel und Text werden kodiert
+      - Auch Anführungszeichen werden kodiert (ENT_QUOTES)
+      - Format der Ausgabe unverändert
+    hints:
+      - "Eine kleine Hilfsfunktion: `$e = fn (string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');`"
+    checks:
+      - type: command
+        run: |
+          php -r 'require "src/ansicht.php"; echo notizHtml(["title" => "<b>T</b>", "body" => "<script>x</script> & '"'"'q'"'"'"]);'
+        stdout_equals: "<article><h2>&lt;b&gt;T&lt;/b&gt;</h2><p>&lt;script&gt;x&lt;/script&gt; &amp; &#039;q&#039;</p></article>"
+        message: notizHtml() soll Titel und Text mit htmlspecialchars(…, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') kodieren und das Format <article><h2>…</h2><p>…</p></article> behalten.
+    solution: |
+      ```php
+      function notizHtml(array $notiz): string
+      {
+          $e = fn (string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+          return '<article><h2>' . $e($notiz['title']) . '</h2><p>' . $e($notiz['body']) . '</p></article>';
+      }
+      ```
+    solve: |
+      cat > src/ansicht.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function notizHtml(array $notiz): string
+      {
+          $e = fn (string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+          return '<article><h2>' . $e($notiz['title']) . '</h2><p>' . $e($notiz['body']) . '</p></article>';
+      }
+      PHP
+  - id: csrf
+    title: Das CSRF-Token prüfen
+    description: |
+      Zum Löschen von Notizen soll später ein Formular mit CSRF-Token dienen. Die Prüffunktion `pruefeCsrf()` in
+      `src/csrf.php` gibt aber immer `true` zurück.
+
+      1. Liefere `false`, wenn eines der beiden Tokens `null` oder leer ist.
+      2. Vergleiche sonst zeitkonstant mit `hash_equals($sessionToken, $gesendet)`.
+    checklist:
+      - Leere und fehlende Tokens werden abgelehnt
+      - Vergleich mit hash_equals()
+    hints:
+      - "`if ($sessionToken === null || $sessionToken === '' || $gesendet === null || $gesendet === '') { return false; }`"
+    checks:
+      - type: command
+        run: |
+          php -r 'require "src/csrf.php"; $r = [pruefeCsrf("abc123", "abc123"), pruefeCsrf("abc123", "abc124"), pruefeCsrf("abc123", null), pruefeCsrf(null, null), pruefeCsrf("", "")]; echo json_encode($r);'
+        stdout_equals: "[true,false,false,false,false]"
+        message: pruefeCsrf() soll nur bei zwei gleichen, nicht leeren Tokens true liefern.
+      - type: file_contains
+        path: src/csrf.php
+        pattern: "hash_equals\\("
+        message: Vergleiche die Tokens zeitkonstant mit hash_equals().
+    solution: |
+      ```php
+      function pruefeCsrf(?string $sessionToken, ?string $gesendet): bool
+      {
+          if ($sessionToken === null || $sessionToken === '' || $gesendet === null || $gesendet === '') {
+              return false;
+          }
+
+          return hash_equals($sessionToken, $gesendet);
+      }
+      ```
+    solve: |
+      cat > src/csrf.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function pruefeCsrf(?string $sessionToken, ?string $gesendet): bool
+      {
+          if ($sessionToken === null || $sessionToken === '' || $gesendet === null || $gesendet === '') {
+              return false;
+          }
+
+          return hash_equals($sessionToken, $gesendet);
+      }
+      PHP
+  - id: header
+    title: Security-Header und strikte CSP
+    description: |
+      `public/index.php` schickt jede Zeile aus `securityHeaders($nonce)` als Header – die Funktion in
+      `src/header.php` liefert aber eine leere Liste.
+
+      Gib ein Array mit diesen vier Header-Zeilen zurück:
+
+      1. `X-Content-Type-Options: nosniff`
+      2. `Referrer-Policy: strict-origin-when-cross-origin`
+      3. `Content-Security-Policy: script-src 'nonce-NONCE' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`
+         – `NONCE` ist der übergebene Wert.
+      4. `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+
+      Prüfe danach mit `curl -sI`, dass die Header ankommen und die Nonce bei jedem Aufruf anders ist.
+    checklist:
+      - Vier Header-Zeilen, CSP mit Nonce aus dem Parameter
+      - Kein 'unsafe-inline'
+      - Header kommen per curl -I an
+    hints:
+      - "Die CSP-Zeile in doppelten Anführungszeichen: `\"Content-Security-Policy: script-src 'nonce-{$nonce}' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\"`"
+      - "Die Nonce selbst erzeugt `public/index.php` schon – du musst sie nur einbauen."
+    checks:
+      - type: command
+        run: |
+          php -r 'require "src/header.php"; $h = securityHeaders("abc123");
+          $ok = in_array("X-Content-Type-Options: nosniff", $h, true)
+            && in_array("Referrer-Policy: strict-origin-when-cross-origin", $h, true)
+            && in_array("Permissions-Policy: camera=(), microphone=(), geolocation=()", $h, true);
+          $csp = implode("", array_filter($h, fn ($z) => str_starts_with($z, "Content-Security-Policy:")));
+          $ok = $ok && str_contains($csp, "'"'"'nonce-abc123'"'"'") && str_contains($csp, "object-src '"'"'none'"'"'")
+            && str_contains($csp, "base-uri '"'"'none'"'"'") && str_contains($csp, "frame-ancestors '"'"'none'"'"'")
+            && !str_contains($csp, "unsafe-inline");
+          echo $ok ? "ok" : "fehlt";'
+        stdout_equals: ok
+        message: "securityHeaders() liefert noch nicht alle vier Zeilen. Die CSP braucht 'nonce-…' mit dem übergebenen Wert, object-src 'none', base-uri 'none' und frame-ancestors 'none' – ohne 'unsafe-inline'."
+      - type: command
+        run: |
+          P=$((20000 + RANDOM % 30000)); php -S 127.0.0.1:$P -t public >/dev/null 2>&1 & S=$!; sleep 0.7
+          a=$(curl -sI "http://127.0.0.1:$P/" | tr -d '\r' | grep -i '^content-security-policy:' | grep -o "'nonce-[^']*'")
+          b=$(curl -sI "http://127.0.0.1:$P/" | tr -d '\r' | grep -i '^content-security-policy:' | grep -o "'nonce-[^']*'")
+          kill $S 2>/dev/null
+          if [ -n "$a" ] && [ "$a" != "$b" ]; then echo ok; else echo "fehlt"; fi
+        stdout_equals: ok
+        message: Die App sendet noch keine CSP mit einer Nonce, die sich bei jedem Aufruf ändert. Prüfe securityHeaders() und starte den Server neu.
+    solution: |
+      ```php
+      function securityHeaders(string $nonce): array
+      {
+          return [
+              'X-Content-Type-Options: nosniff',
+              'Referrer-Policy: strict-origin-when-cross-origin',
+              "Content-Security-Policy: script-src 'nonce-{$nonce}' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+              'Permissions-Policy: camera=(), microphone=(), geolocation=()',
+          ];
+      }
+      ```
+    solve: |
+      cat > src/header.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function securityHeaders(string $nonce): array
+      {
+          return [
+              'X-Content-Type-Options: nosniff',
+              'Referrer-Policy: strict-origin-when-cross-origin',
+              "Content-Security-Policy: script-src 'nonce-{$nonce}' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+              'Permissions-Policy: camera=(), microphone=(), geolocation=()',
+          ];
+      }
+      PHP
+  - id: secrets
+    title: Den App-Schlüssel aus Git holen
+    description: |
+      `config.php` enthält den App-Schlüssel `appkey-0000-entwicklung` im Klartext – und der steckt schon im ersten
+      Commit. Behandle ihn als verbrannt:
+
+      1. Lege `.env` mit einem **neuen** Wert an, z. B. `APP_KEY=appkey-1111-neu`.
+      2. Lies `app_key` in `config.php` aus `.env` (`parse_ini_file(__DIR__ . '/.env')`). Der alte Wert verschwindet aus der Datei.
+      3. Trage `.env` in `.gitignore` ein und lege `.env.example` mit `APP_KEY=` an.
+      4. Committe `config.php`, `.gitignore` und `.env.example` – nicht `.env`.
+    checklist:
+      - Neuer Schlüssel nur in .env
+      - .env ignoriert, .env.example committet
+      - config.php ohne alten Schlüssel committet
+    hints:
+      - "`echo 'APP_KEY=appkey-1111-neu' > .env`, `echo 'APP_KEY=' > .env.example`, `echo '.env' > .gitignore`"
+      - "`git add config.php .gitignore .env.example && git commit -m \"fix: move app key to env\"` – danach zeigt `git status` .env nicht an."
+    checks:
+      - type: command
+        run: |
+          php -r '$c = require "config.php"; $e = @parse_ini_file(".env") ?: []; $k = $c["app_key"] ?? "";
+          if ($k === "") { echo "leer"; } elseif ($k === "appkey-0000-entwicklung") { echo "alt"; } elseif ($k !== ($e["APP_KEY"] ?? null)) { echo "nicht-aus-env"; } else { echo "ok"; }'
+        stdout_equals: ok
+        message: config.php soll app_key mit dem neuen Wert aus .env liefern – nicht leer und nicht appkey-0000-entwicklung.
+      - type: command
+        run: git check-ignore -q .env && git ls-files .env | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: .env muss in .gitignore stehen und darf nicht im Repository liegen.
+      - type: command
+        run: git ls-files --error-unmatch .env.example .gitignore >/dev/null 2>&1 && grep -E '^APP_KEY=' .env.example
+        stdout_equals: APP_KEY=
+        message: .env.example mit der Zeile APP_KEY= und .gitignore sollen committet sein.
+      - type: command
+        run: |
+          git show HEAD:config.php | grep -c 'appkey-0000-entwicklung' || true
+          git status --porcelain -- config.php | wc -l
+        stdout_matches: "^0\\s+0$"
+        message: Committe die geänderte config.php ohne den alten Schlüssel.
+    solution: |
+      ```bash
+      echo 'APP_KEY=appkey-1111-neu' > .env
+      echo 'APP_KEY=' > .env.example
+      echo '.env' > .gitignore
+      ```
+
+      ```php
+      <?php
+      declare(strict_types=1);
+
+      $env = parse_ini_file(__DIR__ . '/.env') ?: [];
+
+      return [
+          'app_key' => $env['APP_KEY'] ?? '',
+          'db' => __DIR__ . '/notizen.db',
+      ];
+      ```
+
+      ```bash
+      git add config.php .gitignore .env.example
+      git commit -m "fix: move app key to env"
+      ```
+
+      Der alte Schlüssel bleibt in der Historie – in einer echten App würdest du ihn jetzt überall ungültig machen.
+    solve: |
+      echo 'APP_KEY=appkey-1111-neu' > .env
+      echo 'APP_KEY=' > .env.example
+      echo '.env' > .gitignore
+      cat > config.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      $env = parse_ini_file(__DIR__ . '/.env') ?: [];
+
+      return [
+          'app_key' => $env['APP_KEY'] ?? '',
+          'db' => __DIR__ . '/notizen.db',
+      ];
+      PHP
+      git add config.php .gitignore .env.example
+      git commit -q -m "fix: move app key to env"
+  - id: logging
+    title: Ein strukturiertes Security-Log
+    description: |
+      `logEreignis()` in `src/log.php` schreibt freie Textzeilen – inklusive aller Kontextwerte, also auch eines
+      Passworts. Ein Zeilenumbruch im Benutzernamen fälscht eine zweite Zeile.
+
+      Baue die Funktion so um, dass sie **eine JSON-Zeile** an `$datei` anhängt:
+
+      1. Felder: zuerst `zeit` (UTC, `gmdate('Y-m-d\TH:i:s\Z')`), dann `event`, danach der Kontext.
+      2. Entferne die Schlüssel `passwort`, `password`, `token` und `session_id` (egal in welcher Schreibweise).
+      3. Kodiere mit `json_encode(…, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)` und
+         hänge die Zeile mit `FILE_APPEND | LOCK_EX` an. Fehlt der Ordner, legst du ihn mit `mkdir()` an.
+
+      Teste mit `php -r 'require "src/log.php"; logEreignis("logs/security.log", "login_failed", ["user" => "ada", "passwort" => "x"]);'`
+      und `jq . logs/security.log`.
+    checklist:
+      - Eine JSON-Zeile pro Ereignis
+      - Keine Passwörter oder Tokens im Log
+      - Zeilenumbrüche erzeugen keine zweite Zeile
+    hints:
+      - "Filtern: `array_filter($kontext, fn ($k) => !in_array(strtolower((string) $k), ['passwort', 'password', 'token', 'session_id'], true), ARRAY_FILTER_USE_KEY)`"
+      - "Ordner anlegen: `if (!is_dir(dirname($datei))) { mkdir(dirname($datei), 0775, true); }`"
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          php -r 'require "src/log.php"; logEreignis($argv[1] . "/logs/security.log", "login_failed", ["user" => "ada\n2026-10-10 login_success user=admin", "Passwort" => "geheim", "ip" => "203.0.113.7", "TOKEN" => "t"]); logEreignis($argv[1] . "/logs/security.log", "access_denied", ["user" => "ada", "pfad" => "/?id=3"]);' "$d"
+          f="$d/logs/security.log"
+          if [ ! -f "$f" ]; then echo keine-datei
+          elif [ "$(wc -l < "$f" | tr -d ' ')" != "2" ]; then echo "zeilen-$(wc -l < "$f" | tr -d ' ')"
+          elif grep -qi 'geheim' "$f"; then echo passwort-im-log
+          else jq -sr 'map(.event) | join(",")' "$f" 2>/dev/null || echo kein-json; fi
+          rm -rf "$d"
+        stdout_equals: login_failed,access_denied
+        message: logEreignis() soll pro Aufruf genau eine JSON-Zeile anhängen (Zeilenumbrüche kodiert), den Ordner bei Bedarf anlegen und Passwörter sowie Tokens weglassen.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          php -r 'require "src/log.php"; logEreignis($argv[1] . "/s.log", "login_failed", ["ip" => "203.0.113.7", "user" => "jörg"]);' "$d"
+          jq -r '[keys_unsorted[0], keys_unsorted[1], .ip, .user, (.zeit | test("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$") | tostring)] | join("|")' "$d/s.log" 2>/dev/null || echo kein-json
+          rm -rf "$d"
+        stdout_equals: zeit|event|203.0.113.7|jörg|true
+        message: Jede Zeile soll mit zeit (UTC, z. B. 2026-10-10T08:00:00Z) und event beginnen und danach die Kontextwerte enthalten.
+    solution: |
+      ```php
+      function logEreignis(string $datei, string $event, array $kontext): void
+      {
+          $sensibel = ['passwort', 'password', 'token', 'session_id'];
+          $kontext = array_filter(
+              $kontext,
+              fn ($schluessel): bool => !in_array(strtolower((string) $schluessel), $sensibel, true),
+              ARRAY_FILTER_USE_KEY,
+          );
+
+          $zeile = json_encode(
+              ['zeit' => gmdate('Y-m-d\TH:i:s\Z'), 'event' => $event] + $kontext,
+              JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+          );
+
+          if (!is_dir(dirname($datei))) {
+              mkdir(dirname($datei), 0775, true);
+          }
+          file_put_contents($datei, $zeile . "\n", FILE_APPEND | LOCK_EX);
+      }
+      ```
+    solve: |
+      cat > src/log.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      function logEreignis(string $datei, string $event, array $kontext): void
+      {
+          $sensibel = ['passwort', 'password', 'token', 'session_id'];
+          $kontext = array_filter(
+              $kontext,
+              fn ($schluessel): bool => !in_array(strtolower((string) $schluessel), $sensibel, true),
+              ARRAY_FILTER_USE_KEY,
+          );
+
+          $zeile = json_encode(
+              ['zeit' => gmdate('Y-m-d\TH:i:s\Z'), 'event' => $event] + $kontext,
+              JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+          );
+
+          if (!is_dir(dirname($datei))) {
+              mkdir(dirname($datei), 0775, true);
+          }
+          file_put_contents($datei, $zeile . "\n", FILE_APPEND | LOCK_EX);
+      }
+      PHP

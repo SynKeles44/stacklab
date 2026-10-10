@@ -1,0 +1,106 @@
+title: Zugriff und Anfragen absichern
+description: Broken Access Control verstehen, IDOR und Mass Assignment verhindern, Formulare gegen CSRF schützen, CORS eng einstellen und serverseitige Abrufe gegen SSRF absichern.
+exercise:
+  id: modul-uebung-webhook
+  type: code
+  language: php
+  title: Einen Webhook-Endpunkt Schicht für Schicht absichern
+  description: |
+    Eingeloggte Nutzer können für ihre Dokumente eine Webhook-URL hinterlegen. Schreibe
+    `bearbeiteAnfrage(array $anfrage, array $session, array $dokumente): int`, die den passenden HTTP-Statuscode
+    zurückgibt. Prüfe **in dieser Reihenfolge**:
+
+    1. `$session['user_id']` fehlt oder ist `null` → `401`.
+    2. `$anfrage['methode']` ist nicht `POST` → `405`.
+    3. Das CSRF-Token `$anfrage['token']` passt nicht zu `$session['csrf']` (beide nicht leer, `hash_equals`) → `419`.
+    4. Das Dokument mit `$anfrage['dokument_id']` existiert nicht oder gehört nicht dem eingeloggten Benutzer
+       (`user_id`) → `404`.
+    5. `$anfrage['webhook']` ist keine `https`-URL ohne Zugangsdaten und ohne Port mit dem Host `hooks.example.com` → `422`.
+    6. Sonst → `200`.
+
+    `$dokumente` ist eine Liste von Arrays mit `id` und `user_id`.
+  starter: |
+    <?php
+    declare(strict_types=1);
+
+    function bearbeiteAnfrage(array $anfrage, array $session, array $dokumente): int
+    {
+        return 200;
+    }
+  tests:
+    - name: Gültige Anfrage
+      code: |
+        $docs = [['id' => 10, 'user_id' => 7], ['id' => 11, 'user_id' => 8]];
+        $s = ['user_id' => 7, 'csrf' => 'tok123'];
+        assert_same(200, bearbeiteAnfrage(['methode' => 'POST', 'dokument_id' => 10, 'token' => 'tok123', 'webhook' => 'https://hooks.example.com/ada'], $s, $docs));
+    - name: Nicht eingeloggt, falsche Methode, falsches Token
+      code: |
+        $docs = [['id' => 10, 'user_id' => 7]];
+        $a = ['methode' => 'POST', 'dokument_id' => 10, 'token' => 'tok123', 'webhook' => 'https://hooks.example.com/ada'];
+        assert_same(401, bearbeiteAnfrage($a, ['user_id' => null, 'csrf' => 'tok123'], $docs));
+        assert_same(401, bearbeiteAnfrage($a, [], $docs));
+        assert_same(405, bearbeiteAnfrage(['methode' => 'GET'] + $a, ['user_id' => 7, 'csrf' => 'tok123'], $docs));
+        assert_same(419, bearbeiteAnfrage(['token' => 'falsch'] + $a, ['user_id' => 7, 'csrf' => 'tok123'], $docs));
+        assert_same(419, bearbeiteAnfrage(['token' => ''] + $a, ['user_id' => 7, 'csrf' => ''], $docs));
+    - name: Fremdes oder unbekanntes Dokument
+      code: |
+        $docs = [['id' => 10, 'user_id' => 7], ['id' => 11, 'user_id' => 8]];
+        $s = ['user_id' => 7, 'csrf' => 'tok123'];
+        assert_same(404, bearbeiteAnfrage(['methode' => 'POST', 'dokument_id' => 11, 'token' => 'tok123', 'webhook' => 'https://hooks.example.com/x'], $s, $docs));
+        assert_same(404, bearbeiteAnfrage(['methode' => 'POST', 'dokument_id' => 99, 'token' => 'tok123', 'webhook' => 'https://hooks.example.com/x'], $s, $docs));
+    - name: SSRF-Versuche in der Webhook-URL
+      code: |
+        $docs = [['id' => 10, 'user_id' => 7]];
+        $s = ['user_id' => 7, 'csrf' => 'tok123'];
+        $a = ['methode' => 'POST', 'dokument_id' => 10, 'token' => 'tok123'];
+        assert_same(422, bearbeiteAnfrage($a + ['webhook' => 'http://hooks.example.com/x'], $s, $docs));
+        assert_same(422, bearbeiteAnfrage($a + ['webhook' => 'https://hooks.example.com@169.254.169.254/'], $s, $docs));
+        assert_same(422, bearbeiteAnfrage($a + ['webhook' => 'https://hooks.example.com:8443/x'], $s, $docs));
+        assert_same(422, bearbeiteAnfrage($a + ['webhook' => 'https://hooks.example.com.evil.example/'], $s, $docs));
+  hints:
+    - "Schreibe für jede Schicht eine eigene `if`-Abfrage mit frühem `return`."
+    - "CSRF: `$t = $anfrage['token'] ?? ''; $c = $session['csrf'] ?? ''; if ($t === '' || $c === '' || !hash_equals($c, $t)) return 419;`"
+    - "Webhook: `parse_url()` zerlegen, dann Schema, `user`/`pass`, `port` und den Host exakt prüfen."
+  solution: |
+    <?php
+    declare(strict_types=1);
+
+    function bearbeiteAnfrage(array $anfrage, array $session, array $dokumente): int
+    {
+        $userId = $session['user_id'] ?? null;
+        if ($userId === null) {
+            return 401;
+        }
+
+        if (($anfrage['methode'] ?? '') !== 'POST') {
+            return 405;
+        }
+
+        $token = $anfrage['token'] ?? '';
+        $csrf = $session['csrf'] ?? '';
+        if (!is_string($token) || !is_string($csrf) || $token === '' || $csrf === '' || !hash_equals($csrf, $token)) {
+            return 419;
+        }
+
+        $gefunden = null;
+        foreach ($dokumente as $dokument) {
+            if ($dokument['id'] === ($anfrage['dokument_id'] ?? null)) {
+                $gefunden = $dokument;
+            }
+        }
+        if ($gefunden === null || $gefunden['user_id'] !== $userId) {
+            return 404;
+        }
+
+        $teile = parse_url((string) ($anfrage['webhook'] ?? ''));
+        if (
+            $teile === false
+            || ($teile['scheme'] ?? '') !== 'https'
+            || isset($teile['user']) || isset($teile['pass']) || isset($teile['port'])
+            || strtolower($teile['host'] ?? '') !== 'hooks.example.com'
+        ) {
+            return 422;
+        }
+
+        return 200;
+    }

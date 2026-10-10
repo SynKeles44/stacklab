@@ -1,0 +1,144 @@
+title: Injection und XSS
+description: SQL-, Befehls- und Pfad-Injection verhindern, Ausgaben kontextgerecht kodieren und eine strikte Content Security Policy mit Nonce setzen.
+exercise:
+  id: modul-uebung-gaestebuch
+  type: terminal
+  title: Das Gästebuch reparieren
+  description: |
+    Im Ordner `gaestebuch` liegt ein kleines Gästebuch mit SQLite-Datenbank `gaestebuch.db`. Die Logik steckt in
+    `src/gaestebuch.php`, `public/index.php` zeigt die Einträge an. Ein Eintrag enthält bereits ein `<script>` – und
+    die Suche klebt den Suchbegriff direkt ins SQL.
+
+    1. Teste lokal: `php -S 127.0.0.1:8080 -t public & sleep 1; curl -s "http://127.0.0.1:8080/?q=x%27%20UNION%20SELECT%20name,%20hash%20FROM%20admins%20--%20"; kill %1`
+       – die Suche liefert Passwort-Hashes aus der Tabelle `admins`.
+    2. Baue `eintraegeSuchen()` auf ein Prepared Statement um. Der Suchbegriff wird als Wert übergeben:
+       `WHERE text LIKE ?` mit `'%' . $suche . '%'`.
+    3. Kodiere in `eintragHtml()` Autor und Text mit `htmlspecialchars(…, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')`.
+    4. Ergänze in `public/index.php` vor jeder Ausgabe eine strikte CSP mit einer **pro Antwort neuen** Nonce:
+       `script-src 'nonce-…' 'strict-dynamic'; object-src 'none'; base-uri 'none'`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: gaestebuch
+  setup: |
+    mkdir -p public src
+    sqlite3 gaestebuch.db <<'SQL'
+    CREATE TABLE eintraege (id INTEGER PRIMARY KEY, autor TEXT NOT NULL, text TEXT NOT NULL);
+    CREATE TABLE admins (id INTEGER PRIMARY KEY, name TEXT NOT NULL, hash TEXT NOT NULL);
+    INSERT INTO eintraege (autor, text) VALUES
+      ('Ada', 'Schöne Seite, weiter so!'),
+      ('Grace', 'Grüße an Familie O''Brien'),
+      ('Eve', '<script>alert(''xss'')</script>');
+    INSERT INTO admins (name, hash) VALUES ('admin', '$2y$12$platzhalterplatzhalterplatzhalterplatzhalter12');
+    SQL
+    cat > src/gaestebuch.php <<'PHP'
+    <?php
+    declare(strict_types=1);
+
+    function eintraegeSuchen(PDO $db, string $suche): array
+    {
+        $sql = "SELECT autor, text FROM eintraege WHERE text LIKE '%" . $suche . "%' ORDER BY id";
+
+        return $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    function eintragHtml(array $eintrag): string
+    {
+        return '<li><strong>' . $eintrag['autor'] . '</strong>: ' . $eintrag['text'] . '</li>';
+    }
+    PHP
+    cat > public/index.php <<'PHP'
+    <?php
+    declare(strict_types=1);
+
+    require __DIR__ . '/../src/gaestebuch.php';
+
+    $db = new PDO('sqlite:' . __DIR__ . '/../gaestebuch.db');
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $suche = is_string($_GET['q'] ?? null) ? $_GET['q'] : '';
+
+    echo "<h1>Gästebuch</h1>\n<ul>\n";
+    foreach (eintraegeSuchen($db, $suche) as $eintrag) {
+        echo eintragHtml($eintrag), "\n";
+    }
+    echo "</ul>\n";
+    PHP
+  checks:
+    - type: command
+      run: php -l src/gaestebuch.php >/dev/null && php -l public/index.php >/dev/null && echo ok
+      stdout_equals: ok
+      message: src/gaestebuch.php oder public/index.php enthält einen Syntaxfehler.
+    - type: command
+      run: |
+        php -r 'require "src/gaestebuch.php"; $db = new PDO("sqlite:gaestebuch.db"); $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try { $r = eintraegeSuchen($db, "x%'"'"' UNION SELECT name, hash FROM admins -- "); echo count($r); } catch (Throwable $e) { echo "fehler"; }'
+      stdout_equals: "0"
+      message: Die Suche ist noch angreifbar – ein UNION-Angriff liefert Daten aus admins oder bricht ab. Nutze prepare() mit LIKE ? und übergib '%' . $suche . '%' an execute().
+    - type: command
+      run: |
+        php -r 'require "src/gaestebuch.php"; $db = new PDO("sqlite:gaestebuch.db"); $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $a = eintraegeSuchen($db, "O'"'"'Brien"); $b = eintraegeSuchen($db, "");
+        echo count($a), " ", $a[0]["autor"] ?? "-", " ", count($b);'
+      stdout_equals: 1 Grace 3
+      message: "Die Suche soll weiter funktionieren: „O'Brien“ findet genau Grace, eine leere Suche alle drei Einträge."
+    - type: command
+      run: |
+        php -r 'require "src/gaestebuch.php"; echo eintragHtml(["autor" => "<b>Eve</b>", "text" => "<script>alert(\"x\")</script> & '"'"'"]);'
+      stdout_equals: "<li><strong>&lt;b&gt;Eve&lt;/b&gt;</strong>: &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#039;</li>"
+      message: "eintragHtml() soll Autor und Text mit htmlspecialchars(…, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') kodieren und das Format <li><strong>AUTOR</strong>: TEXT</li> behalten."
+    - type: command
+      run: |
+        P=$((20000 + RANDOM % 30000)); php -S 127.0.0.1:$P -t public >/dev/null 2>&1 & S=$!; sleep 0.7
+        h1=$(curl -sI "http://127.0.0.1:$P/" | tr -d '\r' | grep -i '^content-security-policy:')
+        h2=$(curl -sI "http://127.0.0.1:$P/" | tr -d '\r' | grep -i '^content-security-policy:')
+        kill $S 2>/dev/null
+        n1=$(printf '%s' "$h1" | grep -o "'nonce-[^']*'")
+        n2=$(printf '%s' "$h2" | grep -o "'nonce-[^']*'")
+        if [ -z "$h1" ]; then echo kein-header
+        elif printf '%s' "$h1" | grep -q 'unsafe-inline'; then echo unsafe-inline
+        elif [ -z "$n1" ]; then echo keine-nonce
+        elif [ "$n1" = "$n2" ]; then echo gleiche-nonce
+        elif ! printf '%s' "$h1" | grep -q "object-src 'none'"; then echo kein-object-src
+        elif ! printf '%s' "$h1" | grep -q "base-uri 'none'"; then echo kein-base-uri
+        else echo ok; fi
+      stdout_equals: ok
+      message: "public/index.php braucht eine Content-Security-Policy mit 'nonce-…' (pro Antwort neu, z. B. base64_encode(random_bytes(16))), object-src 'none' und base-uri 'none' – ohne 'unsafe-inline'."
+  hints:
+    - "Prepared Statement mit LIKE: `$stmt = $db->prepare('SELECT autor, text FROM eintraege WHERE text LIKE ? ORDER BY id'); $stmt->execute(['%' . $suche . '%']);`"
+    - "Eine kleine Hilfsfunktion spart Tipparbeit: `$e = fn (string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');`"
+    - "In index.php direkt nach `declare`: `$nonce = base64_encode(random_bytes(16)); header(\"Content-Security-Policy: script-src 'nonce-{$nonce}' 'strict-dynamic'; object-src 'none'; base-uri 'none'\");`"
+  solution: |
+    `src/gaestebuch.php`:
+
+    ```php
+    <?php
+    declare(strict_types=1);
+
+    function eintraegeSuchen(PDO $db, string $suche): array
+    {
+        $stmt = $db->prepare('SELECT autor, text FROM eintraege WHERE text LIKE ? ORDER BY id');
+        $stmt->execute(['%' . $suche . '%']);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    function eintragHtml(array $eintrag): string
+    {
+        $e = fn (string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        return '<li><strong>' . $e($eintrag['autor']) . '</strong>: ' . $e($eintrag['text']) . '</li>';
+    }
+    ```
+
+    `public/index.php` (Anfang):
+
+    ```php
+    <?php
+    declare(strict_types=1);
+
+    $nonce = base64_encode(random_bytes(16));
+    header("Content-Security-Policy: script-src 'nonce-{$nonce}' 'strict-dynamic'; object-src 'none'; base-uri 'none'");
+
+    require __DIR__ . '/../src/gaestebuch.php';
+    // … Rest unverändert
+    ```

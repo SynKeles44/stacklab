@@ -1,0 +1,393 @@
+title: Abschlussprüfung Websicherheit
+description: |
+  Diese Prüfung deckt alle vier Module ab: Grundlagen und Konfiguration, Injection und XSS, Zugriff und Anfragen
+  sowie Daten, Abhängigkeiten und Betrieb. Zuerst beantwortest du Fragen – viele davon zeigen dir Code, in dem du
+  die Lücke findest. Danach löst du drei Praxis-Aufgaben: zwei Programmieraufgaben und eine Auswertung im echten
+  Übungs-Terminal.
+
+  Du bestehst mit 70 Prozent. Danach siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Grundlagen ---
+  - module: grundlagen
+    type: single
+    question: Welche Kategorie führt die OWASP Top 10:2025 an?
+    options:
+      - Injection
+      - Broken Access Control
+      - Software Supply Chain Failures
+      - Cryptographic Failures
+    answer: 1
+    explanation: >
+      Broken Access Control steht wie schon 2021 auf Platz 1. Seit 2025 gehören auch SSRF und CSRF zu dieser Kategorie.
+  - module: grundlagen
+    type: find-bug
+    question: Nur Bestellnummern wie `B-12345` sollen durchkommen. In welcher Zeile ist die Prüfung lückenhaft?
+    language: php
+    code: |
+      function istBestellnummer(mixed $wert): bool
+      {
+          if (!is_string($wert)) {
+              return false;
+          }
+          return preg_match('/B-\d{5}/', $wert) === 1;
+      }
+    bug_line: 6
+    explanation: >
+      Ohne `\A` und `\z` reicht es, wenn das Muster irgendwo im Text vorkommt – `x<script>B-12345` würde
+      akzeptiert. Richtig: `'/\AB-\d{5}\z/'`.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen zur Fehlerbehandlung in Produktion stimmen?
+    options:
+      - Details einer Exception gehören ins Log, nicht in die Antwort an Besucher.
+      - "`display_errors` ist in Produktion ausgeschaltet."
+      - Fällt eine Berechtigungsprüfung mit einer Exception aus, wird der Zugriff sicherheitshalber erlaubt.
+      - Besucher sehen eine neutrale Meldung mit Statuscode 500.
+    answers: [0, 1, 3]
+    explanation: >
+      Bei Fehlern gilt „fail secure“: im Zweifel ablehnen. Details landen im Log, Besucher bekommen nur eine
+      allgemeine Meldung.
+  - module: grundlagen
+    type: match
+    question: Ordne jedem Header seine Aufgabe zu.
+    pairs:
+      - { left: "X-Content-Type-Options: nosniff", right: "Kein Erraten des Dateityps durch den Browser" }
+      - { left: "Strict-Transport-Security", right: "Nur noch HTTPS für diese Domain" }
+      - { left: "Referrer-Policy", right: "Begrenzt, wie viel der URL an fremde Seiten geht" }
+      - { left: "Permissions-Policy", right: "Schaltet Kamera, Mikrofon oder Standort ab" }
+    explanation: Security-Header schalten Schutzfunktionen im Browser ein und werden zentral vor jeder Ausgabe gesetzt.
+  # --- Injection ---
+  - module: injection
+    type: find-bug
+    question: In welcher Zeile steckt eine Command Injection?
+    language: php
+    code: |
+      $datei = $_GET['datei'] ?? '';
+      if (!is_string($datei)) {
+          exit;
+      }
+      $groesse = shell_exec('du -h uploads/' . $datei);
+      echo htmlspecialchars((string) $groesse);
+    bug_line: 5
+    explanation: >
+      Der Dateiname landet ungeprüft in einem Shell-Befehl. Mit `a.txt; rm -rf …` läuft ein zweiter Befehl. Besser:
+      `filesize()` ohne Shell und ein strenges Namensmuster.
+  - module: injection
+    type: single
+    question: Ein Wert soll in `<input value="…">` ausgegeben werden. Was ist richtig?
+    options:
+      - "`strip_tags($wert)`"
+      - "`htmlspecialchars($wert, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')`"
+      - "`addslashes($wert)`"
+      - Gar nichts, Attribute sind sicher.
+    answer: 1
+    explanation: >
+      Nur das Kodieren von `<`, `>`, `&` und beiden Anführungszeichen verhindert, dass der Wert das Attribut verlässt.
+  - module: injection
+    type: multiple
+    question: Welche Zeilen sind gefährliche DOM-Senken, wenn `wert` aus der URL stammt?
+    options:
+      - "`el.innerHTML = wert`"
+      - "`el.textContent = wert`"
+      - "`document.write(wert)`"
+      - "`eval(wert)`"
+    answers: [0, 2, 3]
+    explanation: "`textContent` setzt reinen Text. innerHTML, document.write und eval interpretieren den Wert als HTML bzw. Code."
+  - module: injection
+    type: cloze
+    text: "Eine strikte CSP enthält `script-src 'nonce-…' '___-dynamic'`. Die Nonce wird bei jeder ___ neu erzeugt."
+    blanks:
+      - [strict]
+      - [Antwort, Response, Anfrage, Seitenauslieferung]
+    explanation: Eine feste Nonce wäre bekannt und damit wertlos. `'strict-dynamic'` erlaubt Skripten mit Nonce, weitere Skripte nachzuladen.
+  - module: injection
+    type: single
+    question: Warum ersetzt eine Content Security Policy kein Output-Encoding?
+    options:
+      - Weil Browser die CSP grundsätzlich ignorieren.
+      - Weil die CSP nur eine zusätzliche Schicht ist – die eigentliche Lücke im HTML bleibt bestehen.
+      - Weil die CSP nur für CSS gilt.
+    answer: 1
+    explanation: >
+      Die CSP bremst die Folgen von XSS. Kaputte Ausgaben, eingeschleustes HTML ohne Skript oder ältere Browser
+      bleiben ein Problem – Encoding beseitigt die Ursache.
+  # --- Zugriff ---
+  - module: zugriff
+    type: find-bug
+    question: In welcher Zeile entsteht eine IDOR?
+    language: php
+    code: |
+      $user = aktuellerBenutzer();
+      $id = (int) ($_GET['id'] ?? 0);
+      $stmt = $pdo->prepare('SELECT * FROM documents WHERE id = ?');
+      $stmt->execute([$id]);
+      $doc = $stmt->fetch(PDO::FETCH_ASSOC);
+      echo json_encode($doc);
+    bug_line: 3
+    explanation: >
+      Die Abfrage prüft nicht, wem das Dokument gehört. Richtig: `WHERE id = ? AND user_id = ?` mit der ID aus der
+      Session – und bei fehlendem Treffer 404.
+  - module: zugriff
+    type: single
+    question: Ein Profil-Formular schickt `name`, `email` und heimlich `rolle=admin`. Die App übernimmt alle Felder. Wie heißt das Problem?
+    options:
+      - Mass Assignment
+      - Clickjacking
+      - DNS-Rebinding
+      - Path Traversal
+    answer: 0
+    explanation: Gegen Mass Assignment hilft eine Allowlist der Felder, die Nutzer selbst ändern dürfen.
+  - module: zugriff
+    type: multiple
+    question: Welche Maßnahmen schützen gegen CSRF?
+    options:
+      - Ein zufälliges CSRF-Token, verglichen mit `hash_equals()`
+      - "`SameSite=Lax` für das Session-Cookie"
+      - "`Access-Control-Allow-Origin: *`"
+      - Prüfung von `Origin` oder `Sec-Fetch-Site` bei POST-Anfragen
+    answers: [0, 1, 3]
+    explanation: CORS-Header regeln Lesezugriff auf Antworten und sind kein CSRF-Schutz – ein `*` öffnet sogar weiter.
+  - module: zugriff
+    type: match
+    question: Ordne jeder SSRF-URL zu, warum sie bei der Allowlist `https://images.example.com` scheitern muss.
+    pairs:
+      - { left: "http://images.example.com/a.png", right: "Falsches Schema" }
+      - { left: "https://images.example.com@127.0.0.1/", right: "Der echte Host ist 127.0.0.1" }
+      - { left: "https://images.example.com.evil.example/", right: "Host ist eine andere Domain" }
+      - { left: "https://images.example.com:8080/", right: "Unerwarteter Port" }
+    explanation: Prüfe URLs immer zerlegt mit parse_url() – exakt Schema, Host und Port, keine Zugangsdaten.
+  # --- Betrieb ---
+  - module: betrieb
+    type: single
+    question: Woran erkennt ein sicherer Upload, ob eine Datei wirklich ein PNG ist?
+    options:
+      - An der Dateiendung `.png`
+      - Am Feld `type` in `$_FILES`
+      - An den ersten Bytes des Inhalts, z. B. per `finfo`
+      - Am Dateinamen, den der Browser schickt
+    answer: 2
+    explanation: Endung, Name und `$_FILES[…]['type']` kommen vom Client. finfo liest die Magic Bytes des Inhalts.
+  - module: betrieb
+    type: find-bug
+    question: In welcher Zeile steckt eine unsichere Deserialisierung?
+    language: php
+    code: |
+      $roh = $_COOKIE['einstellungen'] ?? '';
+      $signatur = $_COOKIE['sig'] ?? '';
+      $daten = unserialize(base64_decode($roh));
+      $theme = $daten['theme'] ?? 'hell';
+      echo htmlspecialchars($theme);
+    bug_line: 3
+    explanation: >
+      `unserialize()` auf Cookie-Daten kann beliebige Objekte erzeugen – die Signatur wird nicht einmal geprüft.
+      Besser: `json_decode()` und eine HMAC-Prüfung mit `hash_equals()` vor der Nutzung.
+  - module: betrieb
+    type: multiple
+    question: Ein API-Key wurde ins öffentliche Repository gepusht. Was ist jetzt richtig?
+    options:
+      - Den Key beim Anbieter sofort widerrufen und neu erzeugen.
+      - Den neuen Key in `.env` oder einem Secrets-Manager speichern.
+      - Die Datei löschen und hoffen, dass es niemand bemerkt hat.
+      - "`.env` in `.gitignore` eintragen und `.env.example` ohne Werte committen."
+    answers: [0, 1, 3]
+    explanation: Ein gepushtes Secret ist verbrannt. Nur Rotation macht es wertlos; danach verhinderst du Wiederholungen.
+  - module: betrieb
+    type: match
+    question: Ordne jedem Befehl seine Wirkung zu.
+    pairs:
+      - { left: "npm audit --audit-level=high", right: "Bricht mit Fehlercode ab, wenn Lücken ab „high“ gefunden werden" }
+      - { left: "composer audit --locked", right: "Prüft die Versionen aus composer.lock" }
+      - { left: "npm ci", right: "Installiert exakt die Versionen aus package-lock.json" }
+    explanation: Audits finden bekannte Lücken, Lockfiles sorgen für reproduzierbare, geprüfte Versionen.
+  - module: betrieb
+    type: single
+    question: Warum schreibt man Security-Logs als JSON Lines statt als freie Textzeilen?
+    options:
+      - JSON ist kleiner als Text.
+      - Zeilenumbrüche in Werten werden kodiert, Log-Injection ist nicht möglich, und Werkzeuge wie jq können die Einträge auswerten.
+      - Weil JSON-Logs nicht gelesen werden können.
+    answer: 1
+    explanation: Strukturierte Logs sind fälschungssicherer und maschinenlesbar – die Grundlage für Auswertung und Alarmierung.
+tasks:
+  - module: injection
+    id: pruefung-sicherer-link
+    type: code
+    language: js
+    title: Nutzer-Links sicher ausgeben
+    description: |
+      Nutzer dürfen in ihrem Profil einen Link zu ihrer Website angeben. Schreibe `profilLink(url, text)`:
+
+      1. Erlaubt sind nur absolute URLs mit dem Schema `http:` oder `https:` (prüfe mit `new URL(url)` in einem
+         `try`-Block – ungültige URLs werfen einen Fehler).
+      2. Bei erlaubter URL liefert die Funktion `<a href="URL" rel="nofollow noopener">TEXT</a>`.
+      3. Sonst liefert sie nur den Text ohne Link.
+      4. URL und Text werden in jedem Fall HTML-kodiert: `&`, `<`, `>`, `"` und `'` werden zu `&amp;`, `&lt;`,
+         `&gt;`, `&quot;` und `&#39;`. Die URL gibst du so aus, wie sie übergeben wurde (nur kodiert).
+    starter: |
+      function profilLink(url, text) {
+        return `<a href="${url}">${text}</a>`;
+      }
+    tests:
+      - name: Normaler Link
+        code: |
+          assertEqual(profilLink('https://example.com/ada', 'Adas Blog'), '<a href="https://example.com/ada" rel="nofollow noopener">Adas Blog</a>')
+      - name: javascript-Schema wird kein Link
+        code: |
+          assertEqual(profilLink('javascript:alert(1)', 'Klick mich'), 'Klick mich')
+          assertEqual(profilLink('JavaScript:alert(1)', 'x'), 'x')
+      - name: Kodierung von URL und Text
+        code: |
+          assertEqual(profilLink('https://example.com/?a=1&b="2"', '<b>Ada</b>'), '<a href="https://example.com/?a=1&amp;b=&quot;2&quot;" rel="nofollow noopener">&lt;b&gt;Ada&lt;/b&gt;</a>')
+      - name: Ungültige oder relative URL
+        code: |
+          assertEqual(profilLink('', 'Leer'), 'Leer')
+          assertEqual(profilLink('/profil', "Ada's Seite"), 'Ada&#39;s Seite')
+          assertEqual(profilLink('data:text/html,<script>', 'D'), 'D')
+    hints:
+      - "`new URL(url).protocol` liefert z. B. `'https:'` oder `'javascript:'` – immer kleingeschrieben."
+      - "Schreibe zuerst eine Funktion `escapeHtml(text)` mit `replaceAll`, `&` zuerst."
+    solution: |
+      function escapeHtml(text) {
+        return String(text)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+
+      function profilLink(url, text) {
+        let erlaubt = false;
+        try {
+          const protokoll = new URL(url).protocol;
+          erlaubt = protokoll === 'http:' || protokoll === 'https:';
+        } catch {
+          erlaubt = false;
+        }
+        if (!erlaubt) {
+          return escapeHtml(text);
+        }
+        return `<a href="${escapeHtml(url)}" rel="nofollow noopener">${escapeHtml(text)}</a>`;
+      }
+  - module: zugriff
+    id: pruefung-profil-speichern
+    type: code
+    language: php
+    title: Profil speichern ohne Mass Assignment
+    description: |
+      Schreibe `profilSpeichern(array $benutzer, array $eingabe): ?array`. `$benutzer` ist der eingeloggte Benutzer
+      mit `id`, `name`, `email` und `rolle`.
+
+      1. Aus `$eingabe` werden **nur** `name` und `email` übernommen – alle anderen Felder (z. B. `rolle`, `id`)
+         werden ignoriert.
+      2. Fehlt eines der beiden Felder, bleibt der bisherige Wert.
+      3. `name` muss ein String mit 1 bis 50 Zeichen sein (`mb_strlen`), `email` eine gültige Adresse laut
+         `FILTER_VALIDATE_EMAIL`. Ist ein übergebener Wert ungültig, gibt die Funktion `null` zurück.
+      4. Sonst liefert sie den aktualisierten Benutzer.
+    starter: |
+      <?php
+      declare(strict_types=1);
+
+      function profilSpeichern(array $benutzer, array $eingabe): ?array
+      {
+          return array_merge($benutzer, $eingabe);
+      }
+    tests:
+      - name: Name und E-Mail ändern
+        code: |
+          $u = ['id' => 7, 'name' => 'Ada', 'email' => 'ada@example.com', 'rolle' => 'kunde'];
+          assert_same(['id' => 7, 'name' => 'Ada L.', 'email' => 'ada.l@example.com', 'rolle' => 'kunde'], profilSpeichern($u, ['name' => 'Ada L.', 'email' => 'ada.l@example.com']));
+      - name: Rolle und ID werden ignoriert
+        code: |
+          $u = ['id' => 7, 'name' => 'Ada', 'email' => 'ada@example.com', 'rolle' => 'kunde'];
+          assert_same($u, profilSpeichern($u, ['rolle' => 'admin', 'id' => 1]));
+      - name: Ungültige Werte führen zu null
+        code: |
+          $u = ['id' => 7, 'name' => 'Ada', 'email' => 'ada@example.com', 'rolle' => 'kunde'];
+          assert_same(null, profilSpeichern($u, ['email' => 'keine-mail']));
+          assert_same(null, profilSpeichern($u, ['name' => '']));
+          assert_same(null, profilSpeichern($u, ['name' => str_repeat('ä', 51)]));
+          assert_same(null, profilSpeichern($u, ['name' => ['Ada']]));
+      - name: Leere Eingabe ändert nichts
+        code: |
+          $u = ['id' => 7, 'name' => 'Ada', 'email' => 'ada@example.com', 'rolle' => 'kunde'];
+          assert_same($u, profilSpeichern($u, []));
+    hints:
+      - "Gehe nur über die erlaubten Felder: `foreach (['name', 'email'] as $feld) { … }`."
+      - "Prüfe mit `array_key_exists($feld, $eingabe)`, ob ein Feld übergeben wurde."
+    solution: |
+      <?php
+      declare(strict_types=1);
+
+      function profilSpeichern(array $benutzer, array $eingabe): ?array
+      {
+          if (array_key_exists('name', $eingabe)) {
+              $name = $eingabe['name'];
+              if (!is_string($name) || mb_strlen($name) < 1 || mb_strlen($name) > 50) {
+                  return null;
+              }
+              $benutzer['name'] = $name;
+          }
+
+          if (array_key_exists('email', $eingabe)) {
+              $email = $eingabe['email'];
+              if (!is_string($email) || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                  return null;
+              }
+              $benutzer['email'] = $email;
+          }
+
+          return $benutzer;
+      }
+  - module: betrieb
+    id: pruefung-id-raten
+    type: terminal
+    title: Wer probiert fremde IDs aus?
+    description: |
+      Im Ordner `pruefung-log` liegt `logs/security.log` deiner lokalen Test-App im Format JSON Lines. Jeder Eintrag
+      hat `zeit`, `event`, `user` und `pfad`. Jemand scheint Rechnungs-IDs durchzuprobieren.
+
+      1. Finde den Benutzer mit den **meisten** `access_denied`-Ereignissen und schreibe seinen Namen in
+         `verdaechtig.txt`.
+      2. Schreibe in `pfade.txt`, wie viele **verschiedene** Pfade dieser Benutzer mit `access_denied` aufgerufen hat
+         (nur die Zahl).
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-log
+    setup: |
+      mkdir -p logs
+      : > logs/security.log
+      e() { printf '{"zeit":"2026-10-10T09:%s:00Z","event":"%s","user":"%s","pfad":"%s"}\n' "$1" "$2" "$3" "$4" >> logs/security.log; }
+      e 00 login_success mallory /login
+      e 01 access_denied mallory /rechnungen/1040
+      e 01 access_denied ada /admin
+      e 02 access_denied mallory /rechnungen/1041
+      e 02 login_success ada /login
+      e 03 access_denied mallory /rechnungen/1042
+      e 03 access_denied bob /rechnungen/2001
+      e 04 access_denied mallory /rechnungen/1042
+      e 04 access_denied bob /rechnungen/2001
+      e 05 access_denied mallory /rechnungen/1044
+      e 06 access_denied mallory /rechnungen/1045
+      e 07 login_failed mallory /login
+    checks:
+      - type: command
+        run: tr -d '[:space:]' < verdaechtig.txt
+        stdout_equals: mallory
+        message: verdaechtig.txt soll genau den Benutzer mit den meisten access_denied-Ereignissen enthalten.
+      - type: command
+        run: tr -d '[:space:]' < pfade.txt
+        stdout_equals: "5"
+        message: pfade.txt enthält nicht die richtige Anzahl verschiedener Pfade. Zähle jeden Pfad nur einmal (sort -u).
+    hints:
+      - "`jq -r 'select(.event == \"access_denied\") | .user' logs/security.log | sort | uniq -c | sort -rn`"
+      - "Verschiedene Pfade: `jq -r 'select(.event == \"access_denied\" and .user == \"NAME\") | .pfad' logs/security.log | sort -u | wc -l`"
+    solution: |
+      ```bash
+      jq -r 'select(.event == "access_denied") | .user' logs/security.log \
+        | sort | uniq -c | sort -rn | head -1 | awk '{print $2}' > verdaechtig.txt
+      jq -r 'select(.event == "access_denied" and .user == "mallory") | .pfad' logs/security.log \
+        | sort -u | wc -l > pfade.txt
+      ```

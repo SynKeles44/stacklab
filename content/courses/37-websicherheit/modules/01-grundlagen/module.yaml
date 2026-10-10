@@ -1,0 +1,169 @@
+title: Grundlagen und Konfiguration
+description: Die OWASP Top 10:2025, Vertrauensgrenzen, serverseitige Validierung, sichere Fehlerbehandlung und Security-Header.
+exercise:
+  id: modul-uebung-kontakt
+  type: terminal
+  title: Ein Kontaktformular aufräumen
+  description: |
+    Im Ordner `kontakt-app` liegt eine kleine Kontaktseite: `public/index.php` ist der Front Controller,
+    `src/kontakt.php` enthält die Prüfung der Formulardaten. Ein kurzer Audit hat vier Probleme gefunden:
+
+    - Im Webroot liegt noch `public/info.php` mit `phpinfo()`.
+    - `public/index.php?crash=1` zeigt eine Exception mit Zugangsdaten zur Datenbank an.
+    - `validiereKontakt()` lässt jede Eingabe durch.
+    - Es fehlen Security-Header, und `X-Powered-By` verrät die PHP-Version.
+
+    Behebe alle vier Punkte:
+
+    1. Lösche `public/info.php`.
+    2. Schalte in `public/index.php` die Fehleranzeige ab (`ini_set('display_errors', '0');`) und registriere mit
+       `set_exception_handler()` eine Funktion, die den Fehler per `error_log()` protokolliert, den Statuscode
+       500 setzt und nur `Es ist ein Fehler aufgetreten.` ausgibt.
+    3. Implementiere `validiereKontakt(array $daten): array` in `src/kontakt.php`: Sie gibt die Namen fehlerhafter
+       Felder zurück – `email`, wenn keine gültige E-Mail-Adresse übergeben wurde, und `nachricht`, wenn die
+       Nachricht kein String mit 1 bis 500 Zeichen ist (`mb_strlen`).
+    4. Setze in `public/index.php` vor jeder Ausgabe `X-Content-Type-Options: nosniff` und
+       `Content-Security-Policy: frame-ancestors 'none'` und entferne `X-Powered-By`.
+
+    Testen kannst du mit `php -S 127.0.0.1:8080 -t public & sleep 1; curl -si "http://127.0.0.1:8080/?crash=1"; kill %1`.
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: kontakt-app
+  setup: |
+    mkdir -p public src
+    cat > public/index.php <<'PHP'
+    <?php
+    declare(strict_types=1);
+
+    ini_set('display_errors', '1');
+    require __DIR__ . '/../src/kontakt.php';
+
+    if (($_GET['crash'] ?? '') === '1') {
+        throw new RuntimeException('Keine Verbindung: pgsql://app:geheim@db.example.com/kontakt');
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $fehler = validiereKontakt($_POST);
+        if ($fehler !== []) {
+            http_response_code(422);
+            echo 'Bitte prüfe: ' . implode(', ', $fehler);
+            exit;
+        }
+        echo 'Danke für deine Nachricht!';
+        exit;
+    }
+
+    echo '<form method="post"><input name="email"><textarea name="nachricht"></textarea><button>Senden</button></form>';
+    PHP
+    cat > public/info.php <<'PHP'
+    <?php
+    phpinfo();
+    PHP
+    cat > src/kontakt.php <<'PHP'
+    <?php
+    declare(strict_types=1);
+
+    function validiereKontakt(array $daten): array
+    {
+        return [];
+    }
+    PHP
+  checks:
+    - type: file_absent
+      path: public/info.php
+      message: public/info.php liegt noch im Webroot. Lösche die Datei.
+    - type: command
+      run: php -l public/index.php >/dev/null && php -l src/kontakt.php >/dev/null && echo ok
+      stdout_equals: ok
+      message: public/index.php oder src/kontakt.php enthält einen Syntaxfehler.
+    - type: command
+      run: |
+        php -r 'require "src/kontakt.php";
+        $f = [
+          validiereKontakt(["email" => "ada@example.com", "nachricht" => "Hallo"]) === [],
+          validiereKontakt(["email" => "keine-mail", "nachricht" => "Hallo"]) === ["email"],
+          validiereKontakt(["email" => "ada@example.com", "nachricht" => ""]) === ["nachricht"],
+          validiereKontakt(["email" => "ada@example.com", "nachricht" => str_repeat("ä", 501)]) === ["nachricht"],
+          validiereKontakt(["email" => "ada@example.com", "nachricht" => str_repeat("ä", 500)]) === [],
+          validiereKontakt([]) === ["email", "nachricht"],
+          validiereKontakt(["email" => ["x"], "nachricht" => ["y"]]) === ["email", "nachricht"],
+        ];
+        echo in_array(false, $f, true) ? "falsch" : "ok";'
+      stdout_equals: ok
+      message: "validiereKontakt() prüft noch nicht richtig: Sie soll [\"email\"] für ungültige Adressen und [\"nachricht\"] für leere, zu lange (über 500 Zeichen) oder fehlende Nachrichten liefern – in der Reihenfolge email, nachricht."
+    - type: command
+      run: |
+        P=$((20000 + RANDOM % 30000)); php -S 127.0.0.1:$P -t public >/dev/null 2>&1 & S=$!; sleep 0.7
+        code=$(curl -s -o .antwort.txt -w '%{http_code}' "http://127.0.0.1:$P/?crash=1")
+        if grep -q 'geheim' .antwort.txt; then echo "$code verraten"; elif grep -q 'Es ist ein Fehler aufgetreten.' .antwort.txt; then echo "$code ok"; else echo "$code andere-meldung"; fi
+        rm -f .antwort.txt; kill $S 2>/dev/null
+      stdout_equals: 500 ok
+      message: "?crash=1 soll mit Status 500 nur „Es ist ein Fehler aufgetreten.“ zeigen – ohne die Zugangsdaten aus der Exception. Nutze ini_set('display_errors', '0') und set_exception_handler()."
+    - type: command
+      run: |
+        P=$((20000 + RANDOM % 30000)); php -S 127.0.0.1:$P -t public >/dev/null 2>&1 & S=$!; sleep 0.7
+        a=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode 'email=<script>' --data-urlencode 'nachricht=Hi' "http://127.0.0.1:$P/")
+        b=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode 'email=ada@example.com' --data-urlencode 'nachricht=Hi' "http://127.0.0.1:$P/")
+        echo "$a $b"; kill $S 2>/dev/null
+      stdout_equals: 422 200
+      message: Ein POST mit ungültiger E-Mail soll 422 liefern, ein gültiger POST 200. Prüfe validiereKontakt() und dass index.php sie weiter aufruft.
+    - type: command
+      run: |
+        P=$((20000 + RANDOM % 30000)); php -S 127.0.0.1:$P -t public >/dev/null 2>&1 & S=$!; sleep 0.7
+        h=$(curl -sI "http://127.0.0.1:$P/" | tr -d '\r')
+        n=0
+        printf '%s\n' "$h" | grep -qi '^x-content-type-options: nosniff$' && n=$((n+1))
+        printf '%s\n' "$h" | grep -qi "^content-security-policy:.*frame-ancestors 'none'" && n=$((n+1))
+        printf '%s\n' "$h" | grep -qi '^x-powered-by:' || n=$((n+1))
+        echo $n; kill $S 2>/dev/null
+      stdout_equals: "3"
+      message: "Es fehlen noch Header: X-Content-Type-Options: nosniff und Content-Security-Policy: frame-ancestors 'none' setzen, X-Powered-By mit header_remove() entfernen."
+  hints:
+    - "Arbeite die vier Punkte einzeln ab und teste nach jedem mit `curl -si`."
+    - "Der Exception-Handler gehört direkt unter `declare(strict_types=1);`: `set_exception_handler(function (Throwable $e): void { error_log((string) $e); http_response_code(500); echo 'Es ist ein Fehler aufgetreten.'; });`"
+    - "Für die Nachricht: `is_string($n) && mb_strlen($n) >= 1 && mb_strlen($n) <= 500`; für die E-Mail: `is_string($e) && filter_var($e, FILTER_VALIDATE_EMAIL) !== false`."
+  solution: |
+    ```bash
+    rm public/info.php
+    ```
+
+    `public/index.php` (Anfang):
+
+    ```php
+    <?php
+    declare(strict_types=1);
+
+    ini_set('display_errors', '0');
+    set_exception_handler(function (Throwable $e): void {
+        error_log((string) $e);
+        http_response_code(500);
+        echo 'Es ist ein Fehler aufgetreten.';
+    });
+
+    header_remove('X-Powered-By');
+    header('X-Content-Type-Options: nosniff');
+    header("Content-Security-Policy: frame-ancestors 'none'");
+
+    require __DIR__ . '/../src/kontakt.php';
+    // … Rest unverändert
+    ```
+
+    `src/kontakt.php`:
+
+    ```php
+    <?php
+    declare(strict_types=1);
+
+    function validiereKontakt(array $daten): array
+    {
+        $fehler = [];
+        $email = $daten['email'] ?? null;
+        if (!is_string($email) || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $fehler[] = 'email';
+        }
+        $nachricht = $daten['nachricht'] ?? null;
+        if (!is_string($nachricht) || mb_strlen($nachricht) < 1 || mb_strlen($nachricht) > 500) {
+            $fehler[] = 'nachricht';
+        }
+        return $fehler;
+    }
+    ```

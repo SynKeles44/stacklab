@@ -1,0 +1,34 @@
+title: Websicherheit
+subtitle: Die OWASP Top 10 verstehen und Lücken im eigenen Code finden und schließen
+description: >
+  Eine einzige vergessene Prüfung reicht, und Fremde lesen Rechnungen anderer Kundinnen, schleusen JavaScript
+  in deine Seite ein oder führen Befehle auf deinem Server aus. In diesem Kurs lernst du, wie solche Lücken
+  entstehen und wie du sie zuverlässig schließt – immer aus Sicht der Verteidigung.
+
+
+  Du arbeitest entlang der aktuellen **OWASP Top 10:2025**: Injection, Cross-Site Scripting und Content Security
+  Policy, Zugriffskontrolle und IDOR, CSRF, SSRF, Fehlkonfiguration und Security-Header, Datei-Uploads,
+  unsichere Deserialisierung, Secrets, Abhängigkeiten (`npm audit`, `composer audit`) sowie Logging und
+  Monitoring. Du findest Fehler in Code-Ausschnitten, reparierst verwundbare PHP- und JavaScript-Funktionen und
+  härtest im Abschlussprojekt eine absichtlich unsichere Notiz-App – ausschließlich mit deinem eigenen Code im
+  lokalen Übungs-Terminal.
+category: web
+level: fortgeschritten
+icon: shield-check
+color: "#e11d48"
+estimated_hours: 5
+workspace_dir: websicherheit
+prerequisites: [http-https, javascript, php]
+learning_goals:
+  - Du ordnest Schwachstellen den Kategorien der OWASP Top 10:2025 zu und denkst in Vertrauensgrenzen.
+  - Du validierst Eingaben serverseitig mit Allowlists und behandelst Fehler, ohne Details zu verraten.
+  - Du verhinderst SQL-, Befehls- und Pfad-Injection mit Platzhaltern, Allowlists und sicheren APIs.
+  - Du kodierst Ausgaben passend zum Kontext gegen XSS und ergänzt eine Content Security Policy mit Nonce.
+  - Du sicherst Zugriffe gegen IDOR, Formulare gegen CSRF und serverseitige Abrufe gegen SSRF ab.
+  - Du setzt Security-Header, behandelst Uploads und Deserialisierung sicher und hältst Secrets aus dem Code.
+  - Du prüfst Abhängigkeiten mit npm audit und composer audit und protokollierst sicherheitsrelevante Ereignisse.
+references:
+  - Sicherheits-Reviews vor Releases mit Checklisten entlang der OWASP Top 10
+  - Policies und Gates für Zugriffskontrolle in großen Laravel-Anwendungen
+  - Automatische Abhängigkeitsprüfung mit npm audit und composer audit in CI-Pipelines
+  - Zentrale Security-Header und Content Security Policy am Reverse Proxy

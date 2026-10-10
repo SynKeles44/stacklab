@@ -1,0 +1,97 @@
+title: Daten, Abhängigkeiten und Betrieb
+description: Sichere Datei-Uploads, unsichere Deserialisierung, Secrets-Management, Abhängigkeiten mit npm audit und composer audit sowie Security-Logging und Alarmierung.
+exercise:
+  id: modul-uebung-release-check
+  type: terminal
+  title: Der Sicherheits-Check vor dem Release
+  description: |
+    Im Ordner `release-check` liegt ein Projekt mit einem kleinen JavaScript-Teil (`package.json`) und einem
+    PHP-Teil (`composer.json`, `composer.lock`). Vor dem Release sollen beide Abhängigkeits-Audits grün sein.
+
+    1. Führe `npm audit` aus. Das Paket `minimist` ist in einer Version mit kritischer Lücke festgenagelt.
+       Aktualisiere es auf eine sichere Version (mindestens `1.2.8`), z. B. mit `npm install minimist@^1.2.8`.
+    2. Führe `composer audit --locked` aus. `phpmailer/phpmailer` steckt auf `6.4.1` fest.
+       Hebe es auf `^6.10` an. Da `vendor/` hier nicht gebraucht wird, genügt
+       `composer require "phpmailer/phpmailer:^6.10" --no-install`.
+    3. Prüfe am Ende, dass `npm audit --audit-level=high` und `composer audit --locked` beide mit Exit-Code 0 enden
+       (`echo $?`).
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – das Installieren des npm-Pakets dauert ein paar Sekunden.
+  workdir: release-check
+  setup: |
+    cat > package.json <<'JSON'
+    {
+      "name": "release-check",
+      "version": "1.0.0",
+      "private": true,
+      "dependencies": {}
+    }
+    JSON
+    npm install minimist@1.2.5 --save-exact --no-audit --no-fund --loglevel=error
+    cat > composer.json <<'JSON'
+    {
+        "name": "example/release-check",
+        "require": {
+            "phpmailer/phpmailer": "6.4.1"
+        }
+    }
+    JSON
+    cat > composer.lock <<'JSON'
+    {
+        "_readme": ["This file locks the dependencies of your project to a known state"],
+        "content-hash": "00000000000000000000000000000000",
+        "packages": [
+            {
+                "name": "phpmailer/phpmailer",
+                "version": "v6.4.1",
+                "type": "library",
+                "license": ["LGPL-2.1-only"]
+            }
+        ],
+        "packages-dev": [],
+        "aliases": [],
+        "minimum-stability": "stable",
+        "stability-flags": {},
+        "prefer-stable": false,
+        "prefer-lowest": false,
+        "platform": {},
+        "platform-dev": {},
+        "plugin-api-version": "2.6.0"
+    }
+    JSON
+  checks:
+    - type: command
+      run: |
+        node -e 'const v = require("./node_modules/minimist/package.json").version.split(".").map(Number); console.log(v[0] > 1 || (v[0] === 1 && (v[1] > 2 || (v[1] === 2 && v[2] >= 8))) ? "ok" : "alt")'
+      stdout_equals: ok
+      message: In node_modules steckt noch eine alte minimist-Version. Installiere mindestens 1.2.8, z. B. mit npm install minimist@^1.2.8.
+    - type: command
+      run: jq -r '.dependencies.minimist // "fehlt"' package.json
+      stdout_matches: "^[\\^~]?1\\.2\\.([89]|\\d\\d)"
+      message: package.json soll minimist ab Version 1.2.8 als Abhängigkeit führen.
+    - type: command
+      run: npm audit --audit-level=high >/dev/null 2>&1; echo $?
+      stdout_equals: "0"
+      message: npm audit --audit-level=high meldet noch Lücken. Aktualisiere minimist und prüfe erneut.
+    - type: command
+      run: jq -r '.packages[] | select(.name == "phpmailer/phpmailer") | .version' composer.lock
+      stdout_matches: "^v?6\\.(1\\d|[2-9]\\d)\\."
+      message: In composer.lock steht phpmailer/phpmailer noch in einer alten Version. Nutze composer require "phpmailer/phpmailer:^6.10" --no-install.
+    - type: command
+      run: composer audit --locked --no-interaction >/dev/null 2>&1; echo $?
+      stdout_equals: "0"
+      message: composer audit --locked findet noch Sicherheitswarnungen. Aktualisiere phpmailer/phpmailer.
+  hints:
+    - "`npm audit` zeigt dir, welches Paket betroffen ist und ab welcher Version es sicher ist."
+    - "Weil die Version exakt festgenagelt ist, reicht `npm audit fix` nicht – installiere gezielt `npm install minimist@^1.2.8`."
+    - "Für Composer: `composer require \"phpmailer/phpmailer:^6.10\" --no-install`, danach `composer audit --locked`."
+  solution: |
+    ```bash
+    npm audit                       # minimist 1.2.5: critical
+    npm install minimist@^1.2.8
+    npm audit --audit-level=high; echo $?    # 0
+
+    composer audit --locked         # phpmailer/phpmailer < 6.5.0: high
+    composer require "phpmailer/phpmailer:^6.10" --no-install
+    composer audit --locked; echo $?         # 0
+    ```
