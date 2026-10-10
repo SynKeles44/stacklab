@@ -11,13 +11,13 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-#[Signature('stacklab:import {--force : Import all valid courses and skip the ones with errors}')]
+#[Signature('stacklab:import {--force : Import all valid courses and skip the ones with errors} {--path= : Content directory}')]
 #[Description('Import all learning content from the content directory into the database')]
 final class ImportContent extends Command
 {
     public function handle(ContentImporter $importer): int
     {
-        $root = (string) config('stacklab.content_path');
+        $root = (string) ($this->option('path') ?: config('stacklab.content_path'));
         $loader = new ContentLoader($root);
         $content = $loader->load();
 
