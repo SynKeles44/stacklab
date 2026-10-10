@@ -1,0 +1,92 @@
+title: Container auf AWS
+description: Wann Fargate die richtige Wahl ist, wie du Images in Amazon ECR ablegst und welche Bausteine Amazon ECS mitbringt.
+exercise:
+  id: modul-uebung-ecr
+  type: terminal
+  title: ECR-Repository richtig konfigurieren
+  description: |
+    Dein Team bekommt ein neues ECR-Repository für das Image `shop`. Weil das Übungs-Terminal keinen Zugang zu
+    AWS hat, schreibst du die Konfiguration als JSON-Dateien – genau so, wie du sie später an
+    `aws ecr create-repository` und `aws ecr put-lifecycle-policy` übergibst.
+
+    Im Ordner `ecr-konfig` liegt bereits eine unvollständige `repository.json`.
+
+    1. Ergänze in `repository.json`: `imageTagMutability` soll `IMMUTABLE` sein, und unter
+       `imageScanningConfiguration` soll `scanOnPush` auf `true` stehen.
+    2. Lege `lifecycle-policy.json` mit **zwei** Regeln an:
+       - Regel mit `rulePriority` 1: Images **ohne Tag** (`tagStatus` `untagged`) verfallen nach 7 Tagen
+         (`countType` `sinceImagePushed`, `countUnit` `days`, `countNumber` 7).
+       - Regel mit `rulePriority` 2: Von allen Images (`tagStatus` `any`) bleiben die neuesten 30 erhalten
+         (`countType` `imageCountMoreThan`, `countNumber` 30).
+       - Beide Regeln haben die Aktion `{"type": "expire"}`.
+    3. Prüfe beide Dateien mit `jq . datei.json` auf gültiges JSON.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit `repository.json` angelegt wird.
+  workdir: ecr-konfig
+  setup: |
+    cat > repository.json <<'JSON'
+    {
+      "repositoryName": "shop",
+      "imageTagMutability": "MUTABLE",
+      "encryptionConfiguration": { "encryptionType": "AES256" }
+    }
+    JSON
+  checks:
+    - type: command
+      run: jq -r '.repositoryName' repository.json
+      stdout_equals: shop
+      message: repository.json ist kein gültiges JSON mehr oder der Name ist nicht mehr "shop". Prüfe die Datei mit `jq . repository.json`.
+    - type: command
+      run: jq -r '.imageTagMutability' repository.json
+      stdout_equals: IMMUTABLE
+      message: imageTagMutability steht noch nicht auf IMMUTABLE.
+    - type: command
+      run: jq -e '.imageScanningConfiguration.scanOnPush == true' repository.json
+      message: Unter imageScanningConfiguration fehlt "scanOnPush" mit dem Wert true (ohne Anführungszeichen).
+    - type: command
+      run: jq -e '.rules | length == 2' lifecycle-policy.json
+      message: lifecycle-policy.json fehlt, ist kein gültiges JSON oder hat nicht genau zwei Regeln im Array "rules".
+    - type: command
+      run: jq -e '.rules[] | select(.rulePriority == 1) | .selection.tagStatus == "untagged" and .selection.countType == "sinceImagePushed" and .selection.countUnit == "days" and .selection.countNumber == 7' lifecycle-policy.json
+      message: Regel 1 soll untagged Images nach 7 Tagen entfernen (tagStatus untagged, countType sinceImagePushed, countUnit days, countNumber 7 als Zahl).
+    - type: command
+      run: jq -e '.rules[] | select(.rulePriority == 2) | .selection.tagStatus == "any" and .selection.countType == "imageCountMoreThan" and .selection.countNumber == 30' lifecycle-policy.json
+      message: Regel 2 soll die neuesten 30 Images behalten (tagStatus any, countType imageCountMoreThan, countNumber 30).
+    - type: command
+      run: jq -e '[.rules[].action.type] | all(. == "expire")' lifecycle-policy.json
+      message: 'Jede Regel braucht die Aktion {"type": "expire"}.'
+  hints:
+    - Zahlen und Wahrheitswerte schreibst du in JSON ohne Anführungszeichen – `7`, nicht `"7"`, und `true`, nicht `"true"`.
+    - Eine Regel hat die Felder `rulePriority`, `description`, `selection` und `action`. In `selection` stehen `tagStatus`, `countType`, ggf. `countUnit` und `countNumber`.
+    - "Mit `jq '.rules[0]' lifecycle-policy.json` siehst du die erste Regel und merkst sofort, ob das JSON gültig ist."
+  solution: |
+    ```bash
+    cd ecr-konfig
+    cat > repository.json <<'JSON'
+    {
+      "repositoryName": "shop",
+      "imageTagMutability": "IMMUTABLE",
+      "imageScanningConfiguration": { "scanOnPush": true },
+      "encryptionConfiguration": { "encryptionType": "AES256" }
+    }
+    JSON
+    cat > lifecycle-policy.json <<'JSON'
+    {
+      "rules": [
+        {
+          "rulePriority": 1,
+          "description": "Untagged Images nach 7 Tagen entfernen",
+          "selection": { "tagStatus": "untagged", "countType": "sinceImagePushed", "countUnit": "days", "countNumber": 7 },
+          "action": { "type": "expire" }
+        },
+        {
+          "rulePriority": 2,
+          "description": "Nur die neuesten 30 Images behalten",
+          "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 30 },
+          "action": { "type": "expire" }
+        }
+      ]
+    }
+    JSON
+    jq . repository.json lifecycle-policy.json
+    ```

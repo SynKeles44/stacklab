@@ -1,0 +1,103 @@
+title: Betrieb und Auslieferung
+description: Rolling Updates mit Circuit Breaker, Autoscaling, Laravel mit Web, Worker, Scheduler und Migrationen, Kosten und Deployments per GitHub Actions mit OIDC.
+exercise:
+  id: modul-uebung-deploy-rolle
+  type: terminal
+  title: Die Deploy-Rolle für GitHub Actions
+  description: |
+    Für die Pipeline aus der letzten Lektion fehlt noch die IAM-Rolle `github-deploy`. Schreibe ihre zwei Dokumente
+    im Ordner `deploy-rolle`.
+
+    1. `trust.json`: Ein Statement, das dem Principal
+       `{"Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"}` die Aktion
+       `sts:AssumeRoleWithWebIdentity` erlaubt. Bedingungen unter `StringEquals`:
+       - `token.actions.githubusercontent.com:aud` = `sts.amazonaws.com`
+       - `token.actions.githubusercontent.com:sub` = `repo:beispiel-org/shop:environment:production`
+    2. `permissions.json` mit drei Statements:
+       - `ecr:GetAuthorizationToken` auf `Resource` `"*"` (diese Aktion lässt sich nicht einschränken).
+       - Die ECR-Push-Aktionen `ecr:BatchCheckLayerAvailability`, `ecr:InitiateLayerUpload`, `ecr:UploadLayerPart`,
+         `ecr:CompleteLayerUpload`, `ecr:PutImage` nur auf `arn:aws:ecr:eu-central-1:123456789012:repository/shop`.
+       - `iam:PassRole` nur auf die beiden Rollen `arn:aws:iam::123456789012:role/shop-execution` und
+         `arn:aws:iam::123456789012:role/shop-task`, mit der Bedingung
+         `"StringEquals": {"iam:PassedToService": "ecs-tasks.amazonaws.com"}`.
+       Beide Dateien haben `"Version": "2012-10-17"`.
+
+    (Die ECS-Rechte wie `ecs:UpdateService` ergänzt du in echt als viertes Statement – hier lassen wir sie weg.)
+  workdir: deploy-rolle
+  checks:
+    - type: command
+      run: jq -e '.Version == "2012-10-17" and (.Statement | length == 1) and .Statement[0].Effect == "Allow" and .Statement[0].Action == "sts:AssumeRoleWithWebIdentity"' trust.json
+      message: trust.json fehlt, ist ungültig oder erlaubt nicht genau sts:AssumeRoleWithWebIdentity in einem Statement.
+    - type: command
+      run: jq -e '.Statement[0].Principal.Federated == "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"' trust.json
+      message: Der Principal muss Federated mit der ARN des GitHub-OIDC-Anbieters sein.
+    - type: command
+      run: jq -e '.Statement[0].Condition.StringEquals | .["token.actions.githubusercontent.com:aud"] == "sts.amazonaws.com" and .["token.actions.githubusercontent.com:sub"] == "repo:beispiel-org/shop:environment:production"' trust.json
+      message: Unter Condition.StringEquals fehlen aud = sts.amazonaws.com oder sub = repo:beispiel-org/shop:environment:production.
+    - type: command
+      run: jq -e '.Version == "2012-10-17" and (.Statement | length == 3) and all(.Statement[]; .Effect == "Allow")' permissions.json
+      message: permissions.json fehlt, ist ungültig oder hat nicht genau drei Allow-Statements.
+    - type: command
+      run: jq -e 'any(.Statement[]; ([.Action] | flatten) == ["ecr:GetAuthorizationToken"] and .Resource == "*")' permissions.json
+      message: Es fehlt ein Statement nur mit ecr:GetAuthorizationToken auf Resource "*".
+    - type: command
+      run: jq -e 'any(.Statement[]; ([.Action] | flatten | sort) == ["ecr:BatchCheckLayerAvailability","ecr:CompleteLayerUpload","ecr:InitiateLayerUpload","ecr:PutImage","ecr:UploadLayerPart"] and ([.Resource] | flatten) == ["arn:aws:ecr:eu-central-1:123456789012:repository/shop"])' permissions.json
+      message: Es fehlt ein Statement mit genau den fünf ECR-Push-Aktionen auf das Repository shop.
+    - type: command
+      run: jq -e 'any(.Statement[]; ([.Action] | flatten) == ["iam:PassRole"] and ([.Resource] | flatten | sort) == ["arn:aws:iam::123456789012:role/shop-execution","arn:aws:iam::123456789012:role/shop-task"] and .Condition.StringEquals["iam:PassedToService"] == "ecs-tasks.amazonaws.com")' permissions.json
+      message: Es fehlt ein Statement mit iam:PassRole auf genau die beiden Rollen und der Bedingung iam:PassedToService = ecs-tasks.amazonaws.com.
+  hints:
+    - Die Trust Policy der Lektion „Deployen mit GitHub Actions“ ist fast fertig – vergleiche Principal, Action und Condition.
+    - "Mehrere Ressourcen schreibst du als Liste: `\"Resource\": [\"arn:…:role/shop-execution\", \"arn:…:role/shop-task\"]`."
+    - "Prüfe jedes Statement einzeln: `jq '.Statement[2]' permissions.json`."
+  solution: |
+    ```bash
+    cd deploy-rolle
+    cat > trust.json <<'JSON'
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": { "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" },
+          "Action": "sts:AssumeRoleWithWebIdentity",
+          "Condition": {
+            "StringEquals": {
+              "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+              "token.actions.githubusercontent.com:sub": "repo:beispiel-org/shop:environment:production"
+            }
+          }
+        }
+      ]
+    }
+    JSON
+    cat > permissions.json <<'JSON'
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        { "Effect": "Allow", "Action": "ecr:GetAuthorizationToken", "Resource": "*" },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:InitiateLayerUpload",
+            "ecr:UploadLayerPart",
+            "ecr:CompleteLayerUpload",
+            "ecr:PutImage"
+          ],
+          "Resource": "arn:aws:ecr:eu-central-1:123456789012:repository/shop"
+        },
+        {
+          "Effect": "Allow",
+          "Action": "iam:PassRole",
+          "Resource": [
+            "arn:aws:iam::123456789012:role/shop-execution",
+            "arn:aws:iam::123456789012:role/shop-task"
+          ],
+          "Condition": { "StringEquals": { "iam:PassedToService": "ecs-tasks.amazonaws.com" } }
+        }
+      ]
+    }
+    JSON
+    jq . trust.json permissions.json
+    ```

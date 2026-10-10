@@ -1,0 +1,460 @@
+- slug: amazon-ecs
+  term: Amazon ECS
+  short: Der Container-Orchestrator von AWS, der Container plant, startet, überwacht und ersetzt.
+  explanation: >
+    ECS (Elastic Container Service) entscheidet, welche Container wo laufen, wie viele es sein sollen und was bei
+    einem Absturz passiert. Die Container laufen entweder auf Fargate (ohne eigene Server) oder auf eigenen
+    EC2-Instanzen. Die wichtigsten Bausteine sind Cluster, Task-Definition, Task und Service.
+  example: "`aws ecs create-service --cluster shop --service-name web …` legt einen Service an, der dauerhaft zwei Tasks betreibt."
+  category: cloud
+  aliases: [ECS, Elastic Container Service]
+  related: [aws-fargate, ecs-service, task-definition]
+  lesson: aws-fargate/container-auf-aws
+- slug: aws-fargate
+  term: AWS Fargate
+  short: Eine Rechen-Engine von AWS, die Container ausführt, ohne dass du Server verwaltest.
+  explanation: >
+    Mit Fargate forderst du pro Task nur CPU und Speicher an. AWS sucht passende Kapazität, startet den Container
+    und rechnet pro Sekunde ab. Server patchen oder skalieren musst du nicht – Netzwerk, Rechte und das Image
+    bleiben aber deine Aufgabe.
+  example: "Ein Task mit 0,5 vCPU und 1 GB Speicher läuft auf Fargate, ohne dass irgendwo eine EC2-Instanz sichtbar ist."
+  category: cloud
+  aliases: [Fargate]
+  related: [amazon-ecs, vcpu, fargate-spot]
+  lesson: aws-fargate/container-auf-aws
+- slug: amazon-eks
+  term: Amazon EKS
+  short: Der verwaltete Kubernetes-Dienst von AWS.
+  explanation: >
+    EKS (Elastic Kubernetes Service) betreibt die Steuerzentrale eines Kubernetes-Clusters für dich. Er lohnt sich,
+    wenn ein Team bereits Kubernetes-Werkzeuge wie Helm nutzt oder viele Teams eine gemeinsame Plattform brauchen.
+    Für einzelne Anwendungen ist ECS meist einfacher.
+  example: "Eine Firma mit 40 Diensten und Helm-Charts betreibt sie auf EKS statt auf ECS."
+  category: cloud
+  aliases: [EKS, Elastic Kubernetes Service]
+  related: [kubernetes, amazon-ecs]
+  lesson: aws-fargate/container-auf-aws
+- slug: aws-lambda
+  term: AWS Lambda
+  short: Ein AWS-Dienst, der einzelne Funktionen nur bei Bedarf ausführt und pro Aufruf abrechnet.
+  explanation: >
+    Bei Lambda lädst du eine Funktion hoch, die bei einem Ereignis startet – etwa einem Upload oder einer
+    HTTP-Anfrage. Läuft nichts, kostet es nichts. Eine Ausführung darf höchstens 15 Minuten dauern, deshalb passt
+    Lambda eher für kurze Aufgaben als für eine ganze Web-Anwendung.
+  example: "Sobald ein Bild in S3 landet, verkleinert eine Lambda-Funktion es auf Vorschaugröße."
+  category: cloud
+  aliases: [Lambda]
+  related: [aws-fargate, s3]
+  lesson: aws-fargate/container-auf-aws
+- slug: ecs-express-mode
+  term: ECS Express Mode
+  short: Ein Schnellstart in ECS, der aus einem Image einen fertigen Fargate-Service mit Load Balancer, HTTPS und Autoscaling erzeugt.
+  explanation: >
+    Express Mode braucht nur ein Container-Image und zwei IAM-Rollen. AWS legt den Service, einen gemeinsam
+    genutzten Load Balancer, Autoscaling und Monitoring mit sinnvollen Voreinstellungen an. Alle erzeugten
+    Ressourcen bleiben sichtbar und lassen sich später einzeln anpassen.
+  example: "Ein Prototyp läuft in wenigen Minuten unter einer eigenen HTTPS-Adresse, ohne dass du Listener oder Target Groups anlegst."
+  category: cloud
+  aliases: [Express Mode]
+  related: [amazon-ecs, aws-fargate, application-load-balancer]
+  lesson: aws-fargate/container-auf-aws
+- slug: aws-app-runner
+  term: AWS App Runner
+  short: Ein älterer AWS-Dienst, der Web-Apps direkt aus Code oder Image betreibt und keine Neukunden mehr annimmt.
+  explanation: >
+    App Runner war als besonders einfacher Weg gedacht, eine Web-App ohne Infrastruktur-Wissen zu starten.
+    Bestehende Kunden können ihn weiter nutzen, neue Konten bekommen ihn nicht mehr. Als Ersatz bietet sich
+    ECS Express Mode an.
+  example: "Ein Altprojekt läuft noch auf App Runner; neue Projekte starten direkt auf ECS mit Fargate."
+  category: cloud
+  aliases: [App Runner]
+  related: [ecs-express-mode, aws-fargate]
+  lesson: aws-fargate/container-auf-aws
+- slug: vcpu
+  term: vCPU
+  short: Ein virtueller Prozessorkern, die Recheneinheit, in der Cloud-Anbieter CPU-Leistung zuteilen.
+  explanation: >
+    Bei Fargate entsprechen 1024 CPU-Einheiten einer vCPU. Ein Task kann zum Beispiel 0,25, 0,5, 1 oder 2 vCPU
+    bekommen. Zu jeder CPU-Stufe ist nur ein bestimmter Speicherbereich erlaubt.
+  example: "`\"cpu\": \"512\"` in einer Task-Definition bedeutet 0,5 vCPU."
+  category: cloud
+  aliases: [vCPUs, virtuelle CPU, CPU-Einheiten]
+  related: [aws-fargate, task-definition]
+  lesson: aws-fargate/aufbau-einer-task-definition
+- slug: amazon-ecr
+  term: Amazon ECR
+  short: Die private Container-Registry von AWS, in der du Docker-Images speicherst.
+  explanation: >
+    ECR (Elastic Container Registry) bietet jedem AWS-Konto pro Region eine eigene Registry. Der Zugriff läuft über
+    IAM statt über Passwörter, Images werden auf Wunsch gescannt, und Lifecycle-Policies räumen alte Images auf.
+    Fargate lädt Images aus ECR schnell, weil beides in derselben Region liegt.
+  example: "`123456789012.dkr.ecr.eu-central-1.amazonaws.com/shop:1.4.0` ist ein Image in ECR."
+  category: cloud
+  aliases: [ECR, Elastic Container Registry]
+  related: [registry, ecr-repository, docker-image]
+  lesson: aws-fargate/images-in-ecr
+- slug: ecr-repository
+  term: ECR-Repository
+  short: Ein Ordner in Amazon ECR, der alle Versionen eines Images sammelt.
+  explanation: >
+    Pro Anwendung legst du ein Repository an, etwa `shop`. Jede Version liegt darin mit einem eigenen Tag. Einstellungen
+    wie unveränderliche Tags, Scannen und Lifecycle-Policies gelten pro Repository.
+  example: "`aws ecr create-repository --repository-name shop` legt das Repository für den Shop an."
+  category: cloud
+  aliases: [ECR-Repositorys, Repository in ECR]
+  related: [amazon-ecr, image-tag, lifecycle-policy]
+  lesson: aws-fargate/images-in-ecr
+- slug: tag-immutability
+  term: Unveränderliche Tags
+  short: Eine ECR-Einstellung, die verhindert, dass ein bereits vergebener Image-Tag überschrieben wird.
+  explanation: >
+    Mit `imageTagMutability: IMMUTABLE` lehnt ECR einen zweiten Push mit demselben Tag ab. Dadurch zeigt ein Tag wie
+    1.4.0 für immer auf dasselbe Image, und ein Rollback darauf startet garantiert den alten Code.
+  example: "Ein zweiter `docker push …/shop:1.4.0` schlägt fehl – die neue Version muss 1.4.1 heißen."
+  category: cloud
+  aliases: [IMMUTABLE, Tag Immutability, unveränderlicher Tag]
+  related: [image-tag, ecr-repository, image-digest]
+  lesson: aws-fargate/images-in-ecr
+- slug: image-scanning
+  term: Image-Scanning
+  short: Die automatische Prüfung eines Container-Images auf bekannte Sicherheitslücken.
+  explanation: >
+    ECR vergleicht die Pakete im Image mit Datenbanken bekannter Schwachstellen (CVEs). Basic Scanning prüft die
+    Betriebssystem-Pakete beim Push, Enhanced Scanning mit Amazon Inspector auch Sprachpakete und fortlaufend bei
+    neuen Meldungen.
+  example: "Mit `scanOnPush: true` meldet ECR nach jedem Push, wie viele Lücken der Stufe CRITICAL oder HIGH gefunden wurden."
+  category: cloud
+  aliases: [Scan on Push, Image-Scan]
+  related: [cve, amazon-ecr]
+  lesson: aws-fargate/images-in-ecr
+- slug: lifecycle-policy
+  term: Lifecycle-Policy
+  short: Ein Regelwerk in ECR, das alte oder ungetaggte Images automatisch löscht.
+  explanation: >
+    Eine Lifecycle-Policy besteht aus Regeln mit Priorität, Auswahl und Aktion. Typisch sind „ungetaggte Images nach
+    7 Tagen löschen“ und „nur die neuesten 30 behalten“. ECR wendet die Regeln innerhalb von 24 Stunden an.
+  example: "`{\"rulePriority\": 1, \"selection\": {\"tagStatus\": \"untagged\", \"countType\": \"sinceImagePushed\", \"countUnit\": \"days\", \"countNumber\": 7}, \"action\": {\"type\": \"expire\"}}`"
+  category: cloud
+  aliases: [Lifecycle-Policies, Lebenszyklus-Regel]
+  related: [ecr-repository, amazon-ecr]
+  lesson: aws-fargate/images-in-ecr
+- slug: task-definition
+  term: Task-Definition
+  short: Der JSON-Bauplan in ECS, der beschreibt, welche Container mit welchen Ressourcen und Einstellungen laufen.
+  explanation: >
+    Eine Task-Definition enthält Image, CPU und Speicher, Ports, Umgebungsvariablen, Secrets, Logs und Rollen. Sie
+    ist unveränderlich: Jede Änderung erzeugt eine neue Revision derselben Familie. Aus ihr starten Tasks und Services.
+  example: "`aws ecs register-task-definition --cli-input-json file://web.json` erzeugt die Revision `shop-web:8`."
+  category: cloud
+  aliases: [Task-Definitionen, Task Definition]
+  related: [task-definition-revision, container-definition, ecs-task]
+  lesson: aws-fargate/ecs-bausteine
+- slug: task-definition-revision
+  term: Revision (Task-Definition)
+  short: Eine nummerierte, eingefrorene Version einer Task-Definition.
+  explanation: >
+    Task-Definitionen gehören zu einer Familie wie `shop-web`. Jede Registrierung erhöht die Revisionsnummer:
+    `shop-web:7`, `shop-web:8`. Weil alte Revisionen erhalten bleiben, ist ein Rollback ein Wechsel auf die
+    vorherige Nummer.
+  example: "Ein Rollback setzt den Service von `shop-web:8` zurück auf `shop-web:7`."
+  category: cloud
+  aliases: [Revision, Revisionen, Familie]
+  related: [task-definition, deployment-rollback]
+  lesson: aws-fargate/ecs-bausteine
+- slug: ecs-task
+  term: Task (ECS)
+  short: Eine laufende Instanz einer Task-Definition mit einem oder mehreren Containern.
+  explanation: >
+    Ein Task bündelt Container, die sich Netzwerk und Lebenszyklus teilen. Er läuft, bis sein essentieller Container
+    endet. Einzeln gestartet eignet er sich für einmalige Aufgaben, in einem Service für Dauerläufer.
+  example: "`aws ecs run-task --task-definition shop-web:7 …` startet einen einzelnen Task."
+  category: cloud
+  aliases: [Task, Tasks, ECS-Task]
+  related: [task-definition, ecs-service, one-off-task]
+  lesson: aws-fargate/ecs-bausteine
+- slug: ecs-service
+  term: Service (ECS)
+  short: Ein ECS-Baustein, der dauerhaft eine gewünschte Anzahl von Tasks am Laufen hält.
+  explanation: >
+    Der Service vergleicht ständig den gewünschten Zustand (`desiredCount`) mit dem tatsächlichen und ersetzt
+    ausgefallene Tasks. Er steuert außerdem Deployments, registriert Tasks im Load Balancer und kann automatisch
+    skaliert werden.
+  example: "Der Service `web` mit `desiredCount` 2 startet sofort einen Ersatz, wenn einer der beiden Tasks abstürzt."
+  category: cloud
+  aliases: [Service, Services, ECS-Service, desiredCount]
+  related: [ecs-task, ecs-cluster, deployment-circuit-breaker]
+  lesson: aws-fargate/ecs-bausteine
+- slug: ecs-cluster
+  term: Cluster (ECS)
+  short: Eine logische Gruppe in ECS, in der Services und Tasks laufen.
+  explanation: >
+    Ein Cluster ordnet zusammengehörige Services, etwa alle einer Umgebung. Mit Fargate ist ein Cluster nur ein Name –
+    ein leerer Cluster kostet nichts. Zusätzlich legt er fest, welche Capacity Provider zur Verfügung stehen.
+  example: "`aws ecs create-cluster --cluster-name shop-production`"
+  category: cloud
+  aliases: [Cluster, ECS-Cluster]
+  related: [ecs-service, capacity-provider]
+  lesson: aws-fargate/ecs-bausteine
+- slug: launch-type
+  term: Launch-Type
+  short: Die Angabe, auf welcher Art von Kapazität ein ECS-Task läuft – etwa FARGATE oder EC2.
+  explanation: >
+    Beim Starten eines Tasks oder Services wählst du den Launch-Type. `FARGATE` heißt: AWS stellt die Kapazität.
+    `EC2` heißt: der Task läuft auf deinen eigenen Instanzen. Flexibler sind Capacity Provider, die mehrere Arten
+    mischen können.
+  example: "`--launch-type FARGATE`"
+  category: cloud
+  aliases: [Launch Type, Starttyp]
+  related: [capacity-provider, aws-fargate]
+  lesson: aws-fargate/ecs-bausteine
+- slug: capacity-provider
+  term: Capacity Provider
+  short: Eine Quelle für Rechenkapazität in ECS, zwischen denen ein Service Tasks nach Gewichten verteilen kann.
+  explanation: >
+    Für Fargate gibt es die Capacity Provider `FARGATE` und `FARGATE_SPOT`. Mit einer Strategie legst du fest, wie
+    viele Tasks mindestens auf normalem Fargate laufen und wie sich der Rest verteilt.
+  example: "Strategie: base 1 auf FARGATE, alle weiteren Tasks im Verhältnis 1:3 auf FARGATE und FARGATE_SPOT."
+  category: cloud
+  aliases: [Capacity Providers, Kapazitätsanbieter]
+  related: [launch-type, fargate-spot, ecs-cluster]
+  lesson: aws-fargate/ecs-bausteine
+- slug: fargate-spot
+  term: Fargate Spot
+  short: Stark rabattierte Fargate-Kapazität, die AWS mit zwei Minuten Vorwarnung zurückfordern darf.
+  explanation: >
+    Fargate Spot nutzt freie Kapazität von AWS. Braucht AWS sie zurück, bekommt der Task ein SIGTERM und wird nach
+    zwei Minuten beendet. Das passt für Aufgaben, die eine Unterbrechung verkraften, etwa Queue-Worker mit
+    Wiederholungen.
+  example: "Die Queue-Worker laufen auf FARGATE_SPOT; ein abgebrochener Job wird einfach erneut verarbeitet."
+  category: cloud
+  aliases: [FARGATE_SPOT, Spot]
+  related: [capacity-provider, aws-fargate, queue-worker]
+  lesson: aws-fargate/ecs-bausteine
+- slug: container-definition
+  term: Container-Definition
+  short: Der Teil einer Task-Definition, der einen einzelnen Container beschreibt.
+  explanation: >
+    Jede Container-Definition hat einen Namen, ein Image und Einstellungen wie `essential`, `command`, `portMappings`,
+    `environment`, `secrets`, `healthCheck` und `logConfiguration`. Eine Task-Definition enthält eine Liste davon.
+  example: "`{\"name\": \"app\", \"image\": \"…/shop:1.4.0\", \"essential\": true, \"portMappings\": [{\"containerPort\": 8080}]}`"
+  category: cloud
+  aliases: [containerDefinitions, Container-Definitionen, essential]
+  related: [task-definition, container]
+  lesson: aws-fargate/aufbau-einer-task-definition
+- slug: graviton
+  term: Graviton
+  short: Von AWS entwickelte ARM-Prozessoren, die pro Rechenleistung meist günstiger sind als x86.
+  explanation: >
+    Fargate kann Tasks auf Graviton laufen lassen, wenn `runtimePlatform.cpuArchitecture` auf `ARM64` steht. Das Image
+    muss dann für ARM gebaut sein. Viele Teams sparen damit Kosten, ohne Code zu ändern.
+  example: "`\"runtimePlatform\": {\"operatingSystemFamily\": \"LINUX\", \"cpuArchitecture\": \"ARM64\"}`"
+  category: cloud
+  aliases: [ARM64, AWS Graviton]
+  related: [vcpu, aws-fargate]
+  lesson: aws-fargate/aufbau-einer-task-definition
+- slug: ssm-parameter-store
+  term: Parameter Store
+  short: Ein Speicher in AWS Systems Manager für Konfigurationswerte und verschlüsselte Geheimnisse.
+  explanation: >
+    Im Parameter Store legst du Werte unter Pfaden wie `/shop/production/mail-password` ab, als Klartext oder als
+    verschlüsselten SecureString. ECS kann diese Werte über das Feld `secrets` in den Container bringen. Anders als
+    Secrets Manager bietet er keine eingebaute Rotation.
+  example: "`\"valueFrom\": \"arn:aws:ssm:eu-central-1:123456789012:parameter/shop/production/mail-password\"`"
+  category: cloud
+  aliases: [SSM Parameter Store, Systems Manager Parameter Store, SecureString]
+  related: [secrets-manager, secret]
+  lesson: aws-fargate/umgebung-und-secrets
+- slug: awslogs
+  term: awslogs-Treiber
+  short: Der Log-Treiber in ECS, der stdout und stderr eines Containers an CloudWatch Logs schickt.
+  explanation: >
+    In der `logConfiguration` einer Container-Definition wählst du `awslogs` und gibst Log-Gruppe, Region und
+    Stream-Präfix an. Jeder Container jedes Tasks schreibt dann in einen eigenen Log-Stream. Die Execution-Rolle
+    braucht dafür Schreibrechte.
+  example: "`\"logConfiguration\": {\"logDriver\": \"awslogs\", \"options\": {\"awslogs-group\": \"/ecs/shop\", \"awslogs-region\": \"eu-central-1\", \"awslogs-stream-prefix\": \"web\"}}`"
+  category: cloud
+  aliases: [awslogs, Log-Treiber, logConfiguration]
+  related: [cloudwatch-logs, log-group, standardausgabe]
+  lesson: aws-fargate/logs-und-health-checks
+- slug: cloudwatch-logs
+  term: CloudWatch Logs
+  short: Der zentrale Log-Speicher von AWS, in dem du Logs sammelst, durchsuchst und aufbewahrst.
+  explanation: >
+    CloudWatch Logs ordnet Logs in Log-Gruppen und Log-Streams. Du kannst sie live verfolgen, filtern und eine
+    Aufbewahrungsdauer festlegen. Abgerechnet wird nach aufgenommener und gespeicherter Datenmenge.
+  example: "`aws logs tail /ecs/shop --follow --since 15m` zeigt die Logs der letzten 15 Minuten fortlaufend an."
+  category: cloud
+  aliases: [CloudWatch-Logs]
+  related: [cloudwatch, log-group, awslogs]
+  lesson: aws-fargate/logs-und-health-checks
+- slug: log-group
+  term: Log-Gruppe
+  short: Ein Sammelbehälter in CloudWatch Logs für zusammengehörige Log-Streams.
+  explanation: >
+    Eine Log-Gruppe fasst zum Beispiel alle Logs einer Anwendung zusammen. Für sie legst du Aufbewahrung,
+    Verschlüsselung und Rechte fest. Darin liegen viele Log-Streams, einer pro Container und Task.
+  example: "`aws logs create-log-group --log-group-name /ecs/shop` und danach `aws logs put-retention-policy --log-group-name /ecs/shop --retention-in-days 30`."
+  category: cloud
+  aliases: [Log-Gruppen, Log Group, Log-Stream]
+  related: [cloudwatch-logs, awslogs]
+  lesson: aws-fargate/logs-und-health-checks
+- slug: awsvpc
+  term: awsvpc
+  short: Der Netzwerkmodus in ECS, bei dem jeder Task eine eigene Netzwerkschnittstelle mit eigener IP bekommt.
+  explanation: >
+    Fargate unterstützt nur awsvpc. Jeder Task verhält sich im VPC wie ein eigener kleiner Server mit privater IP
+    und eigener Security Group. Container im selben Task teilen sich diese Schnittstelle und erreichen sich über
+    localhost.
+  example: "`\"networkMode\": \"awsvpc\"` in der Task-Definition."
+  category: cloud
+  aliases: [awsvpc-Modus, networkMode]
+  related: [eni, vpc, security-group]
+  lesson: aws-fargate/awsvpc-und-security-groups
+- slug: eni
+  term: Elastic Network Interface
+  short: Eine virtuelle Netzwerkkarte in einem AWS-VPC mit eigener privater IP-Adresse.
+  explanation: >
+    Eine ENI hängt in einem Subnetz und trägt eine oder mehrere Security Groups. Bei awsvpc bekommt jeder ECS-Task
+    eine eigene ENI. Deshalb belegt jeder Task eine IP-Adresse in seinem Subnetz.
+  example: "Ein Fargate-Task im Subnetz 10.0.11.0/24 hat die ENI mit der IP 10.0.11.23."
+  category: cloud
+  aliases: [ENI, Netzwerkschnittstelle]
+  related: [awsvpc, subnetz, private-ip-adresse]
+  lesson: aws-fargate/awsvpc-und-security-groups
+- slug: vpc-endpunkt
+  term: VPC-Endpunkt
+  short: Eine private Verbindung von deinem VPC zu einem AWS-Dienst, ohne Umweg über das Internet.
+  explanation: >
+    Mit VPC-Endpunkten erreichen Tasks in privaten Subnetzen Dienste wie ECR, S3, Secrets Manager oder CloudWatch Logs
+    direkt. Das ersetzt für diese Dienste ein NAT-Gateway und spart oft Datenübertragungskosten.
+  example: "Ein Interface-Endpunkt für `ecr.dkr` und ein Gateway-Endpunkt für S3 erlauben Image-Pulls ohne NAT-Gateway."
+  category: cloud
+  aliases: [VPC-Endpunkte, VPC Endpoint, PrivateLink]
+  related: [nat-gateway, vpc, amazon-ecr]
+  lesson: aws-fargate/awsvpc-und-security-groups
+- slug: application-load-balancer
+  term: Application Load Balancer
+  short: Der verwaltete Load Balancer von AWS für HTTP und HTTPS.
+  explanation: >
+    Ein ALB nimmt Anfragen über Listener an, wählt per Regel eine Target Group und leitet an gesunde Ziele weiter.
+    TLS kann am ALB enden. Er steht in öffentlichen Subnetzen und ist bei Fargate der feste Eingang zu den Tasks.
+  example: "Der ALB nimmt `https://shop.example.com` auf Port 443 an und verteilt auf die Tasks der Target Group `shop-web`."
+  category: cloud
+  aliases: [ALB, Elastic Load Balancing]
+  related: [load-balancer, listener, target-group]
+  lesson: aws-fargate/load-balancer-und-target-groups
+- slug: listener
+  term: Listener
+  short: Der Teil eines Load Balancers, der auf einem Protokoll und Port Verbindungen annimmt.
+  explanation: >
+    Ein Listener wie „HTTPS auf 443“ prüft eingehende Anfragen gegen seine Regeln und leitet sie an eine Target Group
+    weiter. Für HTTPS braucht er ein Zertifikat, typischerweise aus AWS Certificate Manager. Ein zweiter Listener auf
+    Port 80 leitet meist nur auf HTTPS um.
+  example: "Listener 443 mit Regel `Host: api.example.com` → Target Group `api`, sonst → `shop-web`."
+  category: cloud
+  aliases: [Listener-Regel, Listeners]
+  related: [application-load-balancer, target-group]
+  lesson: aws-fargate/load-balancer-und-target-groups
+- slug: target-group
+  term: Target Group
+  short: Eine Gruppe von Zielen hinter einem Load Balancer mit gemeinsamem Health-Check.
+  explanation: >
+    Der Load Balancer verteilt Anfragen nur an gesunde Ziele einer Target Group. Für Fargate muss der Zieltyp `ip` sein,
+    denn Tasks werden über die IP ihrer ENI registriert. Das Registrieren und Abmelden übernimmt der ECS-Service.
+  example: "`aws elbv2 create-target-group --name shop-web --protocol HTTP --port 8080 --target-type ip --health-check-path /up …`"
+  category: cloud
+  aliases: [Target Groups, Zielgruppe]
+  related: [application-load-balancer, listener, healthcheck]
+  lesson: aws-fargate/load-balancer-und-target-groups
+- slug: execution-rolle
+  term: Execution-Rolle
+  short: Die IAM-Rolle, mit der der ECS-Agent einen Task startet – Image ziehen, Secrets holen, Logs schreiben.
+  explanation: >
+    Die Execution-Rolle (`executionRoleArn`) nutzt nicht dein Code, sondern AWS selbst rund um den Start des Tasks.
+    Die verwaltete Policy `AmazonECSTaskExecutionRolePolicy` deckt ECR und Logs ab; für Secrets ergänzt du Leserechte
+    auf genau deine Secrets.
+  example: "Fehlt der Execution-Rolle `secretsmanager:GetSecretValue`, startet der Task mit „unable to pull secrets“ nicht."
+  category: cloud
+  aliases: [Task-Execution-Rolle, executionRoleArn, Task Execution Role]
+  related: [task-rolle, iam-rolle, secrets-manager]
+  lesson: aws-fargate/task-rolle-und-execution-rolle
+- slug: task-rolle
+  term: Task-Rolle
+  short: Die IAM-Rolle, deren Rechte der Code im Container zur Laufzeit nutzt.
+  explanation: >
+    Über die Task-Rolle (`taskRoleArn`) greift deine Anwendung auf AWS-Dienste wie S3, SQS oder SES zu. Das AWS SDK holt
+    sich automatisch kurzlebige Zugangsdaten. Dadurch braucht die App keine dauerhaften Schlüssel in der Konfiguration.
+  example: "Laravel speichert Uploads in S3, weil die Task-Rolle `s3:PutObject` auf den Upload-Bucket erlaubt."
+  category: cloud
+  aliases: [Task Role, taskRoleArn, Task-IAM-Rolle]
+  related: [execution-rolle, iam-rolle, least-privilege]
+  lesson: aws-fargate/task-rolle-und-execution-rolle
+- slug: deployment-circuit-breaker
+  term: Deployment Circuit Breaker
+  short: Ein Schutz in ECS, der Deployments abbricht, deren neue Tasks nicht gesund werden, und optional zurückrollt.
+  explanation: >
+    Der Circuit Breaker zählt fehlgeschlagene Starts und Health-Checks während eines Rolling Updates. Erreicht die Zahl
+    eine Schwelle, wird das Deployment als FAILED markiert. Mit `rollback: true` kehrt ECS zur letzten erfolgreichen
+    Revision zurück.
+  example: "`\"deploymentCircuitBreaker\": {\"enable\": true, \"rollback\": true}`"
+  category: cloud
+  aliases: [Circuit Breaker]
+  related: [rolling-deployment, ecs-service, deployment-rollback]
+  lesson: aws-fargate/deployments-und-autoscaling
+- slug: application-auto-scaling
+  term: Application Auto Scaling
+  short: Der AWS-Dienst, der die Kapazität von Diensten wie ECS-Services automatisch anpasst.
+  explanation: >
+    Für ECS verändert Application Auto Scaling den `desiredCount` eines Services innerhalb von Grenzen, die du festlegst.
+    Gesteuert wird über Richtlinien wie Target Tracking, Step Scaling oder Zeitpläne.
+  example: "`aws application-autoscaling register-scalable-target --service-namespace ecs --resource-id service/shop/web --scalable-dimension ecs:service:DesiredCount --min-capacity 2 --max-capacity 10`"
+  category: cloud
+  aliases: [Autoscaling, Auto Scaling]
+  related: [target-tracking, ecs-service]
+  lesson: aws-fargate/deployments-und-autoscaling
+- slug: target-tracking
+  term: Target Tracking
+  short: Eine Skalierungsart, bei der du einen Zielwert für eine Metrik vorgibst und AWS die Kapazität nachregelt.
+  explanation: >
+    Wie bei einem Thermostat nennst du einen Sollwert, etwa 60 Prozent durchschnittliche CPU. Liegt der Wert darüber,
+    kommen Tasks hinzu, liegt er darunter, werden es weniger. Abkühlzeiten verhindern hektisches Hin und Her.
+  example: "`{\"TargetValue\": 60.0, \"PredefinedMetricSpecification\": {\"PredefinedMetricType\": \"ECSServiceAverageCPUUtilization\"}}`"
+  category: cloud
+  aliases: [Target-Tracking-Policy, Zielverfolgung]
+  related: [application-auto-scaling]
+  lesson: aws-fargate/deployments-und-autoscaling
+- slug: one-off-task
+  term: One-off-Task
+  short: Ein einzeln gestarteter Task, der eine Aufgabe einmal erledigt und dann endet.
+  explanation: >
+    One-off-Tasks startest du mit `aws ecs run-task`, oft mit `--overrides`, um nur den Befehl zu ändern. Kein Service
+    startet sie neu. Typisch sind Datenbank-Migrationen vor einem Deployment oder einmalige Wartungsbefehle.
+  example: "`aws ecs run-task … --overrides '{\"containerOverrides\":[{\"name\":\"app\",\"command\":[\"php\",\"artisan\",\"migrate\",\"--force\"]}]}'`"
+  category: cloud
+  aliases: [run-task, Einzeltask, containerOverrides]
+  related: [ecs-task, migration]
+  lesson: aws-fargate/laravel-auf-fargate
+- slug: oidc-identitaetsanbieter
+  term: OIDC-Identitätsanbieter (IAM)
+  short: Ein Eintrag in IAM, der festlegt, dass AWS den Tokens eines externen Anbieters wie GitHub vertraut.
+  explanation: >
+    Damit GitHub-Actions-Jobs per OpenID Connect Rollen übernehmen können, legst du einmalig den Anbieter
+    `token.actions.githubusercontent.com` in IAM an. Rollen verweisen dann in ihrer Trust Policy auf ihn und schränken per
+    Bedingungen ein, welche Repositorys und Environments sie nutzen dürfen.
+  example: "`\"Principal\": {\"Federated\": \"arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com\"}`"
+  category: cloud
+  aliases: [OIDC-Provider, Identity Provider, Identitätsanbieter]
+  related: [openid-connect, trust-policy, id-token]
+  lesson: aws-fargate/deployen-mit-github-actions
+- slug: iam-passrole
+  term: iam:PassRole
+  short: Die IAM-Berechtigung, eine Rolle an einen AWS-Dienst weiterzugeben.
+  explanation: >
+    Wer eine Task-Definition mit `taskRoleArn` und `executionRoleArn` registriert, gibt diese Rollen an ECS weiter.
+    Ohne `iam:PassRole` auf genau diese Rollen scheitert das. So verhindert AWS, dass sich jemand über einen Dienst mehr
+    Rechte verschafft, als er selbst hat.
+  example: "`{\"Effect\": \"Allow\", \"Action\": \"iam:PassRole\", \"Resource\": \"arn:aws:iam::123456789012:role/shop-task\", \"Condition\": {\"StringEquals\": {\"iam:PassedToService\": \"ecs-tasks.amazonaws.com\"}}}`"
+  category: cloud
+  aliases: [PassRole]
+  related: [iam-rolle, task-rolle, execution-rolle]
+  lesson: aws-fargate/deployen-mit-github-actions

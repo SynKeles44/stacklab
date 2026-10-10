@@ -1,0 +1,108 @@
+title: Task-Definitionen im Detail
+description: CPU und Speicher, Ports, Umgebungsvariablen und Secrets, Logs in CloudWatch und Health-Checks – alles, was in den Bauplan gehört.
+exercise:
+  id: modul-uebung-worker
+  type: terminal
+  title: Task-Definition für den Queue-Worker
+  description: |
+    Die Laravel-App braucht einen Queue-Worker als eigenen Service. Er nutzt dasselbe Image wie die Web-App,
+    startet aber einen anderen Befehl und braucht keinen Port. Schreibe die Task-Definition im Ordner
+    `worker-taskdef` in die Datei `worker.json`.
+
+    Anforderungen:
+
+    1. `family` ist `shop-worker`, `requiresCompatibilities` ist `["FARGATE"]`, `networkMode` ist `awsvpc`,
+       `cpu` ist `"512"`, `memory` ist `"1024"` (CPU und Speicher als **Strings**).
+    2. `executionRoleArn` ist `arn:aws:iam::123456789012:role/shop-execution`, `taskRoleArn` ist
+       `arn:aws:iam::123456789012:role/shop-task`.
+    3. Genau **ein** Container namens `worker` mit dem Image
+       `123456789012.dkr.ecr.eu-central-1.amazonaws.com/shop:1.4.0`, `essential: true` und **ohne** `portMappings`.
+    4. `command` ist `["php", "artisan", "queue:work", "--tries=3", "--max-time=3600"]`.
+    5. `stopTimeout` ist `120`, damit laufende Jobs beim Deployment fertig werden.
+    6. `environment` enthält `APP_ENV` mit dem Wert `production`.
+    7. `secrets` enthält `DB_PASSWORD` mit `valueFrom`
+       `arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-AbCdEf:DB_PASSWORD::`.
+    8. `logConfiguration` nutzt den Treiber `awslogs` mit `awslogs-group` `/ecs/shop`, `awslogs-region`
+       `eu-central-1` und `awslogs-stream-prefix` `worker`.
+
+    Prüfe dein Ergebnis mit `jq . worker.json`.
+  workdir: worker-taskdef
+  checks:
+    - type: command
+      run: jq -e '.family == "shop-worker" and .requiresCompatibilities == ["FARGATE"] and .networkMode == "awsvpc"' worker.json
+      message: worker.json fehlt, ist ungültig, oder family, requiresCompatibilities bzw. networkMode stimmen nicht.
+    - type: command
+      run: jq -e '.cpu == "512" and .memory == "1024"' worker.json
+      message: cpu soll "512" und memory "1024" sein – jeweils als String in Anführungszeichen.
+    - type: command
+      run: jq -e '(.executionRoleArn | endswith(":role/shop-execution")) and (.taskRoleArn | endswith(":role/shop-task"))' worker.json
+      message: executionRoleArn und taskRoleArn fehlen oder zeigen auf die falschen Rollen.
+    - type: command
+      run: jq -e '(.containerDefinitions | length == 1) and .containerDefinitions[0].name == "worker" and .containerDefinitions[0].essential == true and (.containerDefinitions[0].image | endswith("/shop:1.4.0"))' worker.json
+      message: Es braucht genau einen Container "worker" mit dem Image shop:1.4.0 und essential true.
+    - type: command
+      run: jq -e '(.containerDefinitions[0].portMappings // []) | length == 0' worker.json
+      message: Der Worker nimmt keine Anfragen an – entferne portMappings.
+    - type: command
+      run: jq -e '.containerDefinitions[0].command == ["php","artisan","queue:work","--tries=3","--max-time=3600"]' worker.json
+      message: command muss genau ["php", "artisan", "queue:work", "--tries=3", "--max-time=3600"] sein – jedes Argument ein eigener String.
+    - type: command
+      run: jq -e '.containerDefinitions[0].stopTimeout == 120' worker.json
+      message: stopTimeout fehlt oder ist nicht die Zahl 120.
+    - type: command
+      run: jq -e '.containerDefinitions[0].environment | any(.name == "APP_ENV" and .value == "production")' worker.json
+      message: In environment fehlt APP_ENV mit dem Wert production.
+    - type: command
+      run: jq -e '.containerDefinitions[0].secrets | any(.name == "DB_PASSWORD" and (.valueFrom | startswith("arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production")) and (.valueFrom | endswith(":DB_PASSWORD::")))' worker.json
+      message: In secrets fehlt DB_PASSWORD mit valueFrom auf den Secrets-Manager-Schlüssel DB_PASSWORD.
+    - type: command
+      run: jq -e '[.containerDefinitions[0].environment[]?.name] | index("DB_PASSWORD") == null' worker.json
+      message: DB_PASSWORD darf nicht zusätzlich als Klartext in environment stehen.
+    - type: command
+      run: jq -e '.containerDefinitions[0].logConfiguration | .logDriver == "awslogs" and .options["awslogs-group"] == "/ecs/shop" and .options["awslogs-region"] == "eu-central-1" and .options["awslogs-stream-prefix"] == "worker"' worker.json
+      message: logConfiguration braucht den Treiber awslogs mit Gruppe /ecs/shop, Region eu-central-1 und Präfix worker.
+  hints:
+    - Beginne mit dem Grundgerüst aus der Lektion zu Task-Definitionen und entferne alles, was mit Ports zu tun hat.
+    - "`environment` und `secrets` sind Listen von Objekten: `[{\"name\": \"APP_ENV\", \"value\": \"production\"}]` bzw. mit `valueFrom` statt `value`."
+    - "Mit `jq '.containerDefinitions[0]' worker.json` siehst du nur den Container und findest Tippfehler schneller."
+  solution: |
+    ```bash
+    cd worker-taskdef
+    cat > worker.json <<'JSON'
+    {
+      "family": "shop-worker",
+      "requiresCompatibilities": ["FARGATE"],
+      "networkMode": "awsvpc",
+      "cpu": "512",
+      "memory": "1024",
+      "runtimePlatform": { "operatingSystemFamily": "LINUX", "cpuArchitecture": "ARM64" },
+      "executionRoleArn": "arn:aws:iam::123456789012:role/shop-execution",
+      "taskRoleArn": "arn:aws:iam::123456789012:role/shop-task",
+      "containerDefinitions": [
+        {
+          "name": "worker",
+          "image": "123456789012.dkr.ecr.eu-central-1.amazonaws.com/shop:1.4.0",
+          "essential": true,
+          "command": ["php", "artisan", "queue:work", "--tries=3", "--max-time=3600"],
+          "stopTimeout": 120,
+          "environment": [
+            { "name": "APP_ENV", "value": "production" },
+            { "name": "LOG_CHANNEL", "value": "stderr" }
+          ],
+          "secrets": [
+            { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-AbCdEf:DB_PASSWORD::" }
+          ],
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+              "awslogs-group": "/ecs/shop",
+              "awslogs-region": "eu-central-1",
+              "awslogs-stream-prefix": "worker"
+            }
+          }
+        }
+      ]
+    }
+    JSON
+    jq . worker.json
+    ```

@@ -1,0 +1,38 @@
+title: Container in der Cloud mit AWS Fargate
+subtitle: Vom Docker-Image zum skalierenden Dienst auf Amazon ECS – ohne einen einzigen Server zu verwalten
+description: >
+  Dein Docker-Image läuft lokal. Jetzt soll es im Internet laufen – ausfallsicher, skalierbar und ohne dass du
+  Server patchen musst. Genau das macht **AWS Fargate**: Du beschreibst, welche Container mit wie viel CPU und
+  Speicher laufen sollen, und AWS kümmert sich um die Maschinen darunter.
+
+
+  In diesem Kurs lernst du die Bausteine von Amazon ECS kennen (Cluster, Task-Definition, Task, Service),
+  speicherst Images in Amazon ECR, schreibst Task-Definitionen mit Secrets, Logs und Health-Checks, verbindest
+  alles mit Security Groups und einem Application Load Balancer und trennst sauber zwischen Task-Rolle und
+  Execution-Rolle. Zum Schluss betreibst du eine Laravel-App mit Web, Queue-Worker und Scheduler als getrennte
+  Services, lieferst per GitHub Actions mit OIDC aus und behältst die Kosten im Blick.
+
+
+  Das Übungs-Terminal hat keinen Zugang zu AWS. Du schreibst deshalb echte Konfigurationsdateien
+  (Task-Definitionen, IAM-Policies, Workflows) und prüfst sie mit `jq` – alles, was in AWS selbst passiert,
+  übst du in einem simulierten Terminal.
+category: infrastruktur
+level: fortgeschritten
+icon: cloud
+color: "#f59e0b"
+estimated_hours: 4
+workspace_dir: aws-fargate
+prerequisites: [docker, aws-grundlagen, deployments-cicd]
+learning_goals:
+  - Du entscheidest begründet, wann ECS mit Fargate passt und wann EKS, Lambda oder EC2 die bessere Wahl sind.
+  - Du legst ECR-Repositorys an, pushst Images, lässt sie scannen und räumst mit Lifecycle-Policies auf.
+  - Du erklärst Cluster, Task-Definition, Task und Service und wie sie zusammenhängen.
+  - Du schreibst vollständige Task-Definitionen mit CPU und Speicher, Ports, Secrets, CloudWatch-Logs und Health-Checks.
+  - Du baust das Netzwerk mit awsvpc, Security Groups, Application Load Balancer und Target Groups.
+  - Du trennst Task-Rolle und Execution-Rolle und vergibst minimale Rechte.
+  - Du lieferst mit Rolling Updates, Circuit Breaker und Autoscaling aus und schätzt die Kosten ab.
+  - Du betreibst Laravel mit Web, Queue-Worker, Scheduler und Migrationen als One-off-Task und deployst per GitHub Actions mit OIDC.
+references:
+  - Laravel-Anwendungen, die als mehrere ECS-Services aus einem gemeinsamen Image laufen (Web, Worker, Scheduler)
+  - Task-Definitionen als JSON-Vorlagen im Repository, die die Pipeline vor dem Deployment mit dem neuen Image-Tag füllt
+  - Mehrere Umgebungen (Staging, Produktion) mit eigenen Secrets und eigenen IAM-Rollen pro Umgebung

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs><marker id="p" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/></marker></defs>
+  <text x="400" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Zwei Rollen, zwei Zeitpunkte</text>
+  <rect x="30" y="60" width="350" height="320" rx="14" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="205" y="92" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Execution-Rolle</text>
+  <text x="205" y="114" text-anchor="middle" font-size="12" fill="#1e1b3a">nutzt: der ECS-/Fargate-Agent</text>
+  <text x="205" y="132" text-anchor="middle" font-size="12" fill="#1e1b3a">wann: VOR und RUND UM den Start</text>
+  <rect x="60" y="155" width="290" height="44" rx="8" fill="#ffffff" stroke="#1e1b3a"/>
+  <text x="205" y="182" text-anchor="middle" font-size="12" fill="#1e1b3a">Image aus ECR ziehen</text>
+  <rect x="60" y="210" width="290" height="44" rx="8" fill="#ffffff" stroke="#1e1b3a"/>
+  <text x="205" y="237" text-anchor="middle" font-size="12" fill="#1e1b3a">Secrets für „secrets“ abholen</text>
+  <rect x="60" y="265" width="290" height="44" rx="8" fill="#ffffff" stroke="#1e1b3a"/>
+  <text x="205" y="292" text-anchor="middle" font-size="12" fill="#1e1b3a">Logs nach CloudWatch schreiben</text>
+  <text x="205" y="350" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">executionRoleArn</text>
+  <rect x="420" y="60" width="350" height="320" rx="14" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="595" y="92" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Task-Rolle</text>
+  <text x="595" y="114" text-anchor="middle" font-size="12" fill="#1e1b3a">nutzt: dein Code im Container</text>
+  <text x="595" y="132" text-anchor="middle" font-size="12" fill="#1e1b3a">wann: WÄHREND die App läuft</text>
+  <rect x="450" y="155" width="290" height="44" rx="8" fill="#ffffff" stroke="#1e1b3a"/>
+  <text x="595" y="182" text-anchor="middle" font-size="12" fill="#1e1b3a">Uploads in S3 speichern</text>
+  <rect x="450" y="210" width="290" height="44" rx="8" fill="#ffffff" stroke="#1e1b3a"/>
+  <text x="595" y="237" text-anchor="middle" font-size="12" fill="#1e1b3a">Nachrichten an SQS senden</text>
+  <rect x="450" y="265" width="290" height="44" rx="8" fill="#ffffff" stroke="#1e1b3a"/>
+  <text x="595" y="292" text-anchor="middle" font-size="12" fill="#1e1b3a">E-Mails über SES verschicken</text>
+  <text x="595" y="350" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">taskRoleArn</text>
+</svg>

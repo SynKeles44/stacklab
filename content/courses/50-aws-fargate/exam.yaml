@@ -1,0 +1,314 @@
+title: Abschlussprüfung Container in der Cloud mit AWS Fargate
+description: |
+  Die Prüfung deckt alle vier Module ab: Container auf AWS und ECR, Task-Definitionen, Netzwerk und Rechte sowie
+  Betrieb und Auslieferung. Dazu kommen drei Praxisaufgaben – eine Task-Definition, eine IAM-Policy und eine kleine
+  Funktion zu Rolling Deployments. Du bestehst mit 70 Prozent.
+time_limit_minutes: 45
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Was ist der wichtigste Unterschied zwischen ECS mit Fargate und ECS auf EC2?
+    options:
+      - Mit Fargate laufen keine Docker-Images.
+      - Mit Fargate verwaltest du keine Server – AWS stellt die Kapazität pro Task bereit.
+      - Fargate ist immer günstiger als EC2.
+      - Mit EC2 brauchst du keine Task-Definitionen.
+    answer: 1
+    explanation: Beide nutzen dieselben ECS-Bausteine. Bei Fargate entfällt die Verwaltung der Instanzen; dafür ist der Preis pro Ressource etwas höher.
+  - module: grundlagen
+    type: match
+    question: Ordne jeden ECS-Baustein seiner Aufgabe zu.
+    pairs:
+      - { left: "Task-Definition", right: "Unveränderlicher Bauplan mit Revision" }
+      - { left: "Task", right: "Laufende Instanz des Bauplans" }
+      - { left: "Service", right: "Hält eine Anzahl Tasks dauerhaft am Laufen" }
+      - { left: "Cluster", right: "Logische Gruppe, oft eine pro Umgebung" }
+    explanation: Bauplan → Instanz → Aufpasser → Gruppierung.
+  - module: grundlagen
+    type: single
+    question: Warum solltest du ECR-Repositorys mit unveränderlichen Tags (IMMUTABLE) anlegen?
+    options:
+      - Damit Images kleiner werden.
+      - Damit ein Tag wie 1.4.0 immer auf dasselbe Image zeigt und Rollbacks verlässlich sind.
+      - Damit ECR die Images automatisch scannt.
+      - Damit niemand mehr pushen kann.
+    answer: 1
+    explanation: Ein überschreibbarer Tag ist kein verlässliches Rollback-Ziel. Neue Versionen bekommen einfach neue Tags.
+  - module: grundlagen
+    type: cloze
+    text: "Bei ECR lautet der Benutzername für docker login immer ___, das Passwort liefert `aws ecr get-login-___`."
+    blanks:
+      - [AWS]
+      - [password]
+    explanation: Das Token gilt zwölf Stunden. In GitHub Actions übernimmt das die Action amazon-ecr-login.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aufgaben bleiben auch mit Fargate bei dir?
+    options:
+      - CPU und Speicher passend wählen
+      - Betriebssystem der Hosts patchen
+      - Security Groups und IAM-Rollen festlegen
+      - Ein sicheres, schlankes Image bauen
+    answers: [0, 2, 3]
+    explanation: Die Hosts verwaltet AWS. Ressourcen, Netzwerk, Rechte und Image-Qualität verantwortest du.
+  - module: task-definitionen
+    type: single
+    question: Welche Kombination ist für einen Fargate-Task gültig?
+    options:
+      - "cpu 512, memory 768"
+      - "cpu 256, memory 4096"
+      - "cpu 1024, memory 4096"
+      - "cpu 2048, memory 2048"
+    answer: 2
+    explanation: 1 vCPU erlaubt 2 bis 8 GB in GB-Schritten. Die anderen Kombinationen liegen außerhalb der erlaubten Bereiche.
+  - module: task-definitionen
+    type: find-bug
+    question: Der Worker startet nicht – „executable file not found“. In welcher Zeile liegt der Fehler?
+    language: json
+    code: |
+      {
+        "name": "worker",
+        "image": "123456789012.dkr.ecr.eu-central-1.amazonaws.com/shop:1.4.0",
+        "essential": true,
+        "command": ["php artisan queue:work"],
+        "stopTimeout": 120
+      }
+    bug_line: 5
+    explanation: Jedes Argument muss ein eigener Listeneintrag sein – ["php", "artisan", "queue:work"].
+  - module: task-definitionen
+    type: single
+    question: Wo gehört DB_PASSWORD in der Task-Definition hin?
+    options:
+      - In environment mit name und value
+      - In secrets mit name und valueFrom auf Secrets Manager oder Parameter Store
+      - In dockerLabels
+      - In die Task-Rolle
+    answer: 1
+    explanation: environment steht im Klartext in jeder Revision. secrets verweist nur auf den Speicherort.
+  - module: task-definitionen
+    type: multiple
+    question: Was stimmt über Logs und Health-Checks bei Fargate?
+    options:
+      - Der awslogs-Treiber sendet stdout und stderr an CloudWatch Logs.
+      - Der Container-Health-Check läuft im Container – benötigte Werkzeuge müssen im Image sein.
+      - Laravel sollte im Container nach storage/logs schreiben.
+      - startPeriod gibt der App Zeit zum Hochfahren.
+    answers: [0, 1, 3]
+    explanation: Logdateien im Container sieht niemand und sie verschwinden mit dem Task. LOG_CHANNEL=stderr ist richtig.
+  - module: netzwerk-und-rechte
+    type: single
+    question: Welchen Zieltyp braucht eine Target Group für Fargate-Tasks?
+    options: [instance, ip, lambda, alb]
+    answer: 1
+    explanation: Fargate-Tasks werden über die IP ihrer eigenen Netzwerkschnittstelle registriert.
+  - module: netzwerk-und-rechte
+    type: single
+    question: Ein Task in einem privaten Subnetz bricht mit „CannotPullContainerError … i/o timeout“ ab. Was ist die wahrscheinlichste Ursache?
+    options:
+      - Das Image ist zu groß.
+      - Es gibt weder NAT-Gateway noch VPC-Endpunkte, über die der Task ECR erreicht.
+      - Die Task-Rolle hat keine S3-Rechte.
+      - Der Load Balancer ist falsch konfiguriert.
+    answer: 1
+    explanation: Ohne Weg zu ECR (und S3 für die Schichten) kann Fargate das Image nicht laden.
+  - module: netzwerk-und-rechte
+    type: match
+    question: Welche Rolle braucht welche Berechtigung?
+    pairs:
+      - { left: "ecr:BatchGetImage beim Start", right: "Execution-Rolle" }
+      - { left: "s3:PutObject aus der App", right: "Task-Rolle" }
+      - { left: "secretsmanager:GetSecretValue für das Feld secrets", right: "Execution-Rolle" }
+      - { left: "sqs:ReceiveMessage im Queue-Worker", right: "Task-Rolle" }
+    explanation: Execution-Rolle = alles rund um den Start. Task-Rolle = alles, was dein Code tut.
+  - module: netzwerk-und-rechte
+    type: multiple
+    question: Welche Security-Group-Regeln folgen dem Prinzip der geringsten Rechte?
+    options:
+      - "sg-app: 8080 nur von sg-alb"
+      - "sg-db: 5432 von 0.0.0.0/0"
+      - "sg-db: 5432 nur von sg-app"
+      - "sg-alb: 443 von 0.0.0.0/0"
+    answers: [0, 2, 3]
+    explanation: Öffentlich ist nur der Load Balancer. Jede Schicht dahinter vertraut nur der Schicht davor.
+  - module: netzwerk-und-rechte
+    type: cloze
+    text: "Damit Laravel hinter dem ALB HTTPS-Links erzeugt, muss es dem Load Balancer als ___ vertrauen und den Header X-Forwarded-___ auswerten."
+    blanks:
+      - [Proxy, vertrauenswürdigem Proxy, Trusted Proxy]
+      - [Proto]
+    explanation: TLS endet am ALB. Laravel erfährt über X-Forwarded-Proto, dass die ursprüngliche Anfrage HTTPS war.
+  - module: betrieb
+    type: single
+    question: Was macht der Deployment Circuit Breaker mit rollback true?
+    options:
+      - Er verhindert jedes Deployment am Freitag.
+      - Er markiert Deployments, deren Tasks nie gesund werden, als FAILED und rollt auf die letzte erfolgreiche Revision zurück.
+      - Er stoppt alle Tasks bei hoher CPU-Last.
+      - Er schaltet zwischen zwei Target Groups um.
+    answer: 1
+    explanation: Ohne Circuit Breaker würde ECS kaputte Tasks endlos neu starten.
+  - module: betrieb
+    type: single
+    question: Wie sollte die Datenbank-Migration einer Laravel-App auf Fargate laufen?
+    options:
+      - Bei jedem Start eines Web-Tasks im Entrypoint
+      - Als eigener Service mit desiredCount 1
+      - Als One-off-Task mit --overrides vor dem Aktualisieren der Services
+      - Im Scheduler jede Minute
+    answer: 2
+    explanation: Einmal, vor dem Rollout, mit Prüfung des Exit-Codes. Im Entrypoint würden mehrere Tasks parallel migrieren.
+  - module: betrieb
+    type: multiple
+    question: Welche Aussagen über die GitHub-Actions-Pipeline mit OIDC stimmen?
+    options:
+      - "Der Workflow braucht permissions: id-token: write."
+      - Die Trust Policy sollte per sub auf Repository und Environment einschränken.
+      - Die Deploy-Rolle braucht iam:PassRole für Task- und Execution-Rolle.
+      - Ein AWS-Zugangsschlüssel als Repository-Secret ist zusätzlich nötig.
+    answers: [0, 1, 2]
+    explanation: Mit OIDC gibt es keinen gespeicherten Schlüssel – das ist der ganze Sinn.
+  - module: betrieb
+    type: single
+    question: Warum setzt man beim Scheduler-Service minimumHealthyPercent 0 und maximumPercent 100?
+    options:
+      - Damit er schneller startet.
+      - Damit beim Deployment nie zwei Scheduler gleichzeitig laufen und Befehle doppelt auslösen.
+      - Damit er günstiger ist.
+      - Weil der Scheduler keinen Health-Check hat.
+    answer: 1
+    explanation: Mit maximumPercent 100 und desiredCount 1 muss ECS den alten Task stoppen, bevor der neue startet. Eine kurze Lücke ist harmlos, doppelte Ausführung nicht.
+tasks:
+  - module: task-definitionen
+    id: pruefung-taskdef
+    type: terminal
+    title: Task-Definition für eine API
+    description: |
+      Schreibe im Ordner `pruefung-api` die Datei `api.json` – die Task-Definition einer kleinen API.
+
+      1. `family` `notes-api`, Fargate, `awsvpc`, `cpu` `"256"`, `memory` `"512"`.
+      2. `executionRoleArn` `arn:aws:iam::123456789012:role/notes-execution`.
+      3. Ein Container `api` mit Image `123456789012.dkr.ecr.eu-central-1.amazonaws.com/notes-api:2.0.1`,
+         `essential: true`, Port `3000`.
+      4. `environment`: `NODE_ENV` = `production`.
+      5. `secrets`: `DATABASE_URL` aus dem Parameter `arn:aws:ssm:eu-central-1:123456789012:parameter/notes/database-url`.
+      6. `logConfiguration` mit `awslogs`, Gruppe `/ecs/notes`, Region `eu-central-1`, Präfix `api`.
+    workdir: pruefung-api
+    checks:
+      - type: command
+        run: jq -e '.family == "notes-api" and .requiresCompatibilities == ["FARGATE"] and .networkMode == "awsvpc" and .cpu == "256" and .memory == "512" and (.executionRoleArn | endswith(":role/notes-execution"))' api.json
+        message: api.json fehlt oder family, Fargate, awsvpc, cpu "256", memory "512" bzw. executionRoleArn stimmen nicht.
+      - type: command
+        run: jq -e '.containerDefinitions[0] | .name == "api" and .essential == true and .image == "123456789012.dkr.ecr.eu-central-1.amazonaws.com/notes-api:2.0.1" and .portMappings[0].containerPort == 3000' api.json
+        message: Der Container api braucht das richtige Image, essential true und containerPort 3000 (als Zahl).
+      - type: command
+        run: jq -e '.containerDefinitions[0] | (.environment | any(.name == "NODE_ENV" and .value == "production")) and (.secrets | any(.name == "DATABASE_URL" and .valueFrom == "arn:aws:ssm:eu-central-1:123456789012:parameter/notes/database-url"))' api.json
+        message: NODE_ENV gehört in environment, DATABASE_URL als secrets-Eintrag mit valueFrom auf den Parameter.
+      - type: command
+        run: jq -e '.containerDefinitions[0].logConfiguration | .logDriver == "awslogs" and .options["awslogs-group"] == "/ecs/notes" and .options["awslogs-region"] == "eu-central-1" and .options["awslogs-stream-prefix"] == "api"' api.json
+        message: logConfiguration braucht awslogs mit Gruppe /ecs/notes, Region eu-central-1 und Präfix api.
+    hints:
+      - Orientiere dich an der Web-Task-Definition aus Modul 2.
+      - CPU und Speicher sind Strings, Ports Zahlen.
+    solution: |
+      ```bash
+      cd pruefung-api
+      cat > api.json <<'JSON'
+      {
+        "family": "notes-api",
+        "requiresCompatibilities": ["FARGATE"],
+        "networkMode": "awsvpc",
+        "cpu": "256",
+        "memory": "512",
+        "executionRoleArn": "arn:aws:iam::123456789012:role/notes-execution",
+        "containerDefinitions": [
+          {
+            "name": "api",
+            "image": "123456789012.dkr.ecr.eu-central-1.amazonaws.com/notes-api:2.0.1",
+            "essential": true,
+            "portMappings": [{ "containerPort": 3000, "protocol": "tcp" }],
+            "environment": [{ "name": "NODE_ENV", "value": "production" }],
+            "secrets": [{ "name": "DATABASE_URL", "valueFrom": "arn:aws:ssm:eu-central-1:123456789012:parameter/notes/database-url" }],
+            "logConfiguration": {
+              "logDriver": "awslogs",
+              "options": { "awslogs-group": "/ecs/notes", "awslogs-region": "eu-central-1", "awslogs-stream-prefix": "api" }
+            }
+          }
+        ]
+      }
+      JSON
+      ```
+  - module: netzwerk-und-rechte
+    id: pruefung-execution-policy
+    type: terminal
+    title: Zusatz-Policy für die Execution-Rolle
+    description: |
+      Die API aus der vorigen Aufgabe holt `DATABASE_URL` aus dem Parameter Store. Schreibe im Ordner
+      `pruefung-policy` die Datei `execution-extra.json`, die der Execution-Rolle genau das erlaubt:
+
+      - `Version` `2012-10-17`, ein Allow-Statement,
+      - Aktion nur `ssm:GetParameters`,
+      - Ressource nur `arn:aws:ssm:eu-central-1:123456789012:parameter/notes/database-url`.
+    workdir: pruefung-policy
+    checks:
+      - type: command
+        run: jq -e '.Version == "2012-10-17" and (.Statement | length == 1) and .Statement[0].Effect == "Allow"' execution-extra.json
+        message: execution-extra.json fehlt, ist ungültig oder hat nicht genau ein Allow-Statement mit Version 2012-10-17.
+      - type: command
+        run: jq -e '([.Statement[0].Action] | flatten) == ["ssm:GetParameters"]' execution-extra.json
+        message: Als Aktion ist nur ssm:GetParameters erlaubt.
+      - type: command
+        run: jq -e '([.Statement[0].Resource] | flatten) == ["arn:aws:ssm:eu-central-1:123456789012:parameter/notes/database-url"]' execution-extra.json
+        message: Resource soll genau der Parameter notes/database-url sein.
+    hints:
+      - Die Execution-Rolle liest Parameter mit `ssm:GetParameters` (Mehrzahl).
+      - Ein Statement hat Effect, Action und Resource.
+    solution: |
+      ```bash
+      cd pruefung-policy
+      cat > execution-extra.json <<'JSON'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "ssm:GetParameters",
+            "Resource": "arn:aws:ssm:eu-central-1:123456789012:parameter/notes/database-url"
+          }
+        ]
+      }
+      JSON
+      ```
+  - module: betrieb
+    id: pruefung-rolling
+    type: code
+    language: js
+    title: Grenzen eines Rolling Deployments berechnen
+    description: |
+      Schreibe `deploymentBounds(desiredCount, minimumHealthyPercent, maximumPercent)`. Die Funktion gibt ein Objekt
+      `{ minHealthy, maxRunning }` zurück:
+
+      - `minHealthy`: so viele Tasks müssen mindestens gesund laufen – `desiredCount × minimumHealthyPercent / 100`,
+        **aufgerundet**.
+      - `maxRunning`: so viele Tasks dürfen höchstens gleichzeitig laufen – `desiredCount × maximumPercent / 100`,
+        **abgerundet**.
+    starter: |
+      function deploymentBounds(desiredCount, minimumHealthyPercent, maximumPercent) {
+        // Deine Lösung
+      }
+    tests:
+      - name: Standardwerte bei 4 Tasks
+        code: "assertDeepEqual(deploymentBounds(4, 100, 200), { minHealthy: 4, maxRunning: 8 })"
+      - name: 50 Prozent bei 3 Tasks wird aufgerundet
+        code: "assertDeepEqual(deploymentBounds(3, 50, 150), { minHealthy: 2, maxRunning: 4 })"
+      - name: Scheduler-Einstellung
+        code: "assertDeepEqual(deploymentBounds(1, 0, 100), { minHealthy: 0, maxRunning: 1 })"
+      - name: keine Tasks
+        code: "assertDeepEqual(deploymentBounds(0, 100, 200), { minHealthy: 0, maxRunning: 0 })"
+    solution: |
+      function deploymentBounds(desiredCount, minimumHealthyPercent, maximumPercent) {
+        return {
+          minHealthy: Math.ceil((desiredCount * minimumHealthyPercent) / 100),
+          maxRunning: Math.floor((desiredCount * maximumPercent) / 100),
+        }
+      }

@@ -1,0 +1,777 @@
+title: Deployment-Paket für einen Laravel-Shop auf Fargate
+description: |
+  In diesem Projekt schreibst du alle Dateien, die ein Laravel-Shop braucht, um auf AWS Fargate zu laufen: die
+  ECR-Konfiguration, die IAM-Rollen, die Task-Definitionen für Web, Worker und Scheduler, die
+  Service-Definitionen, das Autoscaling, das Override für Migrationen und den GitHub-Actions-Workflow mit OIDC.
+
+  Das Übungs-Terminal hat keinen Zugang zu AWS. Du erzeugst deshalb genau die JSON- und YAML-Dateien, die du in
+  einem echten Projekt ins Repository legst und an die AWS CLI oder die Pipeline übergibst. Stacklab prüft nach
+  jedem Schritt mit `jq` und einem YAML-Parser, ob sie vollständig und stimmig sind.
+
+  Klicke zuerst auf **Projekt vorbereiten**. Dann liegt im Ordner `projekt` deines Workspaces eine kleine
+  Laravel-App mit `Dockerfile`. Wechsle im Übungs-Terminal mit `cd projekt` hinein. Alle Platzhalter:
+  Konto `123456789012`, Region `eu-central-1`, Cluster `shop`, Repository `beispiel-org/shop` auf GitHub.
+
+  Die Schritte bauen aufeinander auf. Lösche zwischendurch keine Dateien früherer Schritte.
+goal: >
+  Ein Ordner `projekt` mit `infra/` (ECR, IAM, ECS-Services, Autoscaling), `.aws/` (drei Task-Definitionen) und
+  `.github/workflows/deploy.yml` – ein vollständiges, geprüftes Deployment-Paket für Laravel auf Fargate.
+workdir: projekt
+setup: |
+  mkdir -p public app
+  cat > Dockerfile <<'EOF'
+  FROM php:8.5-fpm-alpine AS base
+  RUN apk add --no-cache nginx curl libpq-dev && docker-php-ext-install pdo_pgsql
+  WORKDIR /var/www/html
+  COPY . .
+  EXPOSE 8080
+  CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+  EOF
+  printf 'vendor\nnode_modules\n.git\n.env\n' > .dockerignore
+  printf '<?php\necho "Shop";\n' > public/index.php
+  printf '# Shop\n\nLaravel-Shop, der auf AWS Fargate läuft.\n' > README.md
+steps:
+  - id: ecr
+    title: ECR-Repository und Lifecycle-Policy
+    description: |
+      Lege die Konfiguration für das Image-Repository an.
+
+      1. `infra/ecr/repository.json` mit `repositoryName` `shop`, `imageTagMutability` `IMMUTABLE` und
+         `imageScanningConfiguration.scanOnPush` `true`.
+      2. `infra/ecr/lifecycle-policy.json` mit zwei Regeln: Priorität 1 löscht `untagged` Images nach 7 Tagen
+         (`sinceImagePushed`, `days`), Priorität 2 behält von `any` die neuesten 30 (`imageCountMoreThan`).
+         Beide mit `"action": {"type": "expire"}`.
+    checklist:
+      - repository.json mit IMMUTABLE und scanOnPush
+      - lifecycle-policy.json mit zwei Regeln
+      - beide Dateien mit jq geprüft
+    hints:
+      - "`mkdir -p infra/ecr` legt den Ordner an."
+      - Die Lifecycle-Policy kennst du aus der Lektion „Images in Amazon ECR ablegen“.
+      - "Zahlen und `true` ohne Anführungszeichen."
+    checks:
+      - type: command
+        run: jq -e '.repositoryName == "shop" and .imageTagMutability == "IMMUTABLE" and .imageScanningConfiguration.scanOnPush == true' infra/ecr/repository.json
+        message: infra/ecr/repository.json fehlt oder repositoryName, IMMUTABLE bzw. scanOnPush true stimmen nicht.
+      - type: command
+        run: jq -e '(.rules | length == 2) and any(.rules[]; .rulePriority == 1 and .selection.tagStatus == "untagged" and .selection.countType == "sinceImagePushed" and .selection.countNumber == 7) and any(.rules[]; .rulePriority == 2 and .selection.tagStatus == "any" and .selection.countType == "imageCountMoreThan" and .selection.countNumber == 30) and all(.rules[]; .action.type == "expire")' infra/ecr/lifecycle-policy.json
+        message: infra/ecr/lifecycle-policy.json braucht genau die zwei Regeln (untagged nach 7 Tagen, neueste 30 behalten) mit Aktion expire.
+    solution: |
+      ```bash
+      mkdir -p infra/ecr
+      cat > infra/ecr/repository.json <<'JSON'
+      { "repositoryName": "shop", "imageTagMutability": "IMMUTABLE", "imageScanningConfiguration": { "scanOnPush": true } }
+      JSON
+      cat > infra/ecr/lifecycle-policy.json <<'JSON'
+      {
+        "rules": [
+          { "rulePriority": 1, "description": "untagged nach 7 Tagen",
+            "selection": { "tagStatus": "untagged", "countType": "sinceImagePushed", "countUnit": "days", "countNumber": 7 },
+            "action": { "type": "expire" } },
+          { "rulePriority": 2, "description": "neueste 30 behalten",
+            "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 30 },
+            "action": { "type": "expire" } }
+        ]
+      }
+      JSON
+      ```
+    solve: |
+      mkdir -p infra/ecr
+      cat > infra/ecr/repository.json <<'JSON'
+      { "repositoryName": "shop", "imageTagMutability": "IMMUTABLE", "imageScanningConfiguration": { "scanOnPush": true } }
+      JSON
+      cat > infra/ecr/lifecycle-policy.json <<'JSON'
+      {
+        "rules": [
+          { "rulePriority": 1, "description": "untagged nach 7 Tagen",
+            "selection": { "tagStatus": "untagged", "countType": "sinceImagePushed", "countUnit": "days", "countNumber": 7 },
+            "action": { "type": "expire" } },
+          { "rulePriority": 2, "description": "neueste 30 behalten",
+            "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 30 },
+            "action": { "type": "expire" } }
+        ]
+      }
+      JSON
+
+  - id: rollen
+    title: Execution-Rolle und Task-Rolle
+    description: |
+      Lege im Ordner `infra/iam` drei Dokumente an:
+
+      1. `ecs-tasks-trust.json`: Trust Policy für **beide** ECS-Rollen – Principal `{"Service": "ecs-tasks.amazonaws.com"}`,
+         Aktion `sts:AssumeRole`.
+      2. `execution-secrets-policy.json`: Zusatz für die Execution-Rolle. Ein Statement mit
+         `secretsmanager:GetSecretValue` auf `arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-*`.
+      3. `task-policy.json`: Rechte für die App zur Laufzeit. Ein Statement mit `s3:GetObject`, `s3:PutObject`,
+         `s3:DeleteObject` auf `arn:aws:s3:::shop-uploads-production/*` und ein zweites mit `sqs:SendMessage`,
+         `sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sqs:ChangeMessageVisibility`, `sqs:GetQueueAttributes` auf
+         `arn:aws:sqs:eu-central-1:123456789012:shop-jobs`.
+
+      Alle mit `"Version": "2012-10-17"`, keine Wildcard-Aktionen.
+    checklist:
+      - Trust Policy für ecs-tasks.amazonaws.com
+      - Secrets-Zusatz für die Execution-Rolle
+      - Task-Policy mit S3 und SQS, ohne Wildcard-Aktionen
+    hints:
+      - Die Execution-Rolle holt Secrets, die Task-Rolle spricht mit S3 und SQS.
+      - "Jedes Statement: `{ \"Effect\": \"Allow\", \"Action\": [...], \"Resource\": \"...\" }`."
+      - "Prüfe: `jq '.Statement[].Action' infra/iam/task-policy.json`."
+    checks:
+      - type: command
+        run: jq -e '.Version == "2012-10-17" and .Statement[0].Principal.Service == "ecs-tasks.amazonaws.com" and .Statement[0].Action == "sts:AssumeRole"' infra/iam/ecs-tasks-trust.json
+        message: infra/iam/ecs-tasks-trust.json fehlt oder erlaubt ecs-tasks.amazonaws.com nicht sts:AssumeRole.
+      - type: command
+        run: jq -e '.Version == "2012-10-17" and ([.Statement[].Action] | flatten) == ["secretsmanager:GetSecretValue"] and ([.Statement[].Resource] | flatten) == ["arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-*"]' infra/iam/execution-secrets-policy.json
+        message: infra/iam/execution-secrets-policy.json soll nur secretsmanager:GetSecretValue auf die Secrets shop/production-* erlauben.
+      - type: command
+        run: jq -e 'any(.Statement[]; ([.Action] | flatten | sort) == ["s3:DeleteObject","s3:GetObject","s3:PutObject"] and ([.Resource] | flatten) == ["arn:aws:s3:::shop-uploads-production/*"])' infra/iam/task-policy.json
+        message: In infra/iam/task-policy.json fehlt das S3-Statement (GetObject, PutObject, DeleteObject auf shop-uploads-production/*).
+      - type: command
+        run: jq -e 'any(.Statement[]; ([.Action] | flatten | sort) == ["sqs:ChangeMessageVisibility","sqs:DeleteMessage","sqs:GetQueueAttributes","sqs:ReceiveMessage","sqs:SendMessage"] and ([.Resource] | flatten) == ["arn:aws:sqs:eu-central-1:123456789012:shop-jobs"])' infra/iam/task-policy.json
+        message: In infra/iam/task-policy.json fehlt das SQS-Statement mit den fünf Aktionen auf die Queue shop-jobs.
+      - type: command
+        run: jq -e '[.Statement[] | [.Action] | flatten | .[] | select(endswith("*"))] | length == 0' infra/iam/task-policy.json
+        message: infra/iam/task-policy.json enthält eine Wildcard-Aktion wie s3:* – liste die Aktionen einzeln auf.
+    solution: |
+      Siehe die Lektion „Task-Rolle und Execution-Rolle“. Das Ergebnis:
+
+      ```bash
+      mkdir -p infra/iam
+      cat > infra/iam/ecs-tasks-trust.json <<'JSON'
+      { "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Principal": { "Service": "ecs-tasks.amazonaws.com" }, "Action": "sts:AssumeRole" } ] }
+      JSON
+      cat > infra/iam/execution-secrets-policy.json <<'JSON'
+      { "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": "secretsmanager:GetSecretValue",
+        "Resource": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-*" } ] }
+      JSON
+      cat > infra/iam/task-policy.json <<'JSON'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          { "Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+            "Resource": "arn:aws:s3:::shop-uploads-production/*" },
+          { "Effect": "Allow",
+            "Action": ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:GetQueueAttributes"],
+            "Resource": "arn:aws:sqs:eu-central-1:123456789012:shop-jobs" }
+        ]
+      }
+      JSON
+      ```
+    solve: |
+      mkdir -p infra/iam
+      cat > infra/iam/ecs-tasks-trust.json <<'JSON'
+      { "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Principal": { "Service": "ecs-tasks.amazonaws.com" }, "Action": "sts:AssumeRole" } ] }
+      JSON
+      cat > infra/iam/execution-secrets-policy.json <<'JSON'
+      { "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": "secretsmanager:GetSecretValue",
+        "Resource": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-*" } ] }
+      JSON
+      cat > infra/iam/task-policy.json <<'JSON'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          { "Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+            "Resource": "arn:aws:s3:::shop-uploads-production/*" },
+          { "Effect": "Allow",
+            "Action": ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:GetQueueAttributes"],
+            "Resource": "arn:aws:sqs:eu-central-1:123456789012:shop-jobs" }
+        ]
+      }
+      JSON
+
+  - id: web-taskdef
+    title: Task-Definition für die Web-App
+    description: |
+      Schreibe `.aws/web.json` – die Vorlage, die die Pipeline später mit dem neuen Image füllt.
+
+      1. `family` `shop-web`, Fargate, `awsvpc`, `cpu` `"512"`, `memory` `"1024"`,
+         `runtimePlatform` mit `LINUX` und `ARM64`.
+      2. `executionRoleArn` `arn:aws:iam::123456789012:role/shop-execution`, `taskRoleArn`
+         `arn:aws:iam::123456789012:role/shop-task`.
+      3. Container `app`, `image` vorerst `PLATZHALTER` (die Pipeline ersetzt ihn), `essential: true`,
+         Port `8080`.
+      4. `environment`: `APP_ENV=production`, `LOG_CHANNEL=stderr`, `SESSION_DRIVER=redis`, `CACHE_STORE=redis`,
+         `QUEUE_CONNECTION=sqs`, `FILESYSTEM_DISK=s3`.
+      5. `secrets`: `APP_KEY` und `DB_PASSWORD` aus
+         `arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-AbCdEf` (jeweils `:SCHLÜSSEL::`).
+      6. `healthCheck` auf `http://localhost:8080/up` mit `startPeriod` 60.
+      7. `logConfiguration` mit `awslogs`, Gruppe `/ecs/shop`, Region `eu-central-1`, Präfix `web`.
+    checklist:
+      - Task-Einstellungen mit ARM64 und beiden Rollen
+      - Container app mit Port 8080 und Platzhalter-Image
+      - Zustandslose Laravel-Einstellungen in environment
+      - APP_KEY und DB_PASSWORD als secrets
+      - Health-Check und CloudWatch-Logs
+    hints:
+      - Setze die Datei aus den Bausteinen der Lektionen in Modul 2 zusammen.
+      - Kein Passwort und kein APP_KEY in environment!
+      - "Teste Teile gezielt: `jq '.containerDefinitions[0].secrets' .aws/web.json`."
+    checks:
+      - type: command
+        run: jq -e '.family == "shop-web" and .requiresCompatibilities == ["FARGATE"] and .networkMode == "awsvpc" and .cpu == "512" and .memory == "1024" and .runtimePlatform.cpuArchitecture == "ARM64" and .runtimePlatform.operatingSystemFamily == "LINUX"' .aws/web.json
+        message: .aws/web.json fehlt oder family, Fargate, awsvpc, cpu "512", memory "1024" bzw. runtimePlatform LINUX/ARM64 stimmen nicht.
+      - type: command
+        run: jq -e '(.executionRoleArn | endswith(":role/shop-execution")) and (.taskRoleArn | endswith(":role/shop-task"))' .aws/web.json
+        message: executionRoleArn bzw. taskRoleArn fehlen oder zeigen auf die falschen Rollen.
+      - type: command
+        run: jq -e '.containerDefinitions[0] | .name == "app" and .essential == true and .image == "PLATZHALTER" and .portMappings[0].containerPort == 8080' .aws/web.json
+        message: Der Container app braucht essential true, image PLATZHALTER und containerPort 8080.
+      - type: command
+        run: jq -e '.containerDefinitions[0].environment | from_entries | .APP_ENV == "production" and .LOG_CHANNEL == "stderr" and .SESSION_DRIVER == "redis" and .CACHE_STORE == "redis" and .QUEUE_CONNECTION == "sqs" and .FILESYSTEM_DISK == "s3"' .aws/web.json
+        message: In environment fehlen Einträge oder Werte stimmen nicht (APP_ENV, LOG_CHANNEL, SESSION_DRIVER, CACHE_STORE, QUEUE_CONNECTION, FILESYSTEM_DISK).
+      - type: command
+        run: jq -e '.containerDefinitions[0] | ([.secrets[].name] | sort) == ["APP_KEY","DB_PASSWORD"] and all(.secrets[]; .valueFrom == ("arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-AbCdEf:" + .name + "::")) and ([.environment[].name] | index("APP_KEY") == null and index("DB_PASSWORD") == null)' .aws/web.json
+        message: "APP_KEY und DB_PASSWORD müssen als secrets mit valueFrom <ARN>:<NAME>:: eingetragen sein – und dürfen nicht in environment stehen."
+      - type: command
+        run: jq -e '.containerDefinitions[0].healthCheck | (.command | join(" ") | test("localhost:8080/up")) and .startPeriod == 60' .aws/web.json
+        message: Der healthCheck soll http://localhost:8080/up prüfen und startPeriod 60 haben.
+      - type: command
+        run: jq -e '.containerDefinitions[0].logConfiguration | .logDriver == "awslogs" and .options["awslogs-group"] == "/ecs/shop" and .options["awslogs-region"] == "eu-central-1" and .options["awslogs-stream-prefix"] == "web"' .aws/web.json
+        message: logConfiguration braucht awslogs mit Gruppe /ecs/shop, Region eu-central-1 und Präfix web.
+    solution: |
+      ```bash
+      mkdir -p .aws
+      cat > .aws/web.json <<'JSON'
+      {
+        "family": "shop-web",
+        "requiresCompatibilities": ["FARGATE"],
+        "networkMode": "awsvpc",
+        "cpu": "512",
+        "memory": "1024",
+        "runtimePlatform": { "operatingSystemFamily": "LINUX", "cpuArchitecture": "ARM64" },
+        "executionRoleArn": "arn:aws:iam::123456789012:role/shop-execution",
+        "taskRoleArn": "arn:aws:iam::123456789012:role/shop-task",
+        "containerDefinitions": [
+          {
+            "name": "app",
+            "image": "PLATZHALTER",
+            "essential": true,
+            "portMappings": [{ "containerPort": 8080, "protocol": "tcp" }],
+            "environment": [
+              { "name": "APP_ENV", "value": "production" },
+              { "name": "LOG_CHANNEL", "value": "stderr" },
+              { "name": "SESSION_DRIVER", "value": "redis" },
+              { "name": "CACHE_STORE", "value": "redis" },
+              { "name": "QUEUE_CONNECTION", "value": "sqs" },
+              { "name": "FILESYSTEM_DISK", "value": "s3" }
+            ],
+            "secrets": [
+              { "name": "APP_KEY", "valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-AbCdEf:APP_KEY::" },
+              { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-AbCdEf:DB_PASSWORD::" }
+            ],
+            "healthCheck": {
+              "command": ["CMD-SHELL", "curl -fsS http://localhost:8080/up || exit 1"],
+              "interval": 30, "timeout": 5, "retries": 3, "startPeriod": 60
+            },
+            "logConfiguration": {
+              "logDriver": "awslogs",
+              "options": { "awslogs-group": "/ecs/shop", "awslogs-region": "eu-central-1", "awslogs-stream-prefix": "web" }
+            }
+          }
+        ]
+      }
+      JSON
+      ```
+    solve: |
+      mkdir -p .aws
+      cat > .aws/web.json <<'JSON'
+      {
+        "family": "shop-web",
+        "requiresCompatibilities": ["FARGATE"],
+        "networkMode": "awsvpc",
+        "cpu": "512",
+        "memory": "1024",
+        "runtimePlatform": { "operatingSystemFamily": "LINUX", "cpuArchitecture": "ARM64" },
+        "executionRoleArn": "arn:aws:iam::123456789012:role/shop-execution",
+        "taskRoleArn": "arn:aws:iam::123456789012:role/shop-task",
+        "containerDefinitions": [
+          {
+            "name": "app",
+            "image": "PLATZHALTER",
+            "essential": true,
+            "portMappings": [{ "containerPort": 8080, "protocol": "tcp" }],
+            "environment": [
+              { "name": "APP_ENV", "value": "production" },
+              { "name": "LOG_CHANNEL", "value": "stderr" },
+              { "name": "SESSION_DRIVER", "value": "redis" },
+              { "name": "CACHE_STORE", "value": "redis" },
+              { "name": "QUEUE_CONNECTION", "value": "sqs" },
+              { "name": "FILESYSTEM_DISK", "value": "s3" }
+            ],
+            "secrets": [
+              { "name": "APP_KEY", "valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-AbCdEf:APP_KEY::" },
+              { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/production-AbCdEf:DB_PASSWORD::" }
+            ],
+            "healthCheck": {
+              "command": ["CMD-SHELL", "curl -fsS http://localhost:8080/up || exit 1"],
+              "interval": 30, "timeout": 5, "retries": 3, "startPeriod": 60
+            },
+            "logConfiguration": {
+              "logDriver": "awslogs",
+              "options": { "awslogs-group": "/ecs/shop", "awslogs-region": "eu-central-1", "awslogs-stream-prefix": "web" }
+            }
+          }
+        ]
+      }
+      JSON
+
+  - id: worker-scheduler
+    title: Worker und Scheduler aus derselben Vorlage
+    description: |
+      Erzeuge aus `.aws/web.json` zwei weitere Task-Definitionen – am besten mit `jq`, damit Image, Rollen,
+      Secrets und Logs garantiert gleich bleiben.
+
+      1. `.aws/worker.json`: `family` `shop-worker`, `command` `["php", "artisan", "queue:work", "--tries=3", "--max-time=3600"]`,
+         `stopTimeout` `120`, Log-Präfix `worker`, **ohne** `portMappings` und `healthCheck`.
+      2. `.aws/scheduler.json`: `family` `shop-scheduler`, `cpu` `"256"`, `memory` `"512"`,
+         `command` `["php", "artisan", "schedule:work"]`, Log-Präfix `scheduler`, **ohne** `portMappings` und `healthCheck`.
+    checklist:
+      - worker.json mit queue:work, stopTimeout und eigenem Log-Präfix
+      - scheduler.json mit schedule:work und kleinerer Größe
+      - Secrets und Rollen identisch zur Web-Vorlage
+    hints:
+      - "`jq '.family = \"shop-worker\" | del(.containerDefinitions[0].portMappings, .containerDefinitions[0].healthCheck)' .aws/web.json > .aws/worker.json`"
+      - "Das Log-Präfix: `.containerDefinitions[0].logConfiguration.options[\"awslogs-stream-prefix\"] = \"worker\"`."
+      - 256 CPU-Einheiten mit 512 MiB ist die kleinste Fargate-Größe – für den Scheduler reicht sie.
+    checks:
+      - type: command
+        run: jq -e '.family == "shop-worker" and .containerDefinitions[0].command == ["php","artisan","queue:work","--tries=3","--max-time=3600"] and .containerDefinitions[0].stopTimeout == 120 and .containerDefinitions[0].logConfiguration.options["awslogs-stream-prefix"] == "worker"' .aws/worker.json
+        message: .aws/worker.json fehlt oder family, command, stopTimeout 120 bzw. Log-Präfix worker stimmen nicht.
+      - type: command
+        run: jq -e '.family == "shop-scheduler" and .cpu == "256" and .memory == "512" and .containerDefinitions[0].command == ["php","artisan","schedule:work"] and .containerDefinitions[0].logConfiguration.options["awslogs-stream-prefix"] == "scheduler"' .aws/scheduler.json
+        message: .aws/scheduler.json fehlt oder family, cpu "256", memory "512", command bzw. Log-Präfix scheduler stimmen nicht.
+      - type: command
+        run: for f in .aws/worker.json .aws/scheduler.json; do jq -e '.containerDefinitions[0] | (has("portMappings") or has("healthCheck")) | not' "$f" > /dev/null || exit 1; done
+        message: Worker und Scheduler brauchen weder portMappings noch healthCheck – entferne beides.
+      - type: command
+        run: for f in .aws/worker.json .aws/scheduler.json; do jq -e --slurpfile web .aws/web.json '.taskRoleArn == $web[0].taskRoleArn and .executionRoleArn == $web[0].executionRoleArn and .containerDefinitions[0].secrets == $web[0].containerDefinitions[0].secrets and .containerDefinitions[0].environment == $web[0].containerDefinitions[0].environment' "$f" > /dev/null || exit 1; done
+        message: Rollen, environment und secrets von Worker und Scheduler sollen genau wie in .aws/web.json sein.
+    solution: |
+      ```bash
+      jq '.family = "shop-worker"
+          | .containerDefinitions[0].command = ["php", "artisan", "queue:work", "--tries=3", "--max-time=3600"]
+          | .containerDefinitions[0].stopTimeout = 120
+          | .containerDefinitions[0].logConfiguration.options["awslogs-stream-prefix"] = "worker"
+          | del(.containerDefinitions[0].portMappings, .containerDefinitions[0].healthCheck)' .aws/web.json > .aws/worker.json
+
+      jq '.family = "shop-scheduler" | .cpu = "256" | .memory = "512"
+          | .containerDefinitions[0].command = ["php", "artisan", "schedule:work"]
+          | .containerDefinitions[0].logConfiguration.options["awslogs-stream-prefix"] = "scheduler"
+          | del(.containerDefinitions[0].portMappings, .containerDefinitions[0].healthCheck)' .aws/web.json > .aws/scheduler.json
+      ```
+    solve: |
+      jq '.family = "shop-worker"
+          | .containerDefinitions[0].command = ["php", "artisan", "queue:work", "--tries=3", "--max-time=3600"]
+          | .containerDefinitions[0].stopTimeout = 120
+          | .containerDefinitions[0].logConfiguration.options["awslogs-stream-prefix"] = "worker"
+          | del(.containerDefinitions[0].portMappings, .containerDefinitions[0].healthCheck)' .aws/web.json > .aws/worker.json
+      jq '.family = "shop-scheduler" | .cpu = "256" | .memory = "512"
+          | .containerDefinitions[0].command = ["php", "artisan", "schedule:work"]
+          | .containerDefinitions[0].logConfiguration.options["awslogs-stream-prefix"] = "scheduler"
+          | del(.containerDefinitions[0].portMappings, .containerDefinitions[0].healthCheck)' .aws/web.json > .aws/scheduler.json
+
+  - id: services
+    title: Drei Services definieren
+    description: |
+      Lege in `infra/ecs` die Eingaben für `aws ecs create-service --cli-input-json` an. Alle drei: `cluster` `shop`,
+      `launchType` `FARGATE`, private Subnetze `subnet-0aaa1111` und `subnet-0bbb2222`, `assignPublicIp` `DISABLED`.
+
+      1. `web-service.json`: `serviceName` `web`, `taskDefinition` `shop-web`, `desiredCount` 2, Security Group
+         `sg-0app3333bbbb4444`, ein Eintrag in `loadBalancers` (Target Group
+         `arn:aws:elasticloadbalancing:eu-central-1:123456789012:targetgroup/shop-web/6d0ecf831eec9f09`, Container `app`,
+         Port 8080), `healthCheckGracePeriodSeconds` 60 und
+         `deploymentConfiguration` mit `deploymentCircuitBreaker` `{"enable": true, "rollback": true}`.
+      2. `worker-service.json`: `serviceName` `worker`, `taskDefinition` `shop-worker`, `desiredCount` 1, Security Group
+         `sg-0work5555cccc6666`, ohne Load Balancer, ebenfalls mit Circuit Breaker.
+      3. `scheduler-service.json`: `serviceName` `scheduler`, `taskDefinition` `shop-scheduler`, `desiredCount` 1, Security
+         Group `sg-0work5555cccc6666`, ohne Load Balancer. Damit beim Deployment **nie zwei** Scheduler gleichzeitig laufen:
+         `deploymentConfiguration` mit `minimumHealthyPercent` 0 und `maximumPercent` 100.
+    checklist:
+      - Web-Service mit Load Balancer und Circuit Breaker
+      - Worker-Service ohne Load Balancer
+      - Scheduler-Service, bei dem nie zwei Tasks gleichzeitig laufen
+    hints:
+      - Starte mit `web-service.json` und kopiere sie dann für Worker und Scheduler, um Load Balancer und Grace Period zu entfernen.
+      - Bei `maximumPercent` 100 und `desiredCount` 1 darf höchstens ein Task laufen – ECS muss den alten erst stoppen.
+      - "Prüfe alle drei auf einmal: `jq '{serviceName, desiredCount, deploymentConfiguration}' infra/ecs/*-service.json`."
+    checks:
+      - type: command
+        run: for f in web worker scheduler; do jq -e '.cluster == "shop" and .launchType == "FARGATE" and (.networkConfiguration.awsvpcConfiguration | (.subnets | sort) == ["subnet-0aaa1111","subnet-0bbb2222"] and .assignPublicIp == "DISABLED")' "infra/ecs/$f-service.json" > /dev/null || exit 1; done
+        message: Mindestens eine der drei Dateien infra/ecs/{web,worker,scheduler}-service.json fehlt oder cluster, launchType, Subnetze bzw. assignPublicIp DISABLED stimmen nicht.
+      - type: command
+        run: jq -e '.serviceName == "web" and .taskDefinition == "shop-web" and .desiredCount == 2 and .networkConfiguration.awsvpcConfiguration.securityGroups == ["sg-0app3333bbbb4444"] and (.loadBalancers | length == 1) and .loadBalancers[0].containerName == "app" and .loadBalancers[0].containerPort == 8080 and (.loadBalancers[0].targetGroupArn | endswith("targetgroup/shop-web/6d0ecf831eec9f09")) and .healthCheckGracePeriodSeconds == 60' infra/ecs/web-service.json
+        message: web-service.json braucht serviceName web, shop-web, desiredCount 2, sg-0app3333bbbb4444, den Load-Balancer-Eintrag (app, 8080) und healthCheckGracePeriodSeconds 60.
+      - type: command
+        run: jq -e '.deploymentConfiguration.deploymentCircuitBreaker | .enable == true and .rollback == true' infra/ecs/web-service.json && jq -e '.deploymentConfiguration.deploymentCircuitBreaker | .enable == true and .rollback == true' infra/ecs/worker-service.json
+        message: Web- und Worker-Service brauchen deploymentConfiguration.deploymentCircuitBreaker mit enable und rollback true.
+      - type: command
+        run: jq -e '.serviceName == "worker" and .taskDefinition == "shop-worker" and .desiredCount == 1 and .networkConfiguration.awsvpcConfiguration.securityGroups == ["sg-0work5555cccc6666"] and ((.loadBalancers // []) | length == 0)' infra/ecs/worker-service.json
+        message: worker-service.json braucht serviceName worker, shop-worker, desiredCount 1, sg-0work5555cccc6666 und keinen Load Balancer.
+      - type: command
+        run: jq -e '.serviceName == "scheduler" and .taskDefinition == "shop-scheduler" and .desiredCount == 1 and ((.loadBalancers // []) | length == 0) and .deploymentConfiguration.minimumHealthyPercent == 0 and .deploymentConfiguration.maximumPercent == 100' infra/ecs/scheduler-service.json
+        message: scheduler-service.json braucht serviceName scheduler, shop-scheduler, desiredCount 1, keinen Load Balancer und minimumHealthyPercent 0 / maximumPercent 100.
+    solution: |
+      ```bash
+      mkdir -p infra/ecs
+      cat > infra/ecs/web-service.json <<'JSON'
+      {
+        "cluster": "shop", "serviceName": "web", "taskDefinition": "shop-web",
+        "desiredCount": 2, "launchType": "FARGATE",
+        "loadBalancers": [{
+          "targetGroupArn": "arn:aws:elasticloadbalancing:eu-central-1:123456789012:targetgroup/shop-web/6d0ecf831eec9f09",
+          "containerName": "app", "containerPort": 8080 }],
+        "healthCheckGracePeriodSeconds": 60,
+        "deploymentConfiguration": {
+          "minimumHealthyPercent": 100, "maximumPercent": 200,
+          "deploymentCircuitBreaker": { "enable": true, "rollback": true } },
+        "networkConfiguration": { "awsvpcConfiguration": {
+          "subnets": ["subnet-0aaa1111", "subnet-0bbb2222"],
+          "securityGroups": ["sg-0app3333bbbb4444"], "assignPublicIp": "DISABLED" } }
+      }
+      JSON
+      # worker-service.json und scheduler-service.json analog, siehe Aufgabenbeschreibung
+      ```
+    solve: |
+      mkdir -p infra/ecs
+      cat > infra/ecs/web-service.json <<'JSON'
+      {
+        "cluster": "shop", "serviceName": "web", "taskDefinition": "shop-web",
+        "desiredCount": 2, "launchType": "FARGATE",
+        "loadBalancers": [{
+          "targetGroupArn": "arn:aws:elasticloadbalancing:eu-central-1:123456789012:targetgroup/shop-web/6d0ecf831eec9f09",
+          "containerName": "app", "containerPort": 8080 }],
+        "healthCheckGracePeriodSeconds": 60,
+        "deploymentConfiguration": {
+          "minimumHealthyPercent": 100, "maximumPercent": 200,
+          "deploymentCircuitBreaker": { "enable": true, "rollback": true } },
+        "networkConfiguration": { "awsvpcConfiguration": {
+          "subnets": ["subnet-0aaa1111", "subnet-0bbb2222"],
+          "securityGroups": ["sg-0app3333bbbb4444"], "assignPublicIp": "DISABLED" } }
+      }
+      JSON
+      cat > infra/ecs/worker-service.json <<'JSON'
+      {
+        "cluster": "shop", "serviceName": "worker", "taskDefinition": "shop-worker",
+        "desiredCount": 1, "launchType": "FARGATE",
+        "deploymentConfiguration": {
+          "minimumHealthyPercent": 100, "maximumPercent": 200,
+          "deploymentCircuitBreaker": { "enable": true, "rollback": true } },
+        "networkConfiguration": { "awsvpcConfiguration": {
+          "subnets": ["subnet-0aaa1111", "subnet-0bbb2222"],
+          "securityGroups": ["sg-0work5555cccc6666"], "assignPublicIp": "DISABLED" } }
+      }
+      JSON
+      cat > infra/ecs/scheduler-service.json <<'JSON'
+      {
+        "cluster": "shop", "serviceName": "scheduler", "taskDefinition": "shop-scheduler",
+        "desiredCount": 1, "launchType": "FARGATE",
+        "deploymentConfiguration": { "minimumHealthyPercent": 0, "maximumPercent": 100 },
+        "networkConfiguration": { "awsvpcConfiguration": {
+          "subnets": ["subnet-0aaa1111", "subnet-0bbb2222"],
+          "securityGroups": ["sg-0work5555cccc6666"], "assignPublicIp": "DISABLED" } }
+      }
+      JSON
+
+  - id: migration-und-scaling
+    title: Migrations-Override und Autoscaling
+    description: |
+      1. `infra/ecs/migrate-overrides.json`: das JSON für `aws ecs run-task --overrides`. Es überschreibt beim Container
+         `app` den Befehl mit `["php", "artisan", "migrate", "--force"]`.
+      2. `infra/autoscaling/web-cpu.json`: eine Target-Tracking-Konfiguration mit `TargetValue` 60,
+         `PredefinedMetricSpecification.PredefinedMetricType` `ECSServiceAverageCPUUtilization`,
+         `ScaleOutCooldown` 60 und `ScaleInCooldown` 300.
+      3. `infra/autoscaling/limits.txt` mit genau zwei Zeilen: `min=2` und `max=10`.
+    checklist:
+      - Override für die Migration
+      - Target-Tracking auf 60 Prozent CPU
+      - Grenzen für das Autoscaling notiert
+    hints:
+      - Das Override kennst du aus der Lektion „Laravel auf Fargate betreiben“.
+      - "`printf 'min=2\\nmax=10\\n' > infra/autoscaling/limits.txt`"
+      - Die Grenzen übergibst du in echt an `register-scalable-target` mit `--min-capacity` und `--max-capacity`.
+    checks:
+      - type: command
+        run: jq -e '.containerOverrides == [{"name":"app","command":["php","artisan","migrate","--force"]}]' infra/ecs/migrate-overrides.json
+        message: infra/ecs/migrate-overrides.json braucht genau containerOverrides mit name app und command ["php", "artisan", "migrate", "--force"].
+      - type: command
+        run: jq -e '.TargetValue == 60 and .PredefinedMetricSpecification.PredefinedMetricType == "ECSServiceAverageCPUUtilization" and .ScaleOutCooldown == 60 and .ScaleInCooldown == 300' infra/autoscaling/web-cpu.json
+        message: infra/autoscaling/web-cpu.json braucht TargetValue 60, die Metrik ECSServiceAverageCPUUtilization und die Cooldowns 60 und 300.
+      - type: command
+        run: tr -d '\r' < infra/autoscaling/limits.txt | sort | tr '\n' ' '
+        stdout_matches: "^max=10 min=2 ?$"
+        message: infra/autoscaling/limits.txt soll genau die Zeilen min=2 und max=10 enthalten.
+    solution: |
+      ```bash
+      cat > infra/ecs/migrate-overrides.json <<'JSON'
+      { "containerOverrides": [ { "name": "app", "command": ["php", "artisan", "migrate", "--force"] } ] }
+      JSON
+      mkdir -p infra/autoscaling
+      cat > infra/autoscaling/web-cpu.json <<'JSON'
+      {
+        "TargetValue": 60.0,
+        "PredefinedMetricSpecification": { "PredefinedMetricType": "ECSServiceAverageCPUUtilization" },
+        "ScaleOutCooldown": 60,
+        "ScaleInCooldown": 300
+      }
+      JSON
+      printf 'min=2\nmax=10\n' > infra/autoscaling/limits.txt
+      ```
+    solve: |
+      cat > infra/ecs/migrate-overrides.json <<'JSON'
+      { "containerOverrides": [ { "name": "app", "command": ["php", "artisan", "migrate", "--force"] } ] }
+      JSON
+      mkdir -p infra/autoscaling
+      cat > infra/autoscaling/web-cpu.json <<'JSON'
+      {
+        "TargetValue": 60.0,
+        "PredefinedMetricSpecification": { "PredefinedMetricType": "ECSServiceAverageCPUUtilization" },
+        "ScaleOutCooldown": 60,
+        "ScaleInCooldown": 300
+      }
+      JSON
+      printf 'min=2\nmax=10\n' > infra/autoscaling/limits.txt
+
+  - id: deploy-rolle
+    title: Die Deploy-Rolle für GitHub Actions
+    description: |
+      1. `infra/iam/github-deploy-trust.json`: Principal `Federated` mit
+         `arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com`, Aktion
+         `sts:AssumeRoleWithWebIdentity`, unter `StringEquals` die Bedingungen `aud` = `sts.amazonaws.com` und
+         `sub` = `repo:beispiel-org/shop:environment:production`.
+      2. `infra/iam/github-deploy-policy.json` mit vier Statements:
+         - `ecr:GetAuthorizationToken` auf `"*"`,
+         - die fünf ECR-Push-Aktionen auf `arn:aws:ecr:eu-central-1:123456789012:repository/shop`,
+         - `ecs:RegisterTaskDefinition`, `ecs:DescribeTaskDefinition`, `ecs:UpdateService`, `ecs:DescribeServices`,
+           `ecs:RunTask`, `ecs:DescribeTasks` auf `"*"`,
+         - `iam:PassRole` auf `shop-execution` und `shop-task` mit `iam:PassedToService` = `ecs-tasks.amazonaws.com`.
+    checklist:
+      - Trust Policy nur für das Environment production
+      - ECR-Rechte für den Push
+      - ECS-Rechte für Deploy und Migration
+      - iam:PassRole eingeschränkt auf ECS
+    hints:
+      - Die Modul-Übung „Die Deploy-Rolle für GitHub Actions“ hat fast denselben Inhalt.
+      - "`ecs:RunTask` und `ecs:DescribeTasks` braucht die Pipeline für den Migrations-Task."
+      - "Prüfe die Aktionen: `jq '[.Statement[].Action] | flatten' infra/iam/github-deploy-policy.json`."
+    checks:
+      - type: command
+        run: jq -e '.Statement[0] | .Principal.Federated == "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" and .Action == "sts:AssumeRoleWithWebIdentity" and .Condition.StringEquals["token.actions.githubusercontent.com:aud"] == "sts.amazonaws.com" and .Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:beispiel-org/shop:environment:production"' infra/iam/github-deploy-trust.json
+        message: infra/iam/github-deploy-trust.json fehlt oder Principal, Aktion bzw. die aud- und sub-Bedingungen stimmen nicht.
+      - type: command
+        run: jq -e '(.Statement | length == 4) and any(.Statement[]; ([.Action] | flatten) == ["ecr:GetAuthorizationToken"]) and any(.Statement[]; ([.Action] | flatten | sort) == ["ecr:BatchCheckLayerAvailability","ecr:CompleteLayerUpload","ecr:InitiateLayerUpload","ecr:PutImage","ecr:UploadLayerPart"] and ([.Resource] | flatten) == ["arn:aws:ecr:eu-central-1:123456789012:repository/shop"])' infra/iam/github-deploy-policy.json
+        message: infra/iam/github-deploy-policy.json braucht vier Statements, darunter GetAuthorizationToken und die fünf Push-Aktionen auf das Repository shop.
+      - type: command
+        run: jq -e 'any(.Statement[]; ([.Action] | flatten | sort) == ["ecs:DescribeServices","ecs:DescribeTaskDefinition","ecs:DescribeTasks","ecs:RegisterTaskDefinition","ecs:RunTask","ecs:UpdateService"])' infra/iam/github-deploy-policy.json
+        message: Es fehlt das ECS-Statement mit genau den sechs Aktionen (RegisterTaskDefinition, DescribeTaskDefinition, UpdateService, DescribeServices, RunTask, DescribeTasks).
+      - type: command
+        run: jq -e 'any(.Statement[]; ([.Action] | flatten) == ["iam:PassRole"] and ([.Resource] | flatten | sort) == ["arn:aws:iam::123456789012:role/shop-execution","arn:aws:iam::123456789012:role/shop-task"] and .Condition.StringEquals["iam:PassedToService"] == "ecs-tasks.amazonaws.com")' infra/iam/github-deploy-policy.json
+        message: Es fehlt das iam:PassRole-Statement auf shop-execution und shop-task mit der Bedingung iam:PassedToService.
+    solution: |
+      Wie in der Modul-Übung, ergänzt um ein viertes Statement:
+
+      ```json
+      {
+        "Effect": "Allow",
+        "Action": ["ecs:RegisterTaskDefinition", "ecs:DescribeTaskDefinition", "ecs:UpdateService",
+                   "ecs:DescribeServices", "ecs:RunTask", "ecs:DescribeTasks"],
+        "Resource": "*"
+      }
+      ```
+    solve: |
+      cat > infra/iam/github-deploy-trust.json <<'JSON'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": { "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": { "StringEquals": {
+              "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+              "token.actions.githubusercontent.com:sub": "repo:beispiel-org/shop:environment:production" } }
+          }
+        ]
+      }
+      JSON
+      cat > infra/iam/github-deploy-policy.json <<'JSON'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          { "Effect": "Allow", "Action": "ecr:GetAuthorizationToken", "Resource": "*" },
+          { "Effect": "Allow",
+            "Action": ["ecr:BatchCheckLayerAvailability", "ecr:InitiateLayerUpload", "ecr:UploadLayerPart", "ecr:CompleteLayerUpload", "ecr:PutImage"],
+            "Resource": "arn:aws:ecr:eu-central-1:123456789012:repository/shop" },
+          { "Effect": "Allow",
+            "Action": ["ecs:RegisterTaskDefinition", "ecs:DescribeTaskDefinition", "ecs:UpdateService", "ecs:DescribeServices", "ecs:RunTask", "ecs:DescribeTasks"],
+            "Resource": "*" },
+          { "Effect": "Allow", "Action": "iam:PassRole",
+            "Resource": ["arn:aws:iam::123456789012:role/shop-execution", "arn:aws:iam::123456789012:role/shop-task"],
+            "Condition": { "StringEquals": { "iam:PassedToService": "ecs-tasks.amazonaws.com" } } }
+        ]
+      }
+      JSON
+
+  - id: workflow
+    title: Der Deploy-Workflow
+    description: |
+      Zum Schluss verbindest du alles in `.github/workflows/deploy.yml`.
+
+      1. Trigger `push` auf `main`, `permissions` mit `id-token: write` und `contents: read`.
+      2. Job `deploy` auf `ubuntu-latest`, `environment: production`.
+      3. Schritte: `actions/checkout@v5`, `aws-actions/configure-aws-credentials@v6` (Rolle
+         `arn:aws:iam::123456789012:role/github-deploy`, Region `eu-central-1`), `aws-actions/amazon-ecr-login@v2`
+         mit `id: ecr`, ein `run`-Schritt, der mit `docker build` und `docker push` das Image
+         `${{ steps.ecr.outputs.registry }}/shop:${{ github.sha }}` erzeugt.
+      4. Für **jede** der drei Task-Definitionen (`.aws/web.json`, `.aws/worker.json`, `.aws/scheduler.json`) einen
+         Schritt `aws-actions/amazon-ecs-render-task-definition@v1` (Container `app`, neues Image) und einen Schritt
+         `aws-actions/amazon-ecs-deploy-task-definition@v2` mit `cluster: shop` und dem passenden `service`
+         (`web`, `worker`, `scheduler`).
+      5. Der **erste** Deploy-Schritt (für `web`) startet vorher die Migration: `run-task: true`,
+         `wait-for-task-stopped: true`, `run-task-subnets: subnet-0aaa1111,subnet-0bbb2222`,
+         `run-task-security-groups: sg-0app3333bbbb4444` und `run-task-container-overrides` mit
+         `[{"name":"app","command":["php","artisan","migrate","--force"]}]`.
+
+      Prüfe die Syntax mit
+      `bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text()), null, 2))'`.
+    checklist:
+      - OIDC-Anmeldung ohne gespeicherte Schlüssel
+      - Ein Image mit dem Commit-Hash als Tag
+      - Migration vor dem Web-Rollout
+      - Drei Render- und drei Deploy-Schritte
+    hints:
+      - Beginne mit dem Workflow aus der Lektion „Deployen mit GitHub Actions und OIDC“ und ergänze Worker und Scheduler.
+      - Jeder Render-Schritt braucht eine eigene `id` (z. B. `render-web`), damit der Deploy-Schritt `${{ steps.render-web.outputs.task-definition }}` nutzen kann.
+      - "`run-task-container-overrides` ist ein String – setze den JSON-Text in einfache Anführungszeichen."
+    checks:
+      - type: command
+        run: bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '.on.push.branches == ["main"] and .permissions["id-token"] == "write" and .permissions.contents == "read" and .jobs.deploy["runs-on"] == "ubuntu-latest" and .jobs.deploy.environment == "production"'
+        message: .github/workflows/deploy.yml fehlt, ist kein gültiges YAML, oder Trigger, permissions, runs-on bzw. environment stimmen nicht.
+      - type: command
+        run: bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '[.jobs.deploy.steps[] | select((.uses // "") | startswith("aws-actions/configure-aws-credentials@")) | .with] | length == 1 and .[0]["role-to-assume"] == "arn:aws:iam::123456789012:role/github-deploy" and .[0]["aws-region"] == "eu-central-1"'
+        message: Es braucht genau einen Schritt configure-aws-credentials mit der Rolle github-deploy und der Region eu-central-1.
+      - type: command
+        run: bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e 'any(.jobs.deploy.steps[]; (.run // "") | test("docker build") and test("docker push") and test("github.sha"))'
+        message: Ein run-Schritt muss das Image mit docker build und docker push und dem Tag github.sha bauen.
+      - type: command
+        run: bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '[.jobs.deploy.steps[] | select((.uses // "") | startswith("aws-actions/amazon-ecs-render-task-definition@")) | .with["task-definition"]] | sort == [".aws/scheduler.json", ".aws/web.json", ".aws/worker.json"]'
+        message: Es braucht drei Render-Schritte für .aws/web.json, .aws/worker.json und .aws/scheduler.json.
+      - type: command
+        run: bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '[.jobs.deploy.steps[] | select((.uses // "") | startswith("aws-actions/amazon-ecs-deploy-task-definition@")) | .with] | length == 3 and ([.[].service] | sort) == ["scheduler","web","worker"] and all(.[]; .cluster == "shop")'
+        message: Es braucht drei Deploy-Schritte im Cluster shop für die Services web, worker und scheduler.
+      - type: command
+        run: bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file(".github/workflows/deploy.yml").text())))' | jq -e '[.jobs.deploy.steps[] | select((.uses // "") | startswith("aws-actions/amazon-ecs-deploy-task-definition@")) | .with][0] | .service == "web" and (.["run-task"] | tostring) == "true" and (.["wait-for-task-stopped"] | tostring) == "true" and (.["run-task-container-overrides"] | tostring | test("migrate")) and (.["run-task-subnets"] | tostring | test("subnet-0aaa1111"))'
+        message: Der erste Deploy-Schritt soll web sein und vorher die Migration starten (run-task, wait-for-task-stopped, run-task-subnets, run-task-container-overrides mit migrate).
+      - type: command
+        run: grep -Eiq "aws-access-key-id|aws-secret-access-key|AKIA" .github/workflows/deploy.yml
+        expect_exit: 1
+        message: Im Workflow stehen AWS-Schlüssel – mit OIDC brauchst du keine.
+    solution: |
+      ```yaml title=".github/workflows/deploy.yml (Ausschnitt ab dem Build)"
+            - name: Build and push image
+              run: |
+                IMAGE=${{ steps.ecr.outputs.registry }}/shop:${{ github.sha }}
+                docker build -t "$IMAGE" .
+                docker push "$IMAGE"
+
+            - uses: aws-actions/amazon-ecs-render-task-definition@v1
+              id: render-web
+              with:
+                task-definition: .aws/web.json
+                container-name: app
+                image: ${{ steps.ecr.outputs.registry }}/shop:${{ github.sha }}
+
+            - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+              with:
+                task-definition: ${{ steps.render-web.outputs.task-definition }}
+                cluster: shop
+                service: web
+                wait-for-service-stability: true
+                run-task: true
+                wait-for-task-stopped: true
+                run-task-subnets: subnet-0aaa1111,subnet-0bbb2222
+                run-task-security-groups: sg-0app3333bbbb4444
+                run-task-container-overrides: '[{"name":"app","command":["php","artisan","migrate","--force"]}]'
+
+            # danach render-worker / deploy worker und render-scheduler / deploy scheduler nach demselben Muster
+      ```
+    solve: |
+      mkdir -p .github/workflows
+      cat > .github/workflows/deploy.yml <<'YAML'
+      name: Deploy
+
+      on:
+        push:
+          branches: [main]
+
+      permissions:
+        id-token: write
+        contents: read
+
+      jobs:
+        deploy:
+          runs-on: ubuntu-latest
+          environment: production
+          steps:
+            - uses: actions/checkout@v5
+
+            - uses: aws-actions/configure-aws-credentials@v6
+              with:
+                role-to-assume: arn:aws:iam::123456789012:role/github-deploy
+                aws-region: eu-central-1
+
+            - uses: aws-actions/amazon-ecr-login@v2
+              id: ecr
+
+            - name: Build and push image
+              run: |
+                IMAGE=${{ steps.ecr.outputs.registry }}/shop:${{ github.sha }}
+                docker build -t "$IMAGE" .
+                docker push "$IMAGE"
+
+            - uses: aws-actions/amazon-ecs-render-task-definition@v1
+              id: render-web
+              with:
+                task-definition: .aws/web.json
+                container-name: app
+                image: ${{ steps.ecr.outputs.registry }}/shop:${{ github.sha }}
+
+            - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+              with:
+                task-definition: ${{ steps.render-web.outputs.task-definition }}
+                cluster: shop
+                service: web
+                wait-for-service-stability: true
+                run-task: true
+                wait-for-task-stopped: true
+                run-task-subnets: subnet-0aaa1111,subnet-0bbb2222
+                run-task-security-groups: sg-0app3333bbbb4444
+                run-task-container-overrides: '[{"name":"app","command":["php","artisan","migrate","--force"]}]'
+
+            - uses: aws-actions/amazon-ecs-render-task-definition@v1
+              id: render-worker
+              with:
+                task-definition: .aws/worker.json
+                container-name: app
+                image: ${{ steps.ecr.outputs.registry }}/shop:${{ github.sha }}
+
+            - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+              with:
+                task-definition: ${{ steps.render-worker.outputs.task-definition }}
+                cluster: shop
+                service: worker
+                wait-for-service-stability: true
+
+            - uses: aws-actions/amazon-ecs-render-task-definition@v1
+              id: render-scheduler
+              with:
+                task-definition: .aws/scheduler.json
+                container-name: app
+                image: ${{ steps.ecr.outputs.registry }}/shop:${{ github.sha }}
+
+            - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+              with:
+                task-definition: ${{ steps.render-scheduler.outputs.task-definition }}
+                cluster: shop
+                service: scheduler
+                wait-for-service-stability: true
+      YAML

@@ -1,0 +1,86 @@
+title: Netzwerk und Rechte
+description: Tasks im VPC mit awsvpc, Security Groups in Schichten, Application Load Balancer mit Target Groups und die Trennung von Task- und Execution-Rolle.
+exercise:
+  id: modul-uebung-worker-netz
+  type: terminal
+  title: Netzwerk und Rechte für den Queue-Worker
+  description: |
+    Der Queue-Worker aus Modul 2 bekommt jetzt seinen Service. Er liest Jobs aus der SQS-Queue
+    `arn:aws:sqs:eu-central-1:123456789012:shop-jobs`, braucht **keinen** Load Balancer und soll nicht aus dem
+    Internet erreichbar sein. Arbeite im Ordner `worker-netz`.
+
+    1. Schreibe `worker-service.json` mit `cluster` `shop`, `serviceName` `worker`, `taskDefinition` `shop-worker`,
+       `desiredCount` `1`, `launchType` `FARGATE` und **ohne** `loadBalancers`.
+    2. Im selben Dokument: `networkConfiguration.awsvpcConfiguration` mit den privaten Subnetzen
+       `subnet-0aaa1111` und `subnet-0bbb2222`, der Security Group `sg-0work5555cccc6666` und
+       `assignPublicIp` `DISABLED`.
+    3. Schreibe `worker-task-policy.json` mit einem Allow-Statement für genau diese Aktionen:
+       `sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sqs:ChangeMessageVisibility`, `sqs:GetQueueAttributes`.
+       `Resource` ist nur die ARN der Queue `shop-jobs`.
+    4. Schreibe in `sg-worker.txt` eine Zeile, die begründet, warum die Security Group `sg-0work5555cccc6666`
+       **keine eingehende Regel** braucht (mindestens 20 Zeichen, frei formuliert).
+
+    Prüfe die JSON-Dateien mit `jq .`.
+  workdir: worker-netz
+  checks:
+    - type: command
+      run: jq -e '.cluster == "shop" and .serviceName == "worker" and .taskDefinition == "shop-worker" and .desiredCount == 1 and .launchType == "FARGATE"' worker-service.json
+      message: worker-service.json fehlt, ist ungültig, oder cluster, serviceName, taskDefinition, desiredCount bzw. launchType stimmen nicht.
+    - type: command
+      run: jq -e '(.loadBalancers // []) | length == 0' worker-service.json
+      message: Der Worker bekommt keinen Load Balancer – entferne loadBalancers.
+    - type: command
+      run: jq -e '.networkConfiguration.awsvpcConfiguration | (.subnets | sort) == ["subnet-0aaa1111","subnet-0bbb2222"] and .securityGroups == ["sg-0work5555cccc6666"] and .assignPublicIp == "DISABLED"' worker-service.json
+      message: awsvpcConfiguration braucht die zwei privaten Subnetze, sg-0work5555cccc6666 und assignPublicIp DISABLED.
+    - type: command
+      run: jq -e '(.Statement | length == 1) and .Statement[0].Effect == "Allow" and ([.Statement[0].Action] | flatten | sort) == ["sqs:ChangeMessageVisibility","sqs:DeleteMessage","sqs:GetQueueAttributes","sqs:ReceiveMessage"]' worker-task-policy.json
+      message: worker-task-policy.json braucht ein Allow-Statement mit genau den vier SQS-Aktionen.
+    - type: command
+      run: jq -e '([.Statement[0].Resource] | flatten) == ["arn:aws:sqs:eu-central-1:123456789012:shop-jobs"]' worker-task-policy.json
+      message: Resource soll nur die ARN der Queue shop-jobs sein.
+    - type: command
+      run: test "$(tr -d '[:space:]' < sg-worker.txt | wc -c)" -ge 20
+      message: sg-worker.txt fehlt oder ist zu kurz. Schreibe einen Satz, warum der Worker keine eingehenden Regeln braucht.
+  hints:
+    - Die Service-Datei ähnelt der des Web-Services aus der Lektion zum Load Balancer – nur ohne loadBalancers und healthCheckGracePeriodSeconds.
+    - Der Worker baut selbst Verbindungen zu SQS, Datenbank und Redis auf. Antworten auf ausgehende Verbindungen lässt eine Security Group automatisch herein.
+    - "Die Policy hat dieselbe Form wie die S3-Policy aus der letzten Lektion, nur mit `sqs:`-Aktionen."
+  solution: |
+    ```bash
+    cd worker-netz
+    cat > worker-service.json <<'JSON'
+    {
+      "cluster": "shop",
+      "serviceName": "worker",
+      "taskDefinition": "shop-worker",
+      "desiredCount": 1,
+      "launchType": "FARGATE",
+      "networkConfiguration": {
+        "awsvpcConfiguration": {
+          "subnets": ["subnet-0aaa1111", "subnet-0bbb2222"],
+          "securityGroups": ["sg-0work5555cccc6666"],
+          "assignPublicIp": "DISABLED"
+        }
+      }
+    }
+    JSON
+    cat > worker-task-policy.json <<'JSON'
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "sqs:ReceiveMessage",
+            "sqs:DeleteMessage",
+            "sqs:ChangeMessageVisibility",
+            "sqs:GetQueueAttributes"
+          ],
+          "Resource": "arn:aws:sqs:eu-central-1:123456789012:shop-jobs"
+        }
+      ]
+    }
+    JSON
+    echo "Der Worker nimmt keine Verbindungen an, er baut nur ausgehende auf; Antworten darauf lässt die zustandsbehaftete Security Group automatisch zu." > sg-worker.txt
+    jq . worker-service.json worker-task-policy.json
+    ```

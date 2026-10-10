@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs><marker id="p" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/></marker></defs>
+  <rect x="300" y="20" width="220" height="60" rx="10" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="410" y="46" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Ein Image in ECR</text>
+  <text x="410" y="66" text-anchor="middle" font-size="11" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">shop:3f9c2a1</text>
+  <line x1="340" y1="82" x2="110" y2="138" stroke="#1e1b3a" stroke-width="2" marker-end="url(#p)"/>
+  <line x1="390" y1="82" x2="320" y2="138" stroke="#1e1b3a" stroke-width="2" marker-end="url(#p)"/>
+  <line x1="430" y1="82" x2="510" y2="138" stroke="#1e1b3a" stroke-width="2" marker-end="url(#p)"/>
+  <line x1="480" y1="82" x2="710" y2="138" stroke="#1e1b3a" stroke-width="2" marker-end="url(#p)"/>
+  <rect x="20" y="140" width="185" height="150" rx="10" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="112" y="166" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Service web</text>
+  <text x="112" y="190" text-anchor="middle" font-size="11" fill="#1e1b3a">nginx + php-fpm</text>
+  <text x="112" y="210" text-anchor="middle" font-size="11" fill="#1e1b3a">hinter dem ALB</text>
+  <text x="112" y="236" text-anchor="middle" font-size="11" fill="#1e1b3a">2–10 Tasks</text>
+  <text x="112" y="256" text-anchor="middle" font-size="11" fill="#1e1b3a">skaliert nach CPU/Requests</text>
+  <rect x="225" y="140" width="185" height="150" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="317" y="166" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Service worker</text>
+  <text x="317" y="190" text-anchor="middle" font-size="10" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">artisan queue:work</text>
+  <text x="317" y="210" text-anchor="middle" font-size="11" fill="#1e1b3a">kein Load Balancer</text>
+  <text x="317" y="236" text-anchor="middle" font-size="11" fill="#1e1b3a">1–5 Tasks</text>
+  <text x="317" y="256" text-anchor="middle" font-size="11" fill="#1e1b3a">skaliert nach Queue-Länge</text>
+  <rect x="430" y="140" width="185" height="150" rx="10" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="522" y="166" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Service scheduler</text>
+  <text x="522" y="190" text-anchor="middle" font-size="10" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">artisan schedule:work</text>
+  <text x="522" y="210" text-anchor="middle" font-size="11" fill="#1e1b3a">kein Load Balancer</text>
+  <text x="522" y="236" text-anchor="middle" font-size="11" fill="#1e1b3a">genau 1 Task</text>
+  <text x="522" y="256" text-anchor="middle" font-size="11" fill="#1e1b3a">sonst laufen Jobs doppelt</text>
+  <rect x="635" y="140" width="165" height="150" rx="10" fill="#fff1f2" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="717" y="166" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">One-off-Task</text>
+  <text x="717" y="190" text-anchor="middle" font-size="10" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">artisan migrate</text>
+  <text x="717" y="210" text-anchor="middle" font-size="11" fill="#1e1b3a">kein Service</text>
+  <text x="717" y="236" text-anchor="middle" font-size="11" fill="#1e1b3a">läuft einmal, endet</text>
+  <text x="717" y="256" text-anchor="middle" font-size="11" fill="#1e1b3a">vor dem Rollout</text>
+  <rect x="120" y="340" width="580" height="70" rx="10" fill="#f1f5f9" stroke="#1e1b3a"/>
+  <text x="410" y="368" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Gemeinsamer Zustand außerhalb der Container</text>
+  <text x="410" y="390" text-anchor="middle" font-size="12" fill="#1e1b3a">Datenbank (RDS) · Redis/Valkey für Cache, Sessions, Queue · S3 für Uploads</text>
+  <line x1="112" y1="292" x2="200" y2="338" stroke="#1e1b3a" stroke-width="1.5" marker-end="url(#p)"/>
+  <line x1="317" y1="292" x2="340" y2="338" stroke="#1e1b3a" stroke-width="1.5" marker-end="url(#p)"/>
+  <line x1="522" y1="292" x2="480" y2="338" stroke="#1e1b3a" stroke-width="1.5" marker-end="url(#p)"/>
+  <line x1="717" y1="292" x2="620" y2="338" stroke="#1e1b3a" stroke-width="1.5" marker-end="url(#p)"/>
+</svg>
