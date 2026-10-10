@@ -1,0 +1,381 @@
+title: Abschlussprüfung Code-Qualität automatisiert
+description: >
+  Die Prüfung deckt alle vier Module ab: Grundlagen und EditorConfig, die PHP-Werkzeuge Pint, PHPStan und Rector,
+  Biome und TypeScript strict sowie Hooks, CI und das schrittweise Einführen. Zum Schluss löst du drei
+  praktische Aufgaben im Übungs-Terminal und im Code-Editor.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Woran erkennt eine CI-Pipeline, dass eine Prüfung fehlgeschlagen ist?
+    options:
+      - Am Exit-Code ungleich 0 des Werkzeugs.
+      - An roter Schrift in der Ausgabe.
+      - An der Anzahl der Ausgabezeilen.
+      - Am Wort „Error“ in der Ausgabe.
+    answer: 0
+    explanation: Die Pipeline liest keine Texte, sondern nur Exit-Codes. 0 heißt bestanden, alles andere durchgefallen.
+  - module: grundlagen
+    type: match
+    question: Ordne jedes Werkzeug seiner Art zu.
+    pairs:
+      - { left: "Laravel Pint", right: "Formatter" }
+      - { left: "PHPStan", right: "Statische Analyse" }
+      - { left: "Rector", right: "Automatisches Refactoring" }
+      - { left: "php -l", right: "Syntax-Prüfung (Linter)" }
+    explanation: Alle vier lesen den Code, ohne ihn auszuführen – aber mit sehr unterschiedlichen Zielen.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen über EditorConfig stimmen?
+    options:
+      - Die `.editorconfig` gehört ins Repository.
+      - Sie wirkt beim Bearbeiten im Editor, nicht auf bestehende Dateien.
+      - Sie ersetzt einen Formatter in der CI.
+      - "`root = true` beendet die Suche nach weiteren `.editorconfig`-Dateien."
+    answers: [0, 1, 3]
+    explanation: EditorConfig prüft nichts und formatiert nichts im Hintergrund um. Dafür braucht es zusätzlich einen Formatter.
+  - module: grundlagen
+    type: single
+    question: Wo ist ein vergessener Typ am billigsten zu entdecken?
+    options: [Im Editor beim Speichern, Im Pre-Commit-Hook, In der CI-Pipeline, In Produktion]
+    answer: 0
+    explanation: Je früher die Rückmeldung, desto weniger Kontextwechsel und betroffene Personen.
+  - module: php
+    type: cloze
+    text: "Pint prüft ohne zu verändern mit der Option `--___`, formatiert nur Dateien mit uncommitteten Änderungen mit `--___`."
+    blanks:
+      - [test]
+      - [dirty]
+    explanation: "`--test` ist der Prüfmodus für die CI, `--dirty` beschränkt Pint auf Dateien mit offenen Änderungen."
+  - module: php
+    type: single
+    question: Ab welchem PHPStan-Level wird gemeldet, dass ein `?string` an `strtoupper()` übergeben wird?
+    options: ["Level 0", "Level 3", "Level 8", "Nur mit --level max"]
+    answer: 2
+    explanation: Prüfungen rund um nullable Typen kommen auf Level 8 dazu. Level 10 und `max` enthalten sie natürlich auch.
+  - module: php
+    type: find-bug
+    question: PHPStan meldet in dieser Klasse auf Level 6 einen Fehler wegen fehlender Typangabe. In welcher Zeile?
+    language: php
+    code: |
+      final class Tags
+      {
+          /** @var list<string> */
+          private array $tags = [];
+
+          public function add(string $tag): void
+          {
+              $this->tags[] = $tag;
+          }
+
+          public function all()
+          {
+              return $this->tags;
+          }
+      }
+    bug_line: 11
+    explanation: "`all()` hat keinen Rückgabetyp. Richtig wäre `: array` plus `@return list<string>`."
+  - module: php
+    type: multiple
+    question: Welche Aussagen über die PHPStan-Baseline stimmen?
+    options:
+      - Sie wird mit `--generate-baseline` erzeugt und unter `includes:` eingebunden.
+      - Neue Fehler werden trotz Baseline gemeldet.
+      - Behobene Fehler meldet PHPStan als „not matched“, bis die Baseline neu erzeugt ist.
+      - Neuer Code sollte bei Fehlern einfach in die Baseline übernommen werden.
+    answers: [0, 1, 2]
+    explanation: Die Baseline ist eine Schuldenliste für Altlasten und darf nur schrumpfen – neuer Code wird behoben.
+  - module: php
+    type: single
+    question: In welcher Reihenfolge laufen die PHP-Werkzeuge sinnvoll?
+    options:
+      - Rector → Pint → PHPStan
+      - PHPStan → Rector → Pint
+      - Pint → Rector → PHPStan
+    answer: 0
+    explanation: Rector baut um, Pint formatiert das Ergebnis, PHPStan und Tests prüfen am Schluss.
+  - module: php
+    type: single
+    question: Was liefert `vendor/bin/rector process --dry-run`, wenn Rector noch etwas ändern würde?
+    options:
+      - Einen Diff und einen Exit-Code ungleich 0.
+      - Es ändert die Dateien und endet mit 0.
+      - Eine Fehlermeldung, dass `--dry-run` nicht existiert.
+    answer: 0
+    explanation: Der dry-run zeigt die Änderungen und schlägt fehl – so kann die CI vergessene Umbauten erkennen.
+  - module: javascript
+    type: single
+    question: Welches Kommando gehört in die CI, um Format und Lint-Regeln mit Biome zu prüfen?
+    options: ["biome ci", "biome check --write", "biome format --write", "biome init"]
+    answer: 0
+    explanation: "`biome ci` ist der lesende Prüfmodus für Pipelines."
+  - module: javascript
+    type: multiple
+    question: Welche Aussagen zu Biome stimmen?
+    options:
+      - Es vereint Formatter und Linter in einem Werkzeug mit einer `biome.json`.
+      - "`--write` wendet nur sichere Fixes an."
+      - Unsichere Fixes wie `==` → `===` brauchen zusätzlich `--unsafe`.
+      - "Man installiert es mit `npm i biome`."
+    answers: [0, 1, 2]
+    explanation: Das Paket heißt `@biomejs/biome`. Das npm-Paket `biome` ist etwas ganz anderes.
+  - module: javascript
+    type: find-bug
+    question: Mit `strict` und `noUncheckedIndexedAccess` meldet `tsc` hier einen Fehler. In welcher Zeile?
+    language: ts
+    code: |
+      const names: Record<string, string> = { a: "Ada" };
+      function nameOf(id: string): string {
+        const name = names[id];
+        return name.toUpperCase();
+      }
+    bug_line: 4
+    explanation: Durch `noUncheckedIndexedAccess` ist `name` vom Typ `string | undefined`. Der Zugriff in Zeile 4 ist unsicher.
+  - module: javascript
+    type: single
+    question: Warum ist `tsc --noEmit` auch dann nötig, wenn Vite das Projekt baut?
+    options:
+      - Vite entfernt die Typen nur und prüft sie nicht.
+      - Vite kann kein TypeScript.
+      - "`tsc --noEmit` macht den Build schneller."
+    answer: 0
+    explanation: Bundler entfernen Typangaben, ohne sie zu prüfen. Die Typprüfung übernimmt `tsc`.
+  - module: automatisieren
+    type: single
+    question: Warum genügt ein Pre-Commit-Hook nicht als Qualitätsschranke?
+    options:
+      - Hooks lassen sich mit `--no-verify` oder `LEFTHOOK=0` umgehen; verbindlich ist erst die CI.
+      - Hooks laufen nur unter Windows.
+      - Hooks können keine Exit-Codes auswerten.
+    answer: 0
+    explanation: Hooks sind eine Komfort-Abkürzung für schnelles Feedback. Die CI prüft verbindlich.
+  - module: automatisieren
+    type: match
+    question: Ordne jeden Lefthook-Schlüssel seiner Wirkung zu.
+    pairs:
+      - { left: "glob", right: "Nur Dateien mit passendem Muster" }
+      - { left: "{staged_files}", right: "Platzhalter für die vorgemerkten Dateien" }
+      - { left: "stage_fixed", right: "Reparierte Dateien wieder vormerken" }
+      - { left: "parallel", right: "Jobs gleichzeitig ausführen" }
+    explanation: Mit diesen vier Schlüsseln bleibt ein Pre-Commit-Hook schnell und bequem.
+  - module: automatisieren
+    type: cloze
+    text: "Ein reiner Formatierungs-Commit wird in der Datei `.git-blame-___` eingetragen, damit `git blame` ihn überspringt."
+    blanks:
+      - [ignore-revs]
+    explanation: Mit `git config blame.ignoreRevsFile .git-blame-ignore-revs` nutzt Git die Datei, GitHub liest sie automatisch.
+  - module: automatisieren
+    type: multiple
+    question: Was gehört zu einer guten Qualitäts-Pipeline?
+    options:
+      - Dieselben Befehle wie lokal, z. B. `composer qa` und `npm run check`.
+      - Schnelle Prüfungen vor langsamen Tests.
+      - Ein Pflicht-Status-Check auf dem geschützten Haupt-Branch.
+      - "`phpstan analyse | tee log.txt` ohne `pipefail`."
+    answers: [0, 1, 2]
+    explanation: Eine Pipe ohne `pipefail` verschluckt den Exit-Code von PHPStan – die Pipeline bliebe grün.
+tasks:
+  - module: php
+    id: pruefung-phpstan
+    type: terminal
+    title: PHPStan mit Baseline und sauberem neuen Code
+    description: |
+      Im Ordner `pruefung-phpstan` liegen alter Code (`src/Legacy/Export.php`) und eine neue Klasse
+      (`src/Coupon.php`).
+
+      1. Lege eine `phpstan.neon` mit Level 8 für `src` an.
+      2. Behebe die Fehler in `src/Coupon.php` im Code: `discount()` braucht einen Rückgabetyp, und ein
+         unbekannter Code darf nicht als `null` an `strtoupper()` gehen – `label()` liefert dann `KEIN RABATT`.
+      3. Friere die Fehler in `src/Legacy/` in einer Baseline ein und binde sie ein.
+      4. `phpstan analyse` muss grün sein.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-phpstan
+    setup: |
+      mkdir -p src/Legacy
+      cat > src/Legacy/Export.php <<'EOF'
+      <?php
+
+      namespace App\Legacy;
+
+      class Export
+      {
+          public function rows($data)
+          {
+              return array_map(fn ($row) => implode(';', $row), $data);
+          }
+      }
+      EOF
+      cat > src/Coupon.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final class Coupon
+      {
+          /** @var array<string, int> */
+          private array $percent = ['SOMMER' => 10, 'WINTER' => 20];
+
+          public function find(string $code): ?string
+          {
+              return isset($this->percent[$code]) ? $code : null;
+          }
+
+          public function discount(string $code)
+          {
+              return $this->percent[$code] ?? 0;
+          }
+
+          public function label(string $code): string
+          {
+              return strtoupper($this->find($code));
+          }
+      }
+      EOF
+    checks:
+      - type: file_contains
+        path: phpstan.neon
+        pattern: "level:\\s*8\\b"
+        message: "Die phpstan.neon soll Level 8 verwenden."
+      - type: file_contains
+        path: phpstan.neon
+        pattern: "^includes:\\s*\\n\\s+-\\s*phpstan-baseline\\.neon"
+        message: Binde die Baseline unter includes ein.
+      - type: command
+        run: grep -q 'Legacy/Export.php' phpstan-baseline.neon && ! grep -q 'Coupon.php' phpstan-baseline.neon
+        message: Die Baseline soll nur die Fehler aus src/Legacy enthalten – nicht aus Coupon.php.
+      - type: command
+        run: "! grep -rq 'phpstan-ignore' src"
+        message: Behebe die Fehler in Coupon.php im Code, ohne @phpstan-ignore.
+      - type: command
+        run: phpstan analyse --no-progress
+        message: phpstan analyse meldet noch Fehler.
+      - type: command
+        run: "php -r 'require \"src/Coupon.php\"; $c = new App\\Coupon(); echo $c->label(\"SOMMER\"), \"|\", $c->label(\"x\"), \"|\", $c->discount(\"WINTER\");'"
+        stdout_equals: "SOMMER|KEIN RABATT|20"
+        message: "Das Verhalten stimmt nicht. Erwartet: SOMMER|KEIN RABATT|20."
+    hints:
+      - Erst Coupon.php reparieren, dann die Baseline erzeugen.
+      - "`$code = $this->find($code); return $code === null ? 'KEIN RABATT' : strtoupper($code);`"
+    solution: |
+      ```bash
+      cd pruefung-phpstan
+      printf 'parameters:\n    level: 8\n    paths:\n        - src\n' > phpstan.neon
+      sed -i 's/public function discount(string \$code)$/public function discount(string $code): int/' src/Coupon.php
+      sed -i "s/return strtoupper(\$this->find(\$code));/\$found = \$this->find(\$code);\n\n        return \$found === null ? 'KEIN RABATT' : strtoupper(\$found);/" src/Coupon.php
+      phpstan analyse --generate-baseline
+      printf 'includes:\n    - phpstan-baseline.neon\n\nparameters:\n    level: 8\n    paths:\n        - src\n' > phpstan.neon
+      phpstan analyse
+      ```
+  - module: javascript
+    id: pruefung-strict
+    type: code
+    language: ts
+    title: Sicherer Zugriff auf ein Wörterbuch
+    description: |
+      Schreibe `priceOf(prices: Record<string, number>, sku: string): string`. Sie liefert den Preis in Euro mit
+      zwei Nachkommastellen und Komma (z. B. `"4,50 €"` für `450`) oder `"unbekannt"`, wenn es den Artikel nicht
+      gibt. Gehe davon aus, dass `noUncheckedIndexedAccess` aktiv ist: `prices[sku]` ist `number | undefined`.
+      Nutze weder `!` noch `any`.
+    starter: |
+      function priceOf(prices: Record<string, number>, sku: string): string {
+        // dein Code
+      }
+    tests:
+      - name: formatiert einen bekannten Preis
+        code: 'assertEqual(priceOf({ tee: 450 }, "tee"), "4,50 €")'
+      - name: liefert unbekannt für fehlende Artikel
+        code: 'assertEqual(priceOf({ tee: 450 }, "keks"), "unbekannt")'
+      - name: behandelt den Preis 0 korrekt
+        code: 'assertEqual(priceOf({ gratis: 0 }, "gratis"), "0,00 €")'
+    solution: |
+      function priceOf(prices: Record<string, number>, sku: string): string {
+        const cents = prices[sku];
+        if (cents === undefined) {
+          return "unbekannt";
+        }
+        return (cents / 100).toFixed(2).replace(".", ",") + " €";
+      }
+    hints:
+      - Prüfe ausdrücklich auf `undefined` – `0` ist ein gültiger Preis.
+  - module: automatisieren
+    id: pruefung-qa
+    type: terminal
+    title: Ein qa-Befehl, der wirklich rot wird
+    description: |
+      Im Ordner `pruefung-qa` liegt ein PHP-Projekt mit `composer.json`. Ergänze unter `scripts` die Skripte
+      `lint` (`pint --test`), `analyse` (`phpstan analyse src --level 6 --no-progress`) und `qa` als Liste aus
+      `@lint` und `@analyse`. Repariere dann den Code, bis `composer qa` grün ist (Stil und eine fehlende
+      Typangabe in `src/Mailer.php`).
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-qa
+    setup: |
+      cat > composer.json <<'EOF'
+      {
+          "name": "stacklab/pruefung-qa",
+          "type": "project",
+          "require": {
+              "php": "^8.4"
+          }
+      }
+      EOF
+      mkdir -p src
+      cat > src/Mailer.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final class Mailer {
+          /** @var list<string> */
+          private array $sent = [];
+
+          public function send(string $to): void
+          {
+              $this->sent[] = $to;
+          }
+
+          public function sent()
+          {
+              return $this->sent;
+          }
+      }
+      EOF
+    checks:
+      - type: command
+        run: jq -c '.scripts.qa' composer.json
+        stdout_equals: '["@lint","@analyse"]'
+        message: Das Skript qa soll die Liste ["@lint", "@analyse"] sein.
+      - type: command
+        run: jq -r '.scripts.analyse' composer.json
+        stdout_matches: "phpstan analyse.*--level 6"
+        message: Das Skript analyse soll phpstan analyse src --level 6 --no-progress ausführen.
+      - type: command
+        run: composer qa
+        message: composer qa ist noch nicht grün.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cp -r composer.json src "$d"/
+          printf '<?php\n\ndeclare(strict_types=1);\n\nfunction ohne_typ($a)\n{\n    return $a;\n}\n' > "$d/src/ohne.php"
+          (cd "$d" && composer qa >/dev/null 2>&1)
+          ec=$?
+          rm -rf "$d"
+          [ "$ec" -ne 0 ]
+        message: composer qa bleibt grün, obwohl Code ohne Typen hinzukommt. Ruft qa wirklich @analyse mit Level 6 auf?
+    hints:
+      - "`jq '.scripts = {…}' composer.json > c.json && mv c.json composer.json`"
+      - "`sent()` braucht `: array` und `@return list<string>`; den Stil repariert `pint`."
+    solution: |
+      ```bash
+      cd pruefung-qa
+      jq '.scripts = {"lint": "pint --test", "analyse": "phpstan analyse src --level 6 --no-progress", "qa": ["@lint", "@analyse"]}' composer.json > c.json && mv c.json composer.json
+      sed -i 's|^    public function sent()$|    /** @return list<string> */\n    public function sent(): array|' src/Mailer.php
+      pint
+      composer qa
+      ```

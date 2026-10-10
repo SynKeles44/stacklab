@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="860" height="420" fill="#ffffff"/>
+<text x="430" y="34" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Vier Schichten der automatischen Prüfung</text>
+<rect x="30" y="60" width="600" height="72" rx="14" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="50" y="90" font-size="17" font-weight="700" fill="#1e1b3a">Formatter</text>
+<text x="50" y="116" font-size="14" fill="#475569">Wie sieht der Code aus? Einrückung, Leerzeichen, Klammern</text>
+<text x="610" y="104" text-anchor="end" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">pint · biome format</text>
+<rect x="30" y="145" width="600" height="72" rx="14" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="50" y="175" font-size="17" font-weight="700" fill="#1e1b3a">Linter</text>
+<text x="50" y="201" font-size="14" fill="#475569">Verdächtige Muster: == statt ===, var, toter Code</text>
+<text x="610" y="189" text-anchor="end" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">biome lint · php -l</text>
+<rect x="30" y="230" width="600" height="72" rx="14" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="50" y="260" font-size="17" font-weight="700" fill="#1e1b3a">Statische Analyse</text>
+<text x="50" y="286" font-size="14" fill="#475569">Passen die Typen? Kann hier null ankommen?</text>
+<text x="610" y="274" text-anchor="end" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">phpstan · tsc</text>
+<rect x="30" y="315" width="600" height="72" rx="14" fill="#f59e0b" fill-opacity=".14" stroke="#f59e0b" stroke-width="3"/>
+<text x="50" y="345" font-size="17" font-weight="700" fill="#1e1b3a">Tests</text>
+<text x="50" y="371" font-size="14" fill="#475569">Tut der Code beim Ausführen das Richtige?</text>
+<text x="610" y="359" text-anchor="end" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">pest · vitest</text>
+<rect x="660" y="60" width="170" height="242" rx="14" fill="#f87171" fill-opacity=".10" stroke="#f87171" stroke-width="3" stroke-dasharray="8 6"/>
+<text x="745" y="150" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Rector</text>
+<text x="745" y="176" text-anchor="middle" font-size="13" fill="#475569">baut Code um,</text>
+<text x="745" y="196" text-anchor="middle" font-size="13" fill="#475569">statt nur zu meckern</text>
+<text x="745" y="230" text-anchor="middle" font-size="12" fill="#475569">Upgrades, toter Code,</text>
+<text x="745" y="248" text-anchor="middle" font-size="12" fill="#475569">moderne Syntax</text>
+<text x="745" y="345" text-anchor="middle" font-size="13" fill="#475569">ohne Ausführen ↑</text>
+<text x="745" y="371" text-anchor="middle" font-size="13" fill="#475569">mit Ausführen ↓</text>
+<path d="M650 309 H 840" stroke="#64748b" stroke-width="2" stroke-dasharray="4 4"/>
+</svg>

@@ -1,0 +1,259 @@
+- slug: pre-commit-hook
+  term: Pre-Commit-Hook
+  short: Ein Git-Hook, der vor jedem Commit läuft und ihn mit einem Exit-Code ungleich 0 verhindern kann.
+  explanation: >
+    Git startet den Pre-Commit-Hook, nachdem du `git commit` eingegeben hast, aber bevor der Commit gespeichert
+    wird. Typischerweise prüft er die vorgemerkten Dateien mit Formatter und Linter. Endet er mit einem Fehlercode,
+    bricht Git den Commit ab.
+  example: "Eine Datei `.githooks/pre-commit` führt `pint --test` für alle vorgemerkten PHP-Dateien aus."
+  category: werkzeuge
+  aliases: [Pre-Commit-Hooks, pre-commit, Pre-Commit]
+  related: [git-hook, hook-manager, lefthook]
+  lesson: code-qualitaet/git-hooks
+
+- slug: syntaxfehler
+  term: Syntaxfehler
+  short: Ein Verstoß gegen die Grammatik einer Programmiersprache, durch den sich der Code gar nicht erst einlesen lässt.
+  explanation: >
+    Fehlt ein Semikolon oder eine schließende Klammer, kann der Interpreter den Code nicht verstehen und bricht
+    sofort ab. Syntaxfehler findet schon ein einfacher Linter wie `php -l`, ohne den Code auszuführen. Formatter
+    können kaputten Code nicht verarbeiten – der Syntaxfehler muss zuerst von Hand behoben werden.
+  example: "`return $sum` ohne Semikolon führt zu `PHP Parse error: syntax error, unexpected token \"}\"`."
+  category: programmierung
+  aliases: [Syntaxfehlern, Parse error, Parse-Fehler]
+  related: [linter, syntax]
+  lesson: code-qualitaet/formatieren-linten-analysieren
+
+- slug: autofix
+  term: Autofix
+  short: Eine automatische Korrektur, die ein Linter für eine gefundene Regelverletzung selbst anwendet.
+  explanation: >
+    Viele Lint-Regeln können nicht nur melden, sondern auch reparieren, etwa `let` zu `const`, wenn eine Variable
+    nie neu zugewiesen wird. Biome unterscheidet sichere Autofixes, die das Verhalten garantiert nicht ändern,
+    von unsicheren, die du ausdrücklich anfordern musst.
+  example: "`npx biome check --write` wendet alle sicheren Autofixes an."
+  category: werkzeuge
+  aliases: [Autofixes, Auto-Fix, Fix]
+  related: [linter, lint-regel, unsafe-fix]
+  lesson: code-qualitaet/formatieren-linten-analysieren
+
+- slug: php-cs-fixer
+  term: PHP CS Fixer
+  short: Ein Werkzeug, das PHP-Code nach konfigurierbaren Stilregeln automatisch umformatiert.
+  explanation: >
+    PHP CS Fixer bringt hunderte einzelne Regeln mit, von der Einrückung bis zu `declare(strict_types=1)`. Laravel
+    Pint und Easy Coding Standard bauen darauf auf und machen die Konfiguration einfacher. Jede Regel von PHP CS
+    Fixer lässt sich deshalb auch in einer `pint.json` verwenden.
+  example: "Die Regel `concat_space` legt fest, ob um den Punkt-Operator Leerzeichen stehen."
+  category: werkzeuge
+  aliases: [PHP-CS-Fixer, php-cs-fixer, CS Fixer]
+  related: [pint, formatter, easy-coding-standard]
+  lesson: code-qualitaet/pint
+
+- slug: code-stil-preset
+  term: Preset (Code-Stil)
+  short: Eine fertige Sammlung von Stilregeln, die ein Formatter als Grundlage verwendet.
+  explanation: >
+    Statt jede Regel einzeln festzulegen, wählst du ein Preset, auf das sich eine Community geeinigt hat. Pint kennt
+    zum Beispiel `laravel`, `per`, `psr12`, `symfony` und `empty`. Einzelne Regeln kannst du danach zusätzlich
+    ein- oder ausschalten.
+  example: "`{\"preset\": \"per\"}` in der `pint.json` formatiert nach dem PER Coding Style."
+  category: werkzeuge
+  aliases: [Preset, Presets, Stil-Preset]
+  related: [pint, per-coding-style, psr-12]
+  lesson: code-qualitaet/pint
+
+- slug: easy-coding-standard
+  term: Easy Coding Standard (ECS)
+  short: Ein PHP-Werkzeug, das PHP CS Fixer und PHP_CodeSniffer kombiniert und in PHP konfiguriert wird.
+  explanation: >
+    ECS ist eine Alternative zu Laravel Pint. Die Konfiguration steht in einer `ecs.php` mit fertigen Regelsätzen
+    wie `psr12` oder `arrays`. `ecs check` prüft nur, `ecs check --fix` repariert. In einem Projekt sollte immer
+    nur ein Formatter für dieselben Dateien zuständig sein.
+  example: "`ECSConfig::configure()->withPaths([__DIR__ . '/src'])->withPreparedSets(psr12: true);`"
+  category: werkzeuge
+  aliases: [ECS, EasyCodingStandard]
+  related: [php-cs-fixer, pint, formatter]
+  lesson: code-qualitaet/pint
+
+- slug: phpstan-level
+  term: PHPStan-Level
+  short: Eine Stufe von 0 bis 10, die festlegt, wie streng PHPStan prüft.
+  explanation: >
+    Jedes Level enthält alle Prüfungen der niedrigeren und fügt neue hinzu – Level 0 prüft nur das Nötigste,
+    Level 6 verlangt Typangaben, Level 8 behandelt nullable Typen, Level 10 ist am strengsten. `max` steht immer
+    für das höchste Level. Bestehende Projekte arbeiten sich Level für Level nach oben.
+  example: "`vendor/bin/phpstan analyse src --level 8`"
+  category: werkzeuge
+  aliases: [Level, Rule Level, PHPStan-Levels]
+  related: [phpstan, phpstan-baseline, statische-analyse]
+  lesson: code-qualitaet/phpstan
+
+- slug: neon
+  term: NEON
+  short: Ein YAML-ähnliches Dateiformat, in dem PHPStan seine Konfiguration speichert.
+  explanation: >
+    NEON stammt aus dem PHP-Framework Nette und sieht fast aus wie YAML: Schlüssel mit Doppelpunkt, Listen mit
+    Bindestrich, Einrückung bestimmt die Struktur. PHPStan liest standardmäßig die Datei `phpstan.neon` im
+    aktuellen Ordner.
+  example: "`parameters:` mit eingerücktem `level: 8` und `paths:` mit `- src`."
+  category: datenformate
+  aliases: [phpstan.neon, Neon]
+  related: [yaml, phpstan, konfigurationsdatei]
+  lesson: code-qualitaet/phpstan
+
+- slug: phpstan-baseline
+  term: Baseline (PHPStan)
+  short: Eine Datei, in der PHPStan alle heute bekannten Fehler einfriert, damit nur neue Fehler gemeldet werden.
+  explanation: >
+    Mit `--generate-baseline` schreibt PHPStan alle aktuellen Fehler in `phpstan-baseline.neon`. Bindet man sie
+    unter `includes:` ein, ignoriert PHPStan genau diese Fehler. Behobene Einträge meldet PHPStan als „not matched“,
+    sodass die Baseline nur schrumpfen kann.
+  example: "`vendor/bin/phpstan analyse --generate-baseline` und danach `includes: - phpstan-baseline.neon`."
+  category: werkzeuge
+  aliases: [Baseline, Baselines, phpstan-baseline.neon]
+  related: [phpstan, ratschen-prinzip, technische-schulden]
+  lesson: code-qualitaet/phpstan-baseline
+
+- slug: ratschen-prinzip
+  term: Ratschen-Prinzip
+  short: Die Regel, dass eine Kennzahl für Altlasten nur noch in eine Richtung – besser – gehen darf.
+  explanation: >
+    Wie eine Ratsche, die sich nur in eine Richtung dreht, darf zum Beispiel die Zahl der Baseline-Einträge nur
+    sinken. Neue Probleme werden blockiert, behobene verschwinden dauerhaft. So wird ein gewachsenes Projekt
+    schrittweise besser, ohne das Team zu blockieren.
+  example: "Ein Pull Request darf die `phpstan-baseline.neon` nur verkürzen, nie verlängern."
+  category: teamarbeit
+  aliases: [Ratsche, Ratchet, Ratcheting]
+  related: [phpstan-baseline, technische-schulden, legacy-code]
+  lesson: code-qualitaet/phpstan-baseline
+
+- slug: abstrakter-syntaxbaum
+  term: Abstrakter Syntaxbaum (AST)
+  short: Eine Baumstruktur, die den Aufbau von Quellcode beschreibt – Klassen, Methoden, Ausdrücke als verschachtelte Knoten.
+  explanation: >
+    Werkzeuge wie Rector, PHPStan oder Biome lesen Code nicht als Text, sondern bauen daraus einen abstrakten
+    Syntaxbaum. Darauf können sie zuverlässig Muster erkennen und verändern, ohne auf Leerzeichen oder
+    Zeilenumbrüche zu achten. Danach wird der Baum wieder als Code ausgegeben.
+  example: "`$a ?? null` wird zu einem Knoten „Null-Coalescing“ mit den Kindern `$a` und `null`."
+  category: programmierung
+  aliases: [AST, Syntaxbaum, Abstract Syntax Tree]
+  related: [rector, syntax, statische-analyse]
+  lesson: code-qualitaet/rector
+
+- slug: regelsatz
+  term: Regelsatz
+  short: Eine benannte Gruppe von Regeln, die ein Qualitätswerkzeug gemeinsam ein- oder ausschaltet.
+  explanation: >
+    Statt hunderte Regeln einzeln zu aktivieren, schaltet man einen Regelsatz ein, zum Beispiel `deadCode` in
+    Rector oder `recommended` in Biome. Regelsätze bündeln Regeln, die zusammen sinnvoll sind, und werden mit
+    neuen Versionen gepflegt.
+  example: "`->withPreparedSets(deadCode: true, codeQuality: true)` in der `rector.php`."
+  category: werkzeuge
+  aliases: [Regelsätze, Set, Sets, Rule Set]
+  related: [lint-regel, rector, biome]
+  lesson: code-qualitaet/rector
+
+- slug: dry-run
+  term: Dry-Run
+  short: Ein Probelauf, bei dem ein Werkzeug zeigt, was es tun würde, ohne etwas zu verändern.
+  explanation: >
+    Werkzeuge, die viele Dateien ändern, bieten einen Dry-Run an: Sie zeigen den Diff und melden über den
+    Exit-Code, ob es Änderungen gäbe. So kannst du die Wirkung prüfen, bevor etwas passiert, und die CI kann
+    erkennen, ob jemand vergessen hat, das Werkzeug laufen zu lassen.
+  example: "`vendor/bin/rector process --dry-run` endet mit Exit-Code 2, wenn Rector etwas ändern würde."
+  category: werkzeuge
+  aliases: [Dry-run, dry run, Probelauf, --dry-run]
+  related: [rector, exit-code, ci-pipeline]
+  lesson: code-qualitaet/rector
+
+- slug: biome
+  term: Biome
+  short: Ein schnelles Werkzeug, das JavaScript, TypeScript, JSON und CSS formatiert und lintet.
+  explanation: >
+    Biome vereint Formatter und Linter in einem Programm mit einer einzigen Konfigurationsdatei `biome.json`.
+    Es ist in Rust geschrieben und dadurch sehr schnell. Installiert wird das npm-Paket `@biomejs/biome`, der
+    Befehl heißt `biome`.
+  example: "`npx biome check --write` formatiert und repariert, `npx biome ci` prüft in der Pipeline."
+  category: werkzeuge
+  aliases: [Biome.js, biome.json]
+  related: [formatter, linter, eslint, prettier]
+  lesson: code-qualitaet/biome
+
+- slug: eslint
+  term: ESLint
+  short: Der verbreitetste Linter für JavaScript und TypeScript mit großem Plugin-Ökosystem.
+  explanation: >
+    ESLint prüft JavaScript-Code mit konfigurierbaren Regeln und lässt sich über Plugins für React, TypeScript und
+    viele Bibliotheken erweitern. Für die Formatierung wird es meist mit Prettier kombiniert. In neuen Projekten
+    übernimmt oft Biome beide Aufgaben.
+  example: "`eslint.config.js` legt die Regeln fest, `npx eslint .` prüft das Projekt."
+  category: werkzeuge
+  aliases: [eslint]
+  related: [linter, prettier, biome]
+  lesson: code-qualitaet/biome
+
+- slug: prettier
+  term: Prettier
+  short: Ein weit verbreiteter Formatter für JavaScript, TypeScript, CSS, HTML und mehr.
+  explanation: >
+    Prettier formatiert Code nach festen Regeln mit nur wenigen Einstellungen. Es lintet nicht, deshalb wird es
+    häufig zusammen mit ESLint verwendet. Biome erzeugt eine weitgehend gleiche Formatierung und kann
+    Prettier-Einstellungen übernehmen.
+  example: "`npx prettier --check .` prüft, `npx prettier --write .` formatiert."
+  category: werkzeuge
+  aliases: [prettier]
+  related: [formatter, eslint, biome]
+  lesson: code-qualitaet/biome
+
+- slug: unsafe-fix
+  term: Unsicherer Fix
+  short: Eine automatische Korrektur, die das Verhalten des Codes verändern kann und deshalb ausdrücklich angefordert werden muss.
+  explanation: >
+    Manche Korrekturen sind nur meistens richtig. Aus `a == 1` wird `a === 1` – für `a = "1"` ändert sich damit
+    das Ergebnis. Biome wendet solche Fixes nur mit `--write --unsafe` an. Danach solltest du den Diff lesen und
+    die Tests laufen lassen.
+  example: "`npx biome check --write --unsafe` ersetzt auch `var` durch `let` und `==` durch `===`."
+  category: werkzeuge
+  aliases: [unsichere Fixes, unsicheren Fixes, Unsafe Fix, --unsafe]
+  related: [autofix, biome]
+  lesson: code-qualitaet/biome
+
+- slug: typescript-strict
+  term: strict (TypeScript)
+  short: Ein Sammelschalter in der tsconfig.json, der eine ganze Familie strenger Typprüfungen einschaltet.
+  explanation: >
+    `strict: true` aktiviert unter anderem `strictNullChecks`, `noImplicitAny` und `useUnknownInCatchVariables`.
+    Damit musst du `null` und `undefined` behandeln und fehlende Typen angeben. In TypeScript 7 ist `strict`
+    standardmäßig eingeschaltet; ältere Projekte haben es oft noch aus.
+  example: "`\"compilerOptions\": { \"strict\": true, \"noUncheckedIndexedAccess\": true }`"
+  category: typescript
+  aliases: [strict-Modus, strict mode TypeScript, strictNullChecks]
+  related: [typescript, tsconfig, any-typ]
+  lesson: code-qualitaet/typescript-strict
+
+- slug: composer-script
+  term: Composer-Skript
+  short: Ein benannter Befehl im Abschnitt scripts der composer.json, den du mit composer <name> startest.
+  explanation: >
+    Composer-Skripte bündeln wiederkehrende Befehle wie Prüfungen. Composer legt dabei `vendor/bin` in den
+    Suchpfad, du schreibst also nur `pint` statt `./vendor/bin/pint`. Mit `@name` ruft ein Skript ein anderes auf,
+    eine Liste läuft der Reihe nach und stoppt beim ersten Fehler.
+  example: "`\"qa\": [\"@lint\", \"@analyse\"]` – gestartet mit `composer qa`."
+  category: pakete
+  aliases: [Composer-Skripte, Composer Scripts, scripts]
+  related: [composer, composer-json, npm-script]
+  lesson: code-qualitaet/ci-pipeline
+
+- slug: git-blame-ignore-revs
+  term: .git-blame-ignore-revs
+  short: Eine Datei mit Commit-IDs, die git blame überspringt – meist reine Formatierungs-Commits.
+  explanation: >
+    Nach einem großen Formatierungs-Commit zeigt `git blame` bei fast jeder Zeile diesen Commit statt der
+    eigentlichen Autoren. Trägt man seine ID in `.git-blame-ignore-revs` ein und setzt `blame.ignoreRevsFile`,
+    blendet Git ihn aus. GitHub liest die Datei automatisch.
+  example: "`git rev-parse HEAD >> .git-blame-ignore-revs` und `git config blame.ignoreRevsFile .git-blame-ignore-revs`."
+  category: git
+  aliases: [blame.ignoreRevsFile, ignore-revs]
+  related: [git-blame, commit]
+  lesson: code-qualitaet/schrittweise-einfuehren

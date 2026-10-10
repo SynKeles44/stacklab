@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="880" height="360" fill="#ffffff"/>
+<text x="440" y="36" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Die Feedback-Schleife: Wo ein Fehler auffällt</text>
+<rect x="" y="70" width="175" height="170" rx="16" fill="" fill-opacity=".14" stroke="" stroke-width="3"/>
+<text x="87" y="150" text-anchor="middle" font-size="13" fill="#475569"></text>
+<text x="87" y="180" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a"></text>
+<text x="87" y="215" text-anchor="middle" font-size="12" fill="#475569"></text>
+<path d="M177 155 H 211" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="30" y="70" width="175" height="170" rx="16" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="3"/>
+<text x="117" y="150" text-anchor="middle" font-size="13" fill="#475569">beim Speichern</text>
+<text x="117" y="180" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a">Millisekunden</text>
+<text x="117" y="215" text-anchor="middle" font-size="12" fill="#475569">Formatter, Linter im Editor</text>
+<path d="M207 155 H 241" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="245" y="70" width="175" height="170" rx="16" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="3"/>
+<text x="332" y="150" text-anchor="middle" font-size="13" fill="#475569">vor dem Commit</text>
+<text x="332" y="180" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a">Sekunden</text>
+<text x="332" y="215" text-anchor="middle" font-size="12" fill="#475569">nur vorgemerkte Dateien</text>
+<path d="M422 155 H 456" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<rect x="460" y="70" width="175" height="170" rx="16" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="3"/>
+<text x="547" y="150" text-anchor="middle" font-size="13" fill="#475569">nach dem Push</text>
+<text x="547" y="180" text-anchor="middle" font-size="15" font-weight="600" fill="#1e1b3a">Minuten</text>
+<text x="547" y="215" text-anchor="middle" font-size="12" fill="#475569">alle Prüfungen, jede Änderung</text>
+<path d="M60 290 H 820" stroke="#f87171" stroke-width="4" marker-end="url(#a)"/>
+<text x="60" y="320" font-size="14" fill="#1e1b3a">billig zu beheben</text>
+<text x="820" y="320" text-anchor="end" font-size="14" fill="#1e1b3a">teuer zu beheben</text>
+<text x="440" y="320" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Je später ein Fehler auffällt, desto mehr kostet er</text>
+</svg>

@@ -1,0 +1,118 @@
+title: Qualitätswerkzeuge für JavaScript und TypeScript
+description: Biome als Formatter und Linter in einem Werkzeug und der TypeScript-Compiler im strict-Modus als statische Analyse – eingerichtet so, dass niemand die Prüfungen heimlich umgehen kann.
+exercise:
+  id: js-werkzeugkette
+  type: terminal
+  title: Biome und TypeScript strict für ein Bestellmodul
+  description: |
+    Im Ordner `js-werkzeugkette` liegt ein TypeScript-Modul `src/order.ts`. Biome und TypeScript sind bereits
+    installiert (exakte Versionen in der `package.json`). Der Code ist unsauber formatiert, nutzt `==`,
+    `any` und den Non-Null-Operator `!`, und `strict` ist ausgeschaltet.
+
+    1. Erzeuge mit `npx biome init` eine `biome.json`. Stelle die Einrückung auf Leerzeichen und mache zwei Regeln
+       zu Fehlern: `suspicious.noExplicitAny` und `style.noNonNullAssertion`.
+    2. Stelle in der `tsconfig.json` `strict` auf `true` und schalte `noUncheckedIndexedAccess` ein.
+    3. Bring den Code in Ordnung, bis `npx biome ci` **und** `npx tsc` ohne Fehler durchlaufen. Verhalten:
+       - `lineTotal()` rechnet Preis mal Menge.
+       - `orderTotal()` summiert alle Positionen; eine leere Bestellung ergibt `0`.
+       - `firstSku()` liefert die Artikelnummer der ersten Position oder `null`.
+       - `isFree()` ist `true`, wenn die Summe genau `0` ist.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – die Installation dauert einen Moment.
+  workdir: js-werkzeugkette
+  setup: |
+    cat > package.json <<'EOF'
+    {
+      "name": "bestellmodul",
+      "private": true,
+      "type": "module",
+      "devDependencies": {
+        "@biomejs/biome": "2.5.15",
+        "typescript": "7.0.2"
+      }
+    }
+    EOF
+    cat > tsconfig.json <<'EOF'
+    {
+      "compilerOptions": {
+        "target": "es2022",
+        "module": "nodenext",
+        "strict": false,
+        "noEmit": true
+      },
+      "include": ["src"]
+    }
+    EOF
+    mkdir -p src
+    cat > src/order.ts <<'EOF'
+    export interface Line { sku: string; price: number; quantity: number }
+
+    export function lineTotal(line: any): number {
+        return line.price*line.quantity
+    }
+
+    export function orderTotal(lines: Line[]): number {
+        var total = 0
+        for (const line of lines) total += lineTotal(line)
+        return total
+    }
+
+    export function firstSku(lines: Line[]): string | null {
+        if (lines.length == 0) return null
+        return lines[0]!.sku
+    }
+
+    export function isFree(lines: Line[]) { return orderTotal(lines) == 0 }
+    EOF
+    timeout 170 npm install --no-audit --no-fund --silent </dev/null
+  checks:
+    - type: command
+      run: test -x node_modules/.bin/biome && test -x node_modules/.bin/tsc
+      message: Biome oder TypeScript fehlen in node_modules. Setze die Aufgabe zurück, damit npm install läuft.
+    - type: command
+      run: jq -r '.linter.rules.suspicious.noExplicitAny' biome.json
+      stdout_equals: error
+      message: "Die biome.json fehlt oder macht noExplicitAny (Gruppe suspicious) noch nicht zum Fehler."
+    - type: command
+      run: jq -r '.linter.rules.style.noNonNullAssertion' biome.json
+      stdout_equals: error
+      message: "Mache in der biome.json die Regel noNonNullAssertion (Gruppe style) zum Fehler."
+    - type: command
+      run: jq -r '.formatter.indentStyle' biome.json
+      stdout_equals: space
+      message: "Stelle die Einrückung in der biome.json auf Leerzeichen (formatter.indentStyle = \"space\")."
+    - type: command
+      run: ./node_modules/.bin/tsc --showConfig | jq -e '.compilerOptions.strict == true and .compilerOptions.noUncheckedIndexedAccess == true'
+      message: In der tsconfig.json müssen strict und noUncheckedIndexedAccess auf true stehen.
+    - type: command
+      run: "! grep -Eq '@ts-ignore|@ts-expect-error|biome-ignore' src/order.ts"
+      message: Behebe die Meldungen im Code statt sie mit Kommentaren zu unterdrücken.
+    - type: command
+      run: ./node_modules/.bin/biome ci
+      message: biome ci meldet noch Probleme. Führe npx biome check --write aus und behebe den Rest von Hand.
+    - type: command
+      run: ./node_modules/.bin/tsc
+      message: tsc meldet noch Typfehler.
+    - type: command
+      run: "node --input-type=module -e \"import { orderTotal, firstSku, isFree } from './src/order.ts'; const l = [{ sku: 'TEE', price: 450, quantity: 2 }, { sku: 'KEKS', price: 200, quantity: 1 }]; console.log([orderTotal(l), orderTotal([]), firstSku(l), firstSku([]), isFree([]), isFree(l)].join('|'));\""
+      stdout_equals: "1100|0|TEE||true|false"
+      message: "Das Verhalten stimmt noch nicht. Erwartet: 1100|0|TEE||true|false."
+  hints:
+    - "Die biome.json ergänzt du am schnellsten mit jq, z. B. `jq '.linter.rules.style.noNonNullAssertion = \"error\"' biome.json > b.json && mv b.json biome.json`."
+    - "`any` ersetzt du durch den vorhandenen Typ `Line`. Statt `lines[0]!.sku` schreibst du `lines[0]?.sku ?? null`."
+    - "`npx biome check --write --unsafe` erledigt `==` und die Formatierung. Lies danach den Code."
+  solution: |
+    ```bash
+    cd js-werkzeugkette
+    npx biome init
+    jq '.formatter.indentStyle = "space"
+      | .linter.rules.suspicious.noExplicitAny = "error"
+      | .linter.rules.style.noNonNullAssertion = "error"' biome.json > b.json && mv b.json biome.json
+    jq '.compilerOptions.strict = true | .compilerOptions.noUncheckedIndexedAccess = true' tsconfig.json > t.json && mv t.json tsconfig.json
+    sed -i 's/lineTotal(line: any)/lineTotal(line: Line)/' src/order.ts
+    sed -i 's/if (lines.length == 0) return null/if (lines.length === 0) return null/; s/return lines\[0\]!.sku/return lines[0]?.sku ?? null/' src/order.ts
+    sed -i 's/export function isFree(lines: Line\[\]) {/export function isFree(lines: Line[]): boolean {/' src/order.ts
+    npx biome check --write --unsafe
+    npx biome ci
+    npx tsc
+    ```

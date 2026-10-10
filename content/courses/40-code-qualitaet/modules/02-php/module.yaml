@@ -1,0 +1,153 @@
+title: Qualitätswerkzeuge für PHP
+description: Laravel Pint für den Code-Stil, PHPStan mit Leveln und Baseline für Typfehler und Rector für automatische Umbauten – einzeln eingerichtet und im Zusammenspiel.
+exercise:
+  id: php-werkzeugkette
+  type: terminal
+  title: Die PHP-Werkzeugkette für einen Warenkorb
+  description: |
+    Im Ordner `php-werkzeugkette` liegt ein Composer-Projekt mit einem Warenkorb in `src/`. Pint, PHPStan und
+    Rector sind schon als Entwicklungsabhängigkeiten installiert (`vendor/bin/…`). Richte alle drei ein und bring
+    den Code durch die komplette Kette:
+
+    1. **Rector:** Lege eine `rector.php` für `src` mit `withPhpSets()` und den vorbereiteten Sets `deadCode`,
+       `codeQuality` und `typeDeclarations` an und wende sie an.
+    2. **Pint:** Lege eine `pint.json` mit dem Preset `per` und der Regel `declare_strict_types` an und formatiere.
+    3. **PHPStan:** Lege eine `phpstan.neon` mit **Level 8** für `src` an. Behebe alle verbleibenden Fehler im Code
+       (ohne Baseline, ohne `@phpstan-ignore`). Achtung: `findItem()` kann `null` liefern.
+    4. Am Ende müssen `vendor/bin/rector process --dry-run`, `vendor/bin/pint --test` und
+       `vendor/bin/phpstan analyse` alle mit Exit-Code 0 enden.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – das Installieren der Pakete dauert ein paar Sekunden.
+  workdir: php-werkzeugkette
+  setup: |
+    cat > composer.json <<'EOF'
+    {
+        "name": "stacklab/warenkorb",
+        "type": "project",
+        "require": {
+            "php": "^8.4"
+        },
+        "require-dev": {
+            "laravel/pint": "^1.25",
+            "phpstan/phpstan": "^2.1",
+            "rector/rector": "^2.2"
+        },
+        "autoload": {
+            "psr-4": { "App\\": "src/" }
+        }
+    }
+    EOF
+    mkdir -p src
+    cat > src/Cart.php <<'EOF'
+    <?php
+    namespace App;
+
+    class Cart
+    {
+        private $items;
+
+        public function __construct()
+        {
+            $this->items = array();
+        }
+
+        public function add(string $sku, int $cents, int $quantity = 1): void
+        {
+            $this->items[$sku] = array('cents' => $cents, 'quantity' => $quantity);
+        }
+
+        /** @return array{cents: int, quantity: int}|null */
+        public function findItem(string $sku): ?array
+        {
+            return isset($this->items[$sku]) ? $this->items[$sku] : null;
+        }
+
+        public function quantityOf(string $sku): int
+        {
+            return $this->findItem($sku)['quantity'];
+        }
+
+        public function total(): int
+        {
+            $total = 0;
+            foreach ($this->items as $item) {
+                $total += $item['cents'] * $item['quantity'];
+            }
+            return $total;
+        }
+    }
+    EOF
+    timeout 170 composer install -n -q </dev/null
+  checks:
+    - type: command
+      run: test -x vendor/bin/rector && test -x vendor/bin/phpstan && test -x vendor/bin/pint
+      message: Die Werkzeuge fehlen in vendor/bin. Setze die Aufgabe zurück, damit composer install läuft.
+    - type: file_contains
+      path: rector.php
+      pattern: "withPhpSets\\("
+      message: Es fehlt eine rector.php mit withPhpSets() und den vorbereiteten Sets.
+    - type: command
+      run: vendor/bin/rector process --dry-run --no-progress-bar
+      message: Rector würde noch etwas ändern. Führe vendor/bin/rector process aus (und danach wieder Pint).
+    - type: command
+      run: jq -r .preset pint.json
+      stdout_equals: per
+      message: Die pint.json fehlt oder nutzt noch nicht das Preset "per".
+    - type: command
+      run: jq -e '.rules.declare_strict_types == true' pint.json
+      message: Schalte in der pint.json die Regel declare_strict_types ein.
+    - type: command
+      run: vendor/bin/pint --test
+      message: vendor/bin/pint --test meldet noch Stilfehler. Führe vendor/bin/pint aus.
+    - type: file_contains
+      path: phpstan.neon
+      pattern: "level:\\s*8\\b"
+      message: "Die phpstan.neon soll Level 8 verwenden (`level: 8`)."
+    - type: command
+      run: "! grep -rq 'phpstan-ignore' src && ! grep -q 'ignoreErrors\\|includes' phpstan.neon"
+      message: Behebe die PHPStan-Fehler im Code – ohne Baseline, ignoreErrors oder @phpstan-ignore.
+    - type: command
+      run: vendor/bin/phpstan analyse --no-progress --level 8
+      message: PHPStan meldet auf Level 8 noch Fehler. Was passiert in quantityOf(), wenn findItem() null liefert?
+    - type: command
+      run: "php -r 'require \"vendor/autoload.php\"; $c = new App\\Cart(); $c->add(\"tee\", 450, 2); $c->add(\"keks\", 200); echo $c->total(), \"|\", $c->quantityOf(\"tee\"), \"|\", $c->quantityOf(\"fehlt\");'"
+      stdout_equals: "1100|2|0"
+      message: "Das Verhalten stimmt nicht: total() soll 1100 liefern und quantityOf() für einen unbekannten Artikel 0."
+  hints:
+    - "Arbeite die Kette in dieser Reihenfolge ab: Rector, dann Pint, dann PHPStan. Nach Code-Änderungen für PHPStan noch einmal Pint."
+    - "Lies die PHPStan-Meldungen genau: Rector hat vermutlich schon Typen ergänzt, offen bleibt der null-Fall und eventuell der Typ von `$items`."
+    - "In `quantityOf()` hilft `return $this->findItem($sku)['quantity'] ?? 0;` oder eine Variable mit `null`-Prüfung. Für `$items` passt `/** @var array<string, array{cents: int, quantity: int}> */`."
+  solution: |
+    ```bash
+    cd php-werkzeugkette
+    cat > rector.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    use Rector\Config\RectorConfig;
+
+    return RectorConfig::configure()
+        ->withPaths([__DIR__ . '/src'])
+        ->withPhpSets()
+        ->withPreparedSets(deadCode: true, codeQuality: true, typeDeclarations: true);
+    EOF
+    vendor/bin/rector process
+    cat > pint.json <<'EOF'
+    {
+        "preset": "per",
+        "rules": {
+            "declare_strict_types": true
+        }
+    }
+    EOF
+    vendor/bin/pint
+    printf 'parameters:\n    level: 8\n    paths:\n        - src\n' > phpstan.neon
+    vendor/bin/phpstan analyse
+    # quantityOf(): null-Fall behandeln, $items genauer typisieren
+    sed -i "s/return \$this->findItem(\$sku)\['quantity'\];/return \$this->findItem(\$sku)['quantity'] ?? 0;/" src/Cart.php
+    sed -i 's|^    private array \$items|    /** @var array<string, array{cents: int, quantity: int}> */\n    private array $items|' src/Cart.php
+    vendor/bin/pint
+    vendor/bin/rector process --dry-run
+    vendor/bin/phpstan analyse
+    ```

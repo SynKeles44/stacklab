@@ -1,0 +1,841 @@
+title: Eine Qualitätsschranke für das Lager-Projekt
+description: |
+  In diesem Projekt übernimmst du ein kleines, gewachsenes Projekt für eine Lagerverwaltung: PHP-Code für die
+  Fachlogik in `src/` und ein TypeScript-Modul für das Frontend in `web/`. Bisher gibt es keine einzige
+  automatische Prüfung. Du baust Schritt für Schritt die komplette Qualitätsschranke auf – genau so, wie du es
+  in einem echten Team tun würdest:
+
+  EditorConfig, Pint, Rector, PHPStan mit Baseline, Biome, TypeScript strict, ein gemeinsamer `qa`-Befehl,
+  Git-Hooks mit Lefthook und zum Schluss eine CI-Pipeline.
+
+  Klicke zuerst auf **Projekt vorbereiten**. Dabei entsteht im Ordner `projekt` ein Git-Repository, und
+  Composer und npm installieren Pint, PHPStan, Rector, Biome, TypeScript und Lefthook (das dauert einen
+  Moment). Öffne dann das Übungs-Terminal und wechsle mit `cd projekt` in den Ordner. Die Werkzeuge rufst du
+  über `vendor/bin/…` beziehungsweise `npx …` auf.
+
+  Die Schritte bauen aufeinander auf. Nach jedem Schritt prüft Stacklab den echten Zustand des Projekts.
+goal: >
+  Ein Repository, in dem `composer qa` (Pint, Rector, PHPStan Level 8 mit Baseline) und `npm run check` (Biome,
+  TypeScript strict) grün sind, Lefthook die vorgemerkten Dateien vor jedem Commit prüft und ein
+  GitHub-Actions-Workflow dieselben Befehle ausführt.
+workdir: projekt
+setup: |
+  git init -q -b main
+  git config user.name "Stacklab"
+  git config user.email "stacklab@example.com"
+  cat > composer.json <<'EOF'
+  {
+      "name": "stacklab/lager",
+      "type": "project",
+      "require": {
+          "php": "^8.4"
+      },
+      "require-dev": {
+          "laravel/pint": "^1.25",
+          "phpstan/phpstan": "^2.1",
+          "rector/rector": "^2.2"
+      },
+      "autoload": {
+          "psr-4": { "App\\": "src/" }
+      }
+  }
+  EOF
+  cat > package.json <<'EOF'
+  {
+    "name": "lager-frontend",
+    "private": true,
+    "type": "module",
+    "devDependencies": {
+      "@biomejs/biome": "2.5.15",
+      "lefthook": "2.2.1",
+      "typescript": "7.0.2"
+    }
+  }
+  EOF
+  cat > tsconfig.json <<'EOF'
+  {
+    "compilerOptions": {
+      "target": "es2022",
+      "module": "nodenext",
+      "strict": false,
+      "noEmit": true
+    },
+    "include": ["web"]
+  }
+  EOF
+  mkdir -p src/Domain src/Legacy web
+  cat > src/Domain/Inventory.php <<'EOF'
+  <?php
+  namespace App\Domain;
+
+  class Inventory
+  {
+      private $stock;
+
+      public function __construct()
+      {
+          $this->stock = array();
+      }
+
+      public function add($sku, $amount)
+      {
+          $this->stock[$sku] = $this->quantity($sku) + $amount;
+      }
+
+      public function quantity($sku)
+      {
+          return isset($this->stock[$sku]) ? $this->stock[$sku] : 0;
+      }
+
+      public function find(string $sku): ?int
+      {
+          return $this->stock[$sku] ?? null;
+      }
+
+      public function formatted(string $sku): string
+      {
+          return number_format($this->find($sku)) . ' Stück';
+      }
+  }
+  EOF
+  cat > src/Legacy/StockReport.php <<'EOF'
+  <?php
+  namespace App\Legacy;
+
+  class StockReport
+  {
+      private $lines = array();
+
+      public function addLine($sku, $count)
+      {
+          $this->lines[] = array($sku, $count);
+      }
+
+      public function render()
+      {
+          $out = '';
+          foreach ($this->lines as $line) {
+              $out .= $line[0] . ';' . $line[1] . "\n";
+          }
+          return $out;
+      }
+  }
+  EOF
+  cat > web/stock.ts <<'EOF'
+  export interface Item { sku: string; quantity: number }
+
+  export function totalQuantity(items: Item[]) {
+      var total = 0
+      for (const item of items) total += item.quantity
+      return total
+  }
+
+  export function firstSku(items: Item[]): string {
+      return items[0].sku
+  }
+
+  export function isEmpty(items: any): boolean {
+      return totalQuantity(items) == 0
+  }
+  EOF
+  timeout 120 composer install -n -q </dev/null
+  timeout 120 npm install --no-audit --no-fund --silent </dev/null
+  rm -f lefthook.yml
+steps:
+  - id: grundregeln
+    title: Grundregeln und erster Commit
+    description: |
+      Bevor irgendein Werkzeug läuft, legst du die gemeinsamen Grundregeln fest und sorgst dafür, dass
+      installierte Pakete nicht ins Repository gelangen.
+
+      1. Lege eine `.editorconfig` an: `root = true`, im Abschnitt `[*]` UTF-8, LF, Leerzeichen, Einrückung 4,
+         Zeilenumbruch am Dateiende, keine Leerzeichen am Zeilenende; für `[*.{json,yml,yaml,ts,js}]`
+         Einrückung 2.
+      2. Lege eine `.gitignore` mit den Einträgen `vendor/` und `node_modules/` an.
+      3. Committe alles (außer den ignorierten Ordnern), z. B. mit `chore: initial project state`.
+    checklist:
+      - ".editorconfig mit root = true und den Abschnitten [*] und [*.{json,yml,yaml,ts,js}]"
+      - ".gitignore schließt vendor/ und node_modules/ aus"
+      - Erster Commit ohne vendor/ und node_modules/
+    hints:
+      - "Die Datei schreibst du am schnellsten mit `cat > .editorconfig <<'EOF' … EOF`."
+      - "`git status` sollte nach dem Anlegen der .gitignore weder vendor/ noch node_modules/ zeigen."
+    checks:
+      - type: file_contains
+        path: .editorconfig
+        pattern: "^root\\s*=\\s*true"
+        message: Es fehlt eine .editorconfig mit `root = true`.
+      - type: file_contains
+        path: .editorconfig
+        pattern: "^end_of_line\\s*=\\s*lf"
+        message: In der .editorconfig fehlt `end_of_line = lf`.
+      - type: file_contains
+        path: .editorconfig
+        pattern: "^\\[\\*\\.\\{json,yml,yaml,ts,js\\}\\]"
+        message: Es fehlt der Abschnitt `[*.{json,yml,yaml,ts,js}]` mit `indent_size = 2`.
+      - type: command
+        run: grep -qx 'vendor/' .gitignore && grep -qx 'node_modules/' .gitignore
+        message: Die .gitignore braucht die Zeilen vendor/ und node_modules/.
+      - type: command
+        run: git ls-files .editorconfig .gitignore composer.json src/Domain/Inventory.php web/stock.ts | wc -l
+        stdout_matches: "^\\s*5\\s*$"
+        message: Committe .editorconfig, .gitignore und den Projektcode.
+      - type: command
+        run: test "$(git ls-files vendor node_modules | wc -l)" -eq 0
+        message: vendor/ oder node_modules/ wurden committet. Entferne sie mit git rm -r --cached und committe erneut.
+    solution: |
+      ```bash
+      cd projekt
+      cat > .editorconfig <<'EOF'
+      root = true
+
+      [*]
+      charset = utf-8
+      end_of_line = lf
+      indent_style = space
+      indent_size = 4
+      insert_final_newline = true
+      trim_trailing_whitespace = true
+
+      [*.{json,yml,yaml,ts,js}]
+      indent_size = 2
+      EOF
+      printf 'vendor/\nnode_modules/\n' > .gitignore
+      git add .
+      git commit -m "chore: initial project state"
+      ```
+    solve: |
+      cat > .editorconfig <<'EOF'
+      root = true
+
+      [*]
+      charset = utf-8
+      end_of_line = lf
+      indent_style = space
+      indent_size = 4
+      insert_final_newline = true
+      trim_trailing_whitespace = true
+
+      [*.{json,yml,yaml,ts,js}]
+      indent_size = 2
+      EOF
+      printf 'vendor/\nnode_modules/\n' > .gitignore
+      git add .
+      git commit -q -m "chore: initial project state"
+
+  - id: pint
+    title: Code-Stil mit Pint
+    description: |
+      Jetzt bekommt der PHP-Code einen einheitlichen Stil.
+
+      1. Lege eine `pint.json` mit dem Preset `laravel` an und schalte die Regel `declare_strict_types` ein.
+      2. Sieh dir mit `vendor/bin/pint --test -v` an, was sich ändern würde.
+      3. Formatiere mit `vendor/bin/pint`.
+      4. Committe die Formatierung als eigenen Commit vom Typ `style`, z. B. `style: apply pint`. Trage seine
+         Commit-ID in `.git-blame-ignore-revs` ein und committe die Datei, z. B. mit `chore: ignore pint commit in blame`.
+    checklist:
+      - pint.json mit Preset laravel und declare_strict_types
+      - "`vendor/bin/pint --test` ist grün"
+      - Reiner style-Commit, seine ID in .git-blame-ignore-revs
+    hints:
+      - "`{\"preset\": \"laravel\", \"rules\": {\"declare_strict_types\": true}}`"
+      - "Nach dem style-Commit: `git rev-parse HEAD >> .git-blame-ignore-revs`."
+    checks:
+      - type: command
+        run: jq -e '.preset == "laravel" and .rules.declare_strict_types == true' pint.json
+        message: Die pint.json braucht das Preset laravel und die Regel declare_strict_types = true.
+      - type: command
+        run: vendor/bin/pint --test
+        message: vendor/bin/pint --test meldet noch Stilfehler. Führe vendor/bin/pint aus.
+      - type: command
+        run: "h=$(git log --format='%H %s' | awk '$2 ~ /^style/ {print $1; exit}'); test -n \"$h\" && grep -qx \"$h\" .git-blame-ignore-revs"
+        message: Es fehlt ein Commit vom Typ style, dessen vollständige ID in .git-blame-ignore-revs steht.
+      - type: command
+        run: test -z "$(git status --porcelain)"
+        message: Es gibt noch uncommittete Änderungen – committe pint.json, die Formatierung und .git-blame-ignore-revs.
+    solution: |
+      ```bash
+      printf '{\n    "preset": "laravel",\n    "rules": {\n        "declare_strict_types": true\n    }\n}\n' > pint.json
+      vendor/bin/pint --test -v
+      vendor/bin/pint
+      git add -A
+      git commit -m "style: apply pint"
+      git rev-parse HEAD >> .git-blame-ignore-revs
+      git config blame.ignoreRevsFile .git-blame-ignore-revs
+      git add .git-blame-ignore-revs
+      git commit -m "chore: ignore pint commit in blame"
+      ```
+    solve: |
+      printf '{\n    "preset": "laravel",\n    "rules": {\n        "declare_strict_types": true\n    }\n}\n' > pint.json
+      vendor/bin/pint -q
+      git add -A
+      git commit -q -m "style: apply pint"
+      git rev-parse HEAD >> .git-blame-ignore-revs
+      git config blame.ignoreRevsFile .git-blame-ignore-revs
+      git add .git-blame-ignore-revs
+      git commit -q -m "chore: ignore pint commit in blame"
+
+  - id: rector
+    title: Neuen Code mit Rector modernisieren
+    description: |
+      `src/Domain/` ist der Code, an dem das Team täglich arbeitet – er soll modern werden. `src/Legacy/` wird
+      bald ersetzt und bleibt, wie er ist.
+
+      1. Lege eine `rector.php` an, die **nur** `src/Domain` bearbeitet, mit `withPhpSets()` und den vorbereiteten
+         Sets `deadCode`, `codeQuality` und `typeDeclarations`.
+      2. Prüfe mit `vendor/bin/rector process --dry-run`, wende die Änderungen an und formatiere danach mit Pint.
+      3. Committe, z. B. mit `refactor: modernize domain code with rector`.
+    checklist:
+      - rector.php nur für src/Domain
+      - "`vendor/bin/rector process --dry-run` meldet keine Änderungen mehr"
+      - Pint danach wieder grün, alles committet
+    hints:
+      - "`->withPaths([__DIR__ . '/src/Domain'])` – ohne Legacy."
+      - "Nach Rector immer `vendor/bin/pint`, sonst ist `pint --test` rot."
+    checks:
+      - type: file_contains
+        path: rector.php
+        pattern: "src/Domain"
+        message: Die rector.php soll mit withPaths() nur src/Domain bearbeiten.
+      - type: command
+        run: "! grep -q \"src/Legacy\\|'/src'\\]\" rector.php"
+        message: Rector soll src/Legacy nicht anfassen – trage nur src/Domain ein.
+      - type: file_contains
+        path: rector.php
+        pattern: "typeDeclarations:\\s*true"
+        message: Schalte in withPreparedSets() typeDeclarations, deadCode und codeQuality ein.
+      - type: command
+        run: vendor/bin/rector process --dry-run --no-progress-bar
+        message: Rector würde noch etwas ändern. Führe vendor/bin/rector process aus.
+      - type: command
+        run: vendor/bin/pint --test
+        message: Nach Rector ist der Stil nicht mehr sauber. Führe vendor/bin/pint aus.
+      - type: command
+        run: test -z "$(git status --porcelain)"
+        message: Committe rector.php und die Änderungen von Rector.
+    solution: |
+      ```bash
+      cat > rector.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      use Rector\Config\RectorConfig;
+
+      return RectorConfig::configure()
+          ->withPaths([__DIR__ . '/src/Domain'])
+          ->withPhpSets()
+          ->withPreparedSets(deadCode: true, codeQuality: true, typeDeclarations: true);
+      EOF
+      vendor/bin/rector process --dry-run
+      vendor/bin/rector process
+      vendor/bin/pint
+      git add -A
+      git commit -m "refactor: modernize domain code with rector"
+      ```
+    solve: |
+      cat > rector.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      use Rector\Config\RectorConfig;
+
+      return RectorConfig::configure()
+          ->withPaths([__DIR__ . '/src/Domain'])
+          ->withPhpSets()
+          ->withPreparedSets(deadCode: true, codeQuality: true, typeDeclarations: true);
+      EOF
+      vendor/bin/rector process --no-progress-bar >/dev/null
+      vendor/bin/pint -q
+      git add -A
+      git commit -q -m "refactor: modernize domain code with rector"
+
+  - id: phpstan
+    title: PHPStan auf Level 8 mit Baseline
+    description: |
+      Jetzt kommt die statische Analyse. Für neuen Code gilt Level 8 ohne Ausnahme, die Altlasten in `src/Legacy/`
+      wandern in eine Baseline.
+
+      1. Lege eine `phpstan.neon` mit **Level 8** für `src` an und starte `vendor/bin/phpstan analyse`.
+      2. Behebe alle Fehler in `src/Domain/Inventory.php` im Code: Typen für alle Parameter und Rückgaben,
+         ein genauer Typ für `$stock` (`array<string, int>`), und `formatted()` darf `number_format()` kein
+         `null` übergeben – ein unbekannter Artikel wird als `0 Stück` angezeigt.
+      3. Erzeuge für die restlichen Fehler (nur `src/Legacy/`!) eine Baseline und binde sie unter `includes:` ein.
+      4. Lass Rector und Pint noch einmal laufen, dann committe, z. B. mit `chore: add phpstan with baseline`.
+    checklist:
+      - phpstan.neon mit Level 8 und eingebundener Baseline
+      - src/Domain ist ohne Baseline sauber, die Baseline enthält nur src/Legacy
+      - "`vendor/bin/phpstan analyse` ist grün, alles committet"
+    hints:
+      - "Erst `src/Domain/Inventory.php` reparieren, **dann** die Baseline erzeugen – sonst landen neue Fehler in der Baseline."
+      - "`add(string $sku, int $amount): void`, `quantity(string $sku): int` und `number_format($this->find($sku) ?? 0)`."
+      - "`vendor/bin/phpstan analyse --generate-baseline`, danach `includes:` mit `- phpstan-baseline.neon` ganz oben in die phpstan.neon."
+    checks:
+      - type: file_contains
+        path: phpstan.neon
+        pattern: "level:\\s*8\\b"
+        message: "Die phpstan.neon soll Level 8 verwenden (`level: 8`)."
+      - type: file_contains
+        path: phpstan.neon
+        pattern: "^includes:\\s*\\n\\s+-\\s*phpstan-baseline\\.neon"
+        message: Binde phpstan-baseline.neon unter includes ein.
+      - type: file_contains
+        path: phpstan-baseline.neon
+        pattern: "src/Legacy/StockReport\\.php"
+        message: Die Baseline soll die Altlasten aus src/Legacy enthalten.
+      - type: command
+        run: "! grep -q 'src/Domain' phpstan-baseline.neon && ! grep -rq 'phpstan-ignore' src/Domain"
+        message: src/Domain darf weder in der Baseline stehen noch @phpstan-ignore nutzen – behebe die Fehler dort im Code und erzeuge die Baseline neu.
+      - type: command
+        run: vendor/bin/phpstan analyse --no-progress
+        message: vendor/bin/phpstan analyse meldet noch Fehler.
+      - type: command
+        run: "php -r 'require \"vendor/autoload.php\"; $i = new App\\Domain\\Inventory(); $i->add(\"tee\", 1200); $i->add(\"tee\", 34); echo $i->quantity(\"tee\"), \"|\", $i->formatted(\"tee\"), \"|\", $i->formatted(\"fehlt\");'"
+        stdout_equals: "1234|1,234 Stück|0 Stück"
+        message: "Das Verhalten von Inventory stimmt nicht mehr. Erwartet: 1234|1,234 Stück|0 Stück."
+      - type: command
+        run: vendor/bin/pint --test && vendor/bin/rector process --dry-run --no-progress-bar >/dev/null
+        message: Nach deinen Änderungen sind Pint oder Rector nicht mehr grün. Lass beide noch einmal laufen.
+      - type: command
+        run: test -z "$(git status --porcelain)"
+        message: Committe phpstan.neon, die Baseline und deine Änderungen.
+    solution: |
+      ```bash
+      printf 'parameters:\n    level: 8\n    paths:\n        - src\n' > phpstan.neon
+      vendor/bin/phpstan analyse
+      # src/Domain/Inventory.php reparieren (Typen, null-Fall), z. B. so:
+      cat > src/Domain/Inventory.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Domain;
+
+      class Inventory
+      {
+          /** @var array<string, int> */
+          private array $stock = [];
+
+          public function add(string $sku, int $amount): void
+          {
+              $this->stock[$sku] = $this->quantity($sku) + $amount;
+          }
+
+          public function quantity(string $sku): int
+          {
+              return $this->stock[$sku] ?? 0;
+          }
+
+          public function find(string $sku): ?int
+          {
+              return $this->stock[$sku] ?? null;
+          }
+
+          public function formatted(string $sku): string
+          {
+              return number_format($this->find($sku) ?? 0).' Stück';
+          }
+      }
+      EOF
+      vendor/bin/rector process
+      vendor/bin/pint
+      vendor/bin/phpstan analyse --generate-baseline
+      printf 'includes:\n    - phpstan-baseline.neon\n\nparameters:\n    level: 8\n    paths:\n        - src\n' > phpstan.neon
+      vendor/bin/phpstan analyse
+      git add -A
+      git commit -m "chore: add phpstan with baseline"
+      ```
+    solve: |
+      cat > src/Domain/Inventory.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Domain;
+
+      class Inventory
+      {
+          /** @var array<string, int> */
+          private array $stock = [];
+
+          public function add(string $sku, int $amount): void
+          {
+              $this->stock[$sku] = $this->quantity($sku) + $amount;
+          }
+
+          public function quantity(string $sku): int
+          {
+              return $this->stock[$sku] ?? 0;
+          }
+
+          public function find(string $sku): ?int
+          {
+              return $this->stock[$sku] ?? null;
+          }
+
+          public function formatted(string $sku): string
+          {
+              return number_format($this->find($sku) ?? 0).' Stück';
+          }
+      }
+      EOF
+      vendor/bin/rector process --no-progress-bar >/dev/null
+      vendor/bin/pint -q
+      printf 'parameters:\n    level: 8\n    paths:\n        - src\n' > phpstan.neon
+      vendor/bin/phpstan analyse --no-progress --generate-baseline >/dev/null 2>&1 || true
+      printf 'includes:\n    - phpstan-baseline.neon\n\nparameters:\n    level: 8\n    paths:\n        - src\n' > phpstan.neon
+      git add -A
+      git commit -q -m "chore: add phpstan with baseline"
+
+  - id: biome
+    title: Biome für das Frontend
+    description: |
+      Weiter mit dem TypeScript-Teil in `web/`.
+
+      1. Erzeuge mit `npx biome init` eine `biome.json`. Stelle die Einrückung auf Leerzeichen, beschränke Biome
+         mit `files.includes` auf `web/**` und mache `suspicious.noExplicitAny` und `suspicious.noVar` zu Fehlern.
+      2. Lass Biome mit `npx biome check --write` reparieren und behebe den Rest – `any` ersetzt du durch den
+         passenden Typ `Item[]`, `var` und `==` darfst du mit `--unsafe` reparieren lassen.
+      3. `npx biome ci` muss grün sein. Committe, z. B. mit `chore: add biome`.
+    checklist:
+      - biome.json mit Leerzeichen, files.includes und den zwei Fehler-Regeln
+      - Kein any, kein var, kein == mehr in web/stock.ts
+      - "`npx biome ci` ist grün, alles committet"
+    hints:
+      - "Mit jq: `.files.includes = [\"web/**\"] | .formatter.indentStyle = \"space\" | .linter.rules.suspicious.noExplicitAny = \"error\" | .linter.rules.suspicious.noVar = \"error\"`."
+      - "`isEmpty(items: Item[])` statt `any`."
+    checks:
+      - type: command
+        run: jq -e '.formatter.indentStyle == "space" and (.files.includes | index("web/**")) and .linter.rules.suspicious.noExplicitAny == "error" and .linter.rules.suspicious.noVar == "error"' biome.json
+        message: "Die biome.json braucht indentStyle space, files.includes mit \"web/**\" und noExplicitAny sowie noVar als \"error\"."
+      - type: command
+        run: ./node_modules/.bin/biome ci
+        message: biome ci meldet noch Probleme. Führe npx biome check --write (und bei Bedarf --unsafe) aus.
+      - type: command
+        run: test -z "$(git status --porcelain)"
+        message: Committe biome.json und die Änderungen in web/.
+    solution: |
+      ```bash
+      npx biome init
+      jq '.files.includes = ["web/**"]
+        | .formatter.indentStyle = "space"
+        | .linter.rules.suspicious.noExplicitAny = "error"
+        | .linter.rules.suspicious.noVar = "error"' biome.json > b.json && mv b.json biome.json
+      sed -i 's/isEmpty(items: any)/isEmpty(items: Item[])/' web/stock.ts
+      npx biome check --write --unsafe
+      npx biome ci
+      git add -A
+      git commit -m "chore: add biome"
+      ```
+    solve: |
+      ./node_modules/.bin/biome init >/dev/null
+      jq '.files.includes = ["web/**"]
+        | .formatter.indentStyle = "space"
+        | .linter.rules.suspicious.noExplicitAny = "error"
+        | .linter.rules.suspicious.noVar = "error"' biome.json > b.json && mv b.json biome.json
+      sed -i 's/isEmpty(items: any)/isEmpty(items: Item[])/' web/stock.ts
+      ./node_modules/.bin/biome check --write --unsafe >/dev/null 2>&1 || true
+      git add -A
+      git commit -q -m "chore: add biome"
+
+  - id: typescript
+    title: TypeScript strict
+    description: |
+      Biome ist zufrieden, aber der Compiler ist noch nachsichtig.
+
+      1. Stelle in der `tsconfig.json` `strict` auf `true` und schalte `noUncheckedIndexedAccess` ein.
+      2. Starte `npx tsc` und behebe den Fehler: `firstSku()` soll für eine leere Liste `null` liefern
+         (Rückgabetyp `string | null`) – ohne `!`.
+      3. Achte darauf, dass `npx biome ci` grün bleibt, und committe, z. B. mit `chore: enable typescript strict`.
+    checklist:
+      - strict und noUncheckedIndexedAccess eingeschaltet
+      - "`npx tsc` ohne Fehler, kein `!` und kein `any`"
+      - Biome weiterhin grün, alles committet
+    hints:
+      - "`return items[0]?.sku ?? null;`"
+      - "Ändere auch den Rückgabetyp auf `string | null`."
+    checks:
+      - type: command
+        run: ./node_modules/.bin/tsc --showConfig | jq -e '.compilerOptions.strict == true and .compilerOptions.noUncheckedIndexedAccess == true'
+        message: In der tsconfig.json müssen strict und noUncheckedIndexedAccess auf true stehen.
+      - type: command
+        run: ./node_modules/.bin/tsc
+        message: npx tsc meldet noch Typfehler.
+      - type: command
+        run: "! grep -Eq '[a-z)\\]]!\\.|@ts-ignore|: any' web/stock.ts"
+        message: Löse die Fehler ohne !, @ts-ignore oder any.
+      - type: command
+        run: "node --input-type=module -e \"import { firstSku, totalQuantity, isEmpty } from './web/stock.ts'; console.log([firstSku([{ sku: 'TEE', quantity: 2 }]), firstSku([]), totalQuantity([{ sku: 'A', quantity: 2 }, { sku: 'B', quantity: 3 }]), isEmpty([])].join('|'));\""
+        stdout_equals: "TEE||5|true"
+        message: "Das Verhalten stimmt nicht. Erwartet: TEE||5|true (firstSku([]) liefert null)."
+      - type: command
+        run: ./node_modules/.bin/biome ci && test -z "$(git status --porcelain)"
+        message: Biome ist nicht mehr grün oder es gibt uncommittete Änderungen.
+    solution: |
+      ```bash
+      jq '.compilerOptions.strict = true | .compilerOptions.noUncheckedIndexedAccess = true' tsconfig.json > t.json && mv t.json tsconfig.json
+      npx tsc
+      sed -i 's/export function firstSku(items: Item\[\]): string {/export function firstSku(items: Item[]): string | null {/; s/return items\[0\].sku;/return items[0]?.sku ?? null;/' web/stock.ts
+      npx tsc
+      npx biome check --write
+      git add -A
+      git commit -m "chore: enable typescript strict"
+      ```
+    solve: |
+      jq '.compilerOptions.strict = true | .compilerOptions.noUncheckedIndexedAccess = true' tsconfig.json > t.json && mv t.json tsconfig.json
+      sed -i 's/export function firstSku(items: Item\[\]): string {/export function firstSku(items: Item[]): string | null {/; s/return items\[0\].sku;/return items[0]?.sku ?? null;/' web/stock.ts
+      ./node_modules/.bin/biome check --write >/dev/null 2>&1 || true
+      git add -A
+      git commit -q -m "chore: enable typescript strict"
+
+  - id: ein-befehl
+    title: Ein Befehl für alles
+    description: |
+      Jetzt bündelst du alle Prüfungen.
+
+      1. In der `composer.json` unter `scripts`: `lint` (`pint --test`), `refactor-check`
+         (`rector process --dry-run`), `analyse` (`phpstan analyse --no-progress`) und `qa` als Liste
+         `["@lint", "@refactor-check", "@analyse"]`.
+      2. In der `package.json` unter `scripts`: `lint` (`biome ci`), `typecheck` (`tsc`) und
+         `check` (`npm run lint && npm run typecheck`).
+      3. Prüfe mit `composer qa` und `npm run check` und committe, z. B. mit `build: add qa and check scripts`.
+    checklist:
+      - "`composer qa` ruft Pint, Rector und PHPStan auf und ist grün"
+      - "`npm run check` ruft Biome und tsc auf und ist grün"
+      - Alles committet
+    hints:
+      - "`npm pkg set scripts.lint=\"biome ci\"` setzt ein npm-Skript ohne Editor."
+      - "Für die composer.json hilft jq: `.scripts = { … }`."
+    checks:
+      - type: command
+        run: jq -c '.scripts.qa' composer.json
+        stdout_equals: '["@lint","@refactor-check","@analyse"]'
+        message: "Das Composer-Skript qa soll [\"@lint\", \"@refactor-check\", \"@analyse\"] sein."
+      - type: command
+        run: composer qa
+        message: composer qa schlägt fehl. Führe es aus und lies die Ausgabe.
+      - type: command
+        run: jq -r '.scripts.check' package.json
+        stdout_matches: "lint.*typecheck"
+        message: Das npm-Skript check soll erst lint und dann typecheck ausführen.
+      - type: command
+        run: npm run check --silent
+        message: npm run check schlägt fehl.
+      - type: command
+        run: test -z "$(git status --porcelain)"
+        message: Committe composer.json und package.json.
+    solution: |
+      ```bash
+      jq '.scripts = {"lint": "pint --test", "refactor-check": "rector process --dry-run", "analyse": "phpstan analyse --no-progress", "qa": ["@lint", "@refactor-check", "@analyse"]}' composer.json > c.json && mv c.json composer.json
+      npm pkg set scripts.lint="biome ci" scripts.typecheck="tsc" scripts.check="npm run lint && npm run typecheck"
+      composer qa
+      npm run check
+      git add -A
+      git commit -m "build: add qa and check scripts"
+      ```
+    solve: |
+      jq '.scripts = {"lint": "pint --test", "refactor-check": "rector process --dry-run", "analyse": "phpstan analyse --no-progress", "qa": ["@lint", "@refactor-check", "@analyse"]}' composer.json > c.json && mv c.json composer.json
+      npm pkg set scripts.lint="biome ci" scripts.typecheck="tsc" scripts.check="npm run lint && npm run typecheck"
+      git add -A
+      git commit -q -m "build: add qa and check scripts"
+
+  - id: lefthook
+    title: Prüfen vor dem Commit mit Lefthook
+    description: |
+      Damit Fehler gar nicht erst in die Historie kommen, richtest du Lefthook ein.
+
+      1. Lege eine `lefthook.yml` an mit einem `pre-commit`-Hook (parallel) und zwei Jobs:
+         - `pint` für `*.php`: `vendor/bin/pint {staged_files}` mit `stage_fixed: true`
+         - `biome` für `*.{js,ts,json}`: `npx biome check --write --no-errors-on-unmatched {staged_files}`
+           mit `stage_fixed: true`
+      2. Ergänze einen `pre-push`-Hook mit einem Job `qa`, der `composer qa` ausführt.
+      3. Installiere die Hooks mit `npx lefthook install` und committe die `lefthook.yml` – der Commit läuft
+         dabei schon durch deinen Hook.
+    checklist:
+      - lefthook.yml mit pre-commit (pint, biome) und pre-push (composer qa)
+      - Hooks installiert
+      - lefthook.yml committet
+    hints:
+      - "Prüfe die Datei mit `npx lefthook validate`."
+      - "`npx lefthook run pre-commit` startet den Hook auch ohne Commit."
+    checks:
+      - type: command
+        run: ./node_modules/.bin/lefthook validate
+        message: Die lefthook.yml fehlt oder ist ungültig. npx lefthook validate zeigt die Ursache.
+      - type: file_contains
+        path: lefthook.yml
+        pattern: "^\\s*run:.*pint.*\\{staged_files\\}"
+        message: Der pint-Job soll vendor/bin/pint {staged_files} ausführen.
+      - type: file_contains
+        path: lefthook.yml
+        pattern: "^\\s*run:.*biome check.*\\{staged_files\\}"
+        message: Der biome-Job soll biome check auf {staged_files} ausführen.
+      - type: file_contains
+        path: lefthook.yml
+        pattern: "^pre-push:"
+        message: Es fehlt der pre-push-Hook mit composer qa.
+      - type: file_contains
+        path: lefthook.yml
+        pattern: "^\\s*run:\\s*composer (run(-script)? )?qa"
+        message: Der pre-push-Hook soll composer qa ausführen.
+      - type: command
+        run: grep -q lefthook .git/hooks/pre-commit && grep -q lefthook .git/hooks/pre-push
+        message: Die Hooks sind noch nicht installiert. Führe npx lefthook install aus.
+      - type: command
+        run: git ls-files lefthook.yml | grep -q . && test -z "$(git status --porcelain)"
+        message: Committe die lefthook.yml.
+    solution: |
+      ```bash
+      cat > lefthook.yml <<'EOF'
+      pre-commit:
+        parallel: true
+        jobs:
+          - name: pint
+            glob: "*.php"
+            run: vendor/bin/pint {staged_files}
+            stage_fixed: true
+          - name: biome
+            glob: "*.{js,ts,json}"
+            run: npx biome check --write --no-errors-on-unmatched {staged_files}
+            stage_fixed: true
+
+      pre-push:
+        jobs:
+          - name: qa
+            run: composer qa
+      EOF
+      npx lefthook validate
+      npx lefthook install
+      git add lefthook.yml
+      git commit -m "chore: add lefthook hooks"
+      ```
+    solve: |
+      cat > lefthook.yml <<'EOF'
+      pre-commit:
+        parallel: true
+        jobs:
+          - name: pint
+            glob: "*.php"
+            run: vendor/bin/pint {staged_files}
+            stage_fixed: true
+          - name: biome
+            glob: "*.{js,ts,json}"
+            run: npx biome check --write --no-errors-on-unmatched {staged_files}
+            stage_fixed: true
+
+      pre-push:
+        jobs:
+          - name: qa
+            run: composer qa
+      EOF
+      ./node_modules/.bin/lefthook install >/dev/null
+      git add lefthook.yml
+      git commit -q -m "chore: add lefthook hooks"
+
+  - id: ci
+    title: Die CI-Pipeline
+    description: |
+      Hooks lassen sich umgehen – die letzte, verbindliche Instanz ist die CI.
+
+      1. Lege `.github/workflows/qa.yml` an: Name `QA`, läuft bei `push` und `pull_request`, ein Job `qa` auf
+         `ubuntu-latest` mit diesen Schritten: `actions/checkout@v7`, `shivammathur/setup-php@v2` (PHP `8.5`),
+         `actions/setup-node@v7` (Node `24`), `composer install --no-interaction --no-progress`, `npm ci`,
+         `composer qa`, `npm run check`.
+      2. Ergänze in der `README.md` einen kurzen Abschnitt `## Qualität`, der `composer qa` und `npm run check`
+         nennt.
+      3. Committe beides, z. B. mit `ci: add quality workflow`.
+    checklist:
+      - Workflow mit Checkout, PHP, Node, Installation und beiden Prüfbefehlen
+      - README beschreibt die Befehle
+      - Alles committet, `composer qa` und `npm run check` grün
+    hints:
+      - Die Reihenfolge der Schritte ist wichtig – ohne Installation gibt es kein vendor/bin.
+      - Die Workflow-Datei ist YAML, rücke mit zwei Leerzeichen ein.
+    checks:
+      - type: file_exists
+        path: .github/workflows/qa.yml
+        message: Es fehlt die Datei .github/workflows/qa.yml.
+      - type: file_contains
+        path: .github/workflows/qa.yml
+        pattern: "pull_request"
+        message: Der Workflow soll auch bei pull_request laufen.
+      - type: file_contains
+        path: .github/workflows/qa.yml
+        pattern: "uses:\\s*actions/setup-node@v7"
+        message: Richte Node mit actions/setup-node@v7 ein.
+      - type: file_contains
+        path: .github/workflows/qa.yml
+        pattern: "run:\\s*npm ci"
+        message: Installiere die npm-Pakete im Workflow mit npm ci.
+      - type: file_contains
+        path: .github/workflows/qa.yml
+        pattern: "run:\\s*composer (run(-script)? )?qa"
+        message: Der Workflow soll composer qa ausführen.
+      - type: file_contains
+        path: .github/workflows/qa.yml
+        pattern: "run:\\s*npm run check"
+        message: Der Workflow soll npm run check ausführen.
+      - type: file_contains
+        path: README.md
+        pattern: "composer qa"
+        message: Beschreibe in der README.md, dass composer qa und npm run check die Prüfungen starten.
+      - type: command
+        run: composer qa && npm run check --silent && test -z "$(git status --porcelain)"
+        message: Entweder schlägt eine Prüfung fehl oder es gibt uncommittete Änderungen.
+    solution: |
+      ```bash
+      mkdir -p .github/workflows
+      cat > .github/workflows/qa.yml <<'EOF'
+      name: QA
+
+      on: [push, pull_request]
+
+      jobs:
+        qa:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v7
+            - uses: shivammathur/setup-php@v2
+              with:
+                php-version: "8.5"
+            - uses: actions/setup-node@v7
+              with:
+                node-version: 24
+                cache: npm
+            - run: composer install --no-interaction --no-progress
+            - run: npm ci
+            - run: composer qa
+            - run: npm run check
+      EOF
+      printf '# Lager\n\n## Qualität\n\n- `composer qa` – Pint, Rector und PHPStan\n- `npm run check` – Biome und TypeScript\n' > README.md
+      git add -A
+      git commit -m "ci: add quality workflow"
+      ```
+    solve: |
+      mkdir -p .github/workflows
+      cat > .github/workflows/qa.yml <<'EOF'
+      name: QA
+
+      on: [push, pull_request]
+
+      jobs:
+        qa:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v7
+            - uses: shivammathur/setup-php@v2
+              with:
+                php-version: "8.5"
+            - uses: actions/setup-node@v7
+              with:
+                node-version: 24
+                cache: npm
+            - run: composer install --no-interaction --no-progress
+            - run: npm ci
+            - run: composer qa
+            - run: npm run check
+      EOF
+      printf '# Lager\n\n## Qualität\n\n- `composer qa` – Pint, Rector und PHPStan\n- `npm run check` – Biome und TypeScript\n' > README.md
+      git add -A
+      git commit -q -m "ci: add quality workflow"

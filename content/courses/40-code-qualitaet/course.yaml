@@ -1,0 +1,36 @@
+title: Code-Qualität automatisiert
+subtitle: PHPStan, Rector, Pint, Biome, TypeScript strict und Git-Hooks – Regeln, die sich selbst prüfen
+description: >
+  In jedem Team gibt es Regeln: Wie wird eingerückt? Darf eine Funktion `null` zurückgeben, ohne es zu sagen?
+  Werden alte Sprachfeatures noch benutzt? Solange Menschen diese Regeln im Code-Review prüfen, kosten sie
+  Zeit, Nerven und Aufmerksamkeit – und rutschen trotzdem durch. In diesem Kurs lernst du, diese Regeln
+  **an Werkzeuge abzugeben**, die sie in Sekunden und jedes Mal gleich prüfen.
+
+
+  Du lernst den Unterschied zwischen Formatter, Linter und statischer Analyse und arbeitest mit den
+  Werkzeugen, die in modernen PHP- und JavaScript-Projekten Standard sind: **Laravel Pint** für den Code-Stil,
+  **PHPStan** mit Leveln und Baseline, **Rector** für automatische Umbauten, **Biome** für JavaScript und
+  TypeScript sowie den **TypeScript-Compiler im strict-Modus**. Zum Schluss verdrahtest du alles mit
+  **Git-Hooks** und einer **CI-Pipeline** und lernst, wie du die Werkzeuge in ein bestehendes Projekt
+  einführst, ohne das Team mit tausend alten Fehlern zu lähmen. Jede Lektion hat echte Aufgaben im
+  Übungs-Terminal.
+category: backend
+level: fortgeschritten
+icon: shield-check
+color: "#22d3ee"
+estimated_hours: 5
+workspace_dir: code-qualitaet
+prerequisites: [php, javascript, git]
+learning_goals:
+  - Du erklärst, warum man Code-Qualität automatisiert und wo Formatter, Linter, statische Analyse und Tests ihren Platz haben.
+  - Du legst gemeinsame Grundregeln mit EditorConfig und versionierten Konfigurationsdateien fest.
+  - Du formatierst PHP-Code mit Laravel Pint und passt Presets und Regeln an.
+  - Du findest Fehler mit PHPStan, wählst ein passendes Level und arbeitest mit einer Baseline.
+  - Du baust PHP-Code mit Rector automatisch um und modernisierst ihn auf eine neue PHP-Version.
+  - Du formatierst und lintest JavaScript und TypeScript mit Biome und nutzt TypeScript strict als Qualitätswerkzeug.
+  - Du automatisierst alle Prüfungen mit Git-Hooks, einem gemeinsamen Befehl und einer CI-Pipeline.
+  - Du führst Qualitätswerkzeuge schrittweise in eine bestehende Codebasis ein.
+references:
+  - Pint, PHPStan und Rector als feste Qualitätsschranke in Laravel-Projekten, lokal und in der CI-Pipeline
+  - Pre-Commit-Hooks, die nur die vorgemerkten Dateien prüfen, damit Commits schnell bleiben
+  - PHPStan-Baselines in gewachsenen Codebasen, die Schritt für Schritt abgebaut werden

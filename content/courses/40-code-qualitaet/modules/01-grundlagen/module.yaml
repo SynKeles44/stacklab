@@ -1,0 +1,132 @@
+title: Grundlagen der automatischen Qualität
+description: Warum man Qualitätsregeln an Werkzeuge abgibt, was Formatter, Linter und statische Analyse unterscheidet, wie Exit-Codes eine Qualitätsschranke bilden und wie EditorConfig gemeinsame Grundregeln festlegt.
+exercise:
+  id: erste-qualitaetsschranke
+  type: terminal
+  title: Deine erste Qualitätsschranke
+  description: |
+    Im Ordner `erste-schranke` liegt ein kleines PHP-Projekt für einen Kassenbon. Es ist in schlechtem Zustand:
+    Eine Datei hat Windows-Zeilenenden, eine hat einen Syntaxfehler, und der Code-Stil ist uneinheitlich.
+    Baue Ordnung und eine erste, sehr einfache Qualitätsschranke:
+
+    1. Lege eine `.editorconfig` mit `root = true` und einem Abschnitt `[*]` an (UTF-8, LF, Leerzeichen,
+       Einrückung 4, Zeilenumbruch am Dateiende, keine Leerzeichen am Zeilenende).
+    2. Entferne alle `\r`-Zeichen aus den Dateien in `src/`.
+    3. Finde den Syntaxfehler mit `php -l` und repariere ihn von Hand.
+    4. Formatiere alles mit `pint`.
+    5. Schreibe ein Skript `qa.sh`, das nacheinander jede Datei in `src/` mit `php -l` prüft und danach
+       `pint --test` ausführt. Es muss mit Exit-Code `0` enden, wenn alles sauber ist, und mit einem anderen
+       Exit-Code, sobald eine Prüfung fehlschlägt. Tipp: `set -e` in der zweiten Zeile.
+    6. Starte `bash qa.sh; echo $?` – es sollte `0` ausgeben.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Die Prüfung testet dein Skript auch mit einer absichtlich
+    kaputten Datei.
+  workdir: erste-schranke
+  setup: |
+    mkdir -p src
+    printf '<?php\r\n\r\ndeclare(strict_types=1);\r\n\r\nnamespace App;\r\n\r\nfinal class Item\r\n{\r\n    public function __construct(public string $name, public int $cents)\r\n    {\r\n    }\r\n}\r\n' > src/Item.php
+    cat > src/Receipt.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App;
+
+    final class Receipt
+    {
+        /** @var list<Item> */
+        private array $items = [];
+
+        public function add(Item $item): void
+        {
+            $this->items[] = $item;
+        }
+
+        public function total(): int
+        {
+            $sum = 0;
+            foreach ($this->items as $item) {
+                $sum += $item->cents;
+            }
+            return $sum
+        }
+    }
+    EOF
+    cat > src/format.php <<'EOF'
+    <?php
+    declare(strict_types=1);
+    function format_cents( int $cents ) : string {
+      return number_format( $cents/100, 2, ',', '.' ) . ' €' ;
+    }
+    EOF
+  checks:
+    - type: file_contains
+      path: .editorconfig
+      pattern: "^root\\s*=\\s*true"
+      message: Es fehlt eine .editorconfig mit `root = true` in der ersten Zeile.
+    - type: file_contains
+      path: .editorconfig
+      pattern: "^end_of_line\\s*=\\s*lf"
+      message: Die .editorconfig braucht im Abschnitt `[*]` die Zeile `end_of_line = lf`.
+    - type: command
+      run: "! grep -rlq $'\\r' src"
+      message: In src/ stehen noch Windows-Zeilenenden. Entferne sie mit sed -i 's/\r$//' src/*.php.
+    - type: command
+      run: "for f in src/*.php; do php -l \"$f\" >/dev/null 2>&1 || exit 1; done"
+      message: Mindestens eine Datei hat noch einen Syntaxfehler – prüfe sie einzeln mit php -l.
+    - type: file_contains
+      path: src/Receipt.php
+      pattern: "function total\\(\\): int"
+      message: Die Methode total() in src/Receipt.php muss erhalten bleiben – repariere den Fehler, statt Code zu löschen.
+    - type: command
+      run: pint --test
+      message: Der Code-Stil ist noch nicht sauber. Führe pint aus.
+    - type: file_contains
+      path: qa.sh
+      pattern: "pint --test"
+      message: Dein Skript qa.sh soll `pint --test` ausführen.
+    - type: command
+      run: bash qa.sh
+      message: bash qa.sh endet noch nicht mit Exit-Code 0, obwohl das Projekt sauber ist.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        cp -r src qa.sh "$d"/
+        printf '<?php\nfunction kaputt( {\n' > "$d/src/kaputt.php"
+        (cd "$d" && bash qa.sh >/dev/null 2>&1)
+        ec=$?
+        rm -rf "$d"
+        [ "$ec" -ne 0 ]
+      message: Dein Skript endet mit Exit-Code 0, obwohl eine Datei einen Syntaxfehler hat. Nutze set -e oder brich mit exit 1 ab, wenn php -l fehlschlägt.
+  hints:
+    - "Für die Zeilenenden genügt `sed -i 's/\\r$//' src/*.php`. Der Syntaxfehler steckt in `src/Receipt.php`."
+    - "Ein Skript mit `#!/usr/bin/env bash` und `set -e` bricht beim ersten Befehl mit Exit-Code ungleich 0 ab."
+    - "Die Schleife: `for f in src/*.php; do php -l \"$f\"; done` – danach eine Zeile `pint --test`."
+  solution: |
+    ```bash
+    cd erste-schranke
+    cat > .editorconfig <<'EOF'
+    root = true
+
+    [*]
+    charset = utf-8
+    end_of_line = lf
+    indent_style = space
+    indent_size = 4
+    insert_final_newline = true
+    trim_trailing_whitespace = true
+    EOF
+    sed -i 's/\r$//' src/*.php
+    for f in src/*.php; do php -l "$f"; done
+    sed -i 's/return \$sum$/return $sum;/' src/Receipt.php
+    pint
+    cat > qa.sh <<'EOF'
+    #!/usr/bin/env bash
+    set -e
+    for f in src/*.php; do
+        php -l "$f"
+    done
+    pint --test
+    EOF
+    bash qa.sh; echo $?
+    ```

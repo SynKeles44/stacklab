@@ -1,0 +1,125 @@
+title: Automatisieren und einführen
+description: Git-Hooks und Hook-Manager für Prüfungen vor dem Commit, ein gemeinsamer Befehl und eine CI-Pipeline als verbindliche Qualitätsschranke und Strategien, um Werkzeuge in gewachsene Projekte einzuführen.
+exercise:
+  id: lefthook-einrichten
+  type: terminal
+  title: Lefthook für ein gemischtes PHP- und JavaScript-Projekt
+  description: |
+    Im Ordner `lefthook-einrichten` liegt ein Git-Repository mit PHP-Code in `src/` und JavaScript in `web/`.
+    Lefthook und Biome sind schon installiert (siehe `package.json`), eine `biome.json` gibt es auch.
+
+    1. Lege eine `lefthook.yml` an mit einem `pre-commit`-Hook und zwei Jobs:
+       - `pint`: nur für `*.php`, führt `pint {staged_files}` aus und merkt die reparierten Dateien wieder vor
+         (`stage_fixed: true`).
+       - `biome`: nur für `*.{js,ts}`, führt `biome check --no-errors-on-unmatched {staged_files}` aus – **ohne**
+         `--write`, damit Lint-Fehler den Commit stoppen.
+    2. Installiere die Hooks mit `npx lefthook install`.
+    3. Ergänze in der `package.json` das Skript `"check": "biome ci"`.
+    4. Committe `lefthook.yml` und `package.json`. Probiere danach aus: Ein Commit mit einer schief formatierten
+       PHP-Datei wird automatisch repariert, ein Commit mit `==` in einer JS-Datei wird gestoppt.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – die Installation dauert einen Moment.
+  workdir: lefthook-einrichten
+  setup: |
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    cat > package.json <<'EOF'
+    {
+      "name": "lefthook-uebung",
+      "private": true,
+      "type": "module",
+      "devDependencies": {
+        "@biomejs/biome": "2.5.15",
+        "lefthook": "2.2.1"
+      }
+    }
+    EOF
+    cat > biome.json <<'EOF'
+    {
+      "files": { "includes": ["web/**"] },
+      "formatter": { "indentStyle": "space" },
+      "linter": { "rules": { "preset": "recommended" } }
+    }
+    EOF
+    printf 'node_modules/\n' > .gitignore
+    mkdir -p src web
+    printf '<?php\n\ndeclare(strict_types=1);\n\nnamespace App;\n\nfinal class Hello\n{\n    public function text(): string\n    {\n        return '"'"'Hallo'"'"';\n    }\n}\n' > src/Hello.php
+    printf 'export function hello(name) {\n  return `Hallo ${name}`;\n}\n' > web/hello.js
+    timeout 170 npm install --no-audit --no-fund --silent </dev/null
+    rm -f lefthook.yml
+    git add .
+    git commit -q -m "chore: initial commit"
+  checks:
+    - type: file_exists
+      path: lefthook.yml
+      message: Es fehlt die Datei lefthook.yml.
+    - type: command
+      run: ./node_modules/.bin/lefthook validate
+      message: Die lefthook.yml ist ungültig. ./node_modules/.bin/lefthook validate zeigt, was nicht stimmt.
+    - type: file_contains
+      path: lefthook.yml
+      pattern: "^\\s*run:.*\\{staged_files\\}"
+      message: Die Jobs sollen nur die vorgemerkten Dateien prüfen – nutze den Platzhalter {staged_files}.
+    - type: file_contains
+      path: lefthook.yml
+      pattern: "^\\s*stage_fixed:\\s*true"
+      message: "Der pint-Job soll reparierte Dateien wieder vormerken (stage_fixed: true)."
+    - type: command
+      run: grep -q lefthook .git/hooks/pre-commit
+      message: Die Hooks sind noch nicht installiert. Führe npx lefthook install aus.
+    - type: command
+      run: jq -r '.scripts.check' package.json
+      stdout_equals: biome ci
+      message: Ergänze in der package.json das Skript "check" mit "biome ci".
+    - type: command
+      run: git ls-files lefthook.yml && test -z "$(git status --porcelain -- lefthook.yml package.json)"
+      message: Committe lefthook.yml und package.json, damit das Team die Hooks bekommt.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        git clone -q . "$d/repo" && ln -s "$PWD/node_modules" "$d/repo/node_modules" && cd "$d/repo"
+        git config user.name "Pruefung"; git config user.email "pruefung@example.com"
+        printf '<?php\nfunction schief( $a ){ return $a; }\n' > src/schief.php
+        git add src/schief.php
+        LEFTHOOK_QUIET=meta ./node_modules/.bin/lefthook run pre-commit >/dev/null 2>&1
+        ec=$?
+        staged=$(git show :src/schief.php)
+        cd / && rm -rf "$d"
+        [ "$ec" -eq 0 ] && printf '%s' "$staged" | grep -q 'function schief(\$a)'
+      message: Der pre-commit-Hook repariert eine schief formatierte PHP-Datei noch nicht (oder merkt sie nicht wieder vor). Prüfe glob, run und stage_fixed beim pint-Job.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        git clone -q . "$d/repo" && ln -s "$PWD/node_modules" "$d/repo/node_modules" && cd "$d/repo"
+        printf 'export function isOne(x) {\n  return x == 1;\n}\n' > web/one.js
+        git add web/one.js
+        ./node_modules/.bin/lefthook run pre-commit >/dev/null 2>&1
+        ec=$?
+        cd / && rm -rf "$d"
+        [ "$ec" -ne 0 ]
+      message: Der Hook lässt eine JS-Datei mit == durch. Der biome-Job soll biome check ohne --write auf {staged_files} ausführen.
+  hints:
+    - "Aufbau: `pre-commit:` → `jobs:` → je Job ein Listeneintrag mit `name`, `glob` und `run`."
+    - "glob-Muster in Anführungszeichen: `glob: \"*.php\"` und `glob: \"*.{js,ts}\"`."
+    - "Das Skript ergänzt du mit `npm pkg set scripts.check=\"biome ci\"`."
+  solution: |
+    ```bash
+    cd lefthook-einrichten
+    cat > lefthook.yml <<'EOF'
+    pre-commit:
+      parallel: true
+      jobs:
+        - name: pint
+          glob: "*.php"
+          run: pint {staged_files}
+          stage_fixed: true
+        - name: biome
+          glob: "*.{js,ts}"
+          run: npx biome check --no-errors-on-unmatched {staged_files}
+    EOF
+    npx lefthook install
+    npm pkg set scripts.check="biome ci"
+    git add lefthook.yml package.json
+    git commit -m "chore: add lefthook pre-commit hooks"
+    ```
