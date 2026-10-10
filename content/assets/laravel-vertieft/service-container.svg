@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="450" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Der Service Container: erst registrieren, dann auflösen</text>
+
+  <rect x="30" y="80" width="250" height="220" rx="14" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="155" y="110" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">1. Service Provider</text>
+  <text x="155" y="132" text-anchor="middle" font-size="13" fill="#1e1b3a">register() – beim Start</text>
+  <rect x="48" y="150" width="214" height="120" rx="8" fill="#ffffff" stroke="#a78bfa"/>
+  <text x="58" y="176" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">$this-&gt;app-&gt;singleton(</text>
+  <text x="70" y="198" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">PaymentGateway::class,</text>
+  <text x="70" y="220" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">HttpPaymentGateway::class</text>
+  <text x="58" y="242" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">);</text>
+
+  <rect x="330" y="80" width="250" height="220" rx="14" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="455" y="110" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">2. Container</text>
+  <text x="455" y="132" text-anchor="middle" font-size="13" fill="#1e1b3a">„Bauplan-Verzeichnis“</text>
+  <rect x="348" y="150" width="214" height="34" rx="6" fill="#ffffff" stroke="#22d3ee"/>
+  <text x="358" y="172" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">PaymentGateway → Http…</text>
+  <rect x="348" y="192" width="214" height="34" rx="6" fill="#ffffff" stroke="#22d3ee"/>
+  <text x="358" y="214" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">Logger → (singleton)</text>
+  <rect x="348" y="234" width="214" height="34" rx="6" fill="#ffffff" stroke="#22d3ee" stroke-dasharray="5 4"/>
+  <text x="358" y="256" font-size="12" fill="#1e1b3a">Klassen ohne Eintrag: Reflection</text>
+
+  <rect x="630" y="80" width="240" height="220" rx="14" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="750" y="110" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">3. Dein Code</text>
+  <text x="750" y="132" text-anchor="middle" font-size="13" fill="#1e1b3a">bekommt fertige Objekte</text>
+  <rect x="648" y="150" width="204" height="120" rx="8" fill="#ffffff" stroke="#34d399"/>
+  <text x="658" y="176" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">class OrderController</text>
+  <text x="658" y="198" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">__construct(</text>
+  <text x="670" y="220" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">PaymentGateway $g</text>
+  <text x="658" y="242" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">)</text>
+
+  <line x1="282" y1="190" x2="326" y2="190" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="582" y1="190" x2="626" y2="190" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="304" y="180" text-anchor="middle" font-size="12" fill="#1e1b3a">bind</text>
+  <text x="604" y="180" text-anchor="middle" font-size="12" fill="#1e1b3a">make</text>
+
+  <rect x="30" y="330" width="840" height="64" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="450" y="357" text-anchor="middle" font-size="14" fill="#1e1b3a">Der Controller fragt nur nach dem Interface. Welche Klasse dahintersteckt, entscheidet</text>
+  <text x="450" y="379" text-anchor="middle" font-size="14" fill="#1e1b3a">allein der Provider – im Test tauschst du sie mit einer Zeile gegen einen Fake aus.</text>
+</svg>

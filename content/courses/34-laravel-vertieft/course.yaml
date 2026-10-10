@@ -1,0 +1,37 @@
+title: Laravel vertieft
+subtitle: Container, Queues, Events, Caching und Fakes – Laravel 13 wie in echten Projekten
+description: >
+  Du kannst mit Laravel schon Routen, Controller, Blade-Views und Eloquent-Models bauen. In echten
+  Projekten kommen schnell neue Fragen dazu: Wie tausche ich einen externen Dienst aus, ohne den halben
+  Code umzuschreiben? Wie verschicke ich hundert Mails, ohne dass die Seite eine Minute lädt? Warum
+  feuert meine Listenseite 300 Datenbankabfragen? Und wie teste ich Code, der Mails, Jobs und
+  HTTP-Anfragen auslöst?
+
+
+  In diesem Kurs lernst du die Werkzeuge, die Laravel dafür mitbringt – **Service Container und
+  Provider, Middleware, Events, Observer, Queues, Batches, Scheduler, Caching, Dateispeicher,
+  Notifications, Policies und den HTTP-Client** – und testest alles mit Laravels Fakes. Jede Lektion
+  hat Aufgaben in einer echten Laravel-13-Anwendung im Übungs-Terminal. Im Abschlussprojekt baust du
+  einen Bestellservice, der all das verbindet.
+category: backend
+level: fortgeschritten
+icon: layers
+color: "#ef4444"
+estimated_hours: 5
+workspace_dir: laravel-vertieft
+prerequisites: [laravel]
+learning_goals:
+  - Du erklärst, wie der Service Container Abhängigkeiten auflöst, und bindest Interfaces in Service Providern oder per Attribut.
+  - Du schreibst eigene Middleware mit Parametern und begrenzt Routen mit benannten Rate Limitern.
+  - Du entkoppelst Code mit Events, Listenern und Observern.
+  - Du verlagerst langsame Arbeit in Queue-Jobs, steuerst Wiederholungen, behandelst fehlgeschlagene Jobs und bündelst Jobs in Batches.
+  - Du planst wiederkehrende Aufgaben mit dem Scheduler.
+  - Du nutzt Scopes, Accessoren und Casts und vermeidest das N+1-Problem mit Eager Loading und Chunking.
+  - Du beschleunigst Anwendungen mit dem Cache und speicherst Dateien über das Storage-System.
+  - Du verschickst Mails und Notifications, prüfst Berechtigungen mit Gates und Policies und sprichst externe APIs mit dem HTTP-Client an.
+  - Du testest all das mit Queue-, Mail-, Notification-, Event- und HTTP-Fakes.
+references:
+  - Zahlungs- und Versanddienste hinter Interfaces, die im Service Provider gebunden und in Tests gefakt werden
+  - Hintergrund-Jobs mit Wiederholungen und Backoff für Exporte, Importe und Benachrichtigungen
+  - Eager Loading und Lazy-Loading-Schutz gegen das N+1-Problem in Listen mit vielen Datensätzen
+  - Rate Limiting für Partner-Schnittstellen pro API-Schlüssel

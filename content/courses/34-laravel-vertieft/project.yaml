@@ -1,0 +1,1216 @@
+title: Ein Bestellservice mit Queue, Events und Tests
+description: |
+  In diesem Projekt baust du das Backend eines kleinen **Bestellservice**. Eine Bestellung wird
+  angelegt, ein Hintergrund-Job bucht die Zahlung über einen externen Zahlungsdienst, danach löst ein
+  Event eine Bestätigungs-Mail aus. Eine geschützte, rate-limitierte Route liefert den Status, eine
+  Statistik kommt aus dem Cache, und ein geplanter Befehl storniert liegengebliebene Bestellungen.
+  Zum Schluss sicherst du alles mit Pest-Tests und Fakes ab – ohne eine einzige echte Mail oder
+  HTTP-Anfrage.
+
+  Damit verbindest du fast alles aus diesem Kurs: Service Container, Provider, Middleware, Events,
+  Observer, Queues, Notifications, Caching, Scheduling, Eloquent-Casts und Scopes, HTTP-Client und
+  Testing-Fakes.
+
+  Klicke zuerst auf **Projekt vorbereiten**: Stacklab legt im Ordner `bestellservice` eine frische
+  Laravel-13-Anwendung mit Pest an (beim allerersten Mal dauert das etwa eine Minute). Öffne danach das
+  Übungs-Terminal und wechsle mit `cd bestellservice` hinein. Die Schritte bauen aufeinander auf –
+  lösche nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Eine Laravel-Anwendung `bestellservice` mit Order-Model (Enum-Cast, Scope, Accessor), einem an ein
+  Interface gebundenen Zahlungsdienst auf Basis des HTTP-Clients, Observer, Event und Listener, einem
+  Queue-Job mit Wiederholungen, einer Notification, einer geschützten und rate-limitierten Route,
+  einer gecachten Statistik, einem geplanten Artisan-Befehl und einer grünen Pest-Testsuite mit Fakes.
+workdir: bestellservice
+setup: |
+  # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+  B="$HOME/.cache/stacklab/laravel13"
+  if [ ! -f "$B/.fertig" ]; then
+    T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+    timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+    cd "$T"
+    timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+    printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+    printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+    printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+    touch .fertig && cd - >/dev/null
+    rm -rf "$B" && mv "$T" "$B"
+  fi
+  cp -a "$B/." . && rm -f .fertig
+steps:
+  - id: order-model
+    title: Das Order-Model mit Enum, Scope und Accessor
+    description: |
+      Jede Bestellung hat eine E-Mail-Adresse, einen Betrag in Cent, einen Status und einen
+      Bezahl-Zeitpunkt.
+
+      1. Lege das Enum `App\Enums\OrderStatus` an (`php artisan make:enum OrderStatus --string`) mit den
+         Fällen `Pending = 'pending'`, `Paid = 'paid'` und `Cancelled = 'cancelled'`.
+      2. Erzeuge Model und Migration: `php artisan make:model Order -m`. Die Tabelle `orders` bekommt
+         `number` (String, nullable, unique), `email` (String), `total_cents` (unsigned Integer),
+         `status` (String, Standard `pending`), `paid_at` (Timestamp, nullable) und Timestamps.
+      3. Im Model: `#[Fillable(['email', 'total_cents', 'status', 'paid_at'])]`, Casts `status` →
+         `OrderStatus::class` und `paid_at` → `datetime`.
+      4. Ein lokaler Scope `paid` (mit `#[Scope]`) filtert bezahlte Bestellungen.
+      5. Ein Accessor `total` liefert den Betrag formatiert, z. B. `12,50 €` für 1250 Cent.
+      6. Führe `php artisan migrate` aus.
+    checklist:
+      - Enum `OrderStatus` mit drei Fällen
+      - Migration für `orders` ausgeführt
+      - Casts für `status` und `paid_at`
+      - "Scope `paid` und Accessor `total`"
+    hints:
+      - "Den Scope schreibst du als `#[Scope] protected function paid(Builder $query): void { $query->where('status', OrderStatus::Paid); }`."
+      - "Der Accessor: `protected function total(): Attribute { return Attribute::make(get: fn () => number_format($this->total_cents / 100, 2, ',', '.').' €'); }`"
+      - "Prüfe mit `php artisan tinker`: `App\\Models\\Order::make(['total_cents' => 1250])->total`."
+    checks:
+      - type: file_exists
+        path: app/Enums/OrderStatus.php
+        message: Das Enum app/Enums/OrderStatus.php fehlt noch.
+      - type: command
+        run: php artisan tinker --execute="echo implode(',', array_map(fn (\$c) => \$c->value, App\Enums\OrderStatus::cases()));"
+        stdout_matches: "^pending,paid,cancelled\\s*$"
+        message: OrderStatus braucht genau die Werte pending, paid und cancelled (in dieser Reihenfolge).
+      - type: command
+        run: php artisan tinker --execute="echo implode(',', Schema::getColumnListing('orders'));"
+        stdout_matches: "number.*email.*total_cents.*status.*paid_at"
+        message: Die Tabelle orders fehlt oder hat nicht alle Spalten (number, email, total_cents, status, paid_at). Hast du php artisan migrate ausgeführt?
+      - type: command
+        run: |
+          php artisan tinker --execute="DB::beginTransaction(); \$o = App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 1250, 'status' => 'paid', 'paid_at' => '2026-01-02 10:00:00']); \$o = \$o->fresh(); echo get_class(\$o->status), '|', \$o->paid_at->format('Y'), '|', \$o->total, '|', App\Models\Order::paid()->count(); DB::rollBack();"
+        stdout_matches: "^App\\\\Enums\\\\OrderStatus\\|2026\\|12,50 €\\|1\\s*$"
+        message: "Eine bezahlte Bestellung über 1250 Cent sollte als Status ein OrderStatus-Enum, paid_at als Datum, total als „12,50 €“ liefern und von Order::paid() gefunden werden."
+    solution: |
+      ```php title="app/Enums/OrderStatus.php"
+      enum OrderStatus: string
+      {
+          case Pending = 'pending';
+          case Paid = 'paid';
+          case Cancelled = 'cancelled';
+      }
+      ```
+
+      ```php title="app/Models/Order.php"
+      #[Fillable(['email', 'total_cents', 'status', 'paid_at'])]
+      class Order extends Model
+      {
+          protected function casts(): array
+          {
+              return ['status' => OrderStatus::class, 'paid_at' => 'datetime'];
+          }
+
+          #[Scope]
+          protected function paid(Builder $query): void
+          {
+              $query->where('status', OrderStatus::Paid);
+          }
+
+          protected function total(): Attribute
+          {
+              return Attribute::make(
+                  get: fn () => number_format($this->total_cents / 100, 2, ',', '.').' €',
+              );
+          }
+      }
+      ```
+    solve: |
+      mkdir -p app/Enums
+      cat > app/Enums/OrderStatus.php <<'EOF'
+      <?php
+
+      namespace App\Enums;
+
+      enum OrderStatus: string
+      {
+          case Pending = 'pending';
+          case Paid = 'paid';
+          case Cancelled = 'cancelled';
+      }
+      EOF
+      rm -f database/migrations/*_create_orders_table.php
+      cat > database/migrations/2026_01_01_000000_create_orders_table.php <<'EOF'
+      <?php
+
+      use Illuminate\Database\Migrations\Migration;
+      use Illuminate\Database\Schema\Blueprint;
+      use Illuminate\Support\Facades\Schema;
+
+      return new class extends Migration
+      {
+          public function up(): void
+          {
+              Schema::create('orders', function (Blueprint $table) {
+                  $table->id();
+                  $table->string('number')->nullable()->unique();
+                  $table->string('email');
+                  $table->unsignedInteger('total_cents');
+                  $table->string('status')->default('pending');
+                  $table->timestamp('paid_at')->nullable();
+                  $table->timestamps();
+              });
+          }
+
+          public function down(): void
+          {
+              Schema::dropIfExists('orders');
+          }
+      };
+      EOF
+      cat > app/Models/Order.php <<'EOF'
+      <?php
+
+      namespace App\Models;
+
+      use App\Enums\OrderStatus;
+      use Illuminate\Database\Eloquent\Attributes\Fillable;
+      use Illuminate\Database\Eloquent\Attributes\Scope;
+      use Illuminate\Database\Eloquent\Builder;
+      use Illuminate\Database\Eloquent\Casts\Attribute;
+      use Illuminate\Database\Eloquent\Model;
+
+      #[Fillable(['email', 'total_cents', 'status', 'paid_at'])]
+      class Order extends Model
+      {
+          protected function casts(): array
+          {
+              return [
+                  'status' => OrderStatus::class,
+                  'paid_at' => 'datetime',
+              ];
+          }
+
+          #[Scope]
+          protected function paid(Builder $query): void
+          {
+              $query->where('status', OrderStatus::Paid);
+          }
+
+          protected function total(): Attribute
+          {
+              return Attribute::make(
+                  get: fn () => number_format($this->total_cents / 100, 2, ',', '.').' €',
+              );
+          }
+      }
+      EOF
+      php artisan migrate --force -q
+
+  - id: zahlungsdienst
+    title: Den Zahlungsdienst an ein Interface binden
+    description: |
+      Die Zahlung läuft über einen externen Dienst unter `https://payments.example.com`. Dein Code soll
+      aber nur ein **Interface** kennen, damit du den Dienst später austauschen oder im Test faken kannst.
+
+      1. Lege `config/bestellservice.php` an mit den Schlüsseln `payment_url` (aus `PAYMENT_URL`,
+         Standard `https://payments.example.com`), `payment_key` (aus `PAYMENT_KEY`) und `api_key` (aus
+         `ORDERS_API_KEY`). Trage `PAYMENT_KEY=test-payment-key` und `ORDERS_API_KEY=test-api-key` in
+         `.env` ein.
+      2. Lege das Interface `App\Contracts\PaymentGateway` mit der Methode
+         `charge(string $email, int $cents): string` an. Rückgabe ist die ID der Zahlung.
+      3. Die Klasse `App\Services\HttpPaymentGateway` implementiert es mit dem HTTP-Client:
+         `POST {payment_url}/charges` mit Bearer-Token, JSON `{"email": …, "amount": …}`, Timeout 5
+         Sekunden, 2 Versuche mit 100 ms Pause. Sie gibt das Feld `id` aus der Antwort zurück.
+      4. Binde das Interface im `AppServiceProvider` als **Singleton** an `HttpPaymentGateway`.
+    checklist:
+      - Konfigurationsdatei mit drei Schlüsseln
+      - Interface `PaymentGateway`
+      - "`HttpPaymentGateway` nutzt `Http::` mit Token, Timeout und Retry"
+      - Singleton-Binding im Service Provider
+    hints:
+      - "Im Provider: `$this->app->singleton(PaymentGateway::class, HttpPaymentGateway::class);` in `register()`."
+      - "Der Request: `Http::withToken(...)->timeout(5)->retry(2, 100)->post($url.'/charges', [...])->json('id')`."
+      - "Teste in Tinker mit `Http::fake(['payments.example.com/*' => Http::response(['id' => 'ch_1'])])` und `app(App\\Contracts\\PaymentGateway::class)->charge('a@example.com', 100)`."
+    checks:
+      - type: command
+        run: php artisan tinker --execute="echo config('bestellservice.payment_url'), '|', config('bestellservice.api_key');"
+        stdout_matches: "^https://payments\\.example\\.com\\|test-api-key\\s*$"
+        message: config('bestellservice.payment_url') oder config('bestellservice.api_key') stimmt noch nicht. Prüfe config/bestellservice.php und ORDERS_API_KEY in .env.
+      - type: command
+        run: php artisan tinker --execute="\$a = app(App\Contracts\PaymentGateway::class); echo get_class(\$a), '|', var_export(\$a === app(App\Contracts\PaymentGateway::class), true);"
+        stdout_matches: "^App\\\\Services\\\\HttpPaymentGateway\\|true\\s*$"
+        message: Der Container liefert für PaymentGateway noch nicht dieselbe HttpPaymentGateway-Instanz. Binde das Interface mit singleton() im AppServiceProvider.
+      - type: command
+        run: |
+          php artisan tinker --execute="Illuminate\Support\Facades\Http::fake(['payments.example.com/*' => Illuminate\Support\Facades\Http::response(['id' => 'ch_42'], 201)]); echo app(App\Contracts\PaymentGateway::class)->charge('kunde@example.com', 1250); Illuminate\Support\Facades\Http::assertSent(fn (\$r) => \$r->url() === 'https://payments.example.com/charges' && \$r['amount'] === 1250 && \$r->hasHeader('Authorization', 'Bearer test-payment-key'));"
+        stdout_matches: "^ch_42\\s*$"
+        message: charge() soll POST https://payments.example.com/charges mit Bearer-Token und amount senden und die id aus der Antwort zurückgeben.
+    solution: |
+      ```php title="app/Services/HttpPaymentGateway.php"
+      class HttpPaymentGateway implements PaymentGateway
+      {
+          public function charge(string $email, int $cents): string
+          {
+              return Http::withToken(config('bestellservice.payment_key'))
+                  ->timeout(5)
+                  ->retry(2, 100)
+                  ->post(config('bestellservice.payment_url').'/charges', [
+                      'email' => $email,
+                      'amount' => $cents,
+                  ])
+                  ->throw()
+                  ->json('id');
+          }
+      }
+      ```
+
+      ```php title="app/Providers/AppServiceProvider.php (register)"
+      $this->app->singleton(PaymentGateway::class, HttpPaymentGateway::class);
+      ```
+    solve: |
+      cat > config/bestellservice.php <<'EOF'
+      <?php
+
+      return [
+          'payment_url' => env('PAYMENT_URL', 'https://payments.example.com'),
+          'payment_key' => env('PAYMENT_KEY'),
+          'api_key' => env('ORDERS_API_KEY'),
+      ];
+      EOF
+      grep -q '^PAYMENT_KEY=' .env || printf '\nPAYMENT_KEY=test-payment-key\nORDERS_API_KEY=test-api-key\n' >> .env
+      grep -q '^PAYMENT_KEY=' .env.example || printf '\nPAYMENT_URL=https://payments.example.com\nPAYMENT_KEY=\nORDERS_API_KEY=\n' >> .env.example
+      mkdir -p app/Contracts app/Services
+      cat > app/Contracts/PaymentGateway.php <<'EOF'
+      <?php
+
+      namespace App\Contracts;
+
+      interface PaymentGateway
+      {
+          public function charge(string $email, int $cents): string;
+      }
+      EOF
+      cat > app/Services/HttpPaymentGateway.php <<'EOF'
+      <?php
+
+      namespace App\Services;
+
+      use App\Contracts\PaymentGateway;
+      use Illuminate\Support\Facades\Http;
+
+      class HttpPaymentGateway implements PaymentGateway
+      {
+          public function charge(string $email, int $cents): string
+          {
+              return Http::withToken(config('bestellservice.payment_key'))
+                  ->timeout(5)
+                  ->retry(2, 100)
+                  ->post(config('bestellservice.payment_url').'/charges', [
+                      'email' => $email,
+                      'amount' => $cents,
+                  ])
+                  ->throw()
+                  ->json('id');
+          }
+      }
+      EOF
+      cat > app/Providers/AppServiceProvider.php <<'EOF'
+      <?php
+
+      namespace App\Providers;
+
+      use App\Contracts\PaymentGateway;
+      use App\Services\HttpPaymentGateway;
+      use Illuminate\Support\ServiceProvider;
+
+      class AppServiceProvider extends ServiceProvider
+      {
+          public function register(): void
+          {
+              $this->app->singleton(PaymentGateway::class, HttpPaymentGateway::class);
+          }
+
+          public function boot(): void
+          {
+              //
+          }
+      }
+      EOF
+      php artisan config:clear -q
+
+  - id: observer-und-event
+    title: Observer, Event und Listener
+    description: |
+      Jede neue Bestellung bekommt automatisch eine Bestellnummer, und wenn eine Bestellung bezahlt
+      wurde, soll der Rest der Anwendung davon erfahren – ohne dass der Bezahl-Code alle Beteiligten
+      kennt.
+
+      1. Erzeuge einen Observer: `php artisan make:observer OrderObserver --model=Order`. In
+         `creating` setzt er `number` auf `B-` + Datum (`Ymd`) + `-` + vier zufällige Großbuchstaben
+         oder Ziffern, z. B. `B-20261010-K7QZ`.
+      2. Registriere den Observer mit dem Attribut `#[ObservedBy([OrderObserver::class])]` am Model.
+      3. Erzeuge das Event `OrderPaid` (`php artisan make:event OrderPaid`). Es bekommt die Bestellung
+         als `public Order $order` im Konstruktor. Die Broadcast-Methode brauchst du nicht.
+      4. Erzeuge den Listener `SendOrderConfirmation` für dieses Event
+         (`php artisan make:listener SendOrderConfirmation --event=OrderPaid`). Vorläufig schreibt er nur
+         eine Zeile ins Log, z. B. `Log::info('Bestellung bezahlt', ['number' => …])`.
+      5. Prüfe mit `php artisan event:list`, dass Laravel den Listener gefunden hat.
+    checklist:
+      - Observer setzt die Bestellnummer
+      - "Observer per `#[ObservedBy]` registriert"
+      - Event `OrderPaid` mit der Bestellung
+      - Listener wird automatisch erkannt
+    hints:
+      - "Die Nummer: `$order->number = 'B-'.now()->format('Ymd').'-'.Str::upper(Str::random(4));`"
+      - "Listener in `app/Listeners` werden automatisch gefunden, wenn `handle()` das Event als Typ hat."
+      - "`php artisan event:list --event=OrderPaid` zeigt nur dieses Event."
+    checks:
+      - type: command
+        run: php artisan tinker --execute="DB::beginTransaction(); echo App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 500])->number; DB::rollBack();"
+        stdout_matches: "^B-\\d{8}-[A-Z0-9]{4}\\s*$"
+        message: "Eine neue Bestellung bekommt noch keine Nummer im Format B-JJJJMMTT-XXXX. Prüfe den Observer (creating) und #[ObservedBy] am Model."
+      - type: file_contains
+        path: app/Models/Order.php
+        pattern: "ObservedBy\\("
+        message: "Registriere den Observer mit #[ObservedBy([OrderObserver::class])] am Order-Model."
+      - type: command
+        run: php artisan event:list --event=OrderPaid
+        stdout_matches: "SendOrderConfirmation"
+        message: Für das Event OrderPaid ist noch kein Listener SendOrderConfirmation registriert.
+      - type: file_contains
+        path: app/Events/OrderPaid.php
+        pattern: "public\\s+(readonly\\s+)?Order\\s+\\$order"
+        message: Das Event OrderPaid soll die Bestellung als public Order $order im Konstruktor bekommen.
+    solution: |
+      ```php title="app/Observers/OrderObserver.php"
+      public function creating(Order $order): void
+      {
+          $order->number = 'B-'.now()->format('Ymd').'-'.Str::upper(Str::random(4));
+      }
+      ```
+
+      ```php title="app/Events/OrderPaid.php"
+      class OrderPaid
+      {
+          use Dispatchable, SerializesModels;
+
+          public function __construct(public Order $order) {}
+      }
+      ```
+
+      ```php title="app/Listeners/SendOrderConfirmation.php"
+      public function handle(OrderPaid $event): void
+      {
+          Log::info('Bestellung bezahlt', ['number' => $event->order->number]);
+      }
+      ```
+    solve: |
+      mkdir -p app/Observers app/Events app/Listeners
+      cat > app/Observers/OrderObserver.php <<'EOF'
+      <?php
+
+      namespace App\Observers;
+
+      use App\Models\Order;
+      use Illuminate\Support\Str;
+
+      class OrderObserver
+      {
+          public function creating(Order $order): void
+          {
+              $order->number = 'B-'.now()->format('Ymd').'-'.Str::upper(Str::random(4));
+          }
+      }
+      EOF
+      sed -i 's/^use Illuminate\\Database\\Eloquent\\Attributes\\Fillable;/use App\\Observers\\OrderObserver;\nuse Illuminate\\Database\\Eloquent\\Attributes\\Fillable;\nuse Illuminate\\Database\\Eloquent\\Attributes\\ObservedBy;/' app/Models/Order.php
+      sed -i 's/^#\[Fillable(/#[ObservedBy([OrderObserver::class])]\n#[Fillable(/' app/Models/Order.php
+      cat > app/Events/OrderPaid.php <<'EOF'
+      <?php
+
+      namespace App\Events;
+
+      use App\Models\Order;
+      use Illuminate\Foundation\Events\Dispatchable;
+      use Illuminate\Queue\SerializesModels;
+
+      class OrderPaid
+      {
+          use Dispatchable, SerializesModels;
+
+          public function __construct(public Order $order) {}
+      }
+      EOF
+      cat > app/Listeners/SendOrderConfirmation.php <<'EOF'
+      <?php
+
+      namespace App\Listeners;
+
+      use App\Events\OrderPaid;
+      use Illuminate\Support\Facades\Log;
+
+      class SendOrderConfirmation
+      {
+          public function handle(OrderPaid $event): void
+          {
+              Log::info('Bestellung bezahlt', ['number' => $event->order->number]);
+          }
+      }
+      EOF
+      php artisan event:clear -q || true
+
+  - id: queue-job
+    title: Die Zahlung als Queue-Job
+    description: |
+      Die Zahlung kann dauern oder kurz fehlschlagen. Deshalb läuft sie als **Job** im Hintergrund.
+      Die Anwendung nutzt schon den `database`-Treiber (`QUEUE_CONNECTION=database`).
+
+      1. Erzeuge den Job `ProcessOrder` (`php artisan make:job ProcessOrder`). Er bekommt die Bestellung
+         im Konstruktor (`public Order $order`).
+      2. Setze mit Attributen: höchstens 3 Versuche (`#[Tries(3)]`) und Wartezeiten von 10 und 60
+         Sekunden zwischen den Versuchen (`#[Backoff([10, 60])]`).
+      3. In `handle(PaymentGateway $gateway)`: Ist die Bestellung schon bezahlt, passiert nichts.
+         Sonst wird über das Gateway kassiert, der Status auf `Paid` und `paid_at` auf jetzt gesetzt und
+         danach das Event `OrderPaid` ausgelöst.
+      4. Die Methode `failed(?Throwable $exception)` setzt den Status auf `Cancelled`.
+      5. Probiere es aus: In Tinker eine Bestellung anlegen, `ProcessOrder::dispatch($order)` – dann in
+         einem zweiten Schritt `php artisan queue:work --stop-when-empty` (ohne Fake schlägt die Zahlung
+         fehl, weil das Netzwerk gesperrt ist; das ist für den Test von `failed()` sogar praktisch).
+    checklist:
+      - "Job mit `ShouldQueue`, `#[Tries(3)]` und `#[Backoff([10, 60])]`"
+      - "`handle()` nutzt das Gateway per Method Injection"
+      - "Event `OrderPaid` wird ausgelöst"
+      - "`failed()` storniert die Bestellung"
+    hints:
+      - "Die Attribute liegen im Namespace `Illuminate\\Queue\\Attributes`."
+      - "`OrderPaid::dispatch($this->order);` löst das Event aus – der Trait `Dispatchable` macht es möglich."
+      - "Den Status setzt du mit `$this->order->update(['status' => OrderStatus::Paid, 'paid_at' => now()]);`."
+    checks:
+      - type: file_contains
+        path: app/Jobs/ProcessOrder.php
+        pattern: "implements\\s+ShouldQueue"
+        message: ProcessOrder muss ShouldQueue implementieren, damit er in die Queue kommt.
+      - type: file_contains
+        path: app/Jobs/ProcessOrder.php
+        pattern: "#\\[Tries\\(3\\)\\]"
+        message: "Setze die Anzahl der Versuche mit #[Tries(3)]."
+      - type: file_contains
+        path: app/Jobs/ProcessOrder.php
+        pattern: "#\\[Backoff\\(\\[\\s*10\\s*,\\s*60\\s*\\]\\)\\]"
+        message: "Setze die Wartezeiten mit #[Backoff([10, 60])]."
+      - type: command
+        run: |
+          php artisan tinker --execute="DB::beginTransaction(); Illuminate\Support\Facades\Http::fake(['payments.example.com/*' => Illuminate\Support\Facades\Http::response(['id' => 'ch_1'])]); Illuminate\Support\Facades\Event::fake([App\Events\OrderPaid::class]); \$o = App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 990]); \$vorher = DB::table('jobs')->count(); App\Jobs\ProcessOrder::dispatch(\$o); echo DB::table('jobs')->count() - \$vorher, '|'; Artisan::call('queue:work', ['--stop-when-empty' => true]); \$o->refresh(); echo \$o->status->value, '|', \$o->paid_at ? 'datum' : 'leer', '|'; Illuminate\Support\Facades\Event::assertDispatched(App\Events\OrderPaid::class); echo 'event'; DB::rollBack();"
+        stdout_matches: "^1\\|paid\\|datum\\|event\\s*$"
+        message: "Nach dispatch() und queue:work soll die Bestellung bezahlt sein (status paid, paid_at gesetzt) und OrderPaid ausgelöst werden."
+      - type: command
+        run: php artisan tinker --execute="DB::beginTransaction(); \$o = App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 990]); (new App\Jobs\ProcessOrder(\$o))->failed(new RuntimeException('down')); echo \$o->fresh()->status->value; DB::rollBack();"
+        stdout_matches: "^cancelled\\s*$"
+        message: failed() soll die Bestellung auf den Status cancelled setzen.
+    solution: |
+      ```php title="app/Jobs/ProcessOrder.php"
+      #[Tries(3)]
+      #[Backoff([10, 60])]
+      class ProcessOrder implements ShouldQueue
+      {
+          use Queueable;
+
+          public function __construct(public Order $order) {}
+
+          public function handle(PaymentGateway $gateway): void
+          {
+              if ($this->order->status === OrderStatus::Paid) {
+                  return;
+              }
+
+              $gateway->charge($this->order->email, $this->order->total_cents);
+
+              $this->order->update(['status' => OrderStatus::Paid, 'paid_at' => now()]);
+
+              OrderPaid::dispatch($this->order);
+          }
+
+          public function failed(?Throwable $exception): void
+          {
+              $this->order->update(['status' => OrderStatus::Cancelled]);
+          }
+      }
+      ```
+    solve: |
+      mkdir -p app/Jobs
+      cat > app/Jobs/ProcessOrder.php <<'EOF'
+      <?php
+
+      namespace App\Jobs;
+
+      use App\Contracts\PaymentGateway;
+      use App\Enums\OrderStatus;
+      use App\Events\OrderPaid;
+      use App\Models\Order;
+      use Illuminate\Contracts\Queue\ShouldQueue;
+      use Illuminate\Foundation\Queue\Queueable;
+      use Illuminate\Queue\Attributes\Backoff;
+      use Illuminate\Queue\Attributes\Tries;
+      use Throwable;
+
+      #[Tries(3)]
+      #[Backoff([10, 60])]
+      class ProcessOrder implements ShouldQueue
+      {
+          use Queueable;
+
+          public function __construct(public Order $order) {}
+
+          public function handle(PaymentGateway $gateway): void
+          {
+              if ($this->order->status === OrderStatus::Paid) {
+                  return;
+              }
+
+              $gateway->charge($this->order->email, $this->order->total_cents);
+
+              $this->order->update([
+                  'status' => OrderStatus::Paid,
+                  'paid_at' => now(),
+              ]);
+
+              OrderPaid::dispatch($this->order);
+          }
+
+          public function failed(?Throwable $exception): void
+          {
+              $this->order->update(['status' => OrderStatus::Cancelled]);
+          }
+      }
+      EOF
+
+  - id: benachrichtigung
+    title: Die Bestätigung als Notification
+    description: |
+      Statt nur zu loggen, soll der Listener jetzt eine echte Bestätigung verschicken. Die Anwendung
+      nutzt `MAIL_MAILER=log` – Mails landen also in `storage/logs/laravel.log` statt im Postfach.
+
+      1. Erzeuge die Notification `OrderConfirmed` (`php artisan make:notification OrderConfirmed`). Sie
+         bekommt die Bestellung im Konstruktor und verschickt über den Kanal `mail` eine Nachricht mit
+         dem Betreff `Bestellung <Nummer> bezahlt` (z. B. `Bestellung B-20261010-K7QZ bezahlt`) und dem
+         Betrag (`$order->total`) im Text.
+      2. Der Listener `SendOrderConfirmation` schickt sie an die E-Mail-Adresse der Bestellung. Weil es
+         kein User-Model gibt, nutzt du eine **On-Demand-Notification**:
+         `Notification::route('mail', $event->order->email)->notify(new OrderConfirmed($event->order));`
+    checklist:
+      - "Notification `OrderConfirmed` mit Kanal `mail`"
+      - Betreff mit der Bestellnummer
+      - Listener verschickt die Notification on demand
+    hints:
+      - "In `toMail()`: `return (new MailMessage)->subject('Bestellung '.$this->order->number.' bezahlt')->line('Betrag: '.$this->order->total);`"
+      - "Mit `Notification::fake()` und `Notification::assertSentOnDemand(OrderConfirmed::class)` prüfst du das in Tinker."
+    checks:
+      - type: command
+        run: |
+          php artisan tinker --execute="DB::beginTransaction(); Illuminate\Support\Facades\Notification::fake(); \$o = App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 1999]); App\Events\OrderPaid::dispatch(\$o); Illuminate\Support\Facades\Notification::assertSentOnDemand(App\Notifications\OrderConfirmed::class, fn (\$n, \$channels, \$notifiable) => \$notifiable->routes['mail'] === 'kunde@example.com' && in_array('mail', \$channels)); echo 'gesendet'; DB::rollBack();"
+        stdout_matches: "^gesendet\\s*$"
+        message: Wenn OrderPaid ausgelöst wird, soll OrderConfirmed per mail on demand an die E-Mail der Bestellung gehen.
+      - type: command
+        run: |
+          php artisan tinker --execute="DB::beginTransaction(); \$o = App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 1999]); \$m = (new App\Notifications\OrderConfirmed(\$o))->toMail(\$o); echo \$m->subject === 'Bestellung '.\$o->number.' bezahlt' ? 'betreff' : 'falsch:'.\$m->subject, '|', str_contains(implode(' ', \$m->introLines), '19,99') ? 'betrag' : 'ohne-betrag'; DB::rollBack();"
+        stdout_matches: "^betreff\\|betrag\\s*$"
+        message: "Die Mail braucht den Betreff „Bestellung <Nummer> bezahlt“ und den formatierten Betrag (z. B. 19,99 €) in einer Textzeile."
+    solution: |
+      ```php title="app/Notifications/OrderConfirmed.php"
+      class OrderConfirmed extends Notification
+      {
+          use Queueable;
+
+          public function __construct(public Order $order) {}
+
+          public function via(object $notifiable): array
+          {
+              return ['mail'];
+          }
+
+          public function toMail(object $notifiable): MailMessage
+          {
+              return (new MailMessage)
+                  ->subject('Bestellung '.$this->order->number.' bezahlt')
+                  ->line('Vielen Dank! Wir haben deine Zahlung erhalten.')
+                  ->line('Betrag: '.$this->order->total);
+          }
+      }
+      ```
+
+      ```php title="app/Listeners/SendOrderConfirmation.php"
+      public function handle(OrderPaid $event): void
+      {
+          Notification::route('mail', $event->order->email)
+              ->notify(new OrderConfirmed($event->order));
+      }
+      ```
+    solve: |
+      mkdir -p app/Notifications
+      cat > app/Notifications/OrderConfirmed.php <<'EOF'
+      <?php
+
+      namespace App\Notifications;
+
+      use App\Models\Order;
+      use Illuminate\Bus\Queueable;
+      use Illuminate\Notifications\Messages\MailMessage;
+      use Illuminate\Notifications\Notification;
+
+      class OrderConfirmed extends Notification
+      {
+          use Queueable;
+
+          public function __construct(public Order $order) {}
+
+          public function via(object $notifiable): array
+          {
+              return ['mail'];
+          }
+
+          public function toMail(object $notifiable): MailMessage
+          {
+              return (new MailMessage)
+                  ->subject('Bestellung '.$this->order->number.' bezahlt')
+                  ->line('Vielen Dank! Wir haben deine Zahlung erhalten.')
+                  ->line('Betrag: '.$this->order->total);
+          }
+      }
+      EOF
+      cat > app/Listeners/SendOrderConfirmation.php <<'EOF'
+      <?php
+
+      namespace App\Listeners;
+
+      use App\Events\OrderPaid;
+      use App\Notifications\OrderConfirmed;
+      use Illuminate\Support\Facades\Notification;
+
+      class SendOrderConfirmation
+      {
+          public function handle(OrderPaid $event): void
+          {
+              Notification::route('mail', $event->order->email)
+                  ->notify(new OrderConfirmed($event->order));
+          }
+      }
+      EOF
+
+  - id: geschuetzte-route
+    title: Eine geschützte, rate-limitierte Status-Route
+    description: |
+      Ein Partner-System fragt den Status einer Bestellung ab. Nur wer den richtigen API-Schlüssel im
+      Header `X-Api-Key` mitschickt, bekommt eine Antwort – und höchstens 5 Anfragen pro Minute.
+
+      1. Erzeuge die Middleware `EnsureApiKey` (`php artisan make:middleware EnsureApiKey`). Stimmt der
+         Header `X-Api-Key` nicht mit `config('bestellservice.api_key')` überein, bricht sie mit
+         Status **401** ab.
+      2. Registriere sie in `bootstrap/app.php` unter dem Alias `api.key`.
+      3. Definiere im `AppServiceProvider` (in `boot()`) einen Rate Limiter `orders`: 5 Anfragen pro
+         Minute, pro IP-Adresse.
+      4. Lege in `routes/web.php` die Route `GET /orders/{order}` an. Sie nutzt die Middleware
+         `api.key` und `throttle:orders` und gibt JSON mit `number`, `status` und `total` zurück.
+    checklist:
+      - Middleware prüft den Header und antwortet sonst mit 401
+      - "Alias `api.key` in `bootstrap/app.php`"
+      - "Rate Limiter `orders` mit 5 pro Minute"
+      - "Route `GET /orders/{order}` liefert JSON"
+    hints:
+      - "In der Middleware: `abort_unless($request->header('X-Api-Key') === config('bestellservice.api_key'), 401);`"
+      - "In `bootstrap/app.php`: `$middleware->alias(['api.key' => EnsureApiKey::class]);`"
+      - "Rate Limiter: `RateLimiter::for('orders', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));`"
+    checks:
+      - type: command
+        run: |
+          php <<'PHP'
+          <?php
+          require 'vendor/autoload.php';
+          $app = require 'bootstrap/app.php';
+          $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+          $kernel->bootstrap();
+          Illuminate\Support\Facades\DB::beginTransaction();
+          $order = App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 1250]);
+          $ohne = $kernel->handle(Illuminate\Http\Request::create('/orders/'.$order->id));
+          echo $ohne->getStatusCode(), "\n";
+          Illuminate\Support\Facades\DB::rollBack();
+          PHP
+        stdout_matches: "^401\\s*$"
+        message: Ohne Header X-Api-Key soll GET /orders/{id} mit 401 antworten. Prüfe die Middleware EnsureApiKey und die Route.
+      - type: command
+        run: |
+          php <<'PHP'
+          <?php
+          require 'vendor/autoload.php';
+          $app = require 'bootstrap/app.php';
+          $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+          $kernel->bootstrap();
+          Illuminate\Support\Facades\DB::beginTransaction();
+          $order = App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 1250]);
+          $mit = $kernel->handle(Illuminate\Http\Request::create('/orders/'.$order->id, 'GET', [], [], [], ['HTTP_X_API_KEY' => 'test-api-key']));
+          $json = json_decode($mit->getContent(), true);
+          echo $mit->getStatusCode(), '|', ($json['number'] ?? '') === $order->number ? 'nummer' : 'ohne-nummer', '|', $json['status'] ?? '', '|', $json['total'] ?? '', "\n";
+          Illuminate\Support\Facades\DB::rollBack();
+          PHP
+        stdout_matches: "^200\\|nummer\\|pending\\|12,50 €\\s*$"
+        message: "Mit dem richtigen Header soll die Route 200 und JSON mit number, status (z. B. pending) und total (z. B. 12,50 €) liefern."
+      - type: command
+        run: |
+          php <<'PHP'
+          <?php
+          require 'vendor/autoload.php';
+          $app = require 'bootstrap/app.php';
+          $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+          $kernel->bootstrap();
+          Illuminate\Support\Facades\DB::beginTransaction();
+          $order = App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 1250]);
+          $codes = [];
+          for ($i = 0; $i < 6; $i++) {
+              $codes[] = $kernel->handle(Illuminate\Http\Request::create('/orders/'.$order->id, 'GET', [], [], [], ['HTTP_X_API_KEY' => 'test-api-key', 'REMOTE_ADDR' => '198.51.100.7']))->getStatusCode();
+          }
+          echo implode(',', $codes), "\n";
+          Illuminate\Support\Facades\DB::rollBack();
+          PHP
+        stdout_matches: "^200,200,200,200,200,429\\s*$"
+        message: Die sechste Anfrage innerhalb einer Minute soll mit 429 abgelehnt werden. Prüfe den Rate Limiter orders (5 pro Minute) und throttle:orders an der Route.
+      - type: file_contains
+        path: bootstrap/app.php
+        pattern: "['\"]api\\.key['\"]\\s*=>"
+        message: Registriere die Middleware in bootstrap/app.php unter dem Alias api.key.
+    solution: |
+      ```php title="app/Http/Middleware/EnsureApiKey.php"
+      public function handle(Request $request, Closure $next): Response
+      {
+          abort_unless($request->header('X-Api-Key') === config('bestellservice.api_key'), 401);
+
+          return $next($request);
+      }
+      ```
+
+      ```php title="bootstrap/app.php"
+      ->withMiddleware(function (Middleware $middleware): void {
+          $middleware->alias(['api.key' => EnsureApiKey::class]);
+      })
+      ```
+
+      ```php title="AppServiceProvider::boot()"
+      RateLimiter::for('orders', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+      ```
+
+      ```php title="routes/web.php"
+      Route::get('/orders/{order}', fn (Order $order) => [
+          'number' => $order->number,
+          'status' => $order->status,
+          'total' => $order->total,
+      ])->middleware(['api.key', 'throttle:orders']);
+      ```
+    solve: |
+      mkdir -p app/Http/Middleware
+      cat > app/Http/Middleware/EnsureApiKey.php <<'EOF'
+      <?php
+
+      namespace App\Http\Middleware;
+
+      use Closure;
+      use Illuminate\Http\Request;
+      use Symfony\Component\HttpFoundation\Response;
+
+      class EnsureApiKey
+      {
+          public function handle(Request $request, Closure $next): Response
+          {
+              abort_unless($request->header('X-Api-Key') === config('bestellservice.api_key'), 401);
+
+              return $next($request);
+          }
+      }
+      EOF
+      grep -q "'api.key'" bootstrap/app.php || sed -i "s/->withMiddleware(function (Middleware \$middleware): void {/->withMiddleware(function (Middleware \$middleware): void {\n        \$middleware->alias(['api.key' => \\\\App\\\\Http\\\\Middleware\\\\EnsureApiKey::class]);/" bootstrap/app.php
+      cat > app/Providers/AppServiceProvider.php <<'EOF'
+      <?php
+
+      namespace App\Providers;
+
+      use App\Contracts\PaymentGateway;
+      use App\Services\HttpPaymentGateway;
+      use Illuminate\Cache\RateLimiting\Limit;
+      use Illuminate\Http\Request;
+      use Illuminate\Support\Facades\RateLimiter;
+      use Illuminate\Support\ServiceProvider;
+
+      class AppServiceProvider extends ServiceProvider
+      {
+          public function register(): void
+          {
+              $this->app->singleton(PaymentGateway::class, HttpPaymentGateway::class);
+          }
+
+          public function boot(): void
+          {
+              RateLimiter::for('orders', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+          }
+      }
+      EOF
+      cat >> routes/web.php <<'EOF'
+
+      Route::get('/orders/{order}', fn (App\Models\Order $order) => [
+          'number' => $order->number,
+          'status' => $order->status,
+          'total' => $order->total,
+      ])->middleware(['api.key', 'throttle:orders']);
+      EOF
+
+  - id: statistik-cache
+    title: Eine gecachte Statistik
+    description: |
+      Die Startseite des Partner-Portals zeigt Umsatzzahlen. Die Abfrage soll nicht bei jedem Aufruf
+      laufen, sondern zehn Minuten im Cache liegen – und sofort verschwinden, wenn sich eine Bestellung
+      ändert.
+
+      1. Lege die Route `GET /stats` an (ohne Middleware). Sie liefert JSON
+         `{"paid": <Anzahl bezahlter Bestellungen>, "revenue_cents": <Summe>}` und nutzt dafür
+         `Cache::remember('orders.stats', 600, …)` mit dem Scope `paid`.
+      2. Ergänze den `OrderObserver` um die Methode `saved`, die den Schlüssel `orders.stats` mit
+         `Cache::forget()` löscht.
+    checklist:
+      - "Route `/stats` mit `Cache::remember`"
+      - Observer leert den Cache bei jeder Änderung
+    hints:
+      - "Die Statistik: `['paid' => Order::paid()->count(), 'revenue_cents' => (int) Order::paid()->sum('total_cents')]`."
+      - "`saved` läuft nach jedem Anlegen und jedem Update."
+    checks:
+      - type: command
+        run: |
+          php <<'PHP'
+          <?php
+          require 'vendor/autoload.php';
+          $app = require 'bootstrap/app.php';
+          $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+          $kernel->bootstrap();
+          Illuminate\Support\Facades\DB::beginTransaction();
+          Illuminate\Support\Facades\Cache::put('orders.stats', ['paid' => 99, 'revenue_cents' => 1], 600);
+          $a = json_decode($kernel->handle(Illuminate\Http\Request::create('/stats'))->getContent(), true);
+          echo $a['paid'] ?? 'x', "\n";
+          Illuminate\Support\Facades\DB::rollBack();
+          PHP
+        stdout_matches: "^99\\s*$"
+        message: GET /stats soll den Wert aus dem Cache-Schlüssel orders.stats liefern (Cache::remember('orders.stats', 600, …)).
+      - type: command
+        run: |
+          php <<'PHP'
+          <?php
+          require 'vendor/autoload.php';
+          $app = require 'bootstrap/app.php';
+          $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+          $kernel->bootstrap();
+          Illuminate\Support\Facades\DB::beginTransaction();
+          Illuminate\Support\Facades\Cache::forget('orders.stats');
+          $vorher = App\Models\Order::paid()->count();
+          $summe = (int) App\Models\Order::paid()->sum('total_cents');
+          $a = json_decode($kernel->handle(Illuminate\Http\Request::create('/stats'))->getContent(), true);
+          App\Models\Order::create(['email' => 'kunde@example.com', 'total_cents' => 700, 'status' => 'paid', 'paid_at' => now()]);
+          $b = json_decode($kernel->handle(Illuminate\Http\Request::create('/stats'))->getContent(), true);
+          echo ($a['paid'] ?? -1) - $vorher, '|', ($b['paid'] ?? -1) - $vorher, '|', ($b['revenue_cents'] ?? -1) - $summe, "\n";
+          Illuminate\Support\Facades\DB::rollBack();
+          Illuminate\Support\Facades\Cache::forget('orders.stats');
+          PHP
+        stdout_matches: "^0\\|1\\|700\\s*$"
+        message: Nach dem Speichern einer bezahlten Bestellung soll /stats sofort die neue Anzahl und Summe zeigen. Lösche orders.stats im Observer (saved).
+    solution: |
+      ```php title="routes/web.php"
+      Route::get('/stats', fn () => Cache::remember('orders.stats', 600, fn () => [
+          'paid' => Order::paid()->count(),
+          'revenue_cents' => (int) Order::paid()->sum('total_cents'),
+      ]));
+      ```
+
+      ```php title="app/Observers/OrderObserver.php"
+      public function saved(Order $order): void
+      {
+          Cache::forget('orders.stats');
+      }
+      ```
+    solve: |
+      cat >> routes/web.php <<'EOF'
+
+      Route::get('/stats', fn () => Illuminate\Support\Facades\Cache::remember('orders.stats', 600, fn () => [
+          'paid' => App\Models\Order::paid()->count(),
+          'revenue_cents' => (int) App\Models\Order::paid()->sum('total_cents'),
+      ]));
+      EOF
+      cat > app/Observers/OrderObserver.php <<'EOF'
+      <?php
+
+      namespace App\Observers;
+
+      use App\Models\Order;
+      use Illuminate\Support\Facades\Cache;
+      use Illuminate\Support\Str;
+
+      class OrderObserver
+      {
+          public function creating(Order $order): void
+          {
+              $order->number = 'B-'.now()->format('Ymd').'-'.Str::upper(Str::random(4));
+          }
+
+          public function saved(Order $order): void
+          {
+              Cache::forget('orders.stats');
+          }
+      }
+      EOF
+
+  - id: geplanter-befehl
+    title: Liegengebliebene Bestellungen automatisch stornieren
+    description: |
+      Bestellungen, die länger als 24 Stunden unbezahlt sind, sollen automatisch storniert werden –
+      jede Stunde, ohne dass sich zwei Läufe überschneiden.
+
+      1. Erzeuge den Befehl `php artisan make:command CancelStaleOrders`. Signatur:
+         `orders:cancel-stale {--hours=24}`.
+      2. Er sucht alle Bestellungen mit Status `pending`, die älter als `--hours` Stunden sind, und
+         setzt sie auf `cancelled`. Arbeite in Paketen zu 100 mit `chunkById()`.
+      3. Am Ende gibt er `Storniert: <Anzahl>` aus.
+      4. Plane ihn in `routes/console.php`: stündlich und mit `withoutOverlapping()`.
+      5. Prüfe mit `php artisan schedule:list`.
+    checklist:
+      - "Befehl `orders:cancel-stale` mit Option `--hours`"
+      - "Verarbeitung mit `chunkById(100, …)`"
+      - "Stündlich geplant mit `withoutOverlapping()`"
+    hints:
+      - "Die Abfrage: `Order::where('status', OrderStatus::Pending)->where('created_at', '<', now()->subHours($hours))`."
+      - "In `chunkById` bekommst du eine Collection: `foreach ($orders as $order) { $order->update([...]); $count++; }` – denk an `use (&$count)`."
+      - "`Schedule::command('orders:cancel-stale')->hourly()->withoutOverlapping();`"
+    checks:
+      - type: command
+        run: php artisan schedule:list
+        stdout_matches: "0 \\* \\* \\* \\*.*orders:cancel-stale"
+        message: In schedule:list fehlt orders:cancel-stale mit stündlichem Rhythmus (0 * * * *). Plane den Befehl in routes/console.php mit ->hourly().
+      - type: file_contains
+        path: routes/console.php
+        pattern: "withoutOverlapping\\("
+        message: Verhindere Überschneidungen mit ->withoutOverlapping().
+      - type: file_contains
+        path: app/Console/Commands/CancelStaleOrders.php
+        pattern: "chunkById\\(\\s*100"
+        message: Verarbeite die Bestellungen in Paketen mit chunkById(100, …).
+      - type: command
+        run: |
+          php artisan tinker --execute="DB::beginTransaction(); \$alt = App\Models\Order::create(['email' => 'a@example.com', 'total_cents' => 100]); \$alt->forceFill(['created_at' => now()->subHours(30)])->saveQuietly(); \$neu = App\Models\Order::create(['email' => 'b@example.com', 'total_cents' => 100]); \$bezahlt = App\Models\Order::create(['email' => 'c@example.com', 'total_cents' => 100, 'status' => 'paid']); \$bezahlt->forceFill(['created_at' => now()->subHours(30)])->saveQuietly(); Artisan::call('orders:cancel-stale', ['--hours' => 24]); echo trim(Artisan::output()), '|', \$alt->fresh()->status->value, '|', \$neu->fresh()->status->value, '|', \$bezahlt->fresh()->status->value; DB::rollBack();"
+        stdout_matches: "Storniert: \\d+\\|cancelled\\|pending\\|paid\\s*$"
+        message: "Der Befehl soll nur unbezahlte Bestellungen älter als --hours stornieren und „Storniert: <Anzahl>“ ausgeben."
+    solution: |
+      ```php title="app/Console/Commands/CancelStaleOrders.php"
+      #[Signature('orders:cancel-stale {--hours=24}')]
+      #[Description('Storniert unbezahlte Bestellungen, die älter als --hours sind')]
+      class CancelStaleOrders extends Command
+      {
+          public function handle(): int
+          {
+              $count = 0;
+
+              Order::where('status', OrderStatus::Pending)
+                  ->where('created_at', '<', now()->subHours((int) $this->option('hours')))
+                  ->chunkById(100, function ($orders) use (&$count) {
+                      foreach ($orders as $order) {
+                          $order->update(['status' => OrderStatus::Cancelled]);
+                          $count++;
+                      }
+                  });
+
+              $this->info("Storniert: {$count}");
+
+              return self::SUCCESS;
+          }
+      }
+      ```
+
+      ```php title="routes/console.php"
+      Schedule::command('orders:cancel-stale')->hourly()->withoutOverlapping();
+      ```
+    solve: |
+      mkdir -p app/Console/Commands
+      cat > app/Console/Commands/CancelStaleOrders.php <<'EOF'
+      <?php
+
+      namespace App\Console\Commands;
+
+      use App\Enums\OrderStatus;
+      use App\Models\Order;
+      use Illuminate\Console\Attributes\Description;
+      use Illuminate\Console\Attributes\Signature;
+      use Illuminate\Console\Command;
+
+      #[Signature('orders:cancel-stale {--hours=24}')]
+      #[Description('Storniert unbezahlte Bestellungen, die älter als --hours sind')]
+      class CancelStaleOrders extends Command
+      {
+          public function handle(): int
+          {
+              $count = 0;
+
+              Order::where('status', OrderStatus::Pending)
+                  ->where('created_at', '<', now()->subHours((int) $this->option('hours')))
+                  ->chunkById(100, function ($orders) use (&$count) {
+                      foreach ($orders as $order) {
+                          $order->update(['status' => OrderStatus::Cancelled]);
+                          $count++;
+                      }
+                  });
+
+              $this->info("Storniert: {$count}");
+
+              return self::SUCCESS;
+          }
+      }
+      EOF
+      grep -q "orders:cancel-stale" routes/console.php || cat >> routes/console.php <<'EOF'
+
+      Illuminate\Support\Facades\Schedule::command('orders:cancel-stale')->hourly()->withoutOverlapping();
+      EOF
+
+  - id: tests-mit-fakes
+    title: Alles mit Pest und Fakes absichern
+    description: |
+      Zum Schluss schreibst du Feature-Tests, die **keine** echte HTTP-Anfrage und **keine** echte Mail
+      auslösen. Lege `tests/Feature/OrderTest.php` an (mit `uses(RefreshDatabase::class);`) und schreibe
+      mindestens vier Tests:
+
+      1. **Job bezahlt die Bestellung:** `Http::fake()` für `payments.example.com/*`,
+         `Notification::fake()`, dann `ProcessOrder::dispatchSync($order)`. Prüfe Status `paid`,
+         `Http::assertSent(...)` mit `amount` und `Notification::assertSentOnDemand(OrderConfirmed::class)`.
+      2. **Fehlschlag:** Der Zahlungsdienst antwortet mit 500 – `charge()` wirft eine
+         `RequestException`.
+      3. **Queue:** Mit `Queue::fake()` prüfst du, dass `ProcessOrder::dispatch($order)` den Job in die
+         Queue legt (`Queue::assertPushed`).
+      4. **API-Schlüssel:** `GET /orders/{id}` ohne Header liefert 401, mit Header 200.
+
+      Führe die Tests mit `php artisan test` aus – alles muss grün sein. Tipp: Rufe am Anfang der Tests
+      `Http::preventStrayRequests();` auf, dann fällt jede ungefakte Anfrage sofort auf.
+    checklist:
+      - "`tests/Feature/OrderTest.php` mit mindestens vier Tests"
+      - "`Http::fake`, `Queue::fake` und `Notification::fake` werden genutzt"
+      - "`php artisan test` ist grün"
+    hints:
+      - "In Tests ist `QUEUE_CONNECTION=sync` und `MAIL_MAILER=array` (siehe `phpunit.xml`), der Cache ist `array`."
+      - "Für den Fehlschlag: `Http::fake(['payments.example.com/*' => Http::response([], 500)]);` und `expect(fn () => app(PaymentGateway::class)->charge('a@example.com', 100))->toThrow(RequestException::class);`"
+      - "Mit Header: `$this->withHeader('X-Api-Key', 'test-api-key')->getJson('/orders/'.$order->id)->assertOk();`"
+    checks:
+      - type: file_exists
+        path: tests/Feature/OrderTest.php
+        message: Die Datei tests/Feature/OrderTest.php fehlt noch.
+      - type: command
+        run: grep -cE "^\s*(test|it)\(" tests/Feature/OrderTest.php
+        stdout_matches: "^([4-9]|[1-9][0-9]+)\\s*$"
+        message: OrderTest.php braucht mindestens vier Tests (test(...) oder it(...)).
+      - type: command
+        run: "grep -q 'Http::fake' tests/Feature/OrderTest.php && grep -q 'Queue::fake' tests/Feature/OrderTest.php && grep -q 'Notification::fake' tests/Feature/OrderTest.php"
+        message: Nutze in OrderTest.php Http::fake, Queue::fake und Notification::fake.
+      - type: command
+        run: php artisan test --colors=never 2>&1 | tail -5
+        stdout_matches: "Tests:\\s+\\d+ passed"
+        message: php artisan test ist noch nicht grün. Lies die Fehlermeldung über der Zusammenfassung.
+      - type: command
+        run: php artisan test tests/Feature/OrderTest.php
+        message: Die Tests in tests/Feature/OrderTest.php schlagen noch fehl.
+    solution: |
+      ```php title="tests/Feature/OrderTest.php"
+      <?php
+
+      use App\Contracts\PaymentGateway;
+      use App\Enums\OrderStatus;
+      use App\Jobs\ProcessOrder;
+      use App\Models\Order;
+      use App\Notifications\OrderConfirmed;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+      use Illuminate\Http\Client\RequestException;
+      use Illuminate\Support\Facades\Http;
+      use Illuminate\Support\Facades\Notification;
+      use Illuminate\Support\Facades\Queue;
+
+      uses(RefreshDatabase::class);
+
+      beforeEach(fn () => Http::preventStrayRequests());
+
+      test('the job charges the order and sends a confirmation', function () {
+          Http::fake(['payments.example.com/*' => Http::response(['id' => 'ch_1'])]);
+          Notification::fake();
+          $order = Order::create(['email' => 'kunde@example.com', 'total_cents' => 1250]);
+
+          ProcessOrder::dispatchSync($order);
+
+          expect($order->fresh()->status)->toBe(OrderStatus::Paid);
+          Http::assertSent(fn ($request) => $request['amount'] === 1250);
+          Notification::assertSentOnDemand(OrderConfirmed::class);
+      });
+
+      test('a failing payment throws', function () {
+          Http::fake(['payments.example.com/*' => Http::response([], 500)]);
+
+          expect(fn () => app(PaymentGateway::class)->charge('kunde@example.com', 100))
+              ->toThrow(RequestException::class);
+      });
+
+      test('dispatching pushes the job onto the queue', function () {
+          Queue::fake();
+          $order = Order::create(['email' => 'kunde@example.com', 'total_cents' => 500]);
+
+          ProcessOrder::dispatch($order);
+
+          Queue::assertPushed(ProcessOrder::class, fn ($job) => $job->order->is($order));
+      });
+
+      test('the status route requires the api key', function () {
+          $order = Order::create(['email' => 'kunde@example.com', 'total_cents' => 500]);
+
+          $this->getJson('/orders/'.$order->id)->assertUnauthorized();
+          $this->withHeader('X-Api-Key', 'test-api-key')
+              ->getJson('/orders/'.$order->id)
+              ->assertOk()
+              ->assertJson(['number' => $order->number, 'status' => 'pending']);
+      });
+      ```
+    solve: |
+      cat > tests/Feature/OrderTest.php <<'EOF'
+      <?php
+
+      use App\Contracts\PaymentGateway;
+      use App\Enums\OrderStatus;
+      use App\Jobs\ProcessOrder;
+      use App\Models\Order;
+      use App\Notifications\OrderConfirmed;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+      use Illuminate\Http\Client\RequestException;
+      use Illuminate\Support\Facades\Http;
+      use Illuminate\Support\Facades\Notification;
+      use Illuminate\Support\Facades\Queue;
+
+      uses(RefreshDatabase::class);
+
+      beforeEach(fn () => Http::preventStrayRequests());
+
+      test('the job charges the order and sends a confirmation', function () {
+          Http::fake(['payments.example.com/*' => Http::response(['id' => 'ch_1'])]);
+          Notification::fake();
+          $order = Order::create(['email' => 'kunde@example.com', 'total_cents' => 1250]);
+
+          ProcessOrder::dispatchSync($order);
+
+          expect($order->fresh()->status)->toBe(OrderStatus::Paid);
+          Http::assertSent(fn ($request) => $request['amount'] === 1250);
+          Notification::assertSentOnDemand(OrderConfirmed::class);
+      });
+
+      test('a failing payment throws', function () {
+          Http::fake(['payments.example.com/*' => Http::response([], 500)]);
+
+          expect(fn () => app(PaymentGateway::class)->charge('kunde@example.com', 100))
+              ->toThrow(RequestException::class);
+      });
+
+      test('dispatching pushes the job onto the queue', function () {
+          Queue::fake();
+          $order = Order::create(['email' => 'kunde@example.com', 'total_cents' => 500]);
+
+          ProcessOrder::dispatch($order);
+
+          Queue::assertPushed(ProcessOrder::class, fn ($job) => $job->order->is($order));
+      });
+
+      test('the status route requires the api key', function () {
+          $order = Order::create(['email' => 'kunde@example.com', 'total_cents' => 500]);
+
+          $this->getJson('/orders/'.$order->id)->assertUnauthorized();
+          $this->withHeader('X-Api-Key', 'test-api-key')
+              ->getJson('/orders/'.$order->id)
+              ->assertOk()
+              ->assertJson(['number' => $order->number, 'status' => 'pending']);
+      });
+      EOF

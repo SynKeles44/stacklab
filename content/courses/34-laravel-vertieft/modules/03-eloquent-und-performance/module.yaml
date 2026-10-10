@@ -1,0 +1,214 @@
+title: Eloquent und Performance
+description: Scopes, Accessoren und Casts für saubere Models, Eager Loading gegen das N+1-Problem, große Datenmengen in Paketen sowie Cache und Dateispeicher.
+exercise:
+  id: modul-uebung-startseite
+  type: terminal
+  title: Eine schnelle Shop-Startseite
+  description: |
+    Im Ordner `startseite-uebung` liegt eine Laravel-Anwendung mit den Tabellen `categories` und
+    `products` samt Testdaten. Ein `Product` gehört zu einer `Category` (`category()`), hat `name`,
+    `price_cents`, `active` und `sold` (Anzahl Verkäufe). Der Cache nutzt hier die Disk (`CACHE_STORE=file`).
+
+    Die Startseite soll die drei meistverkauften **aktiven** Produkte zeigen – schnell und ohne N+1.
+
+    1. Ergänze im Model `Product` die Scopes `active` und `bestsellers(int $limit)` (sortiert nach
+       `sold` absteigend, begrenzt auf `$limit`), den Cast `active` → `boolean` und den Accessor
+       `price`, der z. B. `12,99 €` liefert.
+    2. Lege die Route `GET /startseite` an. Sie liefert eine JSON-Liste mit `name`, `price` und
+       `category` (Name der Kategorie) der Top 3. Lade die Kategorie per Eager Loading und speichere das
+       Ergebnis 10 Minuten mit `Cache::remember('startseite', 600, …)`.
+    3. Erzeuge einen `ProductObserver`, der bei `saved` den Schlüssel `startseite` löscht, und
+       registriere ihn am Model.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: startseite-uebung
+  setup: |
+    # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      cd "$T"
+      timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+      printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+      printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+      touch .fertig && cd - >/dev/null
+      rm -rf "$B" && mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+    sed -i "s/^SESSION_DRIVER=.*/SESSION_DRIVER=array/; s/^CACHE_STORE=.*/CACHE_STORE=file/" .env
+    cat > database/migrations/2026_01_01_000000_create_shop_tables.php <<'EOF'
+    <?php
+
+    use Illuminate\Database\Migrations\Migration;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\DB;
+    use Illuminate\Support\Facades\Schema;
+
+    return new class extends Migration
+    {
+        public function up(): void
+        {
+            Schema::create('categories', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->timestamps();
+            });
+            Schema::create('products', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('category_id')->constrained();
+                $table->string('name');
+                $table->unsignedInteger('price_cents');
+                $table->boolean('active')->default(true);
+                $table->unsignedInteger('sold')->default(0);
+                $table->timestamps();
+            });
+            DB::table('categories')->insert([['id' => 1, 'name' => 'Küche'], ['id' => 2, 'name' => 'Büro']]);
+            DB::table('products')->insert([
+                ['category_id' => 1, 'name' => 'Kaffeebecher', 'price_cents' => 1299, 'active' => true, 'sold' => 340],
+                ['category_id' => 2, 'name' => 'Notizbuch', 'price_cents' => 899, 'active' => true, 'sold' => 510],
+                ['category_id' => 2, 'name' => 'Kugelschreiber', 'price_cents' => 249, 'active' => true, 'sold' => 120],
+                ['category_id' => 1, 'name' => 'Teekanne', 'price_cents' => 3499, 'active' => false, 'sold' => 900],
+                ['category_id' => 1, 'name' => 'Brotdose', 'price_cents' => 1599, 'active' => true, 'sold' => 95],
+            ]);
+        }
+
+        public function down(): void
+        {
+            Schema::dropIfExists('products');
+            Schema::dropIfExists('categories');
+        }
+    };
+    EOF
+    cat > app/Models/Category.php <<'EOF'
+    <?php
+
+    namespace App\Models;
+
+    use Illuminate\Database\Eloquent\Model;
+
+    class Category extends Model
+    {
+    }
+    EOF
+    cat > app/Models/Product.php <<'EOF'
+    <?php
+
+    namespace App\Models;
+
+    use Illuminate\Database\Eloquent\Attributes\Fillable;
+    use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+    #[Fillable(['category_id', 'name', 'price_cents', 'active', 'sold'])]
+    class Product extends Model
+    {
+        public function category(): BelongsTo
+        {
+            return $this->belongsTo(Category::class);
+        }
+    }
+    EOF
+    php artisan migrate --force -q
+    php artisan cache:clear -q
+  checks:
+    - type: command
+      run: php artisan tinker --execute="echo App\Models\Product::active()->bestsellers(2)->pluck('name')->implode(','), '|', var_export(App\Models\Product::find(1)->active, true), '|', App\Models\Product::find(1)->price;"
+      stdout_matches: "^Notizbuch,Kaffeebecher\\|true\\|12,99 €\\s*$"
+      message: "Product::active()->bestsellers(2) soll Notizbuch und Kaffeebecher liefern, active ein boolean sein und price z. B. „12,99 €“."
+    - type: command
+      run: |
+        php <<'PHP'
+        <?php
+        require 'vendor/autoload.php';
+        $app = require 'bootstrap/app.php';
+        $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+        $kernel->bootstrap();
+        Illuminate\Support\Facades\Cache::forget('startseite');
+        $n = 0;
+        Illuminate\Support\Facades\DB::listen(function () use (&$n) { $n++; });
+        $erste = $kernel->handle(Illuminate\Http\Request::create('/startseite'));
+        $nachErster = $n;
+        $kernel->handle(Illuminate\Http\Request::create('/startseite'));
+        $d = json_decode($erste->getContent(), true);
+        echo json_encode($d, JSON_UNESCAPED_UNICODE), '|', $nachErster <= 2 ? 'eager' : 'n+1:'.$nachErster, '|', $n === $nachErster ? 'gecacht' : 'nicht-gecacht', "\n";
+        PHP
+      stdout_matches: "^\\[\\{\"name\":\"Notizbuch\",\"price\":\"8,99 €\",\"category\":\"Büro\"\\},\\{\"name\":\"Kaffeebecher\",\"price\":\"12,99 €\",\"category\":\"Küche\"\\},\\{\"name\":\"Kugelschreiber\",\"price\":\"2,49 €\",\"category\":\"Büro\"\\}\\]\\|eager\\|gecacht\\s*$"
+      message: "GET /startseite soll die Top 3 aktiver Produkte mit name, price und category liefern, höchstens 2 Abfragen brauchen (with('category')) und beim zweiten Aufruf aus dem Cache kommen."
+    - type: command
+      run: |
+        php <<'PHP'
+        <?php
+        require 'vendor/autoload.php';
+        $app = require 'bootstrap/app.php';
+        $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+        $kernel->bootstrap();
+        $kernel->handle(Illuminate\Http\Request::create('/startseite'));
+        Illuminate\Support\Facades\DB::beginTransaction();
+        App\Models\Product::where('name', 'Brotdose')->first()->update(['sold' => 9999]);
+        $d = json_decode($kernel->handle(Illuminate\Http\Request::create('/startseite'))->getContent(), true);
+        Illuminate\Support\Facades\DB::rollBack();
+        Illuminate\Support\Facades\Cache::forget('startseite');
+        echo $d[0]['name'] ?? 'leer', "\n";
+        PHP
+      stdout_matches: "^Brotdose\\s*$"
+      message: Nach dem Speichern eines Produkts zeigt /startseite noch alte Daten. Der ProductObserver soll in saved den Schlüssel startseite löschen.
+  hints:
+    - "Scopes: `#[Scope] protected function bestsellers(Builder $query, int $limit): void { $query->orderByDesc('sold')->limit($limit); }`"
+    - "Die Route: `Cache::remember('startseite', 600, fn () => Product::with('category')->active()->bestsellers(3)->get()->map(fn ($p) => ['name' => $p->name, 'price' => $p->price, 'category' => $p->category->name])->all())`"
+    - "Observer anlegen mit `php artisan make:observer ProductObserver --model=Product` und am Model `#[ObservedBy([ProductObserver::class])]` setzen."
+  solution: |
+    ```php title="app/Models/Product.php"
+    #[ObservedBy([ProductObserver::class])]
+    #[Fillable(['category_id', 'name', 'price_cents', 'active', 'sold'])]
+    class Product extends Model
+    {
+        protected function casts(): array
+        {
+            return ['active' => 'boolean'];
+        }
+
+        public function category(): BelongsTo
+        {
+            return $this->belongsTo(Category::class);
+        }
+
+        #[Scope]
+        protected function active(Builder $query): void
+        {
+            $query->where('active', true);
+        }
+
+        #[Scope]
+        protected function bestsellers(Builder $query, int $limit): void
+        {
+            $query->orderByDesc('sold')->limit($limit);
+        }
+
+        protected function price(): Attribute
+        {
+            return Attribute::make(get: fn () => number_format($this->price_cents / 100, 2, ',', '.').' €');
+        }
+    }
+    ```
+
+    ```php title="app/Observers/ProductObserver.php"
+    public function saved(Product $product): void
+    {
+        Cache::forget('startseite');
+    }
+    ```
+
+    ```php title="routes/web.php"
+    Route::get('/startseite', fn () => Cache::remember('startseite', 600, fn () => Product::with('category')
+        ->active()
+        ->bestsellers(3)
+        ->get()
+        ->map(fn (Product $p) => [
+            'name' => $p->name,
+            'price' => $p->price,
+            'category' => $p->category->name,
+        ])
+        ->all()));
+    ```

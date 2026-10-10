@@ -1,0 +1,117 @@
+title: Events, Queues und Scheduler
+description: Code mit Events und Observern entkoppeln, langsame Arbeit in Queue-Jobs und Batches verlagern und wiederkehrende Aufgaben planen.
+exercise:
+  id: modul-uebung-import-batch
+  type: terminal
+  title: Ein Import als Batch
+  description: |
+    Im Ordner `import-uebung` liegt eine frische Laravel-Anwendung (Queue und Cache nutzen die
+    Datenbank). Du baust einen Import, der 300 Datensätze in drei Paketen verarbeitet und meldet, wann er
+    fertig ist.
+
+    1. Erzeuge den Job `ImportChunk` mit `public int $from` und `public int $to` im Konstruktor. Er nutzt
+       die Traits `Batchable` und `Queueable`.
+    2. In `handle()`: Ist der Batch abgebrochen, passiert nichts. Sonst erhöht der Job den Cache-Zähler
+       `importiert` um die Anzahl seiner Datensätze: `Cache::increment('importiert', $this->to - $this->from + 1);`
+    3. Erzeuge den Befehl `import:start` (`php artisan make:command StartImport`). Er setzt
+       `Cache::put('importiert', 0)`, schickt einen Batch mit dem Namen `Import` und den Paketen
+       1–100, 101–200 und 201–300 ab und gibt die Batch-ID aus.
+    4. Im `then`-Callback des Batches wird `Cache::put('import.status', 'fertig')` gesetzt.
+    5. Starte den Import mit `php artisan import:start` und arbeite die Queue mit
+       `php artisan queue:work --stop-when-empty` ab.
+    6. Plane `import:start` in `routes/console.php` **täglich um 03:00** ein.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: import-uebung
+  setup: |
+    # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      cd "$T"
+      timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+      printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+      printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+      touch .fertig && cd - >/dev/null
+      rm -rf "$B" && mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+  checks:
+    - type: file_contains
+      path: app/Jobs/ImportChunk.php
+      pattern: "use\\s+Batchable"
+      message: ImportChunk braucht den Trait Batchable (use Batchable, Queueable;).
+    - type: command
+      run: |
+        php artisan tinker --execute="\$b = DB::table('job_batches')->where('name', 'Import')->latest('created_at')->first(); echo \$b ? \$b->total_jobs.'|'.\$b->pending_jobs.'|'.\$b->failed_jobs : 'kein-batch';"
+      stdout_matches: "^3\\|0\\|0\\s*$"
+      message: Es gibt noch keinen fertigen Batch „Import“ mit drei Jobs. Starte php artisan import:start und danach php artisan queue:work --stop-when-empty.
+    - type: command
+      run: php artisan tinker --execute="echo Cache::get('importiert');"
+      stdout_matches: "^300\\s*$"
+      message: Der Cache-Zähler importiert steht nicht auf 300. Erhöht jeder Job ihn um seine Anzahl, und hat import:start ihn vorher auf 0 gesetzt?
+    - type: command
+      run: php artisan tinker --execute="echo Cache::get('import.status');"
+      stdout_matches: "^fertig\\s*$"
+      message: import.status steht nicht auf fertig. Setze den Wert im then-Callback des Batches.
+    - type: command
+      run: php artisan schedule:list
+      stdout_matches: "0\\s+3 \\* \\* \\*\\s+php artisan import:start"
+      message: "Plane import:start in routes/console.php täglich um 03:00 (0 3 * * *)."
+  hints:
+    - "Im Befehl: `$batch = Bus::batch([new ImportChunk(1, 100), new ImportChunk(101, 200), new ImportChunk(201, 300)])->then(static fn (Batch $batch) => Cache::put('import.status', 'fertig'))->name('Import')->dispatch();` – `static`, weil Batch-Callbacks gespeichert werden und kein `$this` mitnehmen dürfen."
+    - "Die Batch-ID gibst du mit `$this->info($batch->id);` aus."
+    - "Den Zeitplan: `Schedule::command('import:start')->dailyAt('03:00');`"
+  solution: |
+    ```php title="app/Jobs/ImportChunk.php"
+    class ImportChunk implements ShouldQueue
+    {
+        use Batchable, Queueable;
+
+        public function __construct(public int $from, public int $to) {}
+
+        public function handle(): void
+        {
+            if ($this->batch()->cancelled()) {
+                return;
+            }
+
+            Cache::increment('importiert', $this->to - $this->from + 1);
+        }
+    }
+    ```
+
+    ```php title="app/Console/Commands/StartImport.php"
+    #[Signature('import:start')]
+    #[Description('Startet den Import in drei Paketen')]
+    class StartImport extends Command
+    {
+        public function handle(): int
+        {
+            Cache::put('importiert', 0);
+
+            $batch = Bus::batch([
+                new ImportChunk(1, 100),
+                new ImportChunk(101, 200),
+                new ImportChunk(201, 300),
+            ])->then(static fn (Batch $batch) => Cache::put('import.status', 'fertig'))
+                ->name('Import')
+                ->dispatch();
+
+            $this->info($batch->id);
+
+            return self::SUCCESS;
+        }
+    }
+    ```
+
+    ```php title="routes/console.php (Ergänzung)"
+    Schedule::command('import:start')->dailyAt('03:00');
+    ```
+
+    ```bash
+    php artisan import:start
+    php artisan queue:work --stop-when-empty
+    ```

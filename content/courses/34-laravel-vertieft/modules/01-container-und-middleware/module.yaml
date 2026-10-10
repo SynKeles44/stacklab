@@ -1,0 +1,164 @@
+title: Container, Provider und Middleware
+description: Wie Laravel Objekte baut und beim Start zusammensteckt – und wie Middleware und Rate Limiter jeden Request umschließen.
+exercise:
+  id: modul-uebung-zitate-api
+  type: terminal
+  title: Eine geschützte Zitate-API
+  description: |
+    Im Ordner `zitate-api` liegt eine frische Laravel-Anwendung. Es gibt schon das Interface
+    `App\Contracts\QuoteRepository` (Methode `random(): string`) und die Klasse
+    `App\Services\StaticQuoteRepository`, die immer dasselbe Zitat liefert. In `.env` steht
+    `QUOTES_API_KEY=zitate-123`, und `config('services.quotes.key')` liest diesen Wert bereits.
+
+    Baue daraus eine kleine, geschützte API:
+
+    1. Sorge dafür, dass der Container für `QuoteRepository` die Klasse `StaticQuoteRepository` liefert
+       – im `AppServiceProvider` oder per `#[Bind]`-Attribut am Interface.
+    2. Schreibe die Middleware `AddRequestId`. Sie hängt an **jede** Response den Header
+       `X-Request-Id` mit einer UUID (`Str::uuid()`). Registriere sie global.
+    3. Schreibe die Middleware `EnsureApiKey`: Stimmt der Header `X-Api-Key` nicht mit
+       `config('services.quotes.key')` überein, antwortet sie mit **401**. Alias: `api.key`.
+    4. Definiere den Rate Limiter `quotes`: **3** Anfragen pro Minute, gezählt pro API-Schlüssel.
+    5. Lege die Route `GET /quote` an. Sie lässt sich das `QuoteRepository` injizieren und gibt
+       `{"quote": "…"}` zurück. Middleware: `api.key` und `throttle:quotes`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: zitate-api
+  setup: |
+    # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      cd "$T"
+      timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+      printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+      printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+      touch .fertig && cd - >/dev/null
+      rm -rf "$B" && mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+    mkdir -p app/Contracts app/Services
+    cat > app/Contracts/QuoteRepository.php <<'PHPEOF'
+    <?php
+
+    namespace App\Contracts;
+
+    interface QuoteRepository
+    {
+        public function random(): string;
+    }
+    PHPEOF
+    cat > app/Services/StaticQuoteRepository.php <<'PHPEOF'
+    <?php
+
+    namespace App\Services;
+
+    use App\Contracts\QuoteRepository;
+
+    class StaticQuoteRepository implements QuoteRepository
+    {
+        public function random(): string
+        {
+            return 'Erst das Warum, dann das Wie.';
+        }
+    }
+    PHPEOF
+    printf '\nQUOTES_API_KEY=zitate-123\n' >> .env
+    sed -i "s/^];$/    'quotes' => [\n        'key' => env('QUOTES_API_KEY'),\n    ],\n\n];/" config/services.php
+  checks:
+    - type: command
+      run: php artisan tinker --execute="echo get_class(app(App\Contracts\QuoteRepository::class));"
+      stdout_matches: "^App\\\\Services\\\\StaticQuoteRepository\\s*$"
+      message: Der Container kann QuoteRepository noch nicht auflösen. Binde das Interface an StaticQuoteRepository.
+    - type: command
+      run: |
+        php <<'PHP'
+        <?php
+        require 'vendor/autoload.php';
+        $app = require 'bootstrap/app.php';
+        $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+        $r = $kernel->handle(Illuminate\Http\Request::create('/quote'));
+        echo $r->getStatusCode(), '|', $r->headers->has('X-Request-Id') ? 'id' : 'ohne-id', "\n";
+        PHP
+      stdout_matches: "^401\\|id\\s*$"
+      message: Ohne X-Api-Key soll GET /quote mit 401 antworten – und auch diese Response braucht den Header X-Request-Id (globale Middleware).
+    - type: command
+      run: |
+        php <<'PHP'
+        <?php
+        require 'vendor/autoload.php';
+        $app = require 'bootstrap/app.php';
+        $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+        $r = $kernel->handle(Illuminate\Http\Request::create('/quote', 'GET', [], [], [], ['HTTP_X_API_KEY' => 'zitate-123', 'HTTP_ACCEPT' => 'application/json']));
+        $id = (string) $r->headers->get('X-Request-Id');
+        echo $r->getStatusCode(), '|', json_decode($r->getContent(), true)['quote'] ?? '', '|', Illuminate\Support\Str::isUuid($id) ? 'uuid' : 'keine-uuid', "\n";
+        PHP
+      stdout_matches: "^200\\|Erst das Warum, dann das Wie\\.\\|uuid\\s*$"
+      message: Mit gültigem Schlüssel soll GET /quote 200, JSON mit quote und einen UUID-Header X-Request-Id liefern.
+    - type: command
+      run: |
+        php <<'PHP'
+        <?php
+        require 'vendor/autoload.php';
+        $app = require 'bootstrap/app.php';
+        $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+        $kernel->bootstrap();
+        $key = 'pruef-'.uniqid();
+        config(['services.quotes.key' => $key]);
+        $codes = [];
+        for ($i = 0; $i < 4; $i++) {
+            $codes[] = $kernel->handle(Illuminate\Http\Request::create('/quote', 'GET', [], [], [], ['HTTP_X_API_KEY' => $key]))->getStatusCode();
+        }
+        echo implode(',', $codes), "\n";
+        PHP
+      stdout_matches: "^200,200,200,429\\s*$"
+      message: Die vierte Anfrage innerhalb einer Minute soll mit 429 abgelehnt werden. Prüfe RateLimiter::for('quotes', …) mit perMinute(3) und throttle:quotes an der Route.
+  hints:
+    - "Globale Middleware: `$middleware->append(AddRequestId::class);` in `bootstrap/app.php`, daneben `$middleware->alias(['api.key' => EnsureApiKey::class]);`."
+    - "Der Rate Limiter gehört in `boot()` des AppServiceProvider: `RateLimiter::for('quotes', fn (Request $request) => Limit::perMinute(3)->by($request->header('X-Api-Key')));`"
+    - "Die Route: `Route::get('/quote', fn (QuoteRepository $quotes) => ['quote' => $quotes->random()])->middleware(['api.key', 'throttle:quotes']);`"
+  solution: |
+    ```php title="app/Http/Middleware/AddRequestId.php"
+    public function handle(Request $request, Closure $next): Response
+    {
+        $response = $next($request);
+        $response->headers->set('X-Request-Id', (string) Str::uuid());
+
+        return $response;
+    }
+    ```
+
+    ```php title="app/Http/Middleware/EnsureApiKey.php"
+    public function handle(Request $request, Closure $next): Response
+    {
+        abort_unless($request->header('X-Api-Key') === config('services.quotes.key'), 401);
+
+        return $next($request);
+    }
+    ```
+
+    ```php title="bootstrap/app.php"
+    ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(AddRequestId::class);
+        $middleware->alias(['api.key' => EnsureApiKey::class]);
+    })
+    ```
+
+    ```php title="app/Providers/AppServiceProvider.php"
+    public function register(): void
+    {
+        $this->app->bind(QuoteRepository::class, StaticQuoteRepository::class);
+    }
+
+    public function boot(): void
+    {
+        RateLimiter::for('quotes', fn (Request $request) => Limit::perMinute(3)->by($request->header('X-Api-Key')));
+    }
+    ```
+
+    ```php title="routes/web.php"
+    Route::get('/quote', fn (QuoteRepository $quotes) => ['quote' => $quotes->random()])
+        ->middleware(['api.key', 'throttle:quotes']);
+    ```

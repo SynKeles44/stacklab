@@ -1,0 +1,310 @@
+- slug: singleton
+  term: Singleton
+  short: Ein Objekt, von dem es in einem Prozess nur eine einzige Instanz gibt, die überall wiederverwendet wird.
+  explanation: >
+    Im Laravel-Container registrierst du einen Singleton mit `$this->app->singleton(...)` oder dem Attribut
+    `#[Singleton]`. Der Container baut das Objekt beim ersten Bedarf und gibt danach immer dasselbe zurück.
+    Singletons dürfen keine Daten eines einzelnen Requests speichern, sonst sieht sie der nächste Request.
+  example: "`$this->app->singleton(PaymentGateway::class, HttpPaymentGateway::class);` – jede Klasse bekommt dieselbe Instanz."
+  category: laravel
+  aliases: [Singletons, singleton()]
+  related: [service-container, dependency-injection, service-provider]
+  lesson: laravel-vertieft/service-container
+
+- slug: makro
+  term: Makro
+  short: Eine eigene Methode, die du nachträglich an eine Laravel-Klasse wie `Str` oder `Collection` anhängst.
+  explanation: >
+    Viele Laravel-Klassen nutzen den Trait `Macroable`. Mit `Klasse::macro('name', fn () => ...)` ergänzt du
+    eine Methode, die danach überall verfügbar ist. Makros registrierst du in der `boot()`-Methode eines
+    Service Providers.
+  example: "`Str::macro('euro', fn (int $cents) => number_format($cents / 100, 2, ',', '.').' €');` – danach liefert `Str::euro(1250)` den Text `12,50 €`."
+  category: laravel
+  aliases: [Makros, Macro, macro()]
+  related: [service-provider, closure]
+  lesson: laravel-vertieft/service-provider
+
+- slug: observer
+  term: Observer
+  short: Eine Klasse, die auf Model-Ereignisse wie `creating`, `saved` oder `deleted` eines bestimmten Eloquent-Models reagiert.
+  explanation: >
+    Ein Observer bündelt alle Reaktionen auf Änderungen eines Models in einer Klasse. Laravel ruft die
+    passende Methode automatisch auf, sobald ein Datensatz angelegt, gespeichert oder gelöscht wird. Registriert
+    wird er mit dem Attribut `#[ObservedBy([...])]` am Model. Massen-Updates lösen keine Observer aus.
+  example: "`public function saving(User $user): void { $user->email = Str::lower($user->email); }` bereinigt jede E-Mail vor dem Speichern."
+  category: laravel
+  aliases: [Observers, Model-Observer]
+  related: [event, event-listener, eloquent]
+  lesson: laravel-vertieft/events-und-observer
+
+- slug: job-batch
+  term: Job-Batch
+  short: Eine Gruppe von Queue-Jobs, deren gemeinsamer Fortschritt verfolgt wird und die nach dem Ende einen Callback auslösen kann.
+  explanation: >
+    Mit `Bus::batch([...])` schickst du viele Jobs als Gruppe ab. Laravel speichert den Fortschritt in der
+    Tabelle `job_batches`. Mit `then`, `catch` und `finally` reagierst du, wenn alle Jobs erfolgreich waren,
+    einer gescheitert ist oder der Batch fertig ist. Jeder Job braucht den Trait `Batchable`.
+  example: "`Bus::batch([new ImportChunk(1, 100), new ImportChunk(101, 200)])->then(fn () => ...)->dispatch();`"
+  category: laravel
+  aliases: [Batch, Batches, Job-Batches, Bus::batch]
+  related: [queue-job, job-queue, queue-worker]
+  lesson: laravel-vertieft/batches-und-scheduling
+
+- slug: cron
+  term: Cron
+  short: Ein Dienst auf Linux-Servern, der Befehle zu festgelegten Zeiten automatisch ausführt.
+  explanation: >
+    Jede Zeile der Cron-Tabelle (Crontab) besteht aus fünf Zeitfeldern – Minute, Stunde, Tag, Monat,
+    Wochentag – und einem Befehl. Fünf Sternchen bedeuten „jede Minute“. Für Laravel reicht ein einziger
+    Eintrag, der jede Minute `php artisan schedule:run` aufruft.
+  example: "`* * * * * cd /var/www/app && php artisan schedule:run >> /dev/null 2>&1`"
+  category: laravel
+  aliases: [Cronjob, Cronjobs, Crontab, Cron-Eintrag, Cron-Ausdruck]
+  related: [scheduler, artisan]
+  lesson: laravel-vertieft/batches-und-scheduling
+
+- slug: scheduler
+  term: Scheduler
+  short: Laravels Zeitplaner, der wiederkehrende Aufgaben im Code statt in vielen Cron-Einträgen festlegt.
+  explanation: >
+    Im Scheduler definierst du in `routes/console.php`, welcher Befehl, Job oder welche Closure wann laufen
+    soll – etwa täglich oder alle fünf Minuten. Auf dem Server ruft ein einziger Cron-Eintrag jede Minute
+    `schedule:run` auf, und Laravel startet alles, was fällig ist. `schedule:list` zeigt den Plan.
+  example: "`Schedule::command('queue:prune-failed --hours=48')->daily();`"
+  category: laravel
+  aliases: [Task Scheduler, Zeitplaner, Schedule]
+  related: [cron, artisan, queue-job]
+  lesson: laravel-vertieft/batches-und-scheduling
+
+- slug: supervisor
+  term: Supervisor
+  short: Ein Prozess-Manager für Linux, der Hintergrundprozesse wie Queue-Worker startet und bei Abstürzen neu startet.
+  explanation: >
+    Queue-Worker laufen dauerhaft. Stürzt einer ab oder wird der Server neu gestartet, muss ihn jemand wieder
+    starten. Supervisor übernimmt das anhand einer kleinen Konfigurationsdatei und kann auch mehrere Worker
+    gleichzeitig betreiben.
+  example: "Eine Supervisor-Konfiguration startet `php artisan queue:work --sleep=3 --tries=3` mit vier Prozessen."
+  category: laravel
+  aliases: [supervisord]
+  related: [queue-worker, daemon]
+  lesson: laravel-vertieft/queues-und-jobs
+
+- slug: query-scope
+  term: Query Scope
+  short: Eine benannte, wiederverwendbare Abfrage-Bedingung in einem Eloquent-Model.
+  explanation: >
+    Lokale Scopes markierst du in Laravel 13 mit dem Attribut `#[Scope]` an einer geschützten Methode und
+    rufst sie wie eine Methode auf, zum Beispiel `Product::active()`. Globale Scopes hängen ihre Bedingung an
+    jede Abfrage eines Models und werden mit `#[ScopedBy]` registriert.
+  example: "`#[Scope] protected function active(Builder $query): void { $query->where('active', true); }`"
+  category: laravel
+  aliases: [Query Scopes, lokaler Scope, globaler Scope]
+  related: [eloquent, soft-delete]
+  lesson: laravel-vertieft/scopes-accessoren-casts
+
+- slug: soft-delete
+  term: Soft Delete
+  short: Ein „weiches“ Löschen, bei dem ein Datensatz nur als gelöscht markiert und nicht wirklich entfernt wird.
+  explanation: >
+    Mit dem Trait `SoftDeletes` setzt Eloquent beim Löschen nur die Spalte `deleted_at`. Ein globaler Scope
+    blendet solche Datensätze in allen Abfragen aus. Mit `withTrashed()` siehst du sie wieder, mit `restore()`
+    holst du sie zurück.
+  example: "`$post->delete();` setzt `deleted_at`, `Post::withTrashed()->find(5)` findet den Beitrag trotzdem."
+  category: laravel
+  aliases: [Soft Deletes, SoftDeletes]
+  related: [query-scope, eloquent]
+  lesson: laravel-vertieft/scopes-accessoren-casts
+
+- slug: accessor
+  term: Accessor
+  short: Eine Model-Methode, die einen Attributwert beim Lesen umformt oder einen berechneten Wert liefert.
+  explanation: >
+    Ein Accessor ist eine Methode, die ein `Attribute`-Objekt mit `get:` zurückgibt. Die Methode heißt in
+    camelCase (`priceEuro`), angesprochen wird das Attribut in snake_case (`price_euro`). So bleibt die
+    Umrechnung an einer einzigen Stelle.
+  example: "`protected function priceEuro(): Attribute { return Attribute::make(get: fn () => $this->price_cents / 100); }`"
+  category: laravel
+  aliases: [Accessoren, Accessors]
+  related: [mutator, eloquent-cast, eloquent]
+  lesson: laravel-vertieft/scopes-accessoren-casts
+
+- slug: mutator
+  term: Mutator
+  short: Eine Model-Methode, die einen Wert beim Speichern umformt, bevor er in die Datenbank geht.
+  explanation: >
+    Ein Mutator entsteht, wenn ein `Attribute::make()` den Parameter `set:` bekommt. Typisch ist das Bereinigen
+    von Eingaben, etwa Leerzeichen entfernen oder Text klein schreiben. Accessor und Mutator können in derselben
+    Methode stehen.
+  example: "`protected function name(): Attribute { return Attribute::make(set: fn (string $value) => trim($value)); }`"
+  category: laravel
+  aliases: [Mutatoren, Mutators]
+  related: [accessor, eloquent-cast]
+  lesson: laravel-vertieft/scopes-accessoren-casts
+
+- slug: carbon
+  term: Carbon
+  short: Eine PHP-Bibliothek für Datum und Uhrzeit, die Laravel für alle Zeitangaben nutzt.
+  explanation: >
+    Carbon erweitert die PHP-Klasse `DateTime` um bequeme Methoden zum Rechnen und Formatieren. `now()`,
+    `today()` und Datums-Casts wie `datetime` liefern in Laravel Carbon-Objekte. So kannst du direkt
+    `->addDays(7)` oder `->format('d.m.Y')` aufrufen.
+  example: "`now()->subHours(24)` liefert den Zeitpunkt vor genau 24 Stunden."
+  category: laravel
+  aliases: [Carbon-Objekt, CarbonImmutable]
+  related: [eloquent-cast, zeitstempel]
+  lesson: laravel-vertieft/scopes-accessoren-casts
+
+- slug: eloquent-lazy-loading
+  term: Lazy Loading (Eloquent)
+  short: Eloquent lädt eine Beziehung erst in dem Moment aus der Datenbank, in dem du auf sie zugreifst.
+  explanation: >
+    Lazy Loading ist bequem, führt in Schleifen aber zum N+1-Problem: Für jedes Model läuft eine eigene
+    Abfrage. Mit `Model::preventLazyLoading()` wirft Laravel in der Entwicklung eine Exception, sobald eine
+    Beziehung nachgeladen wird. Die Lösung ist Eager Loading mit `with()`.
+  example: "`foreach (Post::all() as $post) { $post->author->name; }` – jeder Zugriff auf author ist eine neue Abfrage."
+  category: laravel
+  aliases: [Lazy Loading von Beziehungen, preventLazyLoading]
+  related: [eager-loading, n-plus-1-problem, eloquent]
+  lesson: laravel-vertieft/eager-loading-und-grosse-datenmengen
+
+- slug: chunking
+  term: Chunking
+  short: Große Datenmengen in kleinen Paketen verarbeiten, statt alles auf einmal in den Speicher zu laden.
+  explanation: >
+    Eloquent bietet `chunk()` und `chunkById()`, die eine Abfrage in Pakete teilen und jedes Paket an eine
+    Closure übergeben. `chunkById()` orientiert sich an der ID und ist sicher, wenn du die Datensätze
+    währenddessen änderst. So bleibt der Speicherbedarf auch bei Millionen Zeilen klein.
+  example: "`Order::where('status', 'pending')->chunkById(500, fn ($orders) => ...);`"
+  category: laravel
+  aliases: [chunk, chunkById, Paketweise Verarbeitung]
+  related: [lazy-collection, eloquent]
+  lesson: laravel-vertieft/eager-loading-und-grosse-datenmengen
+
+- slug: lazy-collection
+  term: Lazy Collection
+  short: Eine Collection, die ihre Elemente erst bei Bedarf erzeugt und dadurch auch riesige Datenmengen speicherschonend durchläuft.
+  explanation: >
+    Lazy Collections basieren auf PHP-Generatoren. `Model::lazy()` lädt im Hintergrund paketweise nach, du
+    schreibst aber eine ganz normale `foreach`-Schleife. Ideal für Exporte und Berichte über viele Datensätze.
+  example: "`foreach (Order::lazy() as $order) { $csv->insertOne([$order->number]); }`"
+  category: laravel
+  aliases: [Lazy Collections, LazyCollection, lazy()]
+  related: [chunking, eloquent]
+  lesson: laravel-vertieft/eager-loading-und-grosse-datenmengen
+
+- slug: stale-while-revalidate
+  term: Stale While Revalidate
+  short: Ein Cache-Muster, bei dem ein leicht veralteter Wert weiter ausgeliefert und im Hintergrund erneuert wird.
+  explanation: >
+    Statt beim Ablauf des Caches einen Nutzer auf die Neuberechnung warten zu lassen, bekommt er noch den alten
+    Wert. Direkt danach wird der Wert im Hintergrund frisch berechnet. In Laravel setzt `Cache::flexible()`
+    dieses Muster um.
+  example: "`Cache::flexible('stats', [60, 300], fn () => Order::count());` – 60 Sekunden frisch, bis 300 Sekunden als „alt“ erlaubt."
+  category: laravel
+  aliases: [Cache::flexible, stale-while-revalidate]
+  related: [cache, ttl]
+  lesson: laravel-vertieft/caching-und-dateispeicher
+
+- slug: filesystem-disk
+  term: Disk (Storage)
+  short: Ein benannter Speicherort im Storage-System von Laravel, zum Beispiel ein lokaler Ordner oder ein Cloud-Speicher.
+  explanation: >
+    Disks werden in `config/filesystems.php` konfiguriert. `local` speichert privat unter `storage/app/private`,
+    `public` unter `storage/app/public` und `s3` in einem Objektspeicher. Dein Code nutzt immer dieselben
+    Methoden wie `Storage::put()` – nur die Disk wechselt.
+  example: "`Storage::disk('public')->put('logos/shop.svg', $svg);`"
+  category: laravel
+  aliases: [Disk, Disks, Storage-Disk]
+  related: [cache, dateisystem]
+  lesson: laravel-vertieft/caching-und-dateispeicher
+
+- slug: mailable
+  term: Mailable
+  short: Eine Laravel-Klasse, die genau eine Art E-Mail mit Betreff, Inhalt und Anhängen beschreibt.
+  explanation: >
+    Ein Mailable entsteht mit `php artisan make:mail`. In `envelope()` steht der Betreff, in `content()` die
+    Blade- oder Markdown-Vorlage, in `attachments()` die Anhänge. Verschickt wird es mit
+    `Mail::to($user)->send(...)` oder über die Queue mit `queue()`.
+  example: "`Mail::to($user)->send(new WelcomeMail($user));`"
+  category: laravel
+  aliases: [Mailables, Mail-Klasse]
+  related: [notification, smtp]
+  lesson: laravel-vertieft/mail-und-notifications
+
+- slug: notification
+  term: Notification
+  short: Eine Laravel-Benachrichtigung, die über einen oder mehrere Kanäle wie Mail, Datenbank oder Slack zugestellt wird.
+  explanation: >
+    In `via()` wählt eine Notification ihre Kanäle, pro Kanal liefert sie eine Darstellung wie `toMail()`
+    oder `toArray()`. Empfänger ist jedes Model mit dem Trait `Notifiable`, etwa der User. Mit
+    `Notification::route()` geht sie auch an eine Adresse ohne Model.
+  example: "`$user->notify(new PasswordChanged());`"
+  category: laravel
+  aliases: [Notifications, Benachrichtigung, Benachrichtigungen]
+  related: [mailable, job-queue]
+  lesson: laravel-vertieft/mail-und-notifications
+
+- slug: gate
+  term: Gate
+  short: Eine benannte Berechtigungsregel in Laravel, meist für Aktionen ohne bestimmtes Model.
+  explanation: >
+    Ein Gate ist eine Closure, die du mit `Gate::define()` in einem Service Provider registrierst. Sie bekommt
+    den eingeloggten Nutzer und gibt `true` oder `false` zurück. Geprüft wird mit `Gate::allows()`,
+    `Gate::authorize()` oder `@can` in Blade.
+  example: "`Gate::define('view-reports', fn (User $user) => $user->is_admin);`"
+  category: laravel
+  aliases: [Gates, Gate::define]
+  related: [policy, autorisierung]
+  lesson: laravel-vertieft/gates-und-policies
+
+- slug: policy
+  term: Policy
+  short: Eine Klasse, die alle Berechtigungsregeln für ein bestimmtes Model bündelt.
+  explanation: >
+    Eine Policy hat pro Aktion eine Methode, etwa `view`, `update` oder `delete`, die den Nutzer und das Model
+    bekommt. Laravel findet sie automatisch, wenn sie `<Model>Policy` heißt und in `app/Policies` liegt. Die
+    Methode `before()` kann Admins vorab alles erlauben.
+  example: "`public function update(User $user, Note $note): bool { return $user->id === $note->user_id; }`"
+  category: laravel
+  aliases: [Policies, Model-Policy]
+  related: [gate, autorisierung]
+  lesson: laravel-vertieft/gates-und-policies
+
+- slug: guzzle
+  term: Guzzle
+  short: Eine verbreitete PHP-Bibliothek für HTTP-Anfragen, auf der Laravels HTTP-Client aufbaut.
+  explanation: >
+    Guzzle kümmert sich um Verbindungen, Header, Timeouts und das Senden von Anfragen. Laravel legt mit dem
+    `Http`-Facade eine kürzere, testfreundliche Schicht darüber. Für Sonderfälle kannst du Guzzle-Optionen
+    direkt weiterreichen.
+  example: "`Http::withOptions(['verify' => false])` gibt eine Guzzle-Option weiter."
+  category: laravel
+  aliases: [Guzzle HTTP]
+  related: [http-client, library]
+  lesson: laravel-vertieft/http-client-und-fakes
+
+- slug: retry
+  term: Retry
+  short: Eine fehlgeschlagene Operation automatisch noch einmal versuchen, oft mit Pause dazwischen.
+  explanation: >
+    Netzwerke und externe Dienste fallen manchmal kurz aus. Ein Retry versucht es nach einer Wartezeit erneut,
+    statt sofort aufzugeben. In Laravel steuerst du das beim HTTP-Client mit `retry()` und bei Jobs mit
+    `#[Tries]` und `#[Backoff]`.
+  example: "`Http::retry(3, 200)->get($url)` versucht es bis zu dreimal mit 200 Millisekunden Pause."
+  category: laravel
+  aliases: [Retries, Wiederholung, Wiederholungen, retry()]
+  related: [exponential-backoff, http-client, queue-job]
+  lesson: laravel-vertieft/http-client-und-fakes
+
+- slug: fake
+  term: Fake (Laravel)
+  short: Ein Test-Ersatz für einen Laravel-Dienst, der nichts wirklich ausführt, sich aber jeden Aufruf merkt.
+  explanation: >
+    `Http::fake()`, `Mail::fake()`, `Queue::fake()`, `Event::fake()` und `Notification::fake()` legen statt des
+    echten Dienstes einen Rekorder in den Service Container. Danach prüfst du mit Methoden wie `assertSent()`
+    oder `assertPushed()`, ob der Code das Richtige getan hätte – ohne echte Mails oder Netzwerk.
+  example: "`Mail::fake(); /* Code ausführen */ Mail::assertSent(WelcomeMail::class);`"
+  category: laravel
+  aliases: [Fakes, Http::fake, Mail::fake, Queue::fake]
+  related: [mock, stub, facade]
+  lesson: laravel-vertieft/http-client-und-fakes

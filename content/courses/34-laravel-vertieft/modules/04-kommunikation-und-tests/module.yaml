@@ -1,0 +1,212 @@
+title: Kommunikation, Berechtigungen und Tests
+description: Mails und Notifications verschicken, Rechte mit Gates und Policies prüfen, externe APIs mit dem HTTP-Client ansprechen und alles mit Fakes testen.
+exercise:
+  id: modul-uebung-rechnungen
+  type: terminal
+  title: Rechnungen bezahlen – sicher und getestet
+  description: |
+    Im Ordner `rechnungen-uebung` liegt eine Laravel-Anwendung mit dem Model `Invoice` (`user_id`,
+    `number`, `amount_cents`, `paid_at`) und zwei Nutzerinnen: **Ada** (ID 1, Rechnung `R-1001`) und
+    **Grace** (ID 2, Rechnung `R-1002`).
+
+    1. Erzeuge `InvoicePolicy` mit der Methode `pay`: Nur die Besitzerin einer Rechnung darf sie
+       bezahlen – und nur, solange `paid_at` leer ist.
+    2. Erzeuge die Notification `InvoicePaid` (Kanäle `mail` und `database`, Konstruktor bekommt die
+       Rechnung). `toMail()` hat den Betreff `Rechnung <Nummer> bezahlt`, `toArray()` liefert
+       `['number' => <Nummer>]`. Lege die Tabelle mit `php artisan make:notifications-table` und
+       `php artisan migrate` an.
+    3. Lege die Route `POST /invoices/{invoice}/pay` an, geschützt mit `->can('pay', 'invoice')`. Sie setzt
+       `paid_at` auf jetzt, benachrichtigt die Besitzerin (`$invoice->user->notify(...)`) und gibt
+       `{"paid": true}` zurück.
+    4. Schreibe `tests/Feature/InvoiceTest.php` (mit `uses(RefreshDatabase::class);`) mit mindestens zwei
+       Tests:
+       - Die Besitzerin zahlt: Status 200, `paid_at` gesetzt, `Notification::assertSentTo(...)`.
+       - Eine andere Person bekommt 403, und `Notification::assertNothingSent()`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: rechnungen-uebung
+  setup: |
+    # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      cd "$T"
+      timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+      printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+      printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+      touch .fertig && cd - >/dev/null
+      rm -rf "$B" && mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+    sed -i "s/^SESSION_DRIVER=.*/SESSION_DRIVER=array/" .env
+    cat > database/migrations/2026_01_01_000000_create_invoices_table.php <<'EOF'
+    <?php
+
+    use Illuminate\Database\Migrations\Migration;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\Schema;
+
+    return new class extends Migration
+    {
+        public function up(): void
+        {
+            Schema::create('invoices', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained();
+                $table->string('number')->unique();
+                $table->unsignedInteger('amount_cents');
+                $table->timestamp('paid_at')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        public function down(): void
+        {
+            Schema::dropIfExists('invoices');
+        }
+    };
+    EOF
+    cat > app/Models/Invoice.php <<'EOF'
+    <?php
+
+    namespace App\Models;
+
+    use Illuminate\Database\Eloquent\Attributes\Fillable;
+    use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+    #[Fillable(['user_id', 'number', 'amount_cents', 'paid_at'])]
+    class Invoice extends Model
+    {
+        protected function casts(): array
+        {
+            return ['paid_at' => 'datetime'];
+        }
+
+        public function user(): BelongsTo
+        {
+            return $this->belongsTo(User::class);
+        }
+    }
+    EOF
+    php artisan migrate --force -q
+    php artisan tinker --execute="foreach ([1 => 'Ada', 2 => 'Grace'] as \$id => \$n) { \$u = App\Models\User::create(['name' => \$n, 'email' => strtolower(\$n).'@example.com', 'password' => 'geheim123']); App\Models\Invoice::create(['user_id' => \$u->id, 'number' => 'R-100'.\$id, 'amount_cents' => 4900]); }"
+  checks:
+    - type: command
+      run: |
+        php artisan tinker --execute="\$a = App\Models\User::find(1); \$g = App\Models\User::find(2); \$i = App\Models\Invoice::where('number', 'R-1001')->first(); \$bezahlt = (clone \$i)->forceFill(['paid_at' => now()]); echo Gate::forUser(\$a)->allows('pay', \$i) ? 'ja' : 'nein', ',', Gate::forUser(\$g)->allows('pay', \$i) ? 'ja' : 'nein', ',', Gate::forUser(\$a)->allows('pay', \$bezahlt) ? 'ja' : 'nein';"
+      stdout_matches: "^ja,nein,nein\\s*$"
+      message: "Die Policy stimmt noch nicht: Ada darf R-1001 bezahlen (ja), Grace nicht (nein), und eine schon bezahlte Rechnung darf niemand mehr bezahlen (nein)."
+    - type: command
+      run: |
+        php artisan tinker --execute="\$i = App\Models\Invoice::where('number', 'R-1001')->first(); \$n = new App\Notifications\InvoicePaid(\$i); echo implode(',', \$n->via(\$i->user)), '|', \$n->toMail(\$i->user)->subject, '|', json_encode(\$n->toArray(\$i->user));"
+      stdout_matches: "^mail,database\\|Rechnung R-1001 bezahlt\\|\\{\"number\":\"R-1001\"\\}\\s*$"
+      message: "InvoicePaid soll über mail und database gehen, den Betreff „Rechnung R-1001 bezahlt“ haben und toArray() ['number' => 'R-1001'] liefern."
+    - type: command
+      run: |
+        php <<'PHP'
+        <?php
+        require 'vendor/autoload.php';
+        putenv('APP_ENV=testing'); $_ENV['APP_ENV'] = $_SERVER['APP_ENV'] = 'testing';
+        $app = require 'bootstrap/app.php';
+        $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+        $kernel->bootstrap();
+        Illuminate\Support\Facades\DB::beginTransaction();
+        $invoice = App\Models\Invoice::where('number', 'R-1001')->first();
+        $codes = [];
+        foreach ([2, 1] as $id) {
+            $request = Illuminate\Http\Request::create('/invoices/'.$invoice->id.'/pay', 'POST', [], [], [], ['HTTP_ACCEPT' => 'application/json']);
+            $app->instance('request', $request);
+            $app['auth']->guard('web')->setUser(App\Models\User::find($id));
+            $codes[] = $kernel->handle($request)->getStatusCode();
+        }
+        echo implode(',', $codes), '|', $invoice->fresh()->paid_at ? 'bezahlt' : 'offen', '|', Illuminate\Support\Facades\DB::table('notifications')->where('notifiable_id', 1)->count(), "\n";
+        Illuminate\Support\Facades\DB::rollBack();
+        PHP
+      stdout_matches: "^403,200\\|bezahlt\\|1\\s*$"
+      message: "POST /invoices/{id}/pay soll für Grace 403 liefern, für Ada 200 – danach ist paid_at gesetzt und Ada hat eine gespeicherte Notification. Prüfe Route, ->can('pay', 'invoice') und die notifications-Tabelle."
+    - type: command
+      run: "grep -q 'Notification::fake' tests/Feature/InvoiceTest.php && grep -q 'actingAs' tests/Feature/InvoiceTest.php && grep -q 'assertNothingSent' tests/Feature/InvoiceTest.php"
+      message: InvoiceTest.php soll Notification::fake, actingAs und Notification::assertNothingSent nutzen.
+    - type: command
+      run: php artisan test tests/Feature/InvoiceTest.php
+      message: Die Tests in tests/Feature/InvoiceTest.php schlagen noch fehl.
+  hints:
+    - "Policy: `public function pay(User $user, Invoice $invoice): bool { return $user->id === $invoice->user_id && $invoice->paid_at === null; }`"
+    - "Route: `Route::post('/invoices/{invoice}/pay', function (App\\Models\\Invoice $invoice) { $invoice->update(['paid_at' => now()]); $invoice->user->notify(new App\\Notifications\\InvoicePaid($invoice)); return ['paid' => true]; })->can('pay', 'invoice');`"
+    - "Im Test: `$ada = User::factory()->create(); $invoice = Invoice::create([...]); $this->actingAs($ada)->postJson('/invoices/'.$invoice->id.'/pay')->assertOk();`"
+  solution: |
+    ```php title="app/Policies/InvoicePolicy.php"
+    class InvoicePolicy
+    {
+        public function pay(User $user, Invoice $invoice): bool
+        {
+            return $user->id === $invoice->user_id && $invoice->paid_at === null;
+        }
+    }
+    ```
+
+    ```php title="app/Notifications/InvoicePaid.php (Auszug)"
+    public function __construct(public Invoice $invoice) {}
+
+    public function via(object $notifiable): array
+    {
+        return ['mail', 'database'];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)->subject('Rechnung '.$this->invoice->number.' bezahlt');
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return ['number' => $this->invoice->number];
+    }
+    ```
+
+    ```php title="routes/web.php"
+    Route::post('/invoices/{invoice}/pay', function (App\Models\Invoice $invoice) {
+        $invoice->update(['paid_at' => now()]);
+        $invoice->user->notify(new App\Notifications\InvoicePaid($invoice));
+
+        return ['paid' => true];
+    })->can('pay', 'invoice');
+    ```
+
+    ```php title="tests/Feature/InvoiceTest.php"
+    <?php
+
+    use App\Models\Invoice;
+    use App\Models\User;
+    use App\Notifications\InvoicePaid;
+    use Illuminate\Foundation\Testing\RefreshDatabase;
+    use Illuminate\Support\Facades\Notification;
+
+    uses(RefreshDatabase::class);
+
+    test('the owner can pay an invoice', function () {
+        Notification::fake();
+        $ada = User::factory()->create();
+        $invoice = Invoice::create(['user_id' => $ada->id, 'number' => 'R-1', 'amount_cents' => 4900]);
+
+        $this->actingAs($ada)->postJson('/invoices/'.$invoice->id.'/pay')->assertOk();
+
+        expect($invoice->fresh()->paid_at)->not->toBeNull();
+        Notification::assertSentTo($ada, InvoicePaid::class);
+    });
+
+    test('nobody else can pay it', function () {
+        Notification::fake();
+        $ada = User::factory()->create();
+        $grace = User::factory()->create();
+        $invoice = Invoice::create(['user_id' => $ada->id, 'number' => 'R-2', 'amount_cents' => 4900]);
+
+        $this->actingAs($grace)->postJson('/invoices/'.$invoice->id.'/pay')->assertForbidden();
+
+        expect($invoice->fresh()->paid_at)->toBeNull();
+        Notification::assertNothingSent();
+    });
+    ```

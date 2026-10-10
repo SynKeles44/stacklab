@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="450" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Middleware: Schichten um deine Route</text>
+  <rect x="160" y="60" width="580" height="300" rx="24" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="450" y="86" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">throttle:orders (Rate Limit)</text>
+  <rect x="210" y="100" width="480" height="230" rx="20" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="450" y="126" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">api.key (Header prüfen)</text>
+  <rect x="260" y="140" width="380" height="160" rx="16" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="450" y="166" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">AddRequestId (Header anhängen)</text>
+  <rect x="330" y="186" width="240" height="90" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="450" y="222" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Controller / Route</text>
+  <text x="450" y="246" text-anchor="middle" font-size="13" fill="#1e1b3a">erzeugt die Response</text>
+  <line x1="40" y1="200" x2="326" y2="200" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <text x="70" y="190" font-size="13" fill="#1e1b3a">Request</text>
+  <line x1="574" y1="262" x2="860" y2="262" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <text x="790" y="252" font-size="13" fill="#1e1b3a">Response</text>
+  <text x="450" y="384" text-anchor="middle" font-size="13" fill="#1e1b3a">Jede Schicht kann vorher prüfen (abbrechen mit 401/429) oder nachher die Response verändern.</text>
+</svg>

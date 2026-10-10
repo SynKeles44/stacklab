@@ -1,0 +1,570 @@
+title: Abschlussprüfung Laravel vertieft
+description: |
+  Die Prüfung deckt alle vier Module ab: Service Container, Provider und Middleware; Events, Queues und
+  Scheduler; Eloquent, Performance und Caching; Mail, Notifications, Berechtigungen und Testing-Fakes.
+  Zum Schluss löst du zwei Aufgaben in einer echten Laravel-Anwendung und eine Programmieraufgabe.
+  Du bestehst mit 70 Prozent.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  - module: container-und-middleware
+    type: single
+    question: Ein Controller verlangt im Konstruktor das Interface `PaymentGateway`. Nirgends ist eine Bindung registriert. Was passiert beim Aufruf der Route?
+    options:
+      - Laravel nimmt automatisch die erste Klasse, die das Interface implementiert
+      - Der Container wirft einen Fehler, weil er ein Interface nicht instanziieren kann
+      - Der Parameter bleibt null
+    answer: 1
+    explanation: Konkrete Klassen löst der Container per Reflection auf, Interfaces nicht. Dafür brauchst du eine Bindung im Provider oder das Attribut #[Bind] am Interface.
+  - module: container-und-middleware
+    type: match
+    question: Welche Container-Methode passt?
+    pairs:
+      - { left: Ein HTTP-Client mit festem Token für die ganze Laufzeit, right: "singleton()" }
+      - { left: Ein Objekt mit Daten des aktuellen Requests im Queue-Worker, right: "scoped()" }
+      - { left: "Ein Formular-Objekt, das jedes Mal frisch sein muss", right: "bind()" }
+    explanation: singleton teilt eine Instanz pro Prozess, scoped eine pro Request oder Job, bind baut jedes Mal neu.
+  - module: container-und-middleware
+    type: multiple
+    question: Welche Aufgaben gehören in die `boot()`-Methode eines Service Providers?
+    options:
+      - "`RateLimiter::for('api', …)` definieren"
+      - "`Gate::define('admin', …)` definieren"
+      - "`Str::macro('euro', …)` registrieren"
+      - Nur Bindungen mit bind() und singleton()
+    answers: [0, 1, 2]
+    explanation: Alles, was andere Dienste oder Facades nutzt, gehört in boot(). Reine Bindungen stehen in register().
+  - module: container-und-middleware
+    type: find-bug
+    question: Diese Middleware soll an jede Response den Header `X-Version` hängen, aber der Header fehlt. Welche Zeile ist falsch?
+    language: php
+    code: |
+      public function handle(Request $request, Closure $next): Response
+      {
+          $response = response('');
+          $response->headers->set('X-Version', '2.4');
+
+          return $next($request);
+      }
+    bug_line: 3
+    explanation: Die Middleware baut eine eigene leere Response, statt die echte von $next($request) zu holen. Richtig ist $response = $next($request); dann Header setzen und $response zurückgeben.
+  - module: container-und-middleware
+    type: cloze
+    text: "Einen benannten Limiter definierst du mit `RateLimiter::___('orders', fn (Request $r) => Limit::perMinute(10)->by($r->ip()));` und hängst ihn mit der Middleware `___:orders` an eine Route."
+    blanks:
+      - [for]
+      - [throttle]
+    explanation: RateLimiter::for() registriert den Limiter, throttle:name nutzt ihn. Wird das Limit überschritten, kommt Status 429.
+  - module: events-und-queues
+    type: single
+    question: Ein Observer hat die Methode `updated`. Du führst `Post::where('draft', true)->update(['draft' => false])` aus. Was passiert?
+    options:
+      - updated läuft einmal pro geändertem Beitrag
+      - updated läuft genau einmal
+      - updated läuft gar nicht, weil Massen-Updates keine Models laden
+    answer: 2
+    explanation: Massen-Updates werden direkt als SQL ausgeführt. Ohne geladene Models gibt es keine Model-Events und damit keinen Observer-Aufruf.
+  - module: events-und-queues
+    type: find-bug
+    question: Nach der Registrierung soll eine Willkommens-Mail rausgehen. `UserRegistered::dispatch($user)` wird aufgerufen, aber der Listener läuft nie, und `php artisan event:list` zeigt ihn nicht an. Welche Zeile ist schuld?
+    language: php
+    code: |
+      namespace App\Listeners;
+
+      class SendWelcomeMail implements ShouldQueue
+      {
+          public function handle($event): void
+          {
+              Mail::to($event->user)->send(new WelcomeMail($event->user));
+          }
+      }
+    bug_line: 5
+    explanation: "Event Discovery erkennt am Typ des handle()-Parameters, auf welches Event ein Listener hört. Ohne Typ ordnet Laravel ihn keinem Event zu. Richtig ist handle(UserRegistered $event)."
+  - module: events-und-queues
+    type: match
+    question: Was passiert mit dem Job?
+    pairs:
+      - { left: "Exception, Versuche übrig", right: Zurück in die Queue nach der Backoff-Zeit }
+      - { left: "Exception, alle Versuche verbraucht", right: "failed() läuft, Eintrag in failed_jobs" }
+      - { left: handle() läuft ohne Fehler durch, right: Job wird aus der jobs-Tabelle gelöscht }
+    explanation: Laravel wiederholt Jobs bis zur Grenze aus #[Tries]. Danach ruft es failed() auf und speichert den Job in failed_jobs.
+  - module: events-und-queues
+    type: single
+    question: Nach einem Deployment verhalten sich Jobs, als wäre der alte Code noch aktiv. Was hast du vergessen?
+    options:
+      - "`php artisan queue:restart`"
+      - "`php artisan queue:retry all`"
+      - "`php artisan config:clear`"
+    answer: 0
+    explanation: Ein Worker lädt den Code einmal beim Start. queue:restart bittet alle Worker, nach dem aktuellen Job neu zu starten.
+  - module: events-und-queues
+    type: cloze
+    text: "Auf dem Server ruft ein Cron-Eintrag jede Minute `php artisan schedule:___` auf. Damit ein langer Lauf sich nicht mit dem nächsten überschneidet, hängst du `->___()` an die Aufgabe."
+    blanks:
+      - [run]
+      - [withoutOverlapping]
+    explanation: schedule:run startet alle fälligen Aufgaben. withoutOverlapping() sperrt eine Aufgabe, solange sie noch läuft.
+  - module: events-und-queues
+    type: multiple
+    question: Was stimmt für Job-Batches?
+    options:
+      - Jeder Job im Batch braucht den Trait Batchable
+      - "`then()` läuft, wenn alle Jobs erfolgreich waren"
+      - Die Jobs eines Batches laufen garantiert nacheinander
+      - Scheitert ein Job, gilt der Batch standardmäßig als abgebrochen
+    answers: [0, 1, 3]
+    explanation: Batch-Jobs dürfen parallel laufen. Eine feste Reihenfolge bietet Bus::chain(). Mit allowFailures() laufen die übrigen Jobs trotz Fehler weiter.
+  - module: eloquent-und-performance
+    type: single
+    question: Eine Seite listet 200 Rechnungen mit `$invoice->customer->name`. Wie viele Abfragen braucht sie mit `Invoice::with('customer')->get()`?
+    options:
+      - "1"
+      - "2"
+      - "201"
+    answer: 1
+    explanation: Eine Abfrage für die Rechnungen und eine für alle zugehörigen Kunden mit WHERE id IN (…).
+  - module: eloquent-und-performance
+    type: find-bug
+    question: Der Befehl soll unbezahlte Bestellungen stornieren, überspringt aber Datensätze. Welche Zeile muss geändert werden?
+    language: php
+    code: |
+      Order::where('status', 'pending')
+          ->chunk(200, function ($orders) {
+              foreach ($orders as $order) {
+                  $order->update(['status' => 'cancelled']);
+              }
+          });
+    bug_line: 2
+    explanation: chunk() blättert per OFFSET. Weil geänderte Zeilen aus der Bedingung fallen, rutschen andere in schon verarbeitete Seiten. chunkById(200, …) ist hier richtig.
+  - module: eloquent-und-performance
+    type: match
+    question: Welches Eloquent-Werkzeug passt?
+    pairs:
+      - { left: "`Product::active()->get()`", right: Lokaler Scope }
+      - { left: "`$order->total` liefert „12,50 €“", right: Accessor }
+      - { left: "'status' => OrderStatus::class", right: Enum-Cast }
+      - { left: Name wird beim Speichern getrimmt, right: Mutator }
+    explanation: Scopes benennen Abfragen, Accessoren und Mutatoren formen Werte beim Lesen und Schreiben, Casts wandeln Typen um.
+  - module: eloquent-und-performance
+    type: single
+    question: "`Cache::remember('stats', 600, fn () => Order::count())` – wann läuft die Closure?"
+    options:
+      - Bei jedem Aufruf
+      - Nur, wenn unter stats kein gültiger Wert im Cache liegt
+      - Genau alle 600 Sekunden im Hintergrund
+    answer: 1
+    explanation: remember() berechnet nur beim Cache-Miss. Sonst wird der gespeicherte Wert zurückgegeben.
+  - module: eloquent-und-performance
+    type: cloze
+    text: "Private Dateien der Disk `local` liegen unter `storage/app/___`. Eine Datei lieferst du über eine Route mit `Storage::___('exports/users.csv')` als Download aus."
+    blanks:
+      - [private]
+      - [download]
+    explanation: Die local-Disk ist nicht direkt im Web erreichbar. Eine Route mit Storage::download() entscheidet, wer die Datei bekommt.
+  - module: kommunikation-und-tests
+    type: single
+    question: Ein Test ruft `Mail::fake()` erst **nach** dem POST-Request auf und prüft dann `Mail::assertSent(...)`. Was passiert?
+    options:
+      - Der Test besteht, weil Laravel nachträglich prüft
+      - Der Test schlägt fehl, weil der Fake die Mail nie gesehen hat
+      - Laravel wirft einen Konfigurationsfehler
+    answer: 1
+    explanation: Fakes zeichnen nur auf, was nach ihrem Einsetzen passiert. Reihenfolge immer – faken, handeln, prüfen.
+  - module: kommunikation-und-tests
+    type: multiple
+    question: Welche Aussagen über Policies stimmen?
+    options:
+      - "`NotePolicy` in `app/Policies` wird für `App\\Models\\Note` automatisch gefunden"
+      - "`before()` muss für normale Nutzer `null` zurückgeben, damit die eigentliche Methode geprüft wird"
+      - Eine ausgeblendete Schaltfläche im Frontend ersetzt die Policy-Prüfung
+      - "`->can('update', 'note')` an der Route antwortet bei fehlendem Recht mit 403"
+    answers: [0, 1, 3]
+    explanation: Rechte werden immer auf dem Server geprüft. Ein versteckter Button verhindert keinen direkten Aufruf der URL.
+  - module: kommunikation-und-tests
+    type: match
+    question: Welcher Kanal einer Notification braucht was?
+    pairs:
+      - { left: mail, right: "toMail() mit MailMessage" }
+      - { left: database, right: "toArray() und die Tabelle notifications" }
+      - { left: Empfänger ohne Model, right: "Notification::route('mail', …)" }
+    explanation: Jeder Kanal hat seine eigene Darstellung. Für Adressen ohne Model gibt es On-Demand-Notifications.
+  - module: kommunikation-und-tests
+    type: find-bug
+    question: Der Code soll bei einem Fehler des Zahlungsdienstes abbrechen. Stattdessen wird die Bestellung mit leerer Zahlungs-ID als bezahlt markiert. Welche Zeile ist das Problem?
+    language: php
+    code: |
+      $response = Http::withToken($key)
+          ->timeout(5)
+          ->post('https://payments.example.com/charges', ['amount' => 1999]);
+
+      $order->update(['payment_id' => $response->json('id'), 'status' => 'paid']);
+    bug_line: 3
+    explanation: Ohne ->throw() (oder eine Prüfung mit failed()) liefert ein 500er einfach eine Response, und json('id') ist null. Mit ->throw() vor dem Update bricht der Code ab.
+tasks:
+  - module: events-und-queues
+    id: pruefung-sms-job
+    type: terminal
+    title: Ein SMS-Job hinter einem Interface
+    description: |
+      Im Ordner `pruefung-sms` liegt eine Laravel-Anwendung (`QUEUE_CONNECTION=database`) mit dem
+      Interface `App\Contracts\SmsGateway` (`send(string $to, string $text): void`) und der Klasse
+      `App\Services\LogSmsGateway`, die jede SMS als Zeile `SMS an <Nummer>: <Text>` ins Log schreibt.
+
+      1. Binde `SmsGateway` als **Singleton** an `LogSmsGateway`.
+      2. Erzeuge den Job `SendSms` mit `public string $to` und `public string $text`. Er implementiert
+         `ShouldQueue`, hat höchstens **3** Versuche (`#[Tries(3)]`) und verschickt in `handle()` über das
+         per Method Injection übergebene `SmsGateway`.
+      3. `failed()` schreibt `Log::error('SMS fehlgeschlagen: '.$this->to);`.
+      4. Lege den Job mit `to = +490000000001` und `text = Hallo Prüfung` in die Queue und arbeite die Queue
+         vollständig ab.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-sms
+    setup: |
+      # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+      B="$HOME/.cache/stacklab/laravel13"
+      if [ ! -f "$B/.fertig" ]; then
+        T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+        timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+        cd "$T"
+        timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+        printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+        printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+        printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+        touch .fertig && cd - >/dev/null
+        rm -rf "$B" && mv "$T" "$B"
+      fi
+      cp -a "$B/." . && rm -f .fertig
+      mkdir -p app/Contracts app/Services
+      cat > app/Contracts/SmsGateway.php <<'EOF'
+      <?php
+
+      namespace App\Contracts;
+
+      interface SmsGateway
+      {
+          public function send(string $to, string $text): void;
+      }
+      EOF
+      cat > app/Services/LogSmsGateway.php <<'EOF'
+      <?php
+
+      namespace App\Services;
+
+      use App\Contracts\SmsGateway;
+      use Illuminate\Support\Facades\Log;
+
+      class LogSmsGateway implements SmsGateway
+      {
+          public function send(string $to, string $text): void
+          {
+              Log::info("SMS an {$to}: {$text}");
+          }
+      }
+      EOF
+    checks:
+      - type: command
+        run: |
+          php artisan tinker --execute="\$a = app(App\Contracts\SmsGateway::class); echo get_class(\$a), '|', var_export(\$a === app(App\Contracts\SmsGateway::class), true);"
+        stdout_matches: "^App\\\\Services\\\\LogSmsGateway\\|true\\s*$"
+        message: SmsGateway ist noch nicht als Singleton an LogSmsGateway gebunden.
+      - type: file_contains
+        path: app/Jobs/SendSms.php
+        pattern: "implements\\s+ShouldQueue"
+        message: SendSms muss ShouldQueue implementieren.
+      - type: file_contains
+        path: app/Jobs/SendSms.php
+        pattern: "#\\[Tries\\(3\\)\\]"
+        message: "Begrenze die Versuche mit #[Tries(3)]."
+      - type: file_contains
+        path: app/Jobs/SendSms.php
+        pattern: "function\\s+failed\\("
+        message: SendSms braucht eine Methode failed().
+      - type: file_contains
+        path: storage/logs/laravel.log
+        pattern: "SMS an \\+490000000001: Hallo Prüfung"
+        message: "Im Log fehlt „SMS an +490000000001: Hallo Prüfung“. Lege den Job in die Queue und starte php artisan queue:work --stop-when-empty."
+      - type: command
+        run: php artisan tinker --execute="echo DB::table('jobs')->count();"
+        stdout_matches: "^0\\s*$"
+        message: In der jobs-Tabelle warten noch Jobs. Arbeite die Queue vollständig ab.
+    hints:
+      - "Bindung im AppServiceProvider: `$this->app->singleton(SmsGateway::class, LogSmsGateway::class);`"
+      - "Im Job: `public function handle(SmsGateway $sms): void { $sms->send($this->to, $this->text); }`"
+      - "`php artisan tinker --execute=\"App\\Jobs\\SendSms::dispatch('+490000000001', 'Hallo Prüfung');\"` und danach `php artisan queue:work --stop-when-empty`."
+    solution: |
+      ```php title="app/Jobs/SendSms.php"
+      #[Tries(3)]
+      class SendSms implements ShouldQueue
+      {
+          use Queueable;
+
+          public function __construct(public string $to, public string $text) {}
+
+          public function handle(SmsGateway $sms): void
+          {
+              $sms->send($this->to, $this->text);
+          }
+
+          public function failed(?Throwable $exception): void
+          {
+              Log::error('SMS fehlgeschlagen: '.$this->to);
+          }
+      }
+      ```
+
+      ```bash
+      php artisan tinker --execute="App\Jobs\SendSms::dispatch('+490000000001', 'Hallo Prüfung');"
+      php artisan queue:work --stop-when-empty
+      ```
+  - module: eloquent-und-performance
+    id: pruefung-artikel
+    type: terminal
+    title: Eine schnelle Artikelliste
+    description: |
+      Im Ordner `pruefung-artikel` liegt eine Laravel-Anwendung mit den Models `Article` (`title`,
+      `published_at`) und `Comment` (gehört zu einem Artikel; `Article::comments()` existiert). Es gibt fünf
+      Artikel, davon drei veröffentlicht, und mehrere Kommentare.
+
+      1. Ergänze in `Article` den Cast `published_at` → `datetime` und den Scope `published` (mit
+         `#[Scope]`): `published_at` ist gesetzt und liegt nicht in der Zukunft.
+      2. Lege die Route `GET /articles` an. Sie liefert für jeden **veröffentlichten** Artikel `title` und
+         `comments_count`, sortiert nach Titel – in **einer** Abfrage. Speichere das Ergebnis mit
+         `Cache::remember('articles', 60, …)`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-artikel
+    setup: |
+      # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+      B="$HOME/.cache/stacklab/laravel13"
+      if [ ! -f "$B/.fertig" ]; then
+        T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+        timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+        cd "$T"
+        timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+        printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+        printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+        printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+        touch .fertig && cd - >/dev/null
+        rm -rf "$B" && mv "$T" "$B"
+      fi
+      cp -a "$B/." . && rm -f .fertig
+      sed -i "s/^SESSION_DRIVER=.*/SESSION_DRIVER=array/; s/^CACHE_STORE=.*/CACHE_STORE=file/" .env
+      cat > database/migrations/2026_01_01_000000_create_articles_tables.php <<'EOF'
+      <?php
+
+      use Illuminate\Database\Migrations\Migration;
+      use Illuminate\Database\Schema\Blueprint;
+      use Illuminate\Support\Facades\DB;
+      use Illuminate\Support\Facades\Schema;
+
+      return new class extends Migration
+      {
+          public function up(): void
+          {
+              Schema::create('articles', function (Blueprint $table) {
+                  $table->id();
+                  $table->string('title');
+                  $table->timestamp('published_at')->nullable();
+                  $table->timestamps();
+              });
+              Schema::create('comments', function (Blueprint $table) {
+                  $table->id();
+                  $table->foreignId('article_id')->constrained();
+                  $table->string('body');
+                  $table->timestamps();
+              });
+              DB::table('articles')->insert([
+                  ['id' => 1, 'title' => 'Queues verstehen', 'published_at' => '2026-01-10 08:00:00'],
+                  ['id' => 2, 'title' => 'Caching im Alltag', 'published_at' => '2026-02-01 08:00:00'],
+                  ['id' => 3, 'title' => 'Entwurf: Policies', 'published_at' => null],
+                  ['id' => 4, 'title' => 'Eager Loading', 'published_at' => '2026-03-05 08:00:00'],
+                  ['id' => 5, 'title' => 'Zukunft: Laravel 14', 'published_at' => '2099-01-01 08:00:00'],
+              ]);
+              foreach ([1, 1, 1, 2, 4, 4, 3] as $i => $articleId) {
+                  DB::table('comments')->insert(['article_id' => $articleId, 'body' => 'Kommentar '.$i]);
+              }
+          }
+
+          public function down(): void
+          {
+              Schema::dropIfExists('comments');
+              Schema::dropIfExists('articles');
+          }
+      };
+      EOF
+      cat > app/Models/Comment.php <<'EOF'
+      <?php
+
+      namespace App\Models;
+
+      use Illuminate\Database\Eloquent\Model;
+
+      class Comment extends Model
+      {
+      }
+      EOF
+      cat > app/Models/Article.php <<'EOF'
+      <?php
+
+      namespace App\Models;
+
+      use Illuminate\Database\Eloquent\Model;
+      use Illuminate\Database\Eloquent\Relations\HasMany;
+
+      class Article extends Model
+      {
+          public function comments(): HasMany
+          {
+              return $this->hasMany(Comment::class);
+          }
+      }
+      EOF
+      php artisan migrate --force -q
+      php artisan cache:clear -q
+    checks:
+      - type: command
+        run: |
+          php artisan tinker --execute="echo App\Models\Article::published()->orderBy('title')->pluck('title')->implode(','), '|', App\Models\Article::find(1)->published_at instanceof Carbon\CarbonInterface ? 'datum' : 'text';"
+        stdout_matches: "^Caching im Alltag,Eager Loading,Queues verstehen\\|datum\\s*$"
+        message: Article::published() liefert noch nicht genau die drei veröffentlichten Artikel (ohne Entwurf und ohne Zukunftsdatum), oder published_at ist noch kein Datum.
+      - type: command
+        run: |
+          php <<'PHP'
+          <?php
+          require 'vendor/autoload.php';
+          $app = require 'bootstrap/app.php';
+          $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+          $kernel->bootstrap();
+          Illuminate\Support\Facades\Cache::forget('articles');
+          $n = 0;
+          Illuminate\Support\Facades\DB::listen(function () use (&$n) { $n++; });
+          $erste = $kernel->handle(Illuminate\Http\Request::create('/articles'));
+          $nachErster = $n;
+          $kernel->handle(Illuminate\Http\Request::create('/articles'));
+          $d = array_map(fn ($a) => $a['title'].':'.$a['comments_count'], json_decode($erste->getContent(), true) ?? []);
+          echo implode(',', $d), '|', $nachErster <= 1 ? 'eine' : 'zu-viele:'.$nachErster, '|', $n === $nachErster ? 'gecacht' : 'nicht-gecacht', "\n";
+          PHP
+        stdout_matches: "^Caching im Alltag:1,Eager Loading:2,Queues verstehen:3\\|eine\\|gecacht\\s*$"
+        message: "GET /articles soll die veröffentlichten Artikel mit comments_count nach Titel sortiert liefern, nur eine Abfrage brauchen (withCount) und beim zweiten Aufruf aus dem Cache kommen."
+    hints:
+      - "Der Scope: `$query->whereNotNull('published_at')->where('published_at', '<=', now());`"
+      - "Die Route: `Cache::remember('articles', 60, fn () => Article::published()->withCount('comments')->orderBy('title')->get(['id', 'title']))`."
+    solution: |
+      ```php title="app/Models/Article.php"
+      class Article extends Model
+      {
+          protected function casts(): array
+          {
+              return ['published_at' => 'datetime'];
+          }
+
+          public function comments(): HasMany
+          {
+              return $this->hasMany(Comment::class);
+          }
+
+          #[Scope]
+          protected function published(Builder $query): void
+          {
+              $query->whereNotNull('published_at')->where('published_at', '<=', now());
+          }
+      }
+      ```
+
+      ```php title="routes/web.php"
+      Route::get('/articles', fn () => Cache::remember('articles', 60, fn () => App\Models\Article::published()
+          ->withCount('comments')
+          ->orderBy('title')
+          ->get(['id', 'title'])));
+      ```
+  - module: container-und-middleware
+    id: pruefung-rate-limiter
+    type: code
+    language: php
+    title: Ein einfacher Rate Limiter
+    description: |
+      Baue das Prinzip von `RateLimiter::attempt()` nach.
+
+      Die Klasse `SimpleLimiter` hat die Methode
+      `attempt(string $key, int $max, int $decaySeconds, int $now): bool`:
+
+      - Beim ersten Versuch für einen Schlüssel beginnt ein Zeitfenster, das bei `$now + $decaySeconds`
+        endet.
+      - Innerhalb des Fensters sind höchstens `$max` Versuche erlaubt (`true`), danach `false`.
+      - Ist das Fenster abgelaufen (`$now` ≥ Ende), beginnt ein neues Fenster und gezählt wird von vorn.
+      - `availableIn(string $key, int $now): int` liefert die Sekunden bis zum Ende des Fensters, aber nie
+        weniger als `0`.
+    starter: |
+      <?php
+
+      class SimpleLimiter
+      {
+          private array $windows = [];
+
+          public function attempt(string $key, int $max, int $decaySeconds, int $now): bool
+          {
+          }
+
+          public function availableIn(string $key, int $now): int
+          {
+          }
+      }
+    tests:
+      - name: bis zum Limit erlaubt, danach nicht
+        code: |
+          $l = new SimpleLimiter();
+          assert_true($l->attempt('ip:1', 3, 60, 100));
+          assert_true($l->attempt('ip:1', 3, 60, 101));
+          assert_true($l->attempt('ip:1', 3, 60, 102));
+          assert_same(false, $l->attempt('ip:1', 3, 60, 103));
+      - name: Schlüssel werden getrennt gezählt
+        code: |
+          $l = new SimpleLimiter();
+          $l->attempt('ip:1', 1, 60, 100);
+          assert_same(false, $l->attempt('ip:1', 1, 60, 101));
+          assert_true($l->attempt('ip:2', 1, 60, 101));
+      - name: nach Ablauf beginnt ein neues Fenster
+        code: |
+          $l = new SimpleLimiter();
+          $l->attempt('k', 1, 60, 100);
+          assert_same(false, $l->attempt('k', 1, 60, 159));
+          assert_true($l->attempt('k', 1, 60, 160));
+      - name: availableIn zählt herunter und wird nie negativ
+        code: |
+          $l = new SimpleLimiter();
+          $l->attempt('k', 1, 60, 100);
+          assert_same(45, $l->availableIn('k', 115));
+          assert_same(0, $l->availableIn('k', 500));
+          assert_same(0, $l->availableIn('unbekannt', 100));
+    hints:
+      - "Speichere pro Schlüssel `['count' => 0, 'resetAt' => $now + $decaySeconds]`."
+      - "Lege das Fenster neu an, wenn es fehlt oder `$now >= resetAt` ist. Erhöhe dann den Zähler und vergleiche mit `$max`."
+      - "`availableIn`: `max(0, ($this->windows[$key]['resetAt'] ?? $now) - $now)`."
+    solution: |
+      <?php
+
+      class SimpleLimiter
+      {
+          private array $windows = [];
+
+          public function attempt(string $key, int $max, int $decaySeconds, int $now): bool
+          {
+              if (! isset($this->windows[$key]) || $now >= $this->windows[$key]['resetAt']) {
+                  $this->windows[$key] = ['count' => 0, 'resetAt' => $now + $decaySeconds];
+              }
+
+              if ($this->windows[$key]['count'] >= $max) {
+                  return false;
+              }
+
+              $this->windows[$key]['count']++;
+
+              return true;
+          }
+
+          public function availableIn(string $key, int $now): int
+          {
+              return max(0, ($this->windows[$key]['resetAt'] ?? $now) - $now);
+          }
+      }
