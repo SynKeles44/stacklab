@@ -4,13 +4,8 @@ COMPOSE := docker compose
 help: ## Show all commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Build and start everything (first start)
-	@test -f .env || cp .env.example .env
-	@mkdir -p workspace
-	$(COMPOSE) up -d --build
-	@echo ""
-	@echo "Stacklab startet … öffne gleich http://localhost:$${STACKLAB_PORT:-8080}"
-	@echo "Logs: make logs"
+setup: ## Build and start everything and wait until Stacklab is ready
+	@./bin/start.sh
 
 up: ## Start all services
 	$(COMPOSE) up -d
