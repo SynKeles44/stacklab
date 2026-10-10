@@ -5,6 +5,8 @@ export NVM_DIR=/opt/nvm
 export BUN_INSTALL=/opt/bun
 export PATH="./node_modules/.bin:./vendor/bin:$BUN_INSTALL/bin:/opt/composer/vendor/bin:$PATH"
 export EDITOR=nano
+export TMPDIR="$HOME/.tmp"
+mkdir -p "$TMPDIR" 2>/dev/null || true
 
 if [ -n "$PS1" ]; then
   __stacklab_branch() {
