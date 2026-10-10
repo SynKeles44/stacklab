@@ -1,0 +1,130 @@
+title: Das Frontend anbinden
+description: Das React-Frontend in klare Schichten teilen, den API-Vertrag mit Zod absichern, Formulare mit Actions und Fehlerbildern bauen und ein Qualitäts-Gate für beide Seiten einrichten.
+exercise:
+  id: modul-uebung-verleih-vertrag
+  type: terminal
+  title: Der Frontend-Vertrag für den Geräteverleih
+  description: |
+    Die Verleih-API aus Modul 2 liefert `GET /api/items` als `{"data": [{"id": 1, "name": "Zelt", "available": true}]}`
+    und antwortet beim Ausleihen mit 201, 401 oder 409 (`{"message": "…"}`). Du schreibst die Datenschicht des
+    Frontends – ohne Oberfläche, aber geprüft. Klicke zuerst auf **Aufgabe vorbereiten**: Im Ordner
+    `verleih-vertrag` liegt ein Node-Projekt mit Zod.
+
+    Lege `vertrag.ts` an und exportiere:
+
+    1. `itemSchema` (Zod): `id` ganze Zahl > 0, `name` nicht leerer String, `available` Boolean.
+    2. `itemListSchema`: ein Objekt mit `data` (Liste von Items).
+    3. Den Typ `Item` per `z.infer`.
+    4. `parseItems(json: unknown): Item[]` – prüft mit `itemListSchema.parse` und gibt die Liste zurück.
+       Ungültige Daten lösen einen Fehler aus.
+    5. `itemKeys` mit `all` = `['items']` und `detail(id)` = `['items', id]`.
+    6. `loanMessage(status: number, body: unknown): string` – der Text für die Oberfläche:
+       - `201` → `Ausgeliehen.`
+       - `401` → `Bitte melde dich an.`
+       - `409` → die `message` aus dem Body, falls sie ein String ist, sonst `Das Gerät ist gerade verliehen.`
+       - alles andere → `Unbekannter Fehler.`
+
+    Probiere deine Datei mit `node -e "import('./vertrag.ts').then((m) => console.log(m.itemKeys.detail(2)))"` aus.
+  workdir: verleih-vertrag
+  setup: |
+    npm init -y >/dev/null
+    timeout 120 npm install --no-audit --no-fund zod >/dev/null 2>&1
+    jq '.type = "module"' package.json > package.json.neu && mv package.json.neu package.json
+    test -d node_modules/zod
+  checks:
+    - type: file_exists
+      path: vertrag.ts
+      message: Die Datei vertrag.ts fehlt noch.
+    - type: command
+      run: |
+        node -e "
+        (async () => {
+          const v = await import('./vertrag.ts');
+          const gut = { id: 1, name: 'Zelt', available: true };
+          const ok = v.itemSchema.safeParse(gut).success
+            && !v.itemSchema.safeParse({ ...gut, id: 0 }).success
+            && !v.itemSchema.safeParse({ ...gut, name: '' }).success
+            && !v.itemSchema.safeParse({ ...gut, available: 'ja' }).success;
+          console.log(ok ? 'ok' : 'falsch');
+        })().catch(() => console.log('fehler'));
+        "
+      stdout_equals: ok
+      message: "itemSchema prüft noch nicht richtig: id muss eine ganze Zahl > 0 sein, name ein nicht leerer String, available ein Boolean."
+    - type: command
+      run: |
+        node -e "
+        (async () => {
+          const v = await import('./vertrag.ts');
+          const liste = v.parseItems({ data: [{ id: 1, name: 'Zelt', available: true }, { id: 2, name: 'Beamer', available: false }] });
+          let abgelehnt = false;
+          try { v.parseItems({ data: [{ id: 1, name: 'Zelt' }] }); } catch { abgelehnt = true; }
+          console.log(Array.isArray(liste) && liste.length === 2 && liste[1].name === 'Beamer' && abgelehnt ? 'ok' : 'falsch');
+        })().catch(() => console.log('fehler'));
+        "
+      stdout_equals: ok
+      message: parseItems soll die Liste aus data zurückgeben und bei ungültigen Daten (z. B. fehlendes available) einen Fehler werfen.
+    - type: command
+      run: |
+        node -e "
+        (async () => {
+          const v = await import('./vertrag.ts');
+          console.log(JSON.stringify(v.itemKeys.all) === '[\"items\"]' && JSON.stringify(v.itemKeys.detail(4)) === '[\"items\",4]' ? 'ok' : 'falsch');
+        })().catch(() => console.log('fehler'));
+        "
+      stdout_equals: ok
+      message: "itemKeys braucht all = ['items'] und detail(id) = ['items', id]."
+    - type: command
+      run: |
+        node -e "
+        (async () => {
+          const v = await import('./vertrag.ts');
+          const ok = v.loanMessage(201, {}) === 'Ausgeliehen.'
+            && v.loanMessage(401, {}) === 'Bitte melde dich an.'
+            && v.loanMessage(409, { message: 'Gerade beim Sommerfest.' }) === 'Gerade beim Sommerfest.'
+            && v.loanMessage(409, { message: 42 }) === 'Das Gerät ist gerade verliehen.'
+            && v.loanMessage(409, null) === 'Das Gerät ist gerade verliehen.'
+            && v.loanMessage(500, {}) === 'Unbekannter Fehler.';
+          console.log(ok ? 'ok' : 'falsch');
+        })().catch(() => console.log('fehler'));
+        "
+      stdout_equals: ok
+      message: "loanMessage liefert noch nicht für jeden Status den richtigen Text. Denk an 409 ohne message und an body = null."
+  hints:
+    - "Starte mit `import { z } from 'zod'` und `export const itemSchema = z.object({ … })`."
+    - "Den Typ exportierst du mit `export type Item = z.infer<typeof itemSchema>`."
+    - "Für 409: `typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string'`."
+  solution: |
+    ```ts title="vertrag.ts"
+    import { z } from 'zod'
+
+    export const itemSchema = z.object({
+      id: z.number().int().positive(),
+      name: z.string().min(1),
+      available: z.boolean(),
+    })
+
+    export const itemListSchema = z.object({ data: z.array(itemSchema) })
+
+    export type Item = z.infer<typeof itemSchema>
+
+    export function parseItems(json: unknown): Item[] {
+      return itemListSchema.parse(json).data
+    }
+
+    export const itemKeys = {
+      all: ['items'] as const,
+      detail: (id: number) => ['items', id] as const,
+    }
+
+    export function loanMessage(status: number, body: unknown): string {
+      if (status === 201) return 'Ausgeliehen.'
+      if (status === 401) return 'Bitte melde dich an.'
+      if (status === 409) {
+        if (typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string') {
+          return body.message
+        }
+        return 'Das Gerät ist gerade verliehen.'
+      }
+      return 'Unbekannter Fehler.'
+    }
+    ```

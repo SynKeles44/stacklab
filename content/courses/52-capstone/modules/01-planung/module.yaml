@@ -1,0 +1,112 @@
+title: Planen und entwerfen
+description: Aus einer vagen Idee ein MVP schneiden, die Architektur begründet festhalten und ein Datenmodell entwerfen, das Geschäftsregeln absichert.
+exercise:
+  id: modul-uebung-planungsmappe
+  type: terminal
+  title: Eine Planungsmappe für den Geräteverleih
+  description: |
+    Der Verein möchte als Nächstes einen **Geräteverleih** (Zelte, Beamer, Bierbänke). Du planst Version 1 –
+    ohne Code, aber mit allem, was ein Team zum Loslegen braucht. Arbeite im Ordner `planungsmappe`:
+
+    1. `anforderungen.md` mit den Überschriften `## Muss`, `## Soll`, `## Kann` und `## Nicht jetzt`.
+       Unter `## Muss` stehen mindestens **drei** User Stories im Format `- Als … möchte ich …, damit ….`,
+       unter `## Nicht jetzt` mindestens ein Punkt.
+    2. `entscheidungen.md` mit mindestens einem ADR. Er enthält je eine Zeile, die mit `Kontext:`,
+       `Entscheidung:`, `Begründung:` und `Folgen:` beginnt.
+    3. `schema.sql` mit den Tabellen `items` (`id`, `name` NOT NULL) und `loans` (`id`, `item_id` als
+       Fremdschlüssel auf `items(id)`, `borrower` TEXT NOT NULL, `returned_at` TEXT, darf leer sein).
+       Die wichtigste Regel: **Ein Gerät kann nur einmal gleichzeitig verliehen sein.** Eine zweite offene
+       Ausleihe (ohne `returned_at`) für dasselbe Gerät muss die Datenbank ablehnen. Ist die erste Ausleihe
+       zurückgegeben, darf das Gerät wieder verliehen werden.
+
+    Tipp zu 3: Ein normaler Unique-Constraint auf `item_id` wäre zu streng – dann könnte ein Gerät nie zweimal
+    verliehen werden. SQLite und PostgreSQL kennen einen **partiellen Index**, der nur für bestimmte Zeilen gilt.
+  workdir: planungsmappe
+  checks:
+    - type: command
+      run: for h in 'Muss' 'Soll' 'Kann' 'Nicht jetzt'; do grep -qE "^## $h\s*$" anforderungen.md 2>/dev/null || echo "$h"; done
+      stdout_equals: ""
+      message: "anforderungen.md fehlt oder es fehlt eine Überschrift: ## Muss, ## Soll, ## Kann, ## Nicht jetzt."
+    - type: command
+      run: awk '/^## Muss/{f=1;next} /^## /{f=0} f && /^- Als .+ möchte .+, damit .+/{n++} END{print n+0}' anforderungen.md
+      stdout_matches: "^([3-9]|[1-9][0-9]+)$"
+      message: "Unter ## Muss brauchst du mindestens drei User Stories im Format „- Als … möchte ich …, damit ….“"
+    - type: command
+      run: awk '/^## Nicht jetzt/{f=1;next} /^## /{f=0} f && /^- /{n++} END{print n+0}' anforderungen.md
+      stdout_matches: "^[1-9][0-9]*$"
+      message: Unter ## Nicht jetzt fehlt noch mindestens ein Listenpunkt.
+    - type: command
+      run: for k in Kontext Entscheidung Begründung Folgen; do grep -qE "^$k:" entscheidungen.md 2>/dev/null || echo "$k"; done
+      stdout_equals: ""
+      message: "entscheidungen.md braucht einen ADR mit den Zeilen Kontext:, Entscheidung:, Begründung: und Folgen:."
+    - type: command
+      run: "{ cat schema.sql; echo \"SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;\"; } | sqlite3 :memory: | paste -sd ' ' -"
+      stdout_equals: "items loans"
+      message: schema.sql soll ohne Fehler genau die Tabellen items und loans anlegen.
+    - type: command
+      run: >-
+        { echo 'PRAGMA foreign_keys = ON;'; cat schema.sql;
+        echo "INSERT INTO items (id, name) VALUES (1, 'Zelt');";
+        echo "INSERT INTO loans (item_id, borrower) VALUES (1, 'Ada');";
+        echo "INSERT INTO loans (item_id, borrower) VALUES (1, 'Grace');"; } | sqlite3 :memory: 2>&1 || true
+      stdout_matches: "UNIQUE constraint failed"
+      message: Eine zweite offene Ausleihe für dasselbe Gerät wird noch angenommen. Lege einen eindeutigen Index auf item_id an, der nur für Zeilen mit returned_at IS NULL gilt.
+    - type: command
+      run: >-
+        { echo 'PRAGMA foreign_keys = ON;'; cat schema.sql;
+        echo "INSERT INTO items (id, name) VALUES (1, 'Zelt');";
+        echo "INSERT INTO loans (item_id, borrower, returned_at) VALUES (1, 'Ada', '2026-10-01');";
+        echo "INSERT INTO loans (item_id, borrower) VALUES (1, 'Grace');";
+        echo "SELECT count(*) FROM loans;"; } | sqlite3 :memory: 2>&1
+      stdout_equals: "2"
+      message: Nach der Rückgabe muss das Gerät wieder verliehen werden können. Dein Constraint ist zu streng – er darf nur offene Ausleihen (returned_at IS NULL) betreffen.
+    - type: command
+      run: >-
+        { echo 'PRAGMA foreign_keys = ON;'; cat schema.sql;
+        echo "INSERT INTO loans (item_id, borrower) VALUES (42, 'Ada');"; } | sqlite3 :memory: 2>&1 || true
+      stdout_matches: "FOREIGN KEY constraint failed"
+      message: Eine Ausleihe für ein nicht existierendes Gerät wird noch angenommen. item_id braucht REFERENCES items(id).
+  hints:
+    - "Starte mit `nano anforderungen.md`. Die Überschriften müssen genau so geschrieben sein wie in der Aufgabe."
+    - "Fremdschlüssel: `item_id INTEGER NOT NULL REFERENCES items(id)`."
+    - "Partieller Index: `CREATE UNIQUE INDEX loans_one_open_per_item ON loans (item_id) WHERE returned_at IS NULL;`"
+  solution: |
+    ```markdown title="anforderungen.md"
+    ## Muss
+    - Als Mitglied möchte ich sehen, welche Geräte frei sind, damit ich planen kann.
+    - Als Mitglied möchte ich ein Gerät ausleihen, damit ich es für mein Fest nutzen kann.
+    - Als Gerätewart möchte ich eine Rückgabe eintragen, damit das Gerät wieder frei ist.
+
+    ## Soll
+    - Ausleihen haben ein geplantes Rückgabedatum.
+
+    ## Kann
+    - Fotos der Geräte.
+
+    ## Nicht jetzt
+    - Kaution und Bezahlung
+    ```
+
+    ```markdown title="entscheidungen.md"
+    ## ADR 1: Verfügbarkeit in der Datenbank absichern
+    Kontext: Zwei Mitglieder könnten dasselbe Gerät gleichzeitig ausleihen.
+    Entscheidung: Ein partieller Unique-Index erlaubt pro Gerät nur eine offene Ausleihe.
+    Begründung: Die Regel hält auch bei gleichzeitigen Anfragen und bei Importen.
+    Folgen: Die API muss den Datenbankfehler in eine verständliche 409-Antwort übersetzen.
+    ```
+
+    ```sql title="schema.sql"
+    CREATE TABLE items (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL
+    );
+
+    CREATE TABLE loans (
+      id INTEGER PRIMARY KEY,
+      item_id INTEGER NOT NULL REFERENCES items(id),
+      borrower TEXT NOT NULL,
+      returned_at TEXT
+    );
+
+    CREATE UNIQUE INDEX loans_one_open_per_item ON loans (item_id) WHERE returned_at IS NULL;
+    ```

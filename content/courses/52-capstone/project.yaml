@@ -1,0 +1,2322 @@
+title: "Vereinskurse: eine App von null bis live"
+description: |
+  Das ist das große Abschlussprojekt der Plattform. Du baust **Vereinskurse**, eine kleine, aber vollständige
+  Web-App für einen Sportverein: Mitglieder sehen die kommenden Workshops (Yoga, Erste Hilfe, Kochabend),
+  melden sich an und buchen einen Platz. Organisatorinnen legen neue Workshops an. Ist ein Workshop voll,
+  lehnt die API weitere Buchungen ab.
+
+  Du gehst denselben Weg wie in einem echten Projekt – und nutzt dabei, was du in den früheren Kursen gelernt
+  hast:
+
+  1. Anforderungen und Entscheidungen festhalten
+  2. Datenmodell mit Migrationen und Models
+  3. Login mit Laravel Sanctum
+  4. REST-API mit Validierung und API Resources
+  5. Buchungen mit Geschäftsregeln
+  6. Tests und Code-Qualität
+  7. Datenschicht im Frontend (Zod, TanStack Query)
+  8. Routen und Formulare mit React Router (Data Mode)
+  9. Dockerfiles, Compose und eine CI-Pipeline
+  10. Deploy-Kit, Go-Live-Checkliste und Retrospektive
+
+  Klicke zuerst auf **Projekt vorbereiten**. Stacklab legt den Ordner `vereinskurse` an mit:
+
+  - `api/` – eine frische Laravel-13-Anwendung mit Sanctum und Pest. Unter `api/tests/Feature/Vereinskurse/`
+    liegt für mehrere Schritte ein fertiger Pest-Test, der das Ziel beschreibt. Lies ihn vor dem Schritt.
+  - `web/` – ein frisches Vite-Projekt (React 19, TypeScript) mit React Router, Zod und TanStack Query.
+  - `docs/` – ein leerer Ordner für deine Planungsdokumente.
+  - ein Git-Repository für das ganze Projekt.
+
+  Öffne dann das Übungs-Terminal und wechsle mit `cd vereinskurse` hinein. Die Schritte bauen aufeinander auf.
+  Wenn du festhängst, hilft **Für mich erledigen** – schau dir danach genau an, was geschrieben wurde, und
+  vergleiche es mit deiner Lösung. Plane für das Projekt etwa vier Stunden ein.
+goal: >
+  Ein Repository `vereinskurse` mit Planungsdokumenten, einer getesteten Laravel-API (Sanctum-Login,
+  Workshops, Buchungen mit Platzlimit), einem React-Frontend mit Data-Mode-Routen, Zod-Validierung und
+  TanStack Query, Dockerfiles, Compose-Datei, CI-Workflow, Deploy-Skript, Go-Live-Checkliste und
+  Retrospektive – alles committet.
+workdir: vereinskurse
+setup: |
+  # Laravel 13 mit Sanctum und Pest einmal bauen und zwischenspeichern, dann nach api/ kopieren
+  B="$HOME/.cache/stacklab/laravel13"
+  A="$HOME/.cache/stacklab/laravel13-sanctum"
+  if [ ! -f "$A/.fertig" ]; then
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      (cd "$T" && timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null)
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > "$T/tests/Pest.php"
+      touch "$T/.fertig"; rm -rf "$B"; mv "$T" "$B"
+    fi
+    T="$A.bau.$$"; rm -rf "$T"; cp -a "$B" "$T"
+    (cd "$T" && timeout 120 php artisan install:api --without-migration-prompt -n -q </dev/null && php artisan migrate --force -q)
+    rm -rf "$A"; mv "$T" "$A"
+  fi
+  mkdir -p api docs
+  cp -a "$A/." api/ && rm -f api/.fertig
+  sed -i 's/^APP_NAME=.*/APP_NAME=Vereinskurse/' api/.env
+  touch docs/.gitkeep
+  mkdir -p api/tests/Feature/Vereinskurse
+  cat > api/tests/Feature/Vereinskurse/DatenmodellTest.php <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use App\Models\Workshop;
+  use Illuminate\Database\QueryException;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+  use Illuminate\Support\Facades\Schema;
+
+  uses(RefreshDatabase::class);
+
+  test('die Tabellen haben die geplanten Spalten', function () {
+      expect(Schema::hasColumns('workshops', ['user_id', 'title', 'description', 'location', 'starts_at', 'capacity']))->toBeTrue();
+      expect(Schema::hasColumns('bookings', ['workshop_id', 'user_id']))->toBeTrue();
+  });
+
+  test('ein Workshop gehört einer Organisatorin und kennt seine Buchungen', function () {
+      $workshop = Workshop::factory()->create(['capacity' => 3]);
+      $workshop->bookings()->create(['user_id' => User::factory()->create()->id]);
+
+      expect($workshop->organizer)->toBeInstanceOf(User::class);
+      expect($workshop->starts_at)->toBeInstanceOf(DateTimeInterface::class);
+      expect($workshop->bookings()->count())->toBe(1);
+      expect($workshop->seatsLeft())->toBe(2);
+  });
+
+  test('dieselbe Person kann einen Workshop nur einmal buchen', function () {
+      $workshop = Workshop::factory()->create();
+      $user = User::factory()->create();
+      $workshop->bookings()->create(['user_id' => $user->id]);
+
+      expect(fn () => $workshop->bookings()->create(['user_id' => $user->id]))->toThrow(QueryException::class);
+  });
+  STACKLAB_EOF
+  cat > api/tests/Feature/Vereinskurse/LoginTest.php <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+
+  uses(RefreshDatabase::class);
+
+  test('POST /api/login gibt bei richtigen Zugangsdaten ein Token zurück', function () {
+      User::factory()->create(['email' => 'ada@example.com', 'password' => 'ein-langes-passwort']);
+
+      $this->postJson('/api/login', [
+          'email' => 'ada@example.com',
+          'password' => 'ein-langes-passwort',
+          'device_name' => 'web',
+      ])->assertOk()->assertJsonStructure(['token']);
+
+      expect(User::first()->tokens()->count())->toBe(1);
+  });
+
+  test('ein falsches Passwort führt zu 422', function () {
+      User::factory()->create(['email' => 'ada@example.com', 'password' => 'ein-langes-passwort']);
+
+      $this->postJson('/api/login', [
+          'email' => 'ada@example.com',
+          'password' => 'falsch',
+          'device_name' => 'web',
+      ])->assertStatus(422)->assertJsonValidationErrors('email');
+  });
+
+  test('fehlende Felder führen zu 422', function () {
+      $this->postJson('/api/login', [])
+          ->assertStatus(422)
+          ->assertJsonValidationErrors(['email', 'password', 'device_name']);
+  });
+
+  test('GET /api/me liefert mit Token das eigene Konto ohne Passwort', function () {
+      $user = User::factory()->create();
+      $token = $user->createToken('test')->plainTextToken;
+
+      $this->withToken($token)->getJson('/api/me')
+          ->assertOk()
+          ->assertJsonPath('email', $user->email)
+          ->assertJsonMissingPath('password');
+  });
+
+  test('ohne Token antwortet /api/me mit 401', function () {
+      $this->getJson('/api/me')->assertUnauthorized();
+  });
+
+  test('POST /api/logout widerruft das aktuelle Token', function () {
+      $user = User::factory()->create();
+      $token = $user->createToken('test')->plainTextToken;
+
+      $this->withToken($token)->postJson('/api/logout')->assertNoContent();
+
+      expect($user->tokens()->count())->toBe(0);
+  });
+  STACKLAB_EOF
+  cat > api/tests/Feature/Vereinskurse/WorkshopApiTest.php <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use App\Models\Workshop;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+  use Laravel\Sanctum\Sanctum;
+
+  uses(RefreshDatabase::class);
+
+  test('GET /api/workshops listet kommende Workshops nach Datum mit freien Plätzen', function () {
+      Workshop::factory()->create(['title' => 'Erste Hilfe', 'starts_at' => now()->addDays(10), 'capacity' => 10]);
+      $yoga = Workshop::factory()->create(['title' => 'Yoga', 'starts_at' => now()->addDays(2), 'capacity' => 2]);
+      Workshop::factory()->create(['title' => 'Schon vorbei', 'starts_at' => now()->subDay()]);
+      $yoga->bookings()->create(['user_id' => User::factory()->create()->id]);
+
+      $this->getJson('/api/workshops')
+          ->assertOk()
+          ->assertJsonCount(2, 'data')
+          ->assertJsonPath('data.0.title', 'Yoga')
+          ->assertJsonPath('data.0.seats_left', 1)
+          ->assertJsonPath('data.1.title', 'Erste Hilfe');
+  });
+
+  test('GET /api/workshops/{id} zeigt einen Workshop im vereinbarten Format', function () {
+      $workshop = Workshop::factory()->create(['capacity' => 8]);
+
+      $this->getJson("/api/workshops/{$workshop->id}")
+          ->assertOk()
+          ->assertJsonPath('data.id', $workshop->id)
+          ->assertJsonPath('data.capacity', 8)
+          ->assertJsonPath('data.seats_left', 8)
+          ->assertJsonPath('data.starts_at', $workshop->starts_at->toIso8601String())
+          ->assertJsonStructure(['data' => ['id', 'title', 'description', 'location', 'starts_at', 'capacity', 'seats_left']]);
+  });
+
+  test('ein unbekannter Workshop antwortet mit 404', function () {
+      $this->getJson('/api/workshops/999')->assertNotFound();
+  });
+
+  test('POST /api/workshops verlangt eine Anmeldung', function () {
+      $this->postJson('/api/workshops', [])->assertUnauthorized();
+  });
+
+  test('POST /api/workshops validiert die Eingaben', function () {
+      Sanctum::actingAs(User::factory()->create());
+
+      $this->postJson('/api/workshops', ['title' => '', 'capacity' => 0, 'starts_at' => 'irgendwann'])
+          ->assertStatus(422)
+          ->assertJsonValidationErrors(['title', 'location', 'starts_at', 'capacity']);
+
+      $this->postJson('/api/workshops', [
+          'title' => 'Kochabend',
+          'location' => 'Vereinsheim',
+          'starts_at' => now()->subDay()->toIso8601String(),
+          'capacity' => 501,
+      ])->assertStatus(422)->assertJsonValidationErrors(['starts_at', 'capacity']);
+  });
+
+  test('POST /api/workshops legt einen Workshop für die angemeldete Person an', function () {
+      $user = User::factory()->create();
+      Sanctum::actingAs($user);
+
+      $this->postJson('/api/workshops', [
+          'title' => 'Kochabend',
+          'location' => 'Vereinsheim',
+          'starts_at' => now()->addWeek()->toIso8601String(),
+          'capacity' => 12,
+      ])->assertCreated()
+          ->assertJsonPath('data.title', 'Kochabend')
+          ->assertJsonPath('data.seats_left', 12);
+
+      expect(Workshop::first()->user_id)->toBe($user->id);
+  });
+  STACKLAB_EOF
+  cat > api/tests/Feature/Vereinskurse/BuchungTest.php <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use App\Models\Workshop;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+  use Laravel\Sanctum\Sanctum;
+
+  uses(RefreshDatabase::class);
+
+  test('POST /api/workshops/{id}/booking bucht einen Platz', function () {
+      $user = User::factory()->create();
+      $workshop = Workshop::factory()->create(['capacity' => 5]);
+      Sanctum::actingAs($user);
+
+      $this->postJson("/api/workshops/{$workshop->id}/booking")->assertCreated();
+
+      expect($workshop->bookings()->where('user_id', $user->id)->exists())->toBeTrue();
+      $this->getJson("/api/workshops/{$workshop->id}")->assertJsonPath('data.seats_left', 4);
+  });
+
+  test('eine doppelte Buchung antwortet mit 409', function () {
+      $workshop = Workshop::factory()->create(['capacity' => 5]);
+      Sanctum::actingAs(User::factory()->create());
+
+      $this->postJson("/api/workshops/{$workshop->id}/booking")->assertCreated();
+      $this->postJson("/api/workshops/{$workshop->id}/booking")->assertStatus(409);
+
+      expect($workshop->bookings()->count())->toBe(1);
+  });
+
+  test('ein ausgebuchter Workshop antwortet mit 409', function () {
+      $workshop = Workshop::factory()->create(['capacity' => 1]);
+      $workshop->bookings()->create(['user_id' => User::factory()->create()->id]);
+      Sanctum::actingAs(User::factory()->create());
+
+      $this->postJson("/api/workshops/{$workshop->id}/booking")
+          ->assertStatus(409)
+          ->assertJsonStructure(['message']);
+
+      expect($workshop->bookings()->count())->toBe(1);
+  });
+
+  test('DELETE /api/workshops/{id}/booking storniert nur die eigene Buchung', function () {
+      $workshop = Workshop::factory()->create(['capacity' => 5]);
+      $andere = User::factory()->create();
+      $workshop->bookings()->create(['user_id' => $andere->id]);
+      $user = User::factory()->create();
+      $workshop->bookings()->create(['user_id' => $user->id]);
+      Sanctum::actingAs($user);
+
+      $this->deleteJson("/api/workshops/{$workshop->id}/booking")->assertNoContent();
+
+      expect($workshop->bookings()->pluck('user_id')->all())->toBe([$andere->id]);
+  });
+
+  test('Buchen ohne Anmeldung antwortet mit 401', function () {
+      $workshop = Workshop::factory()->create();
+
+      $this->postJson("/api/workshops/{$workshop->id}/booking")->assertUnauthorized();
+  });
+  STACKLAB_EOF
+  timeout 120 npm create vite@latest web -- --template react-ts --no-interactive >/dev/null 2>&1
+  (cd web && timeout 150 npm install --no-audit --no-fund >/dev/null 2>&1 && timeout 120 npm install --no-audit --no-fund react-router zod @tanstack/react-query >/dev/null 2>&1)
+  test -d web/node_modules/react-router
+  printf '%s\n' '.DS_Store' 'deploy/.env.production' > .gitignore
+  git init -q -b main
+  git config user.name "Stacklab"
+  git config user.email "stacklab@example.com"
+steps:
+  - id: anforderungen
+    title: Anforderungen und Entscheidungen festhalten
+    description: |
+      Bevor du Code schreibst, legst du fest, **was** Version 1 können muss – und was ausdrücklich nicht.
+      Das schützt dich vor Scope Creep. Lies dazu die Lektionen aus Modul 1.
+
+      1. Lege `docs/anforderungen.md` an mit diesen Überschriften (genau so geschrieben):
+         `## Muss`, `## Soll`, `## Kann`, `## Nicht jetzt` und `## Nicht-funktionale Anforderungen`.
+      2. Schreibe unter `## Muss` mindestens **drei User Stories** im Format
+         `- Als <Rolle> möchte ich <Ziel>, damit <Nutzen>.`
+      3. Notiere unter `## Nicht jetzt` mindestens einen Punkt, den du bewusst weglässt (z. B. Bezahlung).
+      4. Lege `docs/entscheidungen.md` an mit mindestens **zwei** Entscheidungen. Jede bekommt eine
+         `##`-Überschrift und eine Zeile, die mit `Begründung:` beginnt.
+    checklist:
+      - "`docs/anforderungen.md` mit Muss/Soll/Kann/Nicht jetzt und nicht-funktionalen Anforderungen"
+      - Mindestens drei User Stories unter Muss
+      - "`docs/entscheidungen.md` mit mindestens zwei begründeten Entscheidungen"
+    hints:
+      - "Mit `mkdir -p docs` und `nano docs/anforderungen.md` legst du die Datei an."
+      - "Eine User Story: `- Als Mitglied möchte ich kommende Workshops sehen, damit ich einen passenden finde.`"
+      - "Eine Entscheidung: `## Laravel-API plus React-SPA` und darunter `Begründung: …`."
+    checks:
+      - type: file_exists
+        path: docs/anforderungen.md
+        message: Die Datei docs/anforderungen.md fehlt noch.
+      - type: command
+        run: for h in 'Muss' 'Soll' 'Kann' 'Nicht jetzt' 'Nicht-funktionale Anforderungen'; do grep -qE "^## $h\s*$" docs/anforderungen.md || echo "$h"; done
+        stdout_equals: ""
+        message: "In docs/anforderungen.md fehlt mindestens eine Überschrift: ## Muss, ## Soll, ## Kann, ## Nicht jetzt, ## Nicht-funktionale Anforderungen."
+      - type: command
+        run: grep -cE '^- Als .+ möchte .+, damit .+' docs/anforderungen.md
+        expect_exit: 0
+        stdout_matches: "^([3-9]|[1-9][0-9]+)\\s*$"
+        message: "Schreibe mindestens drei User Stories im Format „- Als <Rolle> möchte ich <Ziel>, damit <Nutzen>.“"
+      - type: command
+        run: awk '/^## Nicht jetzt/{f=1;next} /^## /{f=0} f && /^- /{n++} END{print n+0}' docs/anforderungen.md
+        stdout_matches: "^[1-9][0-9]*$"
+        message: Notiere unter ## Nicht jetzt mindestens einen Listenpunkt, den Version 1 bewusst nicht kann.
+      - type: command
+        run: "grep -c '^## ' docs/entscheidungen.md && grep -c '^Begründung:' docs/entscheidungen.md"
+        stdout_matches: "^([2-9]|[1-9][0-9]+)\\s+([2-9]|[1-9][0-9]+)\\s*$"
+        message: docs/entscheidungen.md braucht mindestens zwei Entscheidungen mit ##-Überschrift und je einer Zeile „Begründung:“.
+    solution: |
+      ```markdown title="docs/anforderungen.md"
+      # Anforderungen Vereinskurse – Version 1
+
+      ## Muss
+      - Als Mitglied möchte ich die kommenden Workshops sehen, damit ich einen passenden finde.
+      - Als Mitglied möchte ich einen Platz buchen, damit er für mich reserviert ist.
+      - Als Organisatorin möchte ich einen Workshop anlegen, damit Mitglieder ihn buchen können.
+      - Als Mitglied möchte ich eine Buchung stornieren, damit der Platz wieder frei wird.
+
+      ## Soll
+      - Freie Plätze werden in der Liste angezeigt.
+
+      ## Kann
+      - Erinnerung per E-Mail am Vortag.
+
+      ## Nicht jetzt
+      - Bezahlung
+      - Warteliste
+
+      ## Nicht-funktionale Anforderungen
+      - Die Liste lädt in unter einer Sekunde.
+      - Es gibt nie mehr Buchungen als Plätze.
+      ```
+
+      ```markdown title="docs/entscheidungen.md"
+      # Entscheidungen
+
+      ## Laravel-API plus React-SPA
+      Begründung: Beides kennen wir aus den Kursen, die API lässt sich gut testen.
+
+      ## Sanctum-Tokens für den Login
+      Begründung: Einfach zu testen und auch für spätere Apps nutzbar.
+      ```
+    solve: |
+      mkdir -p docs
+      cat > docs/anforderungen.md <<'EOF'
+      # Anforderungen Vereinskurse – Version 1
+
+      ## Muss
+      - Als Mitglied möchte ich die kommenden Workshops sehen, damit ich einen passenden finde.
+      - Als Mitglied möchte ich einen Platz buchen, damit er für mich reserviert ist.
+      - Als Organisatorin möchte ich einen Workshop anlegen, damit Mitglieder ihn buchen können.
+      - Als Mitglied möchte ich eine Buchung stornieren, damit der Platz wieder frei wird.
+
+      ## Soll
+      - Freie Plätze werden in der Liste angezeigt.
+
+      ## Kann
+      - Erinnerung per E-Mail am Vortag.
+
+      ## Nicht jetzt
+      - Bezahlung
+      - Warteliste
+
+      ## Nicht-funktionale Anforderungen
+      - Die Liste lädt in unter einer Sekunde.
+      - Es gibt nie mehr Buchungen als Plätze.
+      EOF
+      cat > docs/entscheidungen.md <<'EOF'
+      # Entscheidungen
+
+      ## Laravel-API plus React-SPA
+      Begründung: Beides kennen wir aus den Kursen, die API lässt sich gut testen.
+
+      ## Sanctum-Tokens für den Login
+      Begründung: Einfach zu testen und auch für spätere Apps nutzbar.
+      EOF
+
+  - id: datenmodell
+    title: Datenmodell mit Migrationen und Models
+    description: |
+      Setze dein Datenmodell um. Ein **Workshop** gehört einer Organisatorin (`users`) und hat viele
+      **Buchungen**. Eine Buchung verbindet genau einen Workshop mit genau einer Person.
+
+      Arbeite im Ordner `api`:
+
+      1. `php artisan make:model Workshop -mf` und `php artisan make:model Booking -m`
+      2. Migration `workshops`: `user_id` (Fremdschlüssel, löscht mit), `title` (string), `description`
+         (text, nullable), `location` (string), `starts_at` (dateTime), `capacity` (unsignedInteger), Timestamps.
+      3. Migration `bookings`: `workshop_id` und `user_id` (Fremdschlüssel, löschen mit), Timestamps und ein
+         **Unique-Constraint** über `workshop_id` und `user_id`.
+      4. `Workshop`: `#[Fillable([...])]` für title, description, location, starts_at, capacity; Casts für
+         `starts_at` (datetime) und `capacity` (integer); Beziehungen `organizer()` (belongsTo User über
+         `user_id`) und `bookings()` (hasMany); Methode `seatsLeft(): int`.
+      5. `Booking`: `#[Fillable(['user_id'])]` und `workshop()` / `user()`.
+      6. `WorkshopFactory` mit sinnvollen Testdaten (Termin in der Zukunft, organizer per `User::factory()`).
+      7. `php artisan migrate` und `./vendor/bin/pest tests/Feature/Vereinskurse/DatenmodellTest.php`.
+    checklist:
+      - Tabellen workshops und bookings mit Fremdschlüsseln
+      - Unique-Constraint verhindert doppelte Buchungen
+      - Models mit Fillable, Casts, Beziehungen und seatsLeft()
+      - WorkshopFactory liefert gültige Testdaten
+    hints:
+      - "`$table->foreignId('user_id')->constrained()->cascadeOnDelete();` legt Spalte und Fremdschlüssel an."
+      - "`$table->unique(['workshop_id', 'user_id']);` – so prüft die Datenbank selbst, dass niemand doppelt bucht."
+      - "seatsLeft: `max(0, $this->capacity - ($this->bookings_count ?? $this->bookings()->count()))` – nutzt einen vorab geladenen Zähler, wenn es ihn gibt."
+    checks:
+      - type: command
+        run: cd api && ./vendor/bin/pest tests/Feature/Vereinskurse/DatenmodellTest.php
+        message: Der Test tests/Feature/Vereinskurse/DatenmodellTest.php ist noch rot. Führe ihn aus und lies die erste Fehlermeldung.
+      - type: command
+        run: cd api && php artisan tinker --execute="var_export(Schema::hasTable('workshops') && Schema::hasTable('bookings'));"
+        stdout_matches: "^true\\s*$"
+        message: In deiner lokalen Datenbank fehlen die Tabellen workshops oder bookings. Führe php artisan migrate aus.
+    solution: |
+      ```php title="database/migrations/…_create_workshops_table.php (Ausschnitt)"
+      Schema::create('workshops', function (Blueprint $table) {
+          $table->id();
+          $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+          $table->string('title');
+          $table->text('description')->nullable();
+          $table->string('location');
+          $table->dateTime('starts_at')->index();
+          $table->unsignedInteger('capacity');
+          $table->timestamps();
+      });
+      ```
+
+      ```php title="database/migrations/…_create_bookings_table.php (Ausschnitt)"
+      Schema::create('bookings', function (Blueprint $table) {
+          $table->id();
+          $table->foreignId('workshop_id')->constrained()->cascadeOnDelete();
+          $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+          $table->timestamps();
+          $table->unique(['workshop_id', 'user_id']);
+      });
+      ```
+
+      ```php title="app/Models/Workshop.php"
+      #[Fillable(['title', 'description', 'location', 'starts_at', 'capacity'])]
+      class Workshop extends Model
+      {
+          /** @use HasFactory<WorkshopFactory> */
+          use HasFactory;
+
+          protected function casts(): array
+          {
+              return ['starts_at' => 'datetime', 'capacity' => 'integer'];
+          }
+
+          public function organizer(): BelongsTo
+          {
+              return $this->belongsTo(User::class, 'user_id');
+          }
+
+          public function bookings(): HasMany
+          {
+              return $this->hasMany(Booking::class);
+          }
+
+          public function seatsLeft(): int
+          {
+              $booked = $this->bookings_count ?? $this->bookings()->count();
+
+              return max(0, $this->capacity - $booked);
+          }
+      }
+      ```
+
+      Den vollständigen Stand inklusive `Booking` und `WorkshopFactory` siehst du, wenn du **Für mich
+      erledigen** nutzt.
+    solve: |
+      cd api
+      [ -f app/Models/Workshop.php ] || php artisan make:model Workshop -mf -q
+      [ -f app/Models/Booking.php ] || php artisan make:model Booking -m -q
+      W=$(ls database/migrations/*_create_workshops_table.php | head -n 1)
+      cat > "$W" <<'EOF'
+      <?php
+
+      use Illuminate\Database\Migrations\Migration;
+      use Illuminate\Database\Schema\Blueprint;
+      use Illuminate\Support\Facades\Schema;
+
+      return new class extends Migration
+      {
+          public function up(): void
+          {
+              Schema::create('workshops', function (Blueprint $table) {
+                  $table->id();
+                  $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                  $table->string('title');
+                  $table->text('description')->nullable();
+                  $table->string('location');
+                  $table->dateTime('starts_at')->index();
+                  $table->unsignedInteger('capacity');
+                  $table->timestamps();
+              });
+          }
+
+          public function down(): void
+          {
+              Schema::dropIfExists('workshops');
+          }
+      };
+      EOF
+      K=$(ls database/migrations/*_create_bookings_table.php | head -n 1)
+      cat > "$K" <<'EOF'
+      <?php
+
+      use Illuminate\Database\Migrations\Migration;
+      use Illuminate\Database\Schema\Blueprint;
+      use Illuminate\Support\Facades\Schema;
+
+      return new class extends Migration
+      {
+          public function up(): void
+          {
+              Schema::create('bookings', function (Blueprint $table) {
+                  $table->id();
+                  $table->foreignId('workshop_id')->constrained()->cascadeOnDelete();
+                  $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                  $table->timestamps();
+                  $table->unique(['workshop_id', 'user_id']);
+              });
+          }
+
+          public function down(): void
+          {
+              Schema::dropIfExists('bookings');
+          }
+      };
+      EOF
+      cat > app/Models/Workshop.php <<'EOF'
+      <?php
+
+      namespace App\Models;
+
+      use Database\Factories\WorkshopFactory;
+      use Illuminate\Database\Eloquent\Attributes\Fillable;
+      use Illuminate\Database\Eloquent\Factories\HasFactory;
+      use Illuminate\Database\Eloquent\Model;
+      use Illuminate\Database\Eloquent\Relations\BelongsTo;
+      use Illuminate\Database\Eloquent\Relations\HasMany;
+
+      #[Fillable(['title', 'description', 'location', 'starts_at', 'capacity'])]
+      class Workshop extends Model
+      {
+          /** @use HasFactory<WorkshopFactory> */
+          use HasFactory;
+
+          protected function casts(): array
+          {
+              return [
+                  'starts_at' => 'datetime',
+                  'capacity' => 'integer',
+              ];
+          }
+
+          /** @return BelongsTo<User, $this> */
+          public function organizer(): BelongsTo
+          {
+              return $this->belongsTo(User::class, 'user_id');
+          }
+
+          /** @return HasMany<Booking, $this> */
+          public function bookings(): HasMany
+          {
+              return $this->hasMany(Booking::class);
+          }
+
+          public function seatsLeft(): int
+          {
+              $booked = $this->bookings_count ?? $this->bookings()->count();
+
+              return max(0, $this->capacity - $booked);
+          }
+      }
+      EOF
+      cat > app/Models/Booking.php <<'EOF'
+      <?php
+
+      namespace App\Models;
+
+      use Illuminate\Database\Eloquent\Attributes\Fillable;
+      use Illuminate\Database\Eloquent\Model;
+      use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+      #[Fillable(['user_id'])]
+      class Booking extends Model
+      {
+          /** @return BelongsTo<Workshop, $this> */
+          public function workshop(): BelongsTo
+          {
+              return $this->belongsTo(Workshop::class);
+          }
+
+          /** @return BelongsTo<User, $this> */
+          public function user(): BelongsTo
+          {
+              return $this->belongsTo(User::class);
+          }
+      }
+      EOF
+      cat > database/factories/WorkshopFactory.php <<'EOF'
+      <?php
+
+      namespace Database\Factories;
+
+      use App\Models\User;
+      use App\Models\Workshop;
+      use Illuminate\Database\Eloquent\Factories\Factory;
+
+      /**
+       * @extends Factory<Workshop>
+       */
+      class WorkshopFactory extends Factory
+      {
+          public function definition(): array
+          {
+              return [
+                  'user_id' => User::factory(),
+                  'title' => fake()->randomElement(['Yoga am Morgen', 'Erste Hilfe', 'Kochabend', 'Lauftreff']),
+                  'description' => fake()->sentence(),
+                  'location' => fake()->randomElement(['Vereinsheim', 'Turnhalle', 'Sportplatz']),
+                  'starts_at' => fake()->dateTimeBetween('+1 day', '+2 months'),
+                  'capacity' => fake()->numberBetween(5, 30),
+              ];
+          }
+      }
+      EOF
+      php artisan migrate --force -q
+
+  - id: login
+    title: Login mit Sanctum-Tokens
+    description: |
+      Sanctum ist schon installiert (`routes/api.php` und die Tabelle `personal_access_tokens` gibt es). Jetzt
+      baust du den Login. Arbeite in `api`:
+
+      1. Ergänze im Model `User` den Trait `Laravel\Sanctum\HasApiTokens`.
+      2. Lege einen Form Request `LoginRequest` an (`php artisan make:request LoginRequest`): `email` (Pflicht,
+         E-Mail), `password` (Pflicht, String), `device_name` (Pflicht, String, max. 255).
+      3. Lege einen `AuthController` mit drei Methoden an:
+         - `login`: Nutzer per E-Mail suchen, Passwort mit `Hash::check` prüfen. Falsch → `ValidationException`
+           für das Feld `email` (Status 422). Richtig → `{"token": "…"}` aus `createToken($deviceName)`.
+         - `me`: gibt `$request->user()` zurück.
+         - `logout`: löscht `currentAccessToken()` und antwortet mit 204.
+      4. Ersetze `routes/api.php`: `POST /login` (mit `throttle:10,1`), und in einer Gruppe mit
+         `auth:sanctum` die Routen `GET /me` und `POST /logout`.
+      5. Prüfe mit `./vendor/bin/pest tests/Feature/Vereinskurse/LoginTest.php`.
+    checklist:
+      - "`User` nutzt `HasApiTokens`"
+      - "`POST /api/login` gibt ein Token zurück, falsche Daten führen zu 422"
+      - "`GET /api/me` und `POST /api/logout` sind mit `auth:sanctum` geschützt"
+      - Login ist gedrosselt
+    hints:
+      - "`throw ValidationException::withMessages(['email' => 'Die Zugangsdaten sind ungültig.']);` erzeugt eine 422-Antwort im Laravel-Format."
+      - "Melde bei falscher E-Mail und falschem Passwort dieselbe Meldung – sonst verrätst du, welche Konten existieren."
+      - "`$request->user()->currentAccessToken()->delete();` widerruft genau das Token dieser Anfrage."
+    checks:
+      - type: file_contains
+        path: api/app/Models/User.php
+        pattern: "use\\s+[^;]*HasApiTokens"
+        message: Das User-Model nutzt den Trait HasApiTokens noch nicht.
+      - type: command
+        run: cd api && ./vendor/bin/pest tests/Feature/Vereinskurse/LoginTest.php
+        message: Der Test tests/Feature/Vereinskurse/LoginTest.php ist noch rot. Führe ihn aus und arbeite die Fehler von oben nach unten ab.
+      - type: file_contains
+        path: api/routes/api.php
+        pattern: "throttle:"
+        message: Drossele den Login in routes/api.php, z. B. mit ->middleware('throttle:10,1').
+    solution: |
+      ```php title="app/Http/Controllers/AuthController.php"
+      class AuthController extends Controller
+      {
+          public function login(LoginRequest $request): JsonResponse
+          {
+              $user = User::where('email', $request->validated('email'))->first();
+
+              if (! $user || ! Hash::check($request->validated('password'), $user->password)) {
+                  throw ValidationException::withMessages(['email' => 'Die Zugangsdaten sind ungültig.']);
+              }
+
+              return response()->json([
+                  'token' => $user->createToken($request->validated('device_name'))->plainTextToken,
+              ]);
+          }
+
+          public function me(Request $request): JsonResponse
+          {
+              return response()->json($request->user());
+          }
+
+          public function logout(Request $request): Response
+          {
+              $request->user()->currentAccessToken()->delete();
+
+              return response()->noContent();
+          }
+      }
+      ```
+
+      ```php title="routes/api.php"
+      Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+
+      Route::middleware('auth:sanctum')->group(function () {
+          Route::get('/me', [AuthController::class, 'me']);
+          Route::post('/logout', [AuthController::class, 'logout']);
+      });
+      ```
+    solve: |
+      cd api
+      grep -q 'HasApiTokens' app/Models/User.php || perl -0pi -e 's/use Illuminate\\Notifications\\Notifiable;/use Illuminate\\Notifications\\Notifiable;\nuse Laravel\\Sanctum\\HasApiTokens;/; s/use HasFactory, Notifiable;/use HasApiTokens, HasFactory, Notifiable;/' app/Models/User.php
+      mkdir -p app/Http/Requests
+      cat > app/Http/Requests/LoginRequest.php <<'EOF'
+      <?php
+
+      namespace App\Http\Requests;
+
+      use Illuminate\Foundation\Http\FormRequest;
+
+      class LoginRequest extends FormRequest
+      {
+          public function authorize(): bool
+          {
+              return true;
+          }
+
+          /** @return array<string, mixed> */
+          public function rules(): array
+          {
+              return [
+                  'email' => ['required', 'email'],
+                  'password' => ['required', 'string'],
+                  'device_name' => ['required', 'string', 'max:255'],
+              ];
+          }
+      }
+      EOF
+      cat > app/Http/Controllers/AuthController.php <<'EOF'
+      <?php
+
+      namespace App\Http\Controllers;
+
+      use App\Http\Requests\LoginRequest;
+      use App\Models\User;
+      use Illuminate\Http\JsonResponse;
+      use Illuminate\Http\Request;
+      use Illuminate\Http\Response;
+      use Illuminate\Support\Facades\Hash;
+      use Illuminate\Validation\ValidationException;
+
+      class AuthController extends Controller
+      {
+          public function login(LoginRequest $request): JsonResponse
+          {
+              $user = User::where('email', $request->validated('email'))->first();
+
+              if (! $user || ! Hash::check($request->validated('password'), $user->password)) {
+                  throw ValidationException::withMessages(['email' => 'Die Zugangsdaten sind ungültig.']);
+              }
+
+              return response()->json([
+                  'token' => $user->createToken($request->validated('device_name'))->plainTextToken,
+              ]);
+          }
+
+          public function me(Request $request): JsonResponse
+          {
+              return response()->json($request->user());
+          }
+
+          public function logout(Request $request): Response
+          {
+              $request->user()->currentAccessToken()->delete();
+
+              return response()->noContent();
+          }
+      }
+      EOF
+      cat > routes/api.php <<'EOF'
+      <?php
+
+      use App\Http\Controllers\AuthController;
+      use Illuminate\Support\Facades\Route;
+
+      Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+
+      Route::middleware('auth:sanctum')->group(function () {
+          Route::get('/me', [AuthController::class, 'me']);
+          Route::post('/logout', [AuthController::class, 'logout']);
+      });
+      EOF
+
+  - id: workshop-api
+    title: REST-API für Workshops
+    description: |
+      Jetzt entsteht die eigentliche API. Sie ist der **Vertrag** mit dem Frontend – das Format legst du hier
+      einmal fest. Arbeite in `api`:
+
+      1. `WorkshopResource` (`php artisan make:resource WorkshopResource`) mit den Feldern `id`, `title`,
+         `description`, `location`, `starts_at` (ISO 8601 per `toIso8601String()`), `capacity`, `seats_left`.
+      2. `StoreWorkshopRequest`: `title` (Pflicht, max. 120), `description` (optional, max. 2000), `location`
+         (Pflicht, max. 120), `starts_at` (Pflicht, Datum, `after:now`), `capacity` (Pflicht, ganze Zahl, 1–500).
+      3. `WorkshopController`:
+         - `index`: nur kommende Workshops, nach `starts_at` sortiert, mit `withCount('bookings')` (kein N+1),
+           paginiert (20 pro Seite), als Resource-Collection.
+         - `show`: ein Workshop per Route Model Binding, mit `loadCount('bookings')`.
+         - `store`: neuen Workshop anlegen, die angemeldete Person als `organizer` zuordnen, Status 201.
+      4. Routen: `GET /workshops` und `GET /workshops/{workshop}` öffentlich, `POST /workshops` in der
+         `auth:sanctum`-Gruppe.
+      5. Prüfe mit `./vendor/bin/pest tests/Feature/Vereinskurse/WorkshopApiTest.php`.
+    checklist:
+      - Liste zeigt nur kommende Workshops, sortiert, mit seats_left
+      - Detailroute mit 404 für unbekannte IDs
+      - Anlegen nur angemeldet, mit Validierung und Status 201
+      - Kein N+1 dank withCount
+    hints:
+      - "`Workshop::query()->withCount('bookings')->where('starts_at', '>=', now())->orderBy('starts_at')->paginate(20)`"
+      - "`return (new WorkshopResource($workshop))->response()->setStatusCode(201);`"
+      - "`$workshop->organizer()->associate($request->user());` setzt die user_id, ohne sie fillable zu machen."
+    checks:
+      - type: command
+        run: cd api && ./vendor/bin/pest tests/Feature/Vereinskurse/WorkshopApiTest.php
+        message: Der Test tests/Feature/Vereinskurse/WorkshopApiTest.php ist noch rot. Führe ihn aus und lies die erste Fehlermeldung.
+      - type: command
+        run: >-
+          cd api && php artisan route:list --path=api/workshops --json | jq -r '.[] | select(.uri == "api/workshops" and (.method | test("POST"))) | .middleware | join(",")'
+        stdout_matches: "Authenticate:sanctum"
+        message: Die Route POST /api/workshops fehlt noch oder ist nicht mit auth:sanctum geschützt.
+      - type: file_contains
+        path: api/app/Http/Controllers/WorkshopController.php
+        pattern: "withCount\\(\\s*['\"]bookings['\"]"
+        message: Lade die Buchungen in index() mit withCount('bookings') vor, sonst entsteht eine N+1-Abfrage.
+    solution: |
+      ```php title="app/Http/Controllers/WorkshopController.php"
+      class WorkshopController extends Controller
+      {
+          public function index(): AnonymousResourceCollection
+          {
+              $workshops = Workshop::query()
+                  ->withCount('bookings')
+                  ->where('starts_at', '>=', now())
+                  ->orderBy('starts_at')
+                  ->paginate(20);
+
+              return WorkshopResource::collection($workshops);
+          }
+
+          public function show(Workshop $workshop): WorkshopResource
+          {
+              return new WorkshopResource($workshop->loadCount('bookings'));
+          }
+
+          public function store(StoreWorkshopRequest $request): JsonResponse
+          {
+              $workshop = new Workshop($request->validated());
+              $workshop->organizer()->associate($request->user());
+              $workshop->save();
+
+              return (new WorkshopResource($workshop->loadCount('bookings')))
+                  ->response()
+                  ->setStatusCode(201);
+          }
+      }
+      ```
+
+      ```php title="app/Http/Resources/WorkshopResource.php (toArray)"
+      return [
+          'id' => $this->id,
+          'title' => $this->title,
+          'description' => $this->description,
+          'location' => $this->location,
+          'starts_at' => $this->starts_at->toIso8601String(),
+          'capacity' => $this->capacity,
+          'seats_left' => $this->seatsLeft(),
+      ];
+      ```
+    solve: |
+      cd api
+      mkdir -p app/Http/Requests app/Http/Resources
+      cat > app/Http/Requests/StoreWorkshopRequest.php <<'EOF'
+      <?php
+
+      namespace App\Http\Requests;
+
+      use Illuminate\Foundation\Http\FormRequest;
+
+      class StoreWorkshopRequest extends FormRequest
+      {
+          public function authorize(): bool
+          {
+              return true;
+          }
+
+          /** @return array<string, mixed> */
+          public function rules(): array
+          {
+              return [
+                  'title' => ['required', 'string', 'max:120'],
+                  'description' => ['nullable', 'string', 'max:2000'],
+                  'location' => ['required', 'string', 'max:120'],
+                  'starts_at' => ['required', 'date', 'after:now'],
+                  'capacity' => ['required', 'integer', 'min:1', 'max:500'],
+              ];
+          }
+      }
+      EOF
+      cat > app/Http/Resources/WorkshopResource.php <<'EOF'
+      <?php
+
+      namespace App\Http\Resources;
+
+      use App\Models\Workshop;
+      use Illuminate\Http\Request;
+      use Illuminate\Http\Resources\Json\JsonResource;
+
+      /** @mixin Workshop */
+      class WorkshopResource extends JsonResource
+      {
+          /** @return array<string, mixed> */
+          public function toArray(Request $request): array
+          {
+              return [
+                  'id' => $this->id,
+                  'title' => $this->title,
+                  'description' => $this->description,
+                  'location' => $this->location,
+                  'starts_at' => $this->starts_at->toIso8601String(),
+                  'capacity' => $this->capacity,
+                  'seats_left' => $this->seatsLeft(),
+              ];
+          }
+      }
+      EOF
+      cat > app/Http/Controllers/WorkshopController.php <<'EOF'
+      <?php
+
+      namespace App\Http\Controllers;
+
+      use App\Http\Requests\StoreWorkshopRequest;
+      use App\Http\Resources\WorkshopResource;
+      use App\Models\Workshop;
+      use Illuminate\Http\JsonResponse;
+      use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+
+      class WorkshopController extends Controller
+      {
+          public function index(): AnonymousResourceCollection
+          {
+              $workshops = Workshop::query()
+                  ->withCount('bookings')
+                  ->where('starts_at', '>=', now())
+                  ->orderBy('starts_at')
+                  ->paginate(20);
+
+              return WorkshopResource::collection($workshops);
+          }
+
+          public function show(Workshop $workshop): WorkshopResource
+          {
+              return new WorkshopResource($workshop->loadCount('bookings'));
+          }
+
+          public function store(StoreWorkshopRequest $request): JsonResponse
+          {
+              $workshop = new Workshop($request->validated());
+              $workshop->organizer()->associate($request->user());
+              $workshop->save();
+
+              return (new WorkshopResource($workshop->loadCount('bookings')))
+                  ->response()
+                  ->setStatusCode(201);
+          }
+      }
+      EOF
+      cat > routes/api.php <<'EOF'
+      <?php
+
+      use App\Http\Controllers\AuthController;
+      use App\Http\Controllers\WorkshopController;
+      use Illuminate\Support\Facades\Route;
+
+      Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+      Route::get('/workshops', [WorkshopController::class, 'index']);
+      Route::get('/workshops/{workshop}', [WorkshopController::class, 'show']);
+
+      Route::middleware('auth:sanctum')->group(function () {
+          Route::get('/me', [AuthController::class, 'me']);
+          Route::post('/logout', [AuthController::class, 'logout']);
+          Route::post('/workshops', [WorkshopController::class, 'store']);
+      });
+      EOF
+
+  - id: buchungen
+    title: Buchungen mit Geschäftsregeln
+    description: |
+      Das Herzstück der Fachlogik: Ein Workshop darf **nie** mehr Buchungen haben als Plätze, und niemand bucht
+      doppelt. Arbeite in `api`:
+
+      1. Lege einen `BookingController` mit zwei Methoden an:
+         - `store(Request $request, Workshop $workshop)`: in einer **Transaktion** den Workshop mit
+           `lockForUpdate()` neu laden. Schon gebucht → `abort(409, …)`. Keine Plätze frei → `abort(409, …)`.
+           Sonst Buchung anlegen und mit Status 201 antworten (z. B. `{"data": {"workshop_id": 1, "seats_left": 4}}`).
+         - `destroy(Request $request, Workshop $workshop)`: löscht nur die **eigene** Buchung, Status 204.
+      2. Routen in der `auth:sanctum`-Gruppe: `POST /workshops/{workshop}/booking` und
+         `DELETE /workshops/{workshop}/booking`.
+      3. Prüfe mit `./vendor/bin/pest tests/Feature/Vereinskurse/BuchungTest.php`.
+    checklist:
+      - Buchen legt eine Buchung an (201)
+      - Doppelte Buchung und ausgebuchter Workshop → 409 mit message
+      - Stornieren löscht nur die eigene Buchung (204)
+      - Prüfung und Anlegen laufen in einer Transaktion mit Sperre
+    hints:
+      - "`return DB::transaction(function () use ($request, $workshop) { … });`"
+      - "`$workshop = Workshop::query()->lockForUpdate()->findOrFail($workshop->id);` – zwei gleichzeitige Anfragen warten so aufeinander."
+      - "Der Unique-Constraint aus Schritt 2 ist dein Sicherheitsnetz, falls die Prüfung im Code doch einmal versagt."
+    checks:
+      - type: command
+        run: cd api && ./vendor/bin/pest tests/Feature/Vereinskurse/BuchungTest.php
+        message: Der Test tests/Feature/Vereinskurse/BuchungTest.php ist noch rot. Führe ihn aus und lies die erste Fehlermeldung.
+      - type: file_contains
+        path: api/app/Http/Controllers/BookingController.php
+        pattern: "lockForUpdate"
+        message: Lade den Workshop im BookingController mit lockForUpdate() innerhalb einer Transaktion, damit zwei gleichzeitige Buchungen nicht beide durchrutschen.
+    solution: |
+      ```php title="app/Http/Controllers/BookingController.php"
+      class BookingController extends Controller
+      {
+          public function store(Request $request, Workshop $workshop): JsonResponse
+          {
+              return DB::transaction(function () use ($request, $workshop) {
+                  $workshop = Workshop::query()->lockForUpdate()->findOrFail($workshop->id);
+                  $userId = $request->user()->id;
+
+                  if ($workshop->bookings()->where('user_id', $userId)->exists()) {
+                      abort(409, 'Du hast diesen Workshop schon gebucht.');
+                  }
+
+                  if ($workshop->seatsLeft() === 0) {
+                      abort(409, 'Der Workshop ist leider ausgebucht.');
+                  }
+
+                  $workshop->bookings()->create(['user_id' => $userId]);
+
+                  return response()->json([
+                      'data' => ['workshop_id' => $workshop->id, 'seats_left' => $workshop->seatsLeft()],
+                  ], 201);
+              });
+          }
+
+          public function destroy(Request $request, Workshop $workshop): Response
+          {
+              $workshop->bookings()->where('user_id', $request->user()->id)->delete();
+
+              return response()->noContent();
+          }
+      }
+      ```
+    solve: |
+      cd api
+      cat > app/Http/Controllers/BookingController.php <<'EOF'
+      <?php
+
+      namespace App\Http\Controllers;
+
+      use App\Models\Workshop;
+      use Illuminate\Http\JsonResponse;
+      use Illuminate\Http\Request;
+      use Illuminate\Http\Response;
+      use Illuminate\Support\Facades\DB;
+
+      class BookingController extends Controller
+      {
+          public function store(Request $request, Workshop $workshop): JsonResponse
+          {
+              return DB::transaction(function () use ($request, $workshop) {
+                  $workshop = Workshop::query()->lockForUpdate()->findOrFail($workshop->id);
+                  $userId = $request->user()->id;
+
+                  if ($workshop->bookings()->where('user_id', $userId)->exists()) {
+                      abort(409, 'Du hast diesen Workshop schon gebucht.');
+                  }
+
+                  if ($workshop->seatsLeft() === 0) {
+                      abort(409, 'Der Workshop ist leider ausgebucht.');
+                  }
+
+                  $workshop->bookings()->create(['user_id' => $userId]);
+
+                  return response()->json([
+                      'data' => ['workshop_id' => $workshop->id, 'seats_left' => $workshop->seatsLeft()],
+                  ], 201);
+              });
+          }
+
+          public function destroy(Request $request, Workshop $workshop): Response
+          {
+              $workshop->bookings()->where('user_id', $request->user()->id)->delete();
+
+              return response()->noContent();
+          }
+      }
+      EOF
+      cat > routes/api.php <<'EOF'
+      <?php
+
+      use App\Http\Controllers\AuthController;
+      use App\Http\Controllers\BookingController;
+      use App\Http\Controllers\WorkshopController;
+      use Illuminate\Support\Facades\Route;
+
+      Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+      Route::get('/workshops', [WorkshopController::class, 'index']);
+      Route::get('/workshops/{workshop}', [WorkshopController::class, 'show']);
+
+      Route::middleware('auth:sanctum')->group(function () {
+          Route::get('/me', [AuthController::class, 'me']);
+          Route::post('/logout', [AuthController::class, 'logout']);
+          Route::post('/workshops', [WorkshopController::class, 'store']);
+          Route::post('/workshops/{workshop}/booking', [BookingController::class, 'store']);
+          Route::delete('/workshops/{workshop}/booking', [BookingController::class, 'destroy']);
+      });
+      EOF
+
+  - id: qualitaet
+    title: Eigene Tests und ein Qualitäts-Gate
+    description: |
+      Die vorbereiteten Tests decken das Wichtigste ab. Jetzt ergänzt du **eigene** Tests für Randfälle und
+      richtest ein Qualitäts-Gate ein, das du lokal und später in der CI mit einem Befehl startest. Arbeite in `api`:
+
+      1. Lege `tests/Feature/Vereinskurse/RandfaelleTest.php` mit mindestens **zwei** eigenen Pest-Tests an.
+         Ideen: Stornieren macht einen Platz wieder frei; ein Workshop mit 500 Plätzen ist gültig, mit 501 nicht;
+         Logout ohne Token ergibt 401.
+      2. Formatiere den Code mit `./vendor/bin/pint`, bis `./vendor/bin/pint --test` sauber durchläuft.
+      3. Ergänze in `composer.json` unter `scripts` einen Eintrag `check`, der nacheinander
+         `@php vendor/bin/pint --test` und `@php artisan test` ausführt.
+      4. `composer check` muss grün sein – also auch alle Tests aus den Schritten 2 bis 5.
+    checklist:
+      - Mindestens zwei eigene Tests in RandfaelleTest.php
+      - Pint meldet keine Stilfehler
+      - "`composer check` führt Pint und alle Tests aus"
+    hints:
+      - "Ein Test-Grundgerüst: `test('…', function () { … });` plus `uses(RefreshDatabase::class);` oben in der Datei."
+      - "Bearbeite `composer.json` mit `nano` oder per `jq '.scripts.check = [\"@php vendor/bin/pint --test\", \"@php artisan test\"]' composer.json > c.json && mv c.json composer.json`."
+      - "Schlägt `pint --test` fehl, führe einfach `./vendor/bin/pint` ohne Option aus – es korrigiert den Stil selbst."
+    checks:
+      - type: file_exists
+        path: api/tests/Feature/Vereinskurse/RandfaelleTest.php
+        message: Die Datei tests/Feature/Vereinskurse/RandfaelleTest.php fehlt noch.
+      - type: command
+        run: grep -cE '^\s*(test|it)\(' api/tests/Feature/Vereinskurse/RandfaelleTest.php
+        stdout_matches: "^([2-9]|[1-9][0-9]+)\\s*$"
+        message: Schreibe mindestens zwei eigene Tests (test(…) oder it(…)) in RandfaelleTest.php.
+      - type: command
+        run: cd api && ./vendor/bin/pint --test >/dev/null
+        message: Pint findet noch Stilfehler. Führe ./vendor/bin/pint aus und prüfe danach mit ./vendor/bin/pint --test.
+      - type: command
+        run: cd api && jq -r '.scripts.check | if type == "array" then join(" | ") else . end' composer.json
+        stdout_matches: "pint --test.*artisan test"
+        message: In composer.json fehlt das Skript check mit „@php vendor/bin/pint --test“ und danach „@php artisan test“.
+      - type: command
+        run: cd api && php artisan test >/dev/null 2>&1
+        message: Die komplette Testsuite ist noch nicht grün. Führe php artisan test aus und behebe die roten Tests.
+    solution: |
+      ```php title="tests/Feature/Vereinskurse/RandfaelleTest.php"
+      <?php
+
+      use App\Models\User;
+      use App\Models\Workshop;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+      use Laravel\Sanctum\Sanctum;
+
+      uses(RefreshDatabase::class);
+
+      test('Stornieren macht den Platz wieder frei', function () {
+          $workshop = Workshop::factory()->create(['capacity' => 1]);
+          Sanctum::actingAs(User::factory()->create());
+
+          $this->postJson("/api/workshops/{$workshop->id}/booking")->assertCreated();
+          $this->deleteJson("/api/workshops/{$workshop->id}/booking")->assertNoContent();
+
+          $this->getJson("/api/workshops/{$workshop->id}")->assertJsonPath('data.seats_left', 1);
+      });
+
+      test('500 Plätze sind erlaubt', function () {
+          Sanctum::actingAs(User::factory()->create());
+
+          $this->postJson('/api/workshops', [
+              'title' => 'Vereinsfest',
+              'location' => 'Sportplatz',
+              'starts_at' => now()->addMonth()->toIso8601String(),
+              'capacity' => 500,
+          ])->assertCreated();
+      });
+      ```
+
+      ```json title="composer.json (Ausschnitt)"
+      "scripts": {
+          "check": [
+              "@php vendor/bin/pint --test",
+              "@php artisan test"
+          ]
+      }
+      ```
+    solve: |
+      cd api
+      cat > tests/Feature/Vereinskurse/RandfaelleTest.php <<'EOF'
+      <?php
+
+      use App\Models\User;
+      use App\Models\Workshop;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+      use Laravel\Sanctum\Sanctum;
+
+      uses(RefreshDatabase::class);
+
+      test('Stornieren macht den Platz wieder frei', function () {
+          $workshop = Workshop::factory()->create(['capacity' => 1]);
+          Sanctum::actingAs(User::factory()->create());
+
+          $this->postJson("/api/workshops/{$workshop->id}/booking")->assertCreated();
+          $this->deleteJson("/api/workshops/{$workshop->id}/booking")->assertNoContent();
+
+          $this->getJson("/api/workshops/{$workshop->id}")->assertJsonPath('data.seats_left', 1);
+      });
+
+      test('500 Plätze sind erlaubt', function () {
+          Sanctum::actingAs(User::factory()->create());
+
+          $this->postJson('/api/workshops', [
+              'title' => 'Vereinsfest',
+              'location' => 'Sportplatz',
+              'starts_at' => now()->addMonth()->toIso8601String(),
+              'capacity' => 500,
+          ])->assertCreated();
+      });
+
+      test('Logout ohne Token antwortet mit 401', function () {
+          $this->postJson('/api/logout')->assertUnauthorized();
+      });
+      EOF
+      ./vendor/bin/pint -q
+      jq '.scripts.check = ["@php vendor/bin/pint --test", "@php artisan test"]' composer.json > composer.json.neu
+      mv composer.json.neu composer.json
+
+  - id: frontend-datenschicht
+    title: "Frontend, Teil 1: Vertrag und Datenschicht"
+    description: |
+      Das Frontend redet nur über eine kleine Datenschicht mit der API. Zod prüft dabei zur Laufzeit, ob die
+      Antworten wirklich dem vereinbarten Format entsprechen. Arbeite in `web`. Importe eigener Dateien schreibst
+      du **mit** Endung (`./schema.ts`), damit die Prüfungen sie direkt mit Node.js ausführen können.
+
+      1. `src/schema.ts`:
+         - `workshopSchema` mit `id` (ganze Zahl), `title`, `description` (String oder `null`), `location`,
+           `starts_at` (`z.iso.datetime({ offset: true })`), `capacity` und `seats_left` (ganze Zahlen ≥ 0).
+         - `workshopListSchema` (`{ data: Workshop[] }`), `workshopResponseSchema` (`{ data: Workshop }`),
+           `tokenSchema` (`{ token: string }`).
+         - `newWorkshopSchema` für das Formular (title min. 3, location min. 2, starts_at nicht leer,
+           capacity per `z.coerce.number()` als ganze Zahl von 1 bis 500) und `loginSchema` (E-Mail, Passwort).
+         - Typen per `z.infer`: `Workshop`, `NewWorkshop`.
+      2. `src/api.ts`: Basis-URL aus `import.meta.env?.VITE_API_URL ?? 'http://localhost:8000'`, ein Token im
+         Speicher (`setToken`, `hasToken`), eine Klasse `ApiError` (mit `status` und `errors`) und die Funktionen
+         `fetchWorkshops`, `fetchWorkshop(id)`, `createWorkshop(input)`, `bookWorkshop(id)` und
+         `login(email, password)`. Jede Antwort wird mit dem passenden Schema geprüft.
+      3. `src/queryClient.ts` exportiert `queryClient` (Standard-`staleTime` 30 Sekunden).
+      4. `src/queries.ts` exportiert `workshopKeys` (`all: ['workshops']`, `detail(id)`) und die Fabriken
+         `workshopsQuery()` und `workshopQuery(id)` mit `queryOptions`.
+    checklist:
+      - Zod-Schemas spiegeln das Format der WorkshopResource
+      - API-Client prüft jede Antwort und wirft bei Fehlern ApiError
+      - Query-Key-Fabrik und queryOptions
+      - "`npm run build` läuft durch"
+    hints:
+      - "Ungültige Daten: `workshopListSchema.parse(json)` wirft einen `ZodError` – genau das willst du, statt kaputte Daten anzuzeigen."
+      - "Für die Header: `const headers = new Headers(init.headers); headers.set('Accept', 'application/json');` – und bei Token `Authorization: Bearer …`."
+      - "Typen importierst du mit `import type { … }` oder `import { type … }` (Option `verbatimModuleSyntax`)."
+    checks:
+      - type: command
+        run: |
+          cd web && node -e "
+          const w = { id: 1, title: 'Yoga', description: null, location: 'Turnhalle', starts_at: '2026-11-03T18:00:00+00:00', capacity: 10, seats_left: 3 };
+          (async () => {
+            const s = await import('./src/schema.ts');
+            const ok = s.workshopSchema.safeParse(w).success;
+            const falsch = s.workshopSchema.safeParse({ ...w, starts_at: 'morgen' }).success;
+            const neu = s.newWorkshopSchema.safeParse({ title: 'Kochabend', location: 'Heim', starts_at: '2026-12-01T18:00', capacity: '12' });
+            const zuViel = s.newWorkshopSchema.safeParse({ title: 'Kochabend', location: 'Heim', starts_at: '2026-12-01T18:00', capacity: '501' }).success;
+            console.log(ok && !falsch && neu.success && neu.data.capacity === 12 && !zuViel ? 'ok' : 'falsch');
+          })().catch(() => console.log('fehler'));
+          "
+        stdout_equals: ok
+        message: "src/schema.ts erfüllt den Vertrag noch nicht: workshopSchema muss gültige Workshops akzeptieren und ein ungültiges starts_at ablehnen; newWorkshopSchema wandelt capacity per z.coerce in eine Zahl und lehnt 501 ab."
+      - type: command
+        run: |
+          cd web && node -e "
+          const w = { id: 1, title: 'Yoga', description: null, location: 'Turnhalle', starts_at: '2026-11-03T18:00:00+00:00', capacity: 10, seats_left: 3 };
+          let antwort = { data: [w] }; let gesehen = null;
+          globalThis.fetch = async (url, init) => { gesehen = { url: String(url), init }; return new Response(JSON.stringify(antwort), { status: 200, headers: { 'Content-Type': 'application/json' } }); };
+          (async () => {
+            const api = await import('./src/api.ts');
+            const liste = await api.fetchWorkshops();
+            const urlOk = gesehen.url.endsWith('/api/workshops');
+            antwort = { data: [{ ...w, seats_left: 'viele' }] };
+            let abgelehnt = false;
+            try { await api.fetchWorkshops(); } catch { abgelehnt = true; }
+            console.log(liste.length === 1 && liste[0].title === 'Yoga' && urlOk && abgelehnt ? 'ok' : 'falsch');
+          })().catch(() => console.log('fehler'));
+          "
+        stdout_equals: ok
+        message: fetchWorkshops() in src/api.ts muss GET …/api/workshops aufrufen, die Liste aus data zurückgeben und Antworten im falschen Format mit einem Fehler ablehnen.
+      - type: command
+        run: |
+          cd web && node -e "
+          globalThis.fetch = async () => new Response(JSON.stringify({ message: 'Die Zugangsdaten sind ungültig.', errors: { email: ['Die Zugangsdaten sind ungültig.'] } }), { status: 422, headers: { 'Content-Type': 'application/json' } });
+          (async () => {
+            const api = await import('./src/api.ts');
+            try { await api.login('ada@example.com', 'falsch'); console.log('kein Fehler'); }
+            catch (e) { console.log(e instanceof api.ApiError && e.status === 422 && e.errors.email.length === 1 && !api.hasToken() ? 'ok' : 'falsch'); }
+          })().catch(() => console.log('fehler'));
+          "
+        stdout_equals: ok
+        message: Bei einer Fehlerantwort (z. B. 422) muss api.ts eine ApiError mit status und errors werfen – und login() darf dann kein Token speichern.
+      - type: command
+        run: |
+          cd web && node -e "
+          (async () => {
+            const q = await import('./src/queries.ts');
+            const c = await import('./src/queryClient.ts');
+            const ok = JSON.stringify(q.workshopsQuery().queryKey) === JSON.stringify(['workshops'])
+              && JSON.stringify(q.workshopQuery(5).queryKey) === JSON.stringify(['workshops', 5])
+              && typeof q.workshopQuery(5).queryFn === 'function'
+              && c.queryClient.getDefaultOptions().queries.staleTime === 30000;
+            console.log(ok ? 'ok' : 'falsch');
+          })().catch(() => console.log('fehler'));
+          "
+        stdout_equals: ok
+        message: "src/queries.ts braucht workshopsQuery() mit Key ['workshops'] und workshopQuery(id) mit Key ['workshops', id]; src/queryClient.ts setzt staleTime auf 30000."
+      - type: command
+        run: cd web && npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Führe den Befehl aus und lies die erste TypeScript-Meldung (oft ein ungenutzter Import).
+    solution: |
+      ```ts title="src/schema.ts"
+      import { z } from 'zod'
+
+      export const workshopSchema = z.object({
+        id: z.number().int().positive(),
+        title: z.string(),
+        description: z.string().nullable(),
+        location: z.string(),
+        starts_at: z.iso.datetime({ offset: true }),
+        capacity: z.number().int().min(0),
+        seats_left: z.number().int().min(0),
+      })
+
+      export const workshopListSchema = z.object({ data: z.array(workshopSchema) })
+      export const workshopResponseSchema = z.object({ data: workshopSchema })
+      export const tokenSchema = z.object({ token: z.string().min(1) })
+
+      export const newWorkshopSchema = z.object({
+        title: z.string().trim().min(3, 'Der Titel braucht mindestens 3 Zeichen.').max(120),
+        description: z.string().trim().max(2000).optional(),
+        location: z.string().trim().min(2, 'Bitte gib einen Ort an.').max(120),
+        starts_at: z.string().min(1, 'Bitte wähle Datum und Uhrzeit.'),
+        capacity: z.coerce.number().int().min(1, 'Mindestens 1 Platz.').max(500, 'Höchstens 500 Plätze.'),
+      })
+
+      export const loginSchema = z.object({
+        email: z.email('Bitte gib eine gültige E-Mail-Adresse ein.'),
+        password: z.string().min(1, 'Bitte gib dein Passwort ein.'),
+      })
+
+      export type Workshop = z.infer<typeof workshopSchema>
+      export type NewWorkshop = z.infer<typeof newWorkshopSchema>
+      ```
+
+      Die Dateien `api.ts`, `queryClient.ts` und `queries.ts` findest du vollständig, wenn du **Für mich
+      erledigen** nutzt.
+    solve: |
+      cd web
+      cat > src/schema.ts <<'EOF'
+      import { z } from 'zod'
+
+      export const workshopSchema = z.object({
+        id: z.number().int().positive(),
+        title: z.string(),
+        description: z.string().nullable(),
+        location: z.string(),
+        starts_at: z.iso.datetime({ offset: true }),
+        capacity: z.number().int().min(0),
+        seats_left: z.number().int().min(0),
+      })
+
+      export const workshopListSchema = z.object({ data: z.array(workshopSchema) })
+      export const workshopResponseSchema = z.object({ data: workshopSchema })
+      export const tokenSchema = z.object({ token: z.string().min(1) })
+
+      export const newWorkshopSchema = z.object({
+        title: z.string().trim().min(3, 'Der Titel braucht mindestens 3 Zeichen.').max(120),
+        description: z.string().trim().max(2000).optional(),
+        location: z.string().trim().min(2, 'Bitte gib einen Ort an.').max(120),
+        starts_at: z.string().min(1, 'Bitte wähle Datum und Uhrzeit.'),
+        capacity: z.coerce.number().int().min(1, 'Mindestens 1 Platz.').max(500, 'Höchstens 500 Plätze.'),
+      })
+
+      export const loginSchema = z.object({
+        email: z.email('Bitte gib eine gültige E-Mail-Adresse ein.'),
+        password: z.string().min(1, 'Bitte gib dein Passwort ein.'),
+      })
+
+      export type Workshop = z.infer<typeof workshopSchema>
+      export type NewWorkshop = z.infer<typeof newWorkshopSchema>
+      EOF
+      cat > src/api.ts <<'EOF'
+      import { tokenSchema, workshopListSchema, workshopResponseSchema } from './schema.ts'
+      import type { NewWorkshop, Workshop } from './schema.ts'
+
+      const baseUrl: string = import.meta.env?.VITE_API_URL ?? 'http://localhost:8000'
+      let token: string | null = null
+
+      export function setToken(value: string | null): void {
+        token = value
+      }
+
+      export function hasToken(): boolean {
+        return token !== null
+      }
+
+      export class ApiError extends Error {
+        status: number
+        errors: Record<string, string[]>
+
+        constructor(status: number, message: string, errors: Record<string, string[]> = {}) {
+          super(message)
+          this.status = status
+          this.errors = errors
+        }
+      }
+
+      async function request(path: string, init: RequestInit = {}): Promise<unknown> {
+        const headers = new Headers(init.headers)
+        headers.set('Accept', 'application/json')
+        if (init.body) headers.set('Content-Type', 'application/json')
+        if (token) headers.set('Authorization', `Bearer ${token}`)
+
+        const response = await fetch(`${baseUrl}/api${path}`, { ...init, headers })
+        if (response.status === 204) return null
+
+        const body = await response.json().catch(() => ({}))
+        if (!response.ok) {
+          throw new ApiError(response.status, body.message ?? 'Unbekannter Fehler', body.errors ?? {})
+        }
+        return body
+      }
+
+      export async function fetchWorkshops(): Promise<Workshop[]> {
+        return workshopListSchema.parse(await request('/workshops')).data
+      }
+
+      export async function fetchWorkshop(id: number): Promise<Workshop> {
+        return workshopResponseSchema.parse(await request(`/workshops/${id}`)).data
+      }
+
+      export async function createWorkshop(input: NewWorkshop): Promise<Workshop> {
+        const body = await request('/workshops', { method: 'POST', body: JSON.stringify(input) })
+        return workshopResponseSchema.parse(body).data
+      }
+
+      export async function bookWorkshop(id: number): Promise<void> {
+        await request(`/workshops/${id}/booking`, { method: 'POST' })
+      }
+
+      export async function login(email: string, password: string): Promise<void> {
+        const body = await request('/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password, device_name: 'web' }),
+        })
+        setToken(tokenSchema.parse(body).token)
+      }
+      EOF
+      cat > src/queryClient.ts <<'EOF'
+      import { QueryClient } from '@tanstack/react-query'
+
+      export const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 30_000 },
+        },
+      })
+      EOF
+      cat > src/queries.ts <<'EOF'
+      import { queryOptions } from '@tanstack/react-query'
+      import { fetchWorkshop, fetchWorkshops } from './api.ts'
+
+      export const workshopKeys = {
+        all: ['workshops'] as const,
+        detail: (id: number) => ['workshops', id] as const,
+      }
+
+      export function workshopsQuery() {
+        return queryOptions({ queryKey: workshopKeys.all, queryFn: fetchWorkshops })
+      }
+
+      export function workshopQuery(id: number) {
+        return queryOptions({ queryKey: workshopKeys.detail(id), queryFn: () => fetchWorkshop(id) })
+      }
+      EOF
+
+  - id: frontend-routen
+    title: "Frontend, Teil 2: Routen, Loader und Actions"
+    description: |
+      Jetzt verbindest du Datenschicht und Oberfläche mit React Router im **Data Mode**: Loader füllen den
+      TanStack-Query-Cache, bevor eine Seite erscheint; Actions verarbeiten Formulare. Arbeite in `web`:
+
+      1. `src/actions.ts` mit drei Actions:
+         - `createWorkshopAction`: `formData` lesen, mit `newWorkshopSchema.safeParse` prüfen. Ungültig →
+           `{ errors }` zurückgeben (Feldfehler per `z.flattenError`). Gültig → `createWorkshop`, danach
+           `queryClient.invalidateQueries({ queryKey: workshopKeys.all })` und `redirect` auf die Detailseite.
+           Eine `ApiError` mit Status 422 wird ebenfalls zu `{ errors }`.
+         - `loginAction`: analog mit `loginSchema` und `login`, danach `redirect('/')`.
+         - `bookAction`: `bookWorkshop(Number(params.id))`, Workshops invalidieren, `{ ok: true }`; bei 409
+           `{ error: message }`, bei 401 `redirect('/login')`.
+      2. `src/pages.tsx` mit den Komponenten `Layout` (Navigation + `<Outlet />`), `WorkshopList`, `WorkshopDetail`,
+         `NewWorkshop`, `Login` und `ErrorPage`. Daten liest du mit `useSuspenseQuery(...)`.
+      3. `src/router.tsx` mit `createBrowserRouter`: `/` (Liste), `/workshops/new` (Formular), `/workshops/:id`
+         (Detail + Buchen), `/login`. Listen- und Detailroute bekommen einen `loader` mit
+         `queryClient.ensureQueryData(...)`.
+      4. `src/main.tsx` rendert `QueryClientProvider` und `RouterProvider` aus `react-router/dom`. Lösche
+         `src/App.tsx` und `src/App.css`.
+      5. `npm run lint` und `npm run build` müssen fehlerfrei laufen.
+    checklist:
+      - Actions validieren mit Zod und invalidieren den Query-Cache
+      - Loader nutzen ensureQueryData
+      - RouterProvider aus react-router/dom in main.tsx
+      - Lint und Build sind grün
+    hints:
+      - "`const parsed = newWorkshopSchema.safeParse(Object.fromEntries(await request.formData()))`"
+      - "In der Komponente: `const actionData = useActionData<typeof createWorkshopAction>()` und `actionData?.errors?.title?.[0]`."
+      - "Für das Buchen ohne Seitenwechsel eignet sich `useFetcher()` mit `<fetcher.Form method=\"post\">`."
+    checks:
+      - type: command
+        run: |
+          cd web && node -e "
+          const w = { id: 7, title: 'Kochabend', description: null, location: 'Vereinsheim', starts_at: '2026-12-01T18:00:00+00:00', capacity: 12, seats_left: 12 };
+          globalThis.fetch = async () => new Response(JSON.stringify({ data: w }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+          (async () => {
+            const a = await import('./src/actions.ts');
+            const { queryClient } = await import('./src/queryClient.ts');
+            const anfrage = (felder) => { const fd = new FormData(); for (const [k, v] of Object.entries(felder)) fd.set(k, v); return new Request('http://localhost/workshops/new', { method: 'POST', body: fd }); };
+            const schlecht = await a.createWorkshopAction({ request: anfrage({ title: 'x', location: '', starts_at: '', capacity: '0' }), params: {} });
+            const fehlerOk = schlecht && schlecht.errors && schlecht.errors.title && schlecht.errors.capacity;
+            queryClient.setQueryData(['workshops'], []);
+            const gut = await a.createWorkshopAction({ request: anfrage({ title: 'Kochabend', location: 'Vereinsheim', starts_at: '2026-12-01T18:00', capacity: '12' }), params: {} });
+            const umleitung = gut instanceof Response && gut.status >= 300 && gut.status < 400 && (gut.headers.get('Location') || '').endsWith('/workshops/7');
+            const invalidiert = queryClient.getQueryState(['workshops']).isInvalidated;
+            console.log(fehlerOk && umleitung && invalidiert ? 'ok' : 'falsch');
+          })().catch((e) => console.log('fehler'));
+          "
+        stdout_equals: ok
+        message: "createWorkshopAction in src/actions.ts: ungültige Formulardaten sollen { errors } mit Feldfehlern liefern; gültige Daten sollen den Workshop anlegen, ['workshops'] invalidieren und auf /workshops/<id> umleiten."
+      - type: command
+        run: |
+          cd web && node -e "
+          globalThis.fetch = async () => new Response(JSON.stringify({ message: 'Der Workshop ist leider ausgebucht.' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+          (async () => {
+            const a = await import('./src/actions.ts');
+            const r = await a.bookAction({ request: new Request('http://localhost/workshops/3', { method: 'POST' }), params: { id: '3' } });
+            console.log(r && r.error === 'Der Workshop ist leider ausgebucht.' ? 'ok' : 'falsch');
+          })().catch(() => console.log('fehler'));
+          "
+        stdout_equals: ok
+        message: "bookAction soll bei einer 409-Antwort der API { error: <message> } zurückgeben, statt abzustürzen."
+      - type: command
+        run: cd web && grep -q 'createBrowserRouter' src/router.tsx && grep -q 'ensureQueryData' src/router.tsx && grep -qE "from ['\"]react-router/dom['\"]" src/main.tsx && grep -q 'QueryClientProvider' src/main.tsx && echo ok
+        stdout_equals: ok
+        message: "src/router.tsx braucht createBrowserRouter und Loader mit ensureQueryData; src/main.tsx rendert QueryClientProvider und RouterProvider aus react-router/dom."
+      - type: file_absent
+        path: web/src/App.tsx
+        message: Lösche src/App.tsx – die Startseite kommt jetzt aus dem Router.
+      - type: command
+        run: cd web && npm run lint >/dev/null 2>&1 && npm run build >/dev/null 2>&1
+        message: npm run lint oder npm run build schlägt fehl. Führe beide Befehle aus und behebe die erste Meldung.
+    solution: |
+      ```ts title="src/actions.ts (Ausschnitt)"
+      export async function createWorkshopAction({ request }: ActionFunctionArgs) {
+        const parsed = newWorkshopSchema.safeParse(Object.fromEntries(await request.formData()))
+        if (!parsed.success) {
+          return { errors: z.flattenError(parsed.error).fieldErrors as FieldErrors }
+        }
+        try {
+          const workshop = await createWorkshop(parsed.data)
+          await queryClient.invalidateQueries({ queryKey: workshopKeys.all })
+          return redirect(`/workshops/${workshop.id}`)
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 422) return { errors: error.errors as FieldErrors }
+          throw error
+        }
+      }
+      ```
+
+      ```tsx title="src/router.tsx"
+      export const router = createBrowserRouter([
+        {
+          path: '/',
+          Component: Layout,
+          ErrorBoundary: ErrorPage,
+          children: [
+            { index: true, Component: WorkshopList, loader: () => queryClient.ensureQueryData(workshopsQuery()) },
+            { path: 'workshops/new', Component: NewWorkshop, action: createWorkshopAction },
+            {
+              path: 'workshops/:id',
+              Component: WorkshopDetail,
+              loader: ({ params }) => queryClient.ensureQueryData(workshopQuery(Number(params.id))),
+              action: bookAction,
+            },
+            { path: 'login', Component: Login, action: loginAction },
+          ],
+        },
+      ])
+      ```
+
+      Alle Komponenten in `src/pages.tsx` siehst du vollständig, wenn du **Für mich erledigen** nutzt.
+    solve: |
+      cd web
+      cat > src/actions.ts <<'EOF'
+      import { redirect } from 'react-router'
+      import type { ActionFunctionArgs } from 'react-router'
+      import { z } from 'zod'
+      import { ApiError, bookWorkshop, createWorkshop, login } from './api.ts'
+      import { workshopKeys } from './queries.ts'
+      import { queryClient } from './queryClient.ts'
+      import { loginSchema, newWorkshopSchema } from './schema.ts'
+
+      export type FieldErrors = Record<string, string[] | undefined>
+
+      export async function createWorkshopAction({ request }: ActionFunctionArgs) {
+        const parsed = newWorkshopSchema.safeParse(Object.fromEntries(await request.formData()))
+        if (!parsed.success) {
+          return { errors: z.flattenError(parsed.error).fieldErrors as FieldErrors }
+        }
+        try {
+          const workshop = await createWorkshop(parsed.data)
+          await queryClient.invalidateQueries({ queryKey: workshopKeys.all })
+          return redirect(`/workshops/${workshop.id}`)
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 422) return { errors: error.errors as FieldErrors }
+          if (error instanceof ApiError && error.status === 401) return redirect('/login')
+          throw error
+        }
+      }
+
+      export async function loginAction({ request }: ActionFunctionArgs) {
+        const parsed = loginSchema.safeParse(Object.fromEntries(await request.formData()))
+        if (!parsed.success) {
+          return { errors: z.flattenError(parsed.error).fieldErrors as FieldErrors }
+        }
+        try {
+          await login(parsed.data.email, parsed.data.password)
+          return redirect('/')
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 422) return { errors: error.errors as FieldErrors }
+          throw error
+        }
+      }
+
+      export async function bookAction({ params }: ActionFunctionArgs) {
+        try {
+          await bookWorkshop(Number(params.id))
+          await queryClient.invalidateQueries({ queryKey: workshopKeys.all })
+          return { ok: true, error: null }
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 401) return redirect('/login')
+          if (error instanceof ApiError && error.status === 409) return { ok: false, error: error.message }
+          throw error
+        }
+      }
+      EOF
+      cat > src/pages.tsx <<'EOF'
+      import { useSuspenseQuery } from '@tanstack/react-query'
+      import {
+        Form,
+        Link,
+        Outlet,
+        isRouteErrorResponse,
+        useActionData,
+        useFetcher,
+        useNavigation,
+        useParams,
+        useRouteError,
+      } from 'react-router'
+      import type { bookAction, createWorkshopAction, loginAction } from './actions.ts'
+      import { hasToken } from './api.ts'
+      import { workshopQuery, workshopsQuery } from './queries.ts'
+
+      const datum = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' })
+
+      export function Layout() {
+        const navigation = useNavigation()
+        return (
+          <div className="app">
+            <header>
+              <Link to="/">Vereinskurse</Link>
+              <nav>
+                <Link to="/workshops/new">Workshop anlegen</Link>
+                {!hasToken() && <Link to="/login">Anmelden</Link>}
+              </nav>
+            </header>
+            <main aria-busy={navigation.state !== 'idle'}>
+              <Outlet />
+            </main>
+          </div>
+        )
+      }
+
+      export function WorkshopList() {
+        const { data: workshops } = useSuspenseQuery(workshopsQuery())
+        if (workshops.length === 0) {
+          return <p>Gerade sind keine Workshops geplant.</p>
+        }
+        return (
+          <ul className="workshops">
+            {workshops.map((workshop) => (
+              <li key={workshop.id}>
+                <Link to={`/workshops/${workshop.id}`}>{workshop.title}</Link>
+                <span>
+                  {datum.format(new Date(workshop.starts_at))} · {workshop.location} · noch {workshop.seats_left} Plätze
+                </span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+
+      export function WorkshopDetail() {
+        const { id } = useParams()
+        const { data: workshop } = useSuspenseQuery(workshopQuery(Number(id)))
+        const fetcher = useFetcher<typeof bookAction>()
+        const ausgebucht = workshop.seats_left === 0
+        return (
+          <article>
+            <h1>{workshop.title}</h1>
+            <p>
+              {datum.format(new Date(workshop.starts_at))} · {workshop.location}
+            </p>
+            {workshop.description && <p>{workshop.description}</p>}
+            <p>
+              Noch {workshop.seats_left} von {workshop.capacity} Plätzen frei.
+            </p>
+            <fetcher.Form method="post">
+              <button type="submit" disabled={ausgebucht || fetcher.state !== 'idle'}>
+                {ausgebucht ? 'Ausgebucht' : 'Platz buchen'}
+              </button>
+            </fetcher.Form>
+            {fetcher.data?.error && <p role="alert">{fetcher.data.error}</p>}
+            {fetcher.data?.ok && <p role="status">Gebucht – bis bald!</p>}
+          </article>
+        )
+      }
+
+      export function NewWorkshop() {
+        const actionData = useActionData<typeof createWorkshopAction>()
+        const errors = actionData?.errors
+        return (
+          <Form method="post" className="formular">
+            <h1>Workshop anlegen</h1>
+            <label>
+              Titel
+              <input name="title" required minLength={3} />
+            </label>
+            {errors?.title && <p role="alert">{errors.title[0]}</p>}
+            <label>
+              Ort
+              <input name="location" required />
+            </label>
+            {errors?.location && <p role="alert">{errors.location[0]}</p>}
+            <label>
+              Beginn
+              <input name="starts_at" type="datetime-local" required />
+            </label>
+            {errors?.starts_at && <p role="alert">{errors.starts_at[0]}</p>}
+            <label>
+              Plätze
+              <input name="capacity" type="number" min={1} max={500} required />
+            </label>
+            {errors?.capacity && <p role="alert">{errors.capacity[0]}</p>}
+            <label>
+              Beschreibung
+              <textarea name="description" />
+            </label>
+            <button type="submit">Speichern</button>
+          </Form>
+        )
+      }
+
+      export function Login() {
+        const actionData = useActionData<typeof loginAction>()
+        const errors = actionData?.errors
+        return (
+          <Form method="post" className="formular">
+            <h1>Anmelden</h1>
+            <label>
+              E-Mail
+              <input name="email" type="email" autoComplete="username" required />
+            </label>
+            {errors?.email && <p role="alert">{errors.email[0]}</p>}
+            <label>
+              Passwort
+              <input name="password" type="password" autoComplete="current-password" required />
+            </label>
+            {errors?.password && <p role="alert">{errors.password[0]}</p>}
+            <button type="submit">Anmelden</button>
+          </Form>
+        )
+      }
+
+      export function ErrorPage() {
+        const error = useRouteError()
+        const text = isRouteErrorResponse(error) ? `${error.status} ${error.statusText}` : 'Etwas ist schiefgelaufen.'
+        return (
+          <div role="alert">
+            <h1>Fehler</h1>
+            <p>{text}</p>
+            <Link to="/">Zur Startseite</Link>
+          </div>
+        )
+      }
+      EOF
+      cat > src/router.tsx <<'EOF'
+      import { createBrowserRouter } from 'react-router'
+      import { bookAction, createWorkshopAction, loginAction } from './actions.ts'
+      import { ErrorPage, Layout, Login, NewWorkshop, WorkshopDetail, WorkshopList } from './pages.tsx'
+      import { workshopQuery, workshopsQuery } from './queries.ts'
+      import { queryClient } from './queryClient.ts'
+
+      export const router = createBrowserRouter([
+        {
+          path: '/',
+          Component: Layout,
+          ErrorBoundary: ErrorPage,
+          children: [
+            { index: true, Component: WorkshopList, loader: () => queryClient.ensureQueryData(workshopsQuery()) },
+            { path: 'workshops/new', Component: NewWorkshop, action: createWorkshopAction },
+            {
+              path: 'workshops/:id',
+              Component: WorkshopDetail,
+              loader: ({ params }) => queryClient.ensureQueryData(workshopQuery(Number(params.id))),
+              action: bookAction,
+            },
+            { path: 'login', Component: Login, action: loginAction },
+          ],
+        },
+      ])
+      EOF
+      cat > src/main.tsx <<'EOF'
+      import { QueryClientProvider } from '@tanstack/react-query'
+      import { StrictMode } from 'react'
+      import { createRoot } from 'react-dom/client'
+      import { RouterProvider } from 'react-router/dom'
+      import './index.css'
+      import { queryClient } from './queryClient.ts'
+      import { router } from './router.tsx'
+
+      createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        </StrictMode>,
+      )
+      EOF
+      rm -f src/App.tsx src/App.css
+
+  - id: container-und-ci
+    title: Dockerfiles, Compose und CI-Pipeline
+    description: |
+      Damit die App überall gleich läuft, verpackst du sie in Container und lässt jede Änderung automatisch
+      prüfen. Docker und GitHub gibt es im Übungs-Terminal nicht – die Prüfungen lesen deine Dateien deshalb
+      statisch. Arbeite im Projektordner `vereinskurse`:
+
+      1. `api/Dockerfile` mit drei Stages: `FROM php:8.5-fpm-alpine AS base` (mit `pdo_pgsql`),
+         `FROM base AS vendor` (Composer ohne Dev-Pakete) und `FROM base AS final` (kopiert aus `vendor`, läuft
+         als `USER www-data`, `CMD ["php-fpm"]`). Dazu `api/.dockerignore` mit mindestens `vendor` und `.env`.
+      2. `web/Dockerfile` mit zwei Stages: `FROM node:24-alpine AS build` (`npm ci`, `npm run build`) und
+         `FROM nginx:1.30-alpine`, das `dist` und `web/nginx.conf` übernimmt.
+      3. `web/nginx.conf`: SPA-Fallback (`try_files $uri /index.html;`) und `location /api/` per
+         `fastcgi_pass api:9000;` an PHP-FPM – Frontend und API liegen so auf **einem** Origin.
+      4. `compose.yaml` mit den Services `db` (`postgres:18-alpine`, Volume), `api` (baut `./api`, Ziel `final`,
+         wartet per `depends_on` auf `db`) und `web` (baut `./web`, Port `8080:80`).
+      5. `.github/workflows/ci.yml` mit zwei Jobs: `api` (setup-php 8.5, `composer install`, `composer check`) und
+         `web` (setup-node 24, `npm ci`, `npm run lint`, `npm run build`). Auslöser: `pull_request` und
+         `push` auf `main`.
+    checklist:
+      - Multi-Stage-Dockerfiles für API und Web, API läuft nicht als root
+      - Nginx liefert die SPA aus und reicht /api an PHP-FPM weiter
+      - compose.yaml mit db, api und web
+      - CI-Workflow prüft beide Teile bei jedem Pull Request
+    hints:
+      - "Die Stage-Reihenfolge prüfst du mit `grep -n '^FROM' api/Dockerfile`."
+      - "In der nginx.conf für PHP: `fastcgi_param SCRIPT_FILENAME /var/www/html/public/index.php;` und `include fastcgi_params;`."
+      - "Im Workflow setzt `defaults: run: working-directory: api` den Ordner für alle Schritte eines Jobs."
+    checks:
+      - type: command
+        run: grep -E '^FROM\s' api/Dockerfile | tr -s ' ' | paste -sd '|' -
+        stdout_equals: "FROM php:8.5-fpm-alpine AS base|FROM base AS vendor|FROM base AS final"
+        message: "api/Dockerfile braucht genau drei Stages: FROM php:8.5-fpm-alpine AS base, FROM base AS vendor, FROM base AS final."
+      - type: command
+        run: >-
+          awk '/^FROM/{s++} s==3 && /^USER +www-data/{u=NR} s==3 && /^CMD +\[ *"php-fpm" *\]/{c=NR} s==2 && /composer +install/ && /--no-dev/{i=1} END{print (u && c && u<c && i) ? "ok" : "falsch"}' api/Dockerfile
+        stdout_equals: ok
+        message: "In api/Dockerfile fehlt etwas: vendor installiert mit composer install --no-dev, final setzt USER www-data vor CMD [\"php-fpm\"]."
+      - type: command
+        run: grep -qxE 'vendor/?' api/.dockerignore && grep -qxE '\.env' api/.dockerignore && echo ok
+        stdout_equals: ok
+        message: api/.dockerignore soll mindestens die Zeilen vendor und .env enthalten – Geheimnisse und lokale Pakete gehören nicht ins Image.
+      - type: command
+        run: grep -E '^FROM\s' web/Dockerfile | tr -s ' ' | paste -sd '|' - | grep -qE '^FROM node:24-alpine AS build\|FROM nginx:[0-9.]+-alpine( AS [a-z]+)?$' && grep -q 'npm ci' web/Dockerfile && grep -q 'npm run build' web/Dockerfile && grep -qE 'COPY +--from=build +/app/dist' web/Dockerfile && echo ok
+        stdout_equals: ok
+        message: "web/Dockerfile: Stage FROM node:24-alpine AS build mit npm ci und npm run build, danach FROM nginx:1.30-alpine mit COPY --from=build /app/dist …"
+      - type: command
+        run: grep -qE 'try_files +\$uri +(\$uri/ +)?/index\.html' web/nginx.conf && grep -qE 'location +(\^~ +)?/api/' web/nginx.conf && grep -qE 'fastcgi_pass +api:9000' web/nginx.conf && echo ok
+        stdout_equals: ok
+        message: "web/nginx.conf braucht try_files $uri /index.html; für die SPA und location /api/ mit fastcgi_pass api:9000;."
+      - type: command
+        run: >-
+          for s in '^  db:' '^  api:' '^  web:' 'postgres:18' 'target: *final' '8080:80' 'depends_on'; do grep -qE "$s" compose.yaml || echo "$s"; done
+        stdout_equals: ""
+        message: "compose.yaml unvollständig: Es braucht die Services db (postgres:18-alpine), api (target: final, depends_on) und web (Port 8080:80)."
+      - type: command
+        run: f=.github/workflows/ci.yml; grep -q 'pull_request' $f && grep -qE '^  api:' $f && grep -qE '^  web:' $f && grep -q 'composer check' $f && grep -q 'npm ci' $f && grep -q 'npm run lint' $f && grep -q 'npm run build' $f && grep -q 'setup-php' $f && grep -q 'setup-node' $f && echo ok
+        stdout_equals: ok
+        message: ".github/workflows/ci.yml braucht den Auslöser pull_request und die Jobs api (setup-php, composer check) und web (setup-node, npm ci, npm run lint, npm run build)."
+    solution: |
+      ```dockerfile title="api/Dockerfile"
+      FROM php:8.5-fpm-alpine AS base
+      RUN apk add --no-cache libpq-dev \
+       && docker-php-ext-install pdo_pgsql
+      WORKDIR /var/www/html
+
+      FROM base AS vendor
+      RUN apk add --no-cache unzip
+      COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+      COPY composer.json composer.lock ./
+      RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+      COPY . .
+      RUN composer dump-autoload --optimize --no-dev
+
+      FROM base AS final
+      COPY --from=vendor --chown=www-data:www-data /var/www/html ./
+      USER www-data
+      EXPOSE 9000
+      CMD ["php-fpm"]
+      ```
+
+      ```yaml title=".github/workflows/ci.yml"
+      name: CI
+      on:
+        pull_request:
+        push:
+          branches: [main]
+
+      jobs:
+        api:
+          runs-on: ubuntu-latest
+          defaults:
+            run:
+              working-directory: api
+          steps:
+            - uses: actions/checkout@v7
+            - uses: shivammathur/setup-php@v2
+              with:
+                php-version: '8.5'
+                coverage: none
+            - run: composer install --no-interaction --prefer-dist
+            - run: cp .env.example .env && php artisan key:generate
+            - run: composer check
+
+        web:
+          runs-on: ubuntu-latest
+          defaults:
+            run:
+              working-directory: web
+          steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
+              with:
+                node-version: 24
+                cache: npm
+                cache-dependency-path: web/package-lock.json
+            - run: npm ci
+            - run: npm run lint
+            - run: npm run build
+      ```
+
+      `web/Dockerfile`, `web/nginx.conf` und `compose.yaml` siehst du vollständig, wenn du **Für mich
+      erledigen** nutzt.
+    solve: |
+      cat > api/Dockerfile <<'EOF'
+      FROM php:8.5-fpm-alpine AS base
+      RUN apk add --no-cache libpq-dev \
+       && docker-php-ext-install pdo_pgsql
+      WORKDIR /var/www/html
+
+      FROM base AS vendor
+      RUN apk add --no-cache unzip
+      COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+      COPY composer.json composer.lock ./
+      RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+      COPY . .
+      RUN composer dump-autoload --optimize --no-dev
+
+      FROM base AS final
+      COPY --from=vendor --chown=www-data:www-data /var/www/html ./
+      USER www-data
+      EXPOSE 9000
+      CMD ["php-fpm"]
+      EOF
+      printf '%s\n' 'vendor' '.env' 'node_modules' 'storage/logs/*' 'database/*.sqlite' 'tests' > api/.dockerignore
+      cat > web/Dockerfile <<'EOF'
+      FROM node:24-alpine AS build
+      WORKDIR /app
+      COPY package.json package-lock.json ./
+      RUN npm ci
+      COPY . .
+      ENV VITE_API_URL=""
+      RUN npm run build
+
+      FROM nginx:1.30-alpine
+      COPY nginx.conf /etc/nginx/conf.d/default.conf
+      COPY --from=build /app/dist /usr/share/nginx/html
+      EOF
+      printf '%s\n' 'node_modules' 'dist' > web/.dockerignore
+      cat > web/nginx.conf <<'EOF'
+      server {
+          listen 80;
+          root /usr/share/nginx/html;
+          index index.html;
+
+          location / {
+              try_files $uri /index.html;
+          }
+
+          location /api/ {
+              include fastcgi_params;
+              fastcgi_param SCRIPT_FILENAME /var/www/html/public/index.php;
+              fastcgi_pass api:9000;
+          }
+
+          location = /up {
+              include fastcgi_params;
+              fastcgi_param SCRIPT_FILENAME /var/www/html/public/index.php;
+              fastcgi_pass api:9000;
+          }
+      }
+      EOF
+      cat > compose.yaml <<'EOF'
+      services:
+        db:
+          image: postgres:18-alpine
+          environment:
+            POSTGRES_DB: vereinskurse
+            POSTGRES_USER: vereinskurse
+            POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD fehlt}
+          volumes:
+            - db-daten:/var/lib/postgresql
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U vereinskurse"]
+            interval: 5s
+            retries: 10
+
+        api:
+          build:
+            context: ./api
+            target: final
+          env_file: ./api/.env
+          depends_on:
+            db:
+              condition: service_healthy
+
+        web:
+          build: ./web
+          ports:
+            - "8080:80"
+          depends_on:
+            - api
+
+      volumes:
+        db-daten:
+      EOF
+      mkdir -p .github/workflows
+      cat > .github/workflows/ci.yml <<'EOF'
+      name: CI
+      on:
+        pull_request:
+        push:
+          branches: [main]
+
+      jobs:
+        api:
+          runs-on: ubuntu-latest
+          defaults:
+            run:
+              working-directory: api
+          steps:
+            - uses: actions/checkout@v7
+            - uses: shivammathur/setup-php@v2
+              with:
+                php-version: '8.5'
+                coverage: none
+            - run: composer install --no-interaction --prefer-dist
+            - run: cp .env.example .env && php artisan key:generate
+            - run: composer check
+
+        web:
+          runs-on: ubuntu-latest
+          defaults:
+            run:
+              working-directory: web
+          steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
+              with:
+                node-version: 24
+                cache: npm
+                cache-dependency-path: web/package-lock.json
+            - run: npm ci
+            - run: npm run lint
+            - run: npm run build
+      EOF
+
+  - id: go-live-und-retro
+    title: Deploy-Kit, Go-Live-Checkliste und Retrospektive
+    description: |
+      Zum Schluss machst du das Projekt **auslieferbar** und schaust zurück. Einen echten Server gibt es im
+      Übungs-Terminal nicht – du baust das Deploy-Kit so, dass du es auf einem Server mit Docker sofort nutzen
+      könntest. Arbeite im Projektordner `vereinskurse`:
+
+      1. `deploy/deploy.sh` (ausführbar): `#!/usr/bin/env bash`, `set -euo pipefail`, dann
+         `docker compose build`, `docker compose run --rm api php artisan migrate --force`,
+         `docker compose run --rm api php artisan optimize`, `docker compose up -d` und zum Schluss ein
+         Health-Check mit `curl -fsS` auf `/up` (Adresse aus `APP_URL`, Standard `http://localhost:8080`).
+      2. `deploy/.env.production.example` mit den nötigen Variablen als Platzhalter (mindestens `APP_ENV=production`,
+         `APP_DEBUG=false`, `APP_KEY=`, `DB_CONNECTION=pgsql`, `DB_PASSWORD=`).
+      3. `docs/go-live.md` mit mindestens **acht** Checklistenpunkten im Format `- [ ] …`.
+      4. `docs/retro.md` mit den Überschriften `## Was lief gut`, `## Was war schwierig` und
+         `## Was ich beim nächsten Mal anders mache` – je mit mindestens einem Punkt.
+      5. `README.md` im Projektordner mit einer Überschrift `## Lokal starten`.
+      6. Committe alles (`git add -A`, `git commit -m "feat: ..."`) – danach ist `git status` sauber.
+    checklist:
+      - Deploy-Skript mit Migration, Cache und Health-Check
+      - Produktions-Variablen als Beispieldatei, ohne echte Werte
+      - Go-Live-Checkliste mit mindestens acht Punkten
+      - Retrospektive und README
+      - Alles committet
+    hints:
+      - "`bash -n deploy/deploy.sh` prüft die Syntax, ohne das Skript auszuführen. `chmod +x` macht es ausführbar."
+      - "Die Route `/up` bringt Laravel 13 schon mit (`health: '/up'` in `bootstrap/app.php`)."
+      - "Prüfe vor dem Commit mit `git status`, dass weder `vendor/` noch `node_modules/` oder `.env` auftauchen."
+    checks:
+      - type: command
+        run: test -x deploy/deploy.sh && bash -n deploy/deploy.sh && echo ok
+        stdout_equals: ok
+        message: deploy/deploy.sh fehlt, ist nicht ausführbar (chmod +x) oder hat einen Syntaxfehler (bash -n deploy/deploy.sh).
+      - type: command
+        run: f=deploy/deploy.sh; grep -q 'set -euo pipefail' $f && grep -q 'migrate --force' $f && grep -qE 'curl +-fsS' $f && grep -q '/up' $f && grep -q 'up -d' $f && echo ok
+        stdout_equals: ok
+        message: "deploy/deploy.sh braucht set -euo pipefail, php artisan migrate --force, docker compose up -d und einen Health-Check mit curl -fsS auf /up."
+      - type: command
+        run: f=deploy/.env.production.example; grep -qx 'APP_ENV=production' $f && grep -qx 'APP_DEBUG=false' $f && grep -q '^DB_CONNECTION=pgsql' $f && grep -q '^APP_KEY=' $f && echo ok
+        stdout_equals: ok
+        message: deploy/.env.production.example braucht mindestens APP_ENV=production, APP_DEBUG=false, APP_KEY= und DB_CONNECTION=pgsql.
+      - type: command
+        run: grep -cE '^- \[[ xX]\] ' docs/go-live.md
+        stdout_matches: "^([8-9]|[1-9][0-9]+)\\s*$"
+        message: docs/go-live.md braucht mindestens acht Checklistenpunkte im Format „- [ ] …“.
+      - type: command
+        run: for h in 'Was lief gut' 'Was war schwierig' 'Was ich beim nächsten Mal anders mache'; do awk -v h="## $h" '$0==h{f=1;next} /^## /{f=0} f && /^- /{n++} END{if(!n) print h}' docs/retro.md; done
+        stdout_equals: ""
+        message: "docs/retro.md braucht die Überschriften ## Was lief gut, ## Was war schwierig und ## Was ich beim nächsten Mal anders mache – jeweils mit mindestens einem Listenpunkt."
+      - type: command
+        run: grep -qE '^## Lokal starten' README.md && echo ok
+        stdout_equals: ok
+        message: Im Projektordner fehlt README.md mit der Überschrift ## Lokal starten.
+      - type: command
+        run: test "$(git rev-list --count HEAD 2>/dev/null || echo 0)" -ge 1 && test -z "$(git status --porcelain)" && echo ok
+        stdout_equals: ok
+        message: Committe alle Dateien. git status muss danach sauber sein (keine geänderten oder neuen Dateien).
+      - type: command
+        run: git ls-files | grep -E '(^|/)(vendor|node_modules)/|(^|/)\.env$' | head -n 1
+        stdout_equals: ""
+        message: Im Repository liegen vendor/, node_modules/ oder eine .env-Datei. Entferne sie mit git rm -r --cached und prüfe die .gitignore.
+    solution: |
+      ```bash title="deploy/deploy.sh"
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      cd "$(dirname "$0")/.."
+      APP_URL="${APP_URL:-http://localhost:8080}"
+
+      docker compose build
+      docker compose run --rm api php artisan migrate --force
+      docker compose run --rm api php artisan optimize
+      docker compose up -d
+
+      curl -fsS --retry 5 --retry-delay 2 "$APP_URL/up" >/dev/null
+      echo "Deployment erfolgreich: $APP_URL"
+      ```
+
+      ```bash
+      chmod +x deploy/deploy.sh
+      git add -A
+      git commit -m "feat: ship vereinskurse v1"
+      git status
+      ```
+
+      Beispiele für Go-Live-Checkliste und Retrospektive findest du in den Lektionen von Modul 4.
+    solve: |
+      mkdir -p deploy
+      cat > deploy/deploy.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      cd "$(dirname "$0")/.."
+      APP_URL="${APP_URL:-http://localhost:8080}"
+
+      docker compose build
+      docker compose run --rm api php artisan migrate --force
+      docker compose run --rm api php artisan optimize
+      docker compose up -d
+
+      curl -fsS --retry 5 --retry-delay 2 "$APP_URL/up" >/dev/null
+      echo "Deployment erfolgreich: $APP_URL"
+      EOF
+      chmod +x deploy/deploy.sh
+      cat > deploy/.env.production.example <<'EOF'
+      APP_NAME=Vereinskurse
+      APP_ENV=production
+      APP_DEBUG=false
+      APP_KEY=
+      APP_URL=https://kurse.example.com
+      LOG_LEVEL=warning
+      DB_CONNECTION=pgsql
+      DB_HOST=db
+      DB_PORT=5432
+      DB_DATABASE=vereinskurse
+      DB_USERNAME=vereinskurse
+      DB_PASSWORD=
+      EOF
+      cat > docs/go-live.md <<'EOF'
+      # Go-Live-Checkliste
+
+      - [ ] CI ist auf main grün
+      - [ ] APP_ENV=production und APP_DEBUG=false gesetzt
+      - [ ] APP_KEY erzeugt und sicher abgelegt
+      - [ ] Datenbank-Passwort nur im Secret-Speicher, nicht im Repository
+      - [ ] Backup der Datenbank vor der ersten Migration getestet
+      - [ ] Migrationen laufen mit --force durch
+      - [ ] HTTPS-Zertifikat aktiv, HTTP leitet auf HTTPS um
+      - [ ] Health-Check /up antwortet mit 200
+      - [ ] Monitoring und Fehler-Logs sind eingerichtet
+      - [ ] Rollback-Weg ist aufgeschrieben und einmal geübt
+      EOF
+      cat > docs/retro.md <<'EOF'
+      # Retrospektive Vereinskurse v1
+
+      ## Was lief gut
+      - Die vorab geschriebenen Tests haben jede API-Änderung abgesichert.
+
+      ## Was war schwierig
+      - Das Antwortformat zwischen API und Frontend synchron zu halten.
+
+      ## Was ich beim nächsten Mal anders mache
+      - Den API-Vertrag zuerst als OpenAPI-Datei festhalten.
+      EOF
+      cat > README.md <<'EOF'
+      # Vereinskurse
+
+      Workshops eines Sportvereins ansehen, anlegen und buchen. Laravel-API (`api/`) plus React-SPA (`web/`).
+
+      ## Lokal starten
+
+      ```bash
+      cd api && composer install && cp .env.example .env && php artisan key:generate && php artisan migrate && php artisan serve
+      cd web && npm install && npm run dev
+      ```
+
+      ## Qualität prüfen
+
+      ```bash
+      cd api && composer check
+      cd web && npm run lint && npm run build
+      ```
+      EOF
+      git add -A
+      git commit -q -m "feat: ship vereinskurse v1"

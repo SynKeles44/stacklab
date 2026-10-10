@@ -1,0 +1,117 @@
+- slug: mvp
+  term: MVP (Minimum Viable Product)
+  short: Die kleinste Version eines Produkts, die echten Nutzen stiftet und sich von echten Menschen ausprobieren lässt.
+  explanation: >
+    Ein MVP ist bewusst klein, aber fertig: Es löst das Kernproblem zuverlässig, alles andere kommt später.
+    So bekommst du früh Rückmeldung und investierst keine Wochen in Funktionen, die niemand braucht. Klein heißt
+    dabei nicht schlampig – Tests und Sicherheit gehören auch ins MVP.
+  example: "Das MVP von Vereinskurse kann Workshops anzeigen, anlegen und buchen – Bezahlung und Warteliste kommen später."
+  category: teamarbeit
+  aliases: [Minimum Viable Product, MVPs]
+  related: [moscow-priorisierung, scope-creep, user-story]
+  lesson: capstone/vom-ziel-zum-mvp
+
+- slug: moscow-priorisierung
+  term: MoSCoW-Priorisierung
+  short: Eine Methode, Anforderungen in Muss, Soll, Kann und Nicht jetzt (Must, Should, Could, Won't) einzuteilen.
+  explanation: >
+    MoSCoW zwingt dazu, jede Anforderung nach ihrem Wert für die nächste Version zu sortieren. Muss-Punkte
+    machen das Produkt überhaupt erst nutzbar, Soll-Punkte sind wichtig, aber verschiebbar, Kann-Punkte sind
+    Extras. Die Liste „Nicht jetzt“ hält bewusst geparkte Wünsche fest und schützt so vor Scope Creep.
+  example: "Muss: Platz buchen. Soll: Buchung stornieren. Kann: Erinnerungs-Mail. Nicht jetzt: Bezahlung."
+  category: teamarbeit
+  aliases: [MoSCoW, MoSCoW-Methode]
+  related: [mvp, scope-creep, backlog]
+  lesson: capstone/vom-ziel-zum-mvp
+
+- slug: scope-creep
+  term: Scope Creep
+  short: Das schleichende, ungeplante Wachsen eines Projektumfangs durch immer neue „nur noch schnell“-Wünsche.
+  explanation: >
+    Jeder einzelne Zusatzwunsch wirkt klein, zusammen verschieben sie Termine und lassen Funktionen halb fertig
+    zurück. Gegenmittel sind ein klar abgegrenztes MVP, eine gepflegte Liste „Nicht jetzt“ und die Regel, dass
+    neue Wünsche erst in die Planung und dann in den Code wandern.
+  example: "Mitten im Bau der API soll „schnell noch“ eine Bezahlfunktion dazukommen – ein typischer Fall von Scope Creep."
+  category: teamarbeit
+  aliases: [Feature Creep, Umfangsausweitung]
+  related: [mvp, moscow-priorisierung]
+  lesson: capstone/vom-ziel-zum-mvp
+
+- slug: funktionale-anforderung
+  term: Funktionale Anforderung
+  short: Eine Anforderung, die beschreibt, was ein System tun soll.
+  explanation: >
+    Funktionale Anforderungen beschreiben Fähigkeiten und Abläufe: Daten anzeigen, anlegen, buchen, löschen. Sie
+    werden oft als User Stories mit Akzeptanzkriterien formuliert. Das Gegenstück sind nicht-funktionale
+    Anforderungen, die beschreiben, wie gut das System seine Aufgaben erfüllt.
+  example: "„Ein Mitglied kann einen Platz in einem Workshop buchen.“"
+  category: teamarbeit
+  aliases: [funktionale Anforderungen, Functional Requirement]
+  related: [nicht-funktionale-anforderung, user-story, akzeptanzkriterien]
+  lesson: capstone/vom-ziel-zum-mvp
+
+- slug: nicht-funktionale-anforderung
+  term: Nicht-funktionale Anforderung
+  short: Eine Anforderung, die beschreibt, wie gut ein System arbeiten soll – etwa schnell, sicher oder barrierefrei.
+  explanation: >
+    Nicht-funktionale Anforderungen betreffen Qualitätseigenschaften wie Geschwindigkeit, Sicherheit,
+    Zuverlässigkeit oder Bedienbarkeit. Sie tauchen in keiner User Story auf und werden deshalb leicht vergessen.
+    Gut formuliert sind sie messbar, damit sie sich mit Tests, Constraints oder Monitoring prüfen lassen.
+  example: "„Die Workshop-Liste antwortet in unter einer Sekunde.“ oder „Es gibt nie mehr Buchungen als Plätze.“"
+  category: teamarbeit
+  aliases: [nicht-funktionale Anforderungen, Qualitätsanforderung, NFR]
+  related: [funktionale-anforderung, performance-budget, barrierefreiheit]
+  lesson: capstone/vom-ziel-zum-mvp
+
+- slug: walking-skeleton
+  term: Walking Skeleton
+  short: Eine allererste, winzige Version, die bereits durch alle Schichten eines Systems läuft – vom Frontend bis zum Deployment.
+  explanation: >
+    Statt jede Schicht nacheinander fertig zu bauen, verbindet ein Walking Skeleton früh Frontend, API,
+    Datenbank, Tests und Pipeline mit minimaler Funktion. Probleme beim Zusammenspiel – falsche URLs, CORS,
+    Datumsformate, Build-Fehler – fallen so am ersten Tag auf. Danach wächst jede Schicht Funktion für Funktion.
+  example: "`GET /api/workshops` liefert eine leere Liste, die React-Seite zeigt „Keine Workshops“, und die CI prüft beides."
+  category: teamarbeit
+  aliases: [Walking Skeletons]
+  related: [vertikaler-schnitt, ci-pipeline, mvp]
+  lesson: capstone/architektur-entscheiden
+
+- slug: api-vertrag
+  term: API-Vertrag
+  short: Die verbindliche Absprache, welche Endpunkte eine API hat, welche Eingaben sie erwartet und welche Antworten und Statuscodes sie liefert.
+  explanation: >
+    Ein API-Vertrag erlaubt es, Frontend und Backend getrennt zu entwickeln, weil beide Seiten wissen, was sie
+    voneinander erwarten können. Festgehalten wird er in API Resources, Validierungsregeln, Tests, Zod-Schemas
+    oder einer OpenAPI-Datei. Ändert sich der Vertrag, müssen beide Seiten gemeinsam angepasst werden.
+  example: "`GET /api/workshops/{id}` liefert `{\"data\": {\"id\": 3, \"title\": …, \"seats_left\": 9}}` oder 404."
+  category: web
+  aliases: [API-Verträge, API Contract, Schnittstellenvertrag]
+  related: [rest-api, api-resource, zod, openapi]
+  lesson: capstone/api-vertrag-schneiden
+
+- slug: oxlint
+  term: Oxlint
+  short: Ein sehr schneller Linter für JavaScript und TypeScript, den das aktuelle Vite-Template mitbringt.
+  explanation: >
+    Oxlint prüft Code auf verdächtige Muster wie ungenutzte Variablen, vergessene `debugger`-Anweisungen oder
+    fehlerhafte Vergleiche, ohne ihn auszuführen. Er ist in Rust geschrieben und dadurch deutlich schneller als
+    klassische Linter. Viele Funde meldet er als Warnung; mit `--deny-warnings` werden sie zu Fehlern.
+  example: "`npx oxlint --deny-warnings src` beendet sich mit Exit-Code 1, wenn in src eine `debugger`-Anweisung steht."
+  category: werkzeuge
+  aliases: [oxc-Linter]
+  related: [linter, lint-regel, quality-gate]
+  lesson: capstone/qualitaets-gate
+
+- slug: larastan
+  term: Larastan
+  short: Eine Erweiterung für PHPStan, die Laravels Besonderheiten wie Eloquent, Facades und Container versteht.
+  explanation: >
+    PHPStan findet Typfehler in PHP-Code, ohne ihn auszuführen. Ohne Hilfe versteht es aber Laravels magische
+    Methoden und Eloquent-Beziehungen nicht und meldet viele falsche Fehler. Larastan bringt dieses Wissen mit
+    und macht statische Analyse in Laravel-Projekten praxistauglich.
+  example: "`composer require --dev larastan/larastan`, danach `./vendor/bin/phpstan analyse` mit einer `phpstan.neon`."
+  category: werkzeuge
+  aliases: [Larastan-Erweiterung]
+  related: [phpstan, statische-analyse, quality-gate]
+  lesson: capstone/qualitaets-gate
+

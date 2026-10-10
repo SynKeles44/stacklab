@@ -1,0 +1,32 @@
+title: "Capstone: Von null bis live"
+subtitle: Eine komplette App planen, bauen, testen und ausliefern – mit allem, was du gelernt hast
+description: >
+  Der Abschluss der Plattform. In diesem Kurs baust du ein größeres Projekt von der ersten Idee bis zum
+  Go-Live: **Vereinskurse**, eine Web-App, in der Mitglieder eines Sportvereins Workshops finden und buchen.
+  Du schreibst Anforderungen, entwirfst das Datenmodell, baust eine getestete Laravel-API mit Sanctum, ein
+  React-Frontend mit React Router (Data Mode), Zod und TanStack Query, verpackst alles in Container,
+  richtest eine CI-Pipeline ein und stellst ein Deploy-Kit mit Go-Live-Checkliste zusammen.
+
+
+  Die Lektionen sind bewusst kurz: Sie lehren keine Themen neu, sondern helfen dir bei **Entscheidungen**
+  und geben dir **Checklisten** für jede Phase. Wo du Details nachschlagen willst, verweisen sie auf die
+  früheren Kurse und das Lexikon. Die Hauptarbeit steckt im begleitenden Projekt.
+category: abschluss
+level: fortgeschritten
+icon: trophy
+color: "#f59e0b"
+estimated_hours: 8
+workspace_dir: capstone
+prerequisites: [laravel, moderner-react-stack, testing, docker, deployments-cicd, projekt-live-stellen]
+learning_goals:
+  - Du schneidest ein Projekt auf einen machbaren ersten Umfang (MVP) zu und hältst Entscheidungen schriftlich fest.
+  - Du entwirfst ein Datenmodell mit Beziehungen und Constraints und setzt es mit Migrationen um.
+  - Du baust eine REST-API mit Validierung, API Resources, Sanctum-Login und klaren Geschäftsregeln.
+  - Du sicherst die API mit Pest-Tests und einem Qualitäts-Gate aus Formatter und Tests ab.
+  - Du verbindest ein React-Frontend über einen geprüften API-Vertrag (Zod) mit TanStack Query und React Router.
+  - Du verpackst die App in Container, prüfst sie in einer CI-Pipeline und lieferst sie mit einer Checkliste aus.
+  - Du reflektierst dein Projekt in einer Retrospektive und planst die nächsten Schritte.
+references:
+  - Projektaufbau mit getrennter Laravel-API und React-SPA, wie er in vielen Produktteams üblich ist
+  - Architecture Decision Records als leichtgewichtiges Entscheidungsprotokoll
+  - Go-Live-Checklisten und Retrospektiven aus dem agilen Projektalltag

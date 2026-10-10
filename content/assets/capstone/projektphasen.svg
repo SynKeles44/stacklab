@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="450" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Die vier Phasen des Projekts</text>
+  <rect x="20" y="70" width="190" height="200" rx="14" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="115" y="100" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">1 · Planen</text>
+  <text x="40" y="132" font-size="13" fill="#1e1b3a">• MVP und User Stories</text>
+  <text x="40" y="156" font-size="13" fill="#1e1b3a">• Architektur-Entscheide</text>
+  <text x="40" y="180" font-size="13" fill="#1e1b3a">• Datenmodell</text>
+  <text x="40" y="246" font-size="12" font-style="italic" fill="#1e1b3a">Ergebnis: docs/</text>
+  <rect x="245" y="70" width="190" height="200" rx="14" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="340" y="100" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">2 · API bauen</text>
+  <text x="265" y="132" font-size="13" fill="#1e1b3a">• Migrationen, Models</text>
+  <text x="265" y="156" font-size="13" fill="#1e1b3a">• Login mit Sanctum</text>
+  <text x="265" y="180" font-size="13" fill="#1e1b3a">• Endpunkte, Regeln</text>
+  <text x="265" y="204" font-size="13" fill="#1e1b3a">• Pest-Tests</text>
+  <text x="265" y="246" font-size="12" font-style="italic" fill="#1e1b3a">Ergebnis: grüne API</text>
+  <rect x="470" y="70" width="190" height="200" rx="14" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="565" y="100" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">3 · Frontend</text>
+  <text x="490" y="132" font-size="13" fill="#1e1b3a">• Zod-Vertrag</text>
+  <text x="490" y="156" font-size="13" fill="#1e1b3a">• TanStack Query</text>
+  <text x="490" y="180" font-size="13" fill="#1e1b3a">• Loader und Actions</text>
+  <text x="490" y="204" font-size="13" fill="#1e1b3a">• Qualitäts-Gate</text>
+  <text x="490" y="246" font-size="12" font-style="italic" fill="#1e1b3a">Ergebnis: nutzbare App</text>
+  <rect x="695" y="70" width="190" height="200" rx="14" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="790" y="100" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">4 · Ausliefern</text>
+  <text x="715" y="132" font-size="13" fill="#1e1b3a">• Docker und Compose</text>
+  <text x="715" y="156" font-size="13" fill="#1e1b3a">• CI-Pipeline</text>
+  <text x="715" y="180" font-size="13" fill="#1e1b3a">• Deploy-Kit, Go-Live</text>
+  <text x="715" y="204" font-size="13" fill="#1e1b3a">• Retrospektive</text>
+  <text x="715" y="246" font-size="12" font-style="italic" fill="#1e1b3a">Ergebnis: live + Lehren</text>
+  <line x1="212" y1="170" x2="241" y2="170" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="437" y1="170" x2="466" y2="170" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="662" y1="170" x2="691" y2="170" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M790 274 C790 330, 115 330, 115 278" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#pfeil)"/>
+  <text x="450" y="322" text-anchor="middle" font-size="13" fill="#1e1b3a">Erkenntnisse aus der Retrospektive fließen in die Planung von Version 2</text>
+</svg>

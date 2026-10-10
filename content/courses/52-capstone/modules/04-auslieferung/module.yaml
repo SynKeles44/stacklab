@@ -1,0 +1,160 @@
+title: Ausliefern und zurückblicken
+description: Die App in Container verpacken, jede Änderung in der CI prüfen, mit Deploy-Skript und Checkliste live gehen und in einer Retrospektive aus dem Projekt lernen.
+exercise:
+  id: modul-uebung-deploy-kit-reparieren
+  type: terminal
+  title: Ein kaputtes Deploy-Kit reparieren
+  description: |
+    Ein Vereinsmitglied hat für den Geräteverleih ein Deploy-Kit angefangen. Es „hat einmal funktioniert“ –
+    beim zweiten Deployment ging die Seite kaputt, und niemand hat es gemerkt. Klicke zuerst auf
+    **Aufgabe vorbereiten** und sieh dir im Ordner `deploy-kit` die Dateien an. Repariere sie:
+
+    **`deploy.sh`**
+
+    1. Die zweite Zeile ist `set -euo pipefail`.
+    2. Die Migration läuft mit `--force`.
+    3. Die Reihenfolge stimmt: `docker compose build` → `migrate` → `optimize` → `docker compose up -d` →
+       Health-Check.
+    4. Am Ende steht ein Health-Check mit `curl -fsS` auf `"$APP_URL/up"`.
+    5. Das Skript ist ausführbar und syntaktisch korrekt (`bash -n deploy.sh`).
+
+    **`.github/workflows/ci.yml`**
+
+    6. Der Workflow läuft auch bei `pull_request`, nicht nur bei `push`.
+    7. Im Job `web` steht `npm ci` **vor** `npm run build`, und `npm run lint` läuft ebenfalls.
+
+    **`.env.production.example`**
+
+    8. Hier steht ein echt aussehendes Passwort und `APP_DEBUG=true`. Ersetze das Passwort durch einen leeren
+       Wert (`DB_PASSWORD=`) und setze `APP_DEBUG=false`.
+  workdir: deploy-kit
+  setup: |
+    mkdir -p .github/workflows
+    cat > deploy.sh <<'EOF'
+    #!/usr/bin/env bash
+
+    cd "$(dirname "$0")"
+    APP_URL="${APP_URL:-http://localhost:8080}"
+
+    docker compose up -d
+    docker compose build
+    docker compose run --rm api php artisan migrate
+    docker compose run --rm api php artisan optimize
+    echo "fertig"
+    EOF
+    cat > .github/workflows/ci.yml <<'EOF'
+    name: CI
+    on:
+      push:
+        branches: [main]
+
+    jobs:
+      api:
+        runs-on: ubuntu-latest
+        defaults:
+          run:
+            working-directory: api
+        steps:
+          - uses: actions/checkout@v7
+          - uses: shivammathur/setup-php@v2
+            with:
+              php-version: '8.5'
+          - run: composer install --no-interaction --prefer-dist
+          - run: cp .env.example .env && php artisan key:generate
+          - run: composer check
+
+      web:
+        runs-on: ubuntu-latest
+        defaults:
+          run:
+            working-directory: web
+        steps:
+          - uses: actions/checkout@v7
+          - uses: actions/setup-node@v7
+            with:
+              node-version: 24
+          - run: npm run build
+          - run: npm ci
+    EOF
+    cat > .env.production.example <<'EOF'
+    APP_NAME=Verleih
+    APP_ENV=production
+    APP_DEBUG=true
+    APP_KEY=
+    APP_URL=https://verleih.example.com
+    DB_CONNECTION=pgsql
+    DB_HOST=db
+    DB_DATABASE=verleih
+    DB_USERNAME=verleih
+    DB_PASSWORD=Sommerfest2026!
+    EOF
+  checks:
+    - type: command
+      run: test -x deploy.sh && bash -n deploy.sh && sed -n 2p deploy.sh
+      stdout_equals: set -euo pipefail
+      message: deploy.sh ist nicht ausführbar (chmod +x), hat einen Syntaxfehler oder Zeile 2 ist nicht „set -euo pipefail“.
+    - type: command
+      run: grep -cE 'artisan +migrate +--force' deploy.sh
+      stdout_matches: "^[1-9]\\s*$"
+      message: Die Migration braucht --force, sonst bricht sie in Produktion mit einer Rückfrage ab.
+    - type: command
+      run: >-
+        awk '/docker +compose +build/{b=NR} /artisan +migrate/{m=NR} /artisan +optimize/{o=NR} /docker +compose +up +-d/{u=NR} /curl +-fsS/{c=NR}
+        END{print (b && m && o && u && c && b<m && m<o && o<u && u<c) ? "ok" : "falsch"}' deploy.sh
+      stdout_equals: ok
+      message: "Die Reihenfolge in deploy.sh stimmt noch nicht: build → migrate → optimize → up -d → Health-Check mit curl -fsS."
+    - type: command
+      run: grep -E 'curl +-fsS' deploy.sh | grep -c '/up'
+      stdout_matches: "^[1-9]\\s*$"
+      message: Der Health-Check soll mit curl -fsS die Adresse „$APP_URL/up“ abfragen.
+    - type: command
+      run: grep -cE '^ *pull_request' .github/workflows/ci.yml
+      stdout_matches: "^[1-9]\\s*$"
+      message: Der Workflow läuft noch nicht bei pull_request. Ergänze den Auslöser unter on.
+    - type: command
+      run: >-
+        awk '/^  web:/{w=1} w && /run: +npm +ci/{c=NR} w && /run: +npm +run +lint/{l=NR} w && /run: +npm +run +build/{b=NR}
+        END{print (c && l && b && c<b && c<l) ? "ok" : "falsch"}' .github/workflows/ci.yml
+      stdout_equals: ok
+      message: "Im Job web muss npm ci vor npm run build stehen, und npm run lint fehlt noch."
+    - type: command
+      run: grep -qx 'APP_DEBUG=false' .env.production.example && grep -qx 'DB_PASSWORD=' .env.production.example && ! grep -q 'Sommerfest' .env.production.example && echo ok
+      stdout_equals: ok
+      message: .env.production.example soll APP_DEBUG=false und ein leeres DB_PASSWORD= enthalten – kein echtes Passwort.
+  hints:
+    - "Mit `nano deploy.sh` bearbeitest du das Skript; `chmod +x deploy.sh` macht es ausführbar."
+    - "Unter `on:` kommt eine Zeile `  pull_request:` dazu – auf derselben Einrückung wie `push:`."
+    - "Ein Passwort, das einmal in einer Beispieldatei stand, gilt als bekannt. Im echten Leben würdest du es jetzt auch ändern."
+  solution: |
+    ```bash title="deploy.sh"
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    cd "$(dirname "$0")"
+    APP_URL="${APP_URL:-http://localhost:8080}"
+
+    docker compose build
+    docker compose run --rm api php artisan migrate --force
+    docker compose run --rm api php artisan optimize
+    docker compose up -d
+
+    curl -fsS --retry 5 --retry-delay 2 "$APP_URL/up" >/dev/null
+    echo "Deployment erfolgreich: $APP_URL"
+    ```
+
+    ```yaml title=".github/workflows/ci.yml (geänderte Teile)"
+    on:
+      pull_request:
+      push:
+        branches: [main]
+
+    # … im Job web:
+          - run: npm ci
+          - run: npm run lint
+          - run: npm run build
+    ```
+
+    ```bash
+    chmod +x deploy.sh
+    sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/; s/^DB_PASSWORD=.*/DB_PASSWORD=/' .env.production.example
+    ```

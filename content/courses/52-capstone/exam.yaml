@@ -1,0 +1,407 @@
+title: "Abschlussprüfung: Capstone"
+description: >
+  Die Prüfung deckt alle vier Phasen deines Capstone-Projekts ab: Planung und Datenmodell, die API mit Login und
+  Geschäftsregeln, das Frontend mit Vertrag und Formularen sowie Auslieferung und Rückblick. Zum Schluss
+  löst du drei praktische Aufgaben.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Planen und entwerfen ---
+  - module: planung
+    type: single
+    question: Was zeichnet ein gutes MVP aus?
+    options:
+      - Es enthält alle Funktionen, aber ohne Tests.
+      - Es ist die kleinste Version, die echten Nutzen stiftet – klein, aber fertig und getestet.
+      - Es ist ein Klick-Prototyp ohne Backend.
+      - Es wird nie ausgeliefert.
+    answer: 1
+    explanation: Ein MVP ist klein im Umfang, nicht in der Qualität.
+  - module: planung
+    type: multiple
+    question: Welche Aussagen über die Liste „Nicht jetzt“ (MoSCoW) stimmen?
+    options:
+      - Sie schützt vor Scope Creep.
+      - Sie ist überflüssig, wenn alle motiviert sind.
+      - Sie ist eine Quelle für die Planung von Version 2.
+      - Neue Wünsche während des Baus landen zuerst dort oder in der Planung, nicht direkt im Code.
+    answers: [0, 2, 3]
+    explanation: Bewusst geparkte Wünsche geben dir eine Antwort auf „nur noch schnell“ – und Stoff für die nächste Version.
+  - module: planung
+    type: cloze
+    text: "Die User Story „Als Mitglied möchte ich einen Platz buchen, damit er für mich reserviert ist“ nennt Rolle, Ziel und ___."
+    blanks:
+      - [Nutzen, Mehrwert, Grund]
+    explanation: Der Nutzen erklärt, warum sich die Arbeit lohnt.
+  - module: planung
+    type: single
+    question: Welche Regel kann die Datenbank allein mit einem Constraint absichern?
+    options:
+      - Es gibt nie mehr Buchungen als Plätze.
+      - Eine Person bucht denselben Workshop höchstens einmal.
+      - Workshop-Titel sind verständlich.
+    answer: 1
+    explanation: "`UNIQUE(workshop_id, user_id)` verhindert Doppelbuchungen. Für die Platzgrenze müssen Zeilen gezählt werden – das macht der Code in einer Transaktion."
+  - module: planung
+    type: match
+    question: Ordne jedem Begriff die passende Beschreibung zu.
+    pairs:
+      - { left: "ADR", right: "kurzes Protokoll einer Architektur-Entscheidung" }
+      - { left: "Walking Skeleton", right: "erste Mini-Version durch alle Schichten" }
+      - { left: "Zwischentabelle", right: "bildet eine n:m-Beziehung ab" }
+      - { left: "Nicht-funktionale Anforderung", right: "beschreibt Qualität wie Geschwindigkeit" }
+    explanation: Diese vier Werkzeuge prägen die Planungsphase.
+
+  # --- Die API bauen ---
+  - module: backend
+    type: single
+    question: Ein Mitglied schickt eine Kapazität von 0. Welcher Statuscode ist richtig?
+    options:
+      - 201
+      - 409
+      - 422
+      - 500
+    answer: 2
+    explanation: Die Eingabe selbst ist ungültig – das ist ein Validierungsfehler (422). 409 steht für einen Konflikt mit dem Zustand.
+  - module: backend
+    type: multiple
+    question: Was gehört zu einem sicheren Login mit Sanctum-Tokens?
+    options:
+      - Passwort mit `Hash::check` prüfen
+      - Bei falscher E-Mail und falschem Passwort dieselbe Meldung
+      - Login-Route mit `throttle` drosseln
+      - Das Token im Klartext in der Datenbank speichern
+    answers: [0, 1, 2]
+    explanation: Sanctum speichert nur einen Hash des Tokens. Einheitliche Meldungen und Drosselung erschweren Angriffe.
+  - module: backend
+    type: find-bug
+    question: Diese Buchung kann bei gleichzeitigen Anfragen überbuchen. Welche Zeile fehlt bzw. ist falsch?
+    language: php
+    code: |
+      return DB::transaction(function () use ($request, $workshop) {
+          $workshop = Workshop::query()->findOrFail($workshop->id);
+          if ($workshop->seatsLeft() === 0) {
+              abort(409, 'Der Workshop ist leider ausgebucht.');
+          }
+          $workshop->bookings()->create(['user_id' => $request->user()->id]);
+      });
+    bug_line: 2
+    explanation: Ohne `lockForUpdate()` lesen zwei Anfragen gleichzeitig denselben Stand. Richtig ist `Workshop::query()->lockForUpdate()->findOrFail(...)`.
+  - module: backend
+    type: single
+    question: Warum gibt der Controller eine `WorkshopResource` zurück statt das Model direkt?
+    options:
+      - Weil Models nicht als JSON ausgegeben werden können.
+      - Weil die Resource das Antwortformat festlegt und das Datenbankmodell vom Vertrag trennt.
+      - Weil Resources schneller sind.
+    answer: 1
+    explanation: So wird nicht jede neue Spalte automatisch Teil des Vertrags.
+  - module: backend
+    type: multiple
+    question: Welche Tests sind für den Endpunkt „Platz buchen“ besonders wertvoll?
+    options:
+      - Ohne Anmeldung → 401
+      - Voller Workshop → 409, und es entsteht keine Buchung
+      - Doppelte Buchung → 409
+      - Prüfen, welche private Methode der Controller intern aufruft
+    answers: [0, 1, 2]
+    explanation: Gute Tests prüfen Verhalten an den Grenzen – nicht die interne Umsetzung.
+
+  # --- Das Frontend anbinden ---
+  - module: frontend
+    type: single
+    question: Was ist die Aufgabe von Zod im Frontend von Vereinskurse?
+    options:
+      - Es ersetzt TypeScript.
+      - Es prüft API-Antworten und Formulardaten zur Laufzeit und liefert die Typen per z.infer.
+      - Es cached Anfragen.
+    answer: 1
+    explanation: Zod ist die Laufzeitprüfung an der Grenze, TanStack Query der Cache.
+  - module: frontend
+    type: match
+    question: Ordne jedem Baustein seine Aufgabe zu.
+    pairs:
+      - { left: "Loader", right: "lädt Daten, bevor eine Route rendert" }
+      - { left: "Action", right: "verarbeitet ein abgeschicktes Formular" }
+      - { left: "ensureQueryData", right: "nutzt den Cache oder lädt neu" }
+      - { left: "invalidateQueries", right: "markiert gecachte Daten als veraltet" }
+    explanation: React Router steuert das Wann, TanStack Query das Ob.
+  - module: frontend
+    type: find-bug
+    question: In welcher Zeile steckt der Fehler dieser Action?
+    language: ts
+    code: |
+      export async function createWorkshopAction({ request }: ActionFunctionArgs) {
+        const parsed = newWorkshopSchema.safeParse(Object.fromEntries(await request.formData()))
+        if (!parsed.success) {
+          throw new Error('Ungültige Eingabe')
+        }
+        const workshop = await createWorkshop(parsed.data)
+        return redirect(`/workshops/${workshop.id}`)
+      }
+    bug_line: 4
+    explanation: Erwartbare Validierungsfehler werden zurückgegeben (`return { errors }`), damit das Formular mit den Eingaben stehen bleibt. Ein `throw` landet in der Error-Boundary.
+  - module: frontend
+    type: multiple
+    question: Welche Prüfungen gehören zum Qualitäts-Gate von Vereinskurse?
+    options:
+      - "`./vendor/bin/pint --test`"
+      - "`php artisan test`"
+      - "`npm run lint` und `npm run build`"
+      - "`git push --force`"
+    answers: [0, 1, 2]
+    explanation: Formatter, Tests, Linter und Typprüfung bilden das Gate. Ein Force-Push ist keine Prüfung.
+  - module: frontend
+    type: cloze
+    text: Damit Warnungen von Oxlint das Gate rot machen, rufst du ihn mit der Option ___ auf.
+    blanks:
+      - [--deny-warnings]
+    explanation: Ohne die Option endet Oxlint bei reinen Warnungen mit Exit-Code 0.
+
+  # --- Ausliefern und zurückblicken ---
+  - module: auslieferung
+    type: single
+    question: Warum ist im Compose-Setup nur der web-Container per Port erreichbar?
+    options:
+      - Weil Docker nur einen Port erlaubt.
+      - Weil Nginx im web-Container die SPA ausliefert und /api intern an PHP-FPM weiterreicht – API und Datenbank bleiben im internen Netz.
+      - Weil PostgreSQL keine Ports kennt.
+    answer: 1
+    explanation: Ein Eingang nach außen, alles andere intern – weniger Angriffsfläche, ein Origin, kein CORS.
+  - module: auslieferung
+    type: multiple
+    question: Was gehört in ein gutes Deploy-Skript?
+    options:
+      - "`set -euo pipefail`"
+      - "`php artisan migrate --force` vor dem Start der neuen Container"
+      - Ein Health-Check auf `/up` am Ende
+      - "`APP_DEBUG=true`, um Fehler schneller zu sehen"
+    answers: [0, 1, 2]
+    explanation: Abbruch bei Fehlern, Migration vor dem Start und ein Beweis am Ende. Debug-Ausgaben haben in Produktion nichts verloren.
+  - module: auslieferung
+    type: single
+    question: Nach einem Deployment antwortet die App mit 500. Was tust du zuerst?
+    options:
+      - Direkt auf dem Server im Code nach dem Fehler suchen.
+      - Nach Runbook auf die letzte funktionierende Version zurückgehen und dann die Ursache suchen.
+      - Abwarten, ob es sich von selbst löst.
+    answer: 1
+    explanation: Erst den Schaden begrenzen (Rollback), dann in Ruhe analysieren.
+  - module: auslieferung
+    type: single
+    question: Welche Maßnahme aus einer Retrospektive ist am besten?
+    options:
+      - „Wir passen nächstes Mal besser auf.“
+      - „Auf der Go-Live-Checkliste steht ab sofort: Migration vorher auf einer Kopie der Produktionsdaten testen.“
+      - „Fehler passieren eben.“
+    answer: 1
+    explanation: Eine gute Maßnahme ist konkret, überprüfbar und an einem festen Ort verankert.
+tasks:
+  - module: backend
+    id: pruefung-validierung
+    type: code
+    language: php
+    title: Die Validierungsregeln als Funktion
+    description: |
+      Schreibe `validateWorkshop(array $input, DateTimeImmutable $now): array`. Sie prüft die Eingaben wie der
+      `StoreWorkshopRequest` und gibt ein Array **Feld → Meldung** zurück (leer, wenn alles gültig ist):
+
+      - `title`: Pflicht, String, nach `trim` 1 bis 120 Zeichen → sonst `'Titel fehlt oder ist zu lang.'`
+      - `location`: Pflicht, nach `trim` nicht leer → sonst `'Ort fehlt.'`
+      - `starts_at`: Pflicht, als Datum lesbar (`new DateTimeImmutable(...)`) und nach `$now` → sonst
+        `'Beginn muss in der Zukunft liegen.'`
+      - `capacity`: Pflicht, ganze Zahl (`is_int`) von 1 bis 500 → sonst `'1 bis 500 Plätze.'`
+
+      Die Reihenfolge der Schlüssel im Ergebnis ist: title, location, starts_at, capacity.
+    starter: |
+      <?php
+
+      declare(strict_types=1);
+
+      function validateWorkshop(array $input, DateTimeImmutable $now): array
+      {
+          $errors = [];
+
+          return $errors;
+      }
+    tests:
+      - name: Gültige Eingaben ergeben keine Fehler
+        code: |
+          $now = new DateTimeImmutable('2026-10-10 12:00');
+          assert_same([], validateWorkshop(['title' => 'Yoga', 'location' => 'Halle', 'starts_at' => '2026-11-01 18:00', 'capacity' => 12], $now));
+      - name: Alles fehlt
+        code: |
+          $now = new DateTimeImmutable('2026-10-10 12:00');
+          assert_same(['title', 'location', 'starts_at', 'capacity'], array_keys(validateWorkshop([], $now)));
+      - name: Vergangenheit und zu viele Plätze
+        code: |
+          $now = new DateTimeImmutable('2026-10-10 12:00');
+          $errors = validateWorkshop(['title' => 'Yoga', 'location' => 'Halle', 'starts_at' => '2026-10-01 18:00', 'capacity' => 501], $now);
+          assert_same(['starts_at' => 'Beginn muss in der Zukunft liegen.', 'capacity' => '1 bis 500 Plätze.'], $errors);
+      - name: Unlesbares Datum und Kapazität als Text
+        code: |
+          $now = new DateTimeImmutable('2026-10-10 12:00');
+          $errors = validateWorkshop(['title' => 'Yoga', 'location' => 'Halle', 'starts_at' => 'irgendwann', 'capacity' => '12'], $now);
+          assert_same(['starts_at', 'capacity'], array_keys($errors));
+      - name: Nur Leerzeichen zählen als leer
+        code: |
+          $now = new DateTimeImmutable('2026-10-10 12:00');
+          $errors = validateWorkshop(['title' => '   ', 'location' => ' ', 'starts_at' => '2026-12-01 10:00', 'capacity' => 1], $now);
+          assert_same(['title' => 'Titel fehlt oder ist zu lang.', 'location' => 'Ort fehlt.'], $errors);
+    solution: |
+      <?php
+
+      declare(strict_types=1);
+
+      function validateWorkshop(array $input, DateTimeImmutable $now): array
+      {
+          $errors = [];
+
+          $title = is_string($input['title'] ?? null) ? trim($input['title']) : '';
+          if ($title === '' || mb_strlen($title) > 120) {
+              $errors['title'] = 'Titel fehlt oder ist zu lang.';
+          }
+
+          $location = is_string($input['location'] ?? null) ? trim($input['location']) : '';
+          if ($location === '') {
+              $errors['location'] = 'Ort fehlt.';
+          }
+
+          try {
+              $startsAt = is_string($input['starts_at'] ?? null) ? new DateTimeImmutable($input['starts_at']) : null;
+          } catch (Exception) {
+              $startsAt = null;
+          }
+          if ($startsAt === null || $startsAt <= $now) {
+              $errors['starts_at'] = 'Beginn muss in der Zukunft liegen.';
+          }
+
+          $capacity = $input['capacity'] ?? null;
+          if (! is_int($capacity) || $capacity < 1 || $capacity > 500) {
+              $errors['capacity'] = '1 bis 500 Plätze.';
+          }
+
+          return $errors;
+      }
+    hints:
+      - "`new DateTimeImmutable('irgendwann')` wirft eine Exception – fange sie mit try/catch ab."
+      - "`is_int('12')` ist false – genau so soll es sein."
+  - module: frontend
+    id: pruefung-buchungsantwort
+    type: code
+    language: ts
+    title: Was zeigt das Frontend nach dem Buchen?
+    description: |
+      Schreibe `afterBooking(status: number, body: unknown)`. Sie übersetzt die Antwort der API in eine
+      Anweisung für die Oberfläche:
+
+      - `201` → `{ type: 'success', message: 'Gebucht – bis bald!' }`
+      - `401` → `{ type: 'redirect', to: '/login' }`
+      - `409` → `{ type: 'error', message: <message aus dem Body> }`; fehlt `message` oder ist sie kein String:
+        `'Buchen ist gerade nicht möglich.'`
+      - alles andere → `{ type: 'error', message: 'Unbekannter Fehler. Bitte versuch es später erneut.' }`
+    starter: |
+      type Outcome =
+        | { type: 'success'; message: string }
+        | { type: 'redirect'; to: string }
+        | { type: 'error'; message: string }
+
+      function afterBooking(status: number, body: unknown): Outcome {
+        return { type: 'error', message: '' }
+      }
+    tests:
+      - name: Erfolg
+        code: |
+          assertDeepEqual(afterBooking(201, { data: {} }), { type: 'success', message: 'Gebucht – bis bald!' })
+      - name: Nicht angemeldet
+        code: |
+          assertDeepEqual(afterBooking(401, {}), { type: 'redirect', to: '/login' })
+      - name: Konflikt mit Meldung
+        code: |
+          assertDeepEqual(afterBooking(409, { message: 'Der Workshop ist leider ausgebucht.' }), { type: 'error', message: 'Der Workshop ist leider ausgebucht.' })
+      - name: Konflikt ohne brauchbare Meldung
+        code: |
+          assertDeepEqual(afterBooking(409, null), { type: 'error', message: 'Buchen ist gerade nicht möglich.' })
+          assertDeepEqual(afterBooking(409, { message: 42 }), { type: 'error', message: 'Buchen ist gerade nicht möglich.' })
+      - name: Serverfehler
+        code: |
+          assertEqual(afterBooking(500, {}).type, 'error')
+    solution: |
+      type Outcome =
+        | { type: 'success'; message: string }
+        | { type: 'redirect'; to: string }
+        | { type: 'error'; message: string }
+
+      function afterBooking(status: number, body: unknown): Outcome {
+        if (status === 201) return { type: 'success', message: 'Gebucht – bis bald!' }
+        if (status === 401) return { type: 'redirect', to: '/login' }
+        if (status === 409) {
+          const message =
+            typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string'
+              ? body.message
+              : 'Buchen ist gerade nicht möglich.'
+          return { type: 'error', message }
+        }
+        return { type: 'error', message: 'Unbekannter Fehler. Bitte versuch es später erneut.' }
+      }
+    hints:
+      - Prüfe die Statuscodes nacheinander mit `if`.
+      - "Für 409: `typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string'`."
+  - module: auslieferung
+    id: pruefung-deploy-kit
+    type: terminal
+    title: Deploy-Skript und Go-Live-Checkliste
+    description: |
+      Lege im Ordner `pruefung-go-live` zwei Dateien an:
+
+      1. `deploy.sh` (ausführbar, `#!/usr/bin/env bash` in Zeile 1, `set -euo pipefail` in Zeile 2) mit genau
+         dieser Reihenfolge: `docker compose build` → `docker compose run --rm api php artisan migrate --force` →
+         `docker compose up -d` → `curl -fsS "$APP_URL/up"`.
+      2. `go-live.md` mit mindestens **acht** Punkten im Format `- [ ] …`. Unter ihnen müssen diese Begriffe
+         vorkommen: `APP_DEBUG=false`, `Backup`, `Rollback` und `/up`.
+    workdir: pruefung-go-live
+    checks:
+      - type: command
+        run: test -x deploy.sh && bash -n deploy.sh && sed -n '1,2p' deploy.sh | paste -sd '|' -
+        stdout_equals: "#!/usr/bin/env bash|set -euo pipefail"
+        message: deploy.sh fehlt, ist nicht ausführbar, hat einen Syntaxfehler oder beginnt nicht mit Shebang und set -euo pipefail.
+      - type: command
+        run: >-
+          awk '/docker +compose +build/{b=NR} /artisan +migrate +--force/{m=NR} /docker +compose +up +-d/{u=NR} /curl +-fsS.*\/up/{c=NR}
+          END{print (b && m && u && c && b<m && m<u && u<c) ? "ok" : "falsch"}' deploy.sh
+        stdout_equals: ok
+        message: "Reihenfolge in deploy.sh: build → migrate --force → up -d → curl -fsS auf /up."
+      - type: command
+        run: grep -cE '^- \[[ xX]\] ' go-live.md
+        stdout_matches: "^([8-9]|[1-9][0-9]+)\\s*$"
+        message: go-live.md braucht mindestens acht Punkte im Format „- [ ] …“.
+      - type: command
+        run: for w in 'APP_DEBUG=false' 'Backup' 'Rollback' '/up'; do grep -E '^- \[[ xX]\] ' go-live.md | grep -qF "$w" || echo "$w"; done
+        stdout_equals: ""
+        message: "In den Checklistenpunkten fehlt mindestens einer dieser Begriffe: APP_DEBUG=false, Backup, Rollback, /up."
+    hints:
+      - "`chmod +x deploy.sh` nicht vergessen."
+      - "Ein Checklistenpunkt: `- [ ] Backup erstellt und Wiederherstellung geprobt`."
+    solution: |
+      ```bash title="deploy.sh"
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      APP_URL="${APP_URL:-http://localhost:8080}"
+
+      docker compose build
+      docker compose run --rm api php artisan migrate --force
+      docker compose up -d
+      curl -fsS "$APP_URL/up"
+      ```
+
+      ```markdown title="go-live.md"
+      - [ ] CI auf main ist grün
+      - [ ] APP_ENV=production und APP_DEBUG=false
+      - [ ] Eigener APP_KEY, nicht im Repository
+      - [ ] Backup erstellt und Wiederherstellung geprobt
+      - [ ] Migrationen laufen mit --force
+      - [ ] HTTPS aktiv
+      - [ ] Health-Check /up antwortet mit 200
+      - [ ] Rollback-Weg aufgeschrieben und geübt
+      ```
