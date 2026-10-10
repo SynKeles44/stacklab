@@ -1,0 +1,657 @@
+title: Performance-Check für einen Produktkatalog
+description: |
+  Ein kleiner Online-Shop hat einen Produktkatalog in PHP und eine statische Startseite, die ein Node.js-Server
+  ausliefert. Kund:innen beschweren sich, dass alles „irgendwie langsam“ ist. Du übernimmst den Performance-Check –
+  genau so, wie du es im Kurs gelernt hast: erst messen, dann den Engpass beheben, dann erneut messen und das
+  Ergebnis mit einem Budget und einem Lasttest absichern.
+
+  Klicke zuerst auf **Projekt vorbereiten**. Danach liegt im Ordner `projekt` deines Performance-Workspace:
+
+  - `shop.db` – SQLite-Datenbank mit 20 Kategorien, 400 Produkten und 20 000 Bewertungen
+  - `db.php` – stellt die Verbindung her und meldet am Ende auf der Fehlerausgabe `Abfragen: N` (nicht verändern)
+  - `katalog.php` – gibt den Katalog aus: Produkt, Kategorie, durchschnittliche Bewertung
+  - `public/` – die Startseite mit gebauten Assets, `server.js` – ein kleiner Server dafür
+
+  Öffne das Übungs-Terminal und wechsle mit `cd projekt` in den Ordner. Die Schritte bauen aufeinander auf; lösche
+  nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Ein vermessener und optimierter Produktkatalog: ein wiederverwendbares Mess-Skript, Messungen vorher und nachher, ein
+  Index, ein N+1-freier Katalog, Cache-Regeln, vorkomprimierte Assets, ein automatisch geprüftes Budget, ein Lasttest
+  und ein kurzer Performance-Bericht mit allen Zahlen.
+workdir: projekt
+setup: |
+  sqlite3 shop.db <<'SQL'
+  CREATE TABLE categories (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+  CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, category_id INTEGER NOT NULL REFERENCES categories(id), price INTEGER NOT NULL);
+  CREATE TABLE reviews (id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES products(id), rating INTEGER NOT NULL);
+  WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 20)
+  INSERT INTO categories (id, name) SELECT i, 'Kategorie ' || printf('%02d', i) FROM n;
+  WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 400)
+  INSERT INTO products (id, name, category_id, price) SELECT i, 'Produkt ' || printf('%03d', i), (i * 7) % 20 + 1, 499 + (i * 13) % 5000 FROM n;
+  WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 20000)
+  INSERT INTO reviews (product_id, rating) SELECT (i * 7919) % 380 + 1, (i * 31) % 5 + 1 FROM n;
+  SQL
+  cat > db.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  final class CountingStatement extends PDOStatement
+  {
+      protected function __construct(private readonly CountingPdo $pdo) {}
+
+      public function execute(?array $params = null): bool
+      {
+          $this->pdo->queries++;
+          return parent::execute($params);
+      }
+  }
+
+  final class CountingPdo extends PDO
+  {
+      public int $queries = 0;
+
+      public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
+      {
+          $this->queries++;
+          return $fetchMode === null ? parent::query($query) : parent::query($query, $fetchMode, ...$fetchModeArgs);
+      }
+  }
+
+  function db(): CountingPdo
+  {
+      $pdo = new CountingPdo('sqlite:' . __DIR__ . '/shop.db');
+      $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+      $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+      $pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, [CountingStatement::class, [$pdo]]);
+      register_shutdown_function(static function () use ($pdo): void {
+          fwrite(STDERR, "Abfragen: {$pdo->queries}\n");
+      });
+      return $pdo;
+  }
+  EOF
+  cat > katalog.php <<'EOF'
+  <?php
+
+  declare(strict_types=1);
+
+  require __DIR__ . '/db.php';
+
+  $pdo = db();
+  $products = $pdo->query('SELECT id, name, category_id FROM products ORDER BY id')->fetchAll();
+
+  foreach ($products as $product) {
+      $category = $pdo->prepare('SELECT name FROM categories WHERE id = ?');
+      $category->execute([$product['category_id']]);
+      $categoryName = $category->fetchColumn();
+
+      $rating = $pdo->prepare('SELECT AVG(rating) FROM reviews WHERE product_id = ?');
+      $rating->execute([$product['id']]);
+      $average = $rating->fetchColumn();
+
+      printf(
+          "%s | %s | %s\n",
+          $product['name'],
+          $categoryName,
+          $average === null ? '-' : number_format((float) $average, 2, ',', ''),
+      );
+  }
+  EOF
+  php katalog.php 2>/dev/null | md5sum | cut -d' ' -f1 > .erwartet.md5
+  mkdir -p public/assets messungen
+  cat > public/index.html <<'EOF'
+  <!doctype html>
+  <html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <title>Produktkatalog</title>
+    <link rel="stylesheet" href="/assets/app.51d0e7aa.css">
+    <script defer src="/assets/app.3c9e1f20.js"></script>
+    <script defer src="/assets/chart.7a41b0d9.js"></script>
+  </head>
+  <body><h1>Produktkatalog</h1></body>
+  </html>
+  EOF
+  printf 'export const appData = "%s";\n' "$(head -c 22500 /dev/urandom | base64 -w0)" > public/assets/app.3c9e1f20.js
+  printf 'export const chartData = "%s";\n' "$(head -c 30000 /dev/urandom | base64 -w0)" > public/assets/chart.7a41b0d9.js
+  for i in $(seq 1 300); do echo ".product-$i { display: grid; gap: 0.5rem; padding: 1rem; }"; done > public/assets/app.51d0e7aa.css
+  cat > server.js <<'EOF'
+  const http = require('node:http');
+  const fs = require('node:fs');
+  const path = require('node:path');
+
+  const root = path.join(__dirname, 'public');
+  const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css' };
+  let rules = null;
+  try {
+    rules = require('./cache-regeln.js');
+  } catch {
+    rules = null;
+  }
+
+  const server = http.createServer((req, res) => {
+    const urlPath = req.url === '/' ? '/index.html' : req.url.split('?')[0];
+    const file = path.join(root, path.normalize(urlPath));
+    if (!file.startsWith(root) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+      res.writeHead(404).end();
+      return;
+    }
+    const headers = { 'content-type': types[path.extname(file)] ?? 'application/octet-stream' };
+    if (rules) headers['cache-control'] = rules.cacheControlFor(req.url);
+    let body = file;
+    if ((req.headers['accept-encoding'] ?? '').includes('br') && fs.existsSync(`${file}.br`)) {
+      body = `${file}.br`;
+      headers['content-encoding'] = 'br';
+    }
+    res.writeHead(200, headers);
+    fs.createReadStream(body).pipe(res);
+  });
+
+  server.listen(Number(process.env.PORT ?? 0), () => {
+    console.error(`Server läuft auf Port ${server.address().port}`);
+  });
+  EOF
+steps:
+  - id: mess-skript
+    title: Ein Mess-Skript bauen und den Ist-Zustand festhalten
+    description: |
+      Bevor du irgendetwas änderst, misst du. Und weil du später noch einmal messen willst, baust du dir dafür ein
+      kleines, wiederverwendbares Werkzeug.
+
+      1. Lege `messen.js` an. Es startet `php katalog.php` **5-mal** nacheinander mit `spawnSync` aus `node:child_process`
+         und misst jede Laufzeit mit `performance.now()`.
+      2. Aus der Fehlerausgabe des letzten Laufs liest es die Zahl hinter `Abfragen:`.
+      3. Es schreibt `{ "abfragen": <Zahl>, "ms": <Median der 5 Laufzeiten> }` als JSON in die Datei, die als erstes
+         Argument übergeben wird.
+      4. Miss den Ist-Zustand: `node messen.js messungen/vorher.json`.
+    checklist:
+      - messen.js startet katalog.php fünfmal und misst mit performance.now()
+      - Der Median und die Zahl der Abfragen landen als JSON in der übergebenen Datei
+      - messungen/vorher.json ist angelegt
+    hints:
+      - "`const r = spawnSync('php', ['katalog.php'], { encoding: 'utf8' });` – danach steht die Fehlerausgabe in `r.stderr`."
+      - "`Number(/Abfragen: (\\d+)/.exec(r.stderr)[1])` liest die Zahl aus."
+      - "`fs.writeFileSync(process.argv[2], JSON.stringify({ abfragen, ms }, null, 2));`"
+    checks:
+      - type: file_contains
+        path: messen.js
+        pattern: "performance\\.now\\("
+        message: messen.js soll die Laufzeit mit performance.now() messen.
+      - type: command
+        run: jq -e '.abfragen == 801' messungen/vorher.json
+        message: messungen/vorher.json braucht das Feld abfragen mit der gemeldeten Zahl (der ursprüngliche Katalog braucht 801 Abfragen).
+      - type: command
+        run: jq -e '(.ms | type == "number") and .ms > 0' messungen/vorher.json
+        message: messungen/vorher.json braucht das Feld ms mit dem Median der Laufzeiten in Millisekunden.
+    solution: |
+      ```js
+      // messen.js
+      const { spawnSync } = require('node:child_process');
+      const fs = require('node:fs');
+
+      const times = [];
+      let queries = 0;
+      for (let i = 0; i < 5; i++) {
+        const start = performance.now();
+        const run = spawnSync('php', ['katalog.php'], { encoding: 'utf8' });
+        times.push(performance.now() - start);
+        queries = Number(/Abfragen: (\d+)/.exec(run.stderr)[1]);
+      }
+      times.sort((a, b) => a - b);
+
+      const result = { abfragen: queries, ms: Math.round(times[2] * 10) / 10 };
+      fs.writeFileSync(process.argv[2], JSON.stringify(result, null, 2));
+      console.log(result);
+      ```
+
+      ```bash
+      node messen.js messungen/vorher.json
+      ```
+    solve: |
+      cat > messen.js <<'EOF'
+      const { spawnSync } = require('node:child_process');
+      const fs = require('node:fs');
+
+      const times = [];
+      let queries = 0;
+      for (let i = 0; i < 5; i++) {
+        const start = performance.now();
+        const run = spawnSync('php', ['katalog.php'], { encoding: 'utf8' });
+        times.push(performance.now() - start);
+        queries = Number(/Abfragen: (\d+)/.exec(run.stderr)[1]);
+      }
+      times.sort((a, b) => a - b);
+
+      const result = { abfragen: queries, ms: Math.round(times[2] * 10) / 10 };
+      fs.writeFileSync(process.argv[2], JSON.stringify(result, null, 2));
+      console.log(result);
+      EOF
+      mkdir -p messungen
+      node messen.js messungen/vorher.json
+  - id: index-anlegen
+    title: Den fehlenden Index finden
+    description: |
+      Der Katalog fragt pro Produkt `SELECT AVG(rating) FROM reviews WHERE product_id = ?`. Prüfe, wie SQLite diese
+      Abfrage ausführt.
+
+      1. Zeig dir den Ausführungsplan an:
+         `sqlite3 shop.db "EXPLAIN QUERY PLAN SELECT AVG(rating) FROM reviews WHERE product_id = 1;"`
+      2. Lege einen Index `idx_reviews_product_id` auf `reviews(product_id)` an.
+      3. Speichere den neuen Plan in `messungen/plan.txt`.
+    checklist:
+      - Vorher-Plan gelesen (SCAN reviews)
+      - Index idx_reviews_product_id angelegt
+      - Neuer Plan in messungen/plan.txt
+    hints:
+      - "`CREATE INDEX idx_reviews_product_id ON reviews(product_id);`"
+      - "Mit `> messungen/plan.txt` leitest du die Ausgabe von `sqlite3` in die Datei um."
+    checks:
+      - type: command
+        run: sqlite3 shop.db "EXPLAIN QUERY PLAN SELECT AVG(rating) FROM reviews WHERE product_id = 1;"
+        stdout_matches: "USING (COVERING )?INDEX idx_reviews_product_id"
+        message: SQLite nutzt noch keinen Index idx_reviews_product_id für reviews.product_id.
+      - type: file_contains
+        path: messungen/plan.txt
+        pattern: "SEARCH reviews USING (COVERING )?INDEX"
+        message: messungen/plan.txt enthält noch nicht den neuen Plan mit SEARCH reviews USING INDEX.
+    solution: |
+      ```bash
+      sqlite3 shop.db "EXPLAIN QUERY PLAN SELECT AVG(rating) FROM reviews WHERE product_id = 1;"
+      sqlite3 shop.db "CREATE INDEX idx_reviews_product_id ON reviews(product_id);"
+      sqlite3 shop.db "EXPLAIN QUERY PLAN SELECT AVG(rating) FROM reviews WHERE product_id = 1;" > messungen/plan.txt
+      ```
+    solve: |
+      sqlite3 shop.db "CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON reviews(product_id);"
+      sqlite3 shop.db "EXPLAIN QUERY PLAN SELECT AVG(rating) FROM reviews WHERE product_id = 1;" > messungen/plan.txt
+  - id: n-plus-1
+    title: Das N+1-Problem im Katalog beheben
+    description: |
+      Der Index hilft jeder einzelnen Abfrage – aber es sind immer noch 801. Schreibe `katalog.php` so um, dass er mit
+      **höchstens zwei** Abfragen auskommt.
+
+      - Die Ausgabe muss Zeichen für Zeichen gleich bleiben: gleiche Reihenfolge, gleiches Format, `-` bei Produkten
+        ohne Bewertung, Durchschnitt mit zwei Nachkommastellen und Komma.
+      - `db.php` bleibt unverändert.
+
+      Prüfe mit `php katalog.php > /dev/null` – in der letzten Zeile siehst du die Zahl der Abfragen.
+    checklist:
+      - Eine Abfrage mit JOIN auf categories und LEFT JOIN auf reviews
+      - GROUP BY pro Produkt, ORDER BY p.id
+      - Ausgabe unverändert, höchstens zwei Abfragen
+    hints:
+      - "`JOIN categories c ON c.id = p.category_id` liefert den Kategorienamen gleich mit."
+      - "`LEFT JOIN reviews r ON r.product_id = p.id` und `AVG(r.rating)` – ohne Bewertungen ist der Durchschnitt `NULL`."
+      - "Die `printf`-Zeile kannst du fast unverändert übernehmen."
+    checks:
+      - type: command
+        run: php katalog.php 2>/dev/null | md5sum | cut -d' ' -f1 | diff -q - .erwartet.md5
+        message: Die Ausgabe von katalog.php hat sich verändert. Reihenfolge, Format und Rundung müssen gleich bleiben.
+      - type: command
+        run: php katalog.php 2>&1 >/dev/null | grep -oE '[0-9]+' | tail -n 1
+        stdout_matches: "^[12]$"
+        message: katalog.php braucht noch mehr als zwei Abfragen. Hole Produkte, Kategorien und Durchschnitte mit einer Abfrage.
+    solution: |
+      ```php
+      <?php
+      // katalog.php
+      declare(strict_types=1);
+
+      require __DIR__ . '/db.php';
+
+      $pdo = db();
+      $rows = $pdo->query(
+          'SELECT p.name, c.name AS category, AVG(r.rating) AS average
+           FROM products p
+           JOIN categories c ON c.id = p.category_id
+           LEFT JOIN reviews r ON r.product_id = p.id
+           GROUP BY p.id, p.name, c.name
+           ORDER BY p.id'
+      )->fetchAll();
+
+      foreach ($rows as $row) {
+          printf(
+              "%s | %s | %s\n",
+              $row['name'],
+              $row['category'],
+              $row['average'] === null ? '-' : number_format((float) $row['average'], 2, ',', ''),
+          );
+      }
+      ```
+    solve: |
+      cat > katalog.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__ . '/db.php';
+
+      $pdo = db();
+      $rows = $pdo->query(
+          'SELECT p.name, c.name AS category, AVG(r.rating) AS average
+           FROM products p
+           JOIN categories c ON c.id = p.category_id
+           LEFT JOIN reviews r ON r.product_id = p.id
+           GROUP BY p.id, p.name, c.name
+           ORDER BY p.id'
+      )->fetchAll();
+
+      foreach ($rows as $row) {
+          printf(
+              "%s | %s | %s\n",
+              $row['name'],
+              $row['category'],
+              $row['average'] === null ? '-' : number_format((float) $row['average'], 2, ',', ''),
+          );
+      }
+      EOF
+  - id: nachher-messen
+    title: Erneut messen
+    description: |
+      Eine Optimierung ohne zweite Messung ist eine Vermutung. Nutze dein Mess-Skript noch einmal – unverändert.
+
+      1. `node messen.js messungen/nachher.json`
+      2. Vergleiche: `jq -s '{vorher: .[0], nachher: .[1]}' messungen/vorher.json messungen/nachher.json`
+    checklist:
+      - messungen/nachher.json angelegt
+      - Weniger Abfragen und kürzere Laufzeit als vorher
+    hints:
+      - Wenn `nachher.json` nicht schneller ist, prüfe, ob `katalog.php` wirklich nur noch eine Abfrage stellt.
+    checks:
+      - type: command
+        run: jq -e '.abfragen <= 2' messungen/nachher.json
+        message: messungen/nachher.json fehlt oder zeigt noch mehr als zwei Abfragen.
+      - type: command
+        run: jq -n -e --slurpfile v messungen/vorher.json --slurpfile n messungen/nachher.json '$n[0].ms < $v[0].ms'
+        message: Die Laufzeit in messungen/nachher.json ist nicht kleiner als vorher. Miss nach der Optimierung erneut.
+    solution: |
+      ```bash
+      node messen.js messungen/nachher.json
+      jq -s '{vorher: .[0], nachher: .[1]}' messungen/vorher.json messungen/nachher.json
+      ```
+    solve: |
+      node messen.js messungen/nachher.json
+  - id: cache-regeln
+    title: Cache-Regeln für die Startseite
+    description: |
+      `server.js` lädt – falls vorhanden – das Modul `cache-regeln.js` und setzt damit den `Cache-Control`-Header.
+      Schreibe dieses Modul.
+
+      `cache-regeln.js` exportiert mit `module.exports = { cacheControlFor };` eine Funktion `cacheControlFor(url)`:
+
+      | URL | Rückgabe |
+      |---|---|
+      | `/` oder endet auf `.html` | `no-cache` |
+      | Dateiname mit 8-stelligem Hex-Hash vor der Endung, z. B. `/assets/app.3c9e1f20.js` | `public, max-age=31536000, immutable` |
+      | alles andere | `public, max-age=3600` |
+    checklist:
+      - cache-regeln.js exportiert cacheControlFor
+      - HTML wird immer geprüft, gehashte Assets ein Jahr gecacht
+    hints:
+      - "Den Hash erkennst du mit `/\\.[0-9a-f]{8}\\.[a-z0-9]+$/`."
+      - "Teste mit `node -e 'console.log(require(\"./cache-regeln.js\").cacheControlFor(\"/\"))'`."
+    checks:
+      - type: command
+        run: |-
+          node -e 'const { cacheControlFor: f } = require("./cache-regeln.js"); process.stdout.write(f("/"))'
+        stdout_equals: no-cache
+        message: Für / soll cacheControlFor "no-cache" liefern.
+      - type: command
+        run: |-
+          node -e 'const { cacheControlFor: f } = require("./cache-regeln.js"); process.stdout.write(f("/assets/app.3c9e1f20.js"))'
+        stdout_equals: "public, max-age=31536000, immutable"
+        message: Gehashte Assets sollen "public, max-age=31536000, immutable" bekommen.
+      - type: command
+        run: |-
+          node -e 'const { cacheControlFor: f } = require("./cache-regeln.js"); process.stdout.write(f("/favicon.ico") + "|" + f("/index.html"))'
+        stdout_equals: "public, max-age=3600|no-cache"
+        message: Dateien ohne Hash sollen "public, max-age=3600" bekommen, HTML-Dateien "no-cache".
+    solution: |
+      ```js
+      // cache-regeln.js
+      function cacheControlFor(url) {
+        if (url === '/' || url.endsWith('.html')) return 'no-cache';
+        if (/\.[0-9a-f]{8}\.[a-z0-9]+$/.test(url)) return 'public, max-age=31536000, immutable';
+        return 'public, max-age=3600';
+      }
+
+      module.exports = { cacheControlFor };
+      ```
+    solve: |
+      cat > cache-regeln.js <<'EOF'
+      function cacheControlFor(url) {
+        if (url === '/' || url.endsWith('.html')) return 'no-cache';
+        if (/\.[0-9a-f]{8}\.[a-z0-9]+$/.test(url)) return 'public, max-age=31536000, immutable';
+        return 'public, max-age=3600';
+      }
+
+      module.exports = { cacheControlFor };
+      EOF
+  - id: vorkomprimieren
+    title: Assets vorkomprimieren
+    description: |
+      Damit der Server nicht bei jeder Anfrage komprimieren muss, legst du komprimierte Fassungen neben die Originale.
+      `server.js` liefert eine `.br`-Datei automatisch aus, wenn der Browser Brotli versteht.
+
+      Erzeuge für **jede** `.js`- und `.css`-Datei in `public/assets`:
+
+      1. eine gzip-Fassung `<datei>.gz` (Original behalten: `gzip -9 -k`),
+      2. eine Brotli-Fassung `<datei>.br` mit `zlib.brotliCompressSync` aus Node.js.
+    checklist:
+      - Zu jeder .js- und .css-Datei gibt es .gz und .br
+      - Die Originale sind noch vorhanden
+    hints:
+      - "`gzip -9 -k public/assets/*.js public/assets/*.css` erzeugt alle .gz-Dateien auf einmal."
+      - "Für Brotli eine Schleife: `for f in public/assets/*.js public/assets/*.css; do node -e '…' \"$f\"; done`"
+      - "Im Node-Einzeiler: `const f = process.argv[1]; fs.writeFileSync(f + '.br', zlib.brotliCompressSync(fs.readFileSync(f)));`"
+    checks:
+      - type: command
+        run: for f in public/assets/*.js public/assets/*.css; do gzip -dc "$f.gz" | cmp -s - "$f" || exit 1; done
+        message: Zu mindestens einer .js- oder .css-Datei fehlt eine passende .gz-Datei (oder das Original wurde gelöscht).
+      - type: command
+        run: |-
+          for f in public/assets/*.js public/assets/*.css; do node -e 'const fs = require("fs"), z = require("zlib"); const f = process.argv[1]; process.exit(z.brotliDecompressSync(fs.readFileSync(f + ".br")).equals(fs.readFileSync(f)) ? 0 : 1)' "$f" || exit 1; done
+        message: Zu mindestens einer .js- oder .css-Datei fehlt eine passende .br-Datei.
+    solution: |
+      ```bash
+      gzip -9 -k public/assets/*.js public/assets/*.css
+      for f in public/assets/*.js public/assets/*.css; do
+        node -e 'const fs = require("fs"), zlib = require("zlib"); const f = process.argv[1];
+          fs.writeFileSync(f + ".br", zlib.brotliCompressSync(fs.readFileSync(f)));' "$f"
+      done
+      ls -l public/assets
+      ```
+    solve: |
+      gzip -9 -k -f public/assets/*.js public/assets/*.css
+      for f in public/assets/*.js public/assets/*.css; do
+        node -e 'const fs = require("fs"), zlib = require("zlib"); const f = process.argv[1]; fs.writeFileSync(f + ".br", zlib.brotliCompressSync(fs.readFileSync(f)));' "$f"
+      done
+  - id: budget
+    title: Ein Budget für die Pipeline
+    description: |
+      Damit die Startseite nicht wieder schleichend wächst, legst du ein Budget fest und prüfst es mit einem Skript.
+
+      1. Lege `budget.json` an: höchstens **60000** Bytes gzip für alle `.js`-Dateien und **10000** für alle `.css`-Dateien:
+         `{ "js": 60000, "css": 10000 }`.
+      2. Schreibe `check-budget.js` wie in der Lektion: `node check-budget.js <ordner> <budget.json>` summiert die
+         gzip-Größen der `.js`- und `.css`-Dateien im Ordner (die `.gz`- und `.br`-Dateien zählen nicht mit), gibt pro Typ
+         eine Zeile aus und endet mit Exit-Code 1, wenn ein Typ über dem Budget liegt.
+      3. Prüfe: `node check-budget.js public/assets budget.json; echo $?` – das Budget soll eingehalten sein.
+    checklist:
+      - budget.json mit js 60000 und css 10000
+      - check-budget.js mit Exit-Code 0 im Budget und 1 darüber
+      - public/assets hält das Budget ein
+    hints:
+      - "`path.extname('app.3c9e1f20.js.gz')` ist `.gz` – solche Dateien überspringst du automatisch, wenn du nur `js` und `css` zählst."
+      - Das Skript aus der Lektion „Das Performance-Budget“ passt unverändert.
+    checks:
+      - type: command
+        run: jq -e '.js == 60000 and .css == 10000' budget.json
+        message: budget.json soll für js den Wert 60000 und für css den Wert 10000 enthalten.
+      - type: command
+        run: node check-budget.js public/assets budget.json
+        message: Für public/assets soll check-budget.js mit Exit-Code 0 enden (Budget eingehalten).
+      - type: command
+        run: |-
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); head -c 90000 /dev/urandom | base64 > "$d/gross.js"; node check-budget.js "$d" budget.json > /dev/null; c=$?; rm -rf "$d"; test "$c" -eq 1
+        message: Bei zu viel JavaScript soll check-budget.js mit Exit-Code 1 enden.
+    solution: |
+      ```bash
+      echo '{ "js": 60000, "css": 10000 }' > budget.json
+      ```
+
+      ```js
+      // check-budget.js
+      const fs = require('node:fs');
+      const path = require('node:path');
+      const zlib = require('node:zlib');
+
+      const [dir, budgetFile] = process.argv.slice(2);
+      const budget = JSON.parse(fs.readFileSync(budgetFile, 'utf8'));
+      const totals = { js: 0, css: 0 };
+
+      for (const name of fs.readdirSync(dir)) {
+        const file = path.join(dir, name);
+        const type = path.extname(name).slice(1);
+        if (!(type in totals) || !fs.statSync(file).isFile()) continue;
+        totals[type] += zlib.gzipSync(fs.readFileSync(file)).length;
+      }
+
+      let overBudget = false;
+      for (const [type, limit] of Object.entries(budget)) {
+        const size = totals[type] ?? 0;
+        const ok = size <= limit;
+        if (!ok) overBudget = true;
+        console.log(`${type}: ${size} / ${limit} B – ${ok ? 'ok' : 'zu groß'}`);
+      }
+
+      process.exitCode = overBudget ? 1 : 0;
+      ```
+    solve: |
+      echo '{ "js": 60000, "css": 10000 }' > budget.json
+      cat > check-budget.js <<'EOF'
+      const fs = require('node:fs');
+      const path = require('node:path');
+      const zlib = require('node:zlib');
+
+      const [dir, budgetFile] = process.argv.slice(2);
+      const budget = JSON.parse(fs.readFileSync(budgetFile, 'utf8'));
+      const totals = { js: 0, css: 0 };
+
+      for (const name of fs.readdirSync(dir)) {
+        const file = path.join(dir, name);
+        const type = path.extname(name).slice(1);
+        if (!(type in totals) || !fs.statSync(file).isFile()) continue;
+        totals[type] += zlib.gzipSync(fs.readFileSync(file)).length;
+      }
+
+      let overBudget = false;
+      for (const [type, limit] of Object.entries(budget)) {
+        const size = totals[type] ?? 0;
+        const ok = size <= limit;
+        if (!ok) overBudget = true;
+        console.log(`${type}: ${size} / ${limit} B – ${ok ? 'ok' : 'zu groß'}`);
+      }
+
+      process.exitCode = overBudget ? 1 : 0;
+      EOF
+      node check-budget.js public/assets budget.json
+  - id: lasttest
+    title: Die Startseite unter Last
+    description: |
+      Zum Schluss prüfst du, wie sich der Server unter vielen gleichzeitigen Anfragen verhält.
+
+      1. Führe einen Lasttest gegen die Startseite `/` mit **10** Verbindungen und **5** Sekunden aus. autocannon startet
+         den Server selbst; das Ergebnis landet in `messungen/last.json`:
+         `npx -y autocannon@8 -c 10 -d 5 -j --on-port / -- node server.js > messungen/last.json`
+      2. Sieh dir p50, p99 und die Anfragen pro Sekunde an.
+    checklist:
+      - Lasttest mit 10 Verbindungen und 5 Sekunden
+      - Keine Fehlerantworten
+    hints:
+      - Beim ersten Aufruf lädt npx autocannon herunter – das dauert einige Sekunden.
+      - "`jq '{p50: .latency.p50, p99: .latency.p99, rps: .requests.average, fehler: .non2xx}' messungen/last.json`"
+    checks:
+      - type: command
+        run: jq -e '.connections == 10 and .duration >= 4.5 and .requests.total > 100' messungen/last.json
+        message: messungen/last.json fehlt oder stammt nicht aus einem Test mit 10 Verbindungen über 5 Sekunden.
+      - type: command
+        run: jq -e '.non2xx == 0 and .errors == 0 and (.url | endswith("/"))' messungen/last.json
+        message: Der Lasttest soll die Startseite / ohne Fehlerantworten belasten.
+    solution: |
+      ```bash
+      npx -y autocannon@8 -c 10 -d 5 -j --on-port / -- node server.js > messungen/last.json
+      jq '{p50: .latency.p50, p99: .latency.p99, rps: .requests.average, fehler: .non2xx}' messungen/last.json
+      ```
+    solve: |
+      npx -y autocannon@8 -c 10 -d 5 -j --on-port / -- node server.js > messungen/last.json 2>/dev/null
+  - id: bericht
+    title: Der Performance-Bericht
+    description: |
+      Ergebnisse, die niemand liest, ändern nichts. Fasse deinen Performance-Check in `PERFORMANCE.md` zusammen –
+      so, wie du es in einen Pull Request schreiben würdest.
+
+      Der Bericht enthält mindestens:
+
+      - eine Überschrift,
+      - die Zahl der Abfragen **vorher und nachher** sowie die gemessenen Laufzeiten (aus `messungen/*.json`),
+      - **p99** und die Anfragen pro Sekunde aus dem Lasttest,
+      - einen Satz zum Budget (`check-budget.js`).
+    checklist:
+      - Abfragen und Laufzeit vorher/nachher stehen im Bericht
+      - p99 und Anfragen pro Sekunde aus dem Lasttest stehen im Bericht
+      - Das Budget ist erwähnt
+    hints:
+      - "Eine Tabelle mit den Spalten Kennzahl, Vorher, Nachher ist übersichtlich."
+      - "Die Werte holst du mit `jq -r .abfragen messungen/vorher.json` usw."
+    checks:
+      - type: file_contains
+        path: PERFORMANCE.md
+        pattern: "^# "
+        message: PERFORMANCE.md braucht eine Überschrift (eine Zeile, die mit „# “ beginnt).
+      - type: command
+        run: grep -qw 801 PERFORMANCE.md && grep -qw "$(jq -r .abfragen messungen/nachher.json)" PERFORMANCE.md
+        message: In PERFORMANCE.md fehlt die Zahl der Abfragen vorher (801) oder nachher.
+      - type: command
+        run: grep -qF "$(jq -r .ms messungen/vorher.json)" PERFORMANCE.md && grep -qF "$(jq -r .ms messungen/nachher.json)" PERFORMANCE.md
+        message: In PERFORMANCE.md fehlen die gemessenen Laufzeiten (ms) aus messungen/vorher.json und messungen/nachher.json.
+      - type: command
+        run: grep -qi "p99" PERFORMANCE.md && grep -qF "$(jq -r .latency.p99 messungen/last.json)" PERFORMANCE.md
+        message: In PERFORMANCE.md fehlt das p99 aus dem Lasttest (messungen/last.json).
+      - type: file_contains
+        path: PERFORMANCE.md
+        pattern: "[Bb]udget"
+        message: Erwähne in PERFORMANCE.md das Budget.
+    solution: |
+      ```bash
+      cat > PERFORMANCE.md <<EOF
+      # Performance-Check Produktkatalog
+
+      | Kennzahl | Vorher | Nachher |
+      |---|---|---|
+      | Abfragen katalog.php | $(jq -r .abfragen messungen/vorher.json) | $(jq -r .abfragen messungen/nachher.json) |
+      | Laufzeit (Median, ms) | $(jq -r .ms messungen/vorher.json) | $(jq -r .ms messungen/nachher.json) |
+
+      Maßnahmen: Index idx_reviews_product_id, N+1 durch eine JOIN-Abfrage ersetzt, Cache-Regeln, Brotli/gzip vorkomprimiert.
+
+      Lasttest Startseite (10 Verbindungen, 5 s): p99 $(jq -r .latency.p99 messungen/last.json) ms,
+      $(jq -r .requests.average messungen/last.json) Anfragen pro Sekunde, keine Fehler.
+
+      Budget: JavaScript ≤ 60000 B, CSS ≤ 10000 B (gzip) – geprüft mit check-budget.js.
+      EOF
+      ```
+    solve: |
+      cat > PERFORMANCE.md <<EOF
+      # Performance-Check Produktkatalog
+
+      | Kennzahl | Vorher | Nachher |
+      |---|---|---|
+      | Abfragen katalog.php | $(jq -r .abfragen messungen/vorher.json) | $(jq -r .abfragen messungen/nachher.json) |
+      | Laufzeit (Median, ms) | $(jq -r .ms messungen/vorher.json) | $(jq -r .ms messungen/nachher.json) |
+
+      Maßnahmen: Index idx_reviews_product_id, N+1 durch eine JOIN-Abfrage ersetzt, Cache-Regeln, Brotli/gzip vorkomprimiert.
+
+      Lasttest Startseite (10 Verbindungen, 5 s): p99 $(jq -r .latency.p99 messungen/last.json) ms,
+      $(jq -r .requests.average messungen/last.json) Anfragen pro Sekunde, keine Fehler.
+
+      Budget: JavaScript höchstens 60000 B, CSS höchstens 10000 B (gzip) – geprüft mit check-budget.js.
+      EOF

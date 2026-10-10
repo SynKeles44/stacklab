@@ -1,0 +1,470 @@
+# Lexikon des Kurses „Performance“
+- slug: performance
+  term: Performance
+  short: Wie schnell und effizient ein System seine Arbeit erledigt – aus Sicht der Nutzer:innen und der Server.
+  explanation: >
+    Performance umfasst Antwortzeiten, Ladezeiten im Browser und wie viele Anfragen ein System gleichzeitig schafft.
+    Sie wird gemessen, nicht geschätzt: mit Kennzahlen wie Median, Perzentilen und Durchsatz. Gute Performance ist
+    ein Ziel, das man festlegt, überprüft und mit einem Budget absichert.
+  example: "„p95 der Such-API unter 300 ms“ ist ein konkretes Performance-Ziel."
+  category: performance
+  aliases: [Leistung, Geschwindigkeit, Web-Performance]
+  related: [antwortzeit, durchsatz, perzentil]
+  lesson: performance/messen-statt-raten
+
+- slug: antwortzeit
+  term: Antwortzeit
+  short: Die Zeit vom Absenden einer Anfrage bis zum Eintreffen der vollständigen Antwort.
+  explanation: >
+    Die Antwortzeit enthält Netzwerkweg, Warten in Schlangen und die eigentliche Verarbeitung auf dem Server. Weil sie
+    von Anfrage zu Anfrage schwankt, beschreibt man sie mit Median und Perzentilen statt mit einem Durchschnitt.
+  example: "Die Produkt-API hat eine Antwortzeit von 40 ms im Median und 250 ms im p99."
+  category: performance
+  aliases: [Antwortzeiten, Response Time]
+  related: [latenz, perzentil, durchsatz]
+  lesson: performance/messen-statt-raten
+
+- slug: durchsatz
+  term: Durchsatz
+  short: Wie viele Anfragen oder Aufgaben ein System pro Zeiteinheit erledigt.
+  explanation: >
+    Der Durchsatz wird meist in Anfragen pro Sekunde (requests per second, rps) angegeben. Er steigt mit der Last, bis
+    das System seine Grenze erreicht – danach bleibt er gleich, und die Antwortzeiten wachsen stark.
+  example: "Der Server schafft einen Durchsatz von 1 200 Anfragen pro Sekunde."
+  category: performance
+  aliases: [Throughput, Anfragen pro Sekunde, rps]
+  related: [antwortzeit, lasttest, engpass]
+  lesson: performance/messen-statt-raten
+
+- slug: perzentil
+  term: Perzentil
+  short: Der Wert, unter dem ein bestimmter Anteil aller Messwerte liegt – p95 bedeutet „95 % sind kleiner oder gleich“.
+  explanation: >
+    Für Perzentile sortiert man alle Messwerte und liest an der passenden Position ab. p50 ist der Median, p95 und p99
+    zeigen das langsame Ende der Verteilung. Für aussagekräftige hohe Perzentile braucht man viele Messwerte.
+  example: "Bei 1 000 Messungen ist das p99 der zehntgrößte Wert."
+  category: performance
+  aliases: [Perzentile, p95, p99, Percentile]
+  related: [median, antwortzeit]
+  lesson: performance/messen-statt-raten
+
+- slug: median
+  term: Median
+  short: Der mittlere Wert einer sortierten Liste – die Hälfte der Werte ist kleiner, die Hälfte größer.
+  explanation: >
+    Der Median entspricht dem 50. Perzentil (p50). Anders als der Durchschnitt lässt er sich von einzelnen extremen
+    Ausreißern kaum verschieben und beschreibt deshalb den typischen Fall gut.
+  example: "Bei den Werten 20, 21, 22, 25 und 3000 ms ist der Median 22 ms."
+  category: performance
+  aliases: [p50, Zentralwert]
+  related: [perzentil, benchmark]
+  lesson: performance/messen-statt-raten
+
+- slug: engpass
+  term: Engpass
+  short: Die langsamste Stelle eines Systems, die die Gesamtgeschwindigkeit begrenzt.
+  explanation: >
+    Optimierungen außerhalb des Engpasses verändern die Gesamtzeit kaum. Deshalb sucht man ihn zuerst – mit Messungen
+    oder einem Profiler – und verbessert dann gezielt diese Stelle.
+  example: "Von 1 000 ms entfallen 900 ms auf die Datenbank – sie ist der Engpass."
+  category: performance
+  aliases: [Flaschenhals, Bottleneck, Engpässe]
+  related: [profiling, antwortzeit]
+  lesson: performance/messen-statt-raten
+
+- slug: benchmark
+  term: Benchmark
+  short: Eine wiederholbare Messung, die die Geschwindigkeit von Code oder eines Systems unter festen Bedingungen bestimmt.
+  explanation: >
+    Mikro-Benchmarks messen kleine Funktionen sehr oft, Makro-Benchmarks ganze Abläufe wie eine Anfrage. Ein guter
+    Benchmark wärmt auf, misst viele Durchläufe einzeln und berichtet den Median.
+  example: "Ein Benchmark vergleicht `Array.includes()` mit `Set.has()` über 20 Durchläufe."
+  category: performance
+  aliases: [Benchmarks, Mikro-Benchmark, Makro-Benchmark]
+  related: [monotone-uhr, median, profiling]
+  lesson: performance/benchmarks
+
+- slug: monotone-uhr
+  term: Monotone Uhr
+  short: Eine Uhr, die nur vorwärts läuft und nicht nachgestellt wird – ideal zum Messen von Zeitdauern.
+  explanation: >
+    Die normale Systemuhr kann das Betriebssystem jederzeit korrigieren, wodurch Zeitdifferenzen falsch werden. Eine
+    monotone Uhr zählt einfach weiter. In JavaScript liefert sie `performance.now()`, in PHP `hrtime(true)`.
+  example: "`const start = performance.now(); arbeite(); console.log(performance.now() - start);`"
+  category: performance
+  aliases: [performance.now, hrtime, Monotonic Clock]
+  related: [benchmark]
+  lesson: performance/benchmarks
+
+- slug: profiling
+  term: Profiling
+  short: Das Aufzeichnen, in welchen Funktionen ein Programm wie viel Zeit verbringt.
+  explanation: >
+    Ein Profiler beobachtet ein laufendes Programm und ordnet die verbrauchte Zeit den Funktionen zu. Sampling-Profiler
+    schauen dazu in kurzen Abständen auf den Call Stack. Das Ergebnis zeigt den Engpass, etwa als Flame Graph.
+  example: "`node --cpu-prof app.js` erzeugt ein CPU-Profil, `xdebug.mode=profile` eines für PHP."
+  category: performance
+  aliases: [Profiler, CPU-Profil, Sampling-Profiler, profilen]
+  related: [flamegraph, engpass, xdebug]
+  lesson: performance/profiling
+
+- slug: flamegraph
+  term: Flame Graph
+  short: Eine Darstellung eines Profils, in der breite Balken viel verbrauchte Zeit und gestapelte Balken Aufrufe zeigen.
+  explanation: >
+    Jeder Balken ist eine Funktion, darüber liegen die Funktionen, die sie aufruft. Die Breite entspricht dem Anteil an
+    der gemessenen Zeit, die x-Achse ist keine Zeitachse. Breite Balken mit wenig darüber sind die heißen Stellen.
+  example: "Im Flame Graph nimmt `renderInvoice` drei Viertel der Breite unter `handleRequest` ein."
+  category: performance
+  aliases: [Flamegraph, Flame Graphs, Flammendiagramm]
+  related: [profiling, call-stack]
+  lesson: performance/profiling
+
+- slug: core-web-vitals
+  term: Core Web Vitals
+  short: Drei Kennzahlen von Google für das Nutzererlebnis einer Webseite – LCP, INP und CLS.
+  explanation: >
+    Die Core Web Vitals messen Laden (LCP), Reaktionsfähigkeit (INP) und visuelle Stabilität (CLS). Bewertet wird das
+    75. Perzentil echter Seitenaufrufe. Sie fließen auch in die Bewertung von Suchergebnissen ein.
+  example: "Gut sind LCP ≤ 2,5 s, INP ≤ 200 ms und CLS ≤ 0,1."
+  category: performance
+  aliases: [Web Vitals, CWV]
+  related: [lcp, inp, cls]
+  lesson: performance/core-web-vitals
+
+- slug: lcp
+  term: LCP (Largest Contentful Paint)
+  short: Die Zeit, bis das größte sichtbare Element einer Seite gezeichnet ist.
+  explanation: >
+    LCP misst, wann der Hauptinhalt – oft ein Titelbild oder großer Textblock – erscheint. Er setzt sich aus Serverzeit,
+    Ladeverzögerung, Ladedauer und Renderverzögerung zusammen. Gut sind höchstens 2,5 Sekunden.
+  example: "Ein unkomprimiertes 3-MB-Titelbild verschlechtert den LCP auf Mobilgeräten stark."
+  category: performance
+  aliases: [Largest Contentful Paint]
+  related: [core-web-vitals, time-to-first-byte, render-blocking]
+  lesson: performance/core-web-vitals
+
+- slug: inp
+  term: INP (Interaction to Next Paint)
+  short: Wie schnell eine Seite nach Klicks, Taps und Tastendrücken sichtbar reagiert.
+  explanation: >
+    INP betrachtet alle Interaktionen eines Besuchs und meldet einen der langsamsten Werte. Er wird schlecht, wenn
+    JavaScript den Main Thread lange blockiert. Gut sind höchstens 200 Millisekunden. INP hat 2024 FID abgelöst.
+  example: "Ein Klick-Handler, der 600 ms sortiert, bevor er etwas anzeigt, führt zu einem schlechten INP."
+  category: performance
+  aliases: [Interaction to Next Paint]
+  related: [core-web-vitals, main-thread, long-task]
+  lesson: performance/core-web-vitals
+
+- slug: cls
+  term: CLS (Cumulative Layout Shift)
+  short: Ein Maß dafür, wie stark sichtbare Inhalte beim Laden unerwartet verrutschen.
+  explanation: >
+    CLS summiert Layout-Verschiebungen nach Fläche und Abstand. Typische Ursachen sind Bilder ohne Größenangabe und
+    nachträglich eingefügte Banner. Gut ist ein Wert von höchstens 0,1.
+  example: "`<img src=\"foto.avif\" width=\"800\" height=\"600\">` reserviert den Platz und verhindert Verschiebungen."
+  category: performance
+  aliases: [Cumulative Layout Shift, Layout Shift, Layout-Verschiebung, Layout-Verschiebungen]
+  related: [core-web-vitals, lcp]
+  lesson: performance/core-web-vitals
+
+- slug: main-thread
+  term: Main Thread
+  short: Der Hauptausführungsstrang des Browsers, in dem JavaScript, Layout und Zeichnen nacheinander laufen.
+  explanation: >
+    Solange der Main Thread mit einer Aufgabe beschäftigt ist, kann der Browser nicht auf Eingaben reagieren oder neu
+    zeichnen. Langes JavaScript blockiert ihn deshalb und verschlechtert INP. Rechenintensives lässt sich in Web Worker auslagern.
+  example: "Ein Skript, das 2 Sekunden lang Daten verarbeitet, friert die Seite für diese Zeit ein."
+  category: performance
+  aliases: [Hauptthread, Haupt-Thread]
+  related: [inp, long-task, single-thread]
+  lesson: performance/core-web-vitals
+
+- slug: long-task
+  term: Long Task
+  short: Eine Aufgabe im Main Thread, die länger als 50 Millisekunden dauert.
+  explanation: >
+    Während eines Long Task kann der Browser nicht reagieren. Man teilt solche Aufgaben in kleinere Stücke und gibt dem
+    Browser dazwischen die Kontrolle zurück, etwa mit `await scheduler.yield()` oder `setTimeout`.
+  example: "Ein Klick-Handler mit 300 ms Rechenzeit ist ein Long Task."
+  category: performance
+  aliases: [Long Tasks, lange Aufgabe]
+  related: [main-thread, inp]
+  lesson: performance/core-web-vitals
+
+- slug: lighthouse
+  term: Lighthouse
+  short: Ein Werkzeug von Google, das eine Webseite im Labor testet und Performance-Kennzahlen und Tipps liefert.
+  explanation: >
+    Lighthouse läuft in den Chrome-DevTools, auf der Kommandozeile oder in der CI-Pipeline (Lighthouse CI). Es misst
+    unter festen Bedingungen, ist also reproduzierbar, zeigt aber nicht, was echte Nutzer:innen erleben.
+  example: "Lighthouse meldet einen LCP von 3,4 s auf einem simulierten Mobilgerät."
+  category: performance
+  aliases: [Lighthouse CI, Labordaten]
+  related: [core-web-vitals, real-user-monitoring, devtools]
+  lesson: performance/core-web-vitals
+
+- slug: real-user-monitoring
+  term: Real User Monitoring (RUM)
+  short: Das Sammeln von Performance-Messwerten aus den Browsern echter Besucher:innen.
+  explanation: >
+    RUM liefert Felddaten: echte Geräte, echte Netze, echte Interaktionen. Eine kleine Bibliothek wie `web-vitals`
+    misst im Browser und schickt die Werte an einen Server, der sie als Perzentile auswertet.
+  example: "`onLCP(metric => navigator.sendBeacon('/api/vitals', JSON.stringify(metric)))`"
+  category: performance
+  aliases: [RUM, Felddaten, Field Data]
+  related: [lighthouse, core-web-vitals]
+  lesson: performance/core-web-vitals
+
+- slug: defer-attribut
+  term: defer-Attribut
+  short: Ein Attribut am script-Tag, das das Skript parallel lädt und erst nach dem Lesen des HTML ausführt.
+  explanation: >
+    Ohne Attribut hält ein Skript den HTML-Parser an. Mit `defer` lädt der Browser es im Hintergrund weiter und führt
+    alle defer-Skripte nach dem Parsen in ihrer Reihenfolge aus. `async` führt dagegen sofort nach dem Laden aus.
+  example: "`<script defer src=\"/assets/app.js\"></script>`"
+  category: performance
+  aliases: [defer, async, async-Attribut]
+  related: [render-blocking, critical-rendering-path]
+  lesson: performance/rendering-und-bilder
+
+- slug: preload
+  term: Preload
+  short: Ein Hinweis an den Browser, eine wichtige Ressource früh zu laden, die er sonst erst spät entdecken würde.
+  explanation: >
+    Mit `<link rel="preload">` im head sagst du dem Browser, dass er eine Schrift, ein Bild oder ein Skript bald braucht.
+    Er lädt sie dann mit hoher Priorität. Zu viele Preloads verdrängen allerdings andere wichtige Ressourcen.
+  example: "`<link rel=\"preload\" href=\"/fonts/inter.woff2\" as=\"font\" type=\"font/woff2\" crossorigin>`"
+  category: performance
+  aliases: [rel=preload, Vorladen]
+  related: [critical-rendering-path, lcp]
+  lesson: performance/rendering-und-bilder
+
+- slug: modernes-bildformat
+  term: Modernes Bildformat
+  short: Bildformate wie AVIF und WebP, die bei gleicher Qualität deutlich kleiner sind als JPEG und PNG.
+  explanation: >
+    AVIF und WebP komprimieren Fotos und Grafiken effizienter und werden von allen aktuellen Browsern unterstützt.
+    Kleinere Bilder laden schneller und verbessern vor allem den LCP.
+  example: "Ein Titelbild schrumpft von 480 KB (JPEG) auf 140 KB (AVIF)."
+  category: performance
+  aliases: [AVIF, WebP, Bildformate]
+  related: [responsive-bilder, lcp]
+  lesson: performance/rendering-und-bilder
+
+- slug: responsive-bilder
+  term: Responsive Bilder
+  short: Bilder, die in mehreren Größen angeboten werden, damit jedes Gerät die passende lädt.
+  explanation: >
+    Mit den Attributen `srcset` und `sizes` beschreibst du verfügbare Bildbreiten und den Platz im Layout. Der Browser
+    wählt selbst die kleinste ausreichende Datei – ein Smartphone lädt so kein riesiges Desktop-Bild.
+  example: "`srcset=\"hero-400.avif 400w, hero-800.avif 800w\" sizes=\"100vw\"`"
+  category: performance
+  aliases: [srcset, sizes, Responsive Images]
+  related: [modernes-bildformat, lazy-loading]
+  lesson: performance/rendering-und-bilder
+
+- slug: lazy-loading
+  term: Lazy Loading
+  short: Ressourcen erst laden, wenn sie gebraucht werden – etwa Bilder, sobald sie sich dem sichtbaren Bereich nähern.
+  explanation: >
+    Mit `loading="lazy"` verschiebt der Browser das Laden von Bildern weiter unten auf der Seite. Das spart Bandbreite
+    für das Wichtige. Für das LCP-Bild im sichtbaren Bereich ist Lazy Loading dagegen schädlich.
+  example: "`<img src=\"produkt.avif\" width=\"400\" height=\"400\" loading=\"lazy\" alt=\"Produkt\">`"
+  category: performance
+  aliases: [loading=lazy, verzögertes Laden]
+  related: [responsive-bilder, code-splitting]
+  lesson: performance/rendering-und-bilder
+
+- slug: cache-busting
+  term: Cache-Busting
+  short: Eine Technik, bei der eine geänderte Datei einen neuen Namen bekommt, damit Browser sie sicher neu laden.
+  explanation: >
+    Der Bundler schreibt einen Hash des Inhalts in den Dateinamen, etwa `app.81bd2e4f.js`. Ändert sich der Inhalt,
+    ändert sich der Name. Deshalb dürfen solche Dateien ein Jahr lang `immutable` gecacht werden.
+  example: "`index.html` verweist nach dem Release auf `app.5c0d9a12.js` statt `app.81bd2e4f.js`."
+  category: performance
+  aliases: [Content-Hash, Fingerprinting, gehashte Dateinamen]
+  related: [cache-control, bundler]
+  lesson: performance/caching-komprimierung-bundles
+
+- slug: komprimierung
+  term: Komprimierung
+  short: Das Verkleinern von Daten durch geschicktes Kodieren von Wiederholungen, ohne Informationen zu verlieren.
+  explanation: >
+    Bei HTTP komprimiert der Server Text wie HTML, CSS, JavaScript und JSON mit gzip oder Brotli. Der Browser kündigt
+    mit `Accept-Encoding` an, was er versteht, der Server antwortet mit `Content-Encoding`. Bilder und Archive sind
+    bereits komprimiert.
+  example: "Ein JavaScript-Bundle von 400 KB wird mit Brotli zu rund 110 KB übertragen."
+  category: performance
+  aliases: [Kompression, komprimieren, Content-Encoding]
+  related: [gzip, brotli]
+  lesson: performance/caching-komprimierung-bundles
+
+- slug: gzip
+  term: gzip
+  short: Ein weit verbreitetes Komprimierungsverfahren und Kommandozeilenwerkzeug, das jeder Browser versteht.
+  explanation: >
+    gzip ist der älteste und überall unterstützte Standard für HTTP-Komprimierung. Auf der Kommandozeile komprimiert
+    `gzip -9 -k datei` eine Datei auf höchster Stufe und behält das Original.
+  example: "`gzip -9 -c dist/app.js | wc -c` zeigt die komprimierte Größe in Bytes."
+  category: performance
+  aliases: [Gzip, .gz]
+  related: [komprimierung, brotli]
+  lesson: performance/caching-komprimierung-bundles
+
+- slug: brotli
+  term: Brotli
+  short: Ein Komprimierungsverfahren, das Text meist noch etwas kleiner macht als gzip.
+  explanation: >
+    Brotli (Kürzel `br`) wird von allen aktuellen Browsern über HTTPS unterstützt. Auf höchster Stufe ist es langsam, darum
+    komprimiert man statische Dateien am besten schon beim Build vor. Node.js bietet dafür `zlib.brotliCompressSync`.
+  example: "`Content-Encoding: br`"
+  category: performance
+  aliases: [br, .br]
+  related: [komprimierung, gzip]
+  lesson: performance/caching-komprimierung-bundles
+
+- slug: bundle
+  term: Bundle
+  short: Eine vom Bundler erzeugte Datei, die viele Quellmodule zu wenigen auslieferbaren Dateien zusammenfasst.
+  explanation: >
+    Die Größe des JavaScript-Bundles bestimmt, wie viel der Browser laden, parsen und ausführen muss. Man misst sie
+    komprimiert, so wie sie übers Netz geht, und hält sie mit Code-Splitting und einem Budget klein.
+  example: "`dist/assets/app.81bd2e4f.js` ist das Haupt-Bundle einer Vite-Anwendung."
+  category: performance
+  aliases: [Bundles, Bundle-Größe, Chunk]
+  related: [bundler, code-splitting, performance-budget]
+  lesson: performance/caching-komprimierung-bundles
+
+- slug: cache-aside
+  term: Cache-Aside
+  short: Ein Caching-Muster, bei dem die Anwendung erst im Cache nachsieht und bei einem Fehlschlag die Quelle fragt und das Ergebnis ablegt.
+  explanation: >
+    Die Anwendung ist selbst für das Befüllen verantwortlich: nachsehen, bei Fehlschlag laden, mit einer TTL speichern.
+    Laravel bietet dafür `Cache::remember()`. Das Muster heißt auch „Lazy Loading“ für Caches.
+  example: "`Cache::remember('categories:all', 600, fn () => Category::all());`"
+  category: performance
+  aliases: [Cache Aside, Cache-Aside-Muster]
+  related: [cache, cache-invalidierung, ttl]
+  lesson: performance/caching-schichten
+
+- slug: cache-invalidierung
+  term: Cache-Invalidierung
+  short: Das gezielte Entfernen eines Cache-Eintrags, weil sich die zugrunde liegenden Daten geändert haben.
+  explanation: >
+    Ohne Invalidierung zeigt ein Cache bis zum Ablauf seiner TTL veraltete Daten. Darum löscht man den Eintrag an der
+    Stelle, an der die Daten geändert werden. Schwierig wird es, wenn viele Einträge von denselben Daten abhängen.
+  example: "Nach dem Speichern einer Kategorie ruft der Code `Cache::forget('categories:all')` auf."
+  category: performance
+  aliases: [Invalidierung, invalidieren, Cache leeren]
+  related: [cache-aside, ttl]
+  lesson: performance/caching-schichten
+
+- slug: cache-stampede
+  term: Cache Stampede
+  short: Viele Anfragen bemerken gleichzeitig einen abgelaufenen Cache-Eintrag und berechnen ihn alle neu.
+  explanation: >
+    Gerade bei beliebten Einträgen kann das die Datenbank schlagartig überlasten. Abhilfe schaffen Sperren, das
+    Ausliefern des alten Werts während der Neuberechnung (Stale-While-Revalidate) und leicht gestreute TTLs.
+  example: "Laravel: `Cache::flexible('stats', [300, 600], fn () => …)` liefert kurz den alten Wert weiter."
+  category: performance
+  aliases: [Stampede, Thundering Herd, Dogpile]
+  related: [cache-aside, sperre]
+  lesson: performance/caching-schichten
+
+- slug: memoisierung
+  term: Memoisierung
+  short: Das Merken des Ergebnisses eines Aufrufs im Arbeitsspeicher, damit derselbe Aufruf nicht erneut berechnet wird.
+  explanation: >
+    Memoisierung ist die kleinste Caching-Schicht: Sie lebt innerhalb eines Prozesses oder einer Anfrage. Sie lohnt sich,
+    wenn dieselbe teure Berechnung mehrmals mit denselben Eingaben gebraucht wird.
+  example: "Ein `RequestCache` merkt sich den Wechselkurs für die Dauer einer Anfrage."
+  category: performance
+  aliases: [Memoization, memoisieren]
+  related: [cache, cache-aside]
+  lesson: performance/caching-schichten
+
+- slug: redis
+  term: Redis
+  short: Ein sehr schneller Schlüssel-Wert-Speicher im Arbeitsspeicher, der oft als Cache und Warteschlange dient.
+  explanation: >
+    Redis läuft als eigener Server, den alle Instanzen einer Anwendung teilen. Er speichert Werte mit Ablaufzeit und
+    bietet Datenstrukturen wie Listen und Sets. Laravel nutzt ihn für Cache, Sessions und Queues.
+  example: "`CACHE_STORE=redis` in der `.env` lässt Laravel Redis als Cache verwenden."
+  category: performance
+  aliases: [Valkey, Key-Value-Store]
+  related: [cache, job-queue]
+  lesson: performance/caching-schichten
+
+- slug: job-queue
+  term: Warteschlange (Queue)
+  short: Eine Liste von Aufgaben, die nicht sofort im Request, sondern später von einem Hintergrundprozess erledigt werden.
+  explanation: >
+    Der Request legt nur einen Job ab und antwortet sofort; ein Worker holt die Jobs nacheinander ab. So warten
+    Nutzer:innen nicht auf Mails, PDFs oder Aufrufe fremder Dienste. Gespeichert wird die Warteschlange z. B. in Redis oder einer Tabelle.
+  example: "`SendOrderConfirmation::dispatch($order);` legt einen Job in die Laravel-Queue."
+  category: performance
+  aliases: [Queue, Queues, Warteschlangen, Job]
+  related: [worker-prozess, redis, idempotenz]
+  lesson: performance/opcache-und-queues
+
+- slug: worker-prozess
+  term: Worker-Prozess
+  short: Ein dauerhaft laufender Prozess, der Jobs aus einer Warteschlange abholt und abarbeitet.
+  explanation: >
+    Worker laufen unabhängig von Web-Anfragen und werden von einem Prozessmanager wie Supervisor überwacht. Weil sie
+    den Code beim Start laden, müssen sie nach einem Deployment neu gestartet werden.
+  example: "`php artisan queue:work` startet einen Laravel-Worker."
+  category: performance
+  aliases: [Worker, Queue-Worker]
+  related: [job-queue, prozess]
+  lesson: performance/opcache-und-queues
+
+- slug: lasttest
+  term: Lasttest
+  short: Ein Test, der viele gleichzeitige Anfragen an ein System schickt und Durchsatz, Latenz und Fehler misst.
+  explanation: >
+    Ein Lasttest zeigt, wie sich ein System bei der erwarteten Spitzenlast verhält und wo seine Grenze liegt. Verwandte
+    Testarten sind Stresstest, Dauertest und Smoke-Test. Getestet werden nur eigene Systeme oder solche mit Erlaubnis.
+  example: "`npx -y autocannon@8 -c 20 -d 10 http://localhost:3000/produkte`"
+  category: performance
+  aliases: [Lasttests, Load Test, Stresstest, Belastungstest]
+  related: [autocannon, durchsatz, nebenlaeufigkeit]
+  lesson: performance/lasttests
+
+- slug: autocannon
+  term: autocannon
+  short: Ein Lasttest-Werkzeug für die Kommandozeile, geschrieben in Node.js.
+  explanation: >
+    autocannon öffnet eine einstellbare Zahl gleichzeitiger Verbindungen und schickt Anfragen für eine feste Dauer oder
+    Anzahl. Es meldet Latenz-Perzentile, Durchsatz und Fehler, mit `-j` auch als JSON.
+  example: "`npx -y autocannon@8 -c 10 -d 5 -j --on-port / -- node server.js > last.json`"
+  category: performance
+  aliases: [Autocannon]
+  related: [lasttest, npx]
+  lesson: performance/lasttests
+
+- slug: nebenlaeufigkeit
+  term: Nebenläufigkeit
+  short: Mehrere Vorgänge sind gleichzeitig in Bearbeitung, etwa viele offene Anfragen an einen Server.
+  explanation: >
+    Im Lasttest bestimmt die Nebenläufigkeit, wie viele Verbindungen gleichzeitig Anfragen schicken. Steigt sie über die
+    Kapazität eines Systems, müssen Anfragen warten – die Antwortzeit wächst, der Durchsatz nicht mehr.
+  example: "`-c 50` lässt autocannon mit einer Nebenläufigkeit von 50 Verbindungen arbeiten."
+  category: performance
+  aliases: [Concurrency, gleichzeitige Verbindungen, parallele Anfragen]
+  related: [lasttest, durchsatz]
+  lesson: performance/lasttests
+
+- slug: performance-budget
+  term: Performance-Budget
+  short: Eine vereinbarte Grenze für Größen oder Zeiten, die bei jeder Änderung automatisch geprüft wird.
+  explanation: >
+    Budgets gibt es für Mengen (z. B. JavaScript-Bytes), Zeiten (z. B. LCP, p95 einer API) und Scores (z. B. Lighthouse).
+    Ein Prüfskript in der CI-Pipeline lässt den Build fehlschlagen, wenn ein Budget überschritten ist.
+  example: "`{ \"js\": 170000, \"css\": 30000 }` begrenzt die gzip-Größe von JavaScript und CSS."
+  category: performance
+  aliases: [Budget, Budgets, Performance-Budgets]
+  related: [bundle, ci-pipeline, exit-code]
+  lesson: performance/performance-budget

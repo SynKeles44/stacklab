@@ -1,0 +1,134 @@
+title: Backend-Performance
+description: N+1-Abfragen erkennen und beheben, Indizes mit EXPLAIN prüfen, die richtige Caching-Schicht wählen, OPcache einstellen und langsame Arbeit in Warteschlangen auslagern.
+exercise:
+  id: modul-uebung-bericht
+  type: terminal
+  title: Ein langsamer Umsatzbericht
+  description: |
+    `bericht.php` gibt für jede Kundin und jeden Kunden den Gesamtumsatz aus. Er ist langsam: Am Ende meldet er auf
+    der Fehlerausgabe, wie viele Datenbankabfragen er gebraucht hat – es sind über 300. `db.php` stellt die Verbindung
+    her und zählt die Abfragen; diese Datei änderst du nicht.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Dann:
+
+    1. Miss den Ist-Zustand: `time php bericht.php > /dev/null`. Notiere die Zeit und die Zahl der Abfragen.
+    2. Schreibe `bericht.php` so um, dass er mit **höchstens zwei** Abfragen auskommt – z. B. mit einem `LEFT JOIN`
+       und `GROUP BY`. Die Ausgabe muss Zeichen für Zeichen gleich bleiben (gleiche Reihenfolge, Kund:innen ohne
+       Bestellungen mit `0`).
+    3. Lege in `shop.db` einen Index `idx_orders_customer_id` auf `orders(customer_id)` an.
+    4. Miss erneut und vergleiche.
+  workdir: umsatzbericht
+  setup: |
+    sqlite3 shop.db <<'SQL'
+    CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+    CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL REFERENCES customers(id), amount INTEGER NOT NULL);
+    WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 320)
+    INSERT INTO customers (id, name) SELECT i, 'Kunde ' || printf('%03d', i) FROM n;
+    WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 40000)
+    INSERT INTO orders (customer_id, amount) SELECT (i * 7919) % 300 + 1, (i * 37) % 900 + 10 FROM n;
+    SQL
+    cat > db.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    final class CountingStatement extends PDOStatement
+    {
+        protected function __construct(private readonly CountingPdo $pdo) {}
+
+        public function execute(?array $params = null): bool
+        {
+            $this->pdo->queries++;
+            return parent::execute($params);
+        }
+    }
+
+    final class CountingPdo extends PDO
+    {
+        public int $queries = 0;
+
+        public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
+        {
+            $this->queries++;
+            return $fetchMode === null ? parent::query($query) : parent::query($query, $fetchMode, ...$fetchModeArgs);
+        }
+    }
+
+    function db(): CountingPdo
+    {
+        $pdo = new CountingPdo('sqlite:' . __DIR__ . '/shop.db');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, [CountingStatement::class, [$pdo]]);
+        register_shutdown_function(static function () use ($pdo): void {
+            fwrite(STDERR, "Abfragen: {$pdo->queries}\n");
+        });
+        return $pdo;
+    }
+    EOF
+    cat > bericht.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    require __DIR__ . '/db.php';
+
+    $pdo = db();
+    $customers = $pdo->query('SELECT id, name FROM customers ORDER BY id')->fetchAll();
+
+    foreach ($customers as $customer) {
+        $stmt = $pdo->prepare('SELECT amount FROM orders WHERE customer_id = ?');
+        $stmt->execute([$customer['id']]);
+        $total = array_sum(array_column($stmt->fetchAll(), 'amount'));
+        printf("%s: %d\n", $customer['name'], $total);
+    }
+    EOF
+    php bericht.php 2>/dev/null | md5sum | cut -d' ' -f1 > .erwartet.md5
+  checks:
+    - type: command
+      run: php bericht.php 2>/dev/null | md5sum | cut -d' ' -f1 | diff -q - .erwartet.md5
+      message: Die Ausgabe von bericht.php hat sich verändert. Gleiche Reihenfolge, gleiche Schreibweise, Kund:innen ohne Bestellungen mit 0.
+    - type: command
+      run: php bericht.php 2>&1 >/dev/null | grep -oE '[0-9]+' | tail -n 1
+      stdout_matches: "^[12]$"
+      message: bericht.php braucht noch mehr als zwei Abfragen. Ersetze die Abfrage in der Schleife durch eine einzige Abfrage mit LEFT JOIN und GROUP BY.
+    - type: command
+      run: sqlite3 shop.db "EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 1;"
+      stdout_matches: "USING (COVERING )?INDEX idx_orders_customer_id"
+      message: Es fehlt der Index idx_orders_customer_id auf orders(customer_id).
+    - type: file_contains
+      path: db.php
+      pattern: "Abfragen: "
+      message: db.php wurde verändert. Setze die Aufgabe zurück, falls du sie versehentlich bearbeitet hast.
+  hints:
+    - "Die Datenbank kann summieren: `SUM(o.amount)` mit `GROUP BY c.id`."
+    - "Damit auch Kund:innen ohne Bestellungen erscheinen, brauchst du `LEFT JOIN` und `COALESCE(SUM(o.amount), 0)`."
+    - "`CREATE INDEX idx_orders_customer_id ON orders(customer_id);` legst du mit `sqlite3 shop.db \"…\"` an."
+  solution: |
+    ```php
+    <?php
+    // bericht.php
+    declare(strict_types=1);
+
+    require __DIR__ . '/db.php';
+
+    $pdo = db();
+    $rows = $pdo->query(
+        'SELECT c.name, COALESCE(SUM(o.amount), 0) AS total
+         FROM customers c
+         LEFT JOIN orders o ON o.customer_id = c.id
+         GROUP BY c.id, c.name
+         ORDER BY c.id'
+    )->fetchAll();
+
+    foreach ($rows as $row) {
+        printf("%s: %d\n", $row['name'], $row['total']);
+    }
+    ```
+
+    ```bash
+    sqlite3 shop.db "CREATE INDEX idx_orders_customer_id ON orders(customer_id);"
+    time php bericht.php > /dev/null
+    ```
+
+    Aus über 300 Abfragen wird eine einzige. Kund:innen 301 bis 320 haben keine Bestellungen und erscheinen trotzdem mit `0`.

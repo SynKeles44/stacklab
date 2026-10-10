@@ -1,0 +1,345 @@
+title: Abschlussprüfung Performance
+description: |
+  Diese Prüfung deckt alle vier Module ab: Messen, Web-Performance im Browser, Backend-Performance sowie Lasttests
+  und Budgets. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben – eine im echten Übungs-Terminal
+  und zwei als Programmieraufgaben.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Messen ---
+  - module: messen
+    type: single
+    question: Ein Endpunkt hat bei 1 000 Messungen einen Durchschnitt von 120 ms, einen Median von 40 ms und ein p99 von 2 800 ms. Was ist die beste Beschreibung?
+    options:
+      - Der Endpunkt ist gleichmäßig mittelschnell.
+      - Die meisten Anfragen sind schnell, aber ein kleiner Teil ist sehr langsam – der Durchschnitt verschleiert das.
+      - Die Messung ist fehlerhaft, weil Durchschnitt und Median nicht gleich sind.
+      - Das p99 ist irrelevant, weil es nur 1 % betrifft.
+    answer: 1
+    explanation: Median und p99 zusammen zeigen eine schiefe Verteilung mit langem Ende. Weil Seiten viele Anfragen brauchen, treffen solche Ausreißer viele Nutzer:innen.
+  - module: messen
+    type: multiple
+    question: Was macht einen Mikro-Benchmark aussagekräftig?
+    options:
+      - Aufwärmphase vor der Messung
+      - Viele einzeln gemessene Durchläufe und der Median
+      - Eine monotone Uhr wie performance.now() oder hrtime(true)
+      - Ein einziger, besonders langer Durchlauf
+    answers: [0, 1, 2]
+    explanation: Ein einzelner Durchlauf enthält Zufälle wie JIT-Übersetzung oder Speicherbereinigung. Viele Läufe und der Median glätten das.
+  - module: messen
+    type: cloze
+    text: "Ein Profil für ein Node.js-Skript erzeugst du mit `node --___ app.js`. In PHP aktivierst du den Profiler mit `xdebug.mode=___`."
+    blanks:
+      - [cpu-prof]
+      - [profile]
+    explanation: Node.js schreibt eine .cpuprofile-Datei, Xdebug eine Datei im Cachegrind-Format.
+  - module: messen
+    type: single
+    question: Ein Endpunkt braucht 1 000 ms, davon 850 ms in der Datenbank und 50 ms im Template. Du halbierst die Template-Zeit. Wie lange dauert die Anfrage danach?
+    options: ["500 ms", "925 ms", "975 ms", "850 ms"]
+    answer: 2
+    explanation: Nur 25 ms werden gespart. Der Engpass ist die Datenbank – dort lohnt sich die Arbeit.
+  # --- Frontend ---
+  - module: frontend
+    type: match
+    question: Ordne jeder Core-Web-Vital-Kennzahl ihren Grenzwert für „gut“ zu.
+    pairs:
+      - { left: "LCP", right: "höchstens 2,5 Sekunden" }
+      - { left: "INP", right: "höchstens 200 Millisekunden" }
+      - { left: "CLS", right: "höchstens 0,1" }
+    explanation: Bewertet wird jeweils das 75. Perzentil echter Seitenaufrufe.
+  - module: frontend
+    type: single
+    question: Was verbessert den LCP eines großen Titelbilds am direktesten?
+    options:
+      - "`loading=\"lazy\"` am Titelbild"
+      - Das Bild im HTML angeben, in passender Größe als AVIF/WebP ausliefern und mit `fetchpriority="high"` laden
+      - Das Bild per JavaScript nach dem Laden der Seite einfügen
+      - Das Bild als CSS-Hintergrund in einer spät geladenen Datei setzen
+    answer: 1
+    explanation: Der Browser soll das LCP-Bild früh entdecken, priorisieren und schnell übertragen können. Lazy Loading und spätes Einfügen verzögern es.
+  - module: frontend
+    type: multiple
+    question: Welche Maßnahmen reduzieren CLS?
+    options:
+      - width- und height-Attribute an Bildern
+      - Platz für nachgeladene Banner im Layout reservieren
+      - Skripte mit defer laden
+      - Inhalte nicht oberhalb bereits sichtbarer Inhalte einfügen
+    answers: [0, 1, 3]
+    explanation: CLS entsteht, wenn sich sichtbare Elemente unerwartet verschieben. defer betrifft das Laden von Skripten, nicht das Layout.
+  - module: frontend
+    type: single
+    question: Welcher Header passt zu `index.html`, die auf gehashte Assets verweist?
+    options:
+      - "Cache-Control: public, max-age=31536000, immutable"
+      - "Cache-Control: no-cache"
+      - "Cache-Control: no-store, private"
+      - Gar keiner – HTML wird nie gecacht.
+    answer: 1
+    explanation: Die HTML-Datei behält ihren Namen und muss nach einem Release sofort die neuen Asset-Namen liefern. `no-cache` erlaubt Speichern, verlangt aber eine Rückfrage (günstig mit ETag und 304).
+  - module: frontend
+    type: find-bug
+    question: Dieser Code soll den Diagramm-Editor erst beim Klick laden. Welche Zeile verhindert das Code-Splitting?
+    language: js
+    code: |
+      import { openChartEditor } from './chart-editor.js';
+
+      const button = document.querySelector('#editor');
+      button.addEventListener('click', async () => {
+        openChartEditor();
+      });
+    bug_line: 1
+    explanation: Ein statischer Import landet im Haupt-Bundle. Richtig ist `const { openChartEditor } = await import('./chart-editor.js');` im Klick-Handler.
+  # --- Backend ---
+  - module: backend
+    type: single
+    question: Eine Laravel-Seite zeigt 30 Bestellungen mit dem Namen der Kundin über `$order->customer->name`. Wie viele Abfragen sind es ohne Eager Loading?
+    options: ["1", "2", "30", "31"]
+    answer: 3
+    explanation: Eine Abfrage für die Bestellungen und 30 für die Kundinnen. Mit `Order::with('customer')` sind es zwei.
+  - module: backend
+    type: cloze
+    text: "`EXPLAIN QUERY PLAN` zeigt `SCAN orders`. Nach `CREATE INDEX idx_orders_status ON orders(status);` steht dort `SEARCH orders USING ___ idx_orders_status (status=?)`."
+    blanks:
+      - [INDEX]
+    explanation: SEARCH mit Index liest nur die passenden Zeilen statt der ganzen Tabelle.
+  - module: backend
+    type: multiple
+    question: Welche Aussagen über Caching stimmen?
+    options:
+      - Persönliche Daten gehören nicht in ein CDN oder einen geteilten Proxy-Cache.
+      - Der Cache-Schlüssel muss alles enthalten, wovon das Ergebnis abhängt.
+      - Eine Cache Stampede entsteht, wenn viele Anfragen gleichzeitig denselben abgelaufenen Eintrag neu berechnen.
+      - Ein Cache ersetzt die Suche nach N+1-Abfragen und fehlenden Indizes.
+    answers: [0, 1, 2]
+    explanation: Ein Cache vor einer schlechten Abfrage versteckt das Problem nur – spätestens bei leerem Cache ist es wieder da.
+  - module: backend
+    type: match
+    question: Ordne jede OPcache-Einstellung ihrer Wirkung zu.
+    pairs:
+      - { left: "opcache.memory_consumption", right: "Speicher für den übersetzten Bytecode" }
+      - { left: "opcache.max_accelerated_files", right: "Höchstzahl gecachter Dateien" }
+      - { left: "opcache.validate_timestamps=0", right: "Keine Prüfung auf geänderte Dateien – Reload beim Deployment nötig" }
+      - { left: "opcache.enable_cli", right: "OPcache auch für Kommandozeilen-Aufrufe" }
+    explanation: In Produktion wird OPcache großzügig dimensioniert und die Zeitstempel-Prüfung abgeschaltet.
+  - module: backend
+    type: single
+    question: Welche Aufgabe gehört beim Registrieren eines Kontos am ehesten in eine Warteschlange?
+    options:
+      - Das Passwort hashen und das Konto speichern
+      - Die Willkommens-Mail mit Anhang versenden
+      - Die Eingaben validieren
+      - Die Antwort mit der Weiterleitung senden
+    answer: 1
+    explanation: Auf die Mail wartet niemand im Browser. Validieren, Speichern und Antworten gehören in den Request.
+  # --- Last und Budget ---
+  - module: last-und-budget
+    type: single
+    question: Bei 20 Verbindungen schafft ein Server 800 Anfragen/s mit p99 = 40 ms, bei 80 Verbindungen 820 Anfragen/s mit p99 = 600 ms. Was zeigt das?
+    options:
+      - Der Server hat noch viele Reserven.
+      - Er ist an seiner Grenze – zusätzliche Anfragen warten nur noch in der Schlange.
+      - Der Lastgenerator ist kaputt.
+      - Mehr Verbindungen machen Server grundsätzlich schneller.
+    answer: 1
+    explanation: Wenn der Durchsatz stagniert und die Latenz stark steigt, ist die Kapazitätsgrenze erreicht.
+  - module: last-und-budget
+    type: multiple
+    question: Was gehört zu einem verantwortungsvollen Lasttest?
+    options:
+      - Nur eigene Systeme oder solche mit ausdrücklicher Erlaubnis testen
+      - Ziele (z. B. p99 und Fehlerrate) vor dem Test festlegen
+      - Fehlerantworten (non2xx) mit auswerten
+      - Den Lasttest gegen die Website eines Konkurrenten fahren, um zu vergleichen
+    answers: [0, 1, 2]
+    explanation: Ein Lasttest gegen fremde Systeme ohne Erlaubnis ist ein Angriff.
+  - module: last-und-budget
+    type: cloze
+    text: "Ein Budget-Skript in der CI-Pipeline endet bei Überschreitung mit einem ___ ungleich 0. autocannon gibt mit der Option `-___` JSON aus."
+    blanks:
+      - [Exit-Code, Exitcode, Exit Code]
+      - [j]
+    explanation: Die Pipeline wird rot, sobald ein Schritt mit einem Exit-Code ungleich 0 endet.
+  - module: last-und-budget
+    type: single
+    question: Das JavaScript-Budget ist um 15 KB überschritten, weil eine neue Bibliothek dazukommt. Was ist die schlechteste Reaktion?
+    options:
+      - Prüfen, ob eine eingebaute Browser-Funktion reicht
+      - Die Bibliothek per dynamischem Import erst bei Bedarf laden
+      - Das Budget ohne Diskussion erhöhen, damit die Pipeline grün wird
+      - Im Team entscheiden, ob das Feature die 15 KB wert ist
+    answer: 2
+    explanation: Ein still erhöhtes Budget ist wertlos. Änderungen am Budget sind bewusste, begründete Entscheidungen.
+tasks:
+  - module: messen
+    id: pruefung-zusammenfassen
+    type: code
+    language: js
+    title: Messwerte zusammenfassen
+    description: |
+      Schreibe `summarize(values)`, die für eine Liste von Antwortzeiten ein Objekt `{ count, p50, p95, max }`
+      zurückgibt. Perzentile berechnest du nach der Nearest-Rank-Methode (Rang `Math.ceil(p / 100 * n)`, mindestens 1).
+      Bei einer leeren Liste ist das Ergebnis `{ count: 0, p50: null, p95: null, max: null }`. Die Eingabe darf nicht
+      verändert werden.
+    starter: |
+      function summarize(values) {
+      }
+    tests:
+      - name: einfache Liste
+        code: |-
+          assertDeepEqual(summarize([30, 10, 20, 40]), { count: 4, p50: 20, p95: 40, max: 40 })
+      - name: Ausreißer im p95
+        code: |
+          const values = Array.from({ length: 20 }, (_, i) => (i === 19 ? 900 : 10 + i));
+          assertDeepEqual(summarize(values), { count: 20, p50: 19, p95: 28, max: 900 });
+      - name: leere Liste
+        code: |-
+          assertDeepEqual(summarize([]), { count: 0, p50: null, p95: null, max: null })
+      - name: Eingabe bleibt unverändert
+        code: |
+          const input = [5, 1, 3];
+          summarize(input);
+          assertDeepEqual(input, [5, 1, 3]);
+    hints:
+      - "Sortiere eine Kopie: `[...values].sort((a, b) => a - b)`."
+      - "Eine kleine Hilfsfunktion `at(p)` berechnet den Rang und gibt `sorted[rank - 1]` zurück."
+    solution: |
+      function summarize(values) {
+        if (values.length === 0) {
+          return { count: 0, p50: null, p95: null, max: null };
+        }
+        const sorted = [...values].sort((a, b) => a - b);
+        const at = (p) => sorted[Math.max(Math.ceil((p / 100) * sorted.length), 1) - 1];
+        return { count: sorted.length, p50: at(50), p95: at(95), max: sorted[sorted.length - 1] };
+      }
+  - module: backend
+    id: pruefung-index
+    type: terminal
+    title: Eine langsame Auswertung beschleunigen
+    description: |
+      `events.db` enthält 150 000 Ereignisse. Die Auswertung
+      `SELECT count(*) FROM events WHERE user_id = 7 AND created_at >= '2026-06-01';` ist langsam.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**. Dann:
+
+      1. Prüfe den Ausführungsplan mit `EXPLAIN QUERY PLAN`.
+      2. Lege einen **zusammengesetzten** Index `idx_events_user_created` auf `events(user_id, created_at)` an – in
+         genau dieser Spaltenreihenfolge.
+      3. Speichere den neuen Plan der Abfrage in `plan.txt`.
+    workdir: pruefung-index
+    setup: |
+      sqlite3 events.db <<'SQL'
+      CREATE TABLE events (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, type TEXT NOT NULL, created_at TEXT NOT NULL);
+      WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 150000)
+      INSERT INTO events (user_id, type, created_at)
+      SELECT (i * 7919) % 500 + 1, CASE i % 3 WHEN 0 THEN 'login' WHEN 1 THEN 'view' ELSE 'order' END, date('2026-01-01', '+' || (i % 280) || ' days') FROM n;
+      SQL
+    checks:
+      - type: command
+        run: sqlite3 events.db "SELECT group_concat(name, ',') FROM (SELECT name FROM pragma_index_info('idx_events_user_created') ORDER BY seqno)"
+        stdout_equals: "user_id,created_at"
+        message: Der Index idx_events_user_created fehlt oder hat nicht die Spalten user_id, created_at in dieser Reihenfolge.
+      - type: command
+        run: sqlite3 events.db "EXPLAIN QUERY PLAN SELECT count(*) FROM events WHERE user_id = 7 AND created_at >= '2026-06-01';"
+        stdout_matches: "USING (COVERING )?INDEX idx_events_user_created"
+        message: SQLite nutzt den Index für die Abfrage noch nicht.
+      - type: file_contains
+        path: plan.txt
+        pattern: "SEARCH events USING (COVERING )?INDEX idx_events_user_created"
+        message: plan.txt enthält noch nicht den neuen Ausführungsplan.
+    hints:
+      - "`CREATE INDEX idx_events_user_created ON events(user_id, created_at);`"
+      - "`sqlite3 events.db \"EXPLAIN QUERY PLAN SELECT …;\" > plan.txt`"
+    solution: |
+      ```bash
+      sqlite3 events.db "EXPLAIN QUERY PLAN SELECT count(*) FROM events WHERE user_id = 7 AND created_at >= '2026-06-01';"
+      sqlite3 events.db "CREATE INDEX idx_events_user_created ON events(user_id, created_at);"
+      sqlite3 events.db "EXPLAIN QUERY PLAN SELECT count(*) FROM events WHERE user_id = 7 AND created_at >= '2026-06-01';" > plan.txt
+      ```
+  - module: backend
+    id: pruefung-memo
+    type: code
+    language: php
+    title: Ein Request-Cache gegen doppelte Abfragen
+    description: |
+      In einer Anfrage wird derselbe Wechselkurs mehrfach gebraucht, und jeder Abruf ist teuer. Schreibe die Klasse
+      `RequestCache` mit der Methode `remember(string $key, callable $loader): mixed`:
+
+      - Beim ersten Aufruf für einen Schlüssel ruft sie `$loader()` auf, merkt sich das Ergebnis und gibt es zurück.
+      - Bei jedem weiteren Aufruf mit demselben Schlüssel gibt sie das gemerkte Ergebnis zurück, **ohne** den Loader aufzurufen –
+        auch wenn das Ergebnis `null` oder `false` war.
+      - `forget(string $key): void` entfernt einen Eintrag.
+    starter: |
+      <?php
+
+      declare(strict_types=1);
+
+      final class RequestCache
+      {
+          public function remember(string $key, callable $loader): mixed
+          {
+          }
+
+          public function forget(string $key): void
+          {
+          }
+      }
+    tests:
+      - name: Loader wird nur einmal aufgerufen
+        code: |
+          $cache = new RequestCache();
+          $calls = 0;
+          $loader = function () use (&$calls) { $calls++; return 1.08; };
+          assert_same(1.08, $cache->remember('eur-usd', $loader));
+          assert_same(1.08, $cache->remember('eur-usd', $loader));
+          assert_same(1, $calls);
+      - name: verschiedene Schlüssel getrennt
+        code: |
+          $cache = new RequestCache();
+          assert_same('a', $cache->remember('x', fn () => 'a'));
+          assert_same('b', $cache->remember('y', fn () => 'b'));
+          assert_same('a', $cache->remember('x', fn () => 'neu'));
+      - name: null wird auch gemerkt
+        code: |
+          $cache = new RequestCache();
+          $calls = 0;
+          $cache->remember('leer', function () use (&$calls) { $calls++; return null; });
+          $cache->remember('leer', function () use (&$calls) { $calls++; return null; });
+          assert_same(1, $calls);
+      - name: forget lädt neu
+        code: |
+          $cache = new RequestCache();
+          $cache->remember('k', fn () => 'alt');
+          $cache->forget('k');
+          assert_same('neu', $cache->remember('k', fn () => 'neu'));
+    hints:
+      - "Speichere die Werte in einem privaten Array `private array $items = [];`."
+      - "`array_key_exists($key, $this->items)` erkennt auch gespeicherte `null`-Werte – `isset()` nicht."
+    solution: |
+      <?php
+
+      declare(strict_types=1);
+
+      final class RequestCache
+      {
+          /** @var array<string, mixed> */
+          private array $items = [];
+
+          public function remember(string $key, callable $loader): mixed
+          {
+              if (! array_key_exists($key, $this->items)) {
+                  $this->items[$key] = $loader();
+              }
+
+              return $this->items[$key];
+          }
+
+          public function forget(string $key): void
+          {
+              unset($this->items[$key]);
+          }
+      }

@@ -1,0 +1,114 @@
+title: Messen statt raten
+description: Latenz, Durchsatz und Perzentile verstehen, faire Benchmarks schreiben und mit einem Profiler den Engpass finden.
+exercise:
+  id: modul-uebung-php-benchmark
+  type: terminal
+  title: Zwei PHP-Varianten mit p50 und p95 vergleichen
+  description: |
+    In `funktionen.php` liegen zwei Funktionen, die dieselbe Liste aufbauen: `mitArrayMerge()` hängt in einer
+    Schleife mit `array_merge()` an, `mitPush()` mit `$liste[] = …`. Vergleiche sie so, wie du es im Modul gelernt hast.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Dann:
+
+    1. Lege `bench.php` an und binde `funktionen.php` mit `require __DIR__ . '/funktionen.php';` ein.
+    2. Wärme jede Funktion 3-mal auf und miss sie danach je **30-mal** einzeln mit `hrtime(true)`.
+    3. Berechne für jede Variante **p50** und **p95** in Millisekunden (Nearest-Rank-Methode).
+    4. Schreibe das Ergebnis mit `json_encode()` in `ergebnis.json` – genau in dieser Form:
+
+       ```json
+       {
+         "array_merge": { "p50": 4.1, "p95": 5.3 },
+         "push": { "p50": 0.1, "p95": 0.2 },
+         "schneller": "push"
+       }
+       ```
+
+    5. `schneller` enthält den Schlüssel der Variante mit dem kleineren p50 – berechnet, nicht von Hand eingetragen.
+  workdir: php-benchmark
+  setup: |
+    cat > funktionen.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    function mitArrayMerge(int $anzahl = 3000): array
+    {
+        $liste = [];
+        for ($i = 0; $i < $anzahl; $i++) {
+            $liste = array_merge($liste, ["eintrag-$i"]);
+        }
+        return $liste;
+    }
+
+    function mitPush(int $anzahl = 3000): array
+    {
+        $liste = [];
+        for ($i = 0; $i < $anzahl; $i++) {
+            $liste[] = "eintrag-$i";
+        }
+        return $liste;
+    }
+    EOF
+  checks:
+    - type: file_contains
+      path: bench.php
+      pattern: "hrtime\\(\\s*true\\s*\\)"
+      message: Miss in bench.php mit hrtime(true).
+    - type: command
+      run: php bench.php && jq -e . ergebnis.json > /dev/null
+      message: Nach `php bench.php` soll ergebnis.json gültiges JSON enthalten.
+    - type: command
+      run: jq -e '[.array_merge.p50, .array_merge.p95, .push.p50, .push.p95] | all(type == "number" and . >= 0)' ergebnis.json
+      message: ergebnis.json braucht für array_merge und push jeweils p50 und p95 als Zahlen.
+    - type: command
+      run: jq -e '(.array_merge.p95 >= .array_merge.p50) and (.push.p95 >= .push.p50)' ergebnis.json
+      message: p95 muss mindestens so groß wie p50 sein. Prüfe deine Perzentil-Berechnung (sortieren!).
+    - type: command
+      run: jq -r .schneller ergebnis.json
+      stdout_equals: push
+      message: '"schneller" soll den Schlüssel der Variante mit dem kleineren p50 enthalten.'
+  hints:
+    - "Eine Funktion `messe(callable $fn): array` liefert die 30 Zeiten in Millisekunden: `(hrtime(true) - $start) / 1e6`."
+    - "Für das Perzentil: `sort($zeiten);` dann `$zeiten[max((int) ceil($p / 100 * count($zeiten)), 1) - 1]`."
+    - "`'schneller' => $merge['p50'] < $push['p50'] ? 'array_merge' : 'push'` und `file_put_contents('ergebnis.json', json_encode($ergebnis, JSON_PRETTY_PRINT));`"
+  solution: |
+    ```php
+    <?php
+    // bench.php
+    declare(strict_types=1);
+
+    require __DIR__ . '/funktionen.php';
+
+    function messe(callable $fn, int $runs = 30): array
+    {
+        for ($i = 0; $i < 3; $i++) {
+            $fn();
+        }
+        $zeiten = [];
+        for ($i = 0; $i < $runs; $i++) {
+            $start = hrtime(true);
+            $fn();
+            $zeiten[] = (hrtime(true) - $start) / 1e6;
+        }
+        sort($zeiten);
+        return $zeiten;
+    }
+
+    function perzentil(array $sortiert, float $p): float
+    {
+        $rang = max((int) ceil($p / 100 * count($sortiert)), 1);
+        return round($sortiert[$rang - 1], 3);
+    }
+
+    $ergebnis = [];
+    foreach (['array_merge' => 'mitArrayMerge', 'push' => 'mitPush'] as $name => $fn) {
+        $zeiten = messe($fn);
+        $ergebnis[$name] = ['p50' => perzentil($zeiten, 50), 'p95' => perzentil($zeiten, 95)];
+    }
+    $ergebnis['schneller'] = $ergebnis['array_merge']['p50'] < $ergebnis['push']['p50'] ? 'array_merge' : 'push';
+
+    file_put_contents(__DIR__ . '/ergebnis.json', json_encode($ergebnis, JSON_PRETTY_PRINT));
+    ```
+
+    `array_merge()` kopiert bei jedem Durchlauf die ganze Liste – die Laufzeit wächst quadratisch. `$liste[] = …`
+    hängt nur an.

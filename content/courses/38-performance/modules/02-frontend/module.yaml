@@ -1,0 +1,92 @@
+title: Web-Performance im Browser
+description: Core Web Vitals verstehen, den Critical Rendering Path entlasten, Bilder richtig laden und mit Cache-Headern, Komprimierung und Code-Splitting Bytes sparen.
+exercise:
+  id: modul-uebung-startseite
+  type: terminal
+  title: Eine langsame Startseite reparieren
+  description: |
+    `index.html` ist die Startseite eines kleinen Shops. Sie hat alle typischen Probleme: blockierende Skripte, ein
+    verspätet geladenes Titelbild und Bilder ohne reservierten Platz. Korrigiere das HTML.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Dann bearbeite `index.html` (z. B. mit `nano index.html`):
+
+    1. `app.js` bekommt `defer`, das unabhängige `stats.js` bekommt `async`.
+    2. Das Titelbild (`hero.avif`, 1600 × 800 Pixel) ist das LCP-Element: Es bekommt `width="1600"`,
+       `height="800"` und `fetchpriority="high"` – und **kein** `loading="lazy"`.
+    3. Die drei Produktbilder (je 400 × 400 Pixel) bekommen `width`, `height` und `loading="lazy"`.
+    4. Das Partnerlogo im Footer (200 × 80 Pixel) bekommt ebenfalls `width`, `height` und `loading="lazy"`.
+
+    Ändere nichts an den `src`-Pfaden und lösche keine Elemente.
+  workdir: startseite
+  setup: |
+    cat > index.html <<'EOF'
+    <!doctype html>
+    <html lang="de">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Kaffee-Shop</title>
+      <link rel="stylesheet" href="/assets/app.css">
+      <script src="/assets/app.js"></script>
+      <script src="/assets/stats.js"></script>
+    </head>
+    <body>
+      <header>
+        <img src="/img/hero.avif" alt="Frisch gerösteter Kaffee" loading="lazy" class="hero">
+        <h1>Frisch gerösteter Kaffee</h1>
+      </header>
+      <main>
+        <article><img src="/img/produkt-1.avif" alt="Espresso-Bohnen"><h2>Espresso</h2></article>
+        <article><img src="/img/produkt-2.avif" alt="Filterkaffee"><h2>Filterkaffee</h2></article>
+        <article><img src="/img/produkt-3.avif" alt="Entkoffeiniert"><h2>Entkoffeiniert</h2></article>
+      </main>
+      <footer>
+        <img src="/img/partner.png" alt="Logo unseres Partners">
+      </footer>
+    </body>
+    </html>
+    EOF
+  checks:
+    - type: command
+      run: |-
+        node -e 'const h = require("fs").readFileSync("index.html", "utf8"); const t = h.match(/<script[^>]*app\.js[^>]*>/); process.exit(t && /\sdefer[\s>=]/.test(t[0]) ? 0 : 1)'
+      message: Das Skript app.js braucht das Attribut defer.
+    - type: command
+      run: |-
+        node -e 'const h = require("fs").readFileSync("index.html", "utf8"); const t = h.match(/<script[^>]*stats\.js[^>]*>/); process.exit(t && /\sasync[\s>=]/.test(t[0]) ? 0 : 1)'
+      message: Das unabhängige Skript stats.js braucht das Attribut async.
+    - type: command
+      run: |-
+        node -e 'const h = require("fs").readFileSync("index.html", "utf8"); const t = h.match(/<img[^>]*hero\.avif[^>]*>/); process.exit(t && /width="1600"/.test(t[0]) && /height="800"/.test(t[0]) && /fetchpriority="high"/.test(t[0]) && !/loading="lazy"/.test(t[0]) ? 0 : 1)'
+      message: 'Das Titelbild braucht width="1600", height="800" und fetchpriority="high" – und loading="lazy" muss weg.'
+    - type: command
+      run: |-
+        node -e 'const h = require("fs").readFileSync("index.html", "utf8"); const t = h.match(/<img[^>]*produkt-\d\.avif[^>]*>/g) || []; process.exit(t.length === 3 && t.every(x => /width="400"/.test(x) && /height="400"/.test(x) && /loading="lazy"/.test(x)) ? 0 : 1)'
+      message: Alle drei Produktbilder brauchen width="400", height="400" und loading="lazy".
+    - type: command
+      run: |-
+        node -e 'const h = require("fs").readFileSync("index.html", "utf8"); const t = h.match(/<img[^>]*partner\.png[^>]*>/); process.exit(t && /width="200"/.test(t[0]) && /height="80"/.test(t[0]) && /loading="lazy"/.test(t[0]) ? 0 : 1)'
+      message: Das Partnerlogo braucht width="200", height="80" und loading="lazy".
+    - type: command
+      run: grep -o '<img' index.html | wc -l
+      stdout_matches: "^\\s*5\\s*$"
+      message: Es sollen weiterhin genau fünf Bilder in index.html stehen – lösche keine Elemente.
+  hints:
+    - Arbeite Tag für Tag. Attribute stehen innerhalb der spitzen Klammern, getrennt durch Leerzeichen.
+    - "Aus `<script src=\"/assets/app.js\"></script>` wird `<script defer src=\"/assets/app.js\"></script>`."
+    - "Ein Produktbild sieht am Ende so aus: `<img src=\"/img/produkt-1.avif\" alt=\"Espresso-Bohnen\" width=\"400\" height=\"400\" loading=\"lazy\">`."
+  solution: |
+    ```html
+    <script defer src="/assets/app.js"></script>
+    <script async src="/assets/stats.js"></script>
+    …
+    <img src="/img/hero.avif" alt="Frisch gerösteter Kaffee" width="1600" height="800" fetchpriority="high" class="hero">
+    …
+    <img src="/img/produkt-1.avif" alt="Espresso-Bohnen" width="400" height="400" loading="lazy">
+    <img src="/img/produkt-2.avif" alt="Filterkaffee" width="400" height="400" loading="lazy">
+    <img src="/img/produkt-3.avif" alt="Entkoffeiniert" width="400" height="400" loading="lazy">
+    …
+    <img src="/img/partner.png" alt="Logo unseres Partners" width="200" height="80" loading="lazy">
+    ```
+
+    Mit `sed` geht es auch in einem Rutsch, z. B. `sed -i 's|<script src="/assets/app.js">|<script defer src="/assets/app.js">|' index.html`.

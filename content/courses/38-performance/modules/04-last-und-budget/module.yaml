@@ -1,0 +1,96 @@
+title: Last und Budget
+description: Mit Lasttests die Grenzen eines Servers finden und Performance mit einem automatisch geprüften Budget dauerhaft absichern.
+exercise:
+  id: modul-uebung-cache-lasttest
+  type: terminal
+  title: Vorher, nachher – ein Cache unter Last
+  description: |
+    `server.js` liefert unter `/bericht` eine Auswertung, deren Berechnung bei **jeder** Anfrage rund 20 ms Rechenzeit
+    kostet. Das Ergebnis ändert sich nur selten. Zeig mit einem Lasttest, was ein Cache bringt.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Dann:
+
+    1. Miss den Ist-Zustand mit 10 Verbindungen und 5 Sekunden und speichere das Ergebnis in `vorher.json`:
+       `npx -y autocannon@8 -c 10 -d 5 -j --on-port /bericht -- node server.js > vorher.json`
+    2. Baue in `server.js` einen Cache ein: Speichere den fertigen Bericht zusammen mit seinem Zeitpunkt (z. B. in einer
+       Variablen oder einer `Map`) und berechne ihn nur neu, wenn er älter als **10 Sekunden** ist.
+    3. Wiederhole denselben Lasttest und speichere das Ergebnis in `nachher.json`.
+    4. Vergleiche `.requests.average` und `.latency.p99` beider Dateien mit `jq`.
+  workdir: cache-lasttest
+  setup: |
+    cat > server.js <<'EOF'
+    const http = require('node:http');
+
+    function buildReport() {
+      const start = performance.now();
+      let checksum = 0;
+      while (performance.now() - start < 20) {
+        checksum = (checksum + Math.sqrt(Math.random() * 1e6)) % 1e9;
+      }
+      return { title: 'Monatsbericht', orders: 1234, revenue: 98765, checksum: Math.round(checksum), generatedAt: new Date().toISOString() };
+    }
+
+    const server = http.createServer((req, res) => {
+      if (req.url !== '/bericht') {
+        res.writeHead(404).end();
+        return;
+      }
+      const report = buildReport();
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(report));
+    });
+
+    server.listen(Number(process.env.PORT ?? 0), () => {
+      console.error(`Server läuft auf Port ${server.address().port}`);
+    });
+    EOF
+  checks:
+    - type: command
+      run: jq -e '.connections == 10 and (.url | endswith("/bericht")) and .non2xx == 0 and .duration >= 4.5' vorher.json
+      message: vorher.json fehlt oder entspricht nicht dem Test mit 10 Verbindungen, 5 Sekunden und dem Pfad /bericht.
+    - type: command
+      run: jq -e '.connections == 10 and (.url | endswith("/bericht")) and .non2xx == 0 and .duration >= 4.5' nachher.json
+      message: nachher.json fehlt oder entspricht nicht dem Test mit 10 Verbindungen, 5 Sekunden und dem Pfad /bericht.
+    - type: command
+      run: jq -n -e --slurpfile v vorher.json --slurpfile n nachher.json '$n[0].requests.average > 5 * $v[0].requests.average'
+      message: nachher.json zeigt noch keinen deutlichen Gewinn – mindestens fünfmal so viele Anfragen pro Sekunde wie vorher. Wird der Bericht wirklich nur alle 10 Sekunden neu berechnet?
+    - type: file_contains
+      path: server.js
+      pattern: "10[_ ]?000|10 \\* 1000|10e3"
+      message: Der Cache in server.js soll 10 Sekunden (10000 ms) gelten.
+    - type: command
+      run: node --check server.js && grep -q 'buildReport()' server.js
+      message: server.js soll weiterhin starten und buildReport verwenden.
+  hints:
+    - "Zwei Variablen außerhalb des Request-Handlers reichen: `let cached = null; let cachedAt = 0;`"
+    - "Im Handler: `if (cached === null || Date.now() - cachedAt >= 10_000) { cached = buildReport(); cachedAt = Date.now(); }`"
+    - "Vergleich: `jq '{rps: .requests.average, p99: .latency.p99}' vorher.json nachher.json`"
+  solution: |
+    ```js
+    // Ausschnitt aus server.js
+    const TTL_MS = 10_000;
+    let cached = null;
+    let cachedAt = 0;
+
+    const server = http.createServer((req, res) => {
+      if (req.url !== '/bericht') {
+        res.writeHead(404).end();
+        return;
+      }
+      if (cached === null || Date.now() - cachedAt >= TTL_MS) {
+        cached = JSON.stringify(buildReport());
+        cachedAt = Date.now();
+      }
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(cached);
+    });
+    ```
+
+    ```bash
+    npx -y autocannon@8 -c 10 -d 5 -j --on-port /bericht -- node server.js > vorher.json   # vor der Änderung
+    npx -y autocannon@8 -c 10 -d 5 -j --on-port /bericht -- node server.js > nachher.json  # nach der Änderung
+    jq '{rps: .requests.average, p99: .latency.p99}' vorher.json nachher.json
+    ```
+
+    Vorher schafft der Server rund 50 Anfragen pro Sekunde, weil jede Berechnung 20 ms den einzigen Thread blockiert.
+    Mit Cache sind es tausende – und das p99 sinkt von mehreren hundert auf wenige Millisekunden.

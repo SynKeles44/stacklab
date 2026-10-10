@@ -1,0 +1,32 @@
+title: Performance
+subtitle: Messen, verstehen, gezielt beschleunigen – im Browser, auf dem Server und unter Last
+description: >
+  „Die Seite ist langsam“ ist kein Fehlerbericht, sondern ein Gefühl. In diesem Kurs lernst du, aus dem Gefühl
+  Zahlen zu machen: Du misst Antwortzeiten mit Perzentilen, schreibst saubere Benchmarks und findest mit einem
+  Profiler die Funktion, die wirklich Zeit kostet.
+
+
+  Danach gehst du die typischen Baustellen durch – im Browser die Core Web Vitals, den Critical Rendering Path,
+  Bilder, Cache-Header, Komprimierung und Bundle-Größe, auf dem Server N+1-Abfragen, Indizes, Caching-Schichten,
+  OPcache und Warteschlangen. Zum Schluss belastest du einen eigenen Server mit einem Lasttest-Werkzeug und
+  sicherst alles mit einem Performance-Budget ab, das automatisch Alarm schlägt. Fast jede Lektion hat eine
+  Aufgabe, in der du im Übungs-Terminal echte Zahlen misst.
+category: backend
+level: fortgeschritten
+icon: gauge
+color: "#f59e0b"
+estimated_hours: 5
+workspace_dir: performance
+prerequisites: [javascript, php, datenbanken-sql]
+learning_goals:
+  - Du erklärst Latenz, Durchsatz und Perzentile und misst, bevor du optimierst.
+  - Du schreibst aussagekräftige Benchmarks in Node.js und PHP und liest ein CPU-Profil.
+  - Du kennst die Core Web Vitals LCP, INP und CLS und weißt, welche Maßnahmen sie verbessern.
+  - Du setzt Cache-Header, Komprimierung, Bildoptimierung und Code-Splitting gezielt ein.
+  - Du findest und behebst N+1-Abfragen, prüfst Indizes mit EXPLAIN und wählst die passende Caching-Schicht.
+  - Du konfigurierst OPcache für die Produktion und lagerst langsame Arbeit in eine Warteschlange aus.
+  - Du führst einen Lasttest durch, liest das Ergebnis richtig und sicherst Performance mit einem Budget ab.
+references:
+  - Performance-Budgets, die in der CI-Pipeline Bundle-Größen prüfen und Pull Requests blockieren
+  - N+1-Abfragen in ORM-basierten Anwendungen und ihre Behebung mit Eager Loading
+  - Lasttests vor großen Releases mit realistischen Perzentil-Zielen statt Durchschnittswerten
