@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="450" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Vom Model zur JSON-Antwort – die API Resource entscheidet, was nach außen geht</text>
+
+  <rect x="30" y="80" width="250" height="260" rx="14" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="155" y="112" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Model Book</text>
+  <text x="155" y="132" text-anchor="middle" font-size="13" fill="#1e1b3a">(alle Spalten der Tabelle)</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#1e1b3a">
+    <text x="55" y="168">id: 7</text>
+    <text x="55" y="194">title: "Momo"</text>
+    <text x="55" y="220">pages: 304</text>
+    <text x="55" y="246">finished: 1</text>
+    <text x="55" y="272" fill="#b91c1c">internal_note: "…"</text>
+    <text x="55" y="298" fill="#b91c1c">created_at: …</text>
+    <text x="55" y="324" fill="#b91c1c">updated_at: …</text>
+  </g>
+
+  <line x1="285" y1="210" x2="345" y2="210" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+
+  <rect x="350" y="80" width="250" height="260" rx="14" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="475" y="112" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">BookResource</text>
+  <text x="475" y="132" text-anchor="middle" font-size="13" fill="#1e1b3a">toArray(): Feld für Feld</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a">
+    <text x="370" y="172">'id' =&gt; $this-&gt;id,</text>
+    <text x="370" y="198">'title' =&gt; $this-&gt;title,</text>
+    <text x="370" y="224">'pages' =&gt; $this-&gt;pages,</text>
+    <text x="370" y="250">'finished' =&gt;</text>
+    <text x="390" y="274">(bool) $this-&gt;finished,</text>
+  </g>
+  <text x="475" y="318" text-anchor="middle" font-size="13" fill="#b91c1c">interne Felder fehlen absichtlich</text>
+
+  <line x1="605" y1="210" x2="665" y2="210" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+
+  <rect x="670" y="80" width="200" height="260" rx="14" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="770" y="112" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">JSON-Antwort</text>
+  <text x="770" y="132" text-anchor="middle" font-size="13" fill="#1e1b3a">Status 200 oder 201</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a">
+    <text x="688" y="170">{"data": {</text>
+    <text x="702" y="196">"id": 7,</text>
+    <text x="702" y="222">"title": "Momo",</text>
+    <text x="702" y="248">"pages": 304,</text>
+    <text x="702" y="274">"finished": true</text>
+    <text x="688" y="300">}}</text>
+  </g>
+
+  <text x="450" y="385" text-anchor="middle" font-size="15" fill="#1e1b3a">Die Datenbank darf sich ändern – die Form der API bleibt stabil, solange die Resource gleich bleibt.</text>
+</svg>

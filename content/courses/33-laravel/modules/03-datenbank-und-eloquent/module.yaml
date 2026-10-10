@@ -1,0 +1,129 @@
+title: Datenbank und Eloquent
+description: Tabellen mit Migrationen beschreiben und mit Eloquent-Models, Testdaten und Beziehungen arbeiten.
+exercise:
+  id: modul-uebung-genres
+  type: terminal
+  title: Bücher nach Genres
+  description: |
+    Im Ordner `genres-uebung` liegt eine frische Laravel-Anwendung mit SQLite. Baue von null an eine
+    Datenbank mit Genres und Büchern – mit allem, was du in diesem Modul gelernt hast.
+
+    1. Erzeuge die Models `Genre` und `Book` jeweils mit Migration und Factory.
+    2. Tabelle `genres`: `name` (Text, eindeutig). Tabelle `books`: `title` (Text), `pages` (positive
+       ganze Zahl), `finished` (Boolean, Standard `false`) und der Fremdschlüssel `genre_id` auf `genres`.
+       Die Migration für `genres` muss **vor** der für `books` laufen.
+    3. Beziehungen: Ein Genre hat viele Bücher (`books()`), ein Buch gehört zu einem Genre (`genre()`).
+       Erlaube Mass Assignment für alle eigenen Spalten.
+    4. Die `BookFactory` erzeugt bei Bedarf automatisch ein passendes Genre
+       (`'genre_id' => Genre::factory()`). Die `GenreFactory` nutzt `fake()->unique()->word()`.
+    5. Der `DatabaseSeeder` legt **3 Genres mit je 4 Büchern** an.
+    6. Die Route `GET /genres` gibt alle Genres alphabetisch als JSON zurück – jedes mit der Zahl seiner
+       Bücher im Feld `books_count`.
+    7. Führe `php artisan migrate:fresh --seed` aus.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: genres-uebung
+  setup: |
+    # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      cd "$T"
+      timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+      printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+      printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+      touch .fertig && cd - >/dev/null
+      rm -rf "$B" && mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+  checks:
+    - type: command
+      run: php artisan tinker --execute="echo implode(',', Schema::getColumnListing('books'));"
+      stdout_matches: "(?=.*\\btitle\\b)(?=.*\\bpages\\b)(?=.*\\bfinished\\b)(?=.*\\bgenre_id\\b)"
+      message: Die Tabelle books fehlt oder hat nicht alle Spalten (title, pages, finished, genre_id). Führe danach php artisan migrate:fresh --seed aus.
+    - type: command
+      run: php artisan tinker --execute="echo App\Models\Genre::count(), '/', App\Models\Book::count();"
+      stdout_matches: "^3/12\\s*$"
+      message: In der Datenbank sollen genau 3 Genres und 12 Bücher liegen. Prüfe den DatabaseSeeder und führe php artisan migrate:fresh --seed aus.
+    - type: command
+      run: php artisan tinker --execute="\$b = App\Models\Book::first(); echo App\Models\Genre::first()->books()->count(), ' ', var_export(\$b->genre->id === \$b->genre_id);"
+      stdout_matches: "^4 true\\s*$"
+      message: Die Beziehungen stimmen noch nicht. Genre braucht books() (hasMany), Book braucht genre() (belongsTo) – und jedes Genre soll 4 Bücher haben.
+    - type: command
+      run: php artisan tinker --execute="\$b = App\Models\Book::factory()->create(); var_export(\$b->genre !== null); \$g = \$b->genre; \$b->delete(); \$g->delete();"
+      stdout_matches: "^true\\s*$"
+      message: Book::factory()->create() soll automatisch ein Genre anlegen. Setze in der BookFactory 'genre_id' => Genre::factory().
+    - type: command
+      run: |
+        php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $k = $app->make(Illuminate\Contracts\Http\Kernel::class); echo $k->handle(Illuminate\Http\Request::create("/genres"))->getContent();' | jq -r '([.[].name] == ([.[].name] | sort)) and (length == 3) and all(.[]; .books_count == 4)'
+      stdout_equals: "true"
+      message: GET /genres liefert noch nicht alle Genres alphabetisch mit books_count = 4. Nutze Genre::withCount('books')->orderBy('name')->get().
+  hints:
+    - "`php artisan make:model Genre -mf` zuerst, dann `php artisan make:model Book -mf` – so bekommt die genres-Migration den früheren Zeitstempel."
+    - "Fremdschlüssel: `$table->foreignId('genre_id')->constrained();` – Seeder: `Genre::factory(3)->has(Book::factory(4))->create();`"
+    - "Bei `has(Book::factory(4))` erkennt Laravel die Beziehung `books()` am Namen. Das klappt nur, wenn Genre die Methode books() hat."
+  solution: |
+    ```php title="Migration genres (Ausschnitt)"
+    $table->id();
+    $table->string('name')->unique();
+    $table->timestamps();
+    ```
+
+    ```php title="Migration books (Ausschnitt)"
+    $table->id();
+    $table->foreignId('genre_id')->constrained();
+    $table->string('title');
+    $table->unsignedInteger('pages');
+    $table->boolean('finished')->default(false);
+    $table->timestamps();
+    ```
+
+    ```php title="app/Models/Genre.php"
+    #[Fillable(['name'])]
+    class Genre extends Model
+    {
+        use HasFactory;
+
+        public function books(): HasMany
+        {
+            return $this->hasMany(Book::class);
+        }
+    }
+    ```
+
+    ```php title="app/Models/Book.php"
+    #[Fillable(['title', 'pages', 'finished', 'genre_id'])]
+    class Book extends Model
+    {
+        use HasFactory;
+
+        protected function casts(): array
+        {
+            return ['finished' => 'boolean'];
+        }
+
+        public function genre(): BelongsTo
+        {
+            return $this->belongsTo(Genre::class);
+        }
+    }
+    ```
+
+    ```php title="database/factories/BookFactory.php (definition)"
+    return [
+        'genre_id' => Genre::factory(),
+        'title' => fake()->sentence(3),
+        'pages' => fake()->numberBetween(80, 900),
+        'finished' => fake()->boolean(),
+    ];
+    ```
+
+    ```php title="DatabaseSeeder (in run())"
+    Genre::factory(3)->has(Book::factory(4))->create();
+    ```
+
+    ```php title="routes/web.php (Ergänzung)"
+    Route::get('/genres', fn () => App\Models\Genre::withCount('books')->orderBy('name')->get());
+    ```

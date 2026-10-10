@@ -1,0 +1,241 @@
+title: Formulare, CRUD, API und Tests
+description: Eingaben validieren, eine vollständige CRUD-Anwendung und eine JSON-API bauen und alles mit Pest absichern.
+exercise:
+  id: modul-uebung-notizen-api
+  type: terminal
+  title: Eine getestete Notizen-API
+  description: |
+    Im Ordner `notizen-api` liegt eine Laravel-Anwendung mit dem Model `Note` (Spalten `title`, `body`,
+    `pinned`) samt Factory. Baue eine vollständige JSON-API mit Validierung und eigenen Tests.
+
+    1. Richte die API ein (`php artisan install:api`, danach `php artisan migrate`).
+    2. Lege den Form Request `NoteRequest` an: `title` Pflicht, Text, max. 100 Zeichen; `body` optional,
+       Text; `pinned` optional, Boolean.
+    3. Lege die Resource `NoteResource` an: `id`, `title`, `body` und `pinned` (als `true`/`false`).
+    4. Lege `Api/NoteController` an und registriere `Route::apiResource('notes', ...)`. Die Liste zeigt
+       angepinnte Notizen zuerst, danach alphabetisch nach Titel. `store` antwortet mit 201,
+       `destroy` mit 204. `store` und `update` nutzen den Form Request.
+    5. Schreibe `tests/Feature/NoteApiTest.php` mit **mindestens drei** Tests (z. B. Anlegen,
+       Ablehnen ohne Titel, Löschen). `php artisan test` muss grün sein.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: notizen-api
+  setup: |
+    # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      cd "$T"
+      timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+      printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+      printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+      touch .fertig && cd - >/dev/null
+      rm -rf "$B" && mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+    cat > database/migrations/2026_10_01_000001_create_notes_table.php <<'PHP'
+    <?php
+
+    use Illuminate\Database\Migrations\Migration;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\Schema;
+
+    return new class extends Migration
+    {
+        public function up(): void
+        {
+            Schema::create('notes', function (Blueprint $table) {
+                $table->id();
+                $table->string('title');
+                $table->text('body')->nullable();
+                $table->boolean('pinned')->default(false);
+                $table->timestamps();
+            });
+        }
+
+        public function down(): void
+        {
+            Schema::dropIfExists('notes');
+        }
+    };
+    PHP
+    cat > app/Models/Note.php <<'PHP'
+    <?php
+
+    namespace App\Models;
+
+    use Illuminate\Database\Eloquent\Attributes\Fillable;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Model;
+
+    #[Fillable(['title', 'body', 'pinned'])]
+    class Note extends Model
+    {
+        use HasFactory;
+
+        protected function casts(): array
+        {
+            return ['pinned' => 'boolean'];
+        }
+    }
+    PHP
+    cat > database/factories/NoteFactory.php <<'PHP'
+    <?php
+
+    namespace Database\Factories;
+
+    use Illuminate\Database\Eloquent\Factories\Factory;
+
+    class NoteFactory extends Factory
+    {
+        public function definition(): array
+        {
+            return [
+                'title' => fake()->sentence(3),
+                'body' => fake()->paragraph(),
+                'pinned' => false,
+            ];
+        }
+    }
+    PHP
+    php artisan migrate --force -q
+  checks:
+    - type: file_exists
+      path: routes/api.php
+      message: routes/api.php fehlt noch. Führe php artisan install:api aus.
+    - type: file_exists
+      path: app/Http/Requests/NoteRequest.php
+      message: Der Form Request app/Http/Requests/NoteRequest.php fehlt noch.
+    - type: file_exists
+      path: app/Http/Resources/NoteResource.php
+      message: Die Resource app/Http/Resources/NoteResource.php fehlt noch.
+    - type: command
+      run: |
+        f=tests/Feature/StacklabPruefungNotizenApiTest.php
+        cat > "$f" <<'EOF'
+        <?php
+
+        use App\Models\Note;
+        use Illuminate\Foundation\Testing\RefreshDatabase;
+
+        uses(RefreshDatabase::class);
+
+        test('stacklab: notizen api', function () {
+            Note::factory()->create(['title' => 'Zahnarzt', 'pinned' => false]);
+            Note::factory()->create(['title' => 'Wichtig', 'pinned' => true]);
+            Note::factory()->create(['title' => 'Apfel', 'pinned' => false]);
+            $this->getJson('/api/notes')->assertOk()
+                ->assertJsonPath('data.0.title', 'Wichtig')
+                ->assertJsonPath('data.1.title', 'Apfel')
+                ->assertJsonPath('data.0.pinned', true)
+                ->assertJsonMissingPath('data.0.created_at');
+            $neu = $this->postJson('/api/notes', ['title' => 'Einkaufen', 'body' => 'Milch'])
+                ->assertCreated()->assertJsonPath('data.pinned', false)->json('data.id');
+            $this->postJson('/api/notes', ['title' => str_repeat('x', 101)])->assertUnprocessable()->assertJsonValidationErrors('title');
+            $this->postJson('/api/notes', ['title' => 'Test', 'pinned' => 'vielleicht'])->assertUnprocessable()->assertJsonValidationErrors('pinned');
+            $this->putJson("/api/notes/{$neu}", ['title' => 'Einkaufen gehen', 'pinned' => true])
+                ->assertOk()->assertJsonPath('data.pinned', true);
+            $this->putJson("/api/notes/{$neu}", ['title' => ''])->assertUnprocessable();
+            $this->deleteJson("/api/notes/{$neu}")->assertNoContent();
+            $this->getJson("/api/notes/{$neu}")->assertNotFound();
+        });
+        EOF
+        php artisan test "$f" >/dev/null 2>&1; s=$?; rm -f "$f"; exit $s
+      message: "Die API verhält sich noch nicht wie beschrieben. Geprüft werden: Reihenfolge (angepinnt zuerst, dann nach Titel), Felder der Resource, 201 beim Anlegen, 422 bei ungültigem title oder pinned, Ändern per PUT, 204 beim Löschen und 404 danach."
+    - type: command
+      run: grep -cE "^\s*(test|it)\(" tests/Feature/NoteApiTest.php
+      stdout_matches: "^([3-9]|[1-9][0-9]+)$"
+      message: In tests/Feature/NoteApiTest.php stehen noch keine drei Tests.
+    - type: command
+      run: php artisan test >/dev/null 2>&1
+      message: "`php artisan test` ist noch nicht grün. Führe den Befehl aus und lies die Fehlermeldung."
+  hints:
+    - "Sortierung: `Note::orderByDesc('pinned')->orderBy('title')->get()`."
+    - "Regeln: `'pinned' => ['sometimes', 'boolean']` – und `authorize()` gibt `true` zurück."
+    - "In den Tests: `$this->postJson('/api/notes', [...])->assertCreated();` und `$this->deleteJson(...)->assertNoContent();`"
+  solution: |
+    ```php title="app/Http/Requests/NoteRequest.php (rules)"
+    return [
+        'title' => ['required', 'string', 'max:100'],
+        'body' => ['nullable', 'string'],
+        'pinned' => ['sometimes', 'boolean'],
+    ];
+    ```
+
+    ```php title="app/Http/Resources/NoteResource.php (toArray)"
+    return [
+        'id' => $this->id,
+        'title' => $this->title,
+        'body' => $this->body,
+        'pinned' => (bool) $this->pinned,
+    ];
+    ```
+
+    ```php title="app/Http/Controllers/Api/NoteController.php"
+    class NoteController extends Controller
+    {
+        public function index()
+        {
+            return NoteResource::collection(Note::orderByDesc('pinned')->orderBy('title')->get());
+        }
+
+        public function store(NoteRequest $request)
+        {
+            return new NoteResource(Note::create($request->validated()));
+        }
+
+        public function show(Note $note)
+        {
+            return new NoteResource($note);
+        }
+
+        public function update(NoteRequest $request, Note $note)
+        {
+            $note->update($request->validated());
+
+            return new NoteResource($note);
+        }
+
+        public function destroy(Note $note)
+        {
+            $note->delete();
+
+            return response()->noContent();
+        }
+    }
+    ```
+
+    ```php title="routes/api.php (Ergänzung)"
+    Route::apiResource('notes', App\Http\Controllers\Api\NoteController::class);
+    ```
+
+    ```php title="tests/Feature/NoteApiTest.php"
+    <?php
+
+    use App\Models\Note;
+    use Illuminate\Foundation\Testing\RefreshDatabase;
+
+    uses(RefreshDatabase::class);
+
+    test('eine notiz wird angelegt', function () {
+        $this->postJson('/api/notes', ['title' => 'Einkaufen'])
+            ->assertCreated()
+            ->assertJsonPath('data.title', 'Einkaufen');
+    });
+
+    test('eine notiz ohne titel wird abgelehnt', function () {
+        $this->postJson('/api/notes', ['body' => 'Ohne Titel'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('title');
+    });
+
+    test('eine notiz kann geloescht werden', function () {
+        $note = Note::factory()->create();
+
+        $this->deleteJson("/api/notes/{$note->id}")->assertNoContent();
+
+        $this->assertModelMissing($note);
+    });
+    ```

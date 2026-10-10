@@ -1,0 +1,403 @@
+title: Abschlussprüfung Laravel
+description: |
+  Diese Prüfung deckt alle vier Module ab: Einstieg und Konfiguration, Routing und Views, Datenbank und
+  Eloquent sowie Formulare, CRUD, API und Tests. Zuerst beantwortest du Fragen, danach löst du drei
+  Praxis-Aufgaben – zwei im echten Übungs-Terminal, eine als Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast,
+  und kannst gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 75
+pass_percent: 70
+questions:
+  - module: einstieg
+    type: single
+    question: Welche Datei ist der Front-Controller einer Laravel-Anwendung?
+    options: [routes/web.php, public/index.php, bootstrap/app.php, artisan]
+    answer: 1
+    explanation: Der Webserver leitet jede Anfrage an public/index.php weiter. Von dort startet Laravel und reicht die Anfrage an Middleware und Router weiter.
+  - module: einstieg
+    type: multiple
+    question: Welche Aussagen über Konfiguration in Laravel stimmen?
+    options:
+      - env() gehört nur in Dateien unter config/.
+      - Im Controller liest du Werte mit config('datei.schluessel').
+      - .env wird mit ins Repository committet, damit alle dieselben Passwörter haben.
+      - Nach php artisan config:cache liefert env() außerhalb von config/ null.
+    answers: [0, 1, 3]
+    explanation: .env ist pro Umgebung verschieden und gehört nicht ins Repository – dafür gibt es .env.example.
+  - module: einstieg
+    type: match
+    question: Ordne jedem Artisan-Befehl seine Wirkung zu.
+    pairs:
+      - { left: "php artisan serve", right: Startet den Entwicklungsserver }
+      - { left: "php artisan make:model Book -mf", right: "Legt Model, Migration und Factory an" }
+      - { left: "php artisan route:list", right: Zeigt alle Routen }
+      - { left: "php artisan tinker", right: Interaktive PHP-Konsole mit geladener App }
+    explanation: Artisan ist das Werkzeug für fast alles rund um ein Laravel-Projekt.
+  - module: einstieg
+    type: single
+    question: Welcher Wert muss für APP_DEBUG auf einem Produktionsserver stehen?
+    options: ["true", "false", "production", "Es ist egal"]
+    answer: 1
+    explanation: Mit APP_DEBUG=true sähen Besucher:innen bei Fehlern Stack-Traces mit Pfaden und Konfigurationswerten.
+  - module: routing-und-views
+    type: single
+    question: "Welche Route beantwortet `GET /books/abc`, wenn `Route::get('/books/{id}', ...)->whereNumber('id')` die einzige Route ist?"
+    options:
+      - Die Route, mit id = "abc"
+      - Keine – Laravel antwortet mit 404
+      - Die Route, mit id = null
+      - Keine – Laravel antwortet mit 500
+    answer: 1
+    explanation: whereNumber lässt nur Ziffern zu. Passt der Wert nicht, passt die Route nicht, und es gibt 404.
+  - module: routing-und-views
+    type: cloze
+    text: "Eine Route mit `->name('books.show')` verlinkst du in Blade mit `{{ ___('books.show', $book) }}`. Den Inhalt zwischen `<x-layout>` und `</x-layout>` gibt die Komponente mit `{{ $___ }}` aus."
+    blanks:
+      - [route]
+      - [slot]
+    explanation: route() erzeugt die URL aus dem Namen, $slot enthält den Inhalt einer Komponente.
+  - module: routing-und-views
+    type: find-bug
+    question: Ein Kommentar enthält `<script>`-Code, der bei allen Besucher:innen ausgeführt wird. Welche Zeile ist schuld?
+    language: php
+    code: |
+      <ul>
+          @foreach ($comments as $comment)
+              <li>{{ $comment->author }}:
+                  {!! $comment->text !!}
+              </li>
+          @endforeach
+      </ul>
+    bug_line: 4
+    explanation: "{!! !!} gibt den Text ungeprüft als HTML aus – eine XSS-Lücke. Richtig ist {{ $comment->text }}."
+  - module: routing-und-views
+    type: single
+    question: "Was gibt eine Controller-Methode zurück, damit Laravel eine JSON-Antwort erzeugt, ohne dass du json_encode() aufrufst?"
+    options:
+      - Einen String
+      - Ein PHP-Array oder ein Eloquent-Model
+      - "Eine View mit der Endung .json"
+      - Das geht nur in routes/api.php
+    answer: 1
+    explanation: Arrays, Models und Collections wandelt Laravel automatisch in JSON um – in Web- und API-Routen.
+  - module: datenbank-und-eloquent
+    type: single
+    question: Eine Migration wurde schon mit dem Team geteilt und auf dem Server ausgeführt. Du brauchst eine neue Spalte. Was tust du?
+    options:
+      - Die alte Migration ändern und php artisan migrate ausführen
+      - Eine neue Migration schreiben, die die Spalte hinzufügt
+      - Die Spalte direkt in der Datenbank anlegen
+      - php artisan migrate:fresh auf dem Server ausführen
+    answer: 1
+    explanation: Ausgeführte Migrationen laufen nicht noch einmal. Jede Änderung bekommt eine neue Migration, z. B. add_isbn_to_books_table.
+  - module: datenbank-und-eloquent
+    type: multiple
+    question: "Welche Aufrufe schicken eine Abfrage an die Datenbank?"
+    options:
+      - "Book::where('finished', true)->get()"
+      - "Book::orderBy('title')"
+      - "Book::count()"
+      - "Book::findOrFail(3)"
+    answers: [0, 2, 3]
+    explanation: orderBy() baut die Abfrage nur. get(), count() und findOrFail() führen sie aus.
+  - module: datenbank-und-eloquent
+    type: match
+    question: Ordne jedem Begriff seine Bedeutung zu.
+    pairs:
+      - { left: Factory, right: Beschreibt erfundene Beispieldaten für ein Model }
+      - { left: Seeder, right: Füllt die Datenbank mit Daten }
+      - { left: "#[Fillable]", right: "Erlaubte Felder für create() und update()" }
+      - { left: "casts()", right: Wandelt Spaltenwerte beim Lesen um }
+    explanation: Factories und Seeder liefern Testdaten, Fillable und Casts gehören zum Model.
+  - module: datenbank-und-eloquent
+    type: find-bug
+    question: Die Seite zeigt 200 Bücher mit Autorin und braucht dafür 201 Datenbankabfragen. Welche Zeile musst du ändern?
+    language: php
+    code: |
+      public function index()
+      {
+          $books = Book::orderBy('title')->get();
+
+          return view('books.index', ['books' => $books]);
+      }
+    bug_line: 3
+    explanation: "Mit Book::with('author')->orderBy('title')->get() werden alle Autor:innen in einer zweiten Abfrage geladen – das N+1-Problem verschwindet."
+  - module: datenbank-und-eloquent
+    type: single
+    question: "Ein Kommentar gehört zu genau einem Beitrag. Welche Methode steht im Model `Comment`?"
+    options:
+      - "return $this->hasMany(Post::class);"
+      - "return $this->belongsTo(Post::class);"
+      - "return $this->belongsToMany(Post::class);"
+      - "return $this->hasOne(Post::class);"
+    answer: 1
+    explanation: Der Fremdschlüssel post_id steht in comments. Die Seite mit dem Fremdschlüssel nutzt belongsTo.
+  - module: formulare-crud-und-tests
+    type: single
+    question: Ein Formular antwortet beim Absenden mit „419 Page Expired“. Was fehlt sehr wahrscheinlich?
+    options: ["@method('PUT')", "@csrf", "old('title')", "@error('title')"]
+    answer: 1
+    explanation: Ohne CSRF-Token lehnt Laravel POST-, PUT- und DELETE-Anfragen aus Formularen mit 419 ab.
+  - module: formulare-crud-und-tests
+    type: multiple
+    question: Welche Aussagen über Form Requests stimmen?
+    options:
+      - Die Regeln stehen in der Methode rules().
+      - authorize() muss true liefern, sonst gibt es 403.
+      - Die Prüfung läuft, bevor die Controller-Methode startet.
+      - Mit $request->all() bekommst du nur die geprüften Felder.
+    answers: [0, 1, 2]
+    explanation: Nur validated() liefert ausschließlich geprüfte Felder; all() enthält alles, was geschickt wurde.
+  - module: formulare-crud-und-tests
+    type: match
+    question: Ordne jeder Anfrage an eine Resource-Route die Controller-Methode zu.
+    pairs:
+      - { left: "GET /books/create", right: create }
+      - { left: "POST /books", right: store }
+      - { left: "PUT /books/4", right: update }
+      - { left: "DELETE /books/4", right: destroy }
+    explanation: Route::resource registriert sieben Routen mit festen Methodennamen.
+  - module: formulare-crud-und-tests
+    type: single
+    question: "Eine API-Route gibt `new BookResource($book)` für ein gerade mit `Book::create()` angelegtes Buch zurück. Welchen Statuscode bekommt der Client?"
+    options: ["200", "201", "204", "302"]
+    answer: 1
+    explanation: Laravel erkennt, dass das Model gerade angelegt wurde, und setzt automatisch 201 Created.
+  - module: formulare-crud-und-tests
+    type: find-bug
+    question: Dieser Test soll beweisen, dass ein Buch ohne Titel abgelehnt wird. Er ist aber auch grün, wenn die Validierung fehlt. Welche Zeile ist zu schwach?
+    language: php
+    code: |
+      test('ein buch ohne titel wird abgelehnt', function () {
+          $response = $this->post('/books', ['title' => '', 'author' => 'Ada']);
+
+          $response->assertStatus(302);
+      });
+    bug_line: 4
+    explanation: Auch ein erfolgreiches Speichern leitet mit 302 weiter. Prüfe gezielt mit assertSessionHasErrors('title') und assertDatabaseCount('books', 0).
+  - module: formulare-crud-und-tests
+    type: cloze
+    text: "Damit jeder Test mit einer leeren Datenbank startet, schreibst du `uses(___::class);`. JSON-Anfragen im Test schickst du z. B. mit `$this->___('/api/books', [...])`."
+    blanks:
+      - [RefreshDatabase]
+      - [postJson, getJson, putJson, deleteJson]
+    explanation: RefreshDatabase setzt die Datenbank nach jedem Test zurück. Die ...Json-Methoden schicken automatisch Accept application/json mit.
+tasks:
+  - module: routing-und-views
+    id: pruefung-begruessung
+    type: terminal
+    title: Route, Controller und View
+    description: |
+      Im Ordner `pruefung-views` liegt eine frische Laravel-Anwendung.
+
+      1. Erzeuge den Controller `WelcomeController` mit der Methode `show(string $name)`.
+      2. Registriere `GET /willkommen/{name}` mit dem Namen `welcome.show`.
+      3. Die Methode gibt die View `welcome-name` zurück (Datei `resources/views/welcome-name.blade.php`)
+         und übergibt den Namen.
+      4. Die View zeigt `<h1>Willkommen, Ada!</h1>` (für den Namen Ada). Der Name muss sicher maskiert
+         ausgegeben werden.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-views
+    setup: |
+      # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+      B="$HOME/.cache/stacklab/laravel13"
+      if [ ! -f "$B/.fertig" ]; then
+        T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+        timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+        cd "$T"
+        timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+        printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+        printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+        printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+        touch .fertig && cd - >/dev/null
+        rm -rf "$B" && mv "$T" "$B"
+      fi
+      cp -a "$B/." . && rm -f .fertig
+    checks:
+      - type: command
+        run: php artisan route:list --json | jq -r '.[] | select(.name == "welcome.show") | .action'
+        stdout_matches: "WelcomeController@show"
+        message: Die Route welcome.show fehlt oder zeigt nicht auf WelcomeController@show.
+      - type: command
+        run: |
+          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $k = $app->make(Illuminate\Contracts\Http\Kernel::class); $r = $k->handle(Illuminate\Http\Request::create("/willkommen/Grace")); echo $r->getStatusCode(), " ", preg_match("#<h1>\\s*Willkommen, Grace!\\s*</h1>#", $r->getContent()) ? "ok" : "fehlt";'
+        stdout_equals: 200 ok
+        message: "GET /willkommen/Grace zeigt noch nicht <h1>Willkommen, Grace!</h1>."
+      - type: command
+        run: |
+          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $k = $app->make(Illuminate\Contracts\Http\Kernel::class); $h = $k->handle(Illuminate\Http\Request::create("/willkommen/%3Cb%3EX"))->getContent(); echo str_contains($h, "&lt;b&gt;X") && ! str_contains($h, "<b>X") ? "sicher" : "unsicher";'
+        stdout_equals: sicher
+        message: Der Name wird nicht maskiert ausgegeben. Nutze {{ $name }} in der View.
+      - type: file_exists
+        path: resources/views/welcome-name.blade.php
+        message: Die View resources/views/welcome-name.blade.php fehlt noch.
+    hints:
+      - "`Route::get('/willkommen/{name}', [WelcomeController::class, 'show'])->name('welcome.show');`"
+      - "`return view('welcome-name', ['name' => $name]);`"
+    solution: |
+      ```php title="app/Http/Controllers/WelcomeController.php"
+      class WelcomeController extends Controller
+      {
+          public function show(string $name)
+          {
+              return view('welcome-name', ['name' => $name]);
+          }
+      }
+      ```
+
+      ```php title="routes/web.php (Ergänzung)"
+      Route::get('/willkommen/{name}', [App\Http\Controllers\WelcomeController::class, 'show'])->name('welcome.show');
+      ```
+
+      ```blade title="resources/views/welcome-name.blade.php"
+      <h1>Willkommen, {{ $name }}!</h1>
+      ```
+  - module: datenbank-und-eloquent
+    id: pruefung-filme
+    type: terminal
+    title: Model, Migration und Abfrage
+    description: |
+      Im Ordner `pruefung-filme` liegt eine frische Laravel-Anwendung mit SQLite.
+
+      1. Lege das Model `Movie` mit Migration an. Die Tabelle `movies` hat die Spalten `title` (Text) und
+         `year` (ganze Zahl) plus Zeitstempel.
+      2. Erlaube Mass Assignment für `title` und `year`.
+      3. Führe die Migration aus.
+      4. Ergänze die Route `GET /filme/neu`. Sie gibt die **Titel** aller Filme ab dem Jahr 2000 als
+         JSON-Liste zurück, sortiert nach Jahr aufsteigend.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-filme
+    setup: |
+      # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+      B="$HOME/.cache/stacklab/laravel13"
+      if [ ! -f "$B/.fertig" ]; then
+        T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+        timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+        cd "$T"
+        timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+        printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+        printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+        printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+        touch .fertig && cd - >/dev/null
+        rm -rf "$B" && mv "$T" "$B"
+      fi
+      cp -a "$B/." . && rm -f .fertig
+    checks:
+      - type: command
+        run: php artisan tinker --execute="echo implode(',', Schema::getColumnListing('movies'));"
+        stdout_matches: "(?=.*\\btitle\\b)(?=.*\\byear\\b)"
+        message: Die Tabelle movies fehlt oder hat nicht die Spalten title und year. Führe php artisan migrate aus.
+      - type: command
+        run: |
+          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $k = $app->make(Illuminate\Contracts\Http\Kernel::class); $k->bootstrap(); App\Models\Movie::query()->delete(); foreach ([["Matrix", 1999], ["Wall-E", 2008], ["Amelie", 2001], ["Metropolis", 1927]] as [$t, $y]) { App\Models\Movie::create(["title" => $t, "year" => $y]); } echo $k->handle(Illuminate\Http\Request::create("/filme/neu"))->getContent(); App\Models\Movie::query()->delete();' | jq -c .
+        stdout_equals: '["Amelie","Wall-E"]'
+        message: "GET /filme/neu liefert noch nicht die Titel der Filme ab 2000, aufsteigend nach Jahr. Prüfe auch #[Fillable(['title', 'year'])] im Model."
+    hints:
+      - "`php artisan make:model Movie -m`, dann `$table->string('title'); $table->unsignedSmallInteger('year');`"
+      - "`Movie::where('year', '>=', 2000)->orderBy('year')->pluck('title')`"
+    solution: |
+      ```php title="Migration (Ausschnitt)"
+      $table->id();
+      $table->string('title');
+      $table->unsignedSmallInteger('year');
+      $table->timestamps();
+      ```
+
+      ```php title="app/Models/Movie.php"
+      #[Fillable(['title', 'year'])]
+      class Movie extends Model
+      {
+      }
+      ```
+
+      ```php title="routes/web.php (Ergänzung)"
+      Route::get('/filme/neu', fn () => App\Models\Movie::where('year', '>=', 2000)->orderBy('year')->pluck('title'));
+      ```
+  - module: formulare-crud-und-tests
+    id: pruefung-validator
+    type: code
+    language: php
+    title: Ein Mini-Validator
+    description: |
+      Baue das Prinzip von Laravels Validierung nach. Schreibe `validiere(array $daten, array $regeln): array`.
+
+      - `$regeln` sieht aus wie in Laravel: `['title' => 'required|max:5', 'pages' => 'integer']`.
+      - Unterstützt werden `required` (Feld fehlt oder ist `''` bzw. `null`), `integer` (ganze Zahl oder
+        Text aus Ziffern) und `max:N` (Text mit höchstens N Zeichen).
+      - Rückgabe: ein Array **Feldname → Name der ersten verletzten Regel** (`'max'` ohne Zahl). Gültige
+        Felder tauchen nicht auf. Alles gültig → leeres Array.
+      - Fehlt ein optionales Feld (ohne `required`), wird es nicht weiter geprüft.
+    starter: |
+      <?php
+
+      function validiere(array $daten, array $regeln): array
+      {
+          $fehler = [];
+
+          foreach ($regeln as $feld => $regelText) {
+              // Tipp: explode('|', $regelText)
+          }
+
+          return $fehler;
+      }
+    tests:
+      - name: gültige Daten ergeben keine Fehler
+        code: |
+          assert_same([], validiere(['title' => 'Momo', 'pages' => '304'], ['title' => 'required|max:10', 'pages' => 'integer']));
+      - name: required schlägt bei fehlendem und leerem Feld an
+        code: |
+          assert_same(['title' => 'required', 'author' => 'required'], validiere(['author' => ''], ['title' => 'required', 'author' => 'required']));
+      - name: max und integer
+        code: |
+          assert_same(['title' => 'max', 'pages' => 'integer'], validiere(['title' => 'Die unendliche Geschichte', 'pages' => '3,5'], ['title' => 'required|max:10', 'pages' => 'integer']));
+      - name: erste verletzte Regel zählt
+        code: |
+          assert_same(['code' => 'integer'], validiere(['code' => 'abcdefgh'], ['code' => 'integer|max:3']));
+      - name: fehlendes optionales Feld wird nicht geprüft
+        code: |
+          assert_same([], validiere([], ['pages' => 'integer|max:4']));
+    hints:
+      - "Prüfe am Anfang je Feld: Ist der Wert leer (`!isset($daten[$feld]) || $daten[$feld] === ''`)? Dann nur `required` melden oder das Feld überspringen."
+      - "`explode(':', $regel, 2)` trennt `max:5` in Name und Zahl. `mb_strlen()` zählt Zeichen."
+      - "Für integer: `is_int($wert) || (is_string($wert) && ctype_digit($wert))`."
+    solution: |
+      <?php
+
+      function validiere(array $daten, array $regeln): array
+      {
+          $fehler = [];
+
+          foreach ($regeln as $feld => $regelText) {
+              $liste = explode('|', $regelText);
+              $wert = $daten[$feld] ?? null;
+              $leer = $wert === null || $wert === '';
+
+              if ($leer) {
+                  if (in_array('required', $liste, true)) {
+                      $fehler[$feld] = 'required';
+                  }
+                  continue;
+              }
+
+              foreach ($liste as $regel) {
+                  [$name, $parameter] = array_pad(explode(':', $regel, 2), 2, null);
+
+                  $ok = match ($name) {
+                      'required' => true,
+                      'integer' => is_int($wert) || (is_string($wert) && ctype_digit($wert)),
+                      'max' => mb_strlen((string) $wert) <= (int) $parameter,
+                      default => true,
+                  };
+
+                  if (! $ok) {
+                      $fehler[$feld] = $name;
+                      break;
+                  }
+              }
+          }
+
+          return $fehler;
+      }

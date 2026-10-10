@@ -1,0 +1,122 @@
+title: Einstieg in Laravel
+description: Was Laravel ist, wie du ein Projekt anlegst, es über .env und config/ konfigurierst und mit Artisan steuerst.
+exercise:
+  id: modul-uebung-status
+  type: terminal
+  title: Ein Statusbericht für die Leseliste
+  description: |
+    Im Ordner `status-uebung` liegt eine frische Laravel-Anwendung. Baue einen kleinen Statusbericht,
+    der Konfiguration, Artisan und eine erste Route verbindet.
+
+    1. Setze in `.env` den App-Namen auf `Leseliste`.
+    2. Lege `config/leseliste.php` an mit dem Schlüssel `pro_seite`, gelesen aus `LESELISTE_PRO_SEITE`
+       (Standardwert `10`, als Zahl). Setze den Wert in `.env` auf `20` und dokumentiere die Variable in
+       `.env.example`.
+    3. Schreibe den Artisan-Befehl `leseliste:status`. Er gibt zwei Zeilen aus:
+
+       ```text
+       App: Leseliste
+       Pro Seite: 20
+       ```
+
+    4. Mit der Option `--json` gibt der Befehl stattdessen eine Zeile JSON aus:
+       `{"app":"Leseliste","pro_seite":20}`.
+    5. Ergänze die Route `GET /status`, die dieselben Daten als JSON liefert. Tipp: Gibt eine Route ein
+       PHP-Array zurück, macht Laravel automatisch JSON daraus.
+
+    Alle Werte kommen aus `config()` – nicht fest im Code und nicht über `env()` außerhalb von `config/`.
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: status-uebung
+  setup: |
+    # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      cd "$T"
+      timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+      printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+      printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+      touch .fertig && cd - >/dev/null
+      rm -rf "$B" && mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+  checks:
+    - type: command
+      run: php artisan tinker --execute="var_export(config('leseliste.pro_seite'));"
+      stdout_matches: "^20\\s*$"
+      message: config('leseliste.pro_seite') liefert noch nicht die Zahl 20. Prüfe config/leseliste.php (mit (int)) und .env.
+    - type: file_contains
+      path: .env.example
+      pattern: "^LESELISTE_PRO_SEITE="
+      message: Dokumentiere LESELISTE_PRO_SEITE in .env.example.
+    - type: command
+      run: php artisan leseliste:status | tr -s ' ' | sed 's/^ //'
+      stdout_matches: "^App: Leseliste\\nPro Seite: 20$"
+      message: "`php artisan leseliste:status` gibt noch nicht genau die zwei Zeilen „App: Leseliste“ und „Pro Seite: 20“ aus."
+    - type: command
+      run: php artisan leseliste:status --json | jq -c .
+      stdout_equals: '{"app":"Leseliste","pro_seite":20}'
+      message: "`php artisan leseliste:status --json` liefert noch nicht das erwartete JSON (pro_seite als Zahl)."
+    - type: command
+      run: |
+        php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $r = $app->make(Illuminate\Contracts\Http\Kernel::class)->handle(Illuminate\Http\Request::create("/status")); echo $r->getContent();' | jq -c .
+      stdout_equals: '{"app":"Leseliste","pro_seite":20}'
+      message: GET /status liefert noch nicht das JSON mit app und pro_seite.
+    - type: command
+      run: "! grep -rn \"env(\" app routes"
+      message: In app/ oder routes/ steht noch env(. Lies Werte dort immer mit config().
+  hints:
+    - "Die Zahl bekommst du mit `(int) env('LESELISTE_PRO_SEITE', 10)` in der Konfigurationsdatei."
+    - "Im Befehl: `#[Signature('leseliste:status {--json}')]` und `$this->line(json_encode([...]))` für die JSON-Variante."
+    - "Die Route: `Route::get('/status', fn () => ['app' => config('app.name'), 'pro_seite' => config('leseliste.pro_seite')]);`"
+  solution: |
+    ```php title="config/leseliste.php"
+    <?php
+
+    return [
+        'pro_seite' => (int) env('LESELISTE_PRO_SEITE', 10),
+    ];
+    ```
+
+    ```php title="app/Console/Commands/Status.php"
+    <?php
+
+    namespace App\Console\Commands;
+
+    use Illuminate\Console\Attributes\Description;
+    use Illuminate\Console\Attributes\Signature;
+    use Illuminate\Console\Command;
+
+    #[Signature('leseliste:status {--json}')]
+    #[Description('Zeigt den Namen der App und die Einträge pro Seite')]
+    class Status extends Command
+    {
+        public function handle(): int
+        {
+            $daten = ['app' => config('app.name'), 'pro_seite' => config('leseliste.pro_seite')];
+
+            if ($this->option('json')) {
+                $this->line(json_encode($daten));
+
+                return self::SUCCESS;
+            }
+
+            $this->line('App: '.$daten['app']);
+            $this->line('Pro Seite: '.$daten['pro_seite']);
+
+            return self::SUCCESS;
+        }
+    }
+    ```
+
+    ```php title="routes/web.php (Ergänzung)"
+    Route::get('/status', fn () => [
+        'app' => config('app.name'),
+        'pro_seite' => config('leseliste.pro_seite'),
+    ]);
+    ```
+
+    Dazu in `.env`: `APP_NAME=Leseliste` und `LESELISTE_PRO_SEITE=20`, in `.env.example`:
+    `LESELISTE_PRO_SEITE=10`.

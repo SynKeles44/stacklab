@@ -1,0 +1,33 @@
+title: Laravel
+subtitle: Vom leeren Ordner zur getesteten Webanwendung – mit Laravel 13 und PHP 8.5
+description: >
+  Laravel ist eines der beliebtesten Frameworks für Webanwendungen in PHP. Es nimmt dir die immer
+  gleichen Aufgaben ab – Anfragen verteilen, HTML erzeugen, mit der Datenbank sprechen, Eingaben prüfen –,
+  damit du dich auf das konzentrierst, was deine Anwendung besonders macht.
+
+
+  In diesem Kurs baust du Schritt für Schritt echte Laravel-Anwendungen im Übungs-Terminal. Du lernst,
+  **wie eine Anfrage durch Laravel wandert**: über Routen zum Controller, von dort zu Eloquent-Models und
+  zurück als Blade-View oder JSON. Am Ende hast du eine vollständige CRUD-Anwendung mit Validierung und
+  eine JSON-API mit API Resources gebaut und beides mit Pest getestet. Sanctum und Queues lernst du im
+  Überblick kennen; vertieft werden sie in den Kursen „Laravel vertieft“ und „Authentifizierung“.
+category: backend
+level: fortgeschritten
+icon: flame
+color: "#ff2d20"
+estimated_hours: 8
+workspace_dir: laravel
+prerequisites: [php, datenbanken-sql]
+learning_goals:
+  - Du erklärst, wie eine Anfrage durch Laravel läuft – vom Front-Controller über Route und Controller bis zur Antwort.
+  - Du legst Laravel-Projekte an, findest dich in ihrer Ordnerstruktur zurecht und konfigurierst sie über .env und config/.
+  - Du nutzt Artisan, um Code zu erzeugen, Routen zu prüfen und mit Tinker Daten zu erkunden.
+  - Du definierst Routen, schreibst Controller und baust Seiten mit Blade-Layouts und -Komponenten.
+  - Du beschreibst Tabellen mit Migrationen und arbeitest mit Eloquent-Models, Factories, Seedern und Beziehungen.
+  - Du validierst Formulare mit Validierungsregeln und Form Requests und baust eine vollständige CRUD-Anwendung.
+  - Du baust eine JSON-API mit API-Routen, API Resources und passenden Statuscodes und kennst Sanctum und Queues im Überblick.
+  - Du sicherst deine Anwendung mit Feature-Tests in Pest ab.
+references:
+  - Schlanke Controller mit Form Requests und Route Model Binding, wie sie in großen Laravel-Projekten üblich sind
+  - Feature-Tests mit Factories und RefreshDatabase als Sicherheitsnetz vor jedem Deployment
+  - Eager Loading gegen das N+1-Problem in Listen mit vielen Datensätzen

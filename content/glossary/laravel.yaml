@@ -1,0 +1,302 @@
+- slug: artisan
+  term: Artisan
+  short: Die Kommandozeile von Laravel, die du mit `php artisan` im Projektordner aufrufst.
+  explanation: >
+    Artisan ist ein PHP-Skript, das jedes Laravel-Projekt mitbringt. Es erzeugt Code aus Vorlagen
+    (`make:model`), führt Migrationen aus, zeigt Routen an und startet den Entwicklungsserver. Eigene
+    Befehle lassen sich als Klassen ergänzen.
+  example: "`php artisan make:controller BookController` legt einen neuen Controller an."
+  category: laravel
+  aliases: [php artisan, Artisan-Befehl, Artisan-Befehle]
+  related: [laravel, tinker, kommandozeile]
+  lesson: laravel/artisan
+
+- slug: tinker
+  term: Tinker
+  short: Eine interaktive PHP-Konsole, in der die komplette Laravel-Anwendung geladen ist.
+  explanation: >
+    In Tinker tippst du PHP-Ausdrücke und siehst sofort das Ergebnis – mit Zugriff auf Models,
+    Konfiguration und Hilfsfunktionen. Ideal, um Abfragen auszuprobieren oder Daten nachzusehen.
+  example: "`php artisan tinker --execute=\"echo App\\Models\\Book::count();\"` zählt alle Bücher."
+  category: laravel
+  aliases: [php artisan tinker]
+  related: [artisan, repl]
+  lesson: laravel/artisan
+
+- slug: blade
+  term: Blade
+  short: Die Template-Sprache von Laravel, mit der du HTML-Seiten aus Daten erzeugst.
+  explanation: >
+    Blade-Dateien enden auf `.blade.php` und liegen in `resources/views/`. Mit `{{ $wert }}` gibst du
+    Daten sicher maskiert aus, mit Direktiven wie `@if` und `@foreach` steuerst du die Ausgabe. Laravel
+    übersetzt Blade-Dateien in normales PHP und speichert das Ergebnis zwischen.
+  example: "`<h1>{{ $book->title }}</h1>` gibt den Buchtitel HTML-sicher aus."
+  category: laravel
+  aliases: [Blade-Template, Blade-Templates, Blade-View, Blade-Views]
+  related: [view, blade-direktive, blade-komponente]
+  lesson: laravel/blade-views
+
+- slug: view
+  term: View
+  short: Der Teil einer Anwendung, der aus Daten die Ausgabe erzeugt – in Laravel meist eine Blade-Datei.
+  explanation: >
+    Eine View enthält nur Darstellung, keine Datenbankabfragen und keine Geschäftslogik. Der Controller
+    übergibt ihr die nötigen Daten, etwa mit `view('books.index', ['books' => $books])`.
+  example: "`resources/views/books/index.blade.php` ist die View `books.index`."
+  category: laravel
+  aliases: [Views, Ansicht]
+  related: [blade, mvc, controller]
+  lesson: laravel/blade-views
+
+- slug: mvc
+  term: MVC
+  short: "Ein Architekturmuster, das Code in Model (Daten), View (Darstellung) und Controller (Steuerung) trennt."
+  explanation: >
+    Jeder der drei Teile hat genau eine Aufgabe. Das Model kennt die Daten und ihre Regeln, die View
+    erzeugt die Ausgabe, der Controller nimmt Anfragen an und verbindet beides. So bleibt Code
+    übersichtlich und austauschbar.
+  example: "In Laravel: `Book` (Model), `books/index.blade.php` (View), `BookController` (Controller)."
+  category: laravel
+  aliases: [Model-View-Controller]
+  related: [model, view, controller]
+  lesson: laravel/was-ist-laravel
+
+- slug: orm
+  term: ORM
+  short: "Ein Object-Relational Mapper bildet Datenbanktabellen auf Klassen und Zeilen auf Objekte ab."
+  explanation: >
+    Statt SQL-Strings zu schreiben, arbeitest du mit Objekten: Du setzt Eigenschaften und rufst
+    `save()` auf, das ORM erzeugt das passende SQL. Das spart Code und schützt vor SQL-Injection.
+    Das ORM von Laravel heißt Eloquent.
+  example: "`$book->title = 'Dune'; $book->save();` erzeugt ein `UPDATE books SET title = ...`."
+  category: datenbanken
+  aliases: [Object-Relational Mapper, Object-Relational Mapping]
+  related: [eloquent, model, sql]
+  lesson: laravel/was-ist-laravel
+
+- slug: eloquent
+  term: Eloquent
+  short: Das ORM von Laravel – jede Tabelle bekommt eine Model-Klasse, jede Zeile wird ein Objekt.
+  explanation: >
+    Eloquent leitet aus dem Klassennamen den Tabellennamen ab (`Book` → `books`) und bietet Methoden
+    wie `all()`, `find()`, `create()` und `where()`. Beziehungen zwischen Tabellen beschreibst du als
+    Methoden im Model.
+  example: "`Book::where('finished', true)->orderBy('title')->get()` liefert alle gelesenen Bücher."
+  category: laravel
+  aliases: [Eloquent ORM, Eloquent-Model, Eloquent-Models]
+  related: [orm, model, migration]
+  lesson: laravel/migrationen-und-models
+
+- slug: app-key
+  term: APP_KEY
+  short: Der geheime Schlüssel, mit dem Laravel Cookies, Sessions und verschlüsselte Werte schützt.
+  explanation: >
+    Der Schlüssel steht in `.env` und ist für jede Umgebung verschieden. Ohne ihn startet die Anwendung
+    nicht. Wer ihn kennt, kann Sessions fälschen – er gehört deshalb nie ins Repository.
+  example: "`php artisan key:generate` erzeugt einen neuen Schlüssel und trägt ihn in `.env` ein."
+  category: laravel
+  aliases: [Application Key, App-Key]
+  related: [env-datei, verschluesselung]
+  lesson: laravel/konfiguration-und-env
+
+- slug: blade-direktive
+  term: Blade-Direktive
+  short: Ein Befehl mit `@` am Anfang, der in einer Blade-View die Ausgabe steuert.
+  explanation: >
+    Direktiven sind die Kontrollstrukturen von Blade, etwa `@if`, `@foreach`, `@forelse`, `@csrf` oder
+    `@error`. Laravel übersetzt sie beim Kompilieren in normales PHP. Sie machen Templates lesbarer als
+    PHP-Tags zwischen HTML.
+  example: "`@foreach ($books as $book) <li>{{ $book->title }}</li> @endforeach`"
+  category: laravel
+  aliases: [Direktive, Direktiven, Blade-Direktiven]
+  related: [blade, view]
+  lesson: laravel/blade-views
+
+- slug: blade-komponente
+  term: Blade-Komponente
+  short: Ein wiederverwendbarer Baustein aus HTML, den du in Blade als `<x-name>` einbindest.
+  explanation: >
+    Anonyme Komponenten sind Dateien in `resources/views/components/`. Was zwischen öffnendem und
+    schließendem Tag steht, landet in `$slot`; Eigenschaften legst du mit `@props` fest. Typische
+    Komponenten sind Layouts, Buttons oder Hinweis-Kästen.
+  example: "`<x-layout title=\"Bücher\">…</x-layout>` nutzt `components/layout.blade.php`."
+  category: laravel
+  aliases: [Komponente in Blade, Blade-Komponenten, Layout-Komponente, x-Komponente]
+  related: [blade, komponente]
+  lesson: laravel/blade-views
+
+- slug: route-model-binding
+  term: Route-Model-Binding
+  short: Laravel lädt aus dem Platzhalter einer URL automatisch das passende Model – oder antwortet mit 404.
+  explanation: >
+    Heißt der Platzhalter `{book}` und der Parameter der Controller-Methode `Book $book`, sucht Laravel
+    das Buch mit dieser ID selbst heraus. Gibt es keins, entsteht eine 404-Antwort, ohne dass du Code dafür
+    schreibst.
+  example: "`public function show(Book $book)` bei der Route `/books/{book}`."
+  category: laravel
+  aliases: [Route Model Binding, Model-Binding]
+  related: [route, model, controller]
+  lesson: laravel/crud-mit-resource-controllern
+
+- slug: eloquent-cast
+  term: Cast (Eloquent)
+  short: Eine Regel im Model, die einen Spaltenwert beim Lesen und Schreiben in einen bestimmten Typ umwandelt.
+  explanation: >
+    Datenbanken speichern einen Boolean oft als 0 oder 1, ein Datum als Text. Mit Casts in der Methode
+    `casts()` bekommst du stattdessen `true`/`false` oder ein Datumsobjekt. Weitere Casts sind
+    `integer`, `array` oder `hashed`.
+  example: "`protected function casts(): array { return ['finished' => 'boolean']; }`"
+  category: laravel
+  aliases: [Cast, Casts, Attribute Casting]
+  related: [eloquent, model, typumwandlung]
+  lesson: laravel/migrationen-und-models
+
+- slug: factory
+  term: Factory (Laravel)
+  short: Eine Klasse, die beschreibt, wie ein typischer erfundener Datensatz für ein Model aussieht.
+  explanation: >
+    In `definition()` gibst du für jede Spalte einen Beispielwert an, meist mit `fake()`. Tests und Seeder
+    erzeugen damit beliebig viele Datensätze, ohne echte Daten zu brauchen. Einzelne Werte lassen sich beim
+    Aufruf überschreiben.
+  example: "`Book::factory(10)->create(['finished' => true]);`"
+  category: laravel
+  aliases: [Factory, Factories, Model-Factory]
+  related: [seed-daten, eloquent, pest]
+  lesson: laravel/migrationen-und-models
+
+- slug: eloquent-beziehung
+  term: Beziehung (Eloquent)
+  short: Eine Methode im Model, die beschreibt, wie zwei Tabellen über Fremdschlüssel zusammenhängen.
+  explanation: >
+    Die wichtigsten Arten sind `hasMany` (1:n), `belongsTo` (die Gegenseite mit dem Fremdschlüssel) und
+    `belongsToMany` (n:m über eine Zwischentabelle). Ohne Klammern liefert die Beziehung Daten, mit
+    Klammern eine Abfrage zum Weiterbauen.
+  example: "`$author->books` liefert alle Bücher, `$book->author` die Autorin."
+  category: laravel
+  aliases: [Beziehung, Beziehungen, Relationship, Relation, hasMany, belongsTo, belongsToMany]
+  related: [eloquent, fremdschluessel, eager-loading]
+  lesson: laravel/abfragen-und-beziehungen
+
+- slug: n-plus-1-problem
+  term: N+1-Problem
+  short: "Ein Performance-Fehler: Für eine Liste mit N Einträgen wird eine Abfrage plus N weitere ausgeführt."
+  explanation: >
+    Es entsteht, wenn in einer Schleife für jeden Eintrag eine Beziehung einzeln nachgeladen wird. Bei
+    wenigen Datensätzen merkt man nichts, bei Hunderten wird die Seite langsam. Die Lösung ist Eager
+    Loading.
+  example: "`foreach (Book::all() as $b) { echo $b->author->name; }` – 1 + N Abfragen."
+  category: datenbanken
+  aliases: [N+1, N plus 1, N+1-Abfragen]
+  related: [eager-loading, eloquent-beziehung]
+  lesson: laravel/abfragen-und-beziehungen
+
+- slug: eager-loading
+  term: Eager Loading
+  short: Beziehungen werden vorab für alle Datensätze auf einmal geladen statt einzeln beim ersten Zugriff.
+  explanation: >
+    Mit `with('author')` lädt Eloquent alle benötigten Autor:innen in einer einzigen zusätzlichen Abfrage
+    (`WHERE id IN (...)`). Das verhindert das N+1-Problem. Das Gegenteil heißt Lazy Loading.
+  example: "`Book::with('author')->get()` braucht 2 Abfragen, egal wie viele Bücher es gibt."
+  category: laravel
+  aliases: [with(), Vorabladen]
+  related: [n-plus-1-problem, eloquent-beziehung]
+  lesson: laravel/abfragen-und-beziehungen
+
+- slug: resource-controller
+  term: Resource-Controller
+  short: Ein Controller mit den sieben Standard-Methoden für CRUD – index, create, store, show, edit, update, destroy.
+  explanation: >
+    Zusammen mit `Route::resource()` entstehen sieben Routen mit festen Namen wie `books.index`.
+    `Route::apiResource()` lässt die Formular-Methoden create und edit weg. Artisan erzeugt das Gerüst mit
+    `make:controller --resource`.
+  example: "`php artisan make:controller BookController --resource --model=Book`"
+  category: laravel
+  aliases: [Resource-Route, Resource-Routen, apiResource, Route::resource]
+  related: [controller, crud, route]
+  lesson: laravel/crud-mit-resource-controllern
+
+- slug: method-spoofing
+  term: Method Spoofing
+  short: Ein verstecktes Formularfeld `_method` lässt eine POST-Anfrage als PUT, PATCH oder DELETE gelten.
+  explanation: >
+    HTML-Formulare können nur GET und POST senden. Laravel liest das Feld `_method` und behandelt die
+    Anfrage wie die dort angegebene Methode. In Blade erzeugst du das Feld mit `@method('PUT')`.
+  example: "`<form method=\"POST\"> @csrf @method('DELETE') <button>Löschen</button> </form>`"
+  category: laravel
+  aliases: ["@method", _method]
+  related: [http-methode, csrf]
+  lesson: laravel/crud-mit-resource-controllern
+
+- slug: flash-nachricht
+  term: Flash-Nachricht
+  short: Ein Wert in der Session, der genau für die nächste Anfrage erhalten bleibt – typisch für „Gespeichert!“-Hinweise.
+  explanation: >
+    Nach dem Speichern leitet der Controller weiter und hängt mit `with('status', '...')` eine Nachricht
+    an. Die nächste Seite liest sie mit `session('status')` aus, danach ist sie wieder weg.
+  example: "`return redirect()->route('books.index')->with('status', 'Buch gespeichert.');`"
+  category: laravel
+  aliases: [Flash, Flash-Daten, Flash Message]
+  related: [session, weiterleitung]
+  lesson: laravel/crud-mit-resource-controllern
+
+- slug: sanctum
+  term: Sanctum
+  short: Das offizielle Laravel-Paket für einfache API-Anmeldung mit Tokens und für Single-Page-Apps.
+  explanation: >
+    Sanctum gibt Nutzer:innen API-Tokens, die der Client als Bearer-Token mitschickt. Routen schützt du mit
+    der Middleware `auth:sanctum`. `php artisan install:api` installiert Sanctum zusammen mit den
+    API-Routen.
+  example: "`Route::get('/user', fn (Request $r) => $r->user())->middleware('auth:sanctum');`"
+  category: laravel
+  aliases: [Laravel Sanctum, auth:sanctum]
+  related: [bearer-token, personal-access-token, authentifizierung]
+  lesson: laravel/json-api-mit-resources
+
+- slug: queue-job
+  term: Job (Queue)
+  short: Eine Klasse, die eine Aufgabe beschreibt, die im Hintergrund über eine Warteschlange erledigt wird.
+  explanation: >
+    Jobs implementieren `ShouldQueue` und erledigen ihre Arbeit in `handle()`. Mit `dispatch()` landet der
+    Job in der Queue, und die Anfrage kann sofort antworten. Ein Worker-Prozess führt ihn später aus.
+  example: "`SendReadingReminder::dispatch($book);`"
+  category: laravel
+  aliases: [Queue-Job, Queue-Jobs, Hintergrund-Job, ShouldQueue]
+  related: [task-queue, queue-worker]
+  lesson: laravel/json-api-mit-resources
+
+- slug: queue-worker
+  term: Queue-Worker
+  short: Ein dauerhaft laufender Prozess, der Jobs aus der Warteschlange holt und ausführt.
+  explanation: >
+    Ohne Worker bleiben Jobs einfach in der Queue liegen. Lokal startest du ihn mit
+    `php artisan queue:work`, auf Servern hält ein Prozessmanager ihn am Laufen und startet ihn nach einem
+    Deployment neu.
+  example: "`php artisan queue:work` verarbeitet die Jobs aus der Tabelle `jobs`."
+  category: laravel
+  aliases: [Worker, queue:work]
+  related: [queue-job, task-queue]
+  lesson: laravel/json-api-mit-resources
+
+- slug: feature-test
+  term: Feature-Test
+  short: Ein Test, der einen ganzen Ablauf prüft – zum Beispiel eine HTTP-Anfrage samt Antwort und Datenbankinhalt.
+  explanation: >
+    In Laravel liegen Feature-Tests in `tests/Feature/`. Sie schicken Anfragen an die Anwendung, ohne
+    Browser und Server, und prüfen Status, Weiterleitungen, Session und Datenbank. Sie zeigen, ob die App
+    aus Sicht der Nutzer:innen funktioniert.
+  example: "`$this->post('/books', ['title' => ''])->assertSessionHasErrors('title');`"
+  category: laravel
+  aliases: [Feature-Tests, Funktionstest, HTTP-Test]
+  related: [unit-test, pest, automatisierter-test]
+  lesson: laravel/testen-mit-pest
+- slug: mass-assignment
+  term: Mass Assignment
+  short: Eine Lücke, bei der eine App alle Felder aus dem Request übernimmt – auch solche, die Nutzer nicht ändern dürfen.
+  explanation: >
+    Schickt jemand zusätzlich `rolle=admin` mit, landet der Wert in der Datenbank. Abhilfe ist eine Allowlist der
+    erlaubten Felder, in Laravel etwa `$fillable` oder validierte Daten aus einem Form Request.
+  example: "`$user->update($_POST)` übernimmt auch ein eingeschmuggeltes Feld `is_admin`."
+  category: sicherheit
+  aliases: [Massenzuweisung, Overposting]
+  related: [form-request]
+  lesson: laravel/migrationen-und-models

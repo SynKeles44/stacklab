@@ -1,0 +1,1104 @@
+title: Deine Leseliste mit Laravel
+description: |
+  In diesem Projekt baust du eine kleine, aber vollständige Laravel-Anwendung: eine **Leseliste**, in
+  der du Bücher anlegst, ansiehst, bearbeitest und löschst. Du gehst dabei denselben Weg wie in einem
+  echten Projekt – Konfiguration, Datenbank, Model, Testdaten, Routen, Controller, Blade-Views,
+  Validierung, eine kleine JSON-API und zum Schluss automatisierte Tests mit Pest.
+
+  Alles passiert im Ordner `leseliste` in deinem Laravel-Workspace. Klicke zuerst auf
+  **Projekt vorbereiten**: Stacklab legt dort eine frische Laravel-13-Anwendung (mit Pest) an. Beim
+  allerersten Mal lädt Composer die Pakete herunter, das dauert etwa eine Minute. Danach öffnest du das
+  Übungs-Terminal und wechselst mit `cd leseliste` hinein.
+
+  Die Schritte bauen aufeinander auf. Lösche zwischendurch nichts, was ein früherer Schritt angelegt
+  hat, sonst schlagen frühere Prüfungen wieder fehl. Wenn du festhängst, hilft dir der Button
+  **Für mich erledigen** – schau dir danach unbedingt an, was er geschrieben hat.
+goal: >
+  Eine lauffähige Laravel-Anwendung `leseliste` mit eigener Konfigurationsdatei, einer Tabelle `books`,
+  dem Model `Book` samt Factory und Seeder, einem Resource-Controller mit Blade-Views für alle
+  CRUD-Aktionen, Form Requests für die Validierung, einer lesenden JSON-API mit API Resource und einer
+  grünen Pest-Testsuite.
+workdir: leseliste
+setup: |
+  # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+  B="$HOME/.cache/stacklab/laravel13"
+  if [ ! -f "$B/.fertig" ]; then
+    T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+    timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+    cd "$T"
+    timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+    printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+    printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+    printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+    touch .fertig && cd - >/dev/null
+    rm -rf "$B" && mv "$T" "$B"
+  fi
+  cp -a "$B/." . && rm -f .fertig
+steps:
+  - id: konfiguration
+    title: Die Anwendung konfigurieren
+    description: |
+      Jede Laravel-Anwendung liest ihre Einstellungen aus `.env` und den Dateien in `config/`. Gib deiner
+      App einen Namen und lege eine eigene Konfigurationsdatei an, die später festlegt, wie viele Bücher
+      pro Seite erscheinen.
+
+      1. Setze in `.env` den Wert `APP_NAME=Leseliste`.
+      2. Lege die Datei `config/leseliste.php` an. Sie gibt ein Array mit dem Schlüssel `pro_seite`
+         zurück. Der Wert kommt aus der Umgebungsvariable `LESELISTE_PRO_SEITE`, Standardwert `10`.
+      3. Trage in `.env` die Zeile `LESELISTE_PRO_SEITE=5` ein.
+      4. Dokumentiere die neue Variable in `.env.example` (z. B. `LESELISTE_PRO_SEITE=10`), damit
+         Teammitglieder wissen, dass es sie gibt.
+      5. Prüfe mit `php artisan tinker --execute="echo config('leseliste.pro_seite');"` – es sollte `5`
+         erscheinen.
+    checklist:
+      - "`APP_NAME` in `.env` ist `Leseliste`"
+      - "`config/leseliste.php` liest `LESELISTE_PRO_SEITE` mit Standardwert 10"
+      - "`.env` setzt den Wert auf 5, `.env.example` dokumentiert die Variable"
+    hints:
+      - Eine Konfigurationsdatei ist eine PHP-Datei mit `return [ ... ];`.
+      - "`env('LESELISTE_PRO_SEITE', 10)` liest die Variable und nimmt 10, wenn sie fehlt. Mit `(int)` davor wird eine Zahl daraus."
+      - Siehst du einen alten Wert, hast du vielleicht einmal `php artisan config:cache` ausgeführt. `php artisan config:clear` löscht den Cache.
+    checks:
+      - type: command
+        run: php artisan tinker --execute="echo config('app.name');"
+        stdout_matches: "^Leseliste\\s*$"
+        message: Der App-Name ist noch nicht „Leseliste“. Setze APP_NAME in der Datei .env.
+      - type: file_exists
+        path: config/leseliste.php
+        message: Die Datei config/leseliste.php fehlt noch.
+      - type: file_contains
+        path: config/leseliste.php
+        pattern: "env\\(\\s*['\"]LESELISTE_PRO_SEITE['\"]"
+        message: config/leseliste.php soll den Wert mit env('LESELISTE_PRO_SEITE', 10) aus der Umgebung lesen.
+      - type: command
+        run: php artisan tinker --execute="echo config('leseliste.pro_seite');"
+        stdout_matches: "^5\\s*$"
+        message: config('leseliste.pro_seite') liefert noch nicht 5. Trage LESELISTE_PRO_SEITE=5 in .env ein.
+      - type: file_contains
+        path: .env.example
+        pattern: "^LESELISTE_PRO_SEITE="
+        message: Dokumentiere die Variable LESELISTE_PRO_SEITE in .env.example.
+    solution: |
+      ```bash
+      cd leseliste
+      sed -i 's/^APP_NAME=.*/APP_NAME=Leseliste/' .env
+      echo 'LESELISTE_PRO_SEITE=5' >> .env
+      echo 'LESELISTE_PRO_SEITE=10' >> .env.example
+      ```
+
+      ```php title="config/leseliste.php"
+      <?php
+
+      return [
+          'pro_seite' => (int) env('LESELISTE_PRO_SEITE', 10),
+      ];
+      ```
+    solve: |
+      sed -i 's/^APP_NAME=.*/APP_NAME=Leseliste/' .env
+      grep -q '^LESELISTE_PRO_SEITE=' .env || printf '\nLESELISTE_PRO_SEITE=5\n' >> .env
+      grep -q '^LESELISTE_PRO_SEITE=' .env.example || printf '\nLESELISTE_PRO_SEITE=10\n' >> .env.example
+      cat > config/leseliste.php <<'EOF'
+      <?php
+
+      return [
+          'pro_seite' => (int) env('LESELISTE_PRO_SEITE', 10),
+      ];
+      EOF
+      php artisan config:clear -q
+
+  - id: buch-model
+    title: Tabelle und Model für Bücher
+    description: |
+      Jetzt bekommt die Leseliste ihre Datenbank. Laravel nutzt hier SQLite (Datei
+      `database/database.sqlite`), du musst also nichts installieren.
+
+      1. Erzeuge Model, Migration und Factory in einem Rutsch: `php artisan make:model Book -mf`.
+      2. Ergänze die Migration `..._create_books_table.php` um diese Spalten:
+         - `title` – Text, Pflicht
+         - `author` – Text, Pflicht
+         - `pages` – positive ganze Zahl, darf leer sein (`unsignedInteger(...)->nullable()`)
+         - `finished` – Boolean mit Standardwert `false`
+      3. Erlaube Mass Assignment für `title`, `author`, `pages` und `finished` – mit dem Attribut
+         `#[Fillable([...])]` über der Klasse `Book`.
+      4. Lass `finished` als Boolean casten (Methode `casts()`).
+      5. Führe die Migration aus: `php artisan migrate`.
+    checklist:
+      - Model `App\Models\Book` mit Migration und Factory erzeugt
+      - Tabelle `books` mit den Spalten title, author, pages, finished
+      - "`#[Fillable]` erlaubt die vier Felder, `finished` wird als Boolean gecastet"
+      - Migration ausgeführt
+    hints:
+      - "Die Spalten schreibst du in `Schema::create('books', function (Blueprint $table) { ... })` zwischen `$table->id()` und `$table->timestamps()`."
+      - "`$table->boolean('finished')->default(false);`"
+      - "Das Attribut importierst du mit `use Illuminate\\Database\\Eloquent\\Attributes\\Fillable;`."
+    checks:
+      - type: file_exists
+        path: app/Models/Book.php
+        message: Das Model app/Models/Book.php fehlt noch. Nutze php artisan make:model Book -mf.
+      - type: command
+        run: php artisan tinker --execute="echo implode(',', Schema::getColumnListing('books'));"
+        stdout_matches: "(?=.*\\btitle\\b)(?=.*\\bauthor\\b)(?=.*\\bpages\\b)(?=.*\\bfinished\\b)"
+        message: Die Tabelle books existiert noch nicht oder ihr fehlen Spalten (title, author, pages, finished). Ergänze die Migration und führe php artisan migrate aus.
+      - type: command
+        run: php artisan tinker --execute="echo implode(',', (new App\Models\Book)->getFillable());"
+        stdout_matches: "(?=.*\\btitle\\b)(?=.*\\bauthor\\b)(?=.*\\bpages\\b)(?=.*\\bfinished\\b)"
+        message: Das Model Book erlaubt noch nicht alle vier Felder für Mass Assignment. Ergänze #[Fillable([...])].
+      - type: command
+        run: php artisan tinker --execute="echo (new App\Models\Book)->getCasts()['finished'] ?? 'fehlt';"
+        stdout_matches: "^(bool|boolean)\\s*$"
+        message: finished wird noch nicht als Boolean gecastet. Gib in casts() 'finished' => 'boolean' zurück.
+    solution: |
+      ```php title="database/migrations/…_create_books_table.php (Ausschnitt)"
+      Schema::create('books', function (Blueprint $table) {
+          $table->id();
+          $table->string('title');
+          $table->string('author');
+          $table->unsignedInteger('pages')->nullable();
+          $table->boolean('finished')->default(false);
+          $table->timestamps();
+      });
+      ```
+
+      ```php title="app/Models/Book.php"
+      <?php
+
+      namespace App\Models;
+
+      use Database\Factories\BookFactory;
+      use Illuminate\Database\Eloquent\Attributes\Fillable;
+      use Illuminate\Database\Eloquent\Factories\HasFactory;
+      use Illuminate\Database\Eloquent\Model;
+
+      #[Fillable(['title', 'author', 'pages', 'finished'])]
+      class Book extends Model
+      {
+          /** @use HasFactory<BookFactory> */
+          use HasFactory;
+
+          protected function casts(): array
+          {
+              return ['finished' => 'boolean'];
+          }
+      }
+      ```
+
+      Danach `php artisan migrate`.
+    solve: |
+      [ -f app/Models/Book.php ] || php artisan make:model Book -mf -q
+      ls database/migrations/*_create_books_table.php >/dev/null 2>&1 || php artisan make:migration create_books_table -q
+      M=$(ls database/migrations/*_create_books_table.php | head -n 1)
+      cat > "$M" <<'EOF'
+      <?php
+
+      use Illuminate\Database\Migrations\Migration;
+      use Illuminate\Database\Schema\Blueprint;
+      use Illuminate\Support\Facades\Schema;
+
+      return new class extends Migration
+      {
+          public function up(): void
+          {
+              Schema::create('books', function (Blueprint $table) {
+                  $table->id();
+                  $table->string('title');
+                  $table->string('author');
+                  $table->unsignedInteger('pages')->nullable();
+                  $table->boolean('finished')->default(false);
+                  $table->timestamps();
+              });
+          }
+
+          public function down(): void
+          {
+              Schema::dropIfExists('books');
+          }
+      };
+      EOF
+      cat > app/Models/Book.php <<'EOF'
+      <?php
+
+      namespace App\Models;
+
+      use Database\Factories\BookFactory;
+      use Illuminate\Database\Eloquent\Attributes\Fillable;
+      use Illuminate\Database\Eloquent\Factories\HasFactory;
+      use Illuminate\Database\Eloquent\Model;
+
+      #[Fillable(['title', 'author', 'pages', 'finished'])]
+      class Book extends Model
+      {
+          /** @use HasFactory<BookFactory> */
+          use HasFactory;
+
+          protected function casts(): array
+          {
+              return ['finished' => 'boolean'];
+          }
+      }
+      EOF
+      php artisan migrate:fresh --force -q
+
+  - id: testdaten
+    title: Testdaten mit Factory und Seeder
+    description: |
+      Eine leere Liste ist schwer zu testen. Mit einer Factory beschreibst du, wie ein „typisches“ Buch
+      aussieht, und ein Seeder füllt die Datenbank damit.
+
+      1. Fülle `definition()` in `database/factories/BookFactory.php`: `title` (z. B.
+         `fake()->sentence(3)`), `author` (`fake()->name()`), `pages` (Zahl zwischen 80 und 900) und
+         `finished` (`fake()->boolean()`).
+      2. Lass `database/seeders/DatabaseSeeder.php` zusätzlich **12 Bücher** anlegen.
+      3. Baue die Datenbank neu auf und befülle sie: `php artisan migrate:fresh --seed`.
+      4. Kontrolliere mit `php artisan tinker --execute="echo App\Models\Book::count();"`.
+    checklist:
+      - BookFactory liefert alle vier Felder
+      - DatabaseSeeder legt 12 Bücher an
+      - "`migrate:fresh --seed` ausgeführt"
+    hints:
+      - "`fake()->numberBetween(80, 900)` liefert eine Zahl im Bereich."
+      - "Im Seeder: `Book::factory(12)->create();` – und oben `use App\\Models\\Book;`."
+    checks:
+      - type: file_contains
+        path: database/factories/BookFactory.php
+        pattern: "'title'\\s*=>"
+        message: Die BookFactory liefert noch keinen title. Fülle die Methode definition().
+      - type: file_contains
+        path: database/seeders/DatabaseSeeder.php
+        pattern: "Book::factory\\("
+        message: Der DatabaseSeeder legt noch keine Bücher an. Nutze Book::factory(12)->create().
+      - type: command
+        run: php artisan tinker --execute="echo App\Models\Book::count();"
+        stdout_matches: "^\\s*(1[2-9]|[2-9][0-9]|[0-9]{3,})\\s*$"
+        message: In der Datenbank liegen noch keine 12 Bücher. Führe php artisan migrate:fresh --seed aus.
+    solution: |
+      ```php title="database/factories/BookFactory.php (definition)"
+      return [
+          'title' => rtrim(fake()->sentence(3), '.'),
+          'author' => fake()->name(),
+          'pages' => fake()->numberBetween(80, 900),
+          'finished' => fake()->boolean(),
+      ];
+      ```
+
+      ```php title="database/seeders/DatabaseSeeder.php (in run())"
+      Book::factory(12)->create();
+      ```
+
+      ```bash
+      php artisan migrate:fresh --seed
+      ```
+    solve: |
+      cat > database/factories/BookFactory.php <<'EOF'
+      <?php
+
+      namespace Database\Factories;
+
+      use App\Models\Book;
+      use Illuminate\Database\Eloquent\Factories\Factory;
+
+      /**
+       * @extends Factory<Book>
+       */
+      class BookFactory extends Factory
+      {
+          public function definition(): array
+          {
+              return [
+                  'title' => rtrim(fake()->sentence(3), '.'),
+                  'author' => fake()->name(),
+                  'pages' => fake()->numberBetween(80, 900),
+                  'finished' => fake()->boolean(),
+              ];
+          }
+      }
+      EOF
+      cat > database/seeders/DatabaseSeeder.php <<'EOF'
+      <?php
+
+      namespace Database\Seeders;
+
+      use App\Models\Book;
+      use App\Models\User;
+      use Illuminate\Database\Seeder;
+
+      class DatabaseSeeder extends Seeder
+      {
+          public function run(): void
+          {
+              User::factory()->create([
+                  'name' => 'Test User',
+                  'email' => 'test@example.com',
+              ]);
+
+              Book::factory(12)->create();
+          }
+      }
+      EOF
+      php artisan migrate:fresh --seed --force -q
+
+  - id: buecher-anzeigen
+    title: Bücher auflisten und anzeigen
+    description: |
+      Jetzt sieht man die Bücher im Browser. Du baust einen Resource-Controller, ein Blade-Layout und zwei
+      Views.
+
+      1. Erzeuge den Controller: `php artisan make:controller BookController --resource --model=Book`.
+      2. Registriere in `routes/web.php` alle Routen auf einmal: `Route::resource('books', BookController::class);`
+      3. `index()` lädt die Bücher alphabetisch nach Titel, seitenweise mit
+         `paginate(config('leseliste.pro_seite'))`, und gibt die View `books.index` zurück.
+      4. `show(Book $book)` gibt die View `books.show` zurück.
+      5. Lege die Blade-Komponente `resources/views/components/layout.blade.php` an (HTML-Gerüst mit
+         `{{ $slot }}`) und nutze sie in `books/index.blade.php` und `books/show.blade.php` mit `<x-layout>`.
+      6. Die Liste verlinkt jeden Titel mit `route('books.show', $book)`.
+
+      Probiere es aus: `php artisan serve` starten und `http://localhost:8000/books` öffnen (im
+      Übungs-Terminal mit `curl -s localhost:8000/books` in einem zweiten Terminal-Tab). Beende den Server
+      mit **Strg+C**.
+    checklist:
+      - Resource-Route `books` registriert
+      - Blade-Layout als Komponente `x-layout`
+      - "`/books` zeigt die Titel (5 pro Seite), `/books/{id}` zeigt ein Buch"
+    hints:
+      - "`php artisan route:list --path=books` zeigt dir die sieben Routen samt Namen."
+      - "In der View: `@foreach ($books as $book) <li><a href=\"{{ route('books.show', $book) }}\">{{ $book->title }}</a></li> @endforeach` und darunter `{{ $books->links() }}`."
+      - "`Book::orderBy('title')->paginate(config('leseliste.pro_seite'))`"
+    checks:
+      - type: command
+        run: php artisan route:list --json | jq -r '.[] | select(.name == "books.index" or .name == "books.show") | .name' | sort | tr '\n' ' '
+        stdout_matches: "books\\.index books\\.show"
+        message: Die Routen books.index und books.show fehlen. Registriere Route::resource('books', BookController::class).
+      - type: file_exists
+        path: resources/views/components/layout.blade.php
+        message: Die Layout-Komponente resources/views/components/layout.blade.php fehlt noch.
+      - type: file_contains
+        path: resources/views/books/index.blade.php
+        pattern: "<x-layout"
+        message: books/index.blade.php soll das Layout mit <x-layout> nutzen.
+      - type: command
+        run: |
+          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $r = $app->make(Illuminate\Contracts\Http\Kernel::class)->handle(Illuminate\Http\Request::create("/books")); $b = App\Models\Book::orderBy("title")->first(); echo $r->getStatusCode() === 200 && $b && str_contains($r->getContent(), e($b->title)) ? "ok" : "fehlt";'
+        stdout_equals: ok
+        message: /books antwortet nicht mit Status 200 oder zeigt den alphabetisch ersten Buchtitel nicht an.
+      - type: command
+        run: |
+          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $k = $app->make(Illuminate\Contracts\Http\Kernel::class); $k->bootstrap(); $b = App\Models\Book::query()->latest("id")->first(); $r = $k->handle(Illuminate\Http\Request::create("/books/".$b->id)); echo $r->getStatusCode() === 200 && str_contains($r->getContent(), e($b->title)) && str_contains($r->getContent(), e($b->author)) ? "ok" : "fehlt";'
+        stdout_equals: ok
+        message: /books/{id} antwortet nicht mit Status 200 oder zeigt Titel und Autor:in des Buchs nicht an.
+    solution: |
+      ```php title="routes/web.php (Ergänzung)"
+      use App\Http\Controllers\BookController;
+
+      Route::resource('books', BookController::class);
+      ```
+
+      ```php title="app/Http/Controllers/BookController.php (Ausschnitt)"
+      public function index()
+      {
+          $books = Book::orderBy('title')->paginate(config('leseliste.pro_seite'));
+
+          return view('books.index', ['books' => $books]);
+      }
+
+      public function show(Book $book)
+      {
+          return view('books.show', ['book' => $book]);
+      }
+      ```
+
+      ```blade title="resources/views/components/layout.blade.php"
+      <!DOCTYPE html>
+      <html lang="de">
+      <head>
+          <meta charset="utf-8">
+          <title>{{ config('app.name') }}</title>
+      </head>
+      <body>
+          <h1><a href="{{ route('books.index') }}">{{ config('app.name') }}</a></h1>
+          {{ $slot }}
+      </body>
+      </html>
+      ```
+
+      ```blade title="resources/views/books/index.blade.php"
+      <x-layout>
+          <ul>
+              @foreach ($books as $book)
+                  <li><a href="{{ route('books.show', $book) }}">{{ $book->title }}</a></li>
+              @endforeach
+          </ul>
+          {{ $books->links() }}
+      </x-layout>
+      ```
+    solve: |
+      [ -f app/Http/Controllers/BookController.php ] || php artisan make:controller BookController --resource --model=Book -q
+      grep -q "Route::resource('books'" routes/web.php || cat >> routes/web.php <<'EOF'
+
+      Route::resource('books', App\Http\Controllers\BookController::class);
+      EOF
+      mkdir -p resources/views/components resources/views/books
+      cat > resources/views/components/layout.blade.php <<'EOF'
+      <!DOCTYPE html>
+      <html lang="de">
+      <head>
+          <meta charset="utf-8">
+          <title>{{ config('app.name') }}</title>
+      </head>
+      <body>
+          <h1><a href="{{ route('books.index') }}">{{ config('app.name') }}</a></h1>
+
+          @if (session('status'))
+              <p class="status">{{ session('status') }}</p>
+          @endif
+
+          {{ $slot }}
+      </body>
+      </html>
+      EOF
+      cat > resources/views/books/index.blade.php <<'EOF'
+      <x-layout>
+          <h2>Meine Bücher</h2>
+          <ul>
+              @foreach ($books as $book)
+                  <li><a href="{{ route('books.show', $book) }}">{{ $book->title }}</a> – {{ $book->author }}</li>
+              @endforeach
+          </ul>
+          {{ $books->links() }}
+      </x-layout>
+      EOF
+      cat > resources/views/books/show.blade.php <<'EOF'
+      <x-layout>
+          <h2>{{ $book->title }}</h2>
+          <p>von {{ $book->author }}</p>
+          <p>{{ $book->pages ?? 'unbekannte' }} Seiten – {{ $book->finished ? 'gelesen' : 'noch nicht gelesen' }}</p>
+      </x-layout>
+      EOF
+      cat > app/Http/Controllers/BookController.php <<'EOF'
+      <?php
+
+      namespace App\Http\Controllers;
+
+      use App\Models\Book;
+
+      class BookController extends Controller
+      {
+          public function index()
+          {
+              $books = Book::orderBy('title')->paginate(config('leseliste.pro_seite'));
+
+              return view('books.index', ['books' => $books]);
+          }
+
+          public function show(Book $book)
+          {
+              return view('books.show', ['book' => $book]);
+          }
+      }
+      EOF
+
+  - id: buch-anlegen
+    title: Neue Bücher anlegen – mit Validierung
+    description: |
+      Jetzt soll man Bücher über ein Formular anlegen können. Die Regeln dafür packst du in einen
+      Form Request, damit der Controller schlank bleibt.
+
+      1. Erzeuge `php artisan make:request StoreBookRequest`. `authorize()` gibt `true` zurück, `rules()`
+         verlangt: `title` und `author` Pflicht, Text, höchstens 255 Zeichen; `pages` optional, ganze Zahl,
+         mindestens 1.
+      2. `create()` im Controller zeigt die View `books.create` mit einem Formular (`method="POST"`,
+         `action="{{ route('books.store') }}"`, `@csrf`, Felder `title`, `author`, `pages`).
+      3. Zeige Fehler mit `@error('title') ... @enderror` an und fülle Felder nach einem Fehler mit
+         `old('title')` wieder.
+      4. `store(StoreBookRequest $request)` speichert mit `Book::create($request->validated())` und leitet
+         zu `books.index` weiter – mit der Flash-Nachricht `status` = „Buch gespeichert.“.
+    checklist:
+      - "`StoreBookRequest` mit Regeln für title, author, pages"
+      - Formular mit `@csrf`, Fehlermeldungen und `old()`
+      - "`store()` speichert und leitet mit Flash-Nachricht weiter"
+    hints:
+      - "Die Regeln als Array: `'title' => ['required', 'string', 'max:255']`."
+      - "`return redirect()->route('books.index')->with('status', 'Buch gespeichert.');`"
+      - "Das Layout aus Schritt 4 zeigt `session('status')` bereits an, wenn du es ergänzt."
+    checks:
+      - type: file_exists
+        path: app/Http/Requests/StoreBookRequest.php
+        message: Der Form Request app/Http/Requests/StoreBookRequest.php fehlt noch.
+      - type: command
+        run: |
+          f=tests/Feature/StacklabPruefungAnlegenTest.php
+          cat > "$f" <<'EOF'
+          <?php
+
+          use Illuminate\Foundation\Testing\RefreshDatabase;
+
+          uses(RefreshDatabase::class);
+
+          test('stacklab: buch anlegen', function () {
+              $this->get('/books/create')->assertOk()->assertSee('name="title"', false)->assertSee('name="_token"', false);
+              $this->post('/books', ['title' => 'Prüfbuch', 'author' => 'Ada Lovelace', 'pages' => 120])
+                  ->assertRedirect('/books')->assertSessionHas('status');
+              $this->assertDatabaseHas('books', ['title' => 'Prüfbuch', 'pages' => 120]);
+          });
+
+          test('stacklab: validierung', function () {
+              $this->post('/books', ['title' => '', 'author' => 'Ada', 'pages' => 0])
+                  ->assertSessionHasErrors(['title', 'pages']);
+              $this->post('/books', ['title' => 'Ohne Seiten', 'author' => 'Ada'])->assertSessionHasNoErrors();
+              $this->assertDatabaseCount('books', 1);
+          });
+          EOF
+          php artisan test "$f" >/dev/null 2>&1; s=$?; rm -f "$f"; exit $s
+        message: Anlegen klappt noch nicht vollständig. Prüfe GET /books/create (Formular mit @csrf und Feld title), POST /books (speichern, Weiterleitung zu /books mit Flash „status“) und die Regeln (title Pflicht, pages mindestens 1, aber optional).
+    solution: |
+      ```php title="app/Http/Requests/StoreBookRequest.php (Ausschnitt)"
+      public function authorize(): bool
+      {
+          return true;
+      }
+
+      public function rules(): array
+      {
+          return [
+              'title' => ['required', 'string', 'max:255'],
+              'author' => ['required', 'string', 'max:255'],
+              'pages' => ['nullable', 'integer', 'min:1'],
+          ];
+      }
+      ```
+
+      ```php title="BookController (Ausschnitt)"
+      public function create()
+      {
+          return view('books.create');
+      }
+
+      public function store(StoreBookRequest $request)
+      {
+          Book::create($request->validated());
+
+          return redirect()->route('books.index')->with('status', 'Buch gespeichert.');
+      }
+      ```
+
+      ```blade title="resources/views/books/create.blade.php"
+      <x-layout>
+          <form method="POST" action="{{ route('books.store') }}">
+              @csrf
+              <label>Titel <input name="title" value="{{ old('title') }}"></label>
+              @error('title') <p>{{ $message }}</p> @enderror
+              <label>Autor:in <input name="author" value="{{ old('author') }}"></label>
+              @error('author') <p>{{ $message }}</p> @enderror
+              <label>Seiten <input name="pages" type="number" value="{{ old('pages') }}"></label>
+              @error('pages') <p>{{ $message }}</p> @enderror
+              <button>Speichern</button>
+          </form>
+      </x-layout>
+      ```
+    solve: |
+      mkdir -p app/Http/Requests
+      for R in StoreBookRequest UpdateBookRequest; do
+      cat > "app/Http/Requests/$R.php" <<EOF
+      <?php
+
+      namespace App\Http\Requests;
+
+      use Illuminate\Foundation\Http\FormRequest;
+
+      class $R extends FormRequest
+      {
+          public function authorize(): bool
+          {
+              return true;
+          }
+
+          public function rules(): array
+          {
+              return [
+                  'title' => ['required', 'string', 'max:255'],
+                  'author' => ['required', 'string', 'max:255'],
+                  'pages' => ['nullable', 'integer', 'min:1'],
+                  'finished' => ['boolean'],
+              ];
+          }
+      }
+      EOF
+      done
+      cat > resources/views/books/_felder.blade.php <<'EOF'
+      @csrf
+      <p>
+          <label>Titel <input name="title" value="{{ old('title', $book->title ?? '') }}"></label>
+          @error('title') <span class="fehler">{{ $message }}</span> @enderror
+      </p>
+      <p>
+          <label>Autor:in <input name="author" value="{{ old('author', $book->author ?? '') }}"></label>
+          @error('author') <span class="fehler">{{ $message }}</span> @enderror
+      </p>
+      <p>
+          <label>Seiten <input name="pages" type="number" value="{{ old('pages', $book->pages ?? '') }}"></label>
+          @error('pages') <span class="fehler">{{ $message }}</span> @enderror
+      </p>
+      <p>
+          <input type="hidden" name="finished" value="0">
+          <label><input type="checkbox" name="finished" value="1" @checked(old('finished', $book->finished ?? false))> gelesen</label>
+      </p>
+      <button>Speichern</button>
+      EOF
+      cat > resources/views/books/create.blade.php <<'EOF'
+      <x-layout>
+          <h2>Neues Buch</h2>
+          <form method="POST" action="{{ route('books.store') }}">
+              @include('books._felder')
+          </form>
+      </x-layout>
+      EOF
+      cat > app/Http/Controllers/BookController.php <<'EOF'
+      <?php
+
+      namespace App\Http\Controllers;
+
+      use App\Http\Requests\StoreBookRequest;
+      use App\Models\Book;
+
+      class BookController extends Controller
+      {
+          public function index()
+          {
+              $books = Book::orderBy('title')->paginate(config('leseliste.pro_seite'));
+
+              return view('books.index', ['books' => $books]);
+          }
+
+          public function create()
+          {
+              return view('books.create');
+          }
+
+          public function store(StoreBookRequest $request)
+          {
+              Book::create($request->validated());
+
+              return redirect()->route('books.index')->with('status', 'Buch gespeichert.');
+          }
+
+          public function show(Book $book)
+          {
+              return view('books.show', ['book' => $book]);
+          }
+      }
+      EOF
+
+  - id: bearbeiten-loeschen
+    title: Bearbeiten und Löschen
+    description: |
+      Damit ist der CRUD-Kreis fast geschlossen. Es fehlen noch **U**pdate und **D**elete.
+
+      1. Erzeuge `UpdateBookRequest` mit denselben Regeln wie beim Anlegen.
+      2. `edit(Book $book)` zeigt die View `books.edit` mit einem Formular, das die aktuellen Werte
+         vorausfüllt (`old('title', $book->title)`) und per `@method('PUT')` an `books.update` sendet.
+      3. `update(UpdateBookRequest $request, Book $book)` speichert die Änderungen und leitet zur
+         Detailseite des Buchs weiter.
+      4. `destroy(Book $book)` löscht das Buch und leitet mit Flash-Nachricht zu `books.index` weiter.
+      5. Ergänze auf der Detailseite einen Link „Bearbeiten“ und ein kleines Formular mit
+         `@method('DELETE')` und einem Button „Löschen“.
+    checklist:
+      - Bearbeiten-Formular mit `@method('PUT')` und vorausgefüllten Werten
+      - "`update()` speichert und leitet zur Detailseite"
+      - "`destroy()` löscht und leitet zur Liste"
+    hints:
+      - HTML-Formulare kennen nur GET und POST. `@method('PUT')` erzeugt ein verstecktes Feld `_method`, das Laravel auswertet.
+      - "`$book->update($request->validated());` und danach `return redirect()->route('books.show', $book);`"
+      - "`$book->delete();`"
+    checks:
+      - type: command
+        run: |
+          f=tests/Feature/StacklabPruefungAendernTest.php
+          cat > "$f" <<'EOF'
+          <?php
+
+          use App\Models\Book;
+          use Illuminate\Foundation\Testing\RefreshDatabase;
+
+          uses(RefreshDatabase::class);
+
+          test('stacklab: bearbeiten und loeschen', function () {
+              $book = Book::create(['title' => 'Alter Titel', 'author' => 'Ada']);
+              $this->get("/books/{$book->id}/edit")->assertOk()->assertSee('Alter Titel')->assertSee('name="_method"', false);
+              $this->put("/books/{$book->id}", ['title' => 'Neuer Titel', 'author' => 'Ada'])
+                  ->assertRedirect("/books/{$book->id}");
+              expect($book->fresh()->title)->toBe('Neuer Titel');
+              $this->put("/books/{$book->id}", ['title' => '', 'author' => 'Ada'])->assertSessionHasErrors('title');
+              $this->delete("/books/{$book->id}")->assertRedirect('/books');
+              $this->assertModelMissing($book);
+          });
+          EOF
+          php artisan test "$f" >/dev/null 2>&1; s=$?; rm -f "$f"; exit $s
+        message: Bearbeiten oder Löschen klappt noch nicht. Prüfe GET /books/{id}/edit (Formular mit @method('PUT') und altem Titel), PUT /books/{id} (speichern, Weiterleitung zur Detailseite, Validierung) und DELETE /books/{id} (löschen, Weiterleitung zu /books).
+    solution: |
+      ```php title="BookController (Ausschnitt)"
+      public function edit(Book $book)
+      {
+          return view('books.edit', ['book' => $book]);
+      }
+
+      public function update(UpdateBookRequest $request, Book $book)
+      {
+          $book->update($request->validated());
+
+          return redirect()->route('books.show', $book)->with('status', 'Buch aktualisiert.');
+      }
+
+      public function destroy(Book $book)
+      {
+          $book->delete();
+
+          return redirect()->route('books.index')->with('status', 'Buch gelöscht.');
+      }
+      ```
+
+      ```blade title="resources/views/books/edit.blade.php"
+      <x-layout>
+          <form method="POST" action="{{ route('books.update', $book) }}">
+              @csrf
+              @method('PUT')
+              <label>Titel <input name="title" value="{{ old('title', $book->title) }}"></label>
+              {{-- … weitere Felder wie beim Anlegen … --}}
+              <button>Speichern</button>
+          </form>
+      </x-layout>
+      ```
+
+      ```blade title="Auf der Detailseite"
+      <a href="{{ route('books.edit', $book) }}">Bearbeiten</a>
+      <form method="POST" action="{{ route('books.destroy', $book) }}">
+          @csrf
+          @method('DELETE')
+          <button>Löschen</button>
+      </form>
+      ```
+    solve: |
+      cat > resources/views/books/edit.blade.php <<'EOF'
+      <x-layout>
+          <h2>{{ $book->title }} bearbeiten</h2>
+          <form method="POST" action="{{ route('books.update', $book) }}">
+              @method('PUT')
+              @include('books._felder')
+          </form>
+      </x-layout>
+      EOF
+      cat > resources/views/books/show.blade.php <<'EOF'
+      <x-layout>
+          <h2>{{ $book->title }}</h2>
+          <p>von {{ $book->author }}</p>
+          <p>{{ $book->pages ?? 'unbekannte' }} Seiten – {{ $book->finished ? 'gelesen' : 'noch nicht gelesen' }}</p>
+
+          <a href="{{ route('books.edit', $book) }}">Bearbeiten</a>
+          <form method="POST" action="{{ route('books.destroy', $book) }}">
+              @csrf
+              @method('DELETE')
+              <button>Löschen</button>
+          </form>
+      </x-layout>
+      EOF
+      cat > app/Http/Controllers/BookController.php <<'EOF'
+      <?php
+
+      namespace App\Http\Controllers;
+
+      use App\Http\Requests\StoreBookRequest;
+      use App\Http\Requests\UpdateBookRequest;
+      use App\Models\Book;
+
+      class BookController extends Controller
+      {
+          public function index()
+          {
+              $books = Book::orderBy('title')->paginate(config('leseliste.pro_seite'));
+
+              return view('books.index', ['books' => $books]);
+          }
+
+          public function create()
+          {
+              return view('books.create');
+          }
+
+          public function store(StoreBookRequest $request)
+          {
+              Book::create($request->validated());
+
+              return redirect()->route('books.index')->with('status', 'Buch gespeichert.');
+          }
+
+          public function show(Book $book)
+          {
+              return view('books.show', ['book' => $book]);
+          }
+
+          public function edit(Book $book)
+          {
+              return view('books.edit', ['book' => $book]);
+          }
+
+          public function update(UpdateBookRequest $request, Book $book)
+          {
+              $book->update($request->validated());
+
+              return redirect()->route('books.show', $book)->with('status', 'Buch aktualisiert.');
+          }
+
+          public function destroy(Book $book)
+          {
+              $book->delete();
+
+              return redirect()->route('books.index')->with('status', 'Buch gelöscht.');
+          }
+      }
+      EOF
+
+  - id: api
+    title: Eine JSON-API für die Leseliste
+    description: |
+      Eine Handy-App soll die Leseliste lesen können. Du ergänzt eine kleine, nur lesende JSON-API – mit
+      einer API Resource, damit keine internen Felder nach außen gelangen.
+
+      1. Richte API-Routen ein: `php artisan install:api` (danach `php artisan migrate`, falls du die
+         Frage verneint hast).
+      2. Erzeuge `php artisan make:resource BookResource`. Sie gibt `id`, `title`, `author`, `pages` und
+         `finished` (als `true`/`false`) aus – keine Zeitstempel.
+      3. Erzeuge `php artisan make:controller Api/BookController --api --model=Book`. `index()` liefert
+         die Bücher alphabetisch nach Titel, seitenweise mit `config('leseliste.pro_seite')`; `show()`
+         liefert ein Buch. Beides über die Resource.
+      4. Registriere in `routes/api.php` nur `index` und `show`:
+         `Route::apiResource('books', BookController::class)->only(['index', 'show'])->names('api.books');`
+      5. Prüfe mit `php artisan route:list --path=books`, dass die Web-Routen weiter `books.index` usw.
+         heißen und die API-Routen `api.books.index` und `api.books.show`.
+    checklist:
+      - "`routes/api.php` mit `apiResource` (nur index und show)"
+      - "`BookResource` gibt nur die fünf Felder aus"
+      - "`/api/books` liefert 5 Bücher pro Seite, alphabetisch"
+    hints:
+      - Ohne `->names('api.books')` hätten Web- und API-Routen dieselben Namen (`books.index`). Dann zeigt `route('books.index')` plötzlich auf die API.
+      - "`return BookResource::collection(Book::orderBy('title')->paginate(config('leseliste.pro_seite')));`"
+      - "Bei einer seitenweisen Liste ergänzt Laravel `links` und `meta` – dort steht z. B. `per_page`."
+    checks:
+      - type: file_exists
+        path: app/Http/Resources/BookResource.php
+        message: Die Resource app/Http/Resources/BookResource.php fehlt noch.
+      - type: command
+        run: php artisan route:list --json | jq -r '.[].name' | grep -E '^(api\.books\.(index|show)|books\.index)$' | sort | tr '\n' ' '
+        stdout_matches: "^api\\.books\\.index api\\.books\\.show books\\.index\\s*$"
+        message: Es fehlen die Routen api.books.index und api.books.show – oder die Web-Route books.index ist verschwunden. Nutze ->only(['index', 'show'])->names('api.books').
+      - type: command
+        run: |
+          f=tests/Feature/StacklabPruefungApiTest.php
+          cat > "$f" <<'EOF'
+          <?php
+
+          use App\Models\Book;
+          use Illuminate\Foundation\Testing\RefreshDatabase;
+
+          uses(RefreshDatabase::class);
+
+          test('stacklab: api', function () {
+              Book::factory(7)->create();
+              $erstes = Book::orderBy('title')->first();
+              $this->getJson('/api/books')->assertOk()
+                  ->assertJsonCount(5, 'data')
+                  ->assertJsonPath('data.0.title', $erstes->title)
+                  ->assertJsonPath('meta.per_page', 5)
+                  ->assertJsonMissingPath('data.0.created_at');
+              $this->getJson("/api/books/{$erstes->id}")->assertOk()
+                  ->assertExactJson(['data' => ['id' => $erstes->id, 'title' => $erstes->title, 'author' => $erstes->author, 'pages' => $erstes->pages, 'finished' => $erstes->finished]]);
+              $this->getJson('/api/books/99999')->assertNotFound();
+              expect(route('books.index', absolute: false))->toBe('/books');
+          });
+          EOF
+          php artisan test "$f" >/dev/null 2>&1; s=$?; rm -f "$f"; exit $s
+        message: "Die API liefert noch nicht das Erwartete. GET /api/books soll 5 Bücher pro Seite alphabetisch unter data liefern (mit meta.per_page), GET /api/books/{id} genau id, title, author, pages und finished – ohne Zeitstempel. route('books.index') muss weiter auf /books zeigen."
+    solution: |
+      ```php title="app/Http/Resources/BookResource.php (toArray)"
+      return [
+          'id' => $this->id,
+          'title' => $this->title,
+          'author' => $this->author,
+          'pages' => $this->pages,
+          'finished' => (bool) $this->finished,
+      ];
+      ```
+
+      ```php title="app/Http/Controllers/Api/BookController.php (Ausschnitt)"
+      public function index()
+      {
+          return BookResource::collection(
+              Book::orderBy('title')->paginate(config('leseliste.pro_seite'))
+          );
+      }
+
+      public function show(Book $book)
+      {
+          return new BookResource($book);
+      }
+      ```
+
+      ```php title="routes/api.php (Ergänzung)"
+      use App\Http\Controllers\Api\BookController;
+
+      Route::apiResource('books', BookController::class)->only(['index', 'show'])->names('api.books');
+      ```
+    solve: |
+      [ -f routes/api.php ] || php artisan install:api --without-migration-prompt -n -q
+      php artisan migrate --force -q
+      mkdir -p app/Http/Resources app/Http/Controllers/Api
+      cat > app/Http/Resources/BookResource.php <<'EOF'
+      <?php
+
+      namespace App\Http\Resources;
+
+      use Illuminate\Http\Request;
+      use Illuminate\Http\Resources\Json\JsonResource;
+
+      class BookResource extends JsonResource
+      {
+          public function toArray(Request $request): array
+          {
+              return [
+                  'id' => $this->id,
+                  'title' => $this->title,
+                  'author' => $this->author,
+                  'pages' => $this->pages,
+                  'finished' => (bool) $this->finished,
+              ];
+          }
+      }
+      EOF
+      cat > app/Http/Controllers/Api/BookController.php <<'EOF'
+      <?php
+
+      namespace App\Http\Controllers\Api;
+
+      use App\Http\Controllers\Controller;
+      use App\Http\Resources\BookResource;
+      use App\Models\Book;
+
+      class BookController extends Controller
+      {
+          public function index()
+          {
+              return BookResource::collection(
+                  Book::orderBy('title')->paginate(config('leseliste.pro_seite'))
+              );
+          }
+
+          public function show(Book $book)
+          {
+              return new BookResource($book);
+          }
+      }
+      EOF
+      grep -q "names('api.books')" routes/api.php || cat >> routes/api.php <<'EOF'
+
+      Route::apiResource('books', App\Http\Controllers\Api\BookController::class)->only(['index', 'show'])->names('api.books');
+      EOF
+
+  - id: eigene-tests
+    title: Eigene Tests mit Pest
+    description: |
+      Bisher hat Stacklab deine App mit eigenen Tests geprüft. Jetzt schreibst du die Tests selbst – so
+      merkst du in Zukunft sofort, wenn eine Änderung etwas kaputt macht.
+
+      1. Lege `tests/Feature/BookTest.php` an (`php artisan make:test BookTest`).
+      2. Nutze `RefreshDatabase`, damit jeder Test mit einer leeren Datenbank startet.
+      3. Schreibe **mindestens drei** Tests, zum Beispiel:
+         - Die Liste zeigt ein Buch, das du vorher mit der Factory angelegt hast.
+         - Ein gültiges Formular legt ein Buch an.
+         - Ein Buch ohne Titel wird abgelehnt (`assertSessionHasErrors('title')`).
+      4. Führe die Suite aus: `php artisan test` – alles muss grün sein.
+    checklist:
+      - "`tests/Feature/BookTest.php` mit mindestens drei Tests"
+      - "`RefreshDatabase` aktiv"
+      - "`php artisan test` ist grün"
+    hints:
+      - "Am Anfang der Datei: `uses(RefreshDatabase::class);` und den passenden `use`-Import."
+      - "`$book = Book::factory()->create(); $this->get('/books')->assertSee($book->title);`"
+      - Schlägt der Beispieltest für `/` fehl, hast du vielleicht `routes/web.php` kaputt gemacht – die Route `/` muss bleiben.
+    checks:
+      - type: file_exists
+        path: tests/Feature/BookTest.php
+        message: Die Datei tests/Feature/BookTest.php fehlt noch.
+      - type: command
+        run: grep -cE "^\s*(test|it)\(" tests/Feature/BookTest.php
+        stdout_matches: "^([3-9]|[1-9][0-9]+)$"
+        message: In tests/Feature/BookTest.php stehen noch keine drei Tests (test(...) oder it(...)).
+      - type: file_contains
+        path: tests/Feature/BookTest.php
+        pattern: "RefreshDatabase"
+        message: Nutze RefreshDatabase in BookTest.php, damit jeder Test mit einer leeren Datenbank startet.
+      - type: command
+        run: php artisan test >/dev/null 2>&1
+        message: "`php artisan test` ist noch nicht grün. Führe den Befehl aus und lies die Fehlermeldung."
+    solution: |
+      ```php title="tests/Feature/BookTest.php"
+      <?php
+
+      use App\Models\Book;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+
+      uses(RefreshDatabase::class);
+
+      test('die liste zeigt vorhandene buecher', function () {
+          $book = Book::factory()->create();
+
+          $this->get('/books')->assertOk()->assertSee($book->title);
+      });
+
+      test('ein gueltiges formular legt ein buch an', function () {
+          $this->post('/books', ['title' => 'Dune', 'author' => 'Frank Herbert'])
+              ->assertRedirect('/books');
+
+          $this->assertDatabaseHas('books', ['title' => 'Dune']);
+      });
+
+      test('ein buch ohne titel wird abgelehnt', function () {
+          $this->post('/books', ['title' => '', 'author' => 'Niemand'])
+              ->assertSessionHasErrors('title');
+
+          $this->assertDatabaseCount('books', 0);
+      });
+      ```
+    solve: |
+      cat > tests/Feature/BookTest.php <<'EOF'
+      <?php
+
+      use App\Models\Book;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+
+      uses(RefreshDatabase::class);
+
+      test('die liste zeigt vorhandene buecher', function () {
+          $book = Book::factory()->create();
+
+          $this->get('/books')->assertOk()->assertSee($book->title);
+      });
+
+      test('ein gueltiges formular legt ein buch an', function () {
+          $this->post('/books', ['title' => 'Dune', 'author' => 'Frank Herbert'])
+              ->assertRedirect('/books');
+
+          $this->assertDatabaseHas('books', ['title' => 'Dune']);
+      });
+
+      test('ein buch ohne titel wird abgelehnt', function () {
+          $this->post('/books', ['title' => '', 'author' => 'Niemand'])
+              ->assertSessionHasErrors('title');
+
+          $this->assertDatabaseCount('books', 0);
+      });
+
+      test('ein buch kann geloescht werden', function () {
+          $book = Book::factory()->create();
+
+          $this->delete("/books/{$book->id}")->assertRedirect('/books');
+
+          $this->assertModelMissing($book);
+      });
+      EOF
+      php artisan test >/dev/null

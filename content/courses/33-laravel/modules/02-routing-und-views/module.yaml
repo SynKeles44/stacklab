@@ -1,0 +1,144 @@
+title: Routing, Controller und Views
+description: Wie URLs zu Code werden und wie du mit Blade HTML-Seiten baust.
+exercise:
+  id: modul-uebung-rezepte
+  type: terminal
+  title: Ein kleines Rezeptbuch
+  description: |
+    Im Ordner `rezepte-uebung` liegt eine Laravel-Anwendung. In `config/rezepte.php` stehen schon zwei
+    Rezepte (Schlüssel `pfannkuchen` und `tomatensuppe`). Baue daraus eine kleine Website mit Liste und
+    Detailseiten – ohne Datenbank.
+
+    1. Erzeuge den Controller `RecipeController` mit den Methoden `index()` und `show(string $slug)`.
+       Die Daten liest er mit `config('rezepte')`.
+    2. Registriere `GET /rezepte` mit dem Namen `recipes.index` und `GET /rezepte/{slug}` mit dem Namen
+       `recipes.show`.
+    3. Lege eine Layout-Komponente `components/layout.blade.php` an und nutze sie in beiden Views
+       (`recipes/index.blade.php` und `recipes/show.blade.php`).
+    4. Die Liste verlinkt jedes Rezept mit `route('recipes.show', ...)`, z. B.
+       `<a href="http://localhost/rezepte/pfannkuchen">Pfannkuchen</a>`.
+    5. Die Detailseite zeigt den Namen als `<h1>`, die Dauer als `<p>20 Minuten</p>` und jede Zutat als
+       `<li>`.
+    6. Ein unbekanntes Rezept (`/rezepte/pizza`) antwortet mit Status 404.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: rezepte-uebung
+  setup: |
+    # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      cd "$T"
+      timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+      printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+      printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+      touch .fertig && cd - >/dev/null
+      rm -rf "$B" && mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+    cat > config/rezepte.php <<'PHP'
+    <?php
+
+    return [
+        'pfannkuchen' => [
+            'name' => 'Pfannkuchen',
+            'minuten' => 20,
+            'zutaten' => ['Mehl', 'Milch', 'Eier', 'Prise Salz'],
+        ],
+        'tomatensuppe' => [
+            'name' => 'Tomatensuppe',
+            'minuten' => 35,
+            'zutaten' => ['Tomaten', 'Zwiebel', 'Brühe'],
+        ],
+    ];
+    PHP
+  checks:
+    - type: file_exists
+      path: app/Http/Controllers/RecipeController.php
+      message: Der Controller app/Http/Controllers/RecipeController.php fehlt noch.
+    - type: command
+      run: php artisan route:list --json | jq -r '.[].name' | grep -E '^recipes\.(index|show)$' | sort | tr '\n' ' '
+      stdout_matches: "^recipes\\.index recipes\\.show\\s*$"
+      message: Die benannten Routen recipes.index und recipes.show fehlen noch.
+    - type: command
+      run: |
+        php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $k = $app->make(Illuminate\Contracts\Http\Kernel::class); $r = $k->handle(Illuminate\Http\Request::create("/rezepte")); $h = $r->getContent(); echo $r->getStatusCode(), " ", preg_match("#<a href=\"http://localhost/rezepte/pfannkuchen\">\\s*Pfannkuchen\\s*</a>#", $h) && preg_match("#<a href=\"http://localhost/rezepte/tomatensuppe\">\\s*Tomatensuppe\\s*</a>#", $h) ? "links" : "-";'
+      stdout_equals: 200 links
+      message: /rezepte zeigt noch nicht beide Rezepte als Links, z. B. <a href="http://localhost/rezepte/pfannkuchen">Pfannkuchen</a>.
+    - type: command
+      run: |
+        php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $k = $app->make(Illuminate\Contracts\Http\Kernel::class); $r = $k->handle(Illuminate\Http\Request::create("/rezepte/tomatensuppe")); $h = $r->getContent(); echo $r->getStatusCode(), " ", preg_match("#<h1>\\s*Tomatensuppe\\s*</h1>#", $h) ? "h1 " : "- ", str_contains($h, "<p>35 Minuten</p>") ? "dauer " : "- ", preg_match("#<li>\\s*Brühe\\s*</li>#", $h) ? "zutaten" : "-";'
+      stdout_equals: 200 h1 dauer zutaten
+      message: Die Detailseite /rezepte/tomatensuppe zeigt noch nicht <h1>Tomatensuppe</h1>, <p>35 Minuten</p> und die Zutaten als <li>.
+    - type: command
+      run: |
+        php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $k = $app->make(Illuminate\Contracts\Http\Kernel::class); echo $k->handle(Illuminate\Http\Request::create("/rezepte/pizza"))->getStatusCode();'
+      stdout_equals: "404"
+      message: Ein unbekanntes Rezept soll mit 404 antworten. Nutze abort(404), wenn der Schlüssel nicht existiert.
+    - type: command
+      run: grep -l "<x-layout" resources/views/recipes/index.blade.php resources/views/recipes/show.blade.php | wc -l
+      stdout_matches: "^\\s*2\\s*$"
+      message: Beide Views sollen die Layout-Komponente mit <x-layout> nutzen.
+  hints:
+    - "`$rezept = config('rezepte.'.$slug);` liefert `null`, wenn es den Schlüssel nicht gibt – dann `abort(404);`."
+    - "In der Liste: `@foreach ($rezepte as $slug => $rezept) <li><a href=\"{{ route('recipes.show', $slug) }}\">{{ $rezept['name'] }}</a></li> @endforeach`"
+    - "`php artisan route:list --except-vendor` zeigt dir, ob Namen und URLs stimmen."
+  solution: |
+    ```php title="app/Http/Controllers/RecipeController.php"
+    <?php
+
+    namespace App\Http\Controllers;
+
+    class RecipeController extends Controller
+    {
+        public function index()
+        {
+            return view('recipes.index', ['rezepte' => config('rezepte')]);
+        }
+
+        public function show(string $slug)
+        {
+            $rezept = config('rezepte.'.$slug);
+
+            if ($rezept === null) {
+                abort(404);
+            }
+
+            return view('recipes.show', ['rezept' => $rezept]);
+        }
+    }
+    ```
+
+    ```php title="routes/web.php (Ergänzung)"
+    use App\Http\Controllers\RecipeController;
+
+    Route::get('/rezepte', [RecipeController::class, 'index'])->name('recipes.index');
+    Route::get('/rezepte/{slug}', [RecipeController::class, 'show'])->name('recipes.show');
+    ```
+
+    ```blade title="resources/views/recipes/index.blade.php"
+    <x-layout>
+        <h1>Rezepte</h1>
+        <ul>
+            @foreach ($rezepte as $slug => $rezept)
+                <li><a href="{{ route('recipes.show', $slug) }}">{{ $rezept['name'] }}</a></li>
+            @endforeach
+        </ul>
+    </x-layout>
+    ```
+
+    ```blade title="resources/views/recipes/show.blade.php"
+    <x-layout>
+        <h1>{{ $rezept['name'] }}</h1>
+        <p>{{ $rezept['minuten'] }} Minuten</p>
+        <ul>
+            @foreach ($rezept['zutaten'] as $zutat)
+                <li>{{ $zutat }}</li>
+            @endforeach
+        </ul>
+    </x-layout>
+    ```
+
+    Die Layout-Komponente sieht aus wie in der Lektion „Views mit Blade“.
