@@ -1,0 +1,440 @@
+- slug: big-o-notation
+  term: Big-O-Notation
+  short: Eine Schreibweise, die beschreibt, wie der Aufwand eines Algorithmus mit der Größe der Eingabe wächst.
+  explanation: >
+    Big-O misst keine Sekunden, sondern das Wachstum: O(n) heißt „doppelt so viele Daten, etwa doppelt so viel
+    Arbeit“, O(n²) heißt „viermal so viel“. Konstante Faktoren und kleinere Terme fallen weg. Man betrachtet
+    meist den schlechtesten Fall.
+  example: "Eine Schleife über ein Array ist O(n), zwei verschachtelte Schleifen darüber sind O(n²)."
+  category: algorithmen
+  aliases: [Big-O, O-Notation, Landau-Notation, Aufwandsklasse, Laufzeitkomplexität]
+  related: [algorithmus, datenstruktur, amortisierte-laufzeit]
+  lesson: datenstrukturen-algorithmen/big-o-und-messen
+
+- slug: datenstruktur
+  term: Datenstruktur
+  short: Die Art, wie Daten im Speicher organisiert werden, damit bestimmte Operationen schnell gehen.
+  explanation: >
+    Arrays, Listen, Maps, Sets, Bäume und Graphen sind Datenstrukturen. Jede ist für andere Fragen gebaut:
+    Ein Array ist schnell beim Zugriff per Position, eine Map beim Nachschlagen über einen Schlüssel. Die
+    Wahl der Struktur bestimmt oft mehr über die Geschwindigkeit als der Code selbst.
+  example: "Für „Gibt es diese ID schon?“ ist ein `Set` die passende Datenstruktur."
+  category: algorithmen
+  aliases: [Datenstrukturen]
+  related: [algorithmus, big-o-notation, array]
+  lesson: datenstrukturen-algorithmen/big-o-und-messen
+
+- slug: verkettete-liste
+  term: Verkettete Liste
+  short: Eine Folge von Knoten, in der jeder Knoten einen Wert und eine Referenz auf den nächsten Knoten speichert.
+  explanation: >
+    Die Knoten liegen verstreut im Speicher und werden nur über Referenzen zusammengehalten. Vorne einfügen
+    oder einen Knoten aushängen kostet O(1), der Zugriff auf das i-te Element aber O(n), weil man von vorne
+    durchlaufen muss. Eine doppelt verkettete Liste speichert zusätzlich den Vorgänger.
+  example: "`{ wert: 1, next: { wert: 2, next: null } }` ist eine verkettete Liste mit zwei Knoten."
+  category: algorithmen
+  aliases: [Linked List, verkettete Listen, doppelt verkettete Liste]
+  related: [knoten, referenz, array]
+  lesson: datenstrukturen-algorithmen/arrays-und-verkettete-listen
+
+- slug: knoten
+  term: Knoten
+  short: Ein einzelnes Element einer verketteten Datenstruktur – etwa einer Liste, eines Baums oder eines Graphen.
+  explanation: >
+    Ein Knoten enthält einen Wert und Verbindungen zu anderen Knoten: In einer Liste ist das `next`, in einem
+    Baum sind es die Kinder, in einem Graphen die Nachbarn. Englisch heißt er „node“.
+  example: "`{ wert: 50, links: null, rechts: null }` ist ein Knoten eines binären Suchbaums."
+  category: algorithmen
+  aliases: [Node, Knotenpunkt]
+  related: [verkettete-liste, baum, graph, kante]
+  lesson: datenstrukturen-algorithmen/arrays-und-verkettete-listen
+
+- slug: amortisierte-laufzeit
+  term: Amortisierte Laufzeit
+  short: Der durchschnittliche Aufwand einer Operation über viele Aufrufe, auch wenn einzelne Aufrufe teurer sind.
+  explanation: >
+    `push` auf einem Array ist meist sofort fertig. Nur selten muss das Array umziehen und alles kopieren.
+    Verteilt man diese seltenen teuren Fälle auf alle Aufrufe, bleibt der Aufwand pro Aufruf im Mittel
+    konstant – amortisiert O(1).
+  example: "Eine Million `push`-Aufrufe kosten insgesamt O(n), also O(1) pro Aufruf."
+  category: algorithmen
+  aliases: [amortisiert, amortisiert O(1)]
+  related: [big-o-notation, array, hash-tabelle]
+  lesson: datenstrukturen-algorithmen/arrays-und-verkettete-listen
+
+- slug: hash-tabelle
+  term: Hash-Tabelle
+  short: Eine Datenstruktur, die aus dem Schlüssel direkt das Fach berechnet, in dem ein Eintrag liegt.
+  explanation: >
+    Eine Hash-Funktion macht aus dem Schlüssel eine Fachnummer. Speichern, Suchen und Löschen kosten dadurch im
+    Durchschnitt O(1), egal wie viele Einträge es gibt. `Map`, `Set` und PHP-Arrays sind intern Hash-Tabellen.
+  example: "`map.get('ada')` schaut nur in einem Fach nach, statt alle Einträge zu durchsuchen."
+  category: algorithmen
+  aliases: [Hashtabelle, Hash-Map, Hashmap, Hash Table, Streuwerttabelle]
+  related: [hash-funktion, hash-kollision, js-map, js-set, assoziatives-array]
+  lesson: datenstrukturen-algorithmen/hash-maps-und-sets
+
+- slug: hash-funktion
+  term: Hash-Funktion
+  short: Eine Funktion, die aus einem Schlüssel eine Zahl berechnet – bei gleichem Schlüssel immer dieselbe.
+  explanation: >
+    In einer Hash-Tabelle bestimmt diese Zahl das Fach, in dem ein Eintrag landet. Eine gute Hash-Funktion
+    verteilt die Schlüssel gleichmäßig auf alle Fächer. Die Hash-Funktionen in JavaScript-Engines und PHP sind
+    eingebaut – selbst schreiben musst du sie nicht.
+  example: "Eine sehr einfache Hash-Funktion addiert die Zeichencodes eines Strings und nimmt das Ergebnis modulo der Fächeranzahl."
+  category: algorithmen
+  aliases: [Hashfunktion, Streuwertfunktion]
+  related: [hash-tabelle, hash-kollision, hash]
+  lesson: datenstrukturen-algorithmen/hash-maps-und-sets
+
+- slug: hash-kollision
+  term: Kollision (Hash-Tabelle)
+  short: Der Fall, dass zwei verschiedene Schlüssel in einer Hash-Tabelle im selben Fach landen.
+  explanation: >
+    Kollisionen sind normal und kein Fehler: Die Tabelle legt beide Einträge in dasselbe Fach und vergleicht
+    beim Suchen nur diese wenigen. Erst wenn sehr viele Schlüssel im selben Fach landen, wird die Suche
+    langsam (O(n)).
+  example: "Landen `\"ab\"` und `\"ba\"` bei einer Summen-Hash-Funktion im selben Fach, liegt eine Kollision vor."
+  category: algorithmen
+  aliases: [Hash-Kollision, Kollision, Kollisionen]
+  related: [hash-tabelle, hash-funktion]
+  lesson: datenstrukturen-algorithmen/hash-maps-und-sets
+
+- slug: js-map
+  term: Map (JavaScript)
+  short: Eine eingebaute JavaScript-Struktur, die Schlüssel-Wert-Paare speichert – mit beliebigen Schlüsseltypen.
+  explanation: >
+    Eine `Map` ist eine Hash-Tabelle: `set`, `get`, `has` und `delete` kosten im Mittel O(1). Anders als bei
+    einem Objekt dürfen Schlüssel Zahlen, Objekte oder Funktionen sein, `size` liefert die Anzahl, und die
+    Einfügereihenfolge bleibt erhalten.
+  example: "`const nachId = new Map(nutzer.map((u) => [u.id, u])); nachId.get(42);`"
+  category: javascript
+  aliases: [Map, Maps, new Map]
+  related: [hash-tabelle, js-set, js-weakmap, objekt]
+  lesson: datenstrukturen-algorithmen/hash-maps-und-sets
+
+- slug: js-set
+  term: Set (JavaScript)
+  short: Eine eingebaute JavaScript-Struktur, die jeden Wert höchstens einmal speichert.
+  explanation: >
+    Ein `Set` beantwortet die Frage „Gibt es diesen Wert schon?“ mit `has()` im Mittel in O(1). Doppelte Werte
+    werden beim `add()` ignoriert. Objekte werden über ihre Referenz verglichen, nicht über ihren Inhalt.
+  example: "`const eindeutig = [...new Set(['a', 'b', 'a'])]; // ['a', 'b']`"
+  category: javascript
+  aliases: [Set, Sets, new Set, Menge]
+  related: [hash-tabelle, js-map]
+  lesson: datenstrukturen-algorithmen/hash-maps-und-sets
+
+- slug: js-weakmap
+  term: WeakMap
+  short: Eine Map, die nur Objekte als Schlüssel erlaubt und diese nicht im Speicher festhält.
+  explanation: >
+    Wird ein Schlüssel-Objekt sonst nirgends mehr verwendet, darf die Garbage Collection es samt Eintrag
+    entfernen. Deshalb eignet sich eine `WeakMap`, um Zusatzdaten an fremde Objekte wie DOM-Elemente zu hängen,
+    ohne Speicherlecks zu erzeugen. Man kann sie nicht durchlaufen und hat kein `size`.
+  example: "`const klicks = new WeakMap(); klicks.set(button, 3);`"
+  category: javascript
+  aliases: [WeakMaps, WeakSet]
+  related: [js-map, garbage-collection, referenz]
+  lesson: datenstrukturen-algorithmen/die-richtige-struktur-waehlen
+
+- slug: stack
+  term: Stack
+  short: Eine Struktur, bei der das zuletzt Hinzugefügte zuerst wieder herauskommt (LIFO).
+  explanation: >
+    Ein Stack (Stapel) kennt im Kern zwei Operationen: `push` legt oben drauf, `pop` nimmt oben weg – beides
+    O(1). Undo-Funktionen, der Zurück-Button und der Call Stack funktionieren so. In JavaScript ist ein Array mit
+    `push` und `pop` bereits ein Stack.
+  example: "`const s = []; s.push('a'); s.push('b'); s.pop(); // 'b'`"
+  category: algorithmen
+  aliases: [Stapel, Stapelspeicher, LIFO, Kellerspeicher]
+  related: [queue, call-stack, tiefensuche]
+  lesson: datenstrukturen-algorithmen/stacks-und-queues
+
+- slug: queue
+  term: Queue
+  short: Eine Warteschlange, bei der das zuerst Hinzugefügte zuerst wieder herauskommt (FIFO).
+  explanation: >
+    Neue Elemente werden hinten angestellt (enqueue), vorne entnommen (dequeue). Job-Queues, die Event Loop und
+    die Breitensuche arbeiten so. `shift()` auf einem Array ist dafür bei großen Mengen zu langsam (O(n)) –
+    besser ist ein Lese-Index, eine verkettete Liste oder `SplQueue` in PHP.
+  example: "`$q = new SplQueue(); $q->enqueue('mail-1'); $q->dequeue(); // 'mail-1'`"
+  category: algorithmen
+  aliases: [Warteschlange, Queues, FIFO]
+  related: [stack, job-queue, breitensuche, prioritaetswarteschlange]
+  lesson: datenstrukturen-algorithmen/stacks-und-queues
+
+- slug: prioritaetswarteschlange
+  term: Prioritätswarteschlange
+  short: Eine Warteschlange, bei der nicht das älteste, sondern das wichtigste Element zuerst herauskommt.
+  explanation: >
+    Jedes Element bekommt eine Priorität. Intern steckt meist ein Heap dahinter, sodass Einfügen und Entnehmen
+    O(log n) kosten. Der Dijkstra-Algorithmus nutzt sie, um immer den nächstgelegenen Knoten zuerst zu bearbeiten.
+  example: "PHP bringt dafür die Klasse `SplPriorityQueue` mit."
+  category: algorithmen
+  aliases: [Priority Queue, Prioritätsqueue]
+  related: [queue, dijkstra-algorithmus]
+  lesson: datenstrukturen-algorithmen/graphen
+
+- slug: baum
+  term: Baum
+  short: Eine hierarchische Datenstruktur mit einer Wurzel, in der jeder andere Knoten genau einen Elternknoten hat.
+  explanation: >
+    Knoten ohne Kinder heißen Blätter, ein Knoten mit allem darunter ist ein Teilbaum. Weil jeder Knoten nur
+    einen Elternknoten hat, gibt es keine Kreise. Das DOM, das Dateisystem und Menüstrukturen sind Bäume.
+  example: "`/` ist die Wurzel des Dateisystems, `README.md` ein Blatt."
+  category: algorithmen
+  aliases: [Bäume, Baumstruktur, Wurzel, Blatt, Teilbaum]
+  related: [knoten, binaerer-suchbaum, traversierung, graph]
+  lesson: datenstrukturen-algorithmen/baeume-und-suchbaeume
+
+- slug: binaerer-suchbaum
+  term: Binärer Suchbaum
+  short: Ein Baum mit höchstens zwei Kindern pro Knoten, in dem links die kleineren und rechts die größeren Werte liegen.
+  explanation: >
+    Durch diese Ordnung fällt bei jeder Suche mit jedem Vergleich ein ganzer Teilbaum weg. Suchen und Einfügen
+    kosten so viel wie die Höhe des Baums: O(log n), wenn er ausgeglichen ist, O(n), wenn er zur Kette entartet.
+  example: "In einem Suchbaum mit Wurzel 50 liegt die 35 im linken Teilbaum."
+  category: algorithmen
+  aliases: [BST, Binary Search Tree, Suchbaum, Binärbaum, Suchbäume]
+  related: [baum, balancierter-baum, binaere-suche]
+  lesson: datenstrukturen-algorithmen/baeume-und-suchbaeume
+
+- slug: balancierter-baum
+  term: Balancierter Baum
+  short: Ein Suchbaum, der sich nach Änderungen selbst so umbaut, dass seine Höhe klein bleibt.
+  explanation: >
+    Ohne Ausgleich kann ein Suchbaum bei sortierten Eingaben zu einer Kette entarten. Balancierte Bäume wie
+    AVL- oder Rot-Schwarz-Bäume drehen Knoten um, sodass die Höhe etwa log₂ n bleibt und Suchen O(log n) kostet.
+  example: "Fügst du 1 bis 1 000 000 in einen balancierten Baum ein, ist er trotzdem nur etwa 20 Ebenen hoch."
+  category: algorithmen
+  aliases: [ausgeglichener Baum, selbstbalancierender Baum, AVL-Baum, Rot-Schwarz-Baum]
+  related: [binaerer-suchbaum, b-baum]
+  lesson: datenstrukturen-algorithmen/baeume-und-suchbaeume
+
+- slug: traversierung
+  term: Traversierung
+  short: Das systematische Besuchen aller Knoten eines Baums oder Graphen – jeden genau einmal.
+  explanation: >
+    Die zwei Grundstrategien sind die Tiefensuche und die Breitensuche. Bei Bäumen unterscheidet man zusätzlich,
+    wann der Knoten selbst bearbeitet wird: vor den Kindern (Preorder), danach (Postorder) oder dazwischen
+    (Inorder, nur bei Binärbäumen).
+  example: "Ein rekursiv gerendertes Menü ist eine Preorder-Traversierung des Menübaums."
+  category: algorithmen
+  aliases: [traversieren, Durchlauf, Preorder, Postorder, Inorder]
+  related: [tiefensuche, breitensuche, baum]
+  lesson: datenstrukturen-algorithmen/baeume-durchlaufen
+
+- slug: tiefensuche
+  term: Tiefensuche
+  short: Ein Durchlauf, der jedem Ast bis zum Ende folgt, bevor er den nächsten nimmt.
+  explanation: >
+    Die Tiefensuche (Depth-First Search, DFS) lässt sich rekursiv oder mit einem eigenen Stack schreiben. Sie
+    eignet sich zum Auflisten, Summieren über Teilbäume und zum Erkennen von Kreisen in Graphen.
+  example: "Die Größe eines Ordners samt Unterordnern berechnest du mit einer Tiefensuche in Postorder."
+  category: algorithmen
+  aliases: [DFS, Depth-First Search, Tiefendurchlauf]
+  related: [breitensuche, traversierung, stack, rekursion]
+  lesson: datenstrukturen-algorithmen/baeume-durchlaufen
+
+- slug: breitensuche
+  term: Breitensuche
+  short: Ein Durchlauf, der Ebene für Ebene vorgeht – erst alle direkten Nachbarn, dann deren Nachbarn.
+  explanation: >
+    Die Breitensuche (Breadth-First Search, BFS) arbeitet mit einer Queue. In einem ungewichteten Graphen findet
+    sie deshalb einen Weg mit den wenigsten Kanten. In Graphen braucht sie ein „besucht“-Set, damit sie bei
+    Kreisen nicht endlos läuft.
+  example: "„Freunde von Freunden“ in einem sozialen Netzwerk findet man mit einer Breitensuche bis Ebene 2."
+  category: algorithmen
+  aliases: [BFS, Breadth-First Search, Breitendurchlauf]
+  related: [tiefensuche, queue, graph, traversierung]
+  lesson: datenstrukturen-algorithmen/baeume-durchlaufen
+
+- slug: graph
+  term: Graph
+  short: Eine Datenstruktur aus Knoten und Kanten, die beliebig miteinander verbunden sein können.
+  explanation: >
+    Anders als ein Baum darf ein Graph Kreise enthalten, und ein Knoten darf mehrere Vorgänger haben. Kanten
+    können gerichtet (A → B) und gewichtet (z. B. mit Entfernungen) sein. Straßennetze, soziale Netzwerke und
+    Paket-Abhängigkeiten sind Graphen.
+  example: "npm-Pakete und ihre Abhängigkeiten bilden einen gerichteten Graphen."
+  category: algorithmen
+  aliases: [Graphen, gerichteter Graph, ungerichteter Graph, gewichteter Graph]
+  related: [knoten, kante, adjazenzliste, zyklus]
+  lesson: datenstrukturen-algorithmen/graphen
+
+- slug: kante
+  term: Kante
+  short: Eine Verbindung zwischen zwei Knoten in einem Graphen.
+  explanation: >
+    Kanten können ungerichtet sein (gilt in beide Richtungen) oder gerichtet (zeigt von einem Knoten zum
+    anderen). Ein Gewicht an der Kante drückt zum Beispiel Entfernung, Dauer oder Kosten aus. Englisch heißt sie
+    „edge“, die Anzahl der Kanten kürzt man mit E ab.
+  example: "Die Abhängigkeit „router braucht url-parser“ ist eine gerichtete Kante von router zu url-parser."
+  category: algorithmen
+  aliases: [Kanten, Edge, Edges]
+  related: [graph, knoten, adjazenzliste]
+  lesson: datenstrukturen-algorithmen/graphen
+
+- slug: adjazenzliste
+  term: Adjazenzliste
+  short: Eine Speicherform für Graphen, die zu jedem Knoten die Liste seiner Nachbarn speichert.
+  explanation: >
+    In JavaScript ist das meist eine `Map` von Knoten zu einem Array von Nachbarn. Sie braucht nur so viel
+    Speicher, wie es Knoten und Kanten gibt, und liefert die Nachbarn eines Knotens in O(1). Die Alternative,
+    eine Adjazenzmatrix, braucht n² Plätze.
+  example: "`new Map([['A', ['B', 'C']], ['B', ['A']]])`"
+  category: algorithmen
+  aliases: [Adjazenzlisten, Nachbarliste, Adjacency List]
+  related: [graph, kante, js-map]
+  lesson: datenstrukturen-algorithmen/graphen
+
+- slug: dijkstra-algorithmus
+  term: Dijkstra-Algorithmus
+  short: Ein Verfahren, das in Graphen mit nicht-negativen Kantengewichten die kürzesten Wege von einem Startknoten findet.
+  explanation: >
+    Er bearbeitet immer den Knoten, der bisher am günstigsten erreichbar ist, und verbessert von dort die
+    Entfernungen der Nachbarn. Dafür nutzt er eine Prioritätswarteschlange. Routenplaner verwenden
+    Weiterentwicklungen dieser Idee.
+  example: "Mit Fahrzeiten an den Kanten findet Dijkstra den schnellsten statt den kürzesten Weg nach Stationen."
+  category: algorithmen
+  aliases: [Dijkstra, Dijkstras Algorithmus]
+  related: [graph, breitensuche, prioritaetswarteschlange]
+  lesson: datenstrukturen-algorithmen/graphen
+
+- slug: zyklus
+  term: Zyklus
+  short: Ein Weg in einem Graphen, der wieder zu seinem Startknoten zurückführt.
+  explanation: >
+    In Abhängigkeitsgraphen ist ein Zyklus meist ein Fehler, weil keines der beteiligten Pakete zuerst gebaut
+    werden kann. Eine Tiefensuche erkennt ihn, wenn sie auf einen Knoten trifft, der gerade noch in Arbeit ist.
+  example: "a braucht b, b braucht c, c braucht a – das ist der Zyklus a → b → c → a."
+  category: algorithmen
+  aliases: [Kreis, Zyklen, Kreise, zyklische Abhängigkeit]
+  related: [graph, tiefensuche, topologische-reihenfolge]
+  lesson: datenstrukturen-algorithmen/graphen
+
+- slug: sortierverfahren
+  term: Sortierverfahren
+  short: Ein Algorithmus, der Elemente nach einer Ordnung anordnet, etwa Zahlen aufsteigend.
+  explanation: >
+    Einfache Verfahren wie Insertion Sort sind O(n²), effiziente wie Merge Sort O(n log n). Verfahren, die nur
+    Elemente miteinander vergleichen, können im Allgemeinen nicht schneller als O(n log n) sein. Im Alltag nutzt
+    du die eingebaute Sortierung deiner Sprache.
+  example: "`Array.prototype.sort()` und PHPs `usort()` sind fertige Sortierverfahren."
+  category: algorithmen
+  aliases: [Sortieralgorithmus, Sortieralgorithmen, sortieren]
+  related: [insertion-sort, merge-sort, stabile-sortierung, vergleichsfunktion]
+  lesson: datenstrukturen-algorithmen/sortieren
+
+- slug: insertion-sort
+  term: Insertion Sort
+  short: Ein einfaches Sortierverfahren, das jedes Element an die richtige Stelle im bereits sortierten Teil steckt.
+  explanation: >
+    Es funktioniert wie das Einsortieren von Spielkarten in die Hand. Im schlechtesten Fall ist es O(n²), bei
+    fast sortierten Daten aber nahezu O(n). Deshalb nutzen eingebaute Sortierungen es für kleine Teilstücke.
+  example: "Aus `[3, 1, 2]` wird nach dem Einsortieren der 1 `[1, 3, 2]`, nach der 2 `[1, 2, 3]`."
+  category: algorithmen
+  aliases: [Sortieren durch Einfügen, Einfügesortieren]
+  related: [sortierverfahren, merge-sort]
+  lesson: datenstrukturen-algorithmen/sortieren
+
+- slug: merge-sort
+  term: Merge Sort
+  short: Ein effizientes Sortierverfahren, das die Liste halbiert, beide Hälften sortiert und dann zusammenführt.
+  explanation: >
+    Merge Sort folgt dem Prinzip „Teile und herrsche“ und braucht immer O(n log n) – auch im schlechtesten Fall.
+    Es ist stabil, benötigt aber O(n) zusätzlichen Speicher für die Zwischenlisten.
+  example: "`[5, 2, 4, 1]` → `[5, 2]` und `[4, 1]` → `[2, 5]` und `[1, 4]` → `[1, 2, 4, 5]`."
+  category: algorithmen
+  aliases: [Mergesort, Sortieren durch Mischen]
+  related: [sortierverfahren, insertion-sort, stabile-sortierung]
+  lesson: datenstrukturen-algorithmen/sortieren
+
+- slug: stabile-sortierung
+  term: Stabile Sortierung
+  short: Eine Sortierung, die gleiche Elemente in ihrer ursprünglichen Reihenfolge belässt.
+  explanation: >
+    Stabilität ist wichtig, wenn du nacheinander nach mehreren Kriterien sortierst: Die Reihenfolge aus der
+    vorherigen Sortierung bleibt innerhalb gleicher Werte erhalten. `Array.prototype.sort()` ist seit ES2019
+    stabil, PHP-Sortierfunktionen seit PHP 8.0.
+  example: "Nach Namen sortierte Mitarbeitende bleiben innerhalb jeder Abteilung alphabetisch, wenn du stabil nach Abteilung sortierst."
+  category: algorithmen
+  aliases: [stabil sortieren, stabiles Sortieren, Stabilität]
+  related: [sortierverfahren, merge-sort, vergleichsfunktion]
+  lesson: datenstrukturen-algorithmen/sortieren
+
+- slug: vergleichsfunktion
+  term: Vergleichsfunktion
+  short: Eine Funktion, die für zwei Elemente angibt, welches beim Sortieren zuerst kommt.
+  explanation: >
+    Sie liefert eine negative Zahl, wenn das erste Element zuerst kommt, 0 bei Gleichheit und eine positive Zahl,
+    wenn das zweite zuerst kommt. JavaScripts `sort()` vergleicht ohne sie Strings – Zahlen brauchen deshalb
+    immer eine Vergleichsfunktion.
+  example: "`preise.sort((a, b) => a - b)` sortiert Zahlen aufsteigend."
+  category: algorithmen
+  aliases: [Comparator, Komparator, compareFn, Vergleichsfunktionen]
+  related: [sortierverfahren, raumschiff-operator, stabile-sortierung]
+  lesson: datenstrukturen-algorithmen/sortieren
+
+- slug: raumschiff-operator
+  term: Raumschiff-Operator
+  short: "Der PHP-Operator `<=>`, der -1, 0 oder 1 liefert, je nachdem, ob der linke Wert kleiner, gleich oder größer ist."
+  explanation: >
+    Er ist ideal für Vergleichsfunktionen in `usort()`. Auf Arrays angewendet vergleicht er Element für Element –
+    so lassen sich mehrere Sortierkriterien in einer Zeile ausdrücken.
+  example: "`usort($produkte, fn($a, $b) => $a['preis'] <=> $b['preis']);`"
+  category: php
+  aliases: [Spaceship-Operator, "<=>", Spaceship Operator]
+  related: [vergleichsfunktion, vergleichsoperator]
+  lesson: datenstrukturen-algorithmen/sortieren
+
+- slug: rekursion
+  term: Rekursion
+  short: Eine Technik, bei der eine Funktion sich selbst mit einem kleineren Teilproblem aufruft.
+  explanation: >
+    Jede rekursive Funktion braucht einen Basisfall, der ohne weiteren Aufruf beantwortet wird. Rekursion passt
+    natürlich zu verschachtelten Daten wie Bäumen. Jeder Aufruf belegt Platz auf dem Call Stack – zu tiefe
+    Rekursion führt zum Stack Overflow.
+  example: "`function fakultaet(n) { return n <= 1 ? 1 : n * fakultaet(n - 1); }`"
+  category: algorithmen
+  aliases: [rekursive Funktion, rekursiver Aufruf, Rekursionen]
+  related: [basisfall, call-stack, stack-overflow, memoisierung]
+  lesson: datenstrukturen-algorithmen/rekursion-und-memoisierung
+
+- slug: basisfall
+  term: Basisfall
+  short: Der Fall einer rekursiven Funktion, der direkt beantwortet wird, ohne dass sie sich erneut aufruft.
+  explanation: >
+    Der Basisfall beendet die Rekursion. Fehlt er oder wird er nicht für jede Eingabe erreicht, ruft sich die
+    Funktion endlos selbst auf, bis der Call Stack überläuft.
+  example: "In `fakultaet(n)` ist `if (n <= 1) return 1;` der Basisfall."
+  category: algorithmen
+  aliases: [Abbruchbedingung, Rekursionsanker, Base Case]
+  related: [rekursion, stack-overflow]
+  lesson: datenstrukturen-algorithmen/rekursion-und-memoisierung
+
+- slug: stack-overflow
+  term: Stack Overflow
+  short: Ein Fehler, der entsteht, wenn zu viele verschachtelte Funktionsaufrufe den Call Stack füllen.
+  explanation: >
+    Jeder Aufruf belegt einen Rahmen auf dem begrenzten Call Stack. Bei endloser oder sehr tiefer Rekursion ist er
+    irgendwann voll. JavaScript wirft dann `RangeError: Maximum call stack size exceeded`. Abhilfe schafft eine
+    Schleife mit eigenem Stack.
+  example: "Eine rekursive Funktion über einen Baum mit 100 000 Ebenen löst in Node.js einen Stack Overflow aus."
+  category: algorithmen
+  aliases: [Stapelüberlauf, Maximum call stack size exceeded]
+  related: [call-stack, rekursion, basisfall]
+  lesson: datenstrukturen-algorithmen/rekursion-und-memoisierung
+
+- slug: dynamische-programmierung
+  term: Dynamische Programmierung
+  short: Eine Technik, die ein Problem aus den Lösungen kleinerer, sich überlappender Teilprobleme zusammensetzt.
+  explanation: >
+    Jedes Teilproblem wird nur einmal gelöst und das Ergebnis gespeichert – von oben nach unten mit Memoisierung
+    oder von unten nach oben mit einer Tabelle oder Schleife. So wird aus exponentiellem oft linearer Aufwand.
+  example: "Die kleinste Münzanzahl für 99 Cent berechnest du aus den Lösungen für 0 bis 98 Cent."
+  category: algorithmen
+  aliases: [DP, Dynamic Programming, Bottom-up]
+  related: [memoisierung, rekursion]
+  lesson: datenstrukturen-algorithmen/rekursion-und-memoisierung

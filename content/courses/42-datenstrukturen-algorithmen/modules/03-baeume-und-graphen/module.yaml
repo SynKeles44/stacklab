@@ -1,0 +1,110 @@
+title: Bäume und Graphen
+description: Hierarchien und Netze – vom DOM und Dateisystem über binäre Suchbäume bis zu Graphen mit Breiten- und Tiefensuche, kürzesten Wegen und Abhängigkeiten.
+exercise:
+  id: modul-uebung-ordnerbaum
+  type: terminal
+  title: Einen echten Ordnerbaum auswerten
+  description: |
+    Dein Dateisystem ist ein Baum: Ordner sind innere Knoten, Dateien sind Blätter. Schreibe ein Node-Skript,
+    das einen beliebigen Ordner vollständig durchläuft.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Im Arbeitsordner liegt dann der Beispielordner `beispiel/`.
+
+    1. Lege `ordnerbaum.js` an. Das Skript bekommt den Pfad als Argument: `node ordnerbaum.js beispiel`.
+    2. Durchlaufe den Ordner mit Tiefen- oder Breitensuche (`fs.readdirSync(pfad, { withFileTypes: true })`).
+    3. Gib genau diese vier Zeilen aus:
+       - `Dateien: <Anzahl aller Dateien>`
+       - `Ordner: <Anzahl aller Unterordner, ohne den Startordner>`
+       - `Bytes: <Summe der Dateigrößen>` (Größe mit `fs.statSync(datei).size`)
+       - `Tiefste Datei: <Pfad relativ zum Startordner>` – die Datei mit den meisten Ordnerebenen darüber; bei
+         Gleichstand die alphabetisch kleinste. Trenne Ordner mit `/`.
+
+    Die Prüfung testet dein Skript zusätzlich mit einem zweiten, unbekannten Ordner.
+  workdir: ordnerbaum
+  setup: |
+    mkdir -p beispiel/src/lib/utils beispiel/docs beispiel/leer
+    printf 'hallo\n' > beispiel/README.md
+    printf 'console.log(1);\n' > beispiel/src/index.js
+    printf 'export const a = 1;\n' > beispiel/src/lib/math.js
+    printf 'x\n' > beispiel/src/lib/utils/format.js
+    printf '# Intro\n' > beispiel/docs/intro.md
+  checks:
+    - type: file_exists
+      path: ordnerbaum.js
+      message: Lege zuerst die Datei ordnerbaum.js im Arbeitsordner an.
+    - type: command
+      run: timeout 10 node ordnerbaum.js beispiel | grep -E '^Dateien:'
+      stdout_matches: "^Dateien:\\s*5\\s*$"
+      message: "Für `beispiel` erwarte ich `Dateien: 5`. Zählst du auch die Dateien in tief verschachtelten Ordnern?"
+    - type: command
+      run: timeout 10 node ordnerbaum.js beispiel | grep -E '^Ordner:'
+      stdout_matches: "^Ordner:\\s*5\\s*$"
+      message: "Für `beispiel` erwarte ich `Ordner: 5` – auch der leere Ordner `leer` zählt, der Startordner nicht."
+    - type: command
+      run: timeout 10 node ordnerbaum.js beispiel | grep -E '^Bytes:'
+      stdout_matches: "^Bytes:\\s*52\\s*$"
+      message: "Für `beispiel` erwarte ich `Bytes: 52`. Addierst du `fs.statSync(pfad).size` aller Dateien?"
+    - type: command
+      run: timeout 10 node ordnerbaum.js beispiel | grep -E '^Tiefste Datei:'
+      stdout_matches: "^Tiefste Datei:\\s*src/lib/utils/format\\.js\\s*$"
+      message: "Für `beispiel` erwarte ich `Tiefste Datei: src/lib/utils/format.js` (Pfad relativ zum Startordner)."
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        mkdir -p "$d/a" "$d/c/d/e"
+        printf '12345' > "$d/a/b.txt"
+        printf '1' > "$d/c/d/e/g.txt"
+        printf '22' > "$d/c/d/e/f.txt"
+        : > "$d/z.txt"
+        out=$(timeout 10 node ordnerbaum.js "$d" | tr '\n' '|')
+        rm -rf "$d"
+        echo "$out"
+      stdout_matches: "^Dateien:\\s*4\\|Ordner:\\s*4\\|Bytes:\\s*8\\|Tiefste Datei:\\s*c/d/e/f\\.txt\\|$"
+      message: "Mit einem anderen Ordner stimmt die Ausgabe noch nicht. Nutzt du den Pfad aus process.argv[2]? Wählst du bei gleich tiefen Dateien die alphabetisch kleinste? Gib genau die vier Zeilen in dieser Reihenfolge aus."
+  hints:
+    - "Starte mit `const start = process.argv[2]; const stapel = [start];` und nimm in einer `while`-Schleife mit `pop()` einen Ordner nach dem anderen."
+    - "Für jeden Eintrag aus `fs.readdirSync(ordner, { withFileTypes: true })` baust du den Pfad mit `path.join(ordner, eintrag.name)`. Ordner kommen auf den Stapel, bei Dateien zählst du und addierst die Größe."
+    - "Die Tiefe einer Datei ist `rel.split('/').length` mit `rel = path.relative(start, pfad)`. Merke dir die beste Datei und ersetze sie, wenn eine tiefere kommt oder eine gleich tiefe mit kleinerem Pfad (`rel < beste`)."
+  solution: |
+    ```js
+    // ordnerbaum.js
+    const fs = require('node:fs');
+    const path = require('node:path');
+
+    const start = process.argv[2];
+    const stapel = [start];
+    let dateien = 0;
+    let ordner = 0;
+    let bytes = 0;
+    let tiefste = null;
+    let tiefsteEbene = -1;
+
+    while (stapel.length > 0) {
+      const aktuell = stapel.pop();
+      for (const eintrag of fs.readdirSync(aktuell, { withFileTypes: true })) {
+        const pfad = path.join(aktuell, eintrag.name);
+        if (eintrag.isDirectory()) {
+          ordner++;
+          stapel.push(pfad);
+        } else if (eintrag.isFile()) {
+          dateien++;
+          bytes += fs.statSync(pfad).size;
+          const rel = path.relative(start, pfad).split(path.sep).join('/');
+          const ebene = rel.split('/').length;
+          if (ebene > tiefsteEbene || (ebene === tiefsteEbene && rel < tiefste)) {
+            tiefste = rel;
+            tiefsteEbene = ebene;
+          }
+        }
+      }
+    }
+
+    console.log(`Dateien: ${dateien}`);
+    console.log(`Ordner: ${ordner}`);
+    console.log(`Bytes: ${bytes}`);
+    console.log(`Tiefste Datei: ${tiefste}`);
+    ```
+
+    ```bash
+    node ordnerbaum.js beispiel
+    ```

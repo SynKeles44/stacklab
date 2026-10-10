@@ -1,0 +1,386 @@
+title: Abschlussprüfung Datenstrukturen & Algorithmen
+description: |
+  Diese Prüfung deckt alle vier Module ab: Aufwand und Listen, Hashes/Stacks/Queues, Bäume und Graphen sowie
+  Sortieren, Suchen und Optimieren. Zuerst beantwortest du Fragen, danach löst du drei Programmieraufgaben in
+  JavaScript, PHP und TypeScript.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast, und kannst
+  gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Aufwand und Listen ---
+  - module: aufwand-und-listen
+    type: single
+    question: Eine Funktion braucht für 10 000 Elemente 40 ms und für 20 000 Elemente 160 ms. Welche Aufwandsklasse ist am wahrscheinlichsten?
+    options: ["O(1)", "O(log n)", "O(n)", "O(n²)"]
+    answer: 3
+    explanation: Bei doppeltem n vervierfacht sich die Zeit – das ist das Kennzeichen von quadratischem Aufwand.
+  - module: aufwand-und-listen
+    type: multiple
+    question: Welche dieser Zeilen enthalten eine versteckte Schleife über `liste`?
+    options:
+      - "`liste.includes(x)`"
+      - "`liste.length`"
+      - "`Math.max(...liste)`"
+      - "`liste[liste.length - 1]`"
+      - "`liste.find((e) => e.id === 5)`"
+    answers: [0, 2, 4]
+    explanation: "`includes`, der Spread-Operator und `find` laufen intern über die Elemente. `length` und der Index-Zugriff sind O(1)."
+  - module: aufwand-und-listen
+    type: cloze
+    text: "Zwei Schleifen nacheinander über je n Elemente ergeben O(___). Zwei ineinander verschachtelte Schleifen ergeben O(___)."
+    blanks:
+      - ["n"]
+      - ["n²", "n^2", "n2", "n*n"]
+    explanation: Nacheinander addiert sich der Aufwand (2n → O(n)), verschachtelt multipliziert er sich.
+  - module: aufwand-und-listen
+    type: match
+    question: Ordne jeder Operation ihren Aufwand zu.
+    pairs:
+      - { left: "Array: Element am Ende anhängen", right: "amortisiert O(1)" }
+      - { left: "Array: Element am Anfang einfügen", right: "O(n)" }
+      - { left: "Verkettete Liste: Element vorne einfügen", right: "O(1)" }
+      - { left: "Verkettete Liste: das 1000. Element lesen", right: "O(n)" }
+    explanation: Arrays sind schnell beim Index-Zugriff und am Ende, verkettete Listen beim Umhängen von Referenzen.
+
+  # --- Hashes, Stacks und Queues ---
+  - module: hashes-stacks-queues
+    type: single
+    question: "Was gibt `new Set([1, \"1\", 1, { a: 1 }, { a: 1 }]).size` zurück?"
+    options: ["2", "3", "4", "5"]
+    answer: 2
+    explanation: >
+      `1` und `"1"` sind verschiedene Werte, die zweite `1` ist ein Duplikat. Die beiden Objekte sind trotz
+      gleichem Inhalt zwei verschiedene Referenzen. Ergebnis: 1, "1", Objekt, Objekt = 4.
+  - module: hashes-stacks-queues
+    type: find-bug
+    question: Diese Funktion soll prüfen, ob ein Benutzername bereits vergeben ist, wird aber mit wachsender Nutzerzahl immer langsamer. Welche Zeile ist das Problem?
+    language: php
+    code: |
+      function istVergeben(string $name, array $nutzer): bool
+      {
+          $namen = array_column($nutzer, 'name');
+          return in_array($name, $namen, true);
+      }
+    bug_line: 4
+    explanation: >
+      `in_array()` durchsucht alle Namen. Wird die Prüfung oft wiederholt, baust du einmal einen Index mit
+      `array_flip()` (oder `array_column($nutzer, null, 'name')`) und prüfst mit `isset()` in O(1).
+  - module: hashes-stacks-queues
+    type: match
+    question: Ordne jede Situation dem Prinzip zu.
+    pairs:
+      - { left: "Der Call Stack beim Funktionsaufruf", right: "LIFO" }
+      - { left: "Eine Job-Queue für E-Mails", right: "FIFO" }
+      - { left: "Strg+Z im Editor", right: "LIFO" }
+      - { left: "Die Breitensuche", right: "FIFO" }
+    explanation: Stacks liefern das Neueste zuerst (LIFO), Queues das Älteste (FIFO).
+  - module: hashes-stacks-queues
+    type: multiple
+    question: Welche Aussagen über Hash-Tabellen stimmen?
+    options:
+      - Suchen, Einfügen und Löschen kosten im Durchschnitt O(1).
+      - Bei einer Kollision geht einer der beiden Einträge verloren.
+      - Wird die Tabelle zu voll, wird sie vergrößert und neu verteilt.
+      - Hash-Tabellen halten ihre Einträge immer nach Schlüssel sortiert.
+    answers: [0, 2]
+    explanation: >
+      Kollidierende Einträge landen gemeinsam im selben Fach und bleiben erhalten. Sortiert sind Hash-Tabellen
+      nicht – für Bereichsabfragen brauchst du sortierte Strukturen.
+
+  # --- Bäume und Graphen ---
+  - module: baeume-und-graphen
+    type: single
+    question: Du fügst 40, 20, 60, 10, 30 in einen leeren binären Suchbaum ein. Welche Zahl ist das rechte Kind von 20?
+    options: ["10", "30", "40", "60"]
+    answer: 1
+    explanation: 30 ist kleiner als 40 (links) und größer als 20 (rechts) – also rechtes Kind von 20.
+  - module: baeume-und-graphen
+    type: match
+    question: "Baum: A hat die Kinder B und C, B hat die Kinder D und E. Ordne jedem Verfahren seine Reihenfolge zu."
+    pairs:
+      - { left: "Preorder-Tiefensuche", right: "A, B, D, E, C" }
+      - { left: "Postorder-Tiefensuche", right: "D, E, B, C, A" }
+      - { left: "Breitensuche", right: "A, B, C, D, E" }
+    explanation: Preorder notiert den Knoten zuerst, Postorder zuletzt; die Breitensuche geht Ebene für Ebene.
+  - module: baeume-und-graphen
+    type: multiple
+    question: Welche Aussagen über Graphen stimmen?
+    options:
+      - Ohne „besucht“-Set kann eine Suche in einem Graphen mit Kreis endlos laufen.
+      - Die Breitensuche findet in einem ungewichteten Graphen einen Weg mit den wenigsten Kanten.
+      - Für Fahrzeiten an den Kanten liefert die Breitensuche automatisch den schnellsten Weg.
+      - Eine Adjazenzliste lässt sich in JavaScript gut als Map von Knoten zu Nachbarn speichern.
+    answers: [0, 1, 3]
+    explanation: Für gewichtete Kanten brauchst du zum Beispiel den Dijkstra-Algorithmus.
+  - module: baeume-und-graphen
+    type: cloze
+    text: "Eine Abhängigkeits-Reihenfolge, in der jedes Paket nach all seinen Abhängigkeiten kommt, heißt ___ Reihenfolge. Sie existiert nur, wenn der Graph keinen ___ enthält."
+    blanks:
+      - ["topologische", "topologisch"]
+      - ["Kreis", "Zyklus", "Kreise", "Zyklen"]
+    explanation: Eine Tiefensuche in Postorder liefert die topologische Reihenfolge und erkennt Kreise.
+
+  # --- Sortieren, Suchen, Optimieren ---
+  - module: sortieren-suchen-optimieren
+    type: find-bug
+    question: Die Punktestände sollen absteigend sortiert werden. In welcher Zeile steckt der Fehler?
+    language: js
+    code: |
+      const punkte = [8, 120, 15, 3];
+      punkte.sort();
+      punkte.reverse();
+      console.log(punkte);
+    bug_line: 2
+    explanation: >
+      Ohne Vergleichsfunktion sortiert `sort()` als Strings: `[120, 15, 3, 8]`. Richtig ist
+      `punkte.sort((a, b) => b - a)` – dann ist auch `reverse()` überflüssig.
+  - module: sortieren-suchen-optimieren
+    type: single
+    question: Warum funktioniert die binäre Suche nicht auf einer unsortierten Liste?
+    options:
+      - Weil sie dort einen Fehler wirft.
+      - Weil sie aus dem Vergleich mit der Mitte nicht mehr schließen kann, in welcher Hälfte der Wert liegt.
+      - Weil unsortierte Listen keinen Index haben.
+      - Sie funktioniert, ist nur langsamer.
+    answer: 1
+    explanation: Die binäre Suche verwirft eine Hälfte – das ist nur korrekt, wenn alle kleineren Werte links und alle größeren rechts stehen.
+  - module: sortieren-suchen-optimieren
+    type: multiple
+    question: Welche Aussagen über Rekursion und Memoisierung stimmen?
+    options:
+      - Jede rekursive Funktion braucht einen erreichbaren Basisfall.
+      - Naives rekursives `fib(n)` hat exponentiellen Aufwand.
+      - Memoisierung ist auch für Funktionen geeignet, die Zufallszahlen liefern.
+      - Jede Rekursion lässt sich mit einer Schleife und einem eigenen Stack umschreiben.
+    answers: [0, 1, 3]
+    explanation: Memoisierung setzt voraus, dass dieselbe Eingabe immer dasselbe Ergebnis liefert.
+  - module: sortieren-suchen-optimieren
+    type: match
+    question: Ordne jedem Verfahren seinen Aufwand zu.
+    pairs:
+      - { left: "Merge Sort", right: "O(n log n)" }
+      - { left: "Insertion Sort, umgekehrt sortierte Eingabe", right: "O(n²)" }
+      - { left: "Binäre Suche", right: "O(log n)" }
+      - { left: "fib(n) mit Memoisierung", right: "O(n)" }
+    explanation: Diese vier Klassen solltest du sicher erkennen.
+  - module: sortieren-suchen-optimieren
+    type: single
+    question: Du musst bei jedem Seitenaufruf prüfen, ob eine von 50 000 gesperrten E-Mail-Adressen vorliegt. Welche Struktur wählst du?
+    options:
+      - Ein Array mit `includes()`
+      - Ein Set mit `has()`
+      - Ein sortiertes Array, das bei jedem Aufruf neu sortiert wird
+      - Eine verkettete Liste
+    answer: 1
+    explanation: Die Frage lautet „Gibt es X schon?“ – das beantwortet ein Set in O(1).
+tasks:
+  - module: aufwand-und-listen
+    id: pruefung-eindeutig
+    type: code
+    language: js
+    title: Duplikate entfernen und die häufigsten Werte finden
+    description: |
+      Ein Log liefert Statuscodes als Array. Schreibe zwei Funktionen, die beide in O(n) bzw. O(n log n) laufen –
+      kein `includes`, `indexOf` oder `filter` innerhalb einer Schleife.
+
+      1. `eindeutig(liste)` liefert die Werte ohne Duplikate in der Reihenfolge ihres **ersten** Auftretens.
+      2. `haeufigste(liste, k)` liefert die `k` häufigsten Werte als Array, absteigend nach Anzahl. Bei gleicher
+         Anzahl kommt der Wert zuerst, der früher in der Liste auftaucht. Sind es weniger als `k` verschiedene
+         Werte, liefere alle.
+    starter: |
+      function eindeutig(liste) {
+        return [];
+      }
+
+      function haeufigste(liste, k) {
+        return [];
+      }
+    tests:
+      - name: eindeutig behält die Reihenfolge
+        code: |
+          assertDeepEqual(eindeutig([200, 404, 200, 500, 404]), [200, 404, 500]);
+          assertDeepEqual(eindeutig([]), []);
+      - name: häufigste Werte
+        code: |
+          assertDeepEqual(haeufigste([200, 404, 200, 500, 404, 200], 2), [200, 404]);
+          assertDeepEqual(haeufigste([1, 2, 3], 5), [1, 2, 3]);
+      - name: Gleichstand nach erstem Auftreten
+        code: |
+          assertDeepEqual(haeufigste([3, 1, 1, 3, 2], 2), [3, 1]);
+          assertDeepEqual(haeufigste([], 3), []);
+      - name: 200 000 Werte schnell
+        code: |
+          const l = Array.from({ length: 200000 }, (_, i) => i % 50000);
+          const start = performance.now();
+          assertEqual(eindeutig(l).length, 50000);
+          assertDeepEqual(haeufigste(l, 2), [0, 1]);
+          assertTrue(performance.now() - start < 500, "zu langsam");
+    hints:
+      - "`eindeutig`: `[...new Set(liste)]` – ein Set behält die Einfügereihenfolge."
+      - "`haeufigste`: Zähle mit einer `Map`. Ihre Einträge stehen in der Reihenfolge des ersten Auftretens – eine **stabile** Sortierung nach Anzahl erhält diese Reihenfolge bei Gleichstand."
+    solution: |
+      function eindeutig(liste) {
+        return [...new Set(liste)];
+      }
+
+      function haeufigste(liste, k) {
+        const anzahl = new Map();
+        for (const wert of liste) {
+          anzahl.set(wert, (anzahl.get(wert) ?? 0) + 1);
+        }
+        return [...anzahl.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, k)
+          .map(([wert]) => wert);
+      }
+  - module: hashes-stacks-queues
+    id: pruefung-html-tags
+    type: code
+    language: php
+    title: HTML-Tags auf korrekte Verschachtelung prüfen
+    description: |
+      Schreibe `tagsKorrekt(array $tags): bool`. Die Eingabe ist eine Liste von Tags wie
+      `['<div>', '<p>', '</p>', '</div>']`.
+
+      1. Öffnende Tags (`<name>`) legst du auf einen Stack.
+      2. Ein schließendes Tag (`</name>`) muss zum **zuletzt** geöffneten Tag passen.
+      3. Am Ende darf kein Tag offen sein. Eine leere Liste ist korrekt.
+      4. Selbstschließende Tags wie `<br/>` werden ignoriert.
+    starter: |
+      function tagsKorrekt(array $tags): bool
+      {
+          $stapel = [];
+          return true;
+      }
+    tests:
+      - name: korrekt verschachtelt
+        code: |
+          assert_same(true, tagsKorrekt(['<div>', '<p>', '</p>', '<ul>', '<li>', '</li>', '</ul>', '</div>']));
+          assert_same(true, tagsKorrekt([]));
+      - name: falsche Reihenfolge
+        code: |
+          assert_same(false, tagsKorrekt(['<div>', '<p>', '</div>', '</p>']));
+      - name: offene oder überzählige Tags
+        code: |
+          assert_same(false, tagsKorrekt(['<div>']));
+          assert_same(false, tagsKorrekt(['</p>']));
+      - name: selbstschließende Tags
+        code: |
+          assert_same(true, tagsKorrekt(['<p>', '<br/>', '</p>']));
+    hints:
+      - "Ein schließendes Tag erkennst du mit `str_starts_with($tag, '</')`, ein selbstschließendes mit `str_ends_with($tag, '/>')`."
+      - "Den Namen bekommst du z. B. mit `trim($tag, '</>')`."
+      - "`array_pop($stapel)` liefert bei leerem Stack `null` – das passt dann zu keinem Namen."
+    solution: |
+      function tagsKorrekt(array $tags): bool
+      {
+          $stapel = [];
+          foreach ($tags as $tag) {
+              if (str_ends_with($tag, '/>')) {
+                  continue;
+              }
+              $name = trim($tag, '</>');
+              if (str_starts_with($tag, '</')) {
+                  if (array_pop($stapel) !== $name) {
+                      return false;
+                  }
+              } else {
+                  $stapel[] = $name;
+              }
+          }
+          return $stapel === [];
+      }
+  - module: baeume-und-graphen
+    id: pruefung-kommentarbaum
+    type: code
+    language: ts
+    title: Einen Kommentarbaum aus flachen Daten bauen
+    description: |
+      Die Datenbank liefert Kommentare flach: `{ id, parentId, text }`. `parentId` ist `null` für Kommentare auf
+      oberster Ebene. Schreibe:
+
+      1. `baueBaum(kommentare)`: liefert ein Array der obersten Kommentare als Knoten `{ id, text, antworten }`.
+         `antworten` enthält die Kinder in der Reihenfolge der Eingabe. Kommentare, deren `parentId` es nicht gibt,
+         werden weggelassen. Die Lösung muss in O(n) laufen – nutze eine `Map` von ID zu Knoten.
+      2. `tiefsteEbene(baum)`: die größte Verschachtelungstiefe (oberste Ebene = 1, leerer Baum = 0).
+    starter: |
+      type Kommentar = { id: number; parentId: number | null; text: string };
+      type Knoten = { id: number; text: string; antworten: Knoten[] };
+
+      function baueBaum(kommentare: Kommentar[]): Knoten[] {
+        return [];
+      }
+
+      function tiefsteEbene(baum: Knoten[]): number {
+        return 0;
+      }
+    tests:
+      - name: baut den Baum
+        code: |
+          const baum = baueBaum([
+            { id: 1, parentId: null, text: "A" },
+            { id: 2, parentId: 1, text: "A1" },
+            { id: 3, parentId: null, text: "B" },
+            { id: 4, parentId: 2, text: "A1a" },
+          ]);
+          assertEqual(baum.length, 2);
+          assertEqual(baum[0].antworten[0].antworten[0].text, "A1a");
+          assertDeepEqual(baum[1], { id: 3, text: "B", antworten: [] });
+          assertEqual(tiefsteEbene(baum), 3);
+      - name: Antwort vor dem Elternkommentar
+        code: |
+          const baum = baueBaum([
+            { id: 5, parentId: 6, text: "Antwort" },
+            { id: 6, parentId: null, text: "Frage" },
+          ]);
+          assertEqual(baum.length, 1);
+          assertEqual(baum[0].antworten[0].text, "Antwort");
+      - name: leer und verwaist
+        code: |
+          assertDeepEqual(baueBaum([]), []);
+          assertEqual(tiefsteEbene([]), 0);
+          assertDeepEqual(baueBaum([{ id: 1, parentId: 99, text: "weg" }]), []);
+      - name: 100 000 Kommentare schnell
+        code: |
+          const k = Array.from({ length: 100000 }, (_, i) => ({ id: i, parentId: i === 0 ? null : Math.floor((i - 1) / 2), text: "k" + i }));
+          const start = performance.now();
+          const baum = baueBaum(k);
+          assertEqual(baum.length, 1);
+          assertEqual(tiefsteEbene(baum), 17);
+          assertTrue(performance.now() - start < 500, "zu langsam – nutzt du eine Map?");
+    hints:
+      - "Erster Durchlauf: Für jeden Kommentar einen Knoten `{ id, text, antworten: [] }` anlegen und in `new Map<number, Knoten>()` ablegen."
+      - "Zweiter Durchlauf: Ist `parentId === null`, kommt der Knoten ins Ergebnis. Sonst `map.get(parentId)?.antworten.push(knoten)` – gibt es den Elternknoten nicht, fällt er weg."
+      - "`tiefsteEbene` kannst du rekursiv schreiben: `1 + Math.max(0, ...knoten.antworten.map(…))` – oder mit einer Queue Ebene für Ebene."
+    solution: |
+      type Kommentar = { id: number; parentId: number | null; text: string };
+      type Knoten = { id: number; text: string; antworten: Knoten[] };
+
+      function baueBaum(kommentare: Kommentar[]): Knoten[] {
+        const nachId = new Map<number, Knoten>();
+        for (const k of kommentare) {
+          nachId.set(k.id, { id: k.id, text: k.text, antworten: [] });
+        }
+        const wurzeln: Knoten[] = [];
+        for (const k of kommentare) {
+          const knoten = nachId.get(k.id)!;
+          if (k.parentId === null) {
+            wurzeln.push(knoten);
+          } else {
+            nachId.get(k.parentId)?.antworten.push(knoten);
+          }
+        }
+        return wurzeln;
+      }
+
+      function tiefsteEbene(baum: Knoten[]): number {
+        let ebene = 0;
+        let aktuell = baum;
+        while (aktuell.length > 0) {
+          ebene++;
+          aktuell = aktuell.flatMap((k) => k.antworten);
+        }
+        return ebene;
+      }

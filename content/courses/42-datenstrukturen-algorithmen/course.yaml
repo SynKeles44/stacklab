@@ -1,0 +1,32 @@
+title: Datenstrukturen & Algorithmen
+subtitle: Praxiswissen für Webentwickler:innen – vom Big-O-Gefühl bis zur richtigen Map im Alltag
+description: >
+  Warum ist die Suche in einer `Map` blitzschnell, während dieselbe Suche in einem Array die Seite
+  zum Stocken bringt? Warum stürzt eine rekursive Funktion bei tiefen Ordnerbäumen ab? Dieser Kurs
+  ist kein Uni-Kurs mit Beweisen, sondern ein Werkzeugkasten für den Alltag im Web: Du lernst die
+  wichtigsten Datenstrukturen und Algorithmen so, dass du sie in JavaScript, TypeScript und PHP
+  sicher einsetzt.
+
+
+  Du schätzt den Aufwand von Code mit der **Big-O-Notation**, misst ihn im Übungs-Terminal nach,
+  baust Stacks, Queues, Bäume und Graphen selbst und weißt am Ende, wann ein Array, eine `Map`, ein
+  `Set` oder ein PHP-Array die richtige Wahl ist.
+category: grundlagen
+level: fortgeschritten
+icon: binary
+color: "#8b5cf6"
+estimated_hours: 5
+workspace_dir: datenstrukturen-algorithmen
+prerequisites: [programmieren-grundlagen, javascript]
+learning_goals:
+  - Du schätzt den Aufwand von Code mit der Big-O-Notation ein und überprüfst deine Schätzung mit einer Messung.
+  - Du erklärst, wann ein Array und wann eine verkettete Liste im Vorteil ist.
+  - Du nutzt Map und Set (und PHP-Arrays) gezielt für schnelle Suchen und weißt, warum Hash-Tabellen so schnell sind.
+  - Du baust Stacks und Queues und erkennst sie im Alltag wieder (Undo, Call Stack, Warteschlangen).
+  - Du durchläufst Bäume und Graphen mit Tiefen- und Breitensuche – vom DOM bis zum Ordnerbaum.
+  - Du verstehst, wie Sortieren und binäre Suche funktionieren und was die eingebaute Sortierung macht.
+  - Du schreibst rekursive und iterative Lösungen und beschleunigst sie mit Memoisierung.
+references:
+  - Lookup-Tabellen mit Map statt verschachtelter Schleifen beim Zusammenführen von API-Daten
+  - Kategoriebäume und Menüstrukturen, die rekursiv gerendert werden
+  - Performance-Probleme durch includes() in Schleifen bei großen Listen

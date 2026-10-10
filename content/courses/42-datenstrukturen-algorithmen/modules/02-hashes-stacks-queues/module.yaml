@@ -1,0 +1,124 @@
+title: Hashes, Stacks und Queues
+description: Wie Hash-Tabellen hinter Map, Set und PHP-Arrays Werte in konstanter Zeit finden – und wie Stacks und Queues Reihenfolgen regeln, vom Undo-Button bis zur Job-Queue.
+exercise:
+  id: modul-uebung-auftragsschlange
+  type: code
+  language: php
+  title: Eine Auftragsschlange ohne Doppelte
+  description: |
+    Ein Shop verschickt Benachrichtigungen über eine Warteschlange. Durch Doppelklicks und Wiederholungen der API
+    kommen manche Aufträge mehrfach an. Baue die Klasse `Auftragsschlange`:
+
+    1. `einreihen(string $id): bool` stellt einen Auftrag **hinten** an und liefert `true`. War die ID schon
+       einmal eingereiht (auch wenn sie inzwischen abgearbeitet ist), passiert nichts und die Methode liefert `false`.
+    2. `naechster(): ?string` entnimmt den **ältesten** Auftrag und liefert seine ID – oder `null`, wenn die
+       Schlange leer ist.
+    3. `anzahl(): int` liefert, wie viele Aufträge gerade warten.
+
+    Alle drei Methoden müssen O(1) sein: kein `in_array()`, kein `array_search()`, kein `array_shift()`.
+    Nutze ein Array mit IDs als **Schlüssel** für „schon gesehen“ und `SplQueue` (oder einen Lese-Index) für die Reihenfolge.
+  starter: |
+    class Auftragsschlange
+    {
+        private array $gesehen = [];
+        private SplQueue $schlange;
+
+        public function __construct()
+        {
+            $this->schlange = new SplQueue();
+        }
+
+        public function einreihen(string $id): bool
+        {
+            return false;
+        }
+
+        public function naechster(): ?string
+        {
+            return null;
+        }
+
+        public function anzahl(): int
+        {
+            return 0;
+        }
+    }
+  tests:
+    - name: FIFO-Reihenfolge
+      code: |
+        $q = new Auftragsschlange();
+        $q->einreihen('a');
+        $q->einreihen('b');
+        $q->einreihen('c');
+        assert_same('a', $q->naechster());
+        assert_same('b', $q->naechster());
+        assert_same(1, $q->anzahl());
+    - name: Doppelte werden abgewiesen – auch nach dem Abarbeiten
+      code: |
+        $q = new Auftragsschlange();
+        assert_same(true, $q->einreihen('mail-1'));
+        assert_same(false, $q->einreihen('mail-1'));
+        assert_same('mail-1', $q->naechster());
+        assert_same(false, $q->einreihen('mail-1'));
+        assert_same(0, $q->anzahl());
+    - name: leere Schlange
+      code: |
+        $q = new Auftragsschlange();
+        assert_same(null, $q->naechster());
+        assert_same(0, $q->anzahl());
+    - name: ID "0" funktioniert
+      code: |
+        $q = new Auftragsschlange();
+        assert_same(true, $q->einreihen('0'));
+        assert_same(false, $q->einreihen('0'));
+        assert_same('0', $q->naechster());
+    - name: 100 000 Aufträge in unter einer halben Sekunde
+      code: |
+        $q = new Auftragsschlange();
+        $start = microtime(true);
+        for ($i = 0; $i < 100000; $i++) {
+            $q->einreihen('job-' . $i);
+            $q->einreihen('job-' . intdiv($i, 2));
+        }
+        assert_same(100000, $q->anzahl());
+        while ($q->naechster() !== null) {
+        }
+        assert_true(microtime(true) - $start < 0.5);
+  hints:
+    - "„Schon gesehen“ prüfst du mit `isset($this->gesehen[$id])` und merkst es dir mit `$this->gesehen[$id] = true;`."
+    - "`SplQueue` hat `enqueue()`, `dequeue()`, `isEmpty()` und `count()`."
+    - "In `naechster()` erst `isEmpty()` prüfen – `dequeue()` auf einer leeren Queue wirft eine Exception. Achtung: PHP macht aus dem Schlüssel `'0'` die Zahl `0`; liefere deshalb die ID aus der Queue zurück, nicht den Array-Schlüssel."
+  solution: |
+    class Auftragsschlange
+    {
+        private array $gesehen = [];
+        private SplQueue $schlange;
+
+        public function __construct()
+        {
+            $this->schlange = new SplQueue();
+        }
+
+        public function einreihen(string $id): bool
+        {
+            if (isset($this->gesehen[$id])) {
+                return false;
+            }
+            $this->gesehen[$id] = true;
+            $this->schlange->enqueue($id);
+            return true;
+        }
+
+        public function naechster(): ?string
+        {
+            if ($this->schlange->isEmpty()) {
+                return null;
+            }
+            return $this->schlange->dequeue();
+        }
+
+        public function anzahl(): int
+        {
+            return $this->schlange->count();
+        }
+    }

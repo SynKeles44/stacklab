@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <line x1="400" y1="80" x2="250" y2="190" stroke="#1e1b3a" stroke-width="2"/>
+  <line x1="400" y1="80" x2="550" y2="190" stroke="#1e1b3a" stroke-width="2"/>
+  <line x1="250" y1="190" x2="170" y2="300" stroke="#1e1b3a" stroke-width="2"/>
+  <line x1="250" y1="190" x2="330" y2="300" stroke="#1e1b3a" stroke-width="2"/>
+  <line x1="550" y1="190" x2="550" y2="300" stroke="#1e1b3a" stroke-width="2"/>
+  <circle cx="400" cy="80" r="26" fill="#ede9fe" stroke="#a78bfa" stroke-width="3"/>
+  <text x="400" y="87" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">A</text>
+  <circle cx="250" cy="190" r="26" fill="#ede9fe" stroke="#a78bfa" stroke-width="3"/>
+  <text x="250" y="197" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">B</text>
+  <circle cx="550" cy="190" r="26" fill="#ede9fe" stroke="#a78bfa" stroke-width="3"/>
+  <text x="550" y="197" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">C</text>
+  <circle cx="170" cy="300" r="26" fill="#ede9fe" stroke="#a78bfa" stroke-width="3"/>
+  <text x="170" y="307" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">D</text>
+  <circle cx="330" cy="300" r="26" fill="#ede9fe" stroke="#a78bfa" stroke-width="3"/>
+  <text x="330" y="307" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">E</text>
+  <circle cx="550" cy="300" r="26" fill="#ede9fe" stroke="#a78bfa" stroke-width="3"/>
+  <text x="550" y="307" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">F</text>
+  <text x="400" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Ein Baum – zwei Reihenfolgen</text>
+  <rect x="620" y="70" width="170" height="110" rx="10" fill="#cffafe" stroke="#22d3ee" stroke-width="2"/>
+  <text x="705" y="98" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Tiefensuche</text>
+  <text x="705" y="122" text-anchor="middle" font-size="13" fill="#1e1b3a">(Stack, Preorder)</text>
+  <text x="705" y="156" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">A B D E C F</text>
+  <rect x="620" y="200" width="170" height="110" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="705" y="228" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Breitensuche</text>
+  <text x="705" y="252" text-anchor="middle" font-size="13" fill="#1e1b3a">(Queue, Ebene für Ebene)</text>
+  <text x="705" y="286" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">A B C D E F</text>
+  <line x1="40" y1="80" x2="40" y2="300" stroke="#94a3b8" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="50" y="84" font-size="13" fill="#1e1b3a">Ebene 0</text>
+  <text x="50" y="194" font-size="13" fill="#1e1b3a">Ebene 1</text>
+  <text x="50" y="304" font-size="13" fill="#1e1b3a">Ebene 2</text>
+  <text x="400" y="370" text-anchor="middle" font-size="15" fill="#1e1b3a">Die Tiefensuche folgt einem Ast bis zum Blatt, die Breitensuche arbeitet Ebene für Ebene.</text>
+</svg>

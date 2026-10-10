@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 470" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="400" y="30" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Merge Sort: teilen, dann sortiert zusammenführen</text>
+  <rect x="280" y="50" width="240" height="40" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="300" y="77" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">5</text>
+  <text x="340" y="77" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">2</text>
+  <text x="380" y="77" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">4</text>
+  <text x="420" y="77" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">7</text>
+  <text x="460" y="77" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">1</text>
+  <text x="500" y="77" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">3</text>
+  <rect x="160" y="130" width="120" height="40" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="180" y="157" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">5</text>
+  <text x="220" y="157" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">2</text>
+  <text x="260" y="157" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">4</text>
+  <rect x="520" y="130" width="120" height="40" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="540" y="157" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">7</text>
+  <text x="580" y="157" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">1</text>
+  <text x="620" y="157" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">3</text>
+  <rect x="110" y="210" width="40" height="40" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="130" y="237" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">5</text>
+  <rect x="240" y="210" width="80" height="40" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="260" y="237" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">2</text>
+  <text x="300" y="237" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">4</text>
+  <rect x="470" y="210" width="40" height="40" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="490" y="237" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">7</text>
+  <rect x="600" y="210" width="80" height="40" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="620" y="237" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">1</text>
+  <text x="660" y="237" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">3</text>
+  <rect x="160" y="300" width="120" height="40" rx="6" fill="#d1fae5" stroke="#34d399" stroke-width="2"/>
+  <text x="180" y="327" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">2</text>
+  <text x="220" y="327" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">4</text>
+  <text x="260" y="327" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">5</text>
+  <rect x="520" y="300" width="120" height="40" rx="6" fill="#d1fae5" stroke="#34d399" stroke-width="2"/>
+  <text x="540" y="327" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">1</text>
+  <text x="580" y="327" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">3</text>
+  <text x="620" y="327" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">7</text>
+  <rect x="280" y="380" width="240" height="40" rx="6" fill="#d1fae5" stroke="#34d399" stroke-width="2"/>
+  <text x="300" y="407" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">1</text>
+  <text x="340" y="407" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">2</text>
+  <text x="380" y="407" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">3</text>
+  <text x="420" y="407" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">4</text>
+  <text x="460" y="407" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">5</text>
+  <text x="500" y="407" text-anchor="middle" font-size="18" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">7</text>
+  <line x1="360" y1="90" x2="240" y2="128" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="440" y1="90" x2="560" y2="128" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="200" y1="170" x2="140" y2="208" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="240" y1="170" x2="280" y2="208" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="560" y1="170" x2="500" y2="208" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="600" y1="170" x2="640" y2="208" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="150" y1="250" x2="200" y2="298" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="280" y1="250" x2="240" y2="298" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="500" y1="250" x2="560" y2="298" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="640" y1="250" x2="600" y2="298" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="240" y1="340" x2="370" y2="378" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="560" y1="340" x2="430" y2="378" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="30" y="160" font-size="15" font-weight="700" fill="#1e1b3a">teilen</text>
+  <text x="30" y="330" font-size="15" font-weight="700" fill="#1e1b3a">zusammen-</text>
+  <text x="30" y="350" font-size="15" font-weight="700" fill="#1e1b3a">führen</text>
+  <text x="400" y="450" text-anchor="middle" font-size="15" fill="#1e1b3a">log₂ n Ebenen · auf jeder Ebene wird jedes Element einmal angefasst → O(n log n)</text>
+</svg>

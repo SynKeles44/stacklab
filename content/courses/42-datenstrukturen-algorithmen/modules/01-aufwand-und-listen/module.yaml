@@ -1,0 +1,75 @@
+title: Aufwand und Listen
+description: Wie du mit Big-O abschätzt und misst, wie Code mit der Datenmenge wächst – und was Arrays und verkettete Listen jeweils gut können.
+exercise:
+  id: modul-uebung-zusammenfuehren
+  type: code
+  language: js
+  title: Bestellungen und Kunden zusammenführen
+  description: |
+    Eine API liefert dir zwei Listen: `kunden` (`{ id, name }`) und `bestellungen` (`{ id, kundeId, summe }`).
+    Für eine Übersicht soll jede Bestellung den Namen ihres Kunden bekommen.
+
+    Die Funktion `mitKundennamen(kunden, bestellungen)` im Starter funktioniert schon – aber sie sucht für
+    **jede** Bestellung mit `find()` durch alle Kunden. Das ist O(n · m) und bei 20 000 Einträgen viel zu
+    langsam.
+
+    1. Schreibe die Funktion so um, dass sie in **O(n + m)** läuft.
+    2. Das Ergebnis ist ein neues Array mit Objekten `{ id, summe, kunde }` in der Reihenfolge der Bestellungen.
+    3. Gibt es zu einer `kundeId` keinen Kunden, ist `kunde` der String `"unbekannt"`.
+    4. Die Eingaben dürfen nicht verändert werden.
+  starter: |
+    function mitKundennamen(kunden, bestellungen) {
+      return bestellungen.map((b) => {
+        const kunde = kunden.find((k) => k.id === b.kundeId);
+        return { id: b.id, summe: b.summe, kunde: kunde ? kunde.name : "unbekannt" };
+      });
+    }
+  tests:
+    - name: ordnet Namen zu
+      code: |
+        const kunden = [{ id: 1, name: "Ada" }, { id: 2, name: "Linus" }];
+        const bestellungen = [{ id: 10, kundeId: 2, summe: 5 }, { id: 11, kundeId: 1, summe: 7 }];
+        assertDeepEqual(mitKundennamen(kunden, bestellungen), [
+          { id: 10, summe: 5, kunde: "Linus" },
+          { id: 11, summe: 7, kunde: "Ada" },
+        ]);
+    - name: unbekannte Kunden und leere Listen
+      code: |
+        assertDeepEqual(mitKundennamen([], [{ id: 1, kundeId: 9, summe: 1 }]), [{ id: 1, summe: 1, kunde: "unbekannt" }]);
+        assertDeepEqual(mitKundennamen([{ id: 1, name: "Ada" }], []), []);
+    - name: Kunden-ID 0 funktioniert
+      code: |
+        assertDeepEqual(mitKundennamen([{ id: 0, name: "Null" }], [{ id: 5, kundeId: 0, summe: 3 }]), [{ id: 5, summe: 3, kunde: "Null" }]);
+    - name: Eingaben bleiben unverändert
+      code: |
+        const kunden = [{ id: 1, name: "Ada" }];
+        const bestellungen = [{ id: 2, kundeId: 1, summe: 4 }];
+        mitKundennamen(kunden, bestellungen);
+        assertDeepEqual(bestellungen, [{ id: 2, kundeId: 1, summe: 4 }]);
+        assertDeepEqual(kunden, [{ id: 1, name: "Ada" }]);
+    - name: 20 000 Kunden und Bestellungen in unter 100 ms
+      code: |
+        const n = 20000;
+        const kunden = Array.from({ length: n }, (_, i) => ({ id: i, name: "Kunde " + i }));
+        const bestellungen = Array.from({ length: n }, (_, i) => ({ id: i, kundeId: n - 1 - i, summe: i }));
+        const start = performance.now();
+        const ergebnis = mitKundennamen(kunden, bestellungen);
+        const dauer = performance.now() - start;
+        assertEqual(ergebnis[0].kunde, "Kunde " + (n - 1));
+        assertTrue(dauer < 100, "Dauer " + dauer.toFixed(0) + " ms – noch O(n · m)?");
+  hints:
+    - Baue zuerst eine Nachschlagetabelle von der Kunden-ID zum Namen – einmal über alle Kunden laufen.
+    - "`const namen = new Map(kunden.map((k) => [k.id, k.name]));` – danach ist `namen.get(id)` O(1)."
+    - "Prüfe mit `namen.has(b.kundeId)` statt mit `namen.get(...) ?`, sonst stolperst du über leere Namen."
+  solution: |
+    function mitKundennamen(kunden, bestellungen) {
+      const namen = new Map();
+      for (const k of kunden) {
+        namen.set(k.id, k.name);
+      }
+      return bestellungen.map((b) => ({
+        id: b.id,
+        summe: b.summe,
+        kunde: namen.has(b.kundeId) ? namen.get(b.kundeId) : "unbekannt",
+      }));
+    }

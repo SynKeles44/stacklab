@@ -1,0 +1,117 @@
+title: Sortieren, Suchen, Optimieren
+description: Einfache und effiziente Sortierverfahren, die binäre Suche, Rekursion mit Memoisierung und dynamischer Programmierung – und wie du im Alltag die passende Struktur auswählst.
+exercise:
+  id: modul-uebung-preisfilter
+  type: code
+  language: ts
+  title: Ein schneller Preisfilter
+  description: |
+    Ein Shop zeigt zu jeder Preisspanne, die Nutzer:innen im Filter einstellen, die passenden Produkte an. Der
+    Filter wird bei jeder Schieberegler-Bewegung neu berechnet – mit `filter()` über 200 000 Produkte ist das zu langsam.
+
+    Baue die Klasse `PreisIndex`:
+
+    1. Der Konstruktor bekommt ein Array von `Produkt` und sortiert **einmal** eine Kopie nach Preis aufsteigend,
+       bei gleichem Preis nach Name (`localeCompare`). Das Eingabe-Array bleibt unverändert.
+    2. `imBereich(min, max)` liefert alle Produkte mit `min <= preis <= max` in dieser Sortierung.
+       Finde Anfang und Ende des Bereichs per **binärer Suche** (O(log n)) und schneide dann mit `slice` heraus.
+    3. `anzahlUnter(preis)` liefert, wie viele Produkte **weniger** als `preis` kosten – ebenfalls in O(log n).
+  starter: |
+    type Produkt = { name: string; preis: number };
+
+    class PreisIndex {
+      private sortiert: Produkt[];
+
+      constructor(produkte: Produkt[]) {
+        this.sortiert = produkte;
+      }
+
+      private ersterIndexAb(preis: number): number {
+        // erster Index mit sortiert[i].preis >= preis
+        return 0;
+      }
+
+      imBereich(min: number, max: number): Produkt[] {
+        return [];
+      }
+
+      anzahlUnter(preis: number): number {
+        return 0;
+      }
+    }
+  tests:
+    - name: sortiert nach Preis und Name
+      code: |
+        const p = [{ name: "Maus", preis: 20 }, { name: "Kabel", preis: 5 }, { name: "Adapter", preis: 20 }];
+        const idx = new PreisIndex(p);
+        assertDeepEqual(idx.imBereich(0, 100).map((x) => x.name), ["Kabel", "Adapter", "Maus"]);
+        assertEqual(p[0].name, "Maus");
+    - name: Bereichsgrenzen sind inklusive
+      code: |
+        const idx = new PreisIndex([5, 10, 10, 15, 20].map((preis, i) => ({ name: "p" + i, preis })));
+        assertDeepEqual(idx.imBereich(10, 15).map((x) => x.preis), [10, 10, 15]);
+        assertDeepEqual(idx.imBereich(11, 14), []);
+        assertDeepEqual(idx.imBereich(30, 40), []);
+    - name: anzahlUnter
+      code: |
+        const idx = new PreisIndex([5, 10, 10, 15].map((preis, i) => ({ name: "p" + i, preis })));
+        assertEqual(idx.anzahlUnter(10), 1);
+        assertEqual(idx.anzahlUnter(11), 3);
+        assertEqual(idx.anzahlUnter(1), 0);
+        assertEqual(idx.anzahlUnter(100), 4);
+    - name: leerer Index
+      code: |
+        const idx = new PreisIndex([]);
+        assertDeepEqual(idx.imBereich(0, 10), []);
+        assertEqual(idx.anzahlUnter(5), 0);
+    - name: 20 000 Abfragen auf 200 000 Produkten
+      code: |
+        const produkte = Array.from({ length: 200000 }, (_, i) => ({ name: "p" + i, preis: (i * 7919) % 10000 }));
+        const idx = new PreisIndex(produkte);
+        const start = performance.now();
+        let summe = 0;
+        for (let i = 0; i < 20000; i++) summe += idx.anzahlUnter(i % 10000);
+        assertEqual(idx.anzahlUnter(5000), 100000);
+        assertTrue(performance.now() - start < 300, "zu langsam – nutzt du die binäre Suche?");
+  hints:
+    - "Konstruktor: `this.sortiert = produkte.toSorted((a, b) => a.preis - b.preis || a.name.localeCompare(b.name));` (oder `[...produkte].sort(...)`)."
+    - "`ersterIndexAb` ist die Lower-Bound-Suche aus der Lektion: `let l = 0, r = this.sortiert.length; while (l < r) { … }`."
+    - "`anzahlUnter(preis)` ist einfach `ersterIndexAb(preis)`. Für `imBereich` brauchst du zusätzlich das Ende: den ersten Index mit `preis > max` – dieselbe Suche, nur mit `<=` statt `<` im Vergleich. Dann `this.sortiert.slice(anfang, ende)`."
+  solution: |
+    type Produkt = { name: string; preis: number };
+
+    class PreisIndex {
+      private sortiert: Produkt[];
+
+      constructor(produkte: Produkt[]) {
+        this.sortiert = [...produkte].sort((a, b) => a.preis - b.preis || a.name.localeCompare(b.name));
+      }
+
+      private suche(istLinks: (p: Produkt) => boolean): number {
+        let links = 0;
+        let rechts = this.sortiert.length;
+        while (links < rechts) {
+          const mitte = Math.floor((links + rechts) / 2);
+          if (istLinks(this.sortiert[mitte])) links = mitte + 1;
+          else rechts = mitte;
+        }
+        return links;
+      }
+
+      private ersterIndexAb(preis: number): number {
+        return this.suche((p) => p.preis < preis);
+      }
+
+      private ersterIndexUeber(preis: number): number {
+        return this.suche((p) => p.preis <= preis);
+      }
+
+      imBereich(min: number, max: number): Produkt[] {
+        if (min > max) return [];
+        return this.sortiert.slice(this.ersterIndexAb(min), this.ersterIndexUeber(max));
+      }
+
+      anzahlUnter(preis: number): number {
+        return this.ersterIndexAb(preis);
+      }
+    }

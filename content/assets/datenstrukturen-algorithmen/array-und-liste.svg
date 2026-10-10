@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="40" y="44" font-size="20" font-weight="700" fill="#1e1b3a">Array: Fächer direkt nebeneinander</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="18" fill="#1e1b3a" text-anchor="middle">
+    <rect x="40" y="70" width="120" height="70" fill="#cffafe" stroke="#22d3ee" stroke-width="3"/>
+    <rect x="160" y="70" width="120" height="70" fill="#cffafe" stroke="#22d3ee" stroke-width="3"/>
+    <rect x="280" y="70" width="120" height="70" fill="#cffafe" stroke="#22d3ee" stroke-width="3"/>
+    <rect x="400" y="70" width="120" height="70" fill="#cffafe" stroke="#22d3ee" stroke-width="3"/>
+    <text x="100" y="112">"rot"</text><text x="220" y="112">"grün"</text><text x="340" y="112">"blau"</text><text x="460" y="112">"gelb"</text>
+    <text x="100" y="164" font-size="15">[0]</text><text x="220" y="164" font-size="15">[1]</text><text x="340" y="164" font-size="15">[2]</text><text x="460" y="164" font-size="15">[3]</text>
+  </g>
+  <text x="550" y="100" font-size="15" fill="#1e1b3a">Adresse = Start + i · Größe</text>
+  <text x="550" y="124" font-size="15" font-weight="700" fill="#047857">Zugriff liste[i]: O(1)</text>
+  <text x="40" y="250" font-size="20" font-weight="700" fill="#1e1b3a">Verkettete Liste: Knoten mit Zeiger auf den Nachfolger</text>
+  <text x="40" y="290" font-size="15" fill="#1e1b3a">kopf</text>
+  <line x1="80" y1="285" x2="108" y2="320" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="17" fill="#1e1b3a" text-anchor="middle">
+    <rect x="100" y="320" width="90" height="60" fill="#ede9fe" stroke="#a78bfa" stroke-width="3"/>
+    <rect x="190" y="320" width="50" height="60" fill="#ffffff" stroke="#a78bfa" stroke-width="3"/>
+    <text x="145" y="356">1</text><text x="215" y="356" font-size="13">next</text>
+    <rect x="320" y="320" width="90" height="60" fill="#ede9fe" stroke="#a78bfa" stroke-width="3"/>
+    <rect x="410" y="320" width="50" height="60" fill="#ffffff" stroke="#a78bfa" stroke-width="3"/>
+    <text x="365" y="356">2</text><text x="435" y="356" font-size="13">next</text>
+    <rect x="540" y="320" width="90" height="60" fill="#ede9fe" stroke="#a78bfa" stroke-width="3"/>
+    <rect x="630" y="320" width="50" height="60" fill="#ffffff" stroke="#a78bfa" stroke-width="3"/>
+    <text x="585" y="356">3</text><text x="655" y="356" font-size="13">null</text>
+  </g>
+  <line x1="240" y1="350" x2="318" y2="350" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="460" y1="350" x2="538" y2="350" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="400" y="410" text-anchor="middle" font-size="15" fill="#1e1b3a">vorne einfügen: <tspan font-weight="700" fill="#047857">O(1)</tspan> · i-tes Element lesen: <tspan font-weight="700" fill="#b91c1c">O(n)</tspan></text>
+</svg>

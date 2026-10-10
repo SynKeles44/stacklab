@@ -1,0 +1,750 @@
+title: Ein Abhängigkeits-Analysator für Pakete
+description: |
+  Paketmanager wie npm oder Composer müssen ständig Fragen über Abhängigkeiten beantworten: Welche Pakete
+  fehlen? Was zieht ein Paket alles mit? Über welchen Weg kommt eine Bibliothek ins Projekt? Gibt es einen Kreis?
+  In welcher Reihenfolge muss installiert werden?
+
+  In diesem Projekt baust du genau so ein Werkzeug in Node.js – und setzt dabei fast alles aus dem Kurs ein:
+  eine `Map` als Index, ein `Set` für „schon gesehen“, Graphen als Adjazenzliste, Breitensuche, Tiefensuche,
+  Sortieren und am Ende eine Messung des Aufwands.
+
+  Klicke zuerst auf **Projekt vorbereiten**. Danach liegen im Ordner `projekt` zwei Dateien:
+
+  - `pakete.json` – 13 Pakete mit Name, Version und Liste der Abhängigkeiten
+  - `pakete-zyklus.json` – ein kleines Beispiel mit einem Abhängigkeitskreis
+
+  Jede Funktion kommt in eine Datei im Ordner `lib/` und wird mit `module.exports` exportiert. Die Schritte
+  bauen aufeinander auf – lösche nichts, was ein früherer Schritt angelegt hat. Teste zwischendurch mit
+  `node -e "…"` oder kleinen Skripten.
+goal: >
+  Ein Node-Werkzeug `analyse.js`, das für eine Paketliste fehlende Pakete, alle transitiven Abhängigkeiten,
+  Abhängigkeitskreise und eine gültige Installationsreihenfolge ausgibt – plus eine Messung, die belegt, dass
+  die Breitensuche linear wächst.
+workdir: projekt
+setup: |
+  cat > pakete.json <<'EOF'
+  [
+    { "name": "app", "version": "1.0.0", "dependencies": ["router", "http-client", "ui-kit", "logger"] },
+    { "name": "router", "version": "2.3.1", "dependencies": ["url-parser", "event-emitter"] },
+    { "name": "http-client", "version": "4.0.2", "dependencies": ["url-parser", "retry", "logger"] },
+    { "name": "ui-kit", "version": "3.2.0", "dependencies": ["event-emitter", "color", "icons", "theme"] },
+    { "name": "logger", "version": "1.4.0", "dependencies": ["color", "format"] },
+    { "name": "retry", "version": "0.9.3", "dependencies": ["timer"] },
+    { "name": "url-parser", "version": "1.1.0", "dependencies": [] },
+    { "name": "event-emitter", "version": "5.0.0", "dependencies": [] },
+    { "name": "color", "version": "2.0.1", "dependencies": [] },
+    { "name": "icons", "version": "1.8.0", "dependencies": ["svg-tools", "zip"] },
+    { "name": "format", "version": "0.3.0", "dependencies": [] },
+    { "name": "timer", "version": "1.0.4", "dependencies": [] },
+    { "name": "svg-tools", "version": "2.2.2", "dependencies": [] }
+  ]
+  EOF
+  cat > pakete-zyklus.json <<'EOF'
+  [
+    { "name": "d", "version": "1.0.0", "dependencies": ["a"] },
+    { "name": "a", "version": "1.0.0", "dependencies": ["b"] },
+    { "name": "b", "version": "1.0.0", "dependencies": ["c"] },
+    { "name": "c", "version": "1.0.0", "dependencies": ["a", "e"] },
+    { "name": "e", "version": "1.0.0", "dependencies": [] }
+  ]
+  EOF
+  mkdir -p lib
+steps:
+  - id: laden
+    title: Pakete in eine Map laden
+    description: |
+      Fast jede Frage beginnt mit „Gib mir das Paket mit dem Namen X“. Mit einem Array wäre das jedes Mal eine
+      Suche über alle Pakete (O(n)). Deshalb baust du zuerst einen Index.
+
+      1. Lege `lib/laden.js` an.
+      2. Schreibe `ladePakete(pfad)`: Sie liest die JSON-Datei, parst sie und liefert eine `Map` vom Paketnamen
+         zum ganzen Paket-Objekt.
+      3. Exportiere die Funktion: `module.exports = { ladePakete };`
+    checklist:
+      - "`lib/laden.js` liest die Datei mit `fs.readFileSync` und `JSON.parse`"
+      - "`ladePakete` liefert eine `Map` mit 13 Einträgen"
+      - "`map.get('router').version` ist `2.3.1`"
+    hints:
+      - "`const fs = require('node:fs');` und `JSON.parse(fs.readFileSync(pfad, 'utf8'))` liefern das Array."
+      - "`for (const paket of liste) pakete.set(paket.name, paket);`"
+      - "Teste mit `node -e \"const { ladePakete } = require('./lib/laden.js'); console.log(ladePakete('pakete.json'))\"`."
+    checks:
+      - type: file_exists
+        path: lib/laden.js
+        message: Lege die Datei lib/laden.js an.
+      - type: command
+        run: "node -e \"const { ladePakete } = require('./lib/laden.js'); const m = ladePakete('pakete.json'); console.log(m instanceof Map, m.size, m.get('router').version)\""
+        stdout_equals: "true 13 2.3.1"
+        message: "`ladePakete('pakete.json')` soll eine Map mit 13 Einträgen liefern, deren Schlüssel die Paketnamen sind. Hast du die Funktion exportiert?"
+    solution: |
+      ```js
+      // lib/laden.js
+      const fs = require('node:fs');
+
+      function ladePakete(pfad) {
+        const liste = JSON.parse(fs.readFileSync(pfad, 'utf8'));
+        const pakete = new Map();
+        for (const paket of liste) {
+          pakete.set(paket.name, paket);
+        }
+        return pakete;
+      }
+
+      module.exports = { ladePakete };
+      ```
+    solve: |
+      mkdir -p lib
+      cat > lib/laden.js <<'EOF'
+      const fs = require('node:fs');
+
+      function ladePakete(pfad) {
+        const liste = JSON.parse(fs.readFileSync(pfad, 'utf8'));
+        const pakete = new Map();
+        for (const paket of liste) {
+          pakete.set(paket.name, paket);
+        }
+        return pakete;
+      }
+
+      module.exports = { ladePakete };
+      EOF
+
+  - id: fehlende
+    title: Fehlende Pakete mit einem Set finden
+    description: |
+      Manche Pakete hängen von Paketen ab, die gar nicht in der Liste stehen. Die willst du finden – jedes
+      genau einmal und ohne `includes()` in einer Schleife.
+
+      1. Ergänze in `lib/laden.js` die Funktion `fehlendeAbhaengigkeiten(pakete)`. Sie bekommt die Map aus Schritt 1.
+      2. Sammle alle Abhängigkeitsnamen, die **nicht** als Schlüssel in der Map stehen, in einem `Set`.
+      3. Gib sie als alphabetisch sortiertes Array zurück und exportiere die Funktion zusätzlich.
+    checklist:
+      - "`map.has(name)` statt Suche im Array"
+      - Jeder fehlende Name erscheint nur einmal
+      - Ergebnis ist alphabetisch sortiert
+    hints:
+      - "`for (const paket of pakete.values()) { for (const name of paket.dependencies) { … } }`"
+      - "`if (!pakete.has(name)) fehlend.add(name);`"
+      - "`return [...fehlend].sort();` – und `module.exports = { ladePakete, fehlendeAbhaengigkeiten };`"
+    checks:
+      - type: command
+        run: "node -e \"const { ladePakete, fehlendeAbhaengigkeiten } = require('./lib/laden.js'); console.log(JSON.stringify(fehlendeAbhaengigkeiten(ladePakete('pakete.json'))))\""
+        stdout_equals: '["theme","zip"]'
+        message: "Für pakete.json erwarte ich `[\"theme\",\"zip\"]` – alphabetisch sortiert und ohne Doppelte."
+      - type: command
+        run: "node -e \"const { fehlendeAbhaengigkeiten } = require('./lib/laden.js'); const m = new Map([['a', { dependencies: ['x', 'b', 'x'] }], ['b', { dependencies: ['x'] }]]); console.log(JSON.stringify(fehlendeAbhaengigkeiten(m)))\""
+        stdout_equals: '["x"]'
+        message: "Ein fehlendes Paket, das mehrfach vorkommt, soll nur einmal im Ergebnis stehen. Nutzt du ein Set?"
+      - type: command
+        run: "node -e \"const { ladePakete } = require('./lib/laden.js'); console.log(ladePakete('pakete.json').size)\""
+        stdout_equals: "13"
+        message: "`ladePakete` aus Schritt 1 funktioniert nicht mehr – exportierst du beide Funktionen?"
+    solution: |
+      ```js
+      // lib/laden.js – zusätzlich zu ladePakete
+      function fehlendeAbhaengigkeiten(pakete) {
+        const fehlend = new Set();
+        for (const paket of pakete.values()) {
+          for (const name of paket.dependencies) {
+            if (!pakete.has(name)) fehlend.add(name);
+          }
+        }
+        return [...fehlend].sort();
+      }
+
+      module.exports = { ladePakete, fehlendeAbhaengigkeiten };
+      ```
+    solve: |
+      cat > lib/laden.js <<'EOF'
+      const fs = require('node:fs');
+
+      function ladePakete(pfad) {
+        const liste = JSON.parse(fs.readFileSync(pfad, 'utf8'));
+        const pakete = new Map();
+        for (const paket of liste) {
+          pakete.set(paket.name, paket);
+        }
+        return pakete;
+      }
+
+      function fehlendeAbhaengigkeiten(pakete) {
+        const fehlend = new Set();
+        for (const paket of pakete.values()) {
+          for (const name of paket.dependencies) {
+            if (!pakete.has(name)) fehlend.add(name);
+          }
+        }
+        return [...fehlend].sort();
+      }
+
+      module.exports = { ladePakete, fehlendeAbhaengigkeiten };
+      EOF
+
+  - id: transitiv
+    title: Alle Abhängigkeiten per Breitensuche
+    description: |
+      Die Pakete bilden einen gerichteten Graphen: Die Map ist bereits eine Adjazenzliste. Jetzt willst du wissen,
+      welche Pakete ein Paket **insgesamt** mitbringt – auch über mehrere Ecken.
+
+      1. Lege `lib/graph.js` an.
+      2. Schreibe `nachbarn(pakete, name)`: die Abhängigkeiten des Pakets, die es in der Map **gibt** (fehlende
+         werden übersprungen). Für unbekannte Namen liefert sie `[]`.
+      3. Schreibe `transitiv(pakete, start)`: eine **Breitensuche** ab `start`. Sie liefert alle erreichbaren Pakete
+         ohne `start` selbst, in der Reihenfolge, in der sie entdeckt werden. Nachbarn werden in der Reihenfolge
+         aus `dependencies` angehängt.
+      4. Exportiere beide Funktionen. Die Suche darf bei Kreisen nicht hängen bleiben.
+    checklist:
+      - "Ein `Set` merkt sich besuchte Pakete"
+      - "Die Queue wird mit einem Lese-Index statt `shift()` abgearbeitet"
+      - "`transitiv(pakete, 'app')` liefert 12 Pakete"
+    hints:
+      - "`function nachbarn(pakete, name) { const p = pakete.get(name); return p ? p.dependencies.filter((d) => pakete.has(d)) : []; }`"
+      - "`const besucht = new Set([start]); const queue = [start]; for (let i = 0; i < queue.length; i++) { … }`"
+      - "Ein neu entdecktes Paket kommt in `besucht`, in die Queue **und** ins Ergebnis."
+    checks:
+      - type: file_exists
+        path: lib/graph.js
+        message: Lege die Datei lib/graph.js an.
+      - type: command
+        run: "node -e \"const { ladePakete } = require('./lib/laden.js'); const { transitiv } = require('./lib/graph.js'); console.log(transitiv(ladePakete('pakete.json'), 'app').join(','))\""
+        stdout_equals: "router,http-client,ui-kit,logger,url-parser,event-emitter,retry,color,icons,format,timer,svg-tools"
+        message: "`transitiv(pakete, 'app')` soll 12 Pakete in Breitensuche-Reihenfolge liefern – zuerst die direkten Abhängigkeiten router, http-client, ui-kit, logger. Fehlende Pakete wie theme werden übersprungen."
+      - type: command
+        run: "timeout 5 node -e \"const { ladePakete } = require('./lib/laden.js'); const { transitiv } = require('./lib/graph.js'); console.log(transitiv(ladePakete('pakete-zyklus.json'), 'd').sort().join(','))\""
+        stdout_equals: "a,b,c,e"
+        message: "Mit pakete-zyklus.json sollte `transitiv(pakete, 'd')` die Pakete a, b, c und e liefern und nicht hängen bleiben. Prüfst du vor dem Anhängen, ob ein Paket schon besucht ist?"
+      - type: command
+        run: "node -e \"const { ladePakete } = require('./lib/laden.js'); const { nachbarn } = require('./lib/graph.js'); const p = ladePakete('pakete.json'); console.log(JSON.stringify(nachbarn(p, 'icons')), JSON.stringify(nachbarn(p, 'gibt-es-nicht')))\""
+        stdout_equals: '["svg-tools"] []'
+        message: "`nachbarn(pakete, 'icons')` soll `[\"svg-tools\"]` liefern (zip fehlt) und für unbekannte Namen `[]`. Exportierst du nachbarn?"
+    solution: |
+      ```js
+      // lib/graph.js
+      function nachbarn(pakete, name) {
+        const paket = pakete.get(name);
+        return paket ? paket.dependencies.filter((d) => pakete.has(d)) : [];
+      }
+
+      function transitiv(pakete, start) {
+        const besucht = new Set([start]);
+        const queue = [start];
+        const ergebnis = [];
+        for (let i = 0; i < queue.length; i++) {
+          for (const nachbar of nachbarn(pakete, queue[i])) {
+            if (besucht.has(nachbar)) continue;
+            besucht.add(nachbar);
+            ergebnis.push(nachbar);
+            queue.push(nachbar);
+          }
+        }
+        return ergebnis;
+      }
+
+      module.exports = { nachbarn, transitiv };
+      ```
+    solve: |
+      cat > lib/graph.js <<'EOF'
+      function nachbarn(pakete, name) {
+        const paket = pakete.get(name);
+        return paket ? paket.dependencies.filter((d) => pakete.has(d)) : [];
+      }
+
+      function transitiv(pakete, start) {
+        const besucht = new Set([start]);
+        const queue = [start];
+        const ergebnis = [];
+        for (let i = 0; i < queue.length; i++) {
+          for (const nachbar of nachbarn(pakete, queue[i])) {
+            if (besucht.has(nachbar)) continue;
+            besucht.add(nachbar);
+            ergebnis.push(nachbar);
+            queue.push(nachbar);
+          }
+        }
+        return ergebnis;
+      }
+
+      module.exports = { nachbarn, transitiv };
+      EOF
+
+  - id: kette
+    title: Die kürzeste Abhängigkeitskette
+    description: |
+      „Warum ist `timer` überhaupt in meinem Projekt?“ – diese Frage beantwortet die kürzeste Kette von deinem
+      Paket bis zur Bibliothek.
+
+      1. Ergänze in `lib/graph.js` die Funktion `kette(pakete, start, ziel)`.
+      2. Sie liefert den Weg mit den **wenigsten** Schritten als Array von `start` bis `ziel`, z. B.
+         `["app", "http-client", "retry", "timer"]`.
+      3. Gibt es keinen Weg oder ist eines der Pakete unbekannt, liefert sie `null`. Ist `start === ziel`, liefert sie `[start]`.
+      4. Exportiere `kette` zusätzlich zu den bisherigen Funktionen.
+    checklist:
+      - Breitensuche mit einer `Map` „kam von“
+      - Rückverfolgung vom Ziel zum Start, dann umdrehen
+      - "`null`, wenn kein Weg existiert"
+    hints:
+      - "`const herkunft = new Map([[start, null]]);` – `herkunft.has(x)` ersetzt das besucht-Set."
+      - "Beim Entdecken: `herkunft.set(nachbar, aktuell)`. Ist `nachbar === ziel`, sammelst du rückwärts: `for (let k = ziel; k !== null; k = herkunft.get(k)) weg.push(k);`."
+      - "Abhängigkeiten zeigen nur in eine Richtung: Von `svg-tools` gibt es keinen Weg zu `app`."
+    checks:
+      - type: command
+        run: "node -e \"const { ladePakete } = require('./lib/laden.js'); const { kette } = require('./lib/graph.js'); console.log(JSON.stringify(kette(ladePakete('pakete.json'), 'app', 'timer')))\""
+        stdout_equals: '["app","http-client","retry","timer"]'
+        message: "`kette(pakete, 'app', 'timer')` soll `[\"app\",\"http-client\",\"retry\",\"timer\"]` liefern."
+      - type: command
+        run: "node -e \"const { ladePakete } = require('./lib/laden.js'); const { kette } = require('./lib/graph.js'); const p = ladePakete('pakete.json'); console.log(JSON.stringify([kette(p, 'svg-tools', 'app'), kette(p, 'app', 'theme'), kette(p, 'color', 'color')]))\""
+        stdout_equals: '[null,null,["color"]]'
+        message: "Ohne Weg (svg-tools → app) und für unbekannte Pakete (theme) soll `kette` `null` liefern, für start === ziel `[start]`."
+      - type: command
+        run: "timeout 5 node -e \"const { ladePakete } = require('./lib/laden.js'); const { kette, transitiv } = require('./lib/graph.js'); const p = ladePakete('pakete-zyklus.json'); console.log(JSON.stringify(kette(p, 'd', 'e')), transitiv(p, 'd').length)\""
+        stdout_equals: '["d","a","b","c","e"] 4'
+        message: "Mit pakete-zyklus.json soll `kette(p, 'd', 'e')` den Weg d → a → b → c → e liefern – und `transitiv` muss weiter exportiert sein."
+    solution: |
+      ```js
+      // lib/graph.js – zusätzlich zu nachbarn und transitiv
+      function kette(pakete, start, ziel) {
+        if (!pakete.has(start) || !pakete.has(ziel)) return null;
+        if (start === ziel) return [start];
+        const herkunft = new Map([[start, null]]);
+        const queue = [start];
+        for (let i = 0; i < queue.length; i++) {
+          for (const nachbar of nachbarn(pakete, queue[i])) {
+            if (herkunft.has(nachbar)) continue;
+            herkunft.set(nachbar, queue[i]);
+            if (nachbar === ziel) {
+              const weg = [];
+              for (let k = ziel; k !== null; k = herkunft.get(k)) weg.push(k);
+              return weg.reverse();
+            }
+            queue.push(nachbar);
+          }
+        }
+        return null;
+      }
+
+      module.exports = { nachbarn, transitiv, kette };
+      ```
+    solve: |
+      cat > lib/graph.js <<'EOF'
+      function nachbarn(pakete, name) {
+        const paket = pakete.get(name);
+        return paket ? paket.dependencies.filter((d) => pakete.has(d)) : [];
+      }
+
+      function transitiv(pakete, start) {
+        const besucht = new Set([start]);
+        const queue = [start];
+        const ergebnis = [];
+        for (let i = 0; i < queue.length; i++) {
+          for (const nachbar of nachbarn(pakete, queue[i])) {
+            if (besucht.has(nachbar)) continue;
+            besucht.add(nachbar);
+            ergebnis.push(nachbar);
+            queue.push(nachbar);
+          }
+        }
+        return ergebnis;
+      }
+
+      function kette(pakete, start, ziel) {
+        if (!pakete.has(start) || !pakete.has(ziel)) return null;
+        if (start === ziel) return [start];
+        const herkunft = new Map([[start, null]]);
+        const queue = [start];
+        for (let i = 0; i < queue.length; i++) {
+          for (const nachbar of nachbarn(pakete, queue[i])) {
+            if (herkunft.has(nachbar)) continue;
+            herkunft.set(nachbar, queue[i]);
+            if (nachbar === ziel) {
+              const weg = [];
+              for (let k = ziel; k !== null; k = herkunft.get(k)) weg.push(k);
+              return weg.reverse();
+            }
+            queue.push(nachbar);
+          }
+        }
+        return null;
+      }
+
+      module.exports = { nachbarn, transitiv, kette };
+      EOF
+
+  - id: zyklus
+    title: Kreise per Tiefensuche erkennen
+    description: |
+      Ein Abhängigkeitskreis (a braucht b, b braucht c, c braucht a) macht jede Installationsreihenfolge
+      unmöglich. Eine Tiefensuche findet ihn, wenn sie sich merkt, welche Pakete gerade **in Arbeit** sind.
+
+      1. Lege `lib/zyklus.js` an und importiere `nachbarn` aus `./graph.js`.
+      2. Schreibe `findeZyklus(pakete)`. Sie startet nacheinander bei jedem noch nicht besuchten Paket eine Tiefensuche.
+      3. Jedes Paket hat einen von drei Zuständen: neu, in Arbeit, fertig. Triffst du auf ein Paket, das noch
+         **in Arbeit** ist, hast du einen Kreis gefunden.
+      4. Gib den Kreis als Array zurück, das mit demselben Paket beginnt und endet, z. B. `["a", "b", "c", "a"]`.
+         Gibt es keinen Kreis, liefere `null`. Exportiere die Funktion.
+    checklist:
+      - Drei Zustände in einer `Map` (neu / in Arbeit / fertig)
+      - Ein Pfad-Stack merkt sich den aktuellen Weg
+      - "`null` für pakete.json, ein Kreis für pakete-zyklus.json"
+    hints:
+      - "Eine rekursive Hilfsfunktion `besuche(name)` setzt den Zustand auf „in Arbeit“, legt den Namen auf `pfad` und geht alle Nachbarn durch."
+      - "Ist ein Nachbar in Arbeit, ist der Kreis `[...pfad.slice(pfad.indexOf(nachbar)), nachbar]`."
+      - "Am Ende von `besuche` nimmst du den Namen mit `pfad.pop()` wieder vom Pfad und setzt den Zustand auf „fertig“."
+    checks:
+      - type: file_exists
+        path: lib/zyklus.js
+        message: Lege die Datei lib/zyklus.js an.
+      - type: command
+        run: "node -e \"const { ladePakete } = require('./lib/laden.js'); const { findeZyklus } = require('./lib/zyklus.js'); console.log(JSON.stringify(findeZyklus(ladePakete('pakete.json'))))\""
+        stdout_equals: "null"
+        message: "pakete.json enthält keinen Kreis – `findeZyklus` soll dort `null` liefern. Unterscheidest du zwischen „in Arbeit“ und „fertig“?"
+      - type: command
+        run: |
+          timeout 5 node -e "
+            const { ladePakete } = require('./lib/laden.js');
+            const { findeZyklus } = require('./lib/zyklus.js');
+            const p = ladePakete('pakete-zyklus.json');
+            const k = findeZyklus(p);
+            const ok = Array.isArray(k) && k.length >= 3 && k[0] === k[k.length - 1]
+              && k.every((n, i) => i === 0 || p.get(k[i - 1]).dependencies.includes(n))
+              && [...k].sort().join() === ['a', 'a', 'b', 'c'].join();
+            console.log(ok ? 'gueltig' : JSON.stringify(k));
+          "
+        stdout_equals: gueltig
+        message: "Für pakete-zyklus.json erwarte ich einen Kreis wie `[\"a\",\"b\",\"c\",\"a\"]` – erstes und letztes Element gleich, jedes Paket hängt vom vorherigen ab."
+    solution: |
+      ```js
+      // lib/zyklus.js
+      const { nachbarn } = require('./graph.js');
+
+      function findeZyklus(pakete) {
+        const zustand = new Map(); // fehlt = neu, 'aktiv' = in Arbeit, 'fertig'
+        const pfad = [];
+
+        function besuche(name) {
+          zustand.set(name, 'aktiv');
+          pfad.push(name);
+          for (const nachbar of nachbarn(pakete, name)) {
+            if (zustand.get(nachbar) === 'aktiv') {
+              return [...pfad.slice(pfad.indexOf(nachbar)), nachbar];
+            }
+            if (!zustand.has(nachbar)) {
+              const gefunden = besuche(nachbar);
+              if (gefunden) return gefunden;
+            }
+          }
+          pfad.pop();
+          zustand.set(name, 'fertig');
+          return null;
+        }
+
+        for (const name of pakete.keys()) {
+          if (!zustand.has(name)) {
+            const gefunden = besuche(name);
+            if (gefunden) return gefunden;
+          }
+        }
+        return null;
+      }
+
+      module.exports = { findeZyklus };
+      ```
+    solve: |
+      cat > lib/zyklus.js <<'EOF'
+      const { nachbarn } = require('./graph.js');
+
+      function findeZyklus(pakete) {
+        const zustand = new Map();
+        const pfad = [];
+
+        function besuche(name) {
+          zustand.set(name, 'aktiv');
+          pfad.push(name);
+          for (const nachbar of nachbarn(pakete, name)) {
+            if (zustand.get(nachbar) === 'aktiv') {
+              return [...pfad.slice(pfad.indexOf(nachbar)), nachbar];
+            }
+            if (!zustand.has(nachbar)) {
+              const gefunden = besuche(nachbar);
+              if (gefunden) return gefunden;
+            }
+          }
+          pfad.pop();
+          zustand.set(name, 'fertig');
+          return null;
+        }
+
+        for (const name of pakete.keys()) {
+          if (!zustand.has(name)) {
+            const gefunden = besuche(name);
+            if (gefunden) return gefunden;
+          }
+        }
+        return null;
+      }
+
+      module.exports = { findeZyklus };
+      EOF
+
+  - id: reihenfolge
+    title: Eine Installationsreihenfolge bilden
+    description: |
+      Ohne Kreis gibt es eine **topologische Reihenfolge**: Jedes Paket kommt erst, wenn alle seine Abhängigkeiten
+      schon installiert sind. Eine Tiefensuche in **Postorder** liefert sie fast geschenkt.
+
+      1. Lege `lib/reihenfolge.js` an und importiere `nachbarn` aus `./graph.js`.
+      2. Schreibe `installReihenfolge(pakete)`: Gehe alle Paketnamen **alphabetisch sortiert** durch. Für jedes
+         noch nicht erledigte Paket besuchst du zuerst (rekursiv) seine Abhängigkeiten – ebenfalls alphabetisch –
+         und hängst das Paket **danach** an das Ergebnis an.
+      3. Das Ergebnis enthält jedes Paket aus der Map genau einmal. Exportiere die Funktion.
+    checklist:
+      - Postorder – erst die Abhängigkeiten, dann das Paket selbst
+      - Ein `Set` verhindert doppelte Einträge
+      - Sortierte Durchlaufreihenfolge macht das Ergebnis reproduzierbar
+    hints:
+      - "`for (const name of [...pakete.keys()].sort()) besuche(name);`"
+      - "In `besuche(name)`: Ist `name` schon im Set `fertig`, sofort zurück. Sonst ins Set, dann `for (const abh of [...nachbarn(pakete, name)].sort()) besuche(abh);` und erst danach `reihenfolge.push(name)`."
+      - "Das erste Paket der Ausgabe ist `color` – alphabetisch das erste Paket ohne eigene Abhängigkeiten auf dem Weg von `app`."
+    checks:
+      - type: file_exists
+        path: lib/reihenfolge.js
+        message: Lege die Datei lib/reihenfolge.js an.
+      - type: command
+        run: |
+          node -e "
+            const { ladePakete } = require('./lib/laden.js');
+            const { installReihenfolge } = require('./lib/reihenfolge.js');
+            const p = ladePakete('pakete.json');
+            const r = installReihenfolge(p);
+            const pos = new Map(r.map((n, i) => [n, i]));
+            const ok = r.length === p.size && pos.size === p.size
+              && [...p.values()].every((x) => x.dependencies.every((d) => !p.has(d) || pos.get(d) < pos.get(x.name)));
+            console.log(ok ? 'gueltig' : r.join(','));
+          "
+        stdout_equals: gueltig
+        message: "Die Reihenfolge ist noch nicht gültig: Sie muss alle 13 Pakete genau einmal enthalten, und jede Abhängigkeit muss vor dem Paket stehen, das sie braucht."
+      - type: command
+        run: "node -e \"const { ladePakete } = require('./lib/laden.js'); const { installReihenfolge } = require('./lib/reihenfolge.js'); console.log(installReihenfolge(ladePakete('pakete.json')).join(','))\""
+        stdout_equals: "color,format,logger,timer,retry,url-parser,http-client,event-emitter,router,svg-tools,icons,ui-kit,app"
+        message: "Die Reihenfolge ist gültig, folgt aber nicht der Vorgabe: Pakete und ihre Abhängigkeiten jeweils alphabetisch durchgehen, Paket erst nach seinen Abhängigkeiten anhängen."
+    solution: |
+      ```js
+      // lib/reihenfolge.js
+      const { nachbarn } = require('./graph.js');
+
+      function installReihenfolge(pakete) {
+        const fertig = new Set();
+        const reihenfolge = [];
+
+        function besuche(name) {
+          if (fertig.has(name)) return;
+          fertig.add(name);
+          for (const abhaengigkeit of [...nachbarn(pakete, name)].sort()) {
+            besuche(abhaengigkeit);
+          }
+          reihenfolge.push(name); // Postorder
+        }
+
+        for (const name of [...pakete.keys()].sort()) {
+          besuche(name);
+        }
+        return reihenfolge;
+      }
+
+      module.exports = { installReihenfolge };
+      ```
+    solve: |
+      cat > lib/reihenfolge.js <<'EOF'
+      const { nachbarn } = require('./graph.js');
+
+      function installReihenfolge(pakete) {
+        const fertig = new Set();
+        const reihenfolge = [];
+
+        function besuche(name) {
+          if (fertig.has(name)) return;
+          fertig.add(name);
+          for (const abhaengigkeit of [...nachbarn(pakete, name)].sort()) {
+            besuche(abhaengigkeit);
+          }
+          reihenfolge.push(name);
+        }
+
+        for (const name of [...pakete.keys()].sort()) {
+          besuche(name);
+        }
+        return reihenfolge;
+      }
+
+      module.exports = { installReihenfolge };
+      EOF
+
+  - id: cli
+    title: Das Kommandozeilen-Werkzeug
+    description: |
+      Jetzt setzt du die Bausteine zu einem Werkzeug zusammen.
+
+      1. Lege `analyse.js` im Projektordner an. Es bekommt zwei Argumente: die JSON-Datei und ein Startpaket,
+         z. B. `node analyse.js pakete.json app`.
+      2. Gib diese Zeilen aus:
+         - `Pakete: <Anzahl>`
+         - `Fehlend: <Namen mit Komma und Leerzeichen getrennt>` – oder `Fehlend: keine`
+         - `Abhängigkeiten von <start>: <Anzahl transitiver Abhängigkeiten>`
+         - `Zyklus: <a -> b -> c -> a>` – oder `Zyklus: keiner`
+         - Nur ohne Zyklus zusätzlich: `Reihenfolge: <Pakete mit Komma und Leerzeichen getrennt>`
+    checklist:
+      - Argumente aus `process.argv` gelesen
+      - Alle Bausteine aus `lib/` per `require` eingebunden
+      - Ausgabe für pakete.json und pakete-zyklus.json geprüft
+    hints:
+      - "`const [datei, start] = process.argv.slice(2);`"
+      - "`fehlend.join(', ') || 'keine'` liefert `keine`, wenn das Array leer ist."
+      - "`zyklus.join(' -> ')` baut die Zyklus-Zeile."
+    checks:
+      - type: file_exists
+        path: analyse.js
+        message: Lege die Datei analyse.js im Projektordner an.
+      - type: command
+        run: "timeout 10 node analyse.js pakete.json app | tr '\\n' '|'"
+        stdout_equals: "Pakete: 13|Fehlend: theme, zip|Abhängigkeiten von app: 12|Zyklus: keiner|Reihenfolge: color, format, logger, timer, retry, url-parser, http-client, event-emitter, router, svg-tools, icons, ui-kit, app|"
+        message: "Die Ausgabe für `node analyse.js pakete.json app` stimmt noch nicht. Erwartet werden fünf Zeilen: Pakete, Fehlend, Abhängigkeiten von app, Zyklus und Reihenfolge."
+      - type: command
+        run: "timeout 10 node analyse.js pakete-zyklus.json d | tr '\\n' '|'"
+        stdout_matches: "^Pakete: 5\\|Fehlend: keine\\|Abhängigkeiten von d: 4\\|Zyklus: \\w( -> \\w){3}\\|$"
+        message: "Für `node analyse.js pakete-zyklus.json d` erwarte ich `Fehlend: keine`, `Abhängigkeiten von d: 4` und eine Zyklus-Zeile wie `Zyklus: a -> b -> c -> a` – aber keine Reihenfolge-Zeile."
+    solution: |
+      ```js
+      // analyse.js
+      const { ladePakete, fehlendeAbhaengigkeiten } = require('./lib/laden.js');
+      const { transitiv } = require('./lib/graph.js');
+      const { findeZyklus } = require('./lib/zyklus.js');
+      const { installReihenfolge } = require('./lib/reihenfolge.js');
+
+      const [datei, start] = process.argv.slice(2);
+      const pakete = ladePakete(datei);
+
+      console.log(`Pakete: ${pakete.size}`);
+      console.log(`Fehlend: ${fehlendeAbhaengigkeiten(pakete).join(', ') || 'keine'}`);
+      console.log(`Abhängigkeiten von ${start}: ${transitiv(pakete, start).length}`);
+      const zyklus = findeZyklus(pakete);
+      if (zyklus) {
+        console.log(`Zyklus: ${zyklus.join(' -> ')}`);
+      } else {
+        console.log('Zyklus: keiner');
+        console.log(`Reihenfolge: ${installReihenfolge(pakete).join(', ')}`);
+      }
+      ```
+    solve: |
+      cat > analyse.js <<'EOF'
+      const { ladePakete, fehlendeAbhaengigkeiten } = require('./lib/laden.js');
+      const { transitiv } = require('./lib/graph.js');
+      const { findeZyklus } = require('./lib/zyklus.js');
+      const { installReihenfolge } = require('./lib/reihenfolge.js');
+
+      const [datei, start] = process.argv.slice(2);
+      const pakete = ladePakete(datei);
+
+      console.log(`Pakete: ${pakete.size}`);
+      console.log(`Fehlend: ${fehlendeAbhaengigkeiten(pakete).join(', ') || 'keine'}`);
+      console.log(`Abhängigkeiten von ${start}: ${transitiv(pakete, start).length}`);
+      const zyklus = findeZyklus(pakete);
+      if (zyklus) {
+        console.log(`Zyklus: ${zyklus.join(' -> ')}`);
+      } else {
+        console.log('Zyklus: keiner');
+        console.log(`Reihenfolge: ${installReihenfolge(pakete).join(', ')}`);
+      }
+      EOF
+
+  - id: messen
+    title: Den Aufwand der Breitensuche messen
+    description: |
+      Zum Abschluss überprüfst du deine Big-O-Schätzung: Die Breitensuche soll O(V + E) sein – bei einem Graphen,
+      in dem jedes Paket nur wenige Abhängigkeiten hat, also linear.
+
+      1. Lege `messung.js` an. Erzeuge darin für `n = 20000`, `40000` und `80000` eine `Map` mit `n` Paketen
+         `p0` bis `p{n-1}`. Paket `pi` hängt von `p{i+1}` und `p{i+2}` ab (sofern es sie gibt).
+      2. Miss für jedes `n` die Laufzeit von `transitiv(pakete, 'p0')` mit `performance.now()` (Median aus 3 Läufen)
+         und gib pro Messung eine Zeile aus, z. B. `n=40000: 12.3 ms`.
+      3. Schreibe in `messung.txt` eine Zeile `transitiv: O(...)` mit der Klasse, die du am Faktor ablesen kannst.
+    checklist:
+      - Testgraph wird im Skript erzeugt, nicht von Hand geschrieben
+      - Drei Messungen mit verdoppeltem n
+      - Ergebnis in messung.txt festgehalten
+    hints:
+      - "`const pakete = new Map(); for (let i = 0; i < n; i++) pakete.set('p' + i, { name: 'p' + i, dependencies: ['p' + (i + 1), 'p' + (i + 2)].filter((d) => Number(d.slice(1)) < n) });`"
+      - "Die Messfunktion aus der ersten Lektion: drei Läufe, Zeiten sortieren, mittleren Wert nehmen."
+      - "Verdoppelt sich die Zeit ungefähr mit n, ist der Aufwand linear: `transitiv: O(n)` (oder `O(V + E)`)."
+    checks:
+      - type: file_contains
+        path: messung.js
+        pattern: "performance\\.now\\("
+        message: Miss die Zeit in messung.js mit performance.now().
+      - type: command
+        run: "timeout 60 node messung.js | grep -cE 'n=(20000|40000|80000).*[0-9]'"
+        stdout_matches: "^\\s*3\\s*$"
+        message: "messung.js soll drei Zeilen ausgeben – je eine für n=20000, 40000 und 80000, z. B. `n=40000: 12.3 ms`."
+      - type: file_contains
+        path: messung.txt
+        pattern: "transitiv:\\s*O\\((n|V\\s*\\+\\s*E|n\\s*\\+\\s*m)\\)"
+        message: "In messung.txt fehlt die Zeile `transitiv: O(n)` – bei doppeltem n braucht die Breitensuche etwa doppelt so lange."
+    solution: |
+      ```js
+      // messung.js
+      const { transitiv } = require('./lib/graph.js');
+
+      function erzeuge(n) {
+        const pakete = new Map();
+        for (let i = 0; i < n; i++) {
+          const deps = [i + 1, i + 2].filter((j) => j < n).map((j) => 'p' + j);
+          pakete.set('p' + i, { name: 'p' + i, dependencies: deps });
+        }
+        return pakete;
+      }
+
+      function miss(pakete) {
+        const zeiten = [];
+        for (let i = 0; i < 3; i++) {
+          const start = performance.now();
+          transitiv(pakete, 'p0');
+          zeiten.push(performance.now() - start);
+        }
+        return zeiten.sort((a, b) => a - b)[1];
+      }
+
+      for (const n of [20000, 40000, 80000]) {
+        console.log(`n=${n}: ${miss(erzeuge(n)).toFixed(2)} ms`);
+      }
+      ```
+
+      ```bash
+      node messung.js
+      echo 'transitiv: O(n)' > messung.txt
+      ```
+    solve: |
+      cat > messung.js <<'EOF'
+      const { transitiv } = require('./lib/graph.js');
+
+      function erzeuge(n) {
+        const pakete = new Map();
+        for (let i = 0; i < n; i++) {
+          const deps = [i + 1, i + 2].filter((j) => j < n).map((j) => 'p' + j);
+          pakete.set('p' + i, { name: 'p' + i, dependencies: deps });
+        }
+        return pakete;
+      }
+
+      function miss(pakete) {
+        const zeiten = [];
+        for (let i = 0; i < 3; i++) {
+          const start = performance.now();
+          transitiv(pakete, 'p0');
+          zeiten.push(performance.now() - start);
+        }
+        return zeiten.sort((a, b) => a - b)[1];
+      }
+
+      for (const n of [20000, 40000, 80000]) {
+        console.log(`n=${n}: ${miss(erzeuge(n)).toFixed(2)} ms`);
+      }
+      EOF
+      echo 'transitiv: O(n)' > messung.txt
