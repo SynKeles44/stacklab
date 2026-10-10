@@ -6,7 +6,7 @@ namespace App\Content;
 
 final class TermLinks
 {
-    private const string PATTERN = '/\[\[([a-z0-9]+(?:-[a-z0-9]+)*)(?:\|([^\]]+))?\]\]/';
+    private const string PATTERN = '/\[\[([a-z0-9]+(?:-[a-z0-9]+)*)(?:\\\\?\|([^\]]+))?\]\]/';
 
     /** @return list<string> */
     public static function extract(string $markdown): array
