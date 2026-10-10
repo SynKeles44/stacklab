@@ -1,0 +1,32 @@
+title: Nginx & Webserver
+subtitle: Vom ersten server-Block bis zur sicheren Konfiguration für SPA, API und PHP
+description: >
+  Hinter fast jeder Website steht ein Webserver, der Anfragen annimmt, Dateien ausliefert und
+  Anfragen an Anwendungen weiterreicht. In diesem Kurs lernst du nginx, den meistgenutzten Webserver
+  im Internet, von Grund auf kennen: wie er intern arbeitet, wie seine Konfiguration aufgebaut ist und
+  wie er entscheidet, welcher Block eine Anfrage beantwortet.
+
+
+  Danach baust du Schritt für Schritt eine echte Konfiguration: statische Dateien mit sinnvollen
+  Cache-Headern, eine Single-Page-App mit `try_files`, eine API hinter einem Reverse Proxy und eine
+  PHP-Anwendung über PHP-FPM – inklusive der Regel, warum nur der Front-Controller ausgeführt werden
+  darf. Zum Schluss geht es um HTTPS mit Let's Encrypt, Kompression, Rate Limiting, Logs und die
+  typischen Fehler, die in echten Projekten immer wieder passieren.
+category: infrastruktur
+level: fortgeschritten
+icon: server
+color: "#009639"
+estimated_hours: 5
+workspace_dir: nginx
+prerequisites: [http-https, terminal-shell, netzwerk-grundlagen]
+learning_goals:
+  - Du erklärst, was ein Webserver tut und wie nginx mit Master- und Worker-Prozessen viele Verbindungen gleichzeitig bedient.
+  - Du liest und schreibst nginx-Konfigurationen mit Kontexten, Direktiven und include-Dateien und prüfst sie mit nginx -t.
+  - Du sagst sicher voraus, welcher server- und location-Block eine Anfrage beantwortet.
+  - Du lieferst statische Dateien und Single-Page-Apps mit root, alias, try_files und passenden Cache-Headern aus.
+  - Du bindest Anwendungen per Reverse Proxy und PHP über PHP-FPM sicher an.
+  - Du richtest HTTPS, Kompression und Rate Limiting ein und findest Fehler mit Access- und Error-Log.
+references:
+  - Typische Server-Konfiguration für Laravel-Anwendungen mit PHP-FPM und Front-Controller
+  - Ein nginx vor einer React-SPA und einer separaten API, wie es in vielen Teams üblich ist
+  - Reverse-Proxy-Header, damit Anwendungen hinter einem Proxy die echte Client-IP sehen

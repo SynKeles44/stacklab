@@ -1,0 +1,296 @@
+- slug: master-prozess
+  term: Master-Prozess
+  short: Der Steuerprozess von nginx, der die Konfiguration liest und die Worker startet.
+  explanation: >
+    Beim Start von nginx entsteht zuerst der Master-Prozess. Er läuft meist als root, liest die
+    Konfiguration, öffnet die Ports und startet die Worker-Prozesse. Anfragen bearbeitet er nie selbst;
+    beim Reload tauscht er die Worker behutsam gegen neue aus.
+  example: "`ps -C nginx -o pid,user,cmd` zeigt `nginx: master process` als root und mehrere Worker als www-data."
+  category: infrastruktur
+  aliases: [Master, master process]
+  related: [worker-prozess, nginx, graceful-reload]
+  lesson: nginx-webserver/was-macht-ein-webserver
+
+- slug: apache-httpd
+  term: Apache HTTP Server
+  short: Ein klassischer, weit verbreiteter Webserver, oft einfach „Apache“ genannt.
+  explanation: >
+    Der Apache HTTP Server ist einer der ältesten Webserver und bis heute verbreitet. Eine Besonderheit
+    sind `.htaccess`-Dateien, mit denen sich Einstellungen pro Ordner ändern lassen. Die Konzepte –
+    virtuelle Hosts, Reverse Proxy, TLS – entsprechen denen von nginx.
+  example: "Viele Shared-Hosting-Angebote laufen mit Apache und erlauben Weiterleitungen per `.htaccess`."
+  category: infrastruktur
+  aliases: [Apache, httpd, Apache httpd]
+  related: [webserver, nginx]
+  lesson: nginx-webserver/was-macht-ein-webserver
+
+- slug: nginx-direktive
+  term: Direktive (nginx)
+  short: Eine einzelne Anweisung in der nginx-Konfiguration, z. B. `listen 80;`.
+  explanation: >
+    Die nginx-Konfiguration besteht aus Direktiven. Einfache Direktiven bestehen aus Name und Werten und
+    enden mit einem Semikolon. Block-Direktiven wie `server` umschließen weitere Direktiven mit
+    geschweiften Klammern und bilden einen Kontext.
+  example: "`root /srv/shop/public;` ist eine einfache Direktive, `location / { … }` eine Block-Direktive."
+  category: infrastruktur
+  aliases: [Direktive, Direktiven, nginx-Direktive, directive]
+  related: [nginx-kontext, konfigurationsdatei]
+  lesson: nginx-webserver/die-konfiguration
+
+- slug: nginx-kontext
+  term: Kontext (nginx)
+  short: Ein Bereich der nginx-Konfiguration, den eine Block-Direktive wie http oder server bildet.
+  explanation: >
+    Kontexte sind ineinander verschachtelt: main, darin events und http, darin server, darin location.
+    Jede Direktive ist nur in bestimmten Kontexten erlaubt. Viele Werte werden von außen nach innen
+    vererbt, solange die innere Ebene sie nicht selbst setzt.
+  example: "`worker_connections` gehört in den events-Kontext, `server_name` in den server-Kontext."
+  category: infrastruktur
+  aliases: [Kontext, Kontexte, Konfigurationskontext]
+  related: [nginx-direktive, server-block, location-block]
+  lesson: nginx-webserver/die-konfiguration
+
+- slug: graceful-reload
+  term: Reload (nginx)
+  short: Neuladen der Konfiguration, ohne laufende Verbindungen abzubrechen.
+  explanation: >
+    Beim Reload prüft der Master-Prozess die neue Konfiguration, startet neue Worker damit und lässt die
+    alten Worker ihre laufenden Anfragen zu Ende bearbeiten. Ist die neue Konfiguration fehlerhaft,
+    läuft nginx mit der alten weiter. Ein Restart beendet dagegen alle Verbindungen sofort.
+  example: "`sudo nginx -t && sudo systemctl reload nginx`"
+  category: infrastruktur
+  aliases: [Reload, nginx -s reload, graceful reload]
+  related: [master-prozess, systemd]
+  lesson: nginx-webserver/die-konfiguration
+
+- slug: systemd
+  term: systemd
+  short: Das Programm, das auf den meisten Linux-Servern Dienste startet, stoppt und überwacht.
+  explanation: >
+    systemd ist der erste Prozess, den Linux beim Hochfahren startet. Es verwaltet Dienste wie nginx oder
+    PHP-FPM und startet sie bei einem Absturz neu. Bedient wird es mit dem Befehl `systemctl`.
+  example: "`sudo systemctl status nginx` zeigt, ob nginx läuft; `sudo systemctl reload nginx` lädt neu."
+  category: infrastruktur
+  aliases: [systemctl, Systemd]
+  related: [daemon, dienst, graceful-reload]
+  lesson: nginx-webserver/die-konfiguration
+
+- slug: server-block
+  term: server-Block
+  short: Der Abschnitt der nginx-Konfiguration, der eine Website auf einem Port beschreibt.
+  explanation: >
+    Ein server-Block legt mit `listen` fest, auf welchem Port er lauscht, und mit `server_name`, für
+    welche Domains er zuständig ist. nginx wählt für jede Anfrage anhand von Port und Host-Header genau
+    einen server-Block aus. Das Konzept heißt allgemein virtueller Host.
+  example: "`server { listen 80; server_name shop.example.com; root /srv/shop/public; }`"
+  category: infrastruktur
+  aliases: [server-Blöcke, server block, Serverblock]
+  related: [virtual-host, default-server, location-block]
+  lesson: nginx-webserver/server-bloecke
+
+- slug: default-server
+  term: default_server
+  short: Der server-Block, der antwortet, wenn kein server_name zur Anfrage passt.
+  explanation: >
+    Pro Port gibt es einen Standard-Server. Er wird mit dem Parameter `default_server` an der
+    listen-Direktive festgelegt; fehlt er, ist es der erste passende Block. Ein bewusster Auffang-Server
+    verhindert, dass die eigene Website unter fremden Domains erscheint.
+  example: "`server { listen 80 default_server; server_name _; return 444; }`"
+  category: infrastruktur
+  aliases: [Default-Server, Standard-Server, Auffang-Server]
+  related: [server-block, host-header]
+  lesson: nginx-webserver/server-bloecke
+
+- slug: nginx-variable
+  term: nginx-Variable
+  short: Ein Platzhalter wie `$uri` oder `$host`, den nginx für jede Anfrage mit einem Wert füllt.
+  explanation: >
+    nginx stellt viele eingebaute Variablen bereit, die mit einem Dollarzeichen beginnen. Sie enthalten
+    Teile der Anfrage wie Pfad, Host oder Client-IP und lassen sich in Direktiven wie `try_files`,
+    `return` oder `proxy_set_header` verwenden.
+  example: "`$request_uri` enthält Pfad und Query-String, `$remote_addr` die IP des Clients."
+  category: infrastruktur
+  aliases: [nginx-Variablen, $uri, $host, $request_uri]
+  related: [try-files, x-forwarded-for]
+  lesson: nginx-webserver/server-bloecke
+
+- slug: location-block
+  term: location-Block
+  short: Ein Abschnitt im server-Block mit eigenen Regeln für bestimmte URL-Pfade.
+  explanation: >
+    Eine location passt auf Pfade per exaktem Vergleich (`=`), Präfix, Präfix mit Vorrang (`^~`) oder
+    regulärem Ausdruck (`~`, `~*`). Pro Anfrage gewinnt genau eine location. Unter Präfixen gewinnt das
+    längste, unter regulären Ausdrücken der erste passende in der Datei.
+  example: "`location /api/ { proxy_pass http://127.0.0.1:3000; }`"
+  category: infrastruktur
+  aliases: [location, locations, location-Blöcke]
+  related: [server-block, try-files, regex]
+  lesson: nginx-webserver/location-bloecke
+
+- slug: root-direktive
+  term: root (nginx)
+  short: Die Direktive, die den Ordner festlegt, aus dem nginx Dateien liest.
+  explanation: >
+    Bei `root` hängt nginx den kompletten URL-Pfad an den angegebenen Ordner an. Die Ordnerstruktur auf
+    der Festplatte spiegelt also die URLs. Man setzt `root` meist einmal im server-Block, alle locations
+    erben ihn.
+  example: "Mit `root /srv/shop/public;` wird `/css/app.css` zu `/srv/shop/public/css/app.css`."
+  category: infrastruktur
+  aliases: [root]
+  related: [alias-direktive, document-root, try-files]
+  lesson: nginx-webserver/root-alias-try-files
+
+- slug: alias-direktive
+  term: alias (nginx)
+  short: Die Direktive, die den passenden Teil einer location durch einen anderen Ordner ersetzt.
+  explanation: >
+    Anders als `root` hängt `alias` nicht den ganzen Pfad an, sondern ersetzt das Präfix der location.
+    location und alias sollten beide auf einen Schrägstrich enden, sonst entstehen falsche Pfade oder
+    sogar eine Path-Traversal-Lücke.
+  example: "`location /downloads/ { alias /srv/files/; }` macht aus `/downloads/a.pdf` den Pfad `/srv/files/a.pdf`."
+  category: infrastruktur
+  aliases: [alias]
+  related: [root-direktive, path-traversal]
+  lesson: nginx-webserver/root-alias-try-files
+
+- slug: try-files
+  term: try_files
+  short: Eine nginx-Direktive, die mehrere Dateien der Reihe nach prüft und sonst einen Ausweg nimmt.
+  explanation: >
+    try_files prüft die angegebenen Pfade nacheinander und liefert den ersten, der existiert. Der letzte
+    Parameter ist der Ausweg: ein Statuscode wie `=404`, eine URI wie `/index.html` oder eine benannte
+    location. So entstehen der SPA-Fallback und die Weiterleitung an einen Front-Controller.
+  example: "`try_files $uri $uri/ /index.php?$query_string;`"
+  category: infrastruktur
+  aliases: [try files]
+  related: [spa-fallback, front-controller, location-block]
+  lesson: nginx-webserver/root-alias-try-files
+
+- slug: error-page
+  term: error_page
+  short: Eine nginx-Direktive, die für bestimmte Statuscodes eine eigene Fehlerseite anzeigt.
+  explanation: >
+    Mit error_page legst du fest, welche Seite bei einem Fehler wie 404 oder 502 ausgeliefert wird. Der
+    Statuscode bleibt dabei erhalten. Die Fehlerseite ist eine normale Datei oder URI im server-Block.
+  example: "`error_page 500 502 503 504 /50x.html;`"
+  category: infrastruktur
+  aliases: [Fehlerseite, eigene Fehlerseite]
+  related: [statuscode, try-files]
+  lesson: nginx-webserver/root-alias-try-files
+
+- slug: expires-direktive
+  term: expires (nginx)
+  short: Eine nginx-Direktive, die Cache-Header für eine bestimmte Dauer setzt.
+  explanation: >
+    expires rechnet eine Zeitangabe wie `30d` oder `1y` in die Header `Expires` und
+    `Cache-Control: max-age` um. So legt der Server fest, wie lange der Browser eine Datei ohne Nachfrage
+    wiederverwenden darf.
+  example: "`location /assets/ { expires 1y; }`"
+  category: infrastruktur
+  aliases: [expires]
+  related: [cache-control, cache-busting]
+  lesson: nginx-webserver/caching-und-kompression
+
+- slug: upstream-server
+  term: Upstream (Backend)
+  short: Die Anwendung hinter einem Reverse Proxy, an die nginx Anfragen weiterreicht.
+  explanation: >
+    Aus Sicht von nginx ist jede Anwendung hinter proxy_pass oder fastcgi_pass ein Upstream. Mehrere
+    gleichartige Upstreams fasst ein `upstream`-Block zusammen, auf den nginx die Anfragen verteilt.
+    Antwortet ein Upstream nicht, meldet nginx 502 oder 504.
+  example: "`upstream api_backend { server 127.0.0.1:3000; server 127.0.0.1:3001; }`"
+  category: infrastruktur
+  aliases: [Upstream, Upstreams, Backend]
+  related: [reverse-proxy, load-balancer]
+  lesson: nginx-webserver/reverse-proxy
+
+- slug: x-forwarded-for
+  term: X-Forwarded-For
+  short: Ein HTTP-Header, in dem Proxys die IP-Adressen des Clients und vorheriger Proxys weitergeben.
+  explanation: >
+    Hinter einem Reverse Proxy sieht die Anwendung nur dessen IP. Der Proxy hängt deshalb die echte
+    Client-IP an den Header X-Forwarded-For an. Anwendungen dürfen ihm nur glauben, wenn er von einem
+    vertrauenswürdigen Proxy kommt, denn Clients können ihn fälschen.
+  example: "`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`"
+  category: infrastruktur
+  aliases: [X-Forwarded-Proto, X-Real-IP, Forwarded-Header]
+  related: [reverse-proxy, http-header]
+  lesson: nginx-webserver/reverse-proxy
+
+- slug: websocket
+  term: WebSocket
+  short: Ein Protokoll für eine dauerhaft offene Verbindung, über die Server und Browser jederzeit Daten senden.
+  explanation: >
+    Eine WebSocket-Verbindung beginnt als normale HTTP-Anfrage und wird dann per `Upgrade`-Header
+    umgeschaltet. Danach bleibt sie offen, sodass zum Beispiel Chat-Nachrichten sofort ankommen. Ein
+    Reverse Proxy muss dafür die Header `Upgrade` und `Connection` weitergeben.
+  example: "Ein Live-Chat empfängt neue Nachrichten über `wss://example.com/ws`."
+  category: web
+  aliases: [WebSockets, Websocket]
+  related: [http, reverse-proxy]
+  lesson: nginx-webserver/reverse-proxy
+
+- slug: unix-socket
+  term: Unix-Socket
+  short: Ein Kommunikationsweg zwischen zwei Programmen auf demselben Rechner über eine spezielle Datei.
+  explanation: >
+    Statt über einen TCP-Port können Programme auf demselben Server über einen Unix-Socket sprechen. Er
+    erscheint als Datei im Dateisystem und ist etwas schneller als eine Netzwerkverbindung. PHP-FPM lauscht
+    oft auf so einem Socket.
+  example: "`fastcgi_pass unix:/run/php/php8.5-fpm.sock;`"
+  category: infrastruktur
+  aliases: [Unix-Sockets, Unix Domain Socket, Socket-Datei]
+  related: [socket, php-fpm]
+  lesson: nginx-webserver/php-fpm
+
+- slug: http-01-challenge
+  term: HTTP-01-Challenge
+  short: Die ACME-Prüfung, bei der ein Server eine vorgegebene Datei auf Port 80 bereitstellt.
+  explanation: >
+    Bei der HTTP-01-Challenge legt das ACME-Programm eine Datei mit einem Token unter
+    `/.well-known/acme-challenge/` ab. Die Zertifizierungsstelle ruft sie über HTTP auf. Kommt der
+    erwartete Inhalt zurück, gilt die Kontrolle über die Domain als bewiesen.
+  example: "Let's Encrypt ruft `http://example.com/.well-known/acme-challenge/<token>` auf."
+  category: sicherheit
+  aliases: [HTTP-01, ACME-Challenge, http-01]
+  related: [acme, lets-encrypt, certbot]
+  lesson: nginx-webserver/https-mit-lets-encrypt
+
+- slug: access-log
+  term: Access-Log
+  short: Die Logdatei, in die ein Webserver jede beantwortete Anfrage als eine Zeile schreibt.
+  explanation: >
+    Das Access-Log enthält pro Anfrage unter anderem Client-IP, Zeitpunkt, Methode und Pfad, Statuscode,
+    Größe und User-Agent. Das Format legt `log_format` fest, die Datei `access_log`. Mit Werkzeugen wie
+    awk, sort und uniq lässt es sich schnell auswerten.
+  example: "`203.0.113.25 - - [10/Oct/2026:09:00:01 +0000] \"GET / HTTP/1.1\" 200 5123 \"-\" \"Mozilla/5.0\"`"
+  category: infrastruktur
+  aliases: [Zugriffslog, access_log, Access Log]
+  related: [error-log, logdatei]
+  lesson: nginx-webserver/logs-und-fehlersuche
+
+- slug: error-log
+  term: Error-Log
+  short: Die Logdatei, in die nginx Fehler und Warnungen samt Ursache schreibt.
+  explanation: >
+    Das Error-Log erklärt, warum eine Anfrage scheiterte – etwa eine fehlende Datei oder eine
+    Anwendung, die nicht antwortet. Mit `error_log` legst du Datei und Mindeststufe fest, z. B. `warn`.
+    Bei Problemen ist es die erste Anlaufstelle.
+  example: "`connect() failed (111: Connection refused) while connecting to upstream`"
+  category: infrastruktur
+  aliases: [Fehlerlog, error_log, Error Log]
+  related: [access-log, logdatei]
+  lesson: nginx-webserver/logs-und-fehlersuche
+
+- slug: awk
+  term: awk
+  short: Ein Kommandozeilen-Werkzeug, das Textzeilen in Spalten zerlegt und auswertet.
+  explanation: >
+    awk liest eine Datei Zeile für Zeile und teilt jede Zeile an Leerzeichen in Felder `$1`, `$2` und so
+    weiter. Mit Bedingungen und Ausgaben lassen sich so Logdateien filtern und zählen, ohne ein eigenes
+    Programm zu schreiben.
+  example: "`awk '$9 == 404 {print $7}' access.log` gibt die Pfade aller 404-Antworten aus."
+  category: terminal
+  aliases: [gawk, mawk]
+  related: [grep, pipe]
+  lesson: nginx-webserver/logs-und-fehlersuche

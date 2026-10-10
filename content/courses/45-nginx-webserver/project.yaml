@@ -1,0 +1,709 @@
+title: Ein nginx für Frontend, API und PHP-Backend
+description: |
+  In diesem Projekt schreibst du die komplette nginx-Konfiguration für ein kleines Produkt, so wie sie
+  in vielen Teams aussieht: Eine React-App unter `app.example.com` mit SPA-Fallback und lange gecachten
+  Assets, eine Node.js-API hinter einem Reverse Proxy unter `/api/` und ein Laravel-Admin unter
+  `admin.example.com`, der über PHP-FPM läuft. Zum Schluss kommen Kompression, Rate Limiting, HTTPS und
+  Logs dazu.
+
+  Alles passiert im Ordner `projekt` in deinem nginx-Workspace. Klicke zuerst auf **Projekt
+  vorbereiten**: Dann liegen dort der Build der React-App unter `dist/` und das Prüfskript `pruefe.sh`.
+  Weil das Übungs-Terminal kein nginx hat, prüft `bash pruefe.sh <datei>` deine Dateien auf fehlende
+  Semikolons und Klammern, und `bash pruefe.sh --baum <datei>` zeigt jede Direktive mit ihrem Kontext.
+  Auf einem echten Server würdest du stattdessen `sudo nginx -t` und `sudo systemctl reload nginx`
+  ausführen.
+
+  Die Schritte bauen aufeinander auf. Schreibe Dateien am besten mit `nano`, dann bleiben alle
+  `$`-Variablen von nginx erhalten.
+goal: >
+  Eine `nginx.conf` mit gzip, Rate-Limit-Zone und verborgener Versionsnummer, ein Auffang-Server, eine
+  HTTPS-Konfiguration für die React-App samt API-Proxy, Cache-Headern und Logs sowie eine sichere
+  Laravel-Konfiguration, die ausschließlich den Front-Controller ausführt.
+workdir: projekt
+setup: |
+  cat > pruefe.sh <<'PRUEFE'
+  #!/usr/bin/env bash
+  # Stacklab-Mini-Pruefung fuer nginx-Konfigurationen.
+  # Ersetzt NICHT "nginx -t": Es findet nur Klammer- und Semikolonfehler.
+  #   bash pruefe.sh datei.conf ...        Syntax pruefen
+  #   bash pruefe.sh --baum datei.conf     jede Direktive mit ihrem Kontext zeigen
+  modus=pruefen
+  if [ "$1" = "--baum" ]; then modus=baum; shift; fi
+  [ $# -eq 0 ] && set -- nginx.conf
+  status=0
+  for datei in "$@"; do
+    if [ ! -f "$datei" ]; then echo "FEHLER: $datei gibt es nicht"; status=1; continue; fi
+    awk -v modus="$modus" -v q="'" '
+      { roh = $0; sub(/#.*/, ""); zeile = $0; sub(/[ \t]+$/, "", zeile)
+        ende = substr(zeile, length(zeile), 1)
+        if (zeile ~ /[^ \t]/ && index(";{}\"" q, ende) == 0) { print FILENAME ":" NR ": Semikolon fehlt -> " roh; fehler = 1 }
+        rest = $0
+        while (length(rest) > 0) {
+          if (match(rest, /[{};]/) == 0) { puffer = puffer " " rest; break }
+          teil = puffer " " substr(rest, 1, RSTART - 1); zeichen = substr(rest, RSTART, 1)
+          rest = substr(rest, RSTART + 1); puffer = ""
+          gsub(/^[ \t]+|[ \t]+$/, "", teil); gsub(/[ \t]+/, " ", teil)
+          if (zeichen == "{") { stapel[++tiefe] = teil }
+          else if (zeichen == "}") { tiefe--; if (tiefe < 0) { print FILENAME ":" NR ": } ohne passende {"; fehler = 1; tiefe = 0 } }
+          else if (teil != "" && modus == "baum") { pfad = ""; for (i = 1; i <= tiefe; i++) pfad = pfad stapel[i] " > "; print pfad teil }
+        } }
+      END { if (tiefe > 0) { print FILENAME ": " tiefe " Block/Bloecke nicht mit } geschlossen"; fehler = 1 }
+            if (modus == "pruefen" && !fehler) print FILENAME ": Syntax sieht gut aus (Stacklab-Mini-Pruefung)"
+            exit fehler }' "$datei" || status=1
+  done
+  exit $status
+  PRUEFE
+  mkdir -p dist/assets conf.d
+  printf '<!doctype html>\n<div id="root"></div>\n<script type="module" src="/assets/index-4f2a9c.js"></script>\n' > dist/index.html
+  printf 'console.log("app")\n' > dist/assets/index-4f2a9c.js
+steps:
+  - id: grundgeruest
+    title: Das Grundgerüst in nginx.conf
+    description: |
+      Jede Konfiguration beginnt mit der Hauptdatei. Lege `nginx.conf` an:
+
+      1. Im main-Kontext `worker_processes auto;`
+      2. Einen `events`-Block mit `worker_connections 1024;`
+      3. Einen `http`-Block mit `include mime.types;`, `default_type application/octet-stream;` und
+         `include conf.d/*.conf;` als letzter Zeile.
+
+      Prüfe mit `bash pruefe.sh nginx.conf` und `bash pruefe.sh --baum nginx.conf`.
+    checklist:
+      - nginx.conf angelegt
+      - main-, events- und http-Kontext vorhanden
+      - conf.d/*.conf wird eingebunden
+    hints:
+      - "Der events-Block sieht so aus: `events { worker_connections 1024; }` – gern auf mehrere Zeilen verteilt."
+      - "Mit `bash pruefe.sh --baum nginx.conf` muss u. a. die Zeile `http > include conf.d/*.conf` erscheinen."
+    checks:
+      - type: command
+        run: bash pruefe.sh nginx.conf
+        message: nginx.conf fehlt oder hat Syntaxfehler. Führe bash pruefe.sh nginx.conf aus.
+      - type: command
+        run: bash pruefe.sh --baum nginx.conf | grep -Eq '^worker_processes auto$'
+        message: Im main-Kontext fehlt worker_processes auto;
+      - type: command
+        run: bash pruefe.sh --baum nginx.conf | grep -Eq '^events > worker_connections 1024$'
+        message: Im events-Block fehlt worker_connections 1024;
+      - type: command
+        run: b=$(bash pruefe.sh --baum nginx.conf); echo "$b" | grep -Eq '^http > include mime\.types$' && echo "$b" | grep -Eq '^http > default_type application/octet-stream$' && echo "$b" | grep -Eq '^http > include conf\.d/\*\.conf$'
+        message: Im http-Block fehlen include mime.types;, default_type application/octet-stream; oder include conf.d/*.conf;
+    solution: |
+      ```nginx title="nginx.conf"
+      worker_processes auto;
+
+      events {
+          worker_connections 1024;
+      }
+
+      http {
+          include mime.types;
+          default_type application/octet-stream;
+          include conf.d/*.conf;
+      }
+      ```
+    solve: |
+      cat > nginx.conf <<'EOF'
+      worker_processes auto;
+
+      events {
+          worker_connections 1024;
+      }
+
+      http {
+          include mime.types;
+          default_type application/octet-stream;
+          include conf.d/*.conf;
+      }
+      EOF
+      bash pruefe.sh nginx.conf
+  - id: server-bloecke
+    title: Auffang-Server und App-Server
+    description: |
+      Jetzt kommen die ersten server-Blöcke, jeder in eine eigene Datei unter `conf.d/`:
+
+      1. `conf.d/00-default.conf`: `listen 80 default_server;`, `server_name _;`, `return 444;`
+      2. `conf.d/app.conf`: `listen 80;`, `server_name app.example.com;`, `root /srv/app/dist;` und
+         `index index.html;`
+
+      Prüfe mit `bash pruefe.sh conf.d/*.conf`.
+    checklist:
+      - Unbekannte Hosts werden vom default_server abgewiesen
+      - app.example.com hat einen eigenen server-Block mit root und index
+    hints:
+      - "Der Auffang-Server: `server { listen 80 default_server; server_name _; return 444; }`"
+      - In `app.conf` darf kein zweites `default_server` stehen.
+    checks:
+      - type: command
+        run: bash pruefe.sh conf.d/00-default.conf conf.d/app.conf
+        message: conf.d/00-default.conf oder conf.d/app.conf fehlt oder hat Syntaxfehler.
+      - type: command
+        run: b=$(bash pruefe.sh --baum conf.d/00-default.conf); echo "$b" | grep -Eq '^server > listen 80 default_server$' && echo "$b" | grep -Eq '^server > return 444$'
+        message: conf.d/00-default.conf braucht listen 80 default_server; und return 444;
+      - type: command
+        run: test "$(cat conf.d/*.conf | grep -c default_server)" = 1
+        message: default_server darf nur einmal vorkommen – in 00-default.conf.
+      - type: command
+        run: b=$(bash pruefe.sh --baum conf.d/app.conf); echo "$b" | grep -Eq '^server > server_name app\.example\.com$' && echo "$b" | grep -Eq '^server > root /srv/app/dist/?$' && echo "$b" | grep -Eq '^server > index index\.html$'
+        message: conf.d/app.conf braucht server_name app.example.com;, root /srv/app/dist; und index index.html;
+    solution: |
+      ```nginx title="conf.d/00-default.conf"
+      server {
+          listen 80 default_server;
+          server_name _;
+          return 444;
+      }
+      ```
+      ```nginx title="conf.d/app.conf"
+      server {
+          listen 80;
+          server_name app.example.com;
+          root /srv/app/dist;
+          index index.html;
+      }
+      ```
+    solve: |
+      mkdir -p conf.d
+      cat > conf.d/00-default.conf <<'EOF'
+      server {
+          listen 80 default_server;
+          server_name _;
+          return 444;
+      }
+      EOF
+      cat > conf.d/app.conf <<'EOF'
+      server {
+          listen 80;
+          server_name app.example.com;
+          root /srv/app/dist;
+          index index.html;
+      }
+      EOF
+  - id: spa-und-assets
+    title: SPA-Fallback und Cache-Header
+    description: |
+      Die React-App braucht den SPA-Fallback, ihre gehashten Assets sollen ein Jahr im Cache bleiben und
+      `index.html` immer frisch sein. Ergänze in `conf.d/app.conf` drei locations:
+
+      1. `location /` mit `try_files $uri $uri/ /index.html;`
+      2. `location /assets/` mit `expires 1y;`, `add_header Cache-Control "public, immutable";` und
+         `try_files $uri =404;`
+      3. `location = /index.html` mit `add_header Cache-Control "no-cache";`
+    checklist:
+      - Neuladen auf /profil liefert die App statt 404
+      - Assets mit Hash werden ein Jahr gecacht, fehlende Assets ergeben 404
+      - index.html wird nie ungeprüft aus dem Cache genommen
+    hints:
+      - Alle drei locations stehen im server-Block von conf.d/app.conf.
+      - "`try_files $uri =404;` in `/assets/` verhindert, dass ein fehlendes Asset index.html bekommt."
+    checks:
+      - type: command
+        run: bash pruefe.sh conf.d/app.conf
+        message: conf.d/app.conf hat Syntaxfehler.
+      - type: command
+        run: bash pruefe.sh --baum conf.d/app.conf | grep -Eq '^server > location / > try_files \$uri \$uri/ /index\.html$'
+        message: "location / braucht try_files $uri $uri/ /index.html;"
+      - type: command
+        run: b=$(bash pruefe.sh --baum conf.d/app.conf); echo "$b" | grep -Eq '^server > location /assets/ > expires 1y$' && echo "$b" | grep -Eq '^server > location /assets/ > add_header Cache-Control "public, immutable"$' && echo "$b" | grep -Eq '^server > location /assets/ > try_files \$uri =404$'
+        message: location /assets/ braucht expires 1y;, add_header Cache-Control "public, immutable"; und try_files $uri =404;
+      - type: command
+        run: bash pruefe.sh --baum conf.d/app.conf | grep -Eq '^server > location = /index\.html > add_header Cache-Control "no-cache"$'
+        message: Es fehlt location = /index.html mit add_header Cache-Control "no-cache";
+    solution: |
+      ```nginx title="conf.d/app.conf"
+      server {
+          listen 80;
+          server_name app.example.com;
+          root /srv/app/dist;
+          index index.html;
+
+          location / {
+              try_files $uri $uri/ /index.html;
+          }
+
+          location /assets/ {
+              expires 1y;
+              add_header Cache-Control "public, immutable";
+              try_files $uri =404;
+          }
+
+          location = /index.html {
+              add_header Cache-Control "no-cache";
+          }
+      }
+      ```
+    solve: |
+      cat > conf.d/app.conf <<'EOF'
+      server {
+          listen 80;
+          server_name app.example.com;
+          root /srv/app/dist;
+          index index.html;
+
+          location / {
+              try_files $uri $uri/ /index.html;
+          }
+
+          location /assets/ {
+              expires 1y;
+              add_header Cache-Control "public, immutable";
+              try_files $uri =404;
+          }
+
+          location = /index.html {
+              add_header Cache-Control "no-cache";
+          }
+      }
+      EOF
+  - id: api-proxy
+    title: Die API hinter den Reverse Proxy
+    description: |
+      Die Node.js-API läuft auf `127.0.0.1:3000` und erwartet Pfade **mit** `/api/` am Anfang. Ergänze in
+      `conf.d/app.conf`:
+
+      1. `location /api/` mit `proxy_pass http://127.0.0.1:3000;` – ohne Schrägstrich am Ende.
+      2. Die vier Header `Host $host`, `X-Real-IP $remote_addr`,
+         `X-Forwarded-For $proxy_add_x_forwarded_for` und `X-Forwarded-Proto $scheme`.
+    checklist:
+      - /api/ wird unverändert an die Node.js-App weitergereicht
+      - Die App kennt Host, Client-IP und Protokoll
+    hints:
+      - Ohne Pfad hinter dem Port bleibt `/api/orders` auch bei der App `/api/orders`.
+      - "Jeder Header ist eine eigene Zeile: `proxy_set_header X-Real-IP $remote_addr;`"
+    checks:
+      - type: command
+        run: bash pruefe.sh conf.d/app.conf
+        message: conf.d/app.conf hat Syntaxfehler.
+      - type: command
+        run: bash pruefe.sh --baum conf.d/app.conf | grep -Eq '^server > location /api/ > proxy_pass http://127\.0\.0\.1:3000$'
+        message: "location /api/ braucht proxy_pass http://127.0.0.1:3000; – ohne Schrägstrich am Ende."
+      - type: command
+        run: b=$(bash pruefe.sh --baum conf.d/app.conf); for h in 'Host \$host' 'X-Real-IP \$remote_addr' 'X-Forwarded-For \$proxy_add_x_forwarded_for' 'X-Forwarded-Proto \$scheme'; do echo "$b" | grep -Eq "^server > location /api/ > proxy_set_header $h\$" || exit 1; done
+        message: In location /api/ fehlt mindestens einer der vier proxy_set_header-Einträge (Host, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto).
+    solution: |
+      ```nginx title="Neu in conf.d/app.conf"
+      location /api/ {
+          proxy_pass http://127.0.0.1:3000;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+      ```
+    solve: |
+      cat > conf.d/app.conf <<'EOF'
+      server {
+          listen 80;
+          server_name app.example.com;
+          root /srv/app/dist;
+          index index.html;
+
+          location / {
+              try_files $uri $uri/ /index.html;
+          }
+
+          location /assets/ {
+              expires 1y;
+              add_header Cache-Control "public, immutable";
+              try_files $uri =404;
+          }
+
+          location = /index.html {
+              add_header Cache-Control "no-cache";
+          }
+
+          location /api/ {
+              proxy_pass http://127.0.0.1:3000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+      EOF
+  - id: php-admin
+    title: Der Laravel-Admin über PHP-FPM
+    description: |
+      Der Admin ist eine Laravel-App unter `admin.example.com`. PHP-FPM läuft in einem eigenen Container
+      und ist unter `php:9000` erreichbar. Lege `conf.d/admin.conf` an:
+
+      1. `listen 80;`, `server_name admin.example.com;`, `root /srv/admin/public;`, `index index.php;`
+      2. `location /` mit `try_files $uri $uri/ /index.php?$query_string;`
+      3. `location ~ ^/index\.php(/|$)` mit `fastcgi_pass php:9000;`,
+         `fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;` und `include fastcgi_params;`
+      4. `location ~ \.php$` mit `return 404;`
+      5. `location ~ /\.(?!well-known)` mit `deny all;`
+    checklist:
+      - root zeigt auf public/, nie auf den Projektordner
+      - Nur index.php wird an PHP-FPM übergeben
+      - Andere PHP-Dateien und versteckte Dateien sind gesperrt
+    hints:
+      - Die index.php-location muss vor `location ~ \.php$` stehen – bei Regex gewinnt die erste passende.
+      - "`fastcgi_pass` darf nur ein einziges Mal in der Datei vorkommen."
+    checks:
+      - type: command
+        run: bash pruefe.sh conf.d/admin.conf
+        message: conf.d/admin.conf fehlt oder hat Syntaxfehler.
+      - type: command
+        run: b=$(bash pruefe.sh --baum conf.d/admin.conf); echo "$b" | grep -Eq '^server > server_name admin\.example\.com$' && echo "$b" | grep -Eq '^server > root /srv/admin/public/?$'
+        message: conf.d/admin.conf braucht server_name admin.example.com; und root /srv/admin/public;
+      - type: command
+        run: bash pruefe.sh --baum conf.d/admin.conf | grep -Eq '^server > location / > try_files \$uri \$uri/ /index\.php\?\$query_string$'
+        message: "location / braucht try_files $uri $uri/ /index.php?$query_string;"
+      - type: command
+        run: b=$(bash pruefe.sh --baum conf.d/admin.conf); echo "$b" | grep -Fq 'server > location ~ ^/index\.php(/|$) > fastcgi_pass php:9000' && echo "$b" | grep -Fq 'server > location ~ ^/index\.php(/|$) > fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name' && echo "$b" | grep -Fq 'server > location ~ ^/index\.php(/|$) > include fastcgi_params'
+        message: Die index.php-location braucht fastcgi_pass php:9000;, fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name; und include fastcgi_params;
+      - type: command
+        run: bash pruefe.sh --baum conf.d/admin.conf | grep -Fq 'server > location ~ \.php$ > return 404' && test "$(grep -c fastcgi_pass conf.d/admin.conf)" = 1
+        message: Es fehlt location ~ \.php$ mit return 404; oder fastcgi_pass kommt mehr als einmal vor.
+      - type: command
+        run: bash pruefe.sh --baum conf.d/admin.conf | grep -Fq 'server > location ~ /\.(?!well-known) > deny all'
+        message: Es fehlt location ~ /\.(?!well-known) mit deny all;
+    solution: |
+      ```nginx title="conf.d/admin.conf"
+      server {
+          listen 80;
+          server_name admin.example.com;
+          root /srv/admin/public;
+          index index.php;
+
+          location / {
+              try_files $uri $uri/ /index.php?$query_string;
+          }
+
+          location ~ ^/index\.php(/|$) {
+              fastcgi_pass php:9000;
+              fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+              include fastcgi_params;
+          }
+
+          location ~ \.php$ {
+              return 404;
+          }
+
+          location ~ /\.(?!well-known) {
+              deny all;
+          }
+      }
+      ```
+    solve: |
+      cat > conf.d/admin.conf <<'EOF'
+      server {
+          listen 80;
+          server_name admin.example.com;
+          root /srv/admin/public;
+          index index.php;
+
+          location / {
+              try_files $uri $uri/ /index.php?$query_string;
+          }
+
+          location ~ ^/index\.php(/|$) {
+              fastcgi_pass php:9000;
+              fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+              include fastcgi_params;
+          }
+
+          location ~ \.php$ {
+              return 404;
+          }
+
+          location ~ /\.(?!well-known) {
+              deny all;
+          }
+      }
+      EOF
+  - id: gzip-und-limits
+    title: Kompression, Rate Limiting und weniger Verrat
+    description: |
+      Jetzt wird es schneller und robuster.
+
+      1. In `nginx.conf` im http-Block (vor dem include): `server_tokens off;`, `gzip on;`,
+         `gzip_vary on;`, `gzip_types text/css application/javascript application/json image/svg+xml;`
+         und `limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;`
+      2. In `conf.d/app.conf` im server-Block: `limit_req_status 429;`
+      3. In `conf.d/app.conf` in `location /api/`: `limit_req zone=api burst=20 nodelay;`
+    checklist:
+      - Textdateien werden komprimiert
+      - Die nginx-Version ist nicht mehr sichtbar
+      - Die API ist pro IP auf 10 Anfragen pro Sekunde begrenzt, mit Puffer für Spitzen
+    hints:
+      - limit_req_zone ist nur im http-Block erlaubt – also in nginx.conf.
+      - Die gzip-Typen stehen alle in einer einzigen gzip_types-Zeile.
+    checks:
+      - type: command
+        run: bash pruefe.sh nginx.conf conf.d/app.conf
+        message: nginx.conf oder conf.d/app.conf hat Syntaxfehler.
+      - type: command
+        run: b=$(bash pruefe.sh --baum nginx.conf); echo "$b" | grep -Eq '^http > server_tokens off$' && echo "$b" | grep -Eq '^http > gzip on$' && echo "$b" | grep -Eq '^http > gzip_vary on$'
+        message: Im http-Block fehlen server_tokens off;, gzip on; oder gzip_vary on;
+      - type: command
+        run: l=$(bash pruefe.sh --baum nginx.conf | grep -E '^http > gzip_types '); for t in text/css application/javascript application/json 'image/svg\+xml'; do echo "$l" | grep -Eq " $t( |$)" || exit 1; done
+        message: gzip_types braucht text/css, application/javascript, application/json und image/svg+xml.
+      - type: command
+        run: bash pruefe.sh --baum nginx.conf | grep -Eq '^http > limit_req_zone \$binary_remote_addr zone=api:10m rate=10r/s$'
+        message: "Im http-Block fehlt limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;"
+      - type: command
+        run: b=$(bash pruefe.sh --baum conf.d/app.conf); echo "$b" | grep -Eq '^server > limit_req_status 429$' && echo "$b" | grep -Eq '^server > location /api/ > limit_req zone=api burst=20 nodelay$'
+        message: In conf.d/app.conf fehlen limit_req_status 429; (server-Block) oder limit_req zone=api burst=20 nodelay; (location /api/).
+    solution: |
+      ```nginx title="nginx.conf (http-Block)"
+      http {
+          include mime.types;
+          default_type application/octet-stream;
+          server_tokens off;
+          gzip on;
+          gzip_vary on;
+          gzip_types text/css application/javascript application/json image/svg+xml;
+          limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+          include conf.d/*.conf;
+      }
+      ```
+      In `conf.d/app.conf` kommt `limit_req_status 429;` in den server-Block und
+      `limit_req zone=api burst=20 nodelay;` in `location /api/`.
+    solve: |
+      cat > nginx.conf <<'EOF'
+      worker_processes auto;
+
+      events {
+          worker_connections 1024;
+      }
+
+      http {
+          include mime.types;
+          default_type application/octet-stream;
+          server_tokens off;
+          gzip on;
+          gzip_vary on;
+          gzip_types text/css application/javascript application/json image/svg+xml;
+          limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+          include conf.d/*.conf;
+      }
+      EOF
+      cat > conf.d/app.conf <<'EOF'
+      server {
+          listen 80;
+          server_name app.example.com;
+          root /srv/app/dist;
+          index index.html;
+          limit_req_status 429;
+
+          location / {
+              try_files $uri $uri/ /index.html;
+          }
+
+          location /assets/ {
+              expires 1y;
+              add_header Cache-Control "public, immutable";
+              try_files $uri =404;
+          }
+
+          location = /index.html {
+              add_header Cache-Control "no-cache";
+          }
+
+          location /api/ {
+              limit_req zone=api burst=20 nodelay;
+              proxy_pass http://127.0.0.1:3000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+      EOF
+  - id: https
+    title: HTTPS für die App
+    description: |
+      Das Zertifikat liegt (auf dem echten Server) unter `/etc/letsencrypt/live/app.example.com/`. Baue
+      `conf.d/app.conf` in **zwei** server-Blöcke um:
+
+      1. **Block 1 (Port 80):** `listen 80;`, `server_name app.example.com;`,
+         `location /.well-known/acme-challenge/` mit `root /var/www/certbot;` und `location /` mit
+         `return 301 https://app.example.com$request_uri;`
+      2. **Block 2 (HTTPS):** `listen 443 ssl;`, `http2 on;`, `server_name app.example.com;`,
+         `ssl_certificate …/fullchain.pem;`, `ssl_certificate_key …/privkey.pem;` – und **alles**, was
+         bisher im Port-80-Block stand (root, index, limit_req_status und alle locations).
+    checklist:
+      - Port 80 liefert nur noch ACME-Dateien und leitet sonst auf HTTPS um
+      - Der HTTPS-Block hat HTTP/2 und das Let's-Encrypt-Zertifikat
+      - SPA, Assets und API funktionieren jetzt über HTTPS
+    hints:
+      - Kopiere den bisherigen server-Block, mache aus der Kopie den HTTPS-Block und kürze das Original auf Weiterleitung und ACME.
+      - "`http2` ist eine eigene Direktive: `http2 on;` – nicht an listen anhängen."
+    checks:
+      - type: command
+        run: bash pruefe.sh conf.d/app.conf && test "$(grep -Ec '^\s*server\s*\{' conf.d/app.conf)" = 2
+        message: conf.d/app.conf soll fehlerfrei sein und genau zwei server-Blöcke enthalten.
+      - type: command
+        run: b=$(bash pruefe.sh --baum conf.d/app.conf); echo "$b" | grep -Eq '^server > location /\.well-known/acme-challenge/ > root /var/www/certbot/?$' && echo "$b" | grep -Eq '^server > location / > return 301 https://app\.example\.com\$request_uri$'
+        message: Im Port-80-Block fehlen die ACME-location oder return 301 https://app.example.com$request_uri;
+      - type: command
+        run: grep -Eq '^\s*listen\s+443\s+ssl\s*;' conf.d/app.conf && grep -Eq '^\s*http2\s+on\s*;' conf.d/app.conf
+        message: Der HTTPS-Block braucht listen 443 ssl; und http2 on;
+      - type: command
+        run: grep -Eq '^\s*ssl_certificate\s+/etc/letsencrypt/live/app\.example\.com/fullchain\.pem\s*;' conf.d/app.conf && grep -Eq '^\s*ssl_certificate_key\s+/etc/letsencrypt/live/app\.example\.com/privkey\.pem\s*;' conf.d/app.conf
+        message: ssl_certificate (fullchain.pem) oder ssl_certificate_key (privkey.pem) fehlen.
+      - type: command
+        run: awk '/^[[:space:]]*server[[:space:]]*\{/{n++} n==2 && /proxy_pass[[:space:]]+http:\/\/127\.0\.0\.1:3000;/{p=1} n==2 && /try_files[[:space:]]+\$uri[[:space:]]+\$uri\/[[:space:]]+\/index\.html;/{t=1} n==2 && /root[[:space:]]+\/srv\/app\/dist/{r=1} END{exit !(p && t && r)}' conf.d/app.conf
+        message: Der zweite (HTTPS-)Block braucht root, den SPA-Fallback und die API-location – sie sind aus dem Port-80-Block umgezogen.
+      - type: command
+        run: awk '/^[[:space:]]*server[[:space:]]*\{/{n++} n==1 && /proxy_pass/{f=1} END{exit f}' conf.d/app.conf
+        message: Im Port-80-Block soll kein proxy_pass mehr stehen – er leitet nur noch um.
+    solution: |
+      ```nginx title="conf.d/app.conf"
+      server {
+          listen 80;
+          server_name app.example.com;
+
+          location /.well-known/acme-challenge/ {
+              root /var/www/certbot;
+          }
+
+          location / {
+              return 301 https://app.example.com$request_uri;
+          }
+      }
+
+      server {
+          listen 443 ssl;
+          http2 on;
+          server_name app.example.com;
+
+          ssl_certificate     /etc/letsencrypt/live/app.example.com/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
+
+          root /srv/app/dist;
+          index index.html;
+          limit_req_status 429;
+
+          location / {
+              try_files $uri $uri/ /index.html;
+          }
+
+          location /assets/ {
+              expires 1y;
+              add_header Cache-Control "public, immutable";
+              try_files $uri =404;
+          }
+
+          location = /index.html {
+              add_header Cache-Control "no-cache";
+          }
+
+          location /api/ {
+              limit_req zone=api burst=20 nodelay;
+              proxy_pass http://127.0.0.1:3000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+      ```
+    solve: |
+      cat > conf.d/app.conf <<'EOF'
+      server {
+          listen 80;
+          server_name app.example.com;
+
+          location /.well-known/acme-challenge/ {
+              root /var/www/certbot;
+          }
+
+          location / {
+              return 301 https://app.example.com$request_uri;
+          }
+      }
+
+      server {
+          listen 443 ssl;
+          http2 on;
+          server_name app.example.com;
+
+          ssl_certificate     /etc/letsencrypt/live/app.example.com/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
+
+          root /srv/app/dist;
+          index index.html;
+          limit_req_status 429;
+
+          location / {
+              try_files $uri $uri/ /index.html;
+          }
+
+          location /assets/ {
+              expires 1y;
+              add_header Cache-Control "public, immutable";
+              try_files $uri =404;
+          }
+
+          location = /index.html {
+              add_header Cache-Control "no-cache";
+          }
+
+          location /api/ {
+              limit_req zone=api burst=20 nodelay;
+              proxy_pass http://127.0.0.1:3000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+      EOF
+  - id: logs
+    title: Eigene Logs pro Website
+    description: |
+      Damit du Fehler später schnell findest, bekommt jede Website eigene Logs.
+
+      1. Im HTTPS-Block von `conf.d/app.conf`: `access_log /var/log/nginx/app.access.log;` und
+         `error_log /var/log/nginx/app.error.log warn;`
+      2. Im server-Block von `conf.d/admin.conf`: `access_log /var/log/nginx/admin.access.log;` und
+         `error_log /var/log/nginx/admin.error.log warn;`
+      3. Im Auffang-Server `conf.d/00-default.conf`: `access_log off;` – Scanner-Anfragen sollen das Log
+         nicht füllen.
+
+      Prüfe zum Schluss alles auf einmal: `bash pruefe.sh nginx.conf conf.d/*.conf`.
+    checklist:
+      - App und Admin schreiben in getrennte Logs
+      - Der Auffang-Server protokolliert nichts
+      - Alle Dateien bestehen die Mini-Prüfung
+    hints:
+      - "`access_log` und `error_log` sind im server-Kontext erlaubt."
+      - Bei app.conf gehören die Zeilen in den zweiten Block (HTTPS).
+    checks:
+      - type: command
+        run: bash pruefe.sh nginx.conf conf.d/00-default.conf conf.d/app.conf conf.d/admin.conf
+        message: Mindestens eine Datei hat Syntaxfehler. Führe bash pruefe.sh nginx.conf conf.d/*.conf aus.
+      - type: command
+        run: awk '/^[[:space:]]*server[[:space:]]*\{/{n++} n==2 && /^[[:space:]]*access_log[[:space:]]+\/var\/log\/nginx\/app\.access\.log;/{a=1} n==2 && /^[[:space:]]*error_log[[:space:]]+\/var\/log\/nginx\/app\.error\.log[[:space:]]+warn;/{e=1} END{exit !(a && e)}' conf.d/app.conf
+        message: Im HTTPS-Block von app.conf fehlen access_log /var/log/nginx/app.access.log; oder error_log /var/log/nginx/app.error.log warn;
+      - type: command
+        run: b=$(bash pruefe.sh --baum conf.d/admin.conf); echo "$b" | grep -Eq '^server > access_log /var/log/nginx/admin\.access\.log$' && echo "$b" | grep -Eq '^server > error_log /var/log/nginx/admin\.error\.log warn$'
+        message: Im server-Block von admin.conf fehlen access_log /var/log/nginx/admin.access.log; oder error_log /var/log/nginx/admin.error.log warn;
+      - type: command
+        run: bash pruefe.sh --baum conf.d/00-default.conf | grep -Eq '^server > access_log off$'
+        message: Im Auffang-Server fehlt access_log off;
+    solution: |
+      ```nginx title="Zusätzliche Zeilen"
+      # conf.d/app.conf, HTTPS-Block
+      access_log /var/log/nginx/app.access.log;
+      error_log /var/log/nginx/app.error.log warn;
+
+      # conf.d/admin.conf, server-Block
+      access_log /var/log/nginx/admin.access.log;
+      error_log /var/log/nginx/admin.error.log warn;
+
+      # conf.d/00-default.conf
+      access_log off;
+      ```
+      Auf einem echten Server folgen jetzt `sudo nginx -t` und `sudo systemctl reload nginx`.
+    solve: |
+      awk '/^[[:space:]]*server[[:space:]]*\{/{n++} {print} n==2 && /^[[:space:]]*server_name/ && !d {print "    access_log /var/log/nginx/app.access.log;"; print "    error_log /var/log/nginx/app.error.log warn;"; d=1}' conf.d/app.conf > conf.d/app.conf.neu
+      mv conf.d/app.conf.neu conf.d/app.conf
+      awk '{print} /^[[:space:]]*server_name/ && !d {print "    access_log /var/log/nginx/admin.access.log;"; print "    error_log /var/log/nginx/admin.error.log warn;"; d=1}' conf.d/admin.conf > conf.d/admin.conf.neu
+      mv conf.d/admin.conf.neu conf.d/admin.conf
+      awk '{print} /^[[:space:]]*server_name/ && !d {print "    access_log off;"; d=1}' conf.d/00-default.conf > conf.d/00-default.conf.neu
+      mv conf.d/00-default.conf.neu conf.d/00-default.conf
+      bash pruefe.sh nginx.conf conf.d/00-default.conf conf.d/app.conf conf.d/admin.conf

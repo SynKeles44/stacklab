@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="410" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Wie nginx den location-Block wählt</text>
+  <rect x="250" y="48" width="320" height="40" rx="8" fill="#e0f7fb" stroke="#22d3ee" stroke-width="2"/>
+  <text x="410" y="73" text-anchor="middle" font-size="14" fill="#1e1b3a">Anfrage-Pfad, z. B. <tspan font-family="ui-monospace, Menlo, monospace">/assets/app.css</tspan></text>
+  <line x1="410" y1="88" x2="410" y2="110" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <rect x="210" y="112" width="400" height="50" rx="8" fill="#ede7fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="410" y="133" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">1. Exakter Treffer mit = ?</text>
+  <text x="410" y="152" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">location = /pfad</text>
+  <line x1="612" y1="137" x2="660" y2="137" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="636" y="128" text-anchor="middle" font-size="12" fill="#1e1b3a">ja</text>
+  <line x1="410" y1="162" x2="410" y2="188" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="422" y="180" font-size="12" fill="#1e1b3a">nein</text>
+  <rect x="210" y="190" width="400" height="50" rx="8" fill="#ede7fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="410" y="211" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">2. Längstes passendes Präfix merken</text>
+  <text x="410" y="230" text-anchor="middle" font-size="12" fill="#1e1b3a">Reihenfolge in der Datei egal</text>
+  <line x1="410" y1="240" x2="410" y2="266" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <rect x="210" y="268" width="400" height="50" rx="8" fill="#ede7fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="410" y="289" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">3. Hat dieses Präfix ^~ ?</text>
+  <text x="410" y="308" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">location ^~ /pfad/</text>
+  <line x1="612" y1="293" x2="660" y2="293" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="636" y="284" text-anchor="middle" font-size="12" fill="#1e1b3a">ja</text>
+  <line x1="410" y1="318" x2="410" y2="344" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="422" y="336" font-size="12" fill="#1e1b3a">nein</text>
+  <rect x="210" y="346" width="400" height="50" rx="8" fill="#fef3dc" stroke="#f59e0b" stroke-width="2"/>
+  <text x="410" y="367" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">4. Regex (~, ~*) der Reihe nach prüfen</text>
+  <text x="410" y="386" text-anchor="middle" font-size="12" fill="#1e1b3a">die erste passende gewinnt</text>
+  <line x1="612" y1="371" x2="660" y2="371" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="636" y="362" text-anchor="middle" font-size="12" fill="#1e1b3a">Treffer</text>
+  <line x1="410" y1="396" x2="410" y2="422" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="422" y="414" font-size="12" fill="#1e1b3a">kein Treffer</text>
+  <rect x="210" y="424" width="400" height="50" rx="8" fill="#e3f9ef" stroke="#34d399" stroke-width="2"/>
+  <text x="410" y="454" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">5. Das gemerkte Präfix aus Schritt 2 gilt</text>
+  <rect x="662" y="112" width="140" height="282" rx="10" fill="#e3f9ef" stroke="#34d399" stroke-width="2"/>
+  <text x="732" y="240" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Dieser Block</text>
+  <text x="732" y="260" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">antwortet.</text>
+  <text x="732" y="282" text-anchor="middle" font-size="12" fill="#1e1b3a">Suche endet.</text>
+  <text x="410" y="505" text-anchor="middle" font-size="12" fill="#1e1b3a">Präfix: das längste gewinnt. Regex: die erste gewinnt. = und ^~ beenden die Suche vor den Regex.</text>
+</svg>

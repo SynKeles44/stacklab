@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="410" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Wie nginx arbeitet: ein Master, mehrere Worker</text>
+  <rect x="300" y="55" width="220" height="70" rx="12" fill="#ede7fe" stroke="#a78bfa" stroke-width="2"/>
+  <text x="410" y="84" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Master-Prozess (root)</text>
+  <text x="410" y="105" text-anchor="middle" font-size="12" fill="#1e1b3a">liest Konfiguration, öffnet Ports</text>
+  <line x1="350" y1="127" x2="175" y2="183" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="410" y1="127" x2="410" y2="183" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="470" y1="127" x2="645" y2="183" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="560" y="150" font-size="12" fill="#1e1b3a">startet und überwacht</text>
+  <g>
+    <rect x="80" y="187" width="190" height="80" rx="12" fill="#e0f7fb" stroke="#22d3ee" stroke-width="2"/>
+    <text x="175" y="215" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Worker 1 (www-data)</text>
+    <text x="175" y="236" text-anchor="middle" font-size="12" fill="#1e1b3a">Ereignisschleife</text>
+    <text x="175" y="254" text-anchor="middle" font-size="12" fill="#1e1b3a">~1000 Verbindungen</text>
+  </g>
+  <g>
+    <rect x="315" y="187" width="190" height="80" rx="12" fill="#e0f7fb" stroke="#22d3ee" stroke-width="2"/>
+    <text x="410" y="215" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Worker 2 (www-data)</text>
+    <text x="410" y="236" text-anchor="middle" font-size="12" fill="#1e1b3a">Ereignisschleife</text>
+    <text x="410" y="254" text-anchor="middle" font-size="12" fill="#1e1b3a">~1000 Verbindungen</text>
+  </g>
+  <g>
+    <rect x="550" y="187" width="190" height="80" rx="12" fill="#e0f7fb" stroke="#22d3ee" stroke-width="2"/>
+    <text x="645" y="215" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Worker 3 (www-data)</text>
+    <text x="645" y="236" text-anchor="middle" font-size="12" fill="#1e1b3a">Ereignisschleife</text>
+    <text x="645" y="254" text-anchor="middle" font-size="12" fill="#1e1b3a">~1000 Verbindungen</text>
+  </g>
+  <g fill="#34d399">
+    <circle cx="110" cy="315" r="9"/><circle cx="140" cy="330" r="9"/><circle cx="175" cy="315" r="9"/><circle cx="210" cy="330" r="9"/><circle cx="240" cy="315" r="9"/>
+    <circle cx="345" cy="315" r="9"/><circle cx="375" cy="330" r="9"/><circle cx="410" cy="315" r="9"/><circle cx="445" cy="330" r="9"/><circle cx="475" cy="315" r="9"/>
+    <circle cx="580" cy="315" r="9"/><circle cx="610" cy="330" r="9"/><circle cx="645" cy="315" r="9"/><circle cx="680" cy="330" r="9"/><circle cx="710" cy="315" r="9"/>
+  </g>
+  <g stroke="#1e1b3a" stroke-width="1" stroke-dasharray="4 3">
+    <line x1="175" y1="269" x2="110" y2="305"/><line x1="175" y1="269" x2="175" y2="305"/><line x1="175" y1="269" x2="240" y2="305"/>
+    <line x1="410" y1="269" x2="345" y2="305"/><line x1="410" y1="269" x2="410" y2="305"/><line x1="410" y1="269" x2="475" y2="305"/>
+    <line x1="645" y1="269" x2="580" y2="305"/><line x1="645" y1="269" x2="645" y2="305"/><line x1="645" y1="269" x2="710" y2="305"/>
+  </g>
+  <text x="410" y="368" text-anchor="middle" font-size="13" fill="#1e1b3a">Jeder Punkt ist eine Client-Verbindung. Ein Worker bedient immer die, die gerade bereit ist.</text>
+  <text x="410" y="394" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">worker_processes auto;   worker_connections 1024;</text>
+</svg>

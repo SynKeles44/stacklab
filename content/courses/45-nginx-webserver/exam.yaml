@@ -1,0 +1,412 @@
+title: Abschlussprüfung Nginx & Webserver
+description: |
+  Die Prüfung deckt alle vier Module ab: Grundlagen und Konfiguration, statische Inhalte, das Anbinden von
+  Anwendungen und den sicheren Betrieb. Zum Schluss wartet eine Programmier-Aufgabe zur location-Auswahl
+  und zwei Aufgaben im Übungs-Terminal. Du brauchst 70 % zum Bestehen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Warum läuft der nginx-Master-Prozess als root, die Worker aber als www-data?
+    options:
+      - Weil Worker schneller sind, wenn sie wenig Rechte haben
+      - Weil nur root Ports unter 1024 öffnen darf, Anfragen aber mit möglichst wenig Rechten bearbeitet werden sollen
+      - Weil www-data die Konfiguration nicht lesen darf
+      - Das ist Zufall und hängt von der Distribution ab
+    answer: 1
+    explanation: Der Master öffnet die Ports, die Worker beantworten Anfragen – ein angegriffener Worker hat so kaum Rechte.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen zu nginx stimmen?
+    options:
+      - Ein Worker bedient dank Ereignisschleife tausende Verbindungen gleichzeitig
+      - nginx führt PHP-Code direkt aus
+      - "`nginx -t` prüft die Konfiguration, ohne den laufenden Server zu ändern"
+      - "`systemctl reload nginx` übernimmt Änderungen ohne Verbindungen abzubrechen"
+    answers: [0, 2, 3]
+    explanation: PHP führt PHP-FPM aus. nginx reicht die Anfrage nur per FastCGI weiter.
+  - module: grundlagen
+    type: find-bug
+    question: In welcher Zeile steckt der Fehler, den nginx mit "directive is not allowed here" meldet?
+    language: nginx
+    code: |
+      http {
+          include mime.types;
+          proxy_pass http://127.0.0.1:3000;
+          server {
+              listen 80;
+              server_name example.com;
+          }
+      }
+    bug_line: 3
+    explanation: proxy_pass ist nur in location (und if in location) erlaubt, nicht im http-Kontext.
+  - module: grundlagen
+    type: cloze
+    text: "Passt kein server_name, antwortet der server-Block mit ___ an der listen-Direktive. Der Header, den nginx mit server_name vergleicht, heißt ___."
+    blanks:
+      - [default_server]
+      - [Host, Host-Header]
+    explanation: Ohne bewussten default_server antwortet der erste Block für den Port.
+  - module: grundlagen
+    type: match
+    question: Ordne jede Direktive ihrem Kontext zu.
+    pairs:
+      - { left: "worker_connections", right: "events" }
+      - { left: "limit_req_zone", right: "http" }
+      - { left: "server_name", right: "server" }
+      - { left: "proxy_pass", right: "location" }
+    explanation: Steht eine Direktive im falschen Kontext, bricht nginx -t mit „not allowed here“ ab.
+  - module: statische-inhalte
+    type: single
+    question: "Gegeben: `location /static/ {A}` und `location ~* \\.css$ {B}`. Wer beantwortet `/static/app.css`?"
+    options: [A, B, Beide, Keiner]
+    answer: 1
+    explanation: Das längste Präfix A hat kein `^~`, also werden danach die Regex geprüft – B passt und gewinnt.
+  - module: statische-inhalte
+    type: single
+    question: "Wie erreichst du, dass im Beispiel oben A gewinnt?"
+    options:
+      - "`location ^~ /static/`"
+      - Den Block A weiter nach oben schieben
+      - "`location ~ /static/`"
+      - "`location = /static/`"
+    answer: 0
+    explanation: "`^~` beendet die Suche, wenn dieses Präfix das längste ist. Die Reihenfolge von Präfixen spielt keine Rolle."
+  - module: statische-inhalte
+    type: single
+    question: "`location /files/ { alias /data/; }` – welche Datei liest nginx für `/files/a.pdf`?"
+    options: ["/data/files/a.pdf", "/data/a.pdf", "/files/a.pdf", "/dataa.pdf"]
+    answer: 1
+    explanation: alias ersetzt den passenden location-Teil `/files/` durch `/data/`.
+  - module: statische-inhalte
+    type: find-bug
+    question: Ein Neuladen auf `/einstellungen` der React-App liefert 404. Welche Zeile ist schuld?
+    language: nginx
+    code: |
+      server {
+          root /srv/app/dist;
+          index index.html;
+          location / {
+              try_files $uri $uri/ =404;
+          }
+      }
+    bug_line: 5
+    explanation: "Für eine SPA lautet der letzte Parameter `/index.html`: `try_files $uri $uri/ /index.html;`."
+  - module: statische-inhalte
+    type: multiple
+    question: Welche Cache-Einstellungen sind für eine Vite-App sinnvoll?
+    options:
+      - "`assets/index-4f2a9c.js` mit `max-age=31536000, immutable`"
+      - "`index.html` mit `no-cache`"
+      - "`index.html` ein Jahr cachen, damit die Seite schnell lädt"
+      - JPEG-Bilder zusätzlich mit gzip komprimieren
+    answers: [0, 1]
+    explanation: index.html muss frisch sein, weil sie auf die neuen Dateinamen verweist. JPEGs sind schon komprimiert.
+  - module: anwendungen-anbinden
+    type: single
+    question: "`location /api/ { proxy_pass http://127.0.0.1:3000/v1/; }` – welchen Pfad sieht die App bei `/api/users`?"
+    options: ["/api/users", "/v1/users", "/v1/api/users", "/users"]
+    answer: 1
+    explanation: Mit Pfad in proxy_pass ersetzt nginx den location-Teil `/api/` durch `/v1/`.
+  - module: anwendungen-anbinden
+    type: match
+    question: Welche Zeile gibt der Anwendung welche Information?
+    pairs:
+      - { left: "proxy_set_header Host $host;", right: "die aufgerufene Domain" }
+      - { left: "proxy_set_header X-Forwarded-Proto $scheme;", right: "http oder https" }
+      - { left: "proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;", right: "die Kette der Client-IPs" }
+      - { left: "fastcgi_param SCRIPT_FILENAME …;", right: "welche PHP-Datei PHP-FPM ausführen soll" }
+    explanation: Ohne diese Angaben kennt die Anwendung weder Domain noch Client noch Protokoll.
+  - module: anwendungen-anbinden
+    type: single
+    question: Warum leitet eine sichere Laravel-Konfiguration nur `^/index\.php` an PHP-FPM weiter?
+    options:
+      - Weil PHP-FPM nur eine Datei gleichzeitig ausführen kann
+      - Damit hochgeladene oder vergessene PHP-Dateien unter public/ nie ausgeführt werden
+      - Weil andere PHP-Dateien sonst nicht gecacht werden
+      - Weil Laravel keine anderen Dateien in public/ erlaubt
+    answer: 1
+    explanation: Eine allgemeine `\.php$`-Regel würde auch eine hochgeladene Webshell ausführen.
+  - module: anwendungen-anbinden
+    type: cloze
+    text: "Läuft die Anwendung hinter proxy_pass nicht, zeigt der Browser ___ Bad Gateway. Im Error-Log steht dann meist `Connection ___`."
+    blanks:
+      - ["502"]
+      - [refused]
+    explanation: nginx selbst funktioniert – nur hinter ihm antwortet niemand.
+  - module: betrieb
+    type: single
+    question: Welche Datei aus /etc/letsencrypt/live/example.com/ gehört zu ssl_certificate?
+    options: [cert.pem, fullchain.pem, privkey.pem, chain.pem]
+    answer: 1
+    explanation: nginx braucht Zertifikat und Zwischenzertifikate zusammen in einer Datei.
+  - module: betrieb
+    type: multiple
+    question: Welche Aussagen zu HTTPS in aktuellen nginx-Versionen stimmen?
+    options:
+      - "`http2 on;` ist die aktuelle Schreibweise für HTTP/2"
+      - "Port 80 muss für die HTTP-01-Prüfung `/.well-known/acme-challenge/` ausliefern"
+      - "`listen 443 ssl http2;` ist die empfohlene Schreibweise"
+      - Let's-Encrypt-Zertifikate gelten standardmäßig 90 Tage
+    answers: [0, 1, 3]
+    explanation: Der http2-Parameter an listen ist veraltet.
+  - module: betrieb
+    type: single
+    question: "`limit_req zone=api burst=10 nodelay;` – was bewirkt nodelay?"
+    options:
+      - Es schaltet das Limit ab
+      - Anfragen im Burst werden sofort bearbeitet statt verzögert; die Grenze bleibt
+      - Abgelehnte Anfragen bekommen Status 429
+      - Der Burst wird unendlich groß
+    answer: 1
+    explanation: Für 429 sorgt `limit_req_status 429;` – nodelay ändert nur die Wartezeit.
+  - module: betrieb
+    type: match
+    question: Ordne Symptom und wahrscheinlichste Ursache zu.
+    pairs:
+      - { left: "413 Request Entity Too Large", right: "client_max_body_size zu klein" }
+      - { left: "ERR_TOO_MANY_REDIRECTS", right: "X-Forwarded-Proto fehlt, App leitet immer auf https um" }
+      - { left: "504 Gateway Timeout", right: "Anwendung antwortet zu langsam" }
+      - { left: "Änderung wirkt nicht", right: "Reload vergessen oder falsche Datei bearbeitet" }
+    explanation: Die genaue Ursache steht fast immer im Error-Log.
+tasks:
+  - module: statische-inhalte
+    id: pruefung-location-wahl
+    type: code
+    language: js
+    title: Die location-Auswahl nachbauen
+    description: |
+      Schreibe `waehleLocation(pfad, locations)`. `locations` ist ein Array von Objekten
+      `{ art, wert, name }` in der Reihenfolge der Konfiguration. `art` ist eine von:
+
+      - `"="` – exakter Pfad
+      - `"prefix"` – normales Präfix
+      - `"^~"` – Präfix, das Regex überspringt, wenn es das längste ist
+      - `"~"` – regulärer Ausdruck (`wert` ist ein String für `new RegExp`)
+      - `"~*"` – regulärer Ausdruck ohne Beachtung von Groß- und Kleinschreibung
+
+      Gib den `name` der location zurück, die nginx wählen würde, oder `null`, wenn keine passt.
+      Halte dich an die Reihenfolge: exakt → längstes Präfix merken → `^~` prüfen → Regex der Reihe nach →
+      gemerktes Präfix.
+    starter: |
+      function waehleLocation(pfad, locations) {
+        // 1. exakter Treffer
+        // 2. längstes Präfix (prefix oder ^~) merken
+        // 3. hat es ^~? dann fertig
+        // 4. Regex in Reihenfolge
+        // 5. gemerktes Präfix oder null
+      }
+    tests:
+      - name: exakter Treffer gewinnt
+        code: |
+          const l = [{ art: "prefix", wert: "/", name: "B" }, { art: "=", wert: "/", name: "A" }]
+          assertEqual(waehleLocation("/", l), "A")
+      - name: Regex schlägt längstes Präfix ohne ^~
+        code: |
+          const l = [{ art: "prefix", wert: "/", name: "root" }, { art: "prefix", wert: "/assets/", name: "assets" }, { art: "~*", wert: "\\.css$", name: "css" }]
+          assertEqual(waehleLocation("/assets/APP.CSS", l), "css")
+      - name: ^~ verhindert die Regex-Prüfung
+        code: |
+          const l = [{ art: "^~", wert: "/vendor/", name: "vendor" }, { art: "~", wert: "\\.js$", name: "js" }]
+          assertEqual(waehleLocation("/vendor/lib.js", l), "vendor")
+      - name: erste passende Regex gewinnt
+        code: |
+          const l = [{ art: "~", wert: "\\.js$", name: "erste" }, { art: "~", wert: "^/api/", name: "zweite" }]
+          assertEqual(waehleLocation("/api/x.js", l), "erste")
+      - name: ohne Regex-Treffer gilt das längste Präfix
+        code: |
+          const l = [{ art: "prefix", wert: "/", name: "root" }, { art: "prefix", wert: "/docs/", name: "docs" }, { art: "~", wert: "\\.pdf$", name: "pdf" }]
+          assertEqual(waehleLocation("/docs/start.html", l), "docs")
+      - name: nichts passt
+        code: |
+          assertEqual(waehleLocation("/x", [{ art: "prefix", wert: "/api/", name: "api" }]), null)
+    solution: |
+      ```js
+      function waehleLocation(pfad, locations) {
+        const exakt = locations.find((l) => l.art === "=" && l.wert === pfad)
+        if (exakt) return exakt.name
+
+        let laengstes = null
+        for (const l of locations) {
+          if ((l.art === "prefix" || l.art === "^~") && pfad.startsWith(l.wert)) {
+            if (!laengstes || l.wert.length > laengstes.wert.length) laengstes = l
+          }
+        }
+        if (laengstes && laengstes.art === "^~") return laengstes.name
+
+        for (const l of locations) {
+          if (l.art === "~" && new RegExp(l.wert).test(pfad)) return l.name
+          if (l.art === "~*" && new RegExp(l.wert, "i").test(pfad)) return l.name
+        }
+        return laengstes ? laengstes.name : null
+      }
+      ```
+  - module: anwendungen-anbinden
+    id: pruefung-konfig-reparieren
+    type: terminal
+    title: Eine gefährliche Konfiguration reparieren
+    description: |
+      Im Ordner `pruefung-reparieren` liegt `shop.conf` einer Laravel-App mit Vue-Frontend und einer
+      Node.js-API. Ein Kollege hat sie in Eile geschrieben. Repariere **vier** Probleme:
+
+      1. Die Datei hat einen Syntaxfehler (`bash pruefe.sh shop.conf`).
+      2. `root` zeigt auf den Projektordner `/srv/shop` statt auf `/srv/shop/public`.
+      3. Die PHP-location führt **jede** `.php`-Datei aus. Ändere sie zu `location ~ ^/index\.php(/|$)` und
+         ergänze eine weitere `location ~ \.php$` mit `return 404;`.
+      4. Die API erwartet Pfade **mit** `/api/`, aber `proxy_pass` schneidet es ab. Entferne den
+         Schrägstrich am Ende von `proxy_pass`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-reparieren
+    setup: |
+      cat > pruefe.sh <<'PRUEFE'
+      #!/usr/bin/env bash
+      # Stacklab-Mini-Pruefung fuer nginx-Konfigurationen.
+      # Ersetzt NICHT "nginx -t": Es findet nur Klammer- und Semikolonfehler.
+      #   bash pruefe.sh datei.conf ...        Syntax pruefen
+      #   bash pruefe.sh --baum datei.conf     jede Direktive mit ihrem Kontext zeigen
+      modus=pruefen
+      if [ "$1" = "--baum" ]; then modus=baum; shift; fi
+      [ $# -eq 0 ] && set -- nginx.conf
+      status=0
+      for datei in "$@"; do
+        if [ ! -f "$datei" ]; then echo "FEHLER: $datei gibt es nicht"; status=1; continue; fi
+        awk -v modus="$modus" -v q="'" '
+          { roh = $0; sub(/#.*/, ""); zeile = $0; sub(/[ \t]+$/, "", zeile)
+            ende = substr(zeile, length(zeile), 1)
+            if (zeile ~ /[^ \t]/ && index(";{}\"" q, ende) == 0) { print FILENAME ":" NR ": Semikolon fehlt -> " roh; fehler = 1 }
+            rest = $0
+            while (length(rest) > 0) {
+              if (match(rest, /[{};]/) == 0) { puffer = puffer " " rest; break }
+              teil = puffer " " substr(rest, 1, RSTART - 1); zeichen = substr(rest, RSTART, 1)
+              rest = substr(rest, RSTART + 1); puffer = ""
+              gsub(/^[ \t]+|[ \t]+$/, "", teil); gsub(/[ \t]+/, " ", teil)
+              if (zeichen == "{") { stapel[++tiefe] = teil }
+              else if (zeichen == "}") { tiefe--; if (tiefe < 0) { print FILENAME ":" NR ": } ohne passende {"; fehler = 1; tiefe = 0 } }
+              else if (teil != "" && modus == "baum") { pfad = ""; for (i = 1; i <= tiefe; i++) pfad = pfad stapel[i] " > "; print pfad teil }
+            } }
+          END { if (tiefe > 0) { print FILENAME ": " tiefe " Block/Bloecke nicht mit } geschlossen"; fehler = 1 }
+                if (modus == "pruefen" && !fehler) print FILENAME ": Syntax sieht gut aus (Stacklab-Mini-Pruefung)"
+                exit fehler }' "$datei" || status=1
+      done
+      exit $status
+      PRUEFE
+      cat > shop.conf <<'EOF'
+      server {
+          listen 80;
+          server_name shop.example.com;
+          root /srv/shop;
+          index index.php;
+
+          location / {
+              try_files $uri $uri/ /index.php?$query_string;
+          }
+
+          location /api/ {
+              proxy_pass http://127.0.0.1:3000/;
+              proxy_set_header Host $host
+          }
+
+          location ~ \.php$ {
+              fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+              fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+              include fastcgi_params;
+          }
+      }
+      EOF
+    checks:
+      - type: command
+        run: bash pruefe.sh shop.conf
+        message: shop.conf hat noch einen Syntaxfehler. Führe bash pruefe.sh shop.conf aus.
+      - type: command
+        run: bash pruefe.sh --baum shop.conf | grep -Eq '^server > root /srv/shop/public/?$'
+        message: root muss auf /srv/shop/public zeigen – sonst sind .env und vendor/ per URL abrufbar.
+      - type: command
+        run: bash pruefe.sh --baum shop.conf | grep -Fq 'server > location ~ ^/index\.php(/|$) > fastcgi_pass unix:/run/php/php8.5-fpm.sock'
+        message: fastcgi_pass soll nur noch in location ~ ^/index\.php(/|$) stehen.
+      - type: command
+        run: bash pruefe.sh --baum shop.conf | grep -Fq 'server > location ~ \.php$ > return 404' && test "$(grep -c fastcgi_pass shop.conf)" = 1
+        message: Es fehlt location ~ \.php$ mit return 404; oder fastcgi_pass kommt noch mehrfach vor.
+      - type: command
+        run: bash pruefe.sh --baum shop.conf | grep -Eq '^server > location /api/ > proxy_pass http://127\.0\.0\.1:3000$'
+        message: "proxy_pass in location /api/ soll http://127.0.0.1:3000 ohne Schrägstrich am Ende sein."
+      - type: command
+        run: bash pruefe.sh --baum shop.conf | grep -Eq '^server > location /api/ > proxy_set_header Host \$host$'
+        message: "proxy_set_header Host $host; soll in location /api/ erhalten bleiben."
+    hints:
+      - Der Syntaxfehler ist ein fehlendes Semikolon in der API-location.
+      - "Benenne die vorhandene PHP-location um und hänge danach `location ~ \\.php$ { return 404; }` an."
+    solution: |
+      ```nginx title="shop.conf"
+      server {
+          listen 80;
+          server_name shop.example.com;
+          root /srv/shop/public;
+          index index.php;
+
+          location / {
+              try_files $uri $uri/ /index.php?$query_string;
+          }
+
+          location /api/ {
+              proxy_pass http://127.0.0.1:3000;
+              proxy_set_header Host $host;
+          }
+
+          location ~ ^/index\.php(/|$) {
+              fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+              fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+              include fastcgi_params;
+          }
+
+          location ~ \.php$ {
+              return 404;
+          }
+      }
+      ```
+  - module: betrieb
+    id: pruefung-log
+    type: terminal
+    title: Ein Vorfall im Access-Log
+    description: |
+      Im Ordner `pruefung-log` liegt ein `access.log` im Format `combined`. Kunden melden seit 10:00 Uhr
+      Fehler. Finde heraus:
+
+      1. Wie viele Anfragen wurden mit Status **502** beantwortet? Schreibe die Zahl in `anzahl-502.txt`.
+      2. Welcher **Pfad** bekam die meisten 502-Antworten? Schreibe ihn in `pfad-502.txt`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-log
+    setup: |
+      z() { printf '%s - - [10/Oct/2026:%s +0000] "%s %s HTTP/1.1" %s %s "-" "Mozilla/5.0"\n' "$1" "$2" "$3" "$4" "$5" "$6"; }
+      {
+      z 203.0.113.5 09:58:10 GET / 200 5123
+      z 203.0.113.5 09:59:02 GET /api/cart 200 812
+      z 192.0.2.80 10:00:15 POST /api/checkout 502 157
+      z 192.0.2.80 10:00:21 POST /api/checkout 502 157
+      z 198.51.100.9 10:01:03 GET /api/cart 502 157
+      z 203.0.113.5 10:01:40 POST /api/checkout 502 157
+      z 198.51.100.9 10:02:11 GET /assets/index-4f2a9c.js 200 81233
+      z 192.0.2.80 10:03:00 GET /api/products 200 2210
+      z 203.0.113.77 10:03:30 POST /api/checkout 502 157
+      z 203.0.113.77 10:04:12 GET /impressum 200 3110
+      } > access.log
+    checks:
+      - type: command
+        run: tr -d '[:space:]' < anzahl-502.txt
+        stdout_equals: "5"
+        message: In anzahl-502.txt steht noch nicht die richtige Anzahl. Tipp – awk '$9 == 502' access.log | wc -l
+      - type: command
+        run: tr -d '[:space:]' < pfad-502.txt
+        stdout_equals: /api/checkout
+        message: In pfad-502.txt steht noch nicht der Pfad mit den meisten 502-Antworten (Spalte 7).
+    hints:
+      - Der Status steht in Spalte 9, der Pfad in Spalte 7.
+      - "`awk '$9 == 502 {print $7}' access.log | sort | uniq -c | sort -rn`"
+    solution: |
+      ```bash
+      cd pruefung-log
+      awk '$9 == 502' access.log | wc -l > anzahl-502.txt
+      awk '$9 == 502 {print $7}' access.log | sort | uniq -c | sort -rn | head -n 1 | awk '{print $2}' > pfad-502.txt
+      ```

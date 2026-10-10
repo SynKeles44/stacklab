@@ -1,0 +1,123 @@
+title: Grundlagen
+description: Was ein Webserver tut, wie nginx intern arbeitet, wie seine Konfiguration aufgebaut ist und wie er den passenden server-Block auswählt.
+exercise:
+  id: modul-uebung-grundgeruest
+  type: terminal
+  title: Eine Konfiguration von Grund auf
+  description: |
+    Du richtest nginx für die Website `example.com` ein – diesmal ohne Vorlage. Im Ordner
+    `grundgeruest` liegt nur das Prüfskript `pruefe.sh`.
+
+    1. Lege `nginx.conf` an mit `worker_processes auto;`, einem `events`-Block mit
+       `worker_connections 1024;` und einem `http`-Block. Der http-Block enthält
+       `include mime.types;` und `include conf.d/*.conf;`.
+    2. Lege `conf.d/00-default.conf` an: ein server-Block mit `listen 80 default_server;`,
+       `server_name _;` und `return 444;`.
+    3. Lege `conf.d/example.conf` an mit **zwei** server-Blöcken:
+       - Block 1: `listen 80;`, `server_name example.com;`, `root /srv/example.com/public;`, `index index.html;`
+       - Block 2: `listen 80;`, `server_name www.example.com;` und eine dauerhafte Weiterleitung
+         `return 301 http://example.com$request_uri;`
+    4. Prüfe alles mit `bash pruefe.sh nginx.conf conf.d/*.conf` und sieh dir die Kontexte mit
+       `bash pruefe.sh --baum nginx.conf` an.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: grundgeruest
+  setup: |
+    cat > pruefe.sh <<'PRUEFE'
+    #!/usr/bin/env bash
+    # Stacklab-Mini-Pruefung fuer nginx-Konfigurationen.
+    # Ersetzt NICHT "nginx -t": Es findet nur Klammer- und Semikolonfehler.
+    #   bash pruefe.sh datei.conf ...        Syntax pruefen
+    #   bash pruefe.sh --baum datei.conf     jede Direktive mit ihrem Kontext zeigen
+    modus=pruefen
+    if [ "$1" = "--baum" ]; then modus=baum; shift; fi
+    [ $# -eq 0 ] && set -- nginx.conf
+    status=0
+    for datei in "$@"; do
+      if [ ! -f "$datei" ]; then echo "FEHLER: $datei gibt es nicht"; status=1; continue; fi
+      awk -v modus="$modus" -v q="'" '
+        { roh = $0; sub(/#.*/, ""); zeile = $0; sub(/[ \t]+$/, "", zeile)
+          ende = substr(zeile, length(zeile), 1)
+          if (zeile ~ /[^ \t]/ && index(";{}\"" q, ende) == 0) { print FILENAME ":" NR ": Semikolon fehlt -> " roh; fehler = 1 }
+          rest = $0
+          while (length(rest) > 0) {
+            if (match(rest, /[{};]/) == 0) { puffer = puffer " " rest; break }
+            teil = puffer " " substr(rest, 1, RSTART - 1); zeichen = substr(rest, RSTART, 1)
+            rest = substr(rest, RSTART + 1); puffer = ""
+            gsub(/^[ \t]+|[ \t]+$/, "", teil); gsub(/[ \t]+/, " ", teil)
+            if (zeichen == "{") { stapel[++tiefe] = teil }
+            else if (zeichen == "}") { tiefe--; if (tiefe < 0) { print FILENAME ":" NR ": } ohne passende {"; fehler = 1; tiefe = 0 } }
+            else if (teil != "" && modus == "baum") { pfad = ""; for (i = 1; i <= tiefe; i++) pfad = pfad stapel[i] " > "; print pfad teil }
+          } }
+        END { if (tiefe > 0) { print FILENAME ": " tiefe " Block/Bloecke nicht mit } geschlossen"; fehler = 1 }
+              if (modus == "pruefen" && !fehler) print FILENAME ": Syntax sieht gut aus (Stacklab-Mini-Pruefung)"
+              exit fehler }' "$datei" || status=1
+    done
+    exit $status
+    PRUEFE
+  checks:
+    - type: command
+      run: bash pruefe.sh nginx.conf conf.d/00-default.conf conf.d/example.conf
+      message: Eine der Dateien nginx.conf, conf.d/00-default.conf oder conf.d/example.conf fehlt oder hat Syntaxfehler.
+    - type: command
+      run: bash pruefe.sh --baum nginx.conf | grep -Eq '^worker_processes auto$'
+      message: In nginx.conf fehlt ganz außen (main-Kontext) worker_processes auto;
+    - type: command
+      run: bash pruefe.sh --baum nginx.conf | grep -Eq '^events > worker_connections 1024$'
+      message: Im events-Block fehlt worker_connections 1024;
+    - type: command
+      run: bash pruefe.sh --baum nginx.conf | grep -Eq '^http > include mime\.types$' && bash pruefe.sh --baum nginx.conf | grep -Eq '^http > include conf\.d/\*\.conf$'
+      message: Der http-Block braucht include mime.types; und include conf.d/*.conf;
+    - type: command
+      run: bash pruefe.sh --baum conf.d/00-default.conf | grep -Eq '^server > listen 80 default_server$' && bash pruefe.sh --baum conf.d/00-default.conf | grep -Eq '^server > return 444$'
+      message: "conf.d/00-default.conf braucht einen server-Block mit listen 80 default_server; und return 444;"
+    - type: command
+      run: test "$(grep -Ec '^\s*server\s*\{' conf.d/example.conf)" = 2
+      message: conf.d/example.conf soll genau zwei server-Blöcke enthalten.
+    - type: command
+      run: bash pruefe.sh --baum conf.d/example.conf | grep -Eq '^server > root /srv/example\.com/public/?$' && bash pruefe.sh --baum conf.d/example.conf | grep -Eq '^server > index index\.html$'
+      message: Der Block für example.com braucht root /srv/example.com/public; und index index.html;
+    - type: command
+      run: grep -Eq '^\s*return\s+301\s+http://example\.com\$request_uri\s*;' conf.d/example.conf
+      message: "Der www-Block braucht return 301 http://example.com$request_uri;"
+    - type: command
+      run: test "$(grep -Ec 'default_server' conf.d/example.conf)" = 0
+      message: In conf.d/example.conf darf kein default_server stehen – den gibt es nur einmal in 00-default.conf.
+  hints:
+    - Beginne mit nginx.conf und prüfe sie sofort mit `bash pruefe.sh nginx.conf`, bevor du die anderen Dateien schreibst.
+    - "Lege den Ordner mit `mkdir -p conf.d` an. Mehrzeilige Dateien schreibst du mit `nano` oder mit `cat > datei <<'EOF'` … `EOF`."
+    - "Achte bei `$request_uri` in einem Heredoc auf `<<'EOF'` mit Anführungszeichen – sonst ersetzt die Shell die Variable durch einen leeren Text."
+  solution: |
+    ```nginx title="nginx.conf"
+    worker_processes auto;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include mime.types;
+        include conf.d/*.conf;
+    }
+    ```
+    ```nginx title="conf.d/00-default.conf"
+    server {
+        listen 80 default_server;
+        server_name _;
+        return 444;
+    }
+    ```
+    ```nginx title="conf.d/example.conf"
+    server {
+        listen 80;
+        server_name example.com;
+        root /srv/example.com/public;
+        index index.html;
+    }
+
+    server {
+        listen 80;
+        server_name www.example.com;
+        return 301 http://example.com$request_uri;
+    }
+    ```

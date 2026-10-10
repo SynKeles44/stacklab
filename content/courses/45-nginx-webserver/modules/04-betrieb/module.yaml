@@ -1,0 +1,140 @@
+title: Sicher betreiben
+description: HTTPS mit Let's Encrypt, Rate Limiting und Schutz-Header, Logs lesen und die typischen Fehler im Betrieb systematisch finden.
+exercise:
+  id: modul-uebung-produktion
+  type: terminal
+  title: Ein produktionsreifer server-Block
+  description: |
+    Im Ordner `produktion` liegt `nginx.conf`. Sie definiert bereits ein Log-Format `timed` und eine
+    Rate-Limit-Zone `api`. Schreibe die Datei `conf.d/shop.conf` für `shop.example.com`:
+
+    **Block 1 – Port 80**
+
+    1. `listen 80;`, `server_name shop.example.com;`
+    2. `location /.well-known/acme-challenge/` mit `root /var/www/certbot;`
+    3. `location /` mit `return 301 https://shop.example.com$request_uri;`
+
+    **Block 2 – HTTPS**
+
+    4. `listen 443 ssl;`, `http2 on;`, `server_name shop.example.com;`
+    5. `ssl_certificate` und `ssl_certificate_key` mit `fullchain.pem` und `privkey.pem` aus
+       `/etc/letsencrypt/live/shop.example.com/`
+    6. `server_tokens off;` und `add_header Strict-Transport-Security "max-age=31536000" always;`
+    7. `access_log /var/log/nginx/shop.access.log timed;`
+    8. `location /api/` mit `limit_req zone=api burst=20 nodelay;` und
+       `proxy_pass http://127.0.0.1:3000;`
+
+    Prüfe mit `bash pruefe.sh nginx.conf conf.d/shop.conf`. Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: produktion
+  setup: |
+    cat > pruefe.sh <<'PRUEFE'
+    #!/usr/bin/env bash
+    # Stacklab-Mini-Pruefung fuer nginx-Konfigurationen.
+    # Ersetzt NICHT "nginx -t": Es findet nur Klammer- und Semikolonfehler.
+    #   bash pruefe.sh datei.conf ...        Syntax pruefen
+    #   bash pruefe.sh --baum datei.conf     jede Direktive mit ihrem Kontext zeigen
+    modus=pruefen
+    if [ "$1" = "--baum" ]; then modus=baum; shift; fi
+    [ $# -eq 0 ] && set -- nginx.conf
+    status=0
+    for datei in "$@"; do
+      if [ ! -f "$datei" ]; then echo "FEHLER: $datei gibt es nicht"; status=1; continue; fi
+      awk -v modus="$modus" -v q="'" '
+        { roh = $0; sub(/#.*/, ""); zeile = $0; sub(/[ \t]+$/, "", zeile)
+          ende = substr(zeile, length(zeile), 1)
+          if (zeile ~ /[^ \t]/ && index(";{}\"" q, ende) == 0) { print FILENAME ":" NR ": Semikolon fehlt -> " roh; fehler = 1 }
+          rest = $0
+          while (length(rest) > 0) {
+            if (match(rest, /[{};]/) == 0) { puffer = puffer " " rest; break }
+            teil = puffer " " substr(rest, 1, RSTART - 1); zeichen = substr(rest, RSTART, 1)
+            rest = substr(rest, RSTART + 1); puffer = ""
+            gsub(/^[ \t]+|[ \t]+$/, "", teil); gsub(/[ \t]+/, " ", teil)
+            if (zeichen == "{") { stapel[++tiefe] = teil }
+            else if (zeichen == "}") { tiefe--; if (tiefe < 0) { print FILENAME ":" NR ": } ohne passende {"; fehler = 1; tiefe = 0 } }
+            else if (teil != "" && modus == "baum") { pfad = ""; for (i = 1; i <= tiefe; i++) pfad = pfad stapel[i] " > "; print pfad teil }
+          } }
+        END { if (tiefe > 0) { print FILENAME ": " tiefe " Block/Bloecke nicht mit } geschlossen"; fehler = 1 }
+              if (modus == "pruefen" && !fehler) print FILENAME ": Syntax sieht gut aus (Stacklab-Mini-Pruefung)"
+              exit fehler }' "$datei" || status=1
+    done
+    exit $status
+    PRUEFE
+    mkdir -p conf.d
+    cat > nginx.conf <<'EOF'
+    worker_processes auto;
+    events {
+        worker_connections 1024;
+    }
+    http {
+        include mime.types;
+        log_format timed '$remote_addr [$time_local] "$request" $status $request_time';
+        limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+        limit_req_status 429;
+        include conf.d/*.conf;
+    }
+    EOF
+  checks:
+    - type: command
+      run: bash pruefe.sh nginx.conf conf.d/shop.conf
+      message: conf.d/shop.conf fehlt oder hat Syntaxfehler. Führe bash pruefe.sh nginx.conf conf.d/shop.conf aus.
+    - type: command
+      run: test "$(grep -Ec '^\s*server\s*\{' conf.d/shop.conf)" = 2
+      message: conf.d/shop.conf soll genau zwei server-Blöcke enthalten.
+    - type: command
+      run: b=$(bash pruefe.sh --baum conf.d/shop.conf); echo "$b" | grep -Eq '^server > location /\.well-known/acme-challenge/ > root /var/www/certbot/?$' && echo "$b" | grep -Eq '^server > location / > return 301 https://shop\.example\.com\$request_uri$'
+      message: Im Port-80-Block fehlen die ACME-location oder die Weiterleitung return 301 https://shop.example.com$request_uri;
+    - type: command
+      run: grep -Eq '^\s*listen\s+443\s+ssl\s*;' conf.d/shop.conf && grep -Eq '^\s*http2\s+on\s*;' conf.d/shop.conf
+      message: Der HTTPS-Block braucht listen 443 ssl; und http2 on;
+    - type: command
+      run: grep -Eq '^\s*ssl_certificate\s+/etc/letsencrypt/live/shop\.example\.com/fullchain\.pem\s*;' conf.d/shop.conf && grep -Eq '^\s*ssl_certificate_key\s+/etc/letsencrypt/live/shop\.example\.com/privkey\.pem\s*;' conf.d/shop.conf
+      message: ssl_certificate (fullchain.pem) oder ssl_certificate_key (privkey.pem) fehlen oder zeigen auf den falschen Ordner.
+    - type: command
+      run: grep -Eq '^\s*server_tokens\s+off\s*;' conf.d/shop.conf && grep -Eq '^\s*add_header\s+Strict-Transport-Security\s+"max-age=31536000"\s+always\s*;' conf.d/shop.conf
+      message: 'Es fehlen server_tokens off; oder add_header Strict-Transport-Security "max-age=31536000" always;'
+    - type: command
+      run: grep -Eq '^\s*access_log\s+/var/log/nginx/shop\.access\.log\s+timed\s*;' conf.d/shop.conf
+      message: Es fehlt access_log /var/log/nginx/shop.access.log timed;
+    - type: command
+      run: b=$(bash pruefe.sh --baum conf.d/shop.conf); echo "$b" | grep -Eq '^server > location /api/ > limit_req zone=api burst=20 nodelay$' && echo "$b" | grep -Eq '^server > location /api/ > proxy_pass http://127\.0\.0\.1:3000$'
+      message: location /api/ braucht limit_req zone=api burst=20 nodelay; und proxy_pass http://127.0.0.1:3000;
+    - type: command
+      run: awk '/^[[:space:]]*server[[:space:]]*\{/{n++} n==1 && /listen[[:space:]]+443/{f=1} END{exit f}' conf.d/shop.conf
+      message: Der erste Block ist für Port 80, der HTTPS-Block kommt als zweiter.
+  hints:
+    - Fang mit dem Port-80-Block an – er ist fast derselbe wie in der Lektion zu HTTPS.
+    - Alles ab Schritt 4 gehört in den zweiten server-Block, die API-location ebenfalls.
+    - Schreibe die Datei mit `nano conf.d/shop.conf`, dann bleiben `$request_uri` und Co. erhalten.
+  solution: |
+    ```nginx title="conf.d/shop.conf"
+    server {
+        listen 80;
+        server_name shop.example.com;
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+
+        location / {
+            return 301 https://shop.example.com$request_uri;
+        }
+    }
+
+    server {
+        listen 443 ssl;
+        http2 on;
+        server_name shop.example.com;
+
+        ssl_certificate     /etc/letsencrypt/live/shop.example.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/shop.example.com/privkey.pem;
+
+        server_tokens off;
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        access_log /var/log/nginx/shop.access.log timed;
+
+        location /api/ {
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://127.0.0.1:3000;
+        }
+    }
+    ```

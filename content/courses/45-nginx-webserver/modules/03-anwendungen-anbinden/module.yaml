@@ -1,0 +1,136 @@
+title: Anwendungen anbinden
+description: Wie nginx als Reverse Proxy Anfragen an Anwendungen weiterreicht und PHP-Anwendungen sicher über PHP-FPM und den Front-Controller ausführt.
+exercise:
+  id: modul-uebung-anbinden
+  type: terminal
+  title: Frontend, API und PHP-Backend auf einem Server
+  description: |
+    Ein Team betreibt auf einem Server drei Teile: eine React-App, eine Node.js-API und ein
+    Laravel-Admin. Im Ordner `anwendungen` liegen zwei leere Dateien. Fülle sie:
+
+    **`conf.d/app.conf`** – ein server-Block für `app.example.com`:
+
+    1. `listen 80;`, `server_name app.example.com;`, `root /srv/app/dist;`
+    2. `location /` mit dem SPA-Fallback `try_files $uri $uri/ /index.html;`
+    3. `location /api/` mit `proxy_pass http://127.0.0.1:8080;` – **ohne** Schrägstrich, die API
+       erwartet Pfade mit `/api/` – und den Headern `Host $host`, `X-Forwarded-For
+       $proxy_add_x_forwarded_for` und `X-Forwarded-Proto $scheme`.
+
+    **`conf.d/admin.conf`** – ein server-Block für `admin.example.com`:
+
+    4. `listen 80;`, `server_name admin.example.com;`, `root /srv/admin/public;`
+    5. `location /` mit `try_files $uri $uri/ /index.php?$query_string;`
+    6. `location ~ ^/index\.php(/|$)` mit `fastcgi_pass 127.0.0.1:9000;`, der Zeile
+       `fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;` und `include fastcgi_params;`
+    7. `location ~ \.php$` mit `return 404;`
+
+    Prüfe mit `bash pruefe.sh conf.d/*.conf`. Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: anwendungen
+  setup: |
+    cat > pruefe.sh <<'PRUEFE'
+    #!/usr/bin/env bash
+    # Stacklab-Mini-Pruefung fuer nginx-Konfigurationen.
+    # Ersetzt NICHT "nginx -t": Es findet nur Klammer- und Semikolonfehler.
+    #   bash pruefe.sh datei.conf ...        Syntax pruefen
+    #   bash pruefe.sh --baum datei.conf     jede Direktive mit ihrem Kontext zeigen
+    modus=pruefen
+    if [ "$1" = "--baum" ]; then modus=baum; shift; fi
+    [ $# -eq 0 ] && set -- nginx.conf
+    status=0
+    for datei in "$@"; do
+      if [ ! -f "$datei" ]; then echo "FEHLER: $datei gibt es nicht"; status=1; continue; fi
+      awk -v modus="$modus" -v q="'" '
+        { roh = $0; sub(/#.*/, ""); zeile = $0; sub(/[ \t]+$/, "", zeile)
+          ende = substr(zeile, length(zeile), 1)
+          if (zeile ~ /[^ \t]/ && index(";{}\"" q, ende) == 0) { print FILENAME ":" NR ": Semikolon fehlt -> " roh; fehler = 1 }
+          rest = $0
+          while (length(rest) > 0) {
+            if (match(rest, /[{};]/) == 0) { puffer = puffer " " rest; break }
+            teil = puffer " " substr(rest, 1, RSTART - 1); zeichen = substr(rest, RSTART, 1)
+            rest = substr(rest, RSTART + 1); puffer = ""
+            gsub(/^[ \t]+|[ \t]+$/, "", teil); gsub(/[ \t]+/, " ", teil)
+            if (zeichen == "{") { stapel[++tiefe] = teil }
+            else if (zeichen == "}") { tiefe--; if (tiefe < 0) { print FILENAME ":" NR ": } ohne passende {"; fehler = 1; tiefe = 0 } }
+            else if (teil != "" && modus == "baum") { pfad = ""; for (i = 1; i <= tiefe; i++) pfad = pfad stapel[i] " > "; print pfad teil }
+          } }
+        END { if (tiefe > 0) { print FILENAME ": " tiefe " Block/Bloecke nicht mit } geschlossen"; fehler = 1 }
+              if (modus == "pruefen" && !fehler) print FILENAME ": Syntax sieht gut aus (Stacklab-Mini-Pruefung)"
+              exit fehler }' "$datei" || status=1
+    done
+    exit $status
+    PRUEFE
+    mkdir -p conf.d
+    : > conf.d/app.conf
+    : > conf.d/admin.conf
+  checks:
+    - type: command
+      run: bash pruefe.sh conf.d/app.conf conf.d/admin.conf && test -s conf.d/app.conf && test -s conf.d/admin.conf
+      message: Eine der beiden Dateien ist leer oder hat Syntaxfehler. Führe bash pruefe.sh conf.d/*.conf aus.
+    - type: command
+      run: bash pruefe.sh --baum conf.d/app.conf | grep -Eq '^server > server_name app\.example\.com$' && bash pruefe.sh --baum conf.d/app.conf | grep -Eq '^server > root /srv/app/dist/?$'
+      message: conf.d/app.conf braucht server_name app.example.com; und root /srv/app/dist;
+    - type: command
+      run: bash pruefe.sh --baum conf.d/app.conf | grep -Eq '^server > location / > try_files \$uri \$uri/ /index\.html$'
+      message: "In app.conf fehlt location / mit try_files $uri $uri/ /index.html;"
+    - type: command
+      run: bash pruefe.sh --baum conf.d/app.conf | grep -Eq '^server > location /api/ > proxy_pass http://127\.0\.0\.1:8080$'
+      message: "location /api/ braucht proxy_pass http://127.0.0.1:8080; – ohne Schrägstrich am Ende, damit /api/ erhalten bleibt."
+    - type: command
+      run: b=$(bash pruefe.sh --baum conf.d/app.conf); echo "$b" | grep -Eq '^server > location /api/ > proxy_set_header Host \$host$' && echo "$b" | grep -Eq '^server > location /api/ > proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for$' && echo "$b" | grep -Eq '^server > location /api/ > proxy_set_header X-Forwarded-Proto \$scheme$'
+      message: In location /api/ fehlen proxy_set_header-Zeilen für Host, X-Forwarded-For oder X-Forwarded-Proto.
+    - type: command
+      run: bash pruefe.sh --baum conf.d/admin.conf | grep -Eq '^server > server_name admin\.example\.com$' && bash pruefe.sh --baum conf.d/admin.conf | grep -Eq '^server > root /srv/admin/public/?$'
+      message: conf.d/admin.conf braucht server_name admin.example.com; und root /srv/admin/public;
+    - type: command
+      run: bash pruefe.sh --baum conf.d/admin.conf | grep -Eq '^server > location / > try_files \$uri \$uri/ /index\.php\?\$query_string$'
+      message: "In admin.conf fehlt location / mit try_files $uri $uri/ /index.php?$query_string;"
+    - type: command
+      run: b=$(bash pruefe.sh --baum conf.d/admin.conf); echo "$b" | grep -Fq 'server > location ~ ^/index\.php(/|$) > fastcgi_pass 127.0.0.1:9000' && echo "$b" | grep -Fq 'server > location ~ ^/index\.php(/|$) > fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name' && echo "$b" | grep -Fq 'server > location ~ ^/index\.php(/|$) > include fastcgi_params'
+      message: Die index.php-location in admin.conf ist unvollständig – fastcgi_pass, fastcgi_param SCRIPT_FILENAME und include fastcgi_params gehören hinein.
+    - type: command
+      run: bash pruefe.sh --baum conf.d/admin.conf | grep -Fq 'server > location ~ \.php$ > return 404' && test "$(grep -c fastcgi_pass conf.d/admin.conf)" = 1
+      message: In admin.conf fehlt location ~ \.php$ mit return 404; oder fastcgi_pass steht mehr als einmal darin.
+  hints:
+    - Schreibe die Dateien mit `nano`, dann bleiben alle `$`-Variablen unverändert.
+    - Der einzige Unterschied beim Proxy zur Lektion: kein Schrägstrich hinter dem Port, weil die API `/api/…` selbst erwartet.
+    - Die index.php-location muss vor `location ~ \.php$` stehen.
+  solution: |
+    ```nginx title="conf.d/app.conf"
+    server {
+        listen 80;
+        server_name app.example.com;
+        root /srv/app/dist;
+
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        location /api/ {
+            proxy_pass http://127.0.0.1:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+    ```
+    ```nginx title="conf.d/admin.conf"
+    server {
+        listen 80;
+        server_name admin.example.com;
+        root /srv/admin/public;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ ^/index\.php(/|$) {
+            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+
+        location ~ \.php$ {
+            return 404;
+        }
+    }
+    ```
