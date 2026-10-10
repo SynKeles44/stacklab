@@ -1,0 +1,142 @@
+title: Effekte, Hooks und Praxis
+description: Refs und Effekte gezielt einsetzen, Logik in eigene Hooks auslagern, Formulare bauen und Komponenten mit Vitest und Testing Library testen.
+exercise:
+  id: modul-uebung-notizblock
+  type: code
+  language: jsx
+  title: Ein Notizblock mit eigenem Hook, Ref und Effekt
+  description: |
+    Baue einen kleinen Notizblock, der alles aus diesem Modul kombiniert.
+
+    1. Schreibe einen eigenen Hook `useNotizen()`. Er verwaltet eine Liste von Notizen `{ id, text }` und
+       gibt `{ notizen, hinzufuegen, entfernen }` zurück. `hinzufuegen(text)` hängt eine Notiz mit neuer `id`
+       an, `entfernen(id)` löscht sie – beides unveränderlich.
+    2. `App` hat ein **kontrolliertes** Formular: `<input className="eingabe">` und
+       `<button type="submit">Hinzufügen</button>`. Der Button ist `disabled`, solange das Feld leer ist oder
+       nur Leerzeichen enthält.
+    3. Beim Absenden (`onSubmit`, ohne Neuladen der Seite) wird der Text ohne Leerzeichen am Rand gespeichert,
+       das Feld geleert und der Cursor per **Ref** wieder ins Eingabefeld gesetzt.
+    4. Jede Notiz erscheint als `<li>` mit dem Text in einem `<span>` und einem `<button className="entfernen">`.
+       Ohne Notizen steht dort `<p className="leer">Noch keine Notizen</p>`.
+    5. Ein **Effekt** hält den Seitentitel aktuell: `document.title` lautet immer `Notizen (0)`, `Notizen (1)` …
+  starter: |
+    let naechsteId = 1
+
+    function useNotizen() {
+      // State und Funktionen hierher
+      return { notizen: [], hinzufuegen: () => {}, entfernen: () => {} }
+    }
+
+    function App() {
+      const { notizen } = useNotizen()
+
+      return (
+        <section>
+          <form>
+            <input className="eingabe" placeholder="Neue Notiz" />
+            <button type="submit">Hinzufügen</button>
+          </form>
+          <p className="leer">Noch keine Notizen</p>
+        </section>
+      )
+    }
+  tests:
+    - name: startet leer mit gesperrtem Button und passendem Titel
+      code: |
+        await new Promise((r) => setTimeout(r, 30))
+        assertTrue(query('.leer') !== null, 'Ohne Notizen fehlt der Hinweis .leer.')
+        assertEqual(query('button[type="submit"]').disabled, true)
+        assertEqual(document.title, 'Notizen (0)')
+        await type('.eingabe', '   ')
+        assertEqual(query('button[type="submit"]').disabled, true, 'Nur Leerzeichen dürfen nicht absendbar sein.')
+    - name: speichert eine Notiz, leert das Feld und setzt den Fokus
+      code: |
+        await type('.eingabe', '  Milch kaufen ')
+        assertEqual(query('button[type="submit"]').disabled, false)
+        await click('button[type="submit"]')
+        await new Promise((r) => setTimeout(r, 30))
+        assertEqual(queryAll('li span').map((s) => s.textContent).join('|'), 'Milch kaufen')
+        assertEqual(query('.eingabe').value, '')
+        assertTrue(document.activeElement === query('.eingabe'), 'Nach dem Speichern soll der Fokus im Eingabefeld stehen.')
+        assertEqual(query('.leer'), null)
+        assertEqual(document.title, 'Notizen (1)')
+    - name: hängt weitere Notizen hinten an
+      code: |
+        await type('.eingabe', 'Code lesen')
+        await click('button[type="submit"]')
+        await new Promise((r) => setTimeout(r, 30))
+        assertEqual(queryAll('li span').map((s) => s.textContent).join('|'), 'Milch kaufen|Code lesen')
+        assertEqual(document.title, 'Notizen (2)')
+    - name: entfernt Notizen gezielt
+      code: |
+        await click('li .entfernen')
+        await new Promise((r) => setTimeout(r, 30))
+        assertEqual(queryAll('li span').map((s) => s.textContent).join('|'), 'Code lesen')
+        await click('li .entfernen')
+        await new Promise((r) => setTimeout(r, 30))
+        assertTrue(query('.leer') !== null)
+        assertEqual(document.title, 'Notizen (0)')
+  hints:
+    - "Im Hook: `const [notizen, setNotizen] = React.useState([])`, `hinzufuegen: (text) => setNotizen((alt) => [...alt, { id: naechsteId++, text }])` und `entfernen: (id) => setNotizen((alt) => alt.filter((n) => n.id !== id))`."
+    - "Formular: `const [text, setText] = React.useState('')`, `<input value={text} onChange={(e) => setText(e.target.value)} ref={feld} />` und `disabled={text.trim() === ''}`."
+    - "Absenden: `function absenden(e) { e.preventDefault(); hinzufuegen(text.trim()); setText(''); feld.current.focus() }`. Titel: `React.useEffect(() => { document.title = 'Notizen (' + notizen.length + ')' }, [notizen.length])`."
+  solution: |
+    let naechsteId = 1
+
+    function useNotizen() {
+      const [notizen, setNotizen] = React.useState([])
+
+      function hinzufuegen(text) {
+        setNotizen((alt) => [...alt, { id: naechsteId++, text }])
+      }
+
+      function entfernen(id) {
+        setNotizen((alt) => alt.filter((n) => n.id !== id))
+      }
+
+      return { notizen, hinzufuegen, entfernen }
+    }
+
+    function App() {
+      const { notizen, hinzufuegen, entfernen } = useNotizen()
+      const [text, setText] = React.useState('')
+      const feld = React.useRef(null)
+
+      React.useEffect(() => {
+        document.title = 'Notizen (' + notizen.length + ')'
+      }, [notizen.length])
+
+      function absenden(e) {
+        e.preventDefault()
+        hinzufuegen(text.trim())
+        setText('')
+        feld.current.focus()
+      }
+
+      return (
+        <section>
+          <form onSubmit={absenden}>
+            <input
+              className="eingabe"
+              placeholder="Neue Notiz"
+              ref={feld}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+            <button type="submit" disabled={text.trim() === ''}>Hinzufügen</button>
+          </form>
+          {notizen.length === 0 ? (
+            <p className="leer">Noch keine Notizen</p>
+          ) : (
+            <ul>
+              {notizen.map((n) => (
+                <li key={n.id}>
+                  <span>{n.text}</span>
+                  <button className="entfernen" onClick={() => entfernen(n.id)}>Entfernen</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )
+    }

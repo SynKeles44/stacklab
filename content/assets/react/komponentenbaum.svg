@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0891b2"/>
+    </marker>
+    <marker id="pb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97706"/>
+    </marker>
+  </defs>
+  <rect x="230" y="55" width="340" height="60" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="3"/>
+  <text x="400" y="93" text-anchor="middle" font-size="19" font-weight="600" fill="#1e1b3a">Akkordeon – besitzt den State</text>
+
+  <rect x="80" y="300" width="200" height="70" rx="12" fill="#ecfdf5" stroke="#34d399" stroke-width="3"/>
+  <text x="180" y="333" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Panel</text>
+  <text x="180" y="356" text-anchor="middle" font-size="14" fill="#1e1b3a">„Über uns“</text>
+  <rect x="520" y="300" width="200" height="70" rx="12" fill="#ecfdf5" stroke="#34d399" stroke-width="3"/>
+  <text x="620" y="333" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Panel</text>
+  <text x="620" y="356" text-anchor="middle" font-size="14" fill="#1e1b3a">„Kontakt“</text>
+
+  <path d="M300,117 L190,296" fill="none" stroke="#0891b2" stroke-width="3" marker-end="url(#pa)"/>
+  <path d="M610,296 L500,117" fill="none" stroke="#d97706" stroke-width="3" stroke-dasharray="9 6" marker-end="url(#pb)"/>
+
+  <rect x="104" y="230" width="240" height="40" rx="8" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="224" y="257" text-anchor="middle" font-size="16" fill="#1e1b3a">Props: istAktiv</text>
+  <rect x="456" y="230" width="240" height="40" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="576" y="257" text-anchor="middle" font-size="16" fill="#1e1b3a">Funktion: onAnzeigen</text>
+
+  <rect x="230" y="400" width="340" height="40" rx="8" fill="#ffffff" stroke="#34d399" stroke-width="2"/>
+  <text x="400" y="427" text-anchor="middle" font-size="16" fill="#1e1b3a">Panel – ohne eigenen State</text>
+  <text x="125" y="290" text-anchor="middle" font-size="13" fill="#0e7490">↓ nach unten</text>
+  <text x="690" y="290" text-anchor="middle" font-size="13" fill="#b45309">↑ meldet nach oben</text>
+</svg>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+    <marker id="pg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#059669"/>
+    </marker>
+  </defs>
+  <text x="225" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Prop-Drilling</text>
+  <text x="675" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Context</text>
+  <line x1="450" y1="20" x2="450" y2="460" stroke="#e5e7eb" stroke-width="2"/>
+
+  <g font-size="17" text-anchor="middle" fill="#1e1b3a">
+    <rect x="140" y="70" width="170" height="54" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2.5"/>
+    <text x="225" y="103">App (nutzer)</text>
+    <rect x="140" y="170" width="170" height="54" rx="10" fill="#ffffff" stroke="#f87171" stroke-width="2.5"/>
+    <text x="225" y="203">Seite</text>
+    <rect x="140" y="270" width="170" height="54" rx="10" fill="#ffffff" stroke="#f87171" stroke-width="2.5"/>
+    <text x="225" y="303">Layout</text>
+    <rect x="140" y="370" width="170" height="54" rx="10" fill="#ecfdf5" stroke="#34d399" stroke-width="2.5"/>
+    <text x="225" y="403">Avatar liest nutzer</text>
+  </g>
+  <g stroke="#1e1b3a" stroke-width="2.5">
+    <line x1="225" y1="125" x2="225" y2="166" marker-end="url(#pf)"/>
+    <line x1="225" y1="225" x2="225" y2="266" marker-end="url(#pf)"/>
+    <line x1="225" y1="325" x2="225" y2="366" marker-end="url(#pf)"/>
+  </g>
+  <g font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">
+    <text x="236" y="152">nutzer={nutzer}</text>
+    <text x="236" y="252">nutzer={nutzer}</text>
+    <text x="236" y="352">nutzer={nutzer}</text>
+  </g>
+  <text x="225" y="452" text-anchor="middle" font-size="14" fill="#b91c1c">Rot: reicht nur weiter, braucht den Wert nicht</text>
+
+  <g font-size="17" text-anchor="middle" fill="#1e1b3a">
+    <rect x="560" y="70" width="230" height="54" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2.5"/>
+    <text x="675" y="103">&lt;NutzerContext value&gt;</text>
+    <rect x="590" y="170" width="170" height="54" rx="10" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+    <text x="675" y="203">Seite</text>
+    <rect x="590" y="270" width="170" height="54" rx="10" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+    <text x="675" y="303">Layout</text>
+    <rect x="590" y="370" width="170" height="54" rx="10" fill="#ecfdf5" stroke="#34d399" stroke-width="2.5"/>
+    <text x="675" y="403">Avatar: useContext</text>
+  </g>
+  <g stroke="#9ca3af" stroke-width="2">
+    <line x1="675" y1="125" x2="675" y2="166" marker-end="url(#pf)"/>
+    <line x1="675" y1="225" x2="675" y2="266" marker-end="url(#pf)"/>
+    <line x1="675" y1="325" x2="675" y2="366" marker-end="url(#pf)"/>
+  </g>
+  <path d="M792,97 C870,97 870,397 764,397" fill="none" stroke="#059669" stroke-width="3" stroke-dasharray="9 6" marker-end="url(#pg)"/>
+  <text x="675" y="452" text-anchor="middle" font-size="14" fill="#047857">Grün gestrichelt: der Wert springt direkt zum Leser</text>
+</svg>

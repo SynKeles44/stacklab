@@ -1,0 +1,156 @@
+title: State verwalten
+description: State zwischen Komponenten teilen und gezielt zurücksetzen, Logik in Reducern bündeln und Daten mit Context tief im Baum verfügbar machen.
+exercise:
+  id: modul-uebung-warenkorb
+  type: code
+  language: jsx
+  title: Ein Warenkorb mit Reducer und Context
+  description: |
+    Baue einen Warenkorb, dessen Logik in einem Reducer steckt und dessen Daten per Context verteilt werden.
+
+    1. Schreibe `warenkorbReducer` mit den Actions `hinzugefuegt` (Feld `produkt`) und `entfernt` (Feld `id`).
+       Wird ein Produkt erneut hinzugefügt, erhöht sich nur seine `menge`; neue Produkte starten mit `menge: 1`.
+    2. Lege zwei Contexts an: `WarenkorbContext` (die Positionen) und `DispatchContext` (die dispatch-Funktion).
+       `App` nutzt `useReducer` und stellt beide bereit.
+    3. `Kopfzeile` liest den Warenkorb per Context und zeigt `<span className="anzahl">` mit der **Summe aller
+       Mengen**.
+    4. `ProduktKarte` schickt beim Klick auf `<button className="kaufen">` per Context eine Action.
+    5. `WarenkorbListe` rendert jede Position als `<li>` mit dem Text `Name × Menge` (z. B. `Tasse × 2`) in einem
+       `<span>` und einem `<button className="entfernen">`. Ist der Warenkorb leer, steht dort `<p className="leer">Leer</p>`.
+
+    Zwischen `App` und den Komponenten werden **keine** Warenkorb-Props durchgereicht.
+  starter: |
+    const produkte = [
+      { id: 'tasse', name: 'Tasse' },
+      { id: 'shirt', name: 'Shirt' },
+    ]
+
+    function warenkorbReducer(positionen, action) {
+      return positionen
+    }
+
+    function Kopfzeile() {
+      return <header>Warenkorb: <span className="anzahl">0</span></header>
+    }
+
+    function ProduktKarte({ produkt }) {
+      return (
+        <div className="produkt">
+          {produkt.name} <button className="kaufen">Kaufen</button>
+        </div>
+      )
+    }
+
+    function WarenkorbListe() {
+      return <p className="leer">Leer</p>
+    }
+
+    function App() {
+      return (
+        <div>
+          <Kopfzeile />
+          {produkte.map((p) => <ProduktKarte key={p.id} produkt={p} />)}
+          <WarenkorbListe />
+        </div>
+      )
+    }
+  tests:
+    - name: startet leer
+      code: |
+        assertEqual(query('.anzahl').textContent, '0')
+        assertTrue(query('.leer') !== null)
+    - name: legt ein Produkt in den Warenkorb
+      code: |
+        await click('.produkt:nth-of-type(1) .kaufen')
+        assertEqual(query('.anzahl').textContent, '1')
+        assertEqual(queryAll('li span').map((s) => s.textContent).join('|'), 'Tasse × 1')
+        assertEqual(query('.leer'), null)
+    - name: erhöht die Menge statt doppelter Einträge
+      code: |
+        await click('.produkt:nth-of-type(1) .kaufen')
+        await click('.produkt:nth-of-type(2) .kaufen')
+        assertEqual(queryAll('li').length, 2)
+        assertEqual(queryAll('li span').map((s) => s.textContent).join('|'), 'Tasse × 2|Shirt × 1')
+        assertEqual(query('.anzahl').textContent, '3')
+    - name: entfernt Positionen
+      code: |
+        await click('li .entfernen')
+        assertEqual(queryAll('li span').map((s) => s.textContent).join('|'), 'Shirt × 1')
+        await click('li .entfernen')
+        assertEqual(query('.anzahl').textContent, '0')
+        assertTrue(query('.leer') !== null)
+  hints:
+    - "Hinzufügen: Prüfe mit `positionen.some((p) => p.id === action.produkt.id)`, ob es die Position schon gibt. Wenn ja, `map` mit `{ ...p, menge: p.menge + 1 }`, sonst `[...positionen, { ...action.produkt, menge: 1 }]`."
+    - "Bereitstellen: `<WarenkorbContext value={positionen}><DispatchContext value={dispatch}>…</DispatchContext></WarenkorbContext>`."
+    - "Summe in der Kopfzeile: `positionen.reduce((summe, p) => summe + p.menge, 0)`."
+  solution: |
+    const produkte = [
+      { id: 'tasse', name: 'Tasse' },
+      { id: 'shirt', name: 'Shirt' },
+    ]
+
+    const WarenkorbContext = React.createContext([])
+    const DispatchContext = React.createContext(() => {})
+
+    function warenkorbReducer(positionen, action) {
+      switch (action.type) {
+        case 'hinzugefuegt': {
+          const vorhanden = positionen.some((p) => p.id === action.produkt.id)
+          if (vorhanden) {
+            return positionen.map((p) => (p.id === action.produkt.id ? { ...p, menge: p.menge + 1 } : p))
+          }
+          return [...positionen, { ...action.produkt, menge: 1 }]
+        }
+        case 'entfernt':
+          return positionen.filter((p) => p.id !== action.id)
+        default:
+          throw new Error('Unbekannte Action: ' + action.type)
+      }
+    }
+
+    function Kopfzeile() {
+      const positionen = React.useContext(WarenkorbContext)
+      const anzahl = positionen.reduce((summe, p) => summe + p.menge, 0)
+      return <header>Warenkorb: <span className="anzahl">{anzahl}</span></header>
+    }
+
+    function ProduktKarte({ produkt }) {
+      const dispatch = React.useContext(DispatchContext)
+      return (
+        <div className="produkt">
+          {produkt.name}{' '}
+          <button className="kaufen" onClick={() => dispatch({ type: 'hinzugefuegt', produkt })}>Kaufen</button>
+        </div>
+      )
+    }
+
+    function WarenkorbListe() {
+      const positionen = React.useContext(WarenkorbContext)
+      const dispatch = React.useContext(DispatchContext)
+      if (positionen.length === 0) return <p className="leer">Leer</p>
+      return (
+        <ul>
+          {positionen.map((p) => (
+            <li key={p.id}>
+              <span>{p.name} × {p.menge}</span>
+              <button className="entfernen" onClick={() => dispatch({ type: 'entfernt', id: p.id })}>Entfernen</button>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    function App() {
+      const [positionen, dispatch] = React.useReducer(warenkorbReducer, [])
+      return (
+        <WarenkorbContext value={positionen}>
+          <DispatchContext value={dispatch}>
+            <div>
+              <Kopfzeile />
+              {produkte.map((p) => <ProduktKarte key={p.id} produkt={p} />)}
+              <WarenkorbListe />
+            </div>
+          </DispatchContext>
+        </WarenkorbContext>
+      )
+    }

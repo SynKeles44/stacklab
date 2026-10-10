@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="450" y="42" text-anchor="middle" font-size="24" font-weight="700" fill="#1e1b3a">Vom Klick zum geänderten DOM</text>
+
+  <rect x="40" y="110" width="230" height="150" rx="14" fill="#ecfeff" stroke="#22d3ee" stroke-width="3"/>
+  <text x="155" y="148" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">1. Trigger</text>
+  <text x="155" y="182" text-anchor="middle" font-size="15" fill="#1e1b3a">Erster Aufruf von render()</text>
+  <text x="155" y="206" text-anchor="middle" font-size="15" fill="#1e1b3a">oder ein Setter wie</text>
+  <text x="155" y="232" text-anchor="middle" font-size="15" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">setAnzahl(1)</text>
+
+  <rect x="335" y="110" width="230" height="150" rx="14" fill="#f5f3ff" stroke="#a78bfa" stroke-width="3"/>
+  <text x="450" y="148" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">2. Render</text>
+  <text x="450" y="182" text-anchor="middle" font-size="15" fill="#1e1b3a">React ruft deine</text>
+  <text x="450" y="206" text-anchor="middle" font-size="15" fill="#1e1b3a">Komponente auf und</text>
+  <text x="450" y="230" text-anchor="middle" font-size="15" fill="#1e1b3a">bekommt neues JSX</text>
+
+  <rect x="630" y="110" width="230" height="150" rx="14" fill="#ecfdf5" stroke="#34d399" stroke-width="3"/>
+  <text x="745" y="148" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">3. Commit</text>
+  <text x="745" y="182" text-anchor="middle" font-size="15" fill="#1e1b3a">React vergleicht alt</text>
+  <text x="745" y="206" text-anchor="middle" font-size="15" fill="#1e1b3a">mit neu und ändert nur</text>
+  <text x="745" y="230" text-anchor="middle" font-size="15" fill="#1e1b3a">die nötigen DOM-Knoten</text>
+
+  <line x1="272" y1="185" x2="330" y2="185" stroke="#1e1b3a" stroke-width="3" marker-end="url(#pfeil)"/>
+  <line x1="567" y1="185" x2="625" y2="185" stroke="#1e1b3a" stroke-width="3" marker-end="url(#pfeil)"/>
+
+  <path d="M745,262 C745,360 155,360 155,266" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#pfeil)"/>
+  <rect x="300" y="322" width="300" height="44" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="450" y="350" text-anchor="middle" font-size="16" fill="#1e1b3a">Nächster Klick → nächster Trigger</text>
+  <text x="450" y="400" text-anchor="middle" font-size="14" fill="#1e1b3a">Danach zeichnet der Browser die Seite neu („Painting“).</text>
+</svg>

@@ -1,0 +1,731 @@
+title: Dein Gewohnheits-Tracker
+description: |
+  In diesem Projekt baust du mit Vite, React 19 und TypeScript einen Gewohnheits-Tracker: eine Liste
+  täglicher Gewohnheiten, die du abhaken, ergänzen und löschen kannst. Die Daten überleben ein Neuladen
+  der Seite, und am Ende sichern automatische Tests das Verhalten ab.
+
+  Du gehst dabei genau die Schritte, die du in einem echten React-Projekt gehst: Komponenten schneiden,
+  Props typisieren, Logik in einen Reducer ziehen, ein kontrolliertes Formular bauen, einen eigenen Hook
+  mit Effekt schreiben, Werte ableiten statt speichern und alles mit Vitest testen.
+
+  Klicke zuerst auf **Projekt vorbereiten**: Das legt im Ordner `tracker` ein frisches Vite-Projekt
+  (Vorlage `react-ts`) an und installiert die Abhängigkeiten. Öffne dann das Übungs-Terminal und wechsle
+  mit `cd tracker` hinein. Dateien bearbeitest du mit `nano`, `vim` oder per `cat > datei <<'EOF'`.
+
+  Nach jedem Schritt prüft Stacklab deinen Code – fast immer auch mit `npm run build`. Dieser Befehl
+  startet zuerst den TypeScript-Compiler (`tsc -b`) und dann den Vite-Build. Schlägt er fehl, zeigt er dir
+  Datei und Zeile des Fehlers. Häufigste Ursache: ein ungenutzter Import.
+
+  Zum Ausprobieren im Browser kannst du jederzeit `npm run dev -- --host` starten und mit `Strg+C` beenden.
+goal: >
+  Ein Vite-React-Projekt `tracker` mit den Komponenten `App` und `Gewohnheit`, einem typisierten Reducer,
+  einem eigenen Hook `useGewohnheiten`, der im localStorage speichert, einer abgeleiteten Statistik und
+  grünen Vitest-Tests für Reducer und Oberfläche – und einem erfolgreichen Produktions-Build.
+workdir: tracker
+setup: |
+  npm create vite@latest . -- --template react-ts --no-interactive >/dev/null 2>&1
+  npm install --no-audit --no-fund >/dev/null 2>&1
+steps:
+  - id: app-aufraeumen
+    title: Die Vorlage aufräumen
+    description: |
+      Die Vite-Vorlage enthält einen Demo-Zähler mit Logos. Den brauchst du nicht – du startest mit einer
+      leeren Oberfläche.
+
+      1. Ersetze den gesamten Inhalt von `src/App.tsx` durch eine Komponente `App`, die ein `<main>` mit der
+         Überschrift `<h1>Gewohnheits-Tracker</h1>` zurückgibt.
+      2. Exportiere sie wie bisher mit `export default App`.
+      3. Entferne alle alten Imports (Logos, `useState`, `App.css`) – sonst meldet TypeScript ungenutzte Imports.
+      4. Prüfe mit `npm run build`, dass alles kompiliert.
+    checklist:
+      - src/App.tsx enthält nur noch die neue Komponente
+      - Keine ungenutzten Imports mehr
+      - "`npm run build` läuft ohne Fehler"
+    hints:
+      - Am einfachsten überschreibst du die Datei komplett mit `cat > src/App.tsx <<'EOF'` … `EOF`.
+      - "Die ganze Datei: `function App() { return <main><h1>Gewohnheits-Tracker</h1></main> }` und `export default App`."
+    checks:
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "<h1>\\s*Gewohnheits-Tracker\\s*</h1>"
+        message: src/App.tsx soll die Überschrift <h1>Gewohnheits-Tracker</h1> rendern.
+      - type: command
+        run: "! grep -q 'reactLogo\\|viteLogo' src/App.tsx"
+        message: In src/App.tsx stehen noch die Logos der Vorlage. Ersetze die Datei komplett.
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Führe den Befehl aus und lies die Fehlermeldung – oft ist es ein übrig gebliebener Import.
+    solution: |
+      ```tsx title="src/App.tsx"
+      function App() {
+        return (
+          <main>
+            <h1>Gewohnheits-Tracker</h1>
+          </main>
+        )
+      }
+
+      export default App
+      ```
+    solve: |
+      cat > src/App.tsx <<'EOF'
+      function App() {
+        return (
+          <main>
+            <h1>Gewohnheits-Tracker</h1>
+          </main>
+        )
+      }
+
+      export default App
+      EOF
+
+  - id: komponente-gewohnheit
+    title: Die Komponente Gewohnheit
+    description: |
+      Jede Gewohnheit ist eine Zeile mit Checkbox, Name und Löschen-Button. Diese Zeile wird eine eigene
+      Komponente mit typisierten Props.
+
+      1. Lege `src/Gewohnheit.tsx` an und exportiere daraus `function Gewohnheit` (benannter Export).
+      2. Typisiere die Props: `name: string`, `erledigt: boolean`, `onUmschalten: () => void` und
+         `onEntfernen: () => void`.
+      3. Die Komponente rendert ein `<li>` mit einem `<label>`, darin eine Checkbox
+         (`checked={erledigt}`, `onChange={onUmschalten}`) und den Namen. Daneben steht ein Button `×` mit
+         `aria-label={name + ' entfernen'}`, der `onEntfernen` aufruft.
+      4. Lege in `src/App.tsx` außerhalb der Komponente ein Array `startGewohnheiten` mit drei Einträgen
+         `{ id, name, erledigt }` an: `Wasser trinken` (nicht erledigt), `20 Minuten lesen` (erledigt) und
+         `Spazieren gehen` (nicht erledigt), IDs 1 bis 3.
+      5. `App` rendert sie unter der Überschrift in einer `<ul>` mit `map` und der `id` als `key`.
+         Als Handler reichst du vorerst leere Funktionen `() => {}` weiter.
+    checklist:
+      - src/Gewohnheit.tsx mit typisierten Props
+      - Checkbox, Name und Löschen-Button in einem li
+      - App rendert drei Gewohnheiten mit map und key
+    hints:
+      - "Props-Typ: `type GewohnheitProps = { name: string; erledigt: boolean; onUmschalten: () => void; onEntfernen: () => void }`."
+      - "Signatur: `export function Gewohnheit({ name, erledigt, onUmschalten, onEntfernen }: GewohnheitProps)`."
+      - "In App: `import { Gewohnheit } from './Gewohnheit'` und `{startGewohnheiten.map((g) => <Gewohnheit key={g.id} name={g.name} erledigt={g.erledigt} onUmschalten={() => {}} onEntfernen={() => {}} />)}`."
+    checks:
+      - type: file_contains
+        path: src/Gewohnheit.tsx
+        pattern: "export\\s+function\\s+Gewohnheit"
+        message: In src/Gewohnheit.tsx fehlt export function Gewohnheit.
+      - type: file_contains
+        path: src/Gewohnheit.tsx
+        pattern: "onUmschalten:\\s*\\(\\)\\s*=>\\s*void"
+        message: Typisiere die Prop onUmschalten als () => void.
+      - type: file_contains
+        path: src/Gewohnheit.tsx
+        pattern: "type=\"checkbox\""
+        message: Die Komponente braucht eine Checkbox (input type="checkbox").
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "Spazieren gehen"
+        message: In src/App.tsx fehlen die drei Start-Gewohnheiten (z. B. Spazieren gehen).
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "key=\\{"
+        message: Gib jeder Gewohnheit in der Liste ein key – am besten ihre id.
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Prüfe die Fehlermeldung – passen die Props-Typen zu dem, was App übergibt?
+    solution: |
+      ```tsx title="src/Gewohnheit.tsx"
+      type GewohnheitProps = {
+        name: string
+        erledigt: boolean
+        onUmschalten: () => void
+        onEntfernen: () => void
+      }
+
+      export function Gewohnheit({ name, erledigt, onUmschalten, onEntfernen }: GewohnheitProps) {
+        return (
+          <li className={erledigt ? 'erledigt' : undefined}>
+            <label>
+              <input type="checkbox" checked={erledigt} onChange={onUmschalten} />
+              {name}
+            </label>
+            <button aria-label={name + ' entfernen'} onClick={onEntfernen}>×</button>
+          </li>
+        )
+      }
+      ```
+
+      In `src/App.tsx` importierst du `Gewohnheit`, legst `startGewohnheiten` an und renderst die Liste mit
+      `map` und `key={g.id}`.
+    solve: |
+      cat > src/Gewohnheit.tsx <<'EOF'
+      type GewohnheitProps = {
+        name: string
+        erledigt: boolean
+        onUmschalten: () => void
+        onEntfernen: () => void
+      }
+
+      export function Gewohnheit({ name, erledigt, onUmschalten, onEntfernen }: GewohnheitProps) {
+        return (
+          <li className={erledigt ? 'erledigt' : undefined}>
+            <label>
+              <input type="checkbox" checked={erledigt} onChange={onUmschalten} />
+              {name}
+            </label>
+            <button aria-label={name + ' entfernen'} onClick={onEntfernen}>×</button>
+          </li>
+        )
+      }
+      EOF
+      cat > src/App.tsx <<'EOF'
+      import { Gewohnheit } from './Gewohnheit'
+
+      const startGewohnheiten = [
+        { id: 1, name: 'Wasser trinken', erledigt: false },
+        { id: 2, name: '20 Minuten lesen', erledigt: true },
+        { id: 3, name: 'Spazieren gehen', erledigt: false },
+      ]
+
+      function App() {
+        return (
+          <main>
+            <h1>Gewohnheits-Tracker</h1>
+            <ul>
+              {startGewohnheiten.map((g) => (
+                <Gewohnheit
+                  key={g.id}
+                  name={g.name}
+                  erledigt={g.erledigt}
+                  onUmschalten={() => {}}
+                  onEntfernen={() => {}}
+                />
+              ))}
+            </ul>
+          </main>
+        )
+      }
+
+      export default App
+      EOF
+
+  - id: reducer
+    title: Die Logik im Reducer
+    description: |
+      Gewohnheiten werden hinzugefügt, abgehakt und gelöscht. Diese drei Änderungen bündelst du in einem
+      Reducer – einer reinen Funktion ohne React, die du später leicht testen kannst.
+
+      1. Lege `src/gewohnheitenReducer.ts` an.
+      2. Exportiere den Typ `GewohnheitDaten = { id: number; name: string; erledigt: boolean }`.
+      3. Exportiere einen Typ `Action` als Union aus drei Varianten:
+         `{ type: 'hinzugefuegt'; id: number; name: string }`, `{ type: 'umgeschaltet'; id: number }` und
+         `{ type: 'entfernt'; id: number }`.
+      4. Exportiere `gewohnheitenReducer(gewohnheiten, action)`. Er gibt immer ein **neues** Array zurück:
+         neue Gewohnheiten hinten anhängen (`erledigt: false`), beim Umschalten nur `erledigt` der passenden
+         Gewohnheit umdrehen, beim Entfernen die Gewohnheit herausfiltern.
+
+      Die Prüfung ruft deinen Reducer direkt mit Node.js auf (Node 24 kann Typen in `.ts`-Dateien einfach
+      überspringen) und kontrolliert, dass der alte State unverändert bleibt.
+    checklist:
+      - Typen GewohnheitDaten und Action exportiert
+      - Reducer behandelt hinzugefuegt, umgeschaltet und entfernt
+      - Kein push, keine Mutation – immer ein neues Array
+    hints:
+      - "Grundgerüst: `export function gewohnheitenReducer(gewohnheiten: GewohnheitDaten[], action: Action): GewohnheitDaten[] { switch (action.type) { … } }`."
+      - "Umschalten: `gewohnheiten.map((g) => (g.id === action.id ? { ...g, erledigt: !g.erledigt } : g))`."
+      - "Hinzufügen: `[...gewohnheiten, { id: action.id, name: action.name, erledigt: false }]`, Entfernen mit `filter`."
+    checks:
+      - type: file_exists
+        path: src/gewohnheitenReducer.ts
+        message: Die Datei src/gewohnheitenReducer.ts gibt es noch nicht.
+      - type: file_contains
+        path: src/gewohnheitenReducer.ts
+        pattern: "export\\s+type\\s+GewohnheitDaten"
+        message: Exportiere den Typ GewohnheitDaten.
+      - type: file_contains
+        path: src/gewohnheitenReducer.ts
+        pattern: "export\\s+type\\s+Action"
+        message: Exportiere den Typ Action als Union der drei Action-Varianten.
+      - type: command
+        run: |
+          node --input-type=module -e "
+          import { gewohnheitenReducer as r } from './src/gewohnheitenReducer.ts'
+          const alt = Object.freeze([Object.freeze({ id: 1, name: 'A', erledigt: false })])
+          const a = r(alt, { type: 'hinzugefuegt', id: 2, name: 'B' })
+          const b = r(a, { type: 'umgeschaltet', id: 1 })
+          const c = r(b, { type: 'entfernt', id: 2 })
+          const ok = a.length === 2 && a[1].name === 'B' && a[1].erledigt === false
+            && b[0].erledigt === true && b[1].erledigt === false && alt[0].erledigt === false
+            && c.length === 1 && c[0].id === 1 && a !== alt
+          process.exit(ok ? 0 : 1)
+          " 2>/dev/null
+        message: Der Reducer liefert noch nicht die erwarteten Ergebnisse. Prüfe alle drei Actions – und verändere den alten State nicht (kein push, keine direkte Zuweisung).
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Prüfe die Typen im Reducer – fehlt eine Rückgabe?
+    solution: |
+      ```ts title="src/gewohnheitenReducer.ts"
+      export type GewohnheitDaten = { id: number; name: string; erledigt: boolean }
+
+      export type Action =
+        | { type: 'hinzugefuegt'; id: number; name: string }
+        | { type: 'umgeschaltet'; id: number }
+        | { type: 'entfernt'; id: number }
+
+      export function gewohnheitenReducer(gewohnheiten: GewohnheitDaten[], action: Action): GewohnheitDaten[] {
+        switch (action.type) {
+          case 'hinzugefuegt':
+            return [...gewohnheiten, { id: action.id, name: action.name, erledigt: false }]
+          case 'umgeschaltet':
+            return gewohnheiten.map((g) => (g.id === action.id ? { ...g, erledigt: !g.erledigt } : g))
+          case 'entfernt':
+            return gewohnheiten.filter((g) => g.id !== action.id)
+        }
+      }
+      ```
+    solve: |
+      cat > src/gewohnheitenReducer.ts <<'EOF'
+      export type GewohnheitDaten = { id: number; name: string; erledigt: boolean }
+
+      export type Action =
+        | { type: 'hinzugefuegt'; id: number; name: string }
+        | { type: 'umgeschaltet'; id: number }
+        | { type: 'entfernt'; id: number }
+
+      export function gewohnheitenReducer(gewohnheiten: GewohnheitDaten[], action: Action): GewohnheitDaten[] {
+        switch (action.type) {
+          case 'hinzugefuegt':
+            return [...gewohnheiten, { id: action.id, name: action.name, erledigt: false }]
+          case 'umgeschaltet':
+            return gewohnheiten.map((g) => (g.id === action.id ? { ...g, erledigt: !g.erledigt } : g))
+          case 'entfernt':
+            return gewohnheiten.filter((g) => g.id !== action.id)
+        }
+      }
+      EOF
+
+  - id: state-und-formular
+    title: State mit useReducer und ein kontrolliertes Formular
+    description: |
+      Jetzt wird die Liste lebendig: `App` verwaltet die Gewohnheiten mit `useReducer`, und ein Formular fügt
+      neue hinzu.
+
+      1. Importiere `useReducer` und `useState` aus `react` sowie `gewohnheitenReducer`.
+      2. `const [gewohnheiten, dispatch] = useReducer(gewohnheitenReducer, startGewohnheiten)` und rendere
+         `gewohnheiten` statt `startGewohnheiten`.
+      3. Übergib echte Handler: `onUmschalten` schickt `{ type: 'umgeschaltet', id }`, `onEntfernen` schickt
+         `{ type: 'entfernt', id }`.
+      4. Über der Liste steht ein `<form>` mit einem **kontrollierten** Eingabefeld
+         (`aria-label="Neue Gewohnheit"`, `value` und `onChange` mit State `name`) und einem
+         `<button type="submit">Hinzufügen</button>`.
+      5. Beim Absenden: `e.preventDefault()`, leere Eingaben (nur Leerzeichen) ignorieren, sonst
+         `{ type: 'hinzugefuegt', id: Date.now(), name: name.trim() }` schicken und das Feld leeren.
+    checklist:
+      - useReducer statt fester Liste
+      - Abhaken und Löschen schicken Actions
+      - Kontrolliertes Eingabefeld mit value und onChange
+      - Leere Eingaben werden ignoriert
+    hints:
+      - "Handler am Formular: `<form onSubmit={(e) => { e.preventDefault(); hinzufuegen() }}>` – so erkennt TypeScript den Typ von `e` selbst."
+      - "In `hinzufuegen`: `const neu = name.trim(); if (neu === '') return; dispatch({ type: 'hinzugefuegt', id: Date.now(), name: neu }); setName('')`."
+      - "Pro Gewohnheit: `onUmschalten={() => dispatch({ type: 'umgeschaltet', id: g.id })}`."
+    checks:
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "useReducer\\(\\s*gewohnheitenReducer"
+        message: App soll den State mit useReducer(gewohnheitenReducer, startGewohnheiten) verwalten.
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "onSubmit="
+        message: Es fehlt ein Formular mit onSubmit-Handler.
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "value=\\{\\s*name\\s*\\}"
+        message: Das Eingabefeld soll kontrolliert sein – mit value={name} und einem onChange-Handler.
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "'umgeschaltet'|\"umgeschaltet\""
+        message: Das Abhaken soll eine Action vom Typ umgeschaltet schicken.
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "trim\\(\\)"
+        message: Entferne Leerzeichen am Rand mit trim() und ignoriere leere Eingaben.
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Prüfe die Fehlermeldung – passt jede Action zum Typ Action?
+    solution: |
+      ```tsx title="src/App.tsx"
+      import { useReducer, useState } from 'react'
+      import { Gewohnheit } from './Gewohnheit'
+      import { gewohnheitenReducer } from './gewohnheitenReducer'
+
+      const startGewohnheiten = [
+        { id: 1, name: 'Wasser trinken', erledigt: false },
+        { id: 2, name: '20 Minuten lesen', erledigt: true },
+        { id: 3, name: 'Spazieren gehen', erledigt: false },
+      ]
+
+      function App() {
+        const [gewohnheiten, dispatch] = useReducer(gewohnheitenReducer, startGewohnheiten)
+        const [name, setName] = useState('')
+
+        function hinzufuegen() {
+          const neu = name.trim()
+          if (neu === '') return
+          dispatch({ type: 'hinzugefuegt', id: Date.now(), name: neu })
+          setName('')
+        }
+
+        return (
+          <main>
+            <h1>Gewohnheits-Tracker</h1>
+            <form onSubmit={(e) => { e.preventDefault(); hinzufuegen() }}>
+              <input aria-label="Neue Gewohnheit" value={name} onChange={(e) => setName(e.target.value)} />
+              <button type="submit">Hinzufügen</button>
+            </form>
+            <ul>
+              {gewohnheiten.map((g) => (
+                <Gewohnheit
+                  key={g.id}
+                  name={g.name}
+                  erledigt={g.erledigt}
+                  onUmschalten={() => dispatch({ type: 'umgeschaltet', id: g.id })}
+                  onEntfernen={() => dispatch({ type: 'entfernt', id: g.id })}
+                />
+              ))}
+            </ul>
+          </main>
+        )
+      }
+
+      export default App
+      ```
+    solve: |
+      cat > src/App.tsx <<'EOF'
+      import { useReducer, useState } from 'react'
+      import { Gewohnheit } from './Gewohnheit'
+      import { gewohnheitenReducer } from './gewohnheitenReducer'
+
+      const startGewohnheiten = [
+        { id: 1, name: 'Wasser trinken', erledigt: false },
+        { id: 2, name: '20 Minuten lesen', erledigt: true },
+        { id: 3, name: 'Spazieren gehen', erledigt: false },
+      ]
+
+      function App() {
+        const [gewohnheiten, dispatch] = useReducer(gewohnheitenReducer, startGewohnheiten)
+        const [name, setName] = useState('')
+
+        function hinzufuegen() {
+          const neu = name.trim()
+          if (neu === '') return
+          dispatch({ type: 'hinzugefuegt', id: Date.now(), name: neu })
+          setName('')
+        }
+
+        return (
+          <main>
+            <h1>Gewohnheits-Tracker</h1>
+            <form onSubmit={(e) => { e.preventDefault(); hinzufuegen() }}>
+              <input aria-label="Neue Gewohnheit" value={name} onChange={(e) => setName(e.target.value)} />
+              <button type="submit">Hinzufügen</button>
+            </form>
+            <ul>
+              {gewohnheiten.map((g) => (
+                <Gewohnheit
+                  key={g.id}
+                  name={g.name}
+                  erledigt={g.erledigt}
+                  onUmschalten={() => dispatch({ type: 'umgeschaltet', id: g.id })}
+                  onEntfernen={() => dispatch({ type: 'entfernt', id: g.id })}
+                />
+              ))}
+            </ul>
+          </main>
+        )
+      }
+
+      export default App
+      EOF
+
+  - id: eigener-hook
+    title: Ein eigener Hook, der speichert
+    description: |
+      Nach einem Neuladen der Seite sind alle Häkchen weg. Du ziehst die State-Logik in einen eigenen Hook
+      und synchronisierst sie per Effekt mit dem `localStorage` des Browsers – einem kleinen
+      Schlüssel-Wert-Speicher, der Neuladen übersteht.
+
+      1. Lege `src/useGewohnheiten.ts` an und exportiere `function useGewohnheiten(start: GewohnheitDaten[])`.
+      2. Darin: `useReducer(gewohnheitenReducer, start, laden)`. Das **dritte** Argument ist eine
+         Init-Funktion: React ruft `laden(start)` nur beim ersten Render auf. `laden` liest
+         `localStorage.getItem('gewohnheiten')` und gibt bei einem Treffer `JSON.parse(…)` zurück, sonst `start`.
+      3. Ein `useEffect` mit dem Abhängigkeits-Array `[gewohnheiten]` schreibt bei jeder Änderung
+         `localStorage.setItem('gewohnheiten', JSON.stringify(gewohnheiten))`.
+      4. Der Hook gibt `{ gewohnheiten, dispatch }` zurück.
+      5. `App` nutzt jetzt `const { gewohnheiten, dispatch } = useGewohnheiten(startGewohnheiten)` statt
+         `useReducer` direkt – entferne den nicht mehr gebrauchten Import.
+    checklist:
+      - src/useGewohnheiten.ts mit eigenem Hook
+      - Init-Funktion liest aus dem localStorage
+      - Effekt schreibt bei jeder Änderung
+      - App nutzt den Hook
+    hints:
+      - "Typen importierst du mit `import type { GewohnheitDaten } from './gewohnheitenReducer'` – das Projekt verlangt `import type` für reine Typen."
+      - "`function laden(start: GewohnheitDaten[]): GewohnheitDaten[] { const gespeichert = localStorage.getItem('gewohnheiten'); return gespeichert ? JSON.parse(gespeichert) : start }`."
+      - "Effekt: `useEffect(() => { localStorage.setItem('gewohnheiten', JSON.stringify(gewohnheiten)) }, [gewohnheiten])`."
+    checks:
+      - type: file_contains
+        path: src/useGewohnheiten.ts
+        pattern: "export\\s+function\\s+useGewohnheiten"
+        message: In src/useGewohnheiten.ts fehlt export function useGewohnheiten.
+      - type: file_contains
+        path: src/useGewohnheiten.ts
+        pattern: "useEffect\\("
+        message: Der Hook soll den State mit einem useEffect im localStorage speichern.
+      - type: file_contains
+        path: src/useGewohnheiten.ts
+        pattern: "localStorage\\.setItem"
+        message: Im Effekt fehlt localStorage.setItem.
+      - type: file_contains
+        path: src/useGewohnheiten.ts
+        pattern: "localStorage\\.getItem"
+        message: Beim Start soll der Hook gespeicherte Daten mit localStorage.getItem laden.
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "useGewohnheiten\\("
+        message: App soll den eigenen Hook useGewohnheiten(startGewohnheiten) verwenden.
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Häufig ist es ein nicht mehr genutzter useReducer-Import in App.tsx oder ein fehlendes import type.
+    solution: |
+      ```ts title="src/useGewohnheiten.ts"
+      import { useEffect, useReducer } from 'react'
+      import { gewohnheitenReducer } from './gewohnheitenReducer'
+      import type { GewohnheitDaten } from './gewohnheitenReducer'
+
+      const SCHLUESSEL = 'gewohnheiten'
+
+      function laden(start: GewohnheitDaten[]): GewohnheitDaten[] {
+        const gespeichert = localStorage.getItem(SCHLUESSEL)
+        return gespeichert ? (JSON.parse(gespeichert) as GewohnheitDaten[]) : start
+      }
+
+      export function useGewohnheiten(start: GewohnheitDaten[]) {
+        const [gewohnheiten, dispatch] = useReducer(gewohnheitenReducer, start, laden)
+
+        useEffect(() => {
+          localStorage.setItem(SCHLUESSEL, JSON.stringify(gewohnheiten))
+        }, [gewohnheiten])
+
+        return { gewohnheiten, dispatch }
+      }
+      ```
+
+      In `App.tsx` ersetzt du die `useReducer`-Zeile durch
+      `const { gewohnheiten, dispatch } = useGewohnheiten(startGewohnheiten)` und importierst nur noch `useState`.
+    solve: |
+      cat > src/useGewohnheiten.ts <<'EOF'
+      import { useEffect, useReducer } from 'react'
+      import { gewohnheitenReducer } from './gewohnheitenReducer'
+      import type { GewohnheitDaten } from './gewohnheitenReducer'
+
+      const SCHLUESSEL = 'gewohnheiten'
+
+      function laden(start: GewohnheitDaten[]): GewohnheitDaten[] {
+        const gespeichert = localStorage.getItem(SCHLUESSEL)
+        return gespeichert ? (JSON.parse(gespeichert) as GewohnheitDaten[]) : start
+      }
+
+      export function useGewohnheiten(start: GewohnheitDaten[]) {
+        const [gewohnheiten, dispatch] = useReducer(gewohnheitenReducer, start, laden)
+
+        useEffect(() => {
+          localStorage.setItem(SCHLUESSEL, JSON.stringify(gewohnheiten))
+        }, [gewohnheiten])
+
+        return { gewohnheiten, dispatch }
+      }
+      EOF
+      sed -i "s/import { useReducer, useState } from 'react'/import { useState } from 'react'/" src/App.tsx
+      sed -i "s/import { gewohnheitenReducer } from '.\/gewohnheitenReducer'/import { useGewohnheiten } from '.\/useGewohnheiten'/" src/App.tsx
+      sed -i "s/useReducer(gewohnheitenReducer, startGewohnheiten)/useGewohnheiten(startGewohnheiten)/" src/App.tsx
+      sed -i "s/const \[gewohnheiten, dispatch\] = useGewohnheiten/const { gewohnheiten, dispatch } = useGewohnheiten/" src/App.tsx
+
+  - id: statistik
+    title: Werte ableiten statt speichern
+    description: |
+      Unter der Überschrift soll stehen, wie viele Gewohnheiten heute erledigt sind, z. B. `1 von 3 erledigt`.
+      Die Versuchung: ein weiterer State `anzahlErledigt`, den du bei jedem Umschalten mitpflegst. Besser: Du
+      **berechnest** den Wert beim Rendern aus `gewohnheiten` – so kann er nie falsch sein.
+
+      1. Berechne in `App` mit `filter` die Anzahl erledigter Gewohnheiten.
+      2. Rendere unter der Überschrift `<p className="statistik">` mit dem Text `X von Y erledigt`.
+      3. Lege dafür **keinen** neuen State an.
+    checklist:
+      - Anzahl mit filter berechnet
+      - Statistik-Absatz mit X von Y erledigt
+      - Kein zusätzlicher State
+    hints:
+      - "`const erledigt = gewohnheiten.filter((g) => g.erledigt).length`."
+      - "`<p className=\"statistik\">{erledigt} von {gewohnheiten.length} erledigt</p>`."
+    checks:
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "className=\"statistik\""
+        message: Es fehlt der Absatz <p className="statistik">.
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "filter\\("
+        message: Berechne die Anzahl erledigter Gewohnheiten mit filter aus gewohnheiten.
+      - type: command
+        run: "[ \"$(grep -o 'useState(' src/App.tsx | wc -l)\" -le 1 ]"
+        message: In App.tsx gibt es mehr als einen useState. Die Statistik soll berechnet werden, nicht in eigenem State liegen.
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Lies die Fehlermeldung des Builds.
+    solution: |
+      ```tsx title="In App, vor dem return"
+      const erledigt = gewohnheiten.filter((g) => g.erledigt).length
+      ```
+
+      ```tsx title="Unter der Überschrift"
+      <p className="statistik">{erledigt} von {gewohnheiten.length} erledigt</p>
+      ```
+    solve: |
+      sed -i "s|^  function hinzufuegen() {|  const erledigt = gewohnheiten.filter((g) => g.erledigt).length\n\n  function hinzufuegen() {|" src/App.tsx
+      sed -i "s|^      <h1>Gewohnheits-Tracker</h1>|      <h1>Gewohnheits-Tracker</h1>\n      <p className=\"statistik\">{erledigt} von {gewohnheiten.length} erledigt</p>|" src/App.tsx
+
+  - id: tests
+    title: Reducer und Oberfläche testen
+    description: |
+      Zum Schluss sicherst du das Verhalten mit automatischen Tests ab – für den Reducer und für die fertige
+      Oberfläche.
+
+      1. Installiere `vitest`, `@testing-library/react`, `@testing-library/dom` und `jsdom` als
+         Entwicklungsabhängigkeiten und lege das Skript `test` mit `vitest run` an.
+      2. Schreibe `src/gewohnheitenReducer.test.ts` mit mindestens **drei** Tests – einem pro Action.
+      3. Schreibe `src/App.test.tsx` (mit `// @vitest-environment jsdom`), der `App` rendert, über das Feld
+         „Neue Gewohnheit“ einen Eintrag hinzufügt und prüft, dass er erscheint und die Statistik
+         `1 von 4 erledigt` lautet. Leere vor jedem Test den `localStorage` und räume mit `cleanup` auf.
+      4. `npm test` und `npm run build` müssen beide erfolgreich sein.
+    checklist:
+      - Test-Werkzeuge installiert, Skript test angelegt
+      - Drei Reducer-Tests
+      - Ein Oberflächentest mit der Testing Library
+      - "`npm test` und `npm run build` grün"
+    hints:
+      - "Reducer-Test: `expect(gewohnheitenReducer([], { type: 'hinzugefuegt', id: 1, name: 'Lesen' })).toEqual([{ id: 1, name: 'Lesen', erledigt: false }])`."
+      - "Eingabe im Test: `fireEvent.change(screen.getByLabelText('Neue Gewohnheit'), { target: { value: 'Meditieren' } })`, dann `fireEvent.click(screen.getByRole('button', { name: 'Hinzufügen' }))`."
+      - "Aufräumen: `beforeEach(() => localStorage.clear())` und `afterEach(cleanup)`."
+    checks:
+      - type: dir_exists
+        path: node_modules/vitest
+        message: Vitest ist noch nicht installiert.
+      - type: dir_exists
+        path: node_modules/@testing-library/react
+        message: Die Testing Library ist noch nicht installiert.
+      - type: file_contains
+        path: package.json
+        pattern: "\"test\":\\s*\"vitest"
+        message: In package.json fehlt das Skript test mit vitest run.
+      - type: command
+        run: "[ \"$(grep -cE '^\\s*(test|it)\\(' src/gewohnheitenReducer.test.ts)\" -ge 3 ]"
+        message: src/gewohnheitenReducer.test.ts braucht mindestens drei Tests – einen pro Action.
+      - type: file_contains
+        path: src/App.test.tsx
+        pattern: "render\\(\\s*<App"
+        message: src/App.test.tsx soll die App mit render(<App />) rendern.
+      - type: command
+        run: npm test >/dev/null 2>&1
+        message: npm test schlägt fehl. Führe den Befehl aus und lies, welcher Test rot ist.
+      - type: command
+        run: npm run build >/dev/null 2>&1 && test -f dist/index.html
+        message: npm run build schlägt fehl. Auch Testdateien werden von TypeScript geprüft – stimmen dort alle Imports?
+    solution: |
+      ```bash
+      npm install -D vitest @testing-library/react @testing-library/dom jsdom
+      npm pkg set scripts.test="vitest run"
+      ```
+
+      ```ts title="src/gewohnheitenReducer.test.ts"
+      import { expect, test } from 'vitest'
+      import { gewohnheitenReducer } from './gewohnheitenReducer'
+
+      const start = [{ id: 1, name: 'Lesen', erledigt: false }]
+
+      test('fügt eine Gewohnheit hinzu', () => {
+        const neu = gewohnheitenReducer(start, { type: 'hinzugefuegt', id: 2, name: 'Laufen' })
+        expect(neu).toEqual([...start, { id: 2, name: 'Laufen', erledigt: false }])
+      })
+
+      test('schaltet erledigt um, ohne den alten State zu ändern', () => {
+        const neu = gewohnheitenReducer(start, { type: 'umgeschaltet', id: 1 })
+        expect(neu[0].erledigt).toBe(true)
+        expect(start[0].erledigt).toBe(false)
+      })
+
+      test('entfernt eine Gewohnheit', () => {
+        expect(gewohnheitenReducer(start, { type: 'entfernt', id: 1 })).toEqual([])
+      })
+      ```
+
+      ```tsx title="src/App.test.tsx"
+      // @vitest-environment jsdom
+      import { afterEach, beforeEach, expect, test } from 'vitest'
+      import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+      import App from './App'
+
+      beforeEach(() => localStorage.clear())
+      afterEach(cleanup)
+
+      test('fügt eine neue Gewohnheit hinzu', () => {
+        render(<App />)
+        fireEvent.change(screen.getByLabelText('Neue Gewohnheit'), { target: { value: 'Meditieren' } })
+        fireEvent.click(screen.getByRole('button', { name: 'Hinzufügen' }))
+        expect(screen.getByText('Meditieren')).toBeTruthy()
+        expect(screen.getByText('1 von 4 erledigt')).toBeTruthy()
+      })
+      ```
+    solve: |
+      npm install -D --no-audit --no-fund vitest @testing-library/react @testing-library/dom jsdom >/dev/null 2>&1
+      npm pkg set scripts.test="vitest run"
+      cat > src/gewohnheitenReducer.test.ts <<'EOF'
+      import { expect, test } from 'vitest'
+      import { gewohnheitenReducer } from './gewohnheitenReducer'
+
+      const start = [{ id: 1, name: 'Lesen', erledigt: false }]
+
+      test('fügt eine Gewohnheit hinzu', () => {
+        const neu = gewohnheitenReducer(start, { type: 'hinzugefuegt', id: 2, name: 'Laufen' })
+        expect(neu).toEqual([...start, { id: 2, name: 'Laufen', erledigt: false }])
+      })
+
+      test('schaltet erledigt um, ohne den alten State zu ändern', () => {
+        const neu = gewohnheitenReducer(start, { type: 'umgeschaltet', id: 1 })
+        expect(neu[0].erledigt).toBe(true)
+        expect(start[0].erledigt).toBe(false)
+      })
+
+      test('entfernt eine Gewohnheit', () => {
+        expect(gewohnheitenReducer(start, { type: 'entfernt', id: 1 })).toEqual([])
+      })
+      EOF
+      cat > src/App.test.tsx <<'EOF'
+      // @vitest-environment jsdom
+      import { afterEach, beforeEach, expect, test } from 'vitest'
+      import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+      import App from './App'
+
+      beforeEach(() => localStorage.clear())
+      afterEach(cleanup)
+
+      test('fügt eine neue Gewohnheit hinzu', () => {
+        render(<App />)
+        fireEvent.change(screen.getByLabelText('Neue Gewohnheit'), { target: { value: 'Meditieren' } })
+        fireEvent.click(screen.getByRole('button', { name: 'Hinzufügen' }))
+        expect(screen.getByText('Meditieren')).toBeTruthy()
+        expect(screen.getByText('1 von 4 erledigt')).toBeTruthy()
+      })
+
+      test('hakt eine Gewohnheit ab', () => {
+        render(<App />)
+        fireEvent.click(screen.getByLabelText('Wasser trinken'))
+        expect(screen.getByText('2 von 3 erledigt')).toBeTruthy()
+      })
+      EOF

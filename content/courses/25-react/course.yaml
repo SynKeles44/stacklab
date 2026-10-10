@@ -1,0 +1,30 @@
+title: React
+subtitle: Benutzeroberflächen aus Komponenten bauen – mit State, Hooks und React 19
+description: >
+  React ist die verbreitetste Bibliothek für Benutzeroberflächen im Web. Statt Schritt für Schritt
+  den DOM zu verändern, beschreibst du, **wie** die Oberfläche bei einem bestimmten Zustand aussehen
+  soll – React kümmert sich um den Rest.
+
+
+  Du lernst die Denkweise von React von Grund auf: Komponenten, JSX und Props, State als
+  Schnappschuss, unveränderliche Updates, `useReducer`, Context, Refs und Effekte, eigene Hooks,
+  Formulare mit React-19-Actions und das Testen mit Vitest und Testing Library. Fast jede Lektion hat
+  React-Aufgaben, die direkt im Browser laufen und gegen echte Tests geprüft werden. Im Projekt baust
+  du mit Vite einen eigenen Gewohnheits-Tracker.
+category: frontend
+level: fortgeschritten
+icon: atom
+color: "#0ea5e9"
+estimated_hours: 4.5
+workspace_dir: react
+prerequisites: [javascript, typescript]
+learning_goals:
+  - Du zerlegst eine Oberfläche in Komponenten und gibst Daten über Props weiter.
+  - Du renderst Listen mit stabilen Keys und zeigst Inhalte bedingt an.
+  - Du verwaltest State mit useState, verstehst State als Schnappschuss und aktualisierst Objekte und Arrays unveränderlich.
+  - Du hebst State an, nutzt useReducer für komplexe Logik und Context gegen Prop-Drilling.
+  - Du setzt Refs und Effekte gezielt ein – und erkennst, wann du keinen Effekt brauchst.
+  - Du schreibst eigene Hooks, baust Formulare (auch mit React-19-Actions) und testest Komponenten mit Vitest.
+references:
+  - Komponentenbibliotheken und Formular-Patterns, wie sie in professionellen React-Projekten üblich sind
+  - Teststrategien mit Vitest und Testing Library in Vite-Projekten

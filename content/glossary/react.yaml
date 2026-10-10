@@ -1,0 +1,399 @@
+# Begriffe aus dem Kurs "React".
+- slug: deklarativ
+  term: Deklarativ
+  short: Du beschreibst, welches Ergebnis du willst – nicht die einzelnen Schritte dorthin.
+  explanation: >
+    Deklarativer Code legt fest, wie etwas am Ende aussehen soll, zum Beispiel „bei drei Einträgen zeige drei
+    Zeilen“. Das Gegenstück ist imperativer Code, der Befehl für Befehl vorgibt, wie sich etwas ändert.
+    React arbeitet deklarativ: Du beschreibst die Oberfläche für den aktuellen Zustand, React erledigt die
+    nötigen DOM-Änderungen.
+  example: "`{eintraege.map((e) => <li key={e.id}>{e.text}</li>)}` beschreibt die Liste, statt `appendChild` aufzurufen."
+  category: react
+  aliases: [deklarative Programmierung, deklarativer Code]
+  related: [react, dom, rendern]
+  lesson: react/warum-react
+- slug: jsx
+  term: JSX
+  short: Eine HTML-ähnliche Schreibweise in JavaScript, mit der React-Komponenten ihr Markup beschreiben.
+  explanation: >
+    JSX sieht aus wie HTML, ist aber JavaScript: Ein Build-Werkzeug wie Vite übersetzt jedes Tag in einen
+    Funktionsaufruf, der ein React-Element erzeugt. In geschweiften Klammern bettest du beliebige
+    JavaScript-Ausdrücke ein. Attribute heißen teils anders als in HTML, etwa `className` statt `class`.
+  example: "`<h1 className=\"titel\">Hallo {name}</h1>` zeigt eine Überschrift mit dem Wert der Variable `name`."
+  category: react
+  aliases: [JavaScript XML, TSX]
+  related: [react, komponente, props]
+  lesson: react/warum-react
+- slug: spa
+  term: Single-Page-Application (SPA)
+  short: Eine Web-App, die nur eine HTML-Seite lädt und alle weiteren Ansichten per JavaScript austauscht.
+  explanation: >
+    Bei einer Single-Page-Application lädt der Browser einmal eine HTML-Datei und ein JavaScript-Bündel.
+    Danach baut JavaScript die Oberfläche auf und ändert sie, ohne die Seite neu vom Server zu laden. Daten
+    holt die App bei Bedarf über eine API nach. Ein mit Vite angelegtes React-Projekt ist zunächst eine SPA.
+  example: "Die Vite-Vorlage enthält nur `index.html` mit `<div id=\"root\"></div>` – alles Weitere rendert React."
+  category: react
+  aliases: [SPA, Single Page Application, Single-Page-App]
+  related: [react, vite, dom]
+  lesson: react/warum-react
+- slug: strict-mode-react
+  term: StrictMode (React)
+  short: Eine React-Komponente, die in der Entwicklung zusätzliche Prüfungen einschaltet, um Fehler früh zu finden.
+  explanation: >
+    `<StrictMode>` umschließt meist die ganze App in `main.tsx`. In der Entwicklung ruft React Komponenten
+    und Effekte dann absichtlich doppelt auf, damit unreine Komponenten und fehlendes Aufräumen sofort
+    auffallen. Im Produktions-Build hat StrictMode keine Wirkung.
+  example: "`createRoot(root).render(<StrictMode><App /></StrictMode>)` – deshalb siehst du `console.log` beim Entwickeln doppelt."
+  category: react
+  aliases: [StrictMode, React.StrictMode, Strict Mode]
+  related: [react-effekt, reine-funktion, cleanup-funktion]
+  lesson: react/warum-react
+- slug: props
+  term: Props
+  short: Die Eingabewerte einer React-Komponente, die ihr die Eltern-Komponente wie Attribute übergibt.
+  explanation: >
+    Props (von „properties“) sind für eine Komponente das, was Parameter für eine Funktion sind. Die
+    Eltern-Komponente schreibt sie als Attribute ins JSX, React sammelt sie in einem Objekt und übergibt es
+    der Komponente. Props sind nur lesbar: Eine Komponente ändert ihre eigenen Props nie.
+  example: "`<Profil name=\"Ada\" alter={36} />` und in der Komponente `function Profil({ name, alter }) { … }`."
+  category: react
+  aliases: [Prop, Properties]
+  related: [komponente, children-prop, destrukturierung]
+  lesson: react/jsx-und-props
+- slug: children-prop
+  term: children (Prop)
+  short: Die besondere Prop, in der eine Komponente alles bekommt, was zwischen ihrem öffnenden und schließenden Tag steht.
+  explanation: >
+    Schreibst du JSX zwischen die Tags einer eigenen Komponente, landet dieser Inhalt in der Prop `children`.
+    So baust du Rahmen-Komponenten wie Karten, Dialoge oder Layouts, die beliebigen Inhalt umschließen. Die
+    Komponente entscheidet nur, wo `{children}` erscheint.
+  example: "`<Karte><p>Hallo</p></Karte>` – in `function Karte({ children })` steckt das `<p>` in `children`."
+  category: react
+  aliases: [children, Kinder-Prop]
+  related: [props, komponente, jsx]
+  lesson: react/jsx-und-props
+- slug: react-fragment
+  term: Fragment
+  short: Ein unsichtbarer Container, mit dem eine Komponente mehrere Elemente zurückgeben kann, ohne ein zusätzliches div.
+  explanation: >
+    Eine Komponente darf nur ein einziges Wurzelelement zurückgeben. Brauchst du mehrere Geschwister, umschließt
+    du sie mit einem Fragment. Es erscheint nicht im DOM. Die Kurzschreibweise ist `<>…</>`; brauchst du einen
+    `key`, schreibst du `<Fragment key={…}>`.
+  example: "`return <><h1>Titel</h1><p>Text</p></>` liefert zwei Elemente ohne Wrapper-div."
+  category: react
+  aliases: [React.Fragment, Fragments, "<>"]
+  related: [jsx, key-prop]
+  lesson: react/jsx-und-props
+- slug: key-prop
+  term: key (Prop)
+  short: Eine eindeutige Kennung für jedes Element einer gerenderten Liste, damit React Einträge zuordnen kann.
+  explanation: >
+    Rendert eine Komponente eine Liste, braucht jedes Element ein `key`, das unter seinen Geschwistern eindeutig
+    und stabil ist – meist eine ID aus den Daten. Daran erkennt React beim nächsten Rendern, welcher Eintrag
+    neu, verschoben oder gelöscht ist. Ein geänderter `key` sorgt außerdem dafür, dass React eine Komponente
+    mit frischem State neu anlegt.
+  example: "`{aufgaben.map((a) => <li key={a.id}>{a.titel}</li>)}`"
+  category: react
+  aliases: [key, Keys, Schlüssel]
+  related: [reconciliation, react-state]
+  lesson: react/listen-und-bedingungen
+- slug: reconciliation
+  term: Reconciliation
+  short: Der Abgleich, bei dem React das neue Render-Ergebnis mit dem alten vergleicht und nur die Unterschiede in den DOM schreibt.
+  explanation: >
+    Nach jedem Rendern hat React eine neue Beschreibung der Oberfläche. Beim Reconciliation-Schritt vergleicht
+    React sie mit der vorherigen: gleicher Typ an gleicher Stelle bleibt erhalten, anderes wird ersetzt. Keys
+    helfen bei Listen, Einträge richtig zuzuordnen. So bleiben DOM-Änderungen minimal.
+  example: "Ändert sich nur ein Text in einer Liste mit 100 Einträgen, aktualisiert React genau diesen einen Textknoten."
+  category: react
+  aliases: [Abgleich, Diffing]
+  related: [key-prop, rendern, dom]
+  lesson: react/listen-und-bedingungen
+- slug: event-handler
+  term: Event-Handler
+  short: Eine Funktion, die ausgeführt wird, wenn ein Ereignis wie ein Klick oder eine Eingabe eintritt.
+  explanation: >
+    In React übergibst du Event-Handler als Props wie `onClick` oder `onChange` an JSX-Elemente. Du übergibst
+    die Funktion selbst, nicht ihren Aufruf. Per Konvention heißen eigene Handler `handle…` und die Props, die
+    sie weiterreichen, `on…`.
+  example: "`<button onClick={() => setAnzahl(anzahl + 1)}>+1</button>`"
+  category: react
+  aliases: [Eventhandler, Handler, onClick]
+  related: [react-state, props]
+  lesson: react/state-und-events
+- slug: react-state
+  term: State (React)
+  short: Daten, die sich eine Komponente zwischen zwei Renders merkt und deren Änderung einen neuen Render auslöst.
+  explanation: >
+    Normale Variablen gehen nach jedem Rendern verloren, und ihre Änderung zeigt nichts Neues an. State dagegen
+    hält React für die Komponente fest. Änderst du ihn über die Setter-Funktion, rendert React die Komponente
+    neu. Jede Instanz einer Komponente hat ihren eigenen State.
+  example: "`const [anzahl, setAnzahl] = useState(0)` – `anzahl` ist der State, `setAnzahl` ändert ihn."
+  category: react
+  aliases: [State, Zustand, Komponenten-State]
+  related: [usestate, rendern, react-hook]
+  lesson: react/state-und-events
+- slug: usestate
+  term: useState
+  short: Der React-Hook, der einer Komponente eine State-Variable und eine Funktion zum Ändern gibt.
+  explanation: >
+    `useState(startwert)` liefert ein Array mit zwei Einträgen: den aktuellen Wert und eine Setter-Funktion.
+    Ein Aufruf des Setters plant einen neuen Render mit dem neuen Wert. Wie alle Hooks darfst du `useState` nur
+    oben in einer Komponente oder einem eigenen Hook aufrufen, nicht in Bedingungen oder Schleifen.
+  example: "`const [name, setName] = useState('')`"
+  category: react
+  aliases: [React.useState, State-Hook]
+  related: [react-state, react-hook, updater-funktion]
+  lesson: react/state-und-events
+- slug: batching
+  term: Batching
+  short: React sammelt mehrere State-Änderungen aus einem Event-Handler und rendert danach nur einmal.
+  explanation: >
+    Rufst du in einem Handler mehrere Setter auf, rendert React nicht nach jedem einzelnen. Erst wenn der
+    Handler fertig ist, verarbeitet React alle geplanten Änderungen gemeinsam. Das spart Arbeit und verhindert
+    halbfertige Zwischenzustände auf dem Bildschirm.
+  example: "`setName('Ada'); setAlter(36)` im selben Klick-Handler führt zu genau einem Render."
+  category: react
+  aliases: [Stapelverarbeitung, automatisches Batching]
+  related: [react-state, updater-funktion]
+  lesson: react/state-als-schnappschuss
+- slug: updater-funktion
+  term: Updater-Funktion
+  short: Eine Funktion, die du einem State-Setter übergibst und die den neuen Wert aus dem vorherigen berechnet.
+  explanation: >
+    Statt eines Werts kannst du einem Setter eine Funktion wie `n => n + 1` übergeben. React stellt sie in eine
+    Warteschlange und ruft sie beim nächsten Render mit dem jeweils aktuellsten Wert auf. So funktionieren
+    mehrere Änderungen hintereinander zuverlässig, auch wenn der State im Handler ein Schnappschuss ist.
+  example: "`setAnzahl((n) => n + 1)` dreimal hintereinander erhöht wirklich um 3."
+  category: react
+  aliases: [Updater, Update-Funktion]
+  related: [usestate, batching]
+  lesson: react/state-als-schnappschuss
+- slug: state-anheben
+  term: State anheben
+  short: Gemeinsam genutzten State aus Geschwister-Komponenten in ihre nächste gemeinsame Eltern-Komponente verschieben.
+  explanation: >
+    Brauchen zwei Komponenten denselben Zustand, entfernst du ihn aus beiden und legst ihn in die nächste
+    gemeinsame Eltern-Komponente. Diese gibt den Wert als Prop nach unten und eine Funktion zum Ändern mit.
+    Englisch heißt das Muster „lifting state up“.
+  example: "Ein Akkordeon speichert `aktiverIndex` und gibt jedem Panel `istAktiv` und `onAnzeigen` als Props."
+  category: react
+  aliases: [Lifting State Up, State hochziehen]
+  related: [single-source-of-truth, props, kontrollierte-komponente]
+  lesson: react/state-anheben
+- slug: single-source-of-truth
+  term: Single Source of Truth
+  short: Das Prinzip, dass jeder Zustand an genau einer Stelle gespeichert ist.
+  explanation: >
+    Liegt derselbe Wert an zwei Stellen, laufen die Kopien früher oder später auseinander. Deshalb besitzt in
+    React genau eine Komponente jeden Zustand, alle anderen bekommen ihn per Props oder Context. Werte, die sich
+    daraus berechnen lassen, speicherst du gar nicht, sondern leitest sie beim Rendern ab.
+  example: "Die Anzahl offener Aufgaben berechnest du mit `aufgaben.filter(…).length`, statt sie zusätzlich in State zu halten."
+  category: react
+  aliases: [einzige Quelle der Wahrheit, SSOT]
+  related: [state-anheben, react-state]
+  lesson: react/state-anheben
+- slug: kontrollierte-komponente
+  term: Kontrollierte Komponente
+  short: Eine Komponente oder ein Eingabefeld, dessen Wert vollständig von außen über Props oder State bestimmt wird.
+  explanation: >
+    Ein kontrolliertes Eingabefeld bekommt seinen Wert über `value` aus State und meldet jede Änderung über
+    `onChange`. So steht der aktuelle Inhalt immer im State, und du kannst ihn prüfen oder umformen. Das
+    Gegenstück ist eine unkontrollierte Komponente, die ihren Wert selbst verwaltet.
+  example: "`<input value={suche} onChange={(e) => setSuche(e.target.value)} />`"
+  category: react
+  aliases: [kontrolliertes Eingabefeld, controlled component, kontrolliert]
+  related: [react-state, state-anheben]
+  lesson: react/state-anheben
+- slug: reducer
+  term: Reducer
+  short: Eine reine Funktion, die aus dem aktuellen State und einer Action den nächsten State berechnet.
+  explanation: >
+    Ein Reducer hat die Form `(state, action) => neuerState`. Er verändert den alten State nicht, sondern gibt
+    einen neuen zurück, und hat keine Nebenwirkungen. Weil er reine Logik ohne React ist, kannst du ihn leicht
+    testen und an einer Stelle bündeln.
+  example: "`function zaehler(state, action) { return action.type === 'plus' ? state + 1 : state }`"
+  category: react
+  aliases: [Reducer-Funktion, Reducers]
+  related: [usereducer, react-action, reine-funktion]
+  lesson: react/usereducer
+- slug: react-action
+  term: Action (React)
+  short: Ein Objekt, das beschreibt, was passiert ist, und das an einen Reducer geschickt wird – in React 19 auch eine Funktion für Formulare.
+  explanation: >
+    Bei `useReducer` ist eine Action ein einfaches Objekt mit einem `type` und weiteren Daten, etwa
+    `{ type: 'geloescht', id: 3 }`. Du schickst sie mit `dispatch` ab, der Reducer entscheidet, was daraus
+    folgt. Seit React 19 heißen außerdem Funktionen, die du einem Formular als `action` übergibst, Actions.
+  example: "`dispatch({ type: 'hinzugefuegt', titel: 'Milch kaufen' })`"
+  category: react
+  aliases: [Action, Actions, Aktion]
+  related: [reducer, usereducer, useactionstate]
+  lesson: react/usereducer
+- slug: usereducer
+  term: useReducer
+  short: Der React-Hook, der State über eine Reducer-Funktion und abgeschickte Actions verwaltet.
+  explanation: >
+    `useReducer(reducer, startwert)` liefert den aktuellen State und eine `dispatch`-Funktion. Statt den State
+    direkt zu setzen, schickst du Actions ab; der Reducer berechnet daraus den nächsten State. Das lohnt sich,
+    wenn viele Event-Handler denselben State auf unterschiedliche Weise ändern.
+  example: "`const [aufgaben, dispatch] = useReducer(aufgabenReducer, [])`"
+  category: react
+  aliases: [React.useReducer, dispatch]
+  related: [reducer, react-action, usestate]
+  lesson: react/usereducer
+- slug: prop-drilling
+  term: Prop-Drilling
+  short: Das Durchreichen von Props durch viele Komponenten-Ebenen, die den Wert selbst gar nicht brauchen.
+  explanation: >
+    Braucht eine tief verschachtelte Komponente einen Wert von weit oben, muss jede Ebene dazwischen ihn als
+    Prop annehmen und weitergeben. Das macht Code schwer lesbar und änderbar. Context löst das Problem, indem
+    die lesende Komponente den Wert direkt bekommt.
+  example: "`App → Seite → Layout → Kopfzeile → Avatar`: Nur `Avatar` braucht `nutzer`, alle anderen reichen ihn nur durch."
+  category: react
+  aliases: [Prop Drilling, Props durchreichen]
+  related: [react-context, props]
+  lesson: react/context
+- slug: react-context
+  term: Context (React)
+  short: Ein Mechanismus, mit dem eine Komponente Daten an alle Komponenten darunter weitergibt, ohne Props durchzureichen.
+  explanation: >
+    Du legst einen Context mit `createContext(standardwert)` an. Eine Komponente stellt einen Wert bereit, indem
+    sie ihre Kinder mit dem Context-Provider umschließt. Jede Komponente darunter liest den nächstgelegenen Wert
+    mit `useContext`. Typische Inhalte sind Theme, angemeldeter Nutzer oder Sprache.
+  example: "`const ThemeContext = createContext('hell')` und später `const theme = useContext(ThemeContext)`."
+  category: react
+  aliases: [Context, Kontext, createContext]
+  related: [context-provider, usecontext, prop-drilling]
+  lesson: react/context
+- slug: context-provider
+  term: Context-Provider
+  short: Das JSX-Element, das einem Context für alle Komponenten darunter einen Wert gibt.
+  explanation: >
+    Seit React 19 schreibst du den Context selbst als Element: `<ThemeContext value="dunkel">`. Alle
+    Komponenten im Baum darunter lesen diesen Wert. Ändert sich `value`, rendern alle lesenden Komponenten neu.
+    Ältere Projekte nutzen noch die Schreibweise `<ThemeContext.Provider value=…>`.
+  example: "`<ThemeContext value={theme}><Seite /></ThemeContext>`"
+  category: react
+  aliases: [Provider, Context.Provider]
+  related: [react-context, usecontext]
+  lesson: react/context
+- slug: usecontext
+  term: useContext
+  short: Der React-Hook, mit dem eine Komponente den aktuellen Wert eines Contexts liest.
+  explanation: >
+    `useContext(MeinContext)` sucht im Komponentenbaum nach oben den nächstgelegenen Provider und liefert dessen
+    `value`. Gibt es keinen, kommt der Standardwert aus `createContext` zurück. Ändert sich der Wert, rendert die
+    Komponente automatisch neu.
+  example: "`const nutzer = useContext(NutzerContext)`"
+  category: react
+  aliases: [React.useContext]
+  related: [react-context, context-provider]
+  lesson: react/context
+- slug: react-ref
+  term: Ref (React)
+  short: Ein Objekt mit der Eigenschaft current, das zwischen Renders erhalten bleibt, ohne einen neuen Render auszulösen.
+  explanation: >
+    `useRef(startwert)` liefert `{ current: startwert }`. Du nutzt Refs für Werte, die nicht angezeigt werden,
+    etwa Timer-IDs, und für den Zugriff auf DOM-Elemente über das Attribut `ref`. Eine Änderung von
+    `ref.current` rendert die Komponente nicht neu.
+  example: "`const feld = useRef(null)` und `<input ref={feld} />`, danach `feld.current.focus()`."
+  category: react
+  aliases: [Ref, Refs, useRef]
+  related: [react-state, dom, react-effekt]
+  lesson: react/refs-und-effekte
+- slug: react-effekt
+  term: Effekt (React)
+  short: Code, den React nach dem Anzeigen einer Komponente ausführt, um sie mit einem externen System zu synchronisieren.
+  explanation: >
+    Mit `useEffect(fn, abhaengigkeiten)` legst du Code fest, der nach dem Commit läuft – etwa eine Verbindung
+    öffnen oder den Seitentitel setzen. Ändern sich Abhängigkeiten, läuft er erneut. Für Berechnungen und
+    Reaktionen auf Klicks brauchst du keinen Effekt.
+  example: "`useEffect(() => { document.title = titel }, [titel])`"
+  category: react
+  aliases: [Effekt, Effekte, useEffect, Effect]
+  related: [abhaengigkeitsarray, cleanup-funktion, react-ref]
+  lesson: react/refs-und-effekte
+- slug: abhaengigkeitsarray
+  term: Abhängigkeits-Array
+  short: Das zweite Argument von useEffect, das festlegt, bei welchen geänderten Werten der Effekt erneut läuft.
+  explanation: >
+    In das Array gehören alle Werte aus der Komponente, die der Effekt verwendet, etwa Props und State. React
+    vergleicht sie nach jedem Render mit `Object.is`. Ein leeres Array heißt: nur nach dem ersten Anzeigen; ohne
+    Array läuft der Effekt nach jedem Render.
+  example: "`useEffect(() => { verbinden(raumId) }, [raumId])` läuft erneut, sobald sich `raumId` ändert."
+  category: react
+  aliases: [Dependency Array, Abhängigkeiten, deps]
+  related: [react-effekt, cleanup-funktion]
+  lesson: react/refs-und-effekte
+- slug: cleanup-funktion
+  term: Cleanup-Funktion
+  short: Die Funktion, die ein Effekt zurückgibt und die React zum Aufräumen aufruft.
+  explanation: >
+    Gibt ein Effekt eine Funktion zurück, ruft React sie vor dem nächsten Durchlauf des Effekts und beim
+    Entfernen der Komponente auf. Dort schließt du Verbindungen, entfernst Event-Listener oder stoppst Timer.
+    Ohne Cleanup entstehen doppelte Verbindungen und Speicherlecks.
+  example: "`useEffect(() => { const id = setInterval(tick, 1000); return () => clearInterval(id) }, [])`"
+  category: react
+  aliases: [Cleanup, Aufräumfunktion]
+  related: [react-effekt, abhaengigkeitsarray, strict-mode-react]
+  lesson: react/refs-und-effekte
+- slug: eigener-hook
+  term: Eigener Hook
+  short: Eine selbst geschriebene Funktion, deren Name mit use beginnt und die andere Hooks aufruft, um Logik wiederzuverwenden.
+  explanation: >
+    Wiederholt sich dieselbe Kombination aus State und Effekten in mehreren Komponenten, ziehst du sie in einen
+    eigenen Hook. Er gibt zurück, was die Komponenten brauchen. Jede Komponente, die ihn aufruft, bekommt ihren
+    eigenen State – geteilt wird nur die Logik.
+  example: "`function useOnline() { const [online, setOnline] = useState(navigator.onLine); … return online }`"
+  category: react
+  aliases: [Custom Hook, eigene Hooks, Custom Hooks]
+  related: [react-hook, usestate, react-effekt]
+  lesson: react/eigene-hooks-und-formulare
+- slug: useactionstate
+  term: useActionState
+  short: Ein React-19-Hook, der eine Formular-Action mit einem Ergebnis-State und einem Ladezustand verbindet.
+  explanation: >
+    `useActionState(aktion, startState)` liefert `[state, formAction, isPending]`. Du übergibst `formAction` an
+    `<form action={…}>`. Beim Absenden ruft React deine Aktion mit dem bisherigen State und den Formulardaten auf
+    und speichert ihr Ergebnis als neuen State.
+  example: "`const [state, formAction, isPending] = useActionState(anmelden, {})`"
+  category: react
+  aliases: [React.useActionState]
+  related: [react-action, react-hook]
+  lesson: react/eigene-hooks-und-formulare
+- slug: vitest
+  term: Vitest
+  short: Ein Test-Runner für JavaScript und TypeScript, der auf Vite aufbaut und dessen Konfiguration mitnutzt.
+  explanation: >
+    Vitest findet Dateien wie `*.test.ts`, führt die darin definierten Tests aus und meldet, welche bestanden
+    haben. Weil es die Vite-Konfiguration verwendet, versteht es JSX und TypeScript ohne Zusatzaufwand. Mit
+    `vitest run` läuft es einmal durch, ohne `run` beobachtet es Dateien und testet bei jeder Änderung neu.
+  example: "`npx vitest run` führt alle Tests des Projekts einmal aus."
+  category: react
+  aliases: [vitest run]
+  related: [test-runner, unit-test, vite]
+  lesson: react/komponenten-testen
+- slug: testing-library
+  term: Testing Library
+  short: Eine Sammlung von Test-Hilfen, mit denen du Komponenten so prüfst, wie Nutzer sie bedienen.
+  explanation: >
+    Die React-Variante `@testing-library/react` rendert eine Komponente in einen simulierten DOM. Elemente
+    suchst du über das, was Menschen sehen – Rolle, Beschriftung, Text – statt über CSS-Klassen. So testen deine
+    Tests Verhalten statt Implementierungsdetails.
+  example: "`render(<Zaehler />)` und dann `screen.getByRole('button', { name: 'Geklickt: 0' })`."
+  category: react
+  aliases: [React Testing Library, RTL, "@testing-library/react"]
+  related: [vitest, jsdom, unit-test]
+  lesson: react/komponenten-testen
+- slug: jsdom
+  term: jsdom
+  short: Eine in JavaScript geschriebene Nachbildung des Browser-DOM, mit der Tests ohne echten Browser laufen.
+  explanation: >
+    Node.js kennt kein `document` und kein `window`. jsdom liefert diese Objekte nach, sodass Komponenten in
+    Tests gerendert und angeklickt werden können. Es zeichnet nichts auf den Bildschirm und kennt kein Layout,
+    deshalb prüfst du damit Inhalte und Verhalten, nicht das Aussehen.
+  example: "Die Zeile `// @vitest-environment jsdom` oben in einer Testdatei schaltet jsdom für diese Datei ein."
+  category: react
+  aliases: [JSDOM]
+  related: [testing-library, vitest, dom]
+  lesson: react/komponenten-testen

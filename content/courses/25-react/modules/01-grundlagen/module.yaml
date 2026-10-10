@@ -1,0 +1,85 @@
+title: Komponenten und JSX
+description: Warum React deklarativ arbeitet, wie du Komponenten mit JSX und Props baust und Listen sowie Bedingungen renderst.
+exercise:
+  id: modul-uebung-produktliste
+  type: code
+  language: jsx
+  title: Eine Produktübersicht aus Komponenten
+  description: |
+    Baue aus den Daten in `produkte` eine Produktübersicht – nur mit Komponenten, Props, Listen und
+    Bedingungen (noch ohne State).
+
+    1. Schreibe eine Komponente `Produkt` mit den Props `name`, `preis` und `lager`. Sie rendert ein
+       `<li className="produkt">` mit dem Namen in einem `<strong>` und dem Preis im Format `12.50 €`
+       (zwei Nachkommastellen, z. B. mit `preis.toFixed(2)`) in einem `<span className="preis">`.
+    2. Ist `lager` gleich `0`, rendert `Produkt` zusätzlich `<em className="ausverkauft">Ausverkauft</em>`.
+    3. `App` rendert alle Produkte in einer `<ul>`, jedes mit seiner `id` als `key`.
+    4. Unter der Liste steht `<p className="summe">3 von 4 verfügbar</p>` – die Zahlen berechnest du aus
+       den Daten (verfügbar heißt: `lager > 0`).
+  starter: |
+    const produkte = [
+      { id: 'p1', name: 'Tastatur', preis: 49.9, lager: 12 },
+      { id: 'p2', name: 'Maus', preis: 19, lager: 0 },
+      { id: 'p3', name: 'Monitor', preis: 189.5, lager: 3 },
+      { id: 'p4', name: 'Kabel', preis: 4.25, lager: 40 },
+    ]
+
+    function Produkt({ name, preis, lager }) {
+      return <li className="produkt">{name}</li>
+    }
+
+    function App() {
+      return (
+        <section>
+          <ul>{/* Produkte rendern */}</ul>
+        </section>
+      )
+    }
+  tests:
+    - name: rendert vier Produkte
+      code: assertEqual(queryAll('li.produkt').length, 4)
+    - name: zeigt Namen in strong und formatierte Preise
+      code: |
+        assertEqual(queryAll('li.produkt strong')[0].textContent, 'Tastatur')
+        const preise = queryAll('.preis').map((p) => p.textContent).join('|')
+        assertEqual(preise, '49.90 €|19.00 €|189.50 €|4.25 €')
+    - name: markiert nur ausverkaufte Produkte
+      code: |
+        assertEqual(queryAll('.ausverkauft').length, 1)
+        assertTrue(queryAll('li.produkt')[1].textContent.includes('Ausverkauft'))
+    - name: berechnet die Verfügbarkeit aus den Daten
+      code: assertEqual(query('p.summe') && query('p.summe').textContent, '3 von 4 verfügbar')
+  hints:
+    - "Formatierung: `<span className=\"preis\">{preis.toFixed(2)} €</span>`."
+    - "Bedingung: `{lager === 0 && <em className=\"ausverkauft\">Ausverkauft</em>}`."
+    - "Verfügbar zählen: `produkte.filter((p) => p.lager > 0).length`. Props weitergeben geht auch mit `{...p}`."
+  solution: |
+    const produkte = [
+      { id: 'p1', name: 'Tastatur', preis: 49.9, lager: 12 },
+      { id: 'p2', name: 'Maus', preis: 19, lager: 0 },
+      { id: 'p3', name: 'Monitor', preis: 189.5, lager: 3 },
+      { id: 'p4', name: 'Kabel', preis: 4.25, lager: 40 },
+    ]
+
+    function Produkt({ name, preis, lager }) {
+      return (
+        <li className="produkt">
+          <strong>{name}</strong> <span className="preis">{preis.toFixed(2)} €</span>
+          {lager === 0 && <em className="ausverkauft">Ausverkauft</em>}
+        </li>
+      )
+    }
+
+    function App() {
+      const verfuegbar = produkte.filter((p) => p.lager > 0).length
+      return (
+        <section>
+          <ul>
+            {produkte.map((p) => (
+              <Produkt key={p.id} name={p.name} preis={p.preis} lager={p.lager} />
+            ))}
+          </ul>
+          <p className="summe">{verfuegbar} von {produkte.length} verfügbar</p>
+        </section>
+      )
+    }

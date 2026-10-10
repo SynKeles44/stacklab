@@ -1,0 +1,484 @@
+title: Abschlussprüfung React
+description: |
+  Diese Prüfung deckt alle vier Module ab: Komponenten und JSX, State und Interaktion, State verwalten
+  sowie Effekte, Hooks und Praxis. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben –
+  zwei React-Aufgaben direkt im Browser und eine Test-Aufgabe im echten Übungs-Terminal.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast,
+  und kannst gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Komponenten und JSX ---
+  - module: grundlagen
+    type: single
+    question: Was bedeutet es, dass React deklarativ arbeitet?
+    options:
+      - Du rufst für jede Änderung selbst document.createElement und append auf.
+      - Du beschreibst, wie die Oberfläche für den aktuellen Zustand aussieht, und React passt den DOM an.
+      - React lädt bei jeder Änderung die Seite neu.
+      - React schreibt HTML-Dateien auf die Festplatte.
+    answer: 1
+    explanation: Du beschreibst das gewünschte Ergebnis. Den Weg dorthin – welche DOM-Knoten sich ändern – findet React beim Abgleich selbst.
+  - module: grundlagen
+    type: find-bug
+    question: Diese Komponente wird nicht angezeigt, React behandelt sie wie ein HTML-Tag. In welcher Zeile liegt die Ursache?
+    language: jsx
+    code: |
+      function begruessung({ name }) {
+        return <p>Hallo {name}</p>
+      }
+
+      function App() {
+        return <begruessung name="Ada" />
+      }
+    bug_line: 1
+    explanation: Komponentennamen müssen mit einem Großbuchstaben beginnen. Kleingeschriebene Tags hält React für eingebaute HTML-Elemente – richtig wäre `function Begruessung` und `<Begruessung />`.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen über Props stimmen?
+    options:
+      - Props sind für eine Komponente das, was Parameter für eine Funktion sind.
+      - Eine Komponente darf ihre eigenen Props verändern, um neu zu rendern.
+      - Inhalt zwischen öffnendem und schließendem Tag landet in der Prop children.
+      - Zahlen übergibst du in geschweiften Klammern, z. B. alter={36}.
+    answers: [0, 2, 3]
+    explanation: Props sind nur lesbar. Was sich ändern soll, gehört in State – die Props kommen immer von der Eltern-Komponente.
+  - module: grundlagen
+    type: single
+    question: Warum ist der Array-Index als key bei einer Liste, in der Einträge gelöscht und umsortiert werden, problematisch?
+    options:
+      - Index-Keys sind in React verboten und erzeugen einen Fehler.
+      - Der Index wandert mit der Position statt mit dem Eintrag, React ordnet State und DOM dann falschen Einträgen zu.
+      - Indizes sind Zahlen, Keys müssen Strings sein.
+      - React rendert Listen mit Index-Keys überhaupt nicht.
+    answer: 1
+    explanation: Ein key soll einen Eintrag dauerhaft kennzeichnen. Nach dem Löschen hat derselbe Eintrag einen anderen Index – deshalb nimmst du stabile IDs aus den Daten.
+  - module: grundlagen
+    type: cloze
+    text: "Bedingtes Rendern geht mit `{istAngemeldet ___ <Profil />}` oder mit dem ternären Operator. Mehrere Elemente ohne Wrapper-div umschließt du mit einem ___."
+    blanks:
+      - ["&&"]
+      - [Fragment, "<>", "<></>"]
+    explanation: "`&&` rendert die rechte Seite nur, wenn die linke wahr ist. Ein Fragment (`<>…</>`) gruppiert Elemente, ohne im DOM aufzutauchen."
+
+  # --- State und Interaktion ---
+  - module: state-und-interaktion
+    type: find-bug
+    question: Beim Laden der Seite erscheint sofort ein Alert, beim Klick passiert nichts. Welche Zeile ist falsch?
+    language: jsx
+    code: |
+      function Knopf() {
+        function handleClick() {
+          alert('Geklickt!')
+        }
+        return <button onClick={handleClick()}>Klick</button>
+      }
+    bug_line: 5
+    explanation: "`onClick={handleClick()}` ruft die Funktion beim Rendern auf und übergibt ihr Ergebnis. Richtig ist `onClick={handleClick}` – du übergibst die Funktion selbst."
+  - module: state-und-interaktion
+    type: single
+    question: "`anzahl` ist 0. Ein Klick-Handler ruft dreimal `setAnzahl(anzahl + 1)` auf. Welchen Wert zeigt der nächste Render?"
+    options: ["0", "1", "3", "Es gibt einen Fehler"]
+    answer: 1
+    explanation: Innerhalb des Handlers ist anzahl ein Schnappschuss mit dem Wert 0. Dreimal „setze auf 0 + 1“ ergibt 1. Mit der Updater-Funktion `setAnzahl((n) => n + 1)` wären es 3.
+  - module: state-und-interaktion
+    type: match
+    question: Ordne jeder Array-Änderung den unveränderlichen Weg zu.
+    pairs:
+      - { left: "Eintrag hinzufügen", right: "[...liste, neu]" }
+      - { left: "Eintrag entfernen", right: "liste.filter((x) => x.id !== id)" }
+      - { left: "Eintrag ändern", right: "liste.map((x) => x.id === id ? { ...x, fertig: true } : x)" }
+      - { left: "Sortiert anzeigen", right: "liste.toSorted(vergleich)" }
+    explanation: Alle vier Wege erzeugen ein neues Array. push, splice, sort und direkte Zuweisungen verändern das alte – React erkennt die Änderung dann nicht zuverlässig.
+  - module: state-und-interaktion
+    type: multiple
+    question: Welche Aussagen über State stimmen?
+    options:
+      - Eine Änderung über die Setter-Funktion löst einen neuen Render aus.
+      - Jede Instanz einer Komponente hat ihren eigenen State.
+      - Nach setName('Ada') enthält name in derselben Funktion sofort 'Ada'.
+      - Hooks wie useState dürfen nicht in Bedingungen oder Schleifen aufgerufen werden.
+    answers: [0, 1, 3]
+    explanation: Der neue Wert gilt erst im nächsten Render. Im laufenden Handler bleibt der Schnappschuss unverändert.
+
+  # --- State verwalten ---
+  - module: state-verwalten
+    type: single
+    question: Zwei Geschwister-Komponenten sollen denselben Filter-Wert anzeigen und ändern. Was ist der übliche Weg?
+    options:
+      - Jede Komponente bekommt einen eigenen useState und ein Effekt hält beide synchron.
+      - Den State in die nächste gemeinsame Eltern-Komponente anheben und Wert plus Änderungsfunktion als Props weitergeben.
+      - Den Wert in einer globalen Variable außerhalb von React speichern.
+      - Die beiden Komponenten zu einer einzigen zusammenlegen.
+    answer: 1
+    explanation: Beim Anheben gibt es genau eine Quelle der Wahrheit. Kopien, die per Effekt synchron gehalten werden, laufen leicht auseinander.
+  - module: state-verwalten
+    type: single
+    question: Wie setzt du den State einer Komponente gezielt zurück, wenn ein anderer Kontakt ausgewählt wird?
+    options:
+      - Mit einem useEffect, der bei jedem Kontaktwechsel alle Setter aufruft.
+      - Mit einem key, der vom Kontakt abhängt, z. B. <Chat key={kontakt.id} />.
+      - Mit window.location.reload().
+      - Gar nicht, State bleibt immer erhalten.
+    answer: 1
+    explanation: Ändert sich der key, behandelt React die Komponente als neue Instanz und legt frischen State an.
+  - module: state-verwalten
+    type: multiple
+    question: Welche Aussagen über Reducer stimmen?
+    options:
+      - Ein Reducer berechnet aus State und Action den nächsten State.
+      - Ein Reducer darf fetch aufrufen, um Daten zu speichern.
+      - Ein Reducer verändert den alten State nicht, sondern gibt einen neuen zurück.
+      - Weil er eine reine Funktion ist, lässt er sich ohne React testen.
+    answers: [0, 2, 3]
+    explanation: Reducer sind rein – keine Nebenwirkungen wie Netzwerkaufrufe, keine Mutationen. Seiteneffekte gehören in Event-Handler oder Effekte.
+  - module: state-verwalten
+    type: cloze
+    text: "Einen Context legst du mit `___(standardwert)` an und liest ihn in einer Komponente mit `___(MeinContext)`."
+    blanks:
+      - [createContext, React.createContext]
+      - [useContext, React.useContext, use]
+    explanation: createContext erzeugt den Context, der Provider (in React 19 `<MeinContext value={…}>`) gibt einen Wert vor, useContext liest den nächstgelegenen.
+
+  # --- Effekte, Hooks und Praxis ---
+  - module: effekte-und-praxis
+    type: multiple
+    question: In welchen Fällen ist ein useEffect sinnvoll?
+    options:
+      - Eine Verbindung zu einem Chat-Server öffnen, solange die Komponente sichtbar ist.
+      - Einen Vollnamen aus Vor- und Nachname berechnen.
+      - Den Seitentitel mit dem aktuellen Zähler synchron halten.
+      - Nach einem Klick auf „Bestellen“ einen POST-Request senden.
+    answers: [0, 2]
+    explanation: Effekte synchronisieren mit Systemen außerhalb von React. Abgeleitete Werte berechnest du beim Rendern, Reaktionen auf Klicks gehören in den Event-Handler.
+  - module: effekte-und-praxis
+    type: single
+    question: Was unterscheidet useRef von useState?
+    options:
+      - Eine Änderung von ref.current löst keinen neuen Render aus.
+      - Refs gehen bei jedem Render verloren.
+      - useRef funktioniert nur mit DOM-Elementen.
+      - useState kann keine Objekte speichern.
+    answer: 0
+    explanation: Ein Ref bleibt zwischen Renders erhalten, rendert aber nicht neu. Deshalb eignet er sich für Timer-IDs und DOM-Elemente, nicht für angezeigte Daten.
+  - module: effekte-und-praxis
+    type: single
+    question: Welche Aussage über eigene Hooks stimmt?
+    options:
+      - Zwei Komponenten, die denselben eigenen Hook aufrufen, teilen sich seinen State.
+      - Ein eigener Hook ist eine Funktion mit use-Präfix, die selbst Hooks aufruft; jeder Aufruf hat eigenen State.
+      - Jede Funktion, die mit use beginnt, ist automatisch schneller.
+      - Eigene Hooks dürfen JSX, aber keine anderen Hooks enthalten.
+    answer: 1
+    explanation: Hooks teilen Logik, nicht State. Wer State wirklich teilen will, hebt ihn an oder nutzt Context.
+  - module: effekte-und-praxis
+    type: match
+    question: Ordne jedem Testing-Library-Aufruf seinen Zweck zu.
+    pairs:
+      - { left: "render(<App />)", right: "Komponente in den simulierten DOM hängen" }
+      - { left: "screen.getByRole('button', { name: 'Speichern' })", right: "Element über Rolle und Beschriftung finden" }
+      - { left: "fireEvent.click(knopf)", right: "Einen Klick auslösen" }
+      - { left: "screen.queryByText('Fehler')", right: "Prüfen, ob etwas nicht angezeigt wird (null)" }
+    explanation: Arrange mit render, Act mit fireEvent, Assert mit expect – Elemente findest du so, wie Nutzer sie sehen.
+  - module: effekte-und-praxis
+    type: single
+    question: "Was liefert `useActionState(aktion, {})` zurück?"
+    options:
+      - "[state, setState]"
+      - "[state, formAction, isPending]"
+      - "{ data, error, loading }"
+      - Ein Promise mit den Formulardaten
+    answer: 1
+    explanation: formAction übergibst du an `<form action={…}>`, state enthält das Ergebnis der letzten Aktion und isPending zeigt, ob sie gerade läuft.
+tasks:
+  - module: state-und-interaktion
+    id: pruefung-suche
+    type: code
+    language: jsx
+    title: Eine filterbare Kontaktliste
+    description: |
+      Baue eine Kontaktliste mit Suchfeld und Favoriten.
+
+      1. Ein **kontrolliertes** `<input className="suche">` filtert die Liste: Es werden nur Kontakte angezeigt,
+         deren Name den Suchbegriff enthält – Groß- und Kleinschreibung egal.
+      2. Jeder Kontakt erscheint als `<li>` mit dem Namen in `<span className="name">` und einem
+         `<button className="favorit">`. Ein Klick schaltet `favorit` des Kontakts um (unveränderlich im State).
+         Favoriten bekommen am `<li>` die Klasse `fav`.
+      3. Darunter steht `<p className="info">2 Treffer, 1 Favorit(en)</p>`: die Anzahl der **angezeigten**
+         Kontakte und die Anzahl **aller** Favoriten – beides berechnet, kein extra State.
+      4. Gibt es keinen Treffer, steht statt der Liste `<p className="keine">Keine Treffer</p>`.
+    starter: |
+      function App() {
+        const [kontakte, setKontakte] = React.useState([
+          { id: 1, name: 'Ada Lovelace', favorit: false },
+          { id: 2, name: 'Alan Turing', favorit: true },
+          { id: 3, name: 'Grace Hopper', favorit: false },
+        ])
+
+        return (
+          <section>
+            <input className="suche" placeholder="Suchen …" />
+            <ul>
+              {kontakte.map((k) => (
+                <li key={k.id}>
+                  <span className="name">{k.name}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+    tests:
+      - name: zeigt alle Kontakte und die Info
+        code: |
+          assertEqual(queryAll('li').length, 3)
+          assertEqual(query('.info').textContent, '3 Treffer, 1 Favorit(en)')
+          assertEqual(queryAll('li.fav').length, 1)
+      - name: filtert ohne Rücksicht auf Groß- und Kleinschreibung
+        code: |
+          await type('.suche', 'a')
+          assertEqual(queryAll('.name').map((n) => n.textContent).join('|'), 'Ada Lovelace|Alan Turing|Grace Hopper')
+          await type('.suche', 'AL')
+          assertEqual(queryAll('.name').map((n) => n.textContent).join('|'), 'Alan Turing')
+          assertEqual(query('.info').textContent, '1 Treffer, 1 Favorit(en)')
+      - name: schaltet Favoriten um und zählt alle Favoriten
+        code: |
+          await type('.suche', '')
+          await click('li:nth-child(1) .favorit')
+          assertEqual(queryAll('li.fav').length, 2)
+          await type('.suche', 'grace')
+          assertEqual(query('.info').textContent, '1 Treffer, 2 Favorit(en)')
+      - name: meldet, wenn nichts gefunden wird
+        code: |
+          await type('.suche', 'xyz')
+          assertEqual(queryAll('li').length, 0)
+          assertTrue(query('.keine') !== null, 'Ohne Treffer fehlt der Hinweis .keine.')
+    hints:
+      - "Suchbegriff in State: `const [suche, setSuche] = React.useState('')`, gefiltert mit `k.name.toLowerCase().includes(suche.toLowerCase())`."
+      - "Umschalten: `setKontakte(kontakte.map((k) => (k.id === id ? { ...k, favorit: !k.favorit } : k)))`."
+      - "Favoriten zählen über **alle** Kontakte: `kontakte.filter((k) => k.favorit).length`."
+    solution: |
+      function App() {
+        const [kontakte, setKontakte] = React.useState([
+          { id: 1, name: 'Ada Lovelace', favorit: false },
+          { id: 2, name: 'Alan Turing', favorit: true },
+          { id: 3, name: 'Grace Hopper', favorit: false },
+        ])
+        const [suche, setSuche] = React.useState('')
+
+        const treffer = kontakte.filter((k) => k.name.toLowerCase().includes(suche.toLowerCase()))
+        const favoriten = kontakte.filter((k) => k.favorit).length
+
+        function umschalten(id) {
+          setKontakte(kontakte.map((k) => (k.id === id ? { ...k, favorit: !k.favorit } : k)))
+        }
+
+        return (
+          <section>
+            <input className="suche" placeholder="Suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} />
+            {treffer.length === 0 ? (
+              <p className="keine">Keine Treffer</p>
+            ) : (
+              <ul>
+                {treffer.map((k) => (
+                  <li key={k.id} className={k.favorit ? 'fav' : undefined}>
+                    <span className="name">{k.name}</span>
+                    <button className="favorit" onClick={() => umschalten(k.id)}>★</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="info">{treffer.length} Treffer, {favoriten} Favorit(en)</p>
+          </section>
+        )
+      }
+  - module: state-verwalten
+    id: pruefung-sprache
+    type: code
+    language: jsx
+    title: Sprachumschaltung mit Reducer und Context
+    description: |
+      Eine kleine App soll zwischen Deutsch und Englisch umschalten – ohne die Sprache durch alle Ebenen zu reichen.
+
+      1. Schreibe `einstellungenReducer(state, action)` für den State `{ sprache, zaehler }` mit den Actions
+         `sprache-gewechselt` (Feld `sprache`) und `gegruesst` (erhöht `zaehler` um 1). Unbekannte Actions
+         werfen einen Fehler.
+      2. Lege `SpracheContext` an. `App` verwaltet den State mit `useReducer` (Start
+         `{ sprache: 'de', zaehler: 0 }`) und stellt `state.sprache` per Context bereit.
+      3. `Gruss` liest die Sprache per Context und zeigt `<h1>Hallo</h1>` bzw. `<h1>Hello</h1>`. `Gruss` steckt in
+         `Rahmen` – `Rahmen` bekommt **keine** Sprach-Prop.
+      4. Buttons `.de` und `.en` wechseln die Sprache, `.gruessen` erhöht den Zähler, angezeigt in
+         `<span className="zaehler">`.
+    starter: |
+      function einstellungenReducer(state, action) {
+        return state
+      }
+
+      function Gruss() {
+        return <h1>Hallo</h1>
+      }
+
+      function Rahmen() {
+        return (
+          <div className="rahmen">
+            <Gruss />
+          </div>
+        )
+      }
+
+      function App() {
+        return (
+          <main>
+            <Rahmen />
+            <button className="de">DE</button>
+            <button className="en">EN</button>
+            <button className="gruessen">Grüßen</button>
+            <span className="zaehler">0</span>
+          </main>
+        )
+      }
+    tests:
+      - name: startet auf Deutsch mit Zähler 0
+        code: |
+          assertEqual(query('h1').textContent, 'Hallo')
+          assertEqual(query('.zaehler').textContent, '0')
+      - name: wechselt die Sprache per Context
+        code: |
+          await click('.en')
+          assertEqual(query('.rahmen h1').textContent, 'Hello')
+          await click('.de')
+          assertEqual(query('h1').textContent, 'Hallo')
+      - name: zählt Grüße, ohne die Sprache zu verlieren
+        code: |
+          await click('.en')
+          await click('.gruessen')
+          await click('.gruessen')
+          assertEqual(query('.zaehler').textContent, '2')
+          assertEqual(query('h1').textContent, 'Hello')
+    hints:
+      - "Reducer: `case 'sprache-gewechselt': return { ...state, sprache: action.sprache }` und `case 'gegruesst': return { ...state, zaehler: state.zaehler + 1 }`."
+      - "Context: `const SpracheContext = React.createContext('de')`, bereitstellen mit `<SpracheContext value={state.sprache}>…</SpracheContext>`."
+      - "In Gruss: `const sprache = React.useContext(SpracheContext)`."
+    solution: |
+      const SpracheContext = React.createContext('de')
+
+      function einstellungenReducer(state, action) {
+        switch (action.type) {
+          case 'sprache-gewechselt':
+            return { ...state, sprache: action.sprache }
+          case 'gegruesst':
+            return { ...state, zaehler: state.zaehler + 1 }
+          default:
+            throw new Error('Unbekannte Action: ' + action.type)
+        }
+      }
+
+      function Gruss() {
+        const sprache = React.useContext(SpracheContext)
+        return <h1>{sprache === 'en' ? 'Hello' : 'Hallo'}</h1>
+      }
+
+      function Rahmen() {
+        return (
+          <div className="rahmen">
+            <Gruss />
+          </div>
+        )
+      }
+
+      function App() {
+        const [state, dispatch] = React.useReducer(einstellungenReducer, { sprache: 'de', zaehler: 0 })
+        return (
+          <SpracheContext value={state.sprache}>
+            <main>
+              <Rahmen />
+              <button className="de" onClick={() => dispatch({ type: 'sprache-gewechselt', sprache: 'de' })}>DE</button>
+              <button className="en" onClick={() => dispatch({ type: 'sprache-gewechselt', sprache: 'en' })}>EN</button>
+              <button className="gruessen" onClick={() => dispatch({ type: 'gegruesst' })}>Grüßen</button>
+              <span className="zaehler">{state.zaehler}</span>
+            </main>
+          </SpracheContext>
+        )
+      }
+  - module: effekte-und-praxis
+    id: pruefung-reducer-test
+    type: terminal
+    title: Einen Reducer mit Vitest absichern
+    description: |
+      Im Ordner `reducer-test` liegt ein kleines Node-Projekt mit der Datei `listenReducer.js`. Der Reducer kennt
+      die Actions `hinzugefuegt` (Feld `text`, neue Einträge bekommen `id` = bisherige Anzahl + 1) und
+      `geleert` (leert die Liste).
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+
+      1. Installiere Vitest als Entwicklungsabhängigkeit.
+      2. Schreibe `listenReducer.test.js` mit mindestens **zwei** Tests: einen für `hinzugefuegt` (prüfe das
+         Ergebnis mit `toEqual`) und einen für `geleert`.
+      3. Führe `npx vitest run` aus – alle Tests müssen grün sein.
+
+      Die Prüfung baut den Reducer zusätzlich kurz kaputt: Deine Tests müssen das bemerken.
+    workdir: reducer-test
+    setup: |
+      npm init -y >/dev/null
+      npm pkg set type=module
+      cat > listenReducer.js <<'EOF'
+      export function listenReducer(liste, action) {
+        switch (action.type) {
+          case 'hinzugefuegt':
+            return [...liste, { id: liste.length + 1, text: action.text }]
+          case 'geleert':
+            return []
+          default:
+            throw new Error('Unbekannte Action: ' + action.type)
+        }
+      }
+      EOF
+    checks:
+      - type: dir_exists
+        path: node_modules/vitest
+        message: Vitest ist noch nicht installiert. Führe npm install -D vitest aus.
+      - type: file_exists
+        path: listenReducer.test.js
+        message: Die Datei listenReducer.test.js fehlt noch.
+      - type: command
+        run: "[ \"$(grep -cE '^\\s*(test|it)\\(' listenReducer.test.js)\" -ge 2 ]"
+        message: Schreibe mindestens zwei Tests (test(…) oder it(…)), je einen pro Action.
+      - type: command
+        run: npx vitest run >/dev/null 2>&1
+        message: npx vitest run schlägt fehl. Führe den Befehl aus und lies, welcher Test rot ist.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cp listenReducer.js "$d/listenReducer.js"
+          sed -i 's/liste.length + 1/liste.length/' listenReducer.js
+          if npx vitest run >/dev/null 2>&1; then r1=1; else r1=0; fi
+          cp "$d/listenReducer.js" listenReducer.js
+          sed -i 's/return \[\]/return liste/' listenReducer.js
+          if npx vitest run >/dev/null 2>&1; then r2=1; else r2=0; fi
+          cp "$d/listenReducer.js" listenReducer.js
+          rm -rf "$d"
+          exit $((r1 + r2))
+        message: Deine Tests bemerken einen kaputten Reducer nicht. Prüfe bei hinzugefuegt das ganze Ergebnis inklusive id mit toEqual und bei geleert, dass wirklich ein leeres Array herauskommt.
+    hints:
+      - "Imports: `import { expect, test } from 'vitest'` und `import { listenReducer } from './listenReducer.js'`."
+      - "Test für hinzugefuegt: `expect(listenReducer([], { type: 'hinzugefuegt', text: 'Milch' })).toEqual([{ id: 1, text: 'Milch' }])`."
+      - "Test für geleert: Starte mit einer Liste mit einem Eintrag und erwarte `toEqual([])`."
+    solution: |
+      ```bash
+      npm install -D vitest
+      cat > listenReducer.test.js <<'EOF'
+      import { expect, test } from 'vitest'
+      import { listenReducer } from './listenReducer.js'
+
+      test('fügt einen Eintrag mit fortlaufender id hinzu', () => {
+        const liste = listenReducer([], { type: 'hinzugefuegt', text: 'Milch' })
+        expect(liste).toEqual([{ id: 1, text: 'Milch' }])
+      })
+
+      test('leert die Liste', () => {
+        expect(listenReducer([{ id: 1, text: 'Milch' }], { type: 'geleert' })).toEqual([])
+      })
+      EOF
+      npx vitest run
+      ```

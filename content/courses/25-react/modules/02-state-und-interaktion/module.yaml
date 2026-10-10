@@ -1,0 +1,100 @@
+title: State und Interaktion
+description: Wie Komponenten mit useState auf Ereignisse reagieren, warum State ein Schnappschuss ist und wie du Objekte und Arrays unveränderlich aktualisierst.
+exercise:
+  id: modul-uebung-umfrage
+  type: code
+  language: jsx
+  title: Eine Live-Umfrage
+  description: |
+    Baue eine kleine Umfrage „Welche Sprache lernst du gerade?“ – nur mit `useState`, Event-Handlern und
+    unveränderlichen Updates.
+
+    1. Der State `optionen` enthält Objekte `{ id, name, stimmen }` (vorbereitet).
+    2. Rendere jede Option als `<li>` mit dem Namen in `<span className="name">`, der Stimmenzahl in
+       `<span className="stimmen">` und einem `<button className="stimme" data-id={o.id}>+1</button>` (das `data-id` brauchen die Tests).
+    3. Ein Klick auf `+1` erhöht **nur** die Stimmen dieser Option – mit `map` und Spread, ohne Mutation.
+    4. Die Liste ist immer nach Stimmen **absteigend** sortiert (bei Gleichstand bleibt die
+       ursprüngliche Reihenfolge). Sortiere beim Rendern mit `toSorted`, nicht im State.
+    5. Darunter steht `<p className="gesamt">Gesamt: 0</p>` mit der Summe aller Stimmen.
+    6. Ein `<button className="zuruecksetzen">` setzt alle Stimmen auf 0.
+  starter: |
+    function App() {
+      const [optionen, setOptionen] = React.useState([
+        { id: 'js', name: 'JavaScript', stimmen: 0 },
+        { id: 'ts', name: 'TypeScript', stimmen: 0 },
+        { id: 'php', name: 'PHP', stimmen: 0 },
+      ])
+
+      return (
+        <section>
+          <ul>
+            {optionen.map((o) => (
+              <li key={o.id}>{o.name}</li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+  tests:
+    - name: zeigt drei Optionen mit 0 Stimmen
+      code: |
+        assertEqual(queryAll('li').length, 3)
+        assertEqual(queryAll('.stimmen').map((s) => s.textContent).join(','), '0,0,0')
+        assertEqual(query('.gesamt').textContent, 'Gesamt: 0')
+    - name: zählt Stimmen und sortiert absteigend
+      code: |
+        await click('[data-id="php"]')
+        assertEqual(queryAll('.name').map((s) => s.textContent).join(','), 'PHP,JavaScript,TypeScript')
+        await click('[data-id="php"]')
+        await click('[data-id="ts"]')
+        assertEqual(queryAll('.name').map((s) => s.textContent).join(','), 'PHP,TypeScript,JavaScript')
+        assertEqual(queryAll('.stimmen').map((s) => s.textContent).join(','), '2,1,0')
+    - name: summiert alle Stimmen
+      code: |
+        await click('[data-id="ts"]')
+        assertEqual(query('.gesamt').textContent, 'Gesamt: 4')
+        assertEqual(queryAll('.name').map((s) => s.textContent).join(','), 'TypeScript,PHP,JavaScript')
+    - name: setzt alle Stimmen zurück
+      code: |
+        await click('.zuruecksetzen')
+        assertEqual(queryAll('.stimmen').map((s) => s.textContent).join(','), '0,0,0')
+        assertEqual(query('.gesamt').textContent, 'Gesamt: 0')
+  hints:
+    - "Stimme abgeben: `setOptionen(optionen.map((o) => o.id === id ? { ...o, stimmen: o.stimmen + 1 } : o))`."
+    - "Sortiert anzeigen: `const sortiert = optionen.toSorted((a, b) => b.stimmen - a.stimmen)` – toSorted ist stabil."
+    - "Summe: `optionen.reduce((summe, o) => summe + o.stimmen, 0)`; Zurücksetzen mit `map((o) => ({ ...o, stimmen: 0 }))`."
+  solution: |
+    function App() {
+      const [optionen, setOptionen] = React.useState([
+        { id: 'js', name: 'JavaScript', stimmen: 0 },
+        { id: 'ts', name: 'TypeScript', stimmen: 0 },
+        { id: 'php', name: 'PHP', stimmen: 0 },
+      ])
+
+      function abstimmen(id) {
+        setOptionen(optionen.map((o) => (o.id === id ? { ...o, stimmen: o.stimmen + 1 } : o)))
+      }
+
+      function zuruecksetzen() {
+        setOptionen(optionen.map((o) => ({ ...o, stimmen: 0 })))
+      }
+
+      const sortiert = optionen.toSorted((a, b) => b.stimmen - a.stimmen)
+      const gesamt = optionen.reduce((summe, o) => summe + o.stimmen, 0)
+
+      return (
+        <section>
+          <ul>
+            {sortiert.map((o) => (
+              <li key={o.id}>
+                <span className="name">{o.name}</span>
+                <span className="stimmen">{o.stimmen}</span>
+                <button className="stimme" data-id={o.id} onClick={() => abstimmen(o.id)}>+1</button>
+              </li>
+            ))}
+          </ul>
+          <p className="gesamt">Gesamt: {gesamt}</p>
+          <button className="zuruecksetzen" onClick={zuruecksetzen}>Zurücksetzen</button>
+        </section>
+      )
+    }
