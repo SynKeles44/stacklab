@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <title>Aufbau eines JSON Web Tokens</title>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="480" y="44" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Ein JWT besteht aus drei Base64URL-Teilen, getrennt durch Punkte</text>
+  <rect x="30" y="76" width="250" height="52" rx="8" fill="#f87171" fill-opacity="0.15" stroke="#f87171" stroke-width="2"/>
+  <text x="155" y="108" text-anchor="middle" font-size="15" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">eyJhbGciOiJIUzI1…</text>
+  <text x="295" y="110" text-anchor="middle" font-size="26" font-weight="700" fill="#1e1b3a">.</text>
+  <rect x="310" y="76" width="330" height="52" rx="8" fill="#a78bfa" fill-opacity="0.15" stroke="#a78bfa" stroke-width="2"/>
+  <text x="475" y="108" text-anchor="middle" font-size="15" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">eyJpc3MiOiJodHRwczovL2F1…</text>
+  <text x="655" y="110" text-anchor="middle" font-size="26" font-weight="700" fill="#1e1b3a">.</text>
+  <rect x="670" y="76" width="260" height="52" rx="8" fill="#22d3ee" fill-opacity="0.15" stroke="#22d3ee" stroke-width="2"/>
+  <text x="800" y="108" text-anchor="middle" font-size="15" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">gP6O6RvEWr6zTc_m…</text>
+
+  <rect x="30" y="160" width="250" height="160" rx="10" fill="#ffffff" stroke="#f87171" stroke-width="2"/>
+  <text x="155" y="188" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Header</text>
+  <text x="50" y="220" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">{</text>
+  <text x="62" y="242" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">"alg": "HS256",</text>
+  <text x="62" y="264" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">"typ": "JWT"</text>
+  <text x="50" y="286" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">}</text>
+
+  <rect x="310" y="160" width="330" height="160" rx="10" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="475" y="188" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Payload (Claims)</text>
+  <text x="330" y="216" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">"iss": "https://auth.example.com",</text>
+  <text x="330" y="238" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">"sub": "42",</text>
+  <text x="330" y="260" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">"role": "editor",</text>
+  <text x="330" y="282" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">"exp": 1791550800</text>
+  <text x="330" y="306" font-size="12" fill="#6b6889">nur kodiert – jeder kann es lesen!</text>
+
+  <rect x="670" y="160" width="260" height="160" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="800" y="188" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Signatur</text>
+  <text x="690" y="220" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">HMAC-SHA256(</text>
+  <text x="702" y="242" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">header + "." + payload,</text>
+  <text x="702" y="264" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">geheimer Schlüssel</text>
+  <text x="690" y="286" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">)</text>
+
+  <rect x="30" y="345" width="900" height="70" rx="10" fill="#34d399" fill-opacity="0.12" stroke="#34d399" stroke-width="2"/>
+  <text x="480" y="374" text-anchor="middle" font-size="15" fill="#1e1b3a">Die Signatur beweist: Header und Payload stammen vom Aussteller und wurden nicht verändert.</text>
+  <text x="480" y="398" text-anchor="middle" font-size="15" fill="#1e1b3a">Sie macht die Daten aber <tspan font-weight="700">nicht geheim</tspan> – keine Passwörter oder Geheimnisse in den Payload!</text>
+</svg>

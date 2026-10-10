@@ -1,0 +1,137 @@
+title: Grundlagen
+description: Wer bist du – und was darfst du? Der Unterschied zwischen Authentifizierung und Autorisierung und wie du Passwörter sicher speicherst.
+exercise:
+  id: modul-uebung-passwortspeicher
+  type: code
+  language: php
+  title: Ein kleiner, sicherer Passwortspeicher
+  description: |
+    Baue die Klasse `PasswortSpeicher`, die Konten im Arbeitsspeicher verwaltet. Sie vereint alles aus
+    diesem Modul: langsame, gesalzene Hashes, sichere Prüfung, Rehashing alter Hashes und eine
+    Fehlermeldung, die nichts verrät.
+
+    1. `registrieren(string $email, string $passwort): void` speichert **nur** einen Argon2id-Hash
+       (`password_hash(..., PASSWORD_ARGON2ID)`). Passwörter unter 12 Zeichen lehnt die Methode mit einer
+       `InvalidArgumentException` ab. Die E-Mail wird kleingeschrieben gespeichert.
+    2. `anmelden(string $email, string $passwort): bool` liefert `true`, wenn das Passwort passt – egal, ob
+       die E-Mail groß oder klein geschrieben ist. Für unbekannte E-Mails und falsche Passwörter liefert
+       sie gleichermaßen `false`.
+    3. Passt das Passwort und meldet `password_needs_rehash()`, dass der Hash veraltet ist (z. B. ein alter
+       bcrypt-Hash), ersetzt `anmelden()` ihn durch einen neuen Argon2id-Hash.
+    4. `hashVon(string $email): ?string` gibt den gespeicherten Hash zurück (oder `null`).
+    5. `importiereAltenHash(string $email, string $hash): void` übernimmt einen Hash aus einem Altsystem
+       unverändert – damit testen wir das Rehashing.
+  starter: |
+    <?php
+    declare(strict_types=1);
+
+    final class PasswortSpeicher
+    {
+        /** @var array<string, string> */
+        private array $hashes = [];
+
+        public function registrieren(string $email, string $passwort): void
+        {
+            // Dein Code
+        }
+
+        public function anmelden(string $email, string $passwort): bool
+        {
+            return false;
+        }
+
+        public function hashVon(string $email): ?string
+        {
+            return null;
+        }
+
+        public function importiereAltenHash(string $email, string $hash): void
+        {
+            $this->hashes[strtolower($email)] = $hash;
+        }
+    }
+  tests:
+    - name: speichert einen Argon2id-Hash und nie das Passwort
+      code: |
+        $s = new PasswortSpeicher();
+        $s->registrieren('ada@example.com', 'ein-langes-passwort');
+        $hash = $s->hashVon('ada@example.com');
+        assert_true(is_string($hash) && str_starts_with($hash, '$argon2id$'));
+        assert_true(! str_contains($hash, 'ein-langes-passwort'));
+    - name: richtiges Passwort meldet an, auch mit anderer Groß-/Kleinschreibung der E-Mail
+      code: |
+        $s = new PasswortSpeicher();
+        $s->registrieren('Ada@Example.com', 'ein-langes-passwort');
+        assert_same(true, $s->anmelden('ada@example.com', 'ein-langes-passwort'));
+        assert_same(true, $s->anmelden('ADA@EXAMPLE.COM', 'ein-langes-passwort'));
+    - name: falsches Passwort und unbekannte E-Mail liefern beide false
+      code: |
+        $s = new PasswortSpeicher();
+        $s->registrieren('ada@example.com', 'ein-langes-passwort');
+        assert_same(false, $s->anmelden('ada@example.com', 'falsch'));
+        assert_same(false, $s->anmelden('niemand@example.com', 'ein-langes-passwort'));
+    - name: zu kurze Passwörter werden abgelehnt
+      code: |
+        $s = new PasswortSpeicher();
+        $geworfen = false;
+        try { $s->registrieren('ada@example.com', 'kurz'); } catch (InvalidArgumentException $e) { $geworfen = true; }
+        assert_true($geworfen);
+        assert_same(null, $s->hashVon('ada@example.com'));
+    - name: ein alter bcrypt-Hash wird beim Login durch Argon2id ersetzt
+      code: |
+        $s = new PasswortSpeicher();
+        $s->importiereAltenHash('alt@example.com', password_hash('altes-passwort-123', PASSWORD_BCRYPT, ['cost' => 10]));
+        assert_same(true, $s->anmelden('alt@example.com', 'altes-passwort-123'));
+        assert_true(str_starts_with((string) $s->hashVon('alt@example.com'), '$argon2id$'));
+        assert_same(true, $s->anmelden('alt@example.com', 'altes-passwort-123'));
+    - name: bei falschem Passwort bleibt der alte Hash unverändert
+      code: |
+        $s = new PasswortSpeicher();
+        $alt = password_hash('altes-passwort-123', PASSWORD_BCRYPT, ['cost' => 10]);
+        $s->importiereAltenHash('alt@example.com', $alt);
+        assert_same(false, $s->anmelden('alt@example.com', 'geraten'));
+        assert_same($alt, $s->hashVon('alt@example.com'));
+  hints:
+    - "`password_hash()` erzeugt Salt und Hash in einem Schritt, `password_verify()` prüft – du musst nichts selbst vergleichen."
+    - "Normalisiere die E-Mail überall mit `strtolower()`, bevor du in `$this->hashes` nachschaust."
+    - "Nach erfolgreichem `password_verify()`: `if (password_needs_rehash($hash, PASSWORD_ARGON2ID)) { … neu hashen … }`."
+  solution: |
+    <?php
+    declare(strict_types=1);
+
+    final class PasswortSpeicher
+    {
+        /** @var array<string, string> */
+        private array $hashes = [];
+
+        public function registrieren(string $email, string $passwort): void
+        {
+            if (mb_strlen($passwort) < 12) {
+                throw new InvalidArgumentException('Das Passwort braucht mindestens 12 Zeichen.');
+            }
+            $this->hashes[strtolower($email)] = password_hash($passwort, PASSWORD_ARGON2ID);
+        }
+
+        public function anmelden(string $email, string $passwort): bool
+        {
+            $schluessel = strtolower($email);
+            $hash = $this->hashes[$schluessel] ?? null;
+            if ($hash === null || ! password_verify($passwort, $hash)) {
+                return false;
+            }
+            if (password_needs_rehash($hash, PASSWORD_ARGON2ID)) {
+                $this->hashes[$schluessel] = password_hash($passwort, PASSWORD_ARGON2ID);
+            }
+            return true;
+        }
+
+        public function hashVon(string $email): ?string
+        {
+            return $this->hashes[strtolower($email)] ?? null;
+        }
+
+        public function importiereAltenHash(string $email, string $hash): void
+        {
+            $this->hashes[strtolower($email)] = $hash;
+        }
+    }

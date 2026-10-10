@@ -1,0 +1,427 @@
+title: Abschlussprüfung Authentifizierung
+description: >
+  Prüfe dein Wissen aus allen vier Modulen: Grundlagen und Passwort-Hashing, Sessions und CSRF, Tokens und
+  OAuth sowie Laravel Sanctum und Kontoschutz. Neben den Fragen warten zwei Programmieraufgaben und eine
+  Aufgabe im Übungs-Terminal. Zum Bestehen brauchst du 70 Prozent.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Ein API-Aufruf kommt mit einem gültigen Token an, aber der Nutzer darf die angefragte Ressource nicht ändern. Welcher Statuscode passt?
+    options: [401 Unauthorized, 403 Forbidden, 419, 429 Too Many Requests]
+    answer: 1
+    explanation: Die Identität ist bekannt, es fehlt die Berechtigung – das ist eine gescheiterte Autorisierung, also 403.
+  - module: grundlagen
+    type: multiple
+    question: Welche Verfahren sind für die Speicherung von Passwörtern geeignet?
+    options: [Argon2id, bcrypt mit Kostenfaktor 12, SHA-256 mit Salt, AES-Verschlüsselung, Base64]
+    answers: [0, 1]
+    explanation: >
+      Nur langsame Passwort-Hashes wie Argon2id und bcrypt (oder scrypt/PBKDF2) sind geeignet. SHA-256 ist zu
+      schnell, AES umkehrbar und Base64 nur eine Kodierung.
+  - module: grundlagen
+    type: cloze
+    text: "Nach einem erfolgreichen Login prüft die PHP-Funktion `___()`, ob ein Hash mit veralteten Einstellungen erzeugt wurde."
+    blanks:
+      - [password_needs_rehash]
+    explanation: "`password_needs_rehash()` meldet veraltete Algorithmen oder Parameter – dann hashst du das gerade geprüfte Passwort neu."
+  - module: grundlagen
+    type: single
+    question: Wozu dient das Salt bei einem Passwort-Hash?
+    options:
+      - Es macht den Hash umkehrbar.
+      - Es sorgt dafür, dass gleiche Passwörter unterschiedliche Hashes bekommen und vorberechnete Tabellen nutzlos sind.
+      - Es ersetzt die Zwei-Faktor-Anmeldung.
+      - Es verschlüsselt das Passwort für den Transport.
+    answer: 1
+    explanation: Das Salt ist zufällig pro Passwort und steht im Hash-String. Rainbow Tables und Vergleiche zwischen Konten laufen ins Leere.
+  - module: sessions-und-cookies
+    type: match
+    question: Ordne jedem Cookie-Attribut die Bedrohung zu, gegen die es hilft.
+    pairs:
+      - { left: "HttpOnly", right: "Session-Diebstahl per XSS" }
+      - { left: "Secure", right: "Mitlesen in unverschlüsselten Netzen" }
+      - { left: "SameSite=Lax", right: "Cross-Site Request Forgery" }
+    explanation: Zusammen bilden die drei Flags den Standardschutz für Session-Cookies.
+  - module: sessions-und-cookies
+    type: single
+    question: Warum ruft man nach dem Login `$request->session()->regenerate()` auf?
+    options:
+      - Damit der Nutzer länger angemeldet bleibt.
+      - Damit eine vorher untergeschobene Session-ID wertlos wird (Session Fixation).
+      - Damit das Passwort neu gehasht wird.
+      - Damit die Seite schneller lädt.
+    answer: 1
+    explanation: Eine neue ID nach dem Login macht jede vorher bekannte Session-ID nutzlos.
+  - module: sessions-und-cookies
+    type: multiple
+    question: Welche Anfragen sind typischerweise durch CSRF gefährdet?
+    options:
+      - Ein Formular, das per Session-Cookie angemeldet die E-Mail-Adresse ändert
+      - Ein API-Aufruf, der sich nur per Authorization-Bearer-Header ausweist
+      - Ein GET-Link, der ein Konto löscht
+      - Ein öffentlicher GET-Endpunkt, der eine Produktliste liefert
+    answers: [0, 2]
+    explanation: >
+      CSRF trifft Anmeldungen per Cookie, die der Browser automatisch mitschickt. Zustandsänderungen per GET sind
+      besonders gefährlich. Bearer-Header setzt der Browser nicht von selbst.
+  - module: sessions-und-cookies
+    type: find-bug
+    question: Welche Zeile macht den Logout unvollständig?
+    language: php
+    code: |
+      Route::post('/logout', function (Request $request) {
+          Auth::logout();
+          $request->session()->regenerateToken();
+
+          return redirect('/');
+      });
+    bug_line: 3
+    explanation: >
+      Vor `regenerateToken()` fehlt `$request->session()->invalidate();`. Ohne das bleiben die alten
+      Session-Daten auf dem Server bestehen.
+  - module: tokens-und-oauth
+    type: single
+    question: Was garantiert die Signatur eines JWT?
+    options:
+      - Dass niemand den Payload lesen kann.
+      - Dass Header und Payload vom Inhaber des Schlüssels stammen und nicht verändert wurden.
+      - Dass das Token nie abläuft.
+      - Dass der Nutzer gerade online ist.
+    answer: 1
+    explanation: Ein signiertes JWT ist lesbar, aber fälschungssicher. Vertraulichkeit bräuchte Verschlüsselung (JWE).
+  - module: tokens-und-oauth
+    type: multiple
+    question: Welche Prüfungen gehören zwingend zur Annahme eines JWT?
+    options:
+      - Algorithmus gegen eine feste Erlaubt-Liste
+      - Signatur mit dem erwarteten Schlüssel
+      - exp gegen die aktuelle Zeit
+      - Länge des Tokens unter 100 Zeichen
+    answers: [0, 1, 2]
+    explanation: Dazu kommen iss und aud. Die Länge sagt nichts über die Gültigkeit.
+  - module: tokens-und-oauth
+    type: single
+    question: Welcher OAuth-Ablauf ist heute für alle Arten von Apps empfohlen?
+    options:
+      - Implicit Flow
+      - Resource Owner Password Credentials
+      - Authorization Code Flow mit PKCE
+      - Basic Auth mit dem Passwort des Nutzers
+    answer: 2
+    explanation: RFC 9700 und der Entwurf von OAuth 2.1 empfehlen Authorization Code mit PKCE für alle Clients.
+  - module: tokens-und-oauth
+    type: match
+    question: Ordne die Werte aus dem PKCE-Ablauf zu.
+    pairs:
+      - { left: "code_verifier", right: "Geheimer Zufallswert, bleibt bei der App bis zum Token-Tausch" }
+      - { left: "code_challenge", right: "SHA-256-Hash des Verifiers, geht mit zum Login" }
+      - { left: "state", right: "Zufallswert gegen CSRF auf dem Rückweg" }
+      - { left: "id_token", right: "JWT von OpenID Connect mit Angaben zur Anmeldung" }
+    explanation: Nur wer den code_verifier kennt, kann einen abgefangenen Code einlösen.
+  - module: tokens-und-oauth
+    type: cloze
+    text: "Das Format, das wie Base64 ist, aber `-` und `_` statt `+` und `/` nutzt und kein `=` anhängt, heißt ___."
+    blanks:
+      - [Base64URL, Base64 URL, base64url]
+    explanation: Base64URL macht Tokens URL- und Header-tauglich.
+  - module: sanctum-und-kontoschutz
+    type: single
+    question: Welche Anmeldung empfiehlt die Laravel-Doku für die eigene SPA auf derselben Hauptdomain?
+    options:
+      - API-Token in localStorage
+      - Sanctum mit Session-Cookie, statefulApi und CSRF-Cookie
+      - OAuth mit Implicit Flow
+      - Basic Auth bei jeder Anfrage
+    answer: 1
+    explanation: Für die eigene SPA nutzt Sanctum keine Tokens, sondern die normale Session – das Cookie ist HttpOnly und damit vor XSS geschützt.
+  - module: sanctum-und-kontoschutz
+    type: multiple
+    question: Welche Aussagen über Sanctum-API-Tokens stimmen?
+    options:
+      - In der Datenbank liegt nur ein SHA-256-Hash des Tokens.
+      - Fähigkeiten werden beim Erstellen mit `createToken($name, [...])` vergeben.
+      - Ohne Konfiguration laufen Tokens nach 24 Stunden ab.
+      - "`currentAccessToken()->delete()` widerruft das gerade benutzte Token."
+    answers: [0, 1, 3]
+    explanation: Standardmäßig laufen Sanctum-Tokens nie ab – setze `expiration` oder ein Ablaufdatum.
+  - module: sanctum-und-kontoschutz
+    type: single
+    question: Warum sind Passkeys im Gegensatz zu TOTP-Codes resistent gegen Phishing?
+    options:
+      - Weil sie länger sind.
+      - Weil der Browser die Signatur an die echte Domain bindet und nichts abgetippt wird.
+      - Weil sie per SMS kommen.
+      - Weil sie nur einmal am Tag gelten.
+    answer: 1
+    explanation: Eine gefälschte Domain bekommt vom Browser keine gültige Passkey-Signatur.
+  - module: sanctum-und-kontoschutz
+    type: multiple
+    question: Was gehört zu einem sicheren Passwort-Reset?
+    options:
+      - Gleiche Antwort für existierende und unbekannte E-Mails
+      - Ein kurzlebiges, einmalig nutzbares und gehashtes Token
+      - Das alte Passwort per E-Mail zurückschicken
+      - Andere Sessions und Tokens nach dem Reset beenden
+    answers: [0, 1, 3]
+    explanation: Passwörter werden nie verschickt – sie liegen ja nur als Hash vor.
+  - module: sanctum-und-kontoschutz
+    type: cloze
+    text: "Wird ein Rate Limit überschritten, antwortet Laravel mit dem Statuscode ___ und dem Header ___."
+    blanks:
+      - ["429"]
+      - [Retry-After, retry-after]
+    explanation: Retry-After nennt die Sekunden bis zum nächsten erlaubten Versuch.
+tasks:
+  - module: grundlagen
+    id: pruefung-passwort-richtlinie
+    type: code
+    language: php
+    title: Eine vernünftige Passwort-Richtlinie
+    description: |
+      Schreibe `pruefePasswort(string $passwort, string $email, array $haeufige): array`. Die Funktion gibt
+      eine Liste von Fehlercodes zurück – eine leere Liste bedeutet: Passwort ist in Ordnung.
+
+      - `zu_kurz`: weniger als 12 Zeichen (zähle mit `mb_strlen`, damit Umlaute als ein Zeichen zählen)
+      - `zu_lang`: mehr als 128 Zeichen
+      - `haeufig`: steht (ohne Beachtung von Groß- und Kleinschreibung) in `$haeufige`
+      - `enthaelt_email`: enthält den Teil der E-Mail vor dem `@` (ohne Beachtung der Groß-/Kleinschreibung)
+
+      Die Codes stehen in genau dieser Reihenfolge in der Liste. Komplexitätsregeln wie „mindestens ein
+      Sonderzeichen“ prüfst du bewusst **nicht** – Länge schlägt Komplexität.
+    starter: |
+      <?php
+      declare(strict_types=1);
+
+      function pruefePasswort(string $passwort, string $email, array $haeufige): array
+      {
+          $fehler = [];
+          // Dein Code
+          return $fehler;
+      }
+    tests:
+      - name: ein langes, ungewöhnliches Passwort ist in Ordnung
+        code: assert_same([], pruefePasswort('fahrrad-mondschein-kaffeetasse', 'ada@example.com', ['passwort123']));
+      - name: kurze Passwörter werden erkannt, Umlaute zählen als ein Zeichen
+        code: |
+          assert_same(['zu_kurz'], pruefePasswort('kurz-öäü', 'ada@example.com', []));
+          assert_same([], pruefePasswort('ääääääääääää', 'ada@example.com', []));
+      - name: zu lange Passwörter werden erkannt
+        code: assert_same(['zu_lang'], pruefePasswort(str_repeat('x', 129), 'ada@example.com', []));
+      - name: häufige Passwörter werden unabhängig von der Schreibweise erkannt
+        code: assert_same(['haeufig'], pruefePasswort('Sommerferien2026', 'ada@example.com', ['sommerferien2026']));
+      - name: der E-Mail-Name im Passwort wird erkannt
+        code: assert_same(['enthaelt_email'], pruefePasswort('mein-name-ist-ADA-lovelace', 'ada@example.com', []));
+      - name: mehrere Fehler in der richtigen Reihenfolge
+        code: assert_same(['zu_kurz', 'haeufig', 'enthaelt_email'], pruefePasswort('Ada123', 'ada@example.com', ['ada123']));
+    hints:
+      - "`strtolower()` reicht für den Vergleich nicht bei Umlauten – nutze `mb_strtolower()`."
+      - "Den Namen vor dem `@` bekommst du mit `strstr($email, '@', true)`."
+      - "`in_array(mb_strtolower($passwort), array_map('mb_strtolower', $haeufige), true)`"
+    solution: |
+      <?php
+      declare(strict_types=1);
+
+      function pruefePasswort(string $passwort, string $email, array $haeufige): array
+      {
+          $fehler = [];
+          $laenge = mb_strlen($passwort);
+          $klein = mb_strtolower($passwort);
+
+          if ($laenge < 12) {
+              $fehler[] = 'zu_kurz';
+          }
+          if ($laenge > 128) {
+              $fehler[] = 'zu_lang';
+          }
+          if (in_array($klein, array_map('mb_strtolower', $haeufige), true)) {
+              $fehler[] = 'haeufig';
+          }
+          $name = mb_strtolower((string) strstr($email, '@', true));
+          if ($name !== '' && str_contains($klein, $name)) {
+              $fehler[] = 'enthaelt_email';
+          }
+
+          return $fehler;
+      }
+  - module: tokens-und-oauth
+    id: pruefung-claims
+    type: code
+    language: php
+    title: Die Claims eines ID-Tokens prüfen
+    description: |
+      Die Signatur eines ID-Tokens ist bereits geprüft. Schreibe `claimsGueltig(array $claims, string $iss, string $aud, int $jetzt): bool`.
+      Sie liefert nur dann `true`, wenn:
+
+      1. `iss` exakt dem erwarteten Aussteller entspricht,
+      2. `aud` entweder exakt die erwartete Client-ID ist **oder** ein Array, das sie enthält,
+      3. `exp` vorhanden ist und **nach** `$jetzt` liegt,
+      4. `nbf` – falls vorhanden – nicht nach `$jetzt` liegt.
+    starter: |
+      <?php
+      declare(strict_types=1);
+
+      function claimsGueltig(array $claims, string $iss, string $aud, int $jetzt): bool
+      {
+          // Dein Code
+          return false;
+      }
+    tests:
+      - name: gültige Claims werden akzeptiert
+        code: assert_same(true, claimsGueltig(['iss' => 'https://auth.example.com', 'aud' => 'notizen-app', 'exp' => 2000, 'sub' => '42'], 'https://auth.example.com', 'notizen-app', 1000));
+      - name: aud als Liste wird akzeptiert
+        code: assert_same(true, claimsGueltig(['iss' => 'https://auth.example.com', 'aud' => ['andere-app', 'notizen-app'], 'exp' => 2000], 'https://auth.example.com', 'notizen-app', 1000));
+      - name: falscher Aussteller oder falscher Empfänger wird abgelehnt
+        code: |
+          assert_same(false, claimsGueltig(['iss' => 'https://boese.example.net', 'aud' => 'notizen-app', 'exp' => 2000], 'https://auth.example.com', 'notizen-app', 1000));
+          assert_same(false, claimsGueltig(['iss' => 'https://auth.example.com', 'aud' => 'andere-app', 'exp' => 2000], 'https://auth.example.com', 'notizen-app', 1000));
+          assert_same(false, claimsGueltig(['iss' => 'https://auth.example.com', 'aud' => ['andere-app'], 'exp' => 2000], 'https://auth.example.com', 'notizen-app', 1000));
+      - name: abgelaufene Tokens und Tokens ohne exp werden abgelehnt
+        code: |
+          assert_same(false, claimsGueltig(['iss' => 'https://auth.example.com', 'aud' => 'notizen-app', 'exp' => 1000], 'https://auth.example.com', 'notizen-app', 1000));
+          assert_same(false, claimsGueltig(['iss' => 'https://auth.example.com', 'aud' => 'notizen-app'], 'https://auth.example.com', 'notizen-app', 1000));
+      - name: nbf in der Zukunft wird abgelehnt, in der Vergangenheit akzeptiert
+        code: |
+          assert_same(false, claimsGueltig(['iss' => 'https://auth.example.com', 'aud' => 'notizen-app', 'exp' => 2000, 'nbf' => 1500], 'https://auth.example.com', 'notizen-app', 1000));
+          assert_same(true, claimsGueltig(['iss' => 'https://auth.example.com', 'aud' => 'notizen-app', 'exp' => 2000, 'nbf' => 900], 'https://auth.example.com', 'notizen-app', 1000));
+    hints:
+      - "Vergleiche `($claims['iss'] ?? null) === $iss`."
+      - "Für `aud`: `is_array($claims['aud'] ?? null) ? in_array($aud, $claims['aud'], true) : ($claims['aud'] ?? null) === $aud`."
+      - "`isset($claims['nbf']) && $claims['nbf'] > $jetzt` bedeutet: noch nicht gültig."
+    solution: |
+      <?php
+      declare(strict_types=1);
+
+      function claimsGueltig(array $claims, string $iss, string $aud, int $jetzt): bool
+      {
+          if (($claims['iss'] ?? null) !== $iss) {
+              return false;
+          }
+
+          $empfaenger = $claims['aud'] ?? null;
+          $audOk = is_array($empfaenger) ? in_array($aud, $empfaenger, true) : $empfaenger === $aud;
+          if (! $audOk) {
+              return false;
+          }
+
+          if (! isset($claims['exp']) || ! is_int($claims['exp']) || $claims['exp'] <= $jetzt) {
+              return false;
+          }
+
+          if (isset($claims['nbf']) && $claims['nbf'] > $jetzt) {
+              return false;
+          }
+
+          return true;
+      }
+  - module: sanctum-und-kontoschutz
+    id: pruefung-berichte
+    type: terminal
+    title: Berichte nur für berechtigte Tokens
+    description: |
+      In `pruefung-berichte` liegt eine Laravel-API mit Sanctum. Die Route `GET /api/berichte` ist noch
+      **für alle** offen. Ein Test `tests/Feature/BerichteTest.php` beschreibt das Ziel. Klicke zuerst auf
+      **Aufgabe vorbereiten** und wechsle mit `cd pruefung-berichte` hinein.
+
+      1. Ergänze im Model `User` den Trait `HasApiTokens`.
+      2. Registriere in `bootstrap/app.php` die Sanctum-Middleware-Aliase `abilities` und `ability`.
+      3. Schütze `GET /berichte` in `routes/api.php` mit `auth:sanctum` und so, dass Tokens mit der Fähigkeit
+         `berichte:lesen` **oder** `admin` Zugriff bekommen.
+      4. Prüfe mit `./vendor/bin/pest tests/Feature/BerichteTest.php`.
+    workdir: pruefung-berichte
+    setup: |
+      # Laravel-13-Basis mit Sanctum (install:api) einmal bauen und zwischenspeichern, dann hierher kopieren
+      B="$HOME/.cache/stacklab/laravel13"
+      A="$HOME/.cache/stacklab/laravel13-sanctum"
+      if [ ! -f "$A/.fertig" ]; then
+        if [ ! -f "$B/.fertig" ]; then
+          T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+          timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+          (cd "$T" && timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null)
+          printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > "$T/tests/Pest.php"
+          touch "$T/.fertig"; rm -rf "$B"; mv "$T" "$B"
+        fi
+        T="$A.bau.$$"; rm -rf "$T"; cp -a "$B" "$T"
+        (cd "$T" && timeout 120 php artisan install:api --without-migration-prompt -n -q </dev/null && php artisan migrate --force -q)
+        rm -rf "$A"; mv "$T" "$A"
+      fi
+      cp -a "$A/." . && rm -f .fertig
+      mkdir -p "$(dirname 'routes/api.php')"
+      cat > 'routes/api.php' <<'STACKLAB_EOF'
+      <?php
+
+      use Illuminate\Http\Request;
+      use Illuminate\Support\Facades\Route;
+
+      Route::get('/user', function (Request $request) {
+          return $request->user();
+      })->middleware('auth:sanctum');
+
+      Route::get('/berichte', function () {
+          return ['berichte' => ['Umsatz Q3', 'Kosten Q3']];
+      });
+      STACKLAB_EOF
+      mkdir -p "$(dirname 'tests/Feature/BerichteTest.php')"
+      cat > 'tests/Feature/BerichteTest.php' <<'STACKLAB_EOF'
+      <?php
+
+      use App\Models\User;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+
+      uses(RefreshDatabase::class);
+
+      test('ohne Token gibt es 401', function () {
+          $this->getJson('/api/berichte')->assertUnauthorized();
+      });
+
+      test('ein Token mit berichte:lesen sieht die Berichte', function () {
+          $token = User::factory()->create()->createToken('t', ['berichte:lesen'])->plainTextToken;
+
+          $this->withToken($token)->getJson('/api/berichte')->assertOk()->assertJsonCount(2, 'berichte');
+      });
+
+      test('ein Admin-Token sieht die Berichte ebenfalls', function () {
+          $token = User::factory()->create()->createToken('t', ['admin'])->plainTextToken;
+
+          $this->withToken($token)->getJson('/api/berichte')->assertOk();
+      });
+
+      test('ein Token ohne passende Fähigkeit bekommt 403', function () {
+          $token = User::factory()->create()->createToken('t', ['notizen:lesen'])->plainTextToken;
+
+          $this->withToken($token)->getJson('/api/berichte')->assertForbidden();
+      });
+      STACKLAB_EOF
+    checks:
+      - type: file_contains
+        path: app/Models/User.php
+        pattern: "use\\s+[^;]*HasApiTokens"
+        message: Das User-Model nutzt HasApiTokens noch nicht.
+      - type: file_contains
+        path: bootstrap/app.php
+        pattern: "CheckForAnyAbility"
+        message: In bootstrap/app.php fehlt der Alias ability für CheckForAnyAbility.
+      - type: command
+        run: ./vendor/bin/pest tests/Feature/BerichteTest.php --colors=never
+        message: Noch nicht alle Tests in tests/Feature/BerichteTest.php sind grün.
+    hints:
+      - "„eine von mehreren Fähigkeiten“ prüft die Middleware `ability`, „alle“ prüft `abilities`."
+      - "`->middleware(['auth:sanctum', 'ability:berichte:lesen,admin'])`"
+    solution: |
+      ```php title="bootstrap/app.php (Ausschnitt)"
+      ->withMiddleware(function (Middleware $middleware): void {
+          $middleware->alias([
+              'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+              'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
+          ]);
+      })
+      ```
+
+      ```php title="routes/api.php (Ausschnitt)"
+      Route::get('/berichte', function () {
+          return ['berichte' => ['Umsatz Q3', 'Kosten Q3']];
+      })->middleware(['auth:sanctum', 'ability:berichte:lesen,admin']);
+      ```
+
+      Und im User-Model `use Laravel\Sanctum\HasApiTokens;` sowie `use HasApiTokens, HasFactory, Notifiable;`.

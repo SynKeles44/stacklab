@@ -1,0 +1,758 @@
+title: Eine abgesicherte Notiz-API mit Laravel Sanctum
+description: |
+  In diesem Projekt baust du die Anmeldung einer kleinen **Notiz-API** von Grund auf – so, wie sie eine
+  Smartphone-App oder ein Kommandozeilen-Werkzeug nutzen würde. Du installierst Sanctum, baust
+  Registrierung und Login mit sicher gehashten Passwörtern, gibst Tokens mit Fähigkeiten aus, sorgst dafür,
+  dass jeder nur seine eigenen Notizen sieht, und schützt den Login gegen Rateversuche.
+
+  Klicke zuerst auf **Projekt vorbereiten**: Stacklab legt im Ordner `notiz-api` eine frische
+  Laravel-13-Anwendung an und legt unter `tests/Feature/NotizApi/` für jeden Schritt einen Pest-Test ab.
+  Beim allerersten Mal lädt Composer Pakete herunter, das kann eine Minute dauern. Öffne dann das
+  Übungs-Terminal und wechsle mit `cd notiz-api` hinein.
+
+  Die Tests beschreiben das Ziel jedes Schritts – lies sie ruhig vorher. Die Schritte bauen aufeinander auf.
+  Wenn du festhängst, hilft **Für mich erledigen**; schau dir danach an, was geschrieben wurde.
+goal: >
+  Eine Laravel-API `notiz-api` mit Sanctum, Registrierung (`POST /api/register`), Token-Login mit
+  Fähigkeiten (`POST /api/login`), Profil (`GET /api/me`), Notizen pro Nutzer mit Fähigkeitsprüfung
+  (`/api/notes`), Logout per Token-Widerruf und gedrosseltem Login – abgesichert durch eine grüne
+  Pest-Testsuite.
+workdir: notiz-api
+setup: |
+  # Laravel-13-Basis einmal bauen und zwischenspeichern, dann hierher kopieren
+  B="$HOME/.cache/stacklab/laravel13"
+  if [ ! -f "$B/.fertig" ]; then
+    T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+    timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+    (cd "$T" && timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null)
+    printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > "$T/tests/Pest.php"
+    touch "$T/.fertig"; rm -rf "$B"; mv "$T" "$B"
+  fi
+  cp -a "$B/." . && rm -f .fertig
+  mkdir -p "$(dirname 'tests/Feature/NotizApi/RegistrierungTest.php')"
+  cat > 'tests/Feature/NotizApi/RegistrierungTest.php' <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+  use Illuminate\Support\Facades\Hash;
+
+  uses(RefreshDatabase::class);
+
+  test('POST /api/register legt ein Konto an und antwortet mit 201', function () {
+      $this->postJson('/api/register', [
+          'name' => 'Ada Lovelace',
+          'email' => 'ada@example.com',
+          'password' => 'ein-langes-passwort',
+          'password_confirmation' => 'ein-langes-passwort',
+      ])->assertCreated()
+          ->assertJsonPath('email', 'ada@example.com')
+          ->assertJsonMissingPath('password');
+
+      $user = User::where('email', 'ada@example.com')->firstOrFail();
+      expect($user->password)->not->toBe('ein-langes-passwort');
+      expect(Hash::check('ein-langes-passwort', $user->password))->toBeTrue();
+  });
+
+  test('eine schon registrierte E-Mail wird abgelehnt', function () {
+      User::factory()->create(['email' => 'ada@example.com']);
+
+      $this->postJson('/api/register', [
+          'name' => 'Ada',
+          'email' => 'ada@example.com',
+          'password' => 'ein-langes-passwort',
+          'password_confirmation' => 'ein-langes-passwort',
+      ])->assertStatus(422)->assertJsonValidationErrors('email');
+  });
+
+  test('zu kurze oder unbestätigte Passwörter werden abgelehnt', function () {
+      $this->postJson('/api/register', [
+          'name' => 'Ada',
+          'email' => 'ada@example.com',
+          'password' => 'kurz',
+          'password_confirmation' => 'kurz',
+      ])->assertStatus(422)->assertJsonValidationErrors('password');
+
+      $this->postJson('/api/register', [
+          'name' => 'Ada',
+          'email' => 'ada@example.com',
+          'password' => 'ein-langes-passwort',
+          'password_confirmation' => 'ein-anderes-passwort',
+      ])->assertStatus(422)->assertJsonValidationErrors('password');
+  });
+  STACKLAB_EOF
+  mkdir -p "$(dirname 'tests/Feature/NotizApi/AnmeldungTest.php')"
+  cat > 'tests/Feature/NotizApi/AnmeldungTest.php' <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+  use Illuminate\Support\Facades\DB;
+
+  uses(RefreshDatabase::class);
+
+  test('POST /api/login gibt ein Token mit beiden Fähigkeiten aus', function () {
+      User::factory()->create(['email' => 'ada@example.com', 'password' => 'ein-langes-passwort']);
+
+      $token = $this->postJson('/api/login', [
+          'email' => 'ada@example.com',
+          'password' => 'ein-langes-passwort',
+          'device_name' => 'laptop',
+      ])->assertOk()->json('token');
+
+      expect($token)->toBeString()->toContain('|');
+
+      $abilities = json_decode(DB::table('personal_access_tokens')->value('abilities'), true);
+      expect($abilities)->toContain('notizen:lesen')->toContain('notizen:schreiben');
+  });
+
+  test('unbekannte E-Mail und falsches Passwort liefern dieselbe Meldung', function () {
+      User::factory()->create(['email' => 'ada@example.com', 'password' => 'ein-langes-passwort']);
+
+      $a = $this->postJson('/api/login', ['email' => 'niemand@example.com', 'password' => 'egal', 'device_name' => 'x'])
+          ->assertStatus(422)->json('errors.email.0');
+      $b = $this->postJson('/api/login', ['email' => 'ada@example.com', 'password' => 'egal', 'device_name' => 'x'])
+          ->assertStatus(422)->json('errors.email.0');
+
+      expect($a)->toBe($b);
+      $this->assertDatabaseCount('personal_access_tokens', 0);
+  });
+  STACKLAB_EOF
+  mkdir -p "$(dirname 'tests/Feature/NotizApi/ProfilTest.php')"
+  cat > 'tests/Feature/NotizApi/ProfilTest.php' <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+
+  uses(RefreshDatabase::class);
+
+  test('GET /api/me liefert mit Token den eigenen Datensatz ohne Passwort', function () {
+      $user = User::factory()->create(['email' => 'ada@example.com']);
+      $token = $user->createToken('test', ['notizen:lesen'])->plainTextToken;
+
+      $this->withToken($token)->getJson('/api/me')
+          ->assertOk()
+          ->assertJsonPath('email', 'ada@example.com')
+          ->assertJsonMissingPath('password');
+  });
+
+  test('GET /api/me ohne Token antwortet mit 401', function () {
+      $this->getJson('/api/me')->assertUnauthorized();
+  });
+  STACKLAB_EOF
+  mkdir -p "$(dirname 'tests/Feature/NotizApi/NotizenTest.php')"
+  cat > 'tests/Feature/NotizApi/NotizenTest.php' <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+
+  uses(RefreshDatabase::class);
+
+  test('ein Schreib-Token legt eine Notiz für den eigenen Nutzer an', function () {
+      $ada = User::factory()->create();
+      $token = $ada->createToken('test', ['notizen:lesen', 'notizen:schreiben'])->plainTextToken;
+
+      $this->withToken($token)->postJson('/api/notes', ['title' => 'Einkauf', 'body' => 'Milch'])
+          ->assertCreated()
+          ->assertJsonPath('title', 'Einkauf');
+
+      $this->assertDatabaseHas('notes', ['user_id' => $ada->id, 'title' => 'Einkauf']);
+  });
+
+  test('ein Titel ist Pflicht', function () {
+      $token = User::factory()->create()->createToken('test', ['notizen:lesen', 'notizen:schreiben'])->plainTextToken;
+
+      $this->withToken($token)->postJson('/api/notes', ['body' => 'ohne Titel'])
+          ->assertStatus(422)->assertJsonValidationErrors('title');
+  });
+
+  test('GET /api/notes zeigt nur die eigenen Notizen', function () {
+      $ada = User::factory()->create();
+      $grace = User::factory()->create();
+      $ada->notes()->create(['title' => 'Von Ada', 'body' => '…']);
+      $grace->notes()->create(['title' => 'Von Grace', 'body' => '…']);
+      $token = $ada->createToken('test', ['notizen:lesen'])->plainTextToken;
+
+      $antwort = $this->withToken($token)->getJson('/api/notes')->assertOk();
+
+      expect($antwort->json())->toHaveCount(1);
+      expect($antwort->json('0.title'))->toBe('Von Ada');
+  });
+
+  test('eine fremde Notiz liefert 404', function () {
+      $ada = User::factory()->create();
+      $grace = User::factory()->create();
+      $fremd = $grace->notes()->create(['title' => 'Geheim', 'body' => '…']);
+      $token = $ada->createToken('test', ['notizen:lesen'])->plainTextToken;
+
+      $this->withToken($token)->getJson('/api/notes/'.$fremd->id)->assertNotFound();
+  });
+
+  test('eine eigene Notiz lässt sich einzeln abrufen', function () {
+      $ada = User::factory()->create();
+      $notiz = $ada->notes()->create(['title' => 'Meins', 'body' => '…']);
+      $token = $ada->createToken('test', ['notizen:lesen'])->plainTextToken;
+
+      $this->withToken($token)->getJson('/api/notes/'.$notiz->id)->assertOk()->assertJsonPath('title', 'Meins');
+  });
+
+  test('ein Lese-Token darf keine Notiz anlegen', function () {
+      $token = User::factory()->create()->createToken('test', ['notizen:lesen'])->plainTextToken;
+
+      $this->withToken($token)->postJson('/api/notes', ['title' => 'Nein', 'body' => '…'])->assertForbidden();
+  });
+
+  test('ein Token ohne Lese-Fähigkeit darf die Liste nicht sehen', function () {
+      $token = User::factory()->create()->createToken('test', ['notizen:schreiben'])->plainTextToken;
+
+      $this->withToken($token)->getJson('/api/notes')->assertForbidden();
+  });
+  STACKLAB_EOF
+  mkdir -p "$(dirname 'tests/Feature/NotizApi/AbmeldungTest.php')"
+  cat > 'tests/Feature/NotizApi/AbmeldungTest.php' <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+
+  uses(RefreshDatabase::class);
+
+  test('POST /api/logout widerruft nur das benutzte Token', function () {
+      $ada = User::factory()->create();
+      $ada->createToken('laptop', ['notizen:lesen']);
+      $token = $ada->createToken('handy', ['notizen:lesen'])->plainTextToken;
+
+      $this->withToken($token)->postJson('/api/logout')->assertNoContent();
+
+      $this->assertDatabaseCount('personal_access_tokens', 1);
+      $this->assertDatabaseHas('personal_access_tokens', ['name' => 'laptop']);
+  });
+
+  test('POST /api/logout ohne Token antwortet mit 401', function () {
+      $this->postJson('/api/logout')->assertUnauthorized();
+  });
+  STACKLAB_EOF
+  mkdir -p "$(dirname 'tests/Feature/NotizApi/DrosselungTest.php')"
+  cat > 'tests/Feature/NotizApi/DrosselungTest.php' <<'STACKLAB_EOF'
+  <?php
+
+  use App\Models\User;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+
+  uses(RefreshDatabase::class);
+
+  test('nach 5 Versuchen pro Minute antwortet /api/login mit 429', function () {
+      User::factory()->create(['email' => 'ada@example.com', 'password' => 'ein-langes-passwort']);
+
+      for ($i = 1; $i <= 5; $i++) {
+          $this->postJson('/api/login', ['email' => 'ada@example.com', 'password' => 'falsch-'.$i, 'device_name' => 'x'])
+              ->assertStatus(422);
+      }
+
+      $this->postJson('/api/login', ['email' => 'ada@example.com', 'password' => 'falsch-6', 'device_name' => 'x'])
+          ->assertStatus(429);
+  });
+
+  test('die Drosselung gilt pro E-Mail-Adresse', function () {
+      for ($i = 1; $i <= 6; $i++) {
+          $this->postJson('/api/login', ['email' => 'ada@example.com', 'password' => 'falsch', 'device_name' => 'x']);
+      }
+
+      $this->postJson('/api/login', ['email' => 'grace@example.com', 'password' => 'falsch', 'device_name' => 'x'])
+          ->assertStatus(422);
+  });
+  STACKLAB_EOF
+steps:
+  - id: sanctum-installieren
+    title: Sanctum installieren
+    description: |
+      Die API braucht Routen unter `/api` und eine Tabelle für Tokens.
+
+      1. Führe `php artisan install:api` aus (bei der Frage nach den Migrationen kannst du `yes` wählen).
+      2. Falls die Migrationen noch nicht gelaufen sind: `php artisan migrate`.
+      3. Ergänze im Model `app/Models/User.php` den Trait `Laravel\Sanctum\HasApiTokens`.
+    checklist:
+      - "`laravel/sanctum` steht in `composer.json`"
+      - "Die Tabelle `personal_access_tokens` existiert"
+      - "`User` nutzt `HasApiTokens`"
+    hints:
+      - "`install:api` installiert Sanctum per Composer und legt `routes/api.php` an."
+      - "Im Model: `use Laravel\\Sanctum\\HasApiTokens;` oben und `use HasApiTokens, HasFactory, Notifiable;` in der Klasse."
+    checks:
+      - type: file_contains
+        path: composer.json
+        pattern: "\"laravel/sanctum\""
+        message: Sanctum ist noch nicht installiert. Führe php artisan install:api aus.
+      - type: file_exists
+        path: routes/api.php
+        message: routes/api.php fehlt noch – install:api legt die Datei an.
+      - type: command
+        run: php artisan tinker --execute="var_export(Illuminate\Support\Facades\Schema::hasTable('personal_access_tokens'));"
+        stdout_matches: "^true\\s*$"
+        message: Die Tabelle personal_access_tokens fehlt. Führe php artisan migrate aus.
+      - type: file_contains
+        path: app/Models/User.php
+        pattern: "use\\s+[^;]*HasApiTokens"
+        message: Das User-Model nutzt den Trait HasApiTokens noch nicht.
+    solution: |
+      ```bash
+      php artisan install:api
+      php artisan migrate
+      ```
+
+      ```php title="app/Models/User.php (Ausschnitt)"
+      use Laravel\Sanctum\HasApiTokens;
+
+      class User extends Authenticatable
+      {
+          use HasApiTokens, HasFactory, Notifiable;
+      ```
+    solve: |
+      grep -q '"laravel/sanctum"' composer.json || timeout 170 php artisan install:api --without-migration-prompt -n -q </dev/null
+      php artisan migrate --force -q
+      grep -q 'HasApiTokens' app/Models/User.php || perl -0pi -e 's/use Illuminate\\Notifications\\Notifiable;/use Illuminate\\Notifications\\Notifiable;\nuse Laravel\\Sanctum\\HasApiTokens;/; s/use HasFactory, Notifiable;/use HasApiTokens, HasFactory, Notifiable;/' app/Models/User.php
+  - id: registrierung
+    title: Registrierung mit sicherem Passwort
+    description: |
+      Neue Nutzer legen sich über `POST /api/register` ein Konto an.
+
+      1. Ersetze den Inhalt von `routes/api.php` durch eine Route `POST /register`.
+      2. Validiere: `name` (Pflicht, max. 255), `email` (Pflicht, gültig, noch nicht in `users`),
+         `password` (Pflicht, `confirmed`, mindestens 12 Zeichen mit `Password::min(12)`).
+      3. Lege den Nutzer mit `User::create($daten)` an – der `hashed`-Cast hasht das Passwort.
+      4. Antworte mit dem Nutzer und Status **201**. Das Passwort taucht dank `#[Hidden]` im Model nicht auf.
+      5. Prüfe: `./vendor/bin/pest tests/Feature/NotizApi/RegistrierungTest.php`.
+    checklist:
+      - "`POST /api/register` antwortet mit 201"
+      - "Doppelte E-Mails und schwache Passwörter werden mit 422 abgelehnt"
+      - "In der Datenbank steht nur ein Hash"
+    hints:
+      - "Die Regel `'unique:users,email'` lehnt bereits registrierte Adressen ab."
+      - "`confirmed` erwartet ein Feld `password_confirmation`. `$request->validate()` gibt nur die geprüften Felder zurück."
+      - "`return response()->json($user, 201);`"
+    checks:
+      - type: command
+        run: ./vendor/bin/pest tests/Feature/NotizApi/RegistrierungTest.php --colors=never
+        message: Die Tests in tests/Feature/NotizApi/RegistrierungTest.php sind noch nicht grün.
+    solution: |
+      ```php title="routes/api.php"
+      <?php
+
+      use App\Models\User;
+      use Illuminate\Http\Request;
+      use Illuminate\Support\Facades\Hash;
+      use Illuminate\Support\Facades\Route;
+      use Illuminate\Validation\Rules\Password;
+      use Illuminate\Validation\ValidationException;
+
+      Route::post('/register', function (Request $request) {
+          $daten = $request->validate([
+              'name' => ['required', 'string', 'max:255'],
+              'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+              'password' => ['required', 'confirmed', Password::min(12)],
+          ]);
+
+          $user = User::create($daten);
+
+          return response()->json($user, 201);
+      });
+      ```
+    solve: |
+      cat > routes/api.php <<'PHP'
+      <?php
+      
+      use App\Models\User;
+      use Illuminate\Http\Request;
+      use Illuminate\Support\Facades\Hash;
+      use Illuminate\Support\Facades\Route;
+      use Illuminate\Validation\Rules\Password;
+      use Illuminate\Validation\ValidationException;
+      
+      Route::post('/register', function (Request $request) {
+          $daten = $request->validate([
+              'name' => ['required', 'string', 'max:255'],
+              'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+              'password' => ['required', 'confirmed', Password::min(12)],
+          ]);
+      
+          $user = User::create($daten);
+      
+          return response()->json($user, 201);
+      });
+      PHP
+  - id: token-login
+    title: Login mit Token und Fähigkeiten
+    description: |
+      Die App tauscht E-Mail und Passwort gegen ein Token.
+
+      1. Lege `POST /login` an. Validiere `email`, `password` und `device_name`.
+      2. Prüfe die Zugangsdaten mit `Hash::check()`. Bei unbekannter E-Mail **und** falschem Passwort wirfst
+         du dieselbe `ValidationException` mit `Diese Zugangsdaten sind ungültig.` am Feld `email`.
+      3. Stelle ein Token mit den Fähigkeiten `notizen:lesen` und `notizen:schreiben` aus und gib
+         `['token' => …->plainTextToken]` zurück.
+      4. Gib der Route den Namen `api.login` (`->name('api.login')`) – das brauchst du in Schritt 8.
+      5. Prüfe: `./vendor/bin/pest tests/Feature/NotizApi/AnmeldungTest.php`.
+    checklist:
+      - "`POST /api/login` gibt ein Token zurück"
+      - "Das Token hat die Fähigkeiten `notizen:lesen` und `notizen:schreiben`"
+      - "Eine einzige Fehlermeldung für alle falschen Zugangsdaten"
+    hints:
+      - "`$user->createToken($request->device_name, ['notizen:lesen', 'notizen:schreiben'])`"
+      - "Prüfe `! $user || ! Hash::check($request->password, $user->password)` in **einer** Bedingung."
+    checks:
+      - type: command
+        run: ./vendor/bin/pest tests/Feature/NotizApi/AnmeldungTest.php --colors=never
+        message: Die Tests in tests/Feature/NotizApi/AnmeldungTest.php sind noch nicht grün.
+    solution: |
+      ```php title="routes/api.php (ergänzen)"
+      Route::post('/login', function (Request $request) {
+          $request->validate([
+              'email' => ['required', 'email'],
+              'password' => ['required', 'string'],
+              'device_name' => ['required', 'string', 'max:100'],
+          ]);
+
+          $user = User::where('email', $request->email)->first();
+
+          if (! $user || ! Hash::check($request->password, $user->password)) {
+              throw ValidationException::withMessages(['email' => 'Diese Zugangsdaten sind ungültig.']);
+          }
+
+          $token = $user->createToken($request->device_name, ['notizen:lesen', 'notizen:schreiben']);
+
+          return ['token' => $token->plainTextToken];
+      })->name('api.login');
+      ```
+    solve: |
+      grep -q "Route::post('/login'" routes/api.php || cat >> routes/api.php <<'PHP'
+      
+      Route::post('/login', function (Request $request) {
+          $request->validate([
+              'email' => ['required', 'email'],
+              'password' => ['required', 'string'],
+              'device_name' => ['required', 'string', 'max:100'],
+          ]);
+      
+          $user = User::where('email', $request->email)->first();
+      
+          if (! $user || ! Hash::check($request->password, $user->password)) {
+              throw ValidationException::withMessages(['email' => 'Diese Zugangsdaten sind ungültig.']);
+          }
+      
+          $token = $user->createToken($request->device_name, ['notizen:lesen', 'notizen:schreiben']);
+      
+          return ['token' => $token->plainTextToken];
+      })->name('api.login');
+      PHP
+  - id: profil
+    title: Das eigene Profil abrufen
+    description: |
+      Mit dem Token fragt die App ab, wer angemeldet ist.
+
+      1. Lege `GET /me` mit der Middleware `auth:sanctum` an, die `$request->user()` zurückgibt.
+      2. Probiere es mit einem echten Token aus. Erzeuge eines mit Tinker:
+         `php artisan tinker --execute="echo App\Models\User::factory()->create()->createToken('cli')->plainTextToken;"`
+      3. Prüfe: `./vendor/bin/pest tests/Feature/NotizApi/ProfilTest.php`.
+    checklist:
+      - "`GET /api/me` liefert mit Token den eigenen Datensatz"
+      - "Ohne Token antwortet die Route mit 401"
+    hints:
+      - "`Route::get('/me', fn (Request $request) => $request->user())->middleware('auth:sanctum');`"
+    checks:
+      - type: command
+        run: ./vendor/bin/pest tests/Feature/NotizApi/ProfilTest.php --colors=never
+        message: Die Tests in tests/Feature/NotizApi/ProfilTest.php sind noch nicht grün.
+    solution: |
+      ```php title="routes/api.php (ergänzen)"
+      Route::get('/me', function (Request $request) {
+          return $request->user();
+      })->middleware('auth:sanctum');
+      ```
+    solve: |
+      grep -q "Route::get('/me'" routes/api.php || cat >> routes/api.php <<'PHP'
+      
+      Route::get('/me', function (Request $request) {
+          return $request->user();
+      })->middleware('auth:sanctum');
+      PHP
+  - id: notiz-model
+    title: Tabelle und Model für Notizen
+    description: |
+      Jede Notiz gehört genau einem Nutzer.
+
+      1. Erzeuge Model und Migration: `php artisan make:model Note -m`.
+      2. Ergänze die Migration um `foreignId('user_id')->constrained()->cascadeOnDelete()`, `string('title')`
+         und `text('body')->nullable()`. Führe `php artisan migrate` aus.
+      3. Erlaube im Model `Note` Mass Assignment für `title` und `body` (`#[Fillable(['title', 'body'])]`).
+      4. Ergänze im Model `User` die Beziehung `notes()` mit `hasMany(Note::class)`.
+    checklist:
+      - "Tabelle `notes` mit `user_id`, `title`, `body`"
+      - "`User::notes()` ist eine hasMany-Beziehung"
+      - "`title` und `body` sind fillable"
+    hints:
+      - "Die Attribut-Klasse heißt `Illuminate\\Database\\Eloquent\\Attributes\\Fillable` – wie im User-Model."
+      - "`public function notes(): HasMany { return $this->hasMany(Note::class); }` mit `use Illuminate\\Database\\Eloquent\\Relations\\HasMany;`"
+    checks:
+      - type: command
+        run: php artisan tinker --execute="var_export(Illuminate\Support\Facades\Schema::hasColumns('notes', ['user_id', 'title', 'body']));"
+        stdout_matches: "^true\\s*$"
+        message: Die Tabelle notes mit den Spalten user_id, title und body gibt es noch nicht. Ergänze die Migration und führe php artisan migrate aus.
+      - type: command
+        run: php artisan tinker --execute="var_export(App\Models\User::factory()->make()->notes() instanceof Illuminate\Database\Eloquent\Relations\HasMany);"
+        stdout_matches: "^true\\s*$"
+        message: Das User-Model hat noch keine Beziehung notes() vom Typ HasMany.
+      - type: command
+        run: php artisan tinker --execute="var_export((new App\Models\Note)->isFillable('title') && (new App\Models\Note)->isFillable('body'));"
+        stdout_matches: "^true\\s*$"
+        message: Im Model Note sind title und body noch nicht fillable.
+    solution: |
+      ```php title="database/migrations/…_create_notes_table.php (up)"
+      Schema::create('notes', function (Blueprint $table) {
+          $table->id();
+          $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+          $table->string('title');
+          $table->text('body')->nullable();
+          $table->timestamps();
+      });
+      ```
+
+      ```php title="app/Models/Note.php"
+      #[Fillable(['title', 'body'])]
+      class Note extends Model
+      {
+          public function user(): BelongsTo
+          {
+              return $this->belongsTo(User::class);
+          }
+      }
+      ```
+
+      ```php title="app/Models/User.php (ergänzen)"
+      public function notes(): HasMany
+      {
+          return $this->hasMany(Note::class);
+      }
+      ```
+    solve: |
+      ls database/migrations/*_create_notes_table.php >/dev/null 2>&1 || php artisan make:migration create_notes_table -q
+      M=$(ls database/migrations/*_create_notes_table.php | head -n 1)
+      cat > "$M" <<'PHP'
+      <?php
+      
+      use Illuminate\Database\Migrations\Migration;
+      use Illuminate\Database\Schema\Blueprint;
+      use Illuminate\Support\Facades\Schema;
+      
+      return new class extends Migration
+      {
+          public function up(): void
+          {
+              Schema::create('notes', function (Blueprint $table) {
+                  $table->id();
+                  $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                  $table->string('title');
+                  $table->text('body')->nullable();
+                  $table->timestamps();
+              });
+          }
+      
+          public function down(): void
+          {
+              Schema::dropIfExists('notes');
+          }
+      };
+      PHP
+      cat > app/Models/Note.php <<'PHP'
+      <?php
+      
+      namespace App\Models;
+      
+      use Illuminate\Database\Eloquent\Attributes\Fillable;
+      use Illuminate\Database\Eloquent\Model;
+      use Illuminate\Database\Eloquent\Relations\BelongsTo;
+      
+      #[Fillable(['title', 'body'])]
+      class Note extends Model
+      {
+          public function user(): BelongsTo
+          {
+              return $this->belongsTo(User::class);
+          }
+      }
+      PHP
+      grep -q 'function notes' app/Models/User.php || perl -0pi -e 's/\n\}\s*$/\n\n    public function notes(): \\Illuminate\\Database\\Eloquent\\Relations\\HasMany\n    {\n        return \$this->hasMany(Note::class);\n    }\n}\n/' app/Models/User.php
+      php artisan migrate --force -q
+  - id: notizen-routen
+    title: Notizen mit Fähigkeiten und Besitzprüfung
+    description: |
+      Jetzt kommt die eigentliche API – mit zwei Schutzschichten: Das **Token** braucht die richtige
+      Fähigkeit, und der **Nutzer** sieht nur seine eigenen Notizen.
+
+      1. Registriere in `bootstrap/app.php` die Middleware-Aliase `abilities` und `ability` von Sanctum.
+      2. Lege in `routes/api.php` eine Gruppe mit `auth:sanctum` an:
+         - `GET /notes` (`abilities:notizen:lesen`) – nur die Notizen des angemeldeten Nutzers.
+         - `GET /notes/{id}` (`abilities:notizen:lesen`) – eine eigene Notiz, fremde Notizen ergeben **404**.
+         - `POST /notes` (`abilities:notizen:schreiben`) – validiert `title` (Pflicht) und `body`
+           (optional), legt die Notiz über `$request->user()->notes()->create(...)` an, Status **201**.
+      3. Prüfe: `./vendor/bin/pest tests/Feature/NotizApi/NotizenTest.php`.
+    checklist:
+      - "Fähigkeiten-Middleware ist registriert"
+      - "Jeder sieht nur die eigenen Notizen, fremde ergeben 404"
+      - "Ein Lese-Token darf nichts anlegen (403)"
+    hints:
+      - "Starte jede Abfrage beim Nutzer: `$request->user()->notes()->findOrFail($id)` findet fremde Notizen gar nicht erst."
+      - "Fähigkeiten an einer Route: `->middleware('abilities:notizen:lesen')`."
+      - "Die Aliase: `$middleware->alias(['abilities' => \\Laravel\\Sanctum\\Http\\Middleware\\CheckAbilities::class, 'ability' => \\Laravel\\Sanctum\\Http\\Middleware\\CheckForAnyAbility::class]);`"
+    checks:
+      - type: file_contains
+        path: bootstrap/app.php
+        pattern: "CheckAbilities"
+        message: In bootstrap/app.php fehlt noch der Alias abilities.
+      - type: command
+        run: ./vendor/bin/pest tests/Feature/NotizApi/NotizenTest.php --colors=never
+        message: Die Tests in tests/Feature/NotizApi/NotizenTest.php sind noch nicht grün.
+    solution: |
+      ```php title="routes/api.php (ergänzen)"
+      Route::middleware('auth:sanctum')->group(function () {
+          Route::get('/notes', function (Request $request) {
+              return $request->user()->notes()->latest('id')->get();
+          })->middleware('abilities:notizen:lesen');
+
+          Route::get('/notes/{id}', function (Request $request, int $id) {
+              return $request->user()->notes()->findOrFail($id);
+          })->middleware('abilities:notizen:lesen');
+
+          Route::post('/notes', function (Request $request) {
+              $daten = $request->validate([
+                  'title' => ['required', 'string', 'max:255'],
+                  'body' => ['nullable', 'string', 'max:10000'],
+              ]);
+
+              return response()->json($request->user()->notes()->create($daten), 201);
+          })->middleware('abilities:notizen:schreiben');
+      });
+      ```
+    solve: |
+      grep -q 'CheckAbilities' bootstrap/app.php || perl -0pi -e 's/->withMiddleware\(function \(Middleware \$middleware\): void \{\n        \/\/\n    \}\)/->withMiddleware(function (Middleware \$middleware): void {\n        \$middleware->alias([\n            \x27abilities\x27 => \\Laravel\\Sanctum\\Http\\Middleware\\CheckAbilities::class,\n            \x27ability\x27 => \\Laravel\\Sanctum\\Http\\Middleware\\CheckForAnyAbility::class,\n        ]);\n    })/' bootstrap/app.php
+      grep -q "'/notes'" routes/api.php || cat >> routes/api.php <<'PHP'
+      
+      Route::middleware('auth:sanctum')->group(function () {
+          Route::get('/notes', function (Request $request) {
+              return $request->user()->notes()->latest('id')->get();
+          })->middleware('abilities:notizen:lesen');
+      
+          Route::get('/notes/{id}', function (Request $request, int $id) {
+              return $request->user()->notes()->findOrFail($id);
+          })->middleware('abilities:notizen:lesen');
+      
+          Route::post('/notes', function (Request $request) {
+              $daten = $request->validate([
+                  'title' => ['required', 'string', 'max:255'],
+                  'body' => ['nullable', 'string', 'max:10000'],
+              ]);
+      
+              return response()->json($request->user()->notes()->create($daten), 201);
+          })->middleware('abilities:notizen:schreiben');
+      });
+      PHP
+  - id: logout
+    title: Logout per Token-Widerruf
+    description: |
+      Wer sich auf einem Gerät abmeldet, soll nur **dieses** Token verlieren – andere Geräte bleiben angemeldet.
+
+      1. Lege `POST /logout` mit `auth:sanctum` an.
+      2. Lösche dort `$request->user()->currentAccessToken()` und antworte mit `response()->noContent()` (204).
+      3. Prüfe: `./vendor/bin/pest tests/Feature/NotizApi/AbmeldungTest.php`.
+    checklist:
+      - "`POST /api/logout` antwortet mit 204"
+      - "Nur das benutzte Token wird gelöscht"
+    hints:
+      - "`$user->tokens()->delete()` wäre zu viel – das meldet alle Geräte ab."
+    checks:
+      - type: command
+        run: ./vendor/bin/pest tests/Feature/NotizApi/AbmeldungTest.php --colors=never
+        message: Die Tests in tests/Feature/NotizApi/AbmeldungTest.php sind noch nicht grün.
+    solution: |
+      ```php title="routes/api.php (ergänzen)"
+      Route::post('/logout', function (Request $request) {
+          $request->user()->currentAccessToken()->delete();
+
+          return response()->noContent();
+      })->middleware('auth:sanctum');
+      ```
+    solve: |
+      grep -q "'/logout'" routes/api.php || cat >> routes/api.php <<'PHP'
+      
+      Route::post('/logout', function (Request $request) {
+          $request->user()->currentAccessToken()->delete();
+      
+          return response()->noContent();
+      })->middleware('auth:sanctum');
+      PHP
+  - id: login-drosseln
+    title: Den Login drosseln
+    description: |
+      Zum Schluss schützt du den Login gegen Rateversuche.
+
+      1. Definiere in `app/Providers/AppServiceProvider.php` einen Limiter `login`: 5 Versuche pro Minute,
+         Schlüssel aus kleingeschriebener E-Mail und IP-Adresse.
+      2. Hänge `throttle:login` an die Route `POST /login` (die mit dem Namen `api.login`).
+      3. Lass zum Abschluss die ganze Suite laufen: `./vendor/bin/pest tests/Feature/NotizApi`.
+    checklist:
+      - "Limiter `login` mit 5 Versuchen pro Minute pro E-Mail und IP"
+      - "Der sechste Versuch bekommt 429"
+      - "Die ganze Suite ist grün"
+    hints:
+      - "`RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));`"
+      - "`})->name('api.login')->middleware('throttle:login');`"
+    checks:
+      - type: file_contains
+        path: app/Providers/AppServiceProvider.php
+        pattern: "RateLimiter::for\\(\\s*['\"]login['\"]"
+        message: In AppServiceProvider fehlt noch RateLimiter::for('login', …).
+      - type: command
+        run: ./vendor/bin/pest tests/Feature/NotizApi/DrosselungTest.php --colors=never
+        message: Die Tests in tests/Feature/NotizApi/DrosselungTest.php sind noch nicht grün.
+      - type: command
+        run: ./vendor/bin/pest tests/Feature/NotizApi --colors=never
+        message: Nicht alle Tests der Notiz-API sind grün. Ein früherer Schritt ist kaputtgegangen – lies die Fehlermeldung.
+    solution: |
+      ```php title="app/Providers/AppServiceProvider.php (boot)"
+      RateLimiter::for('login', function (Request $request) {
+          return Limit::perMinute(5)->by(Str::lower((string) $request->input('email')).'|'.$request->ip());
+      });
+      ```
+
+      ```php title="routes/api.php (Ausschnitt)"
+      })->name('api.login')->middleware('throttle:login');
+      ```
+    solve: |
+      grep -q "RateLimiter::for('login'" app/Providers/AppServiceProvider.php || cat > app/Providers/AppServiceProvider.php <<'PHP'
+      <?php
+      
+      namespace App\Providers;
+      
+      use Illuminate\Cache\RateLimiting\Limit;
+      use Illuminate\Http\Request;
+      use Illuminate\Support\Facades\RateLimiter;
+      use Illuminate\Support\ServiceProvider;
+      use Illuminate\Support\Str;
+      
+      class AppServiceProvider extends ServiceProvider
+      {
+          public function register(): void
+          {
+              //
+          }
+      
+          public function boot(): void
+          {
+              RateLimiter::for('login', function (Request $request) {
+                  return Limit::perMinute(5)->by(Str::lower((string) $request->input('email')).'|'.$request->ip());
+              });
+          }
+      }
+      PHP
+      grep -q "throttle:login" routes/api.php || perl -0pi -e "s/->name\('api\.login'\);/->name('api.login')->middleware('throttle:login');/" routes/api.php

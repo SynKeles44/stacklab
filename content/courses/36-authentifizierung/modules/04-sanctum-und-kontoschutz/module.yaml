@@ -1,0 +1,179 @@
+title: Sanctum und Kontoschutz
+description: API-Tokens und SPA-Anmeldung mit Laravel Sanctum, Zwei-Faktor-Anmeldung und Passkeys sowie Rate Limiting und ein sicherer Passwort-Reset.
+exercise:
+  id: modul-uebung-token-api
+  type: terminal
+  title: Eine Notiz-API mit Fähigkeiten, Logout und Drosselung
+  description: |
+    In `rechte-app` liegt die Token-API aus der Lektion „API-Tokens mit Laravel Sanctum“: Das User-Model
+    nutzt `HasApiTokens`, und `POST /api/tokens` stellt Tokens aus. Ein Test
+    `tests/Feature/TokenRechteTest.php` beschreibt das Ziel. Klicke zuerst auf **Aufgabe vorbereiten** und
+    wechsle mit `cd rechte-app` hinein.
+
+    1. Registriere in `bootstrap/app.php` die Middleware-Aliase `abilities` (`CheckAbilities`) und
+       `ability` (`CheckForAnyAbility`) aus `Laravel\Sanctum\Http\Middleware`.
+    2. Lege in `routes/api.php` eine Gruppe mit `auth:sanctum` an:
+       - `GET /notizen` mit `abilities:notizen:lesen` gibt `['notizen' => []]` zurück.
+       - `POST /notizen` mit `abilities:notizen:schreiben` validiert das Feld `text` (Pflicht, max. 500
+         Zeichen) und antwortet mit Status **201**.
+       - `POST /logout` widerruft **nur das benutzte Token** und antwortet mit **204** (`response()->noContent()`).
+    3. Begrenze `POST /tokens` auf 5 Anfragen pro Minute (`throttle:5,1`).
+    4. Prüfe mit `./vendor/bin/pest tests/Feature/TokenRechteTest.php`.
+  workdir: rechte-app
+  setup: |
+    # Laravel-13-Basis mit Sanctum (install:api) einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    A="$HOME/.cache/stacklab/laravel13-sanctum"
+    if [ ! -f "$A/.fertig" ]; then
+      if [ ! -f "$B/.fertig" ]; then
+        T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+        timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+        (cd "$T" && timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null)
+        printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > "$T/tests/Pest.php"
+        touch "$T/.fertig"; rm -rf "$B"; mv "$T" "$B"
+      fi
+      T="$A.bau.$$"; rm -rf "$T"; cp -a "$B" "$T"
+      (cd "$T" && timeout 120 php artisan install:api --without-migration-prompt -n -q </dev/null && php artisan migrate --force -q)
+      rm -rf "$A"; mv "$T" "$A"
+    fi
+    cp -a "$A/." . && rm -f .fertig
+    perl -0pi -e 's/use Illuminate\\Notifications\\Notifiable;/use Illuminate\\Notifications\\Notifiable;\nuse Laravel\\Sanctum\\HasApiTokens;/; s/use HasFactory, Notifiable;/use HasApiTokens, HasFactory, Notifiable;/' app/Models/User.php
+    mkdir -p "$(dirname 'routes/api.php')"
+    cat > 'routes/api.php' <<'STACKLAB_EOF'
+    <?php
+
+    use App\Models\User;
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\Hash;
+    use Illuminate\Support\Facades\Route;
+    use Illuminate\Validation\ValidationException;
+
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    })->middleware('auth:sanctum');
+
+    Route::post('/tokens', function (Request $request) {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+            'device_name' => ['required', 'string', 'max:100'],
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => 'Diese Zugangsdaten sind ungültig.',
+            ]);
+        }
+
+        return ['token' => $user->createToken($request->device_name)->plainTextToken];
+    });
+    STACKLAB_EOF
+    mkdir -p "$(dirname 'tests/Feature/TokenRechteTest.php')"
+    cat > 'tests/Feature/TokenRechteTest.php' <<'STACKLAB_EOF'
+    <?php
+
+    use App\Models\User;
+    use Illuminate\Foundation\Testing\RefreshDatabase;
+
+    uses(RefreshDatabase::class);
+
+    test('ein Lese-Token darf GET /api/notizen aufrufen', function () {
+        $token = User::factory()->create()->createToken('test', ['notizen:lesen'])->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/notizen')->assertOk();
+    });
+
+    test('ein Lese-Token darf keine Notiz anlegen (403)', function () {
+        $token = User::factory()->create()->createToken('test', ['notizen:lesen'])->plainTextToken;
+
+        $this->withToken($token)->postJson('/api/notizen', ['text' => 'Hallo'])->assertForbidden();
+    });
+
+    test('ein Schreib-Token darf eine Notiz anlegen (201)', function () {
+        $token = User::factory()->create()->createToken('test', ['notizen:schreiben'])->plainTextToken;
+
+        $this->withToken($token)->postJson('/api/notizen', ['text' => 'Hallo'])->assertCreated();
+    });
+
+    test('ein Token ohne passende Fähigkeit wird bei GET abgewiesen (403)', function () {
+        $token = User::factory()->create()->createToken('test', ['profil:lesen'])->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/notizen')->assertForbidden();
+    });
+
+    test('ohne Token gibt es 401', function () {
+        $this->getJson('/api/notizen')->assertUnauthorized();
+    });
+
+    test('POST /api/logout widerruft genau das benutzte Token', function () {
+        $user = User::factory()->create();
+        $user->createToken('laptop', ['notizen:lesen']);
+        $token = $user->createToken('handy', ['notizen:lesen'])->plainTextToken;
+
+        $this->withToken($token)->postJson('/api/logout')->assertNoContent();
+
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+        $this->assertDatabaseHas('personal_access_tokens', ['name' => 'laptop']);
+    });
+
+    test('POST /api/tokens ist auf 5 Versuche pro Minute begrenzt', function () {
+        for ($i = 1; $i <= 5; $i++) {
+            $this->postJson('/api/tokens', ['email' => 'ada@example.com', 'password' => 'falsch', 'device_name' => 'cli'])
+                ->assertStatus(422);
+        }
+
+        $this->postJson('/api/tokens', ['email' => 'ada@example.com', 'password' => 'falsch', 'device_name' => 'cli'])
+            ->assertStatus(429);
+    });
+    STACKLAB_EOF
+  checks:
+    - type: file_contains
+      path: bootstrap/app.php
+      pattern: "CheckAbilities"
+      message: In bootstrap/app.php fehlt noch der Alias abilities für Laravel\Sanctum\Http\Middleware\CheckAbilities.
+    - type: file_contains
+      path: routes/api.php
+      pattern: "currentAccessToken\\(\\)\\s*->\\s*delete\\(\\)"
+      message: POST /logout soll genau das benutzte Token widerrufen – mit $request->user()->currentAccessToken()->delete().
+    - type: command
+      run: ./vendor/bin/pest tests/Feature/TokenRechteTest.php --colors=never
+      message: Noch nicht alle Tests in tests/Feature/TokenRechteTest.php sind grün. Führe sie aus und lies die erste Fehlermeldung.
+  hints:
+    - "In `bootstrap/app.php` ersetzt du den Kommentar im Block `withMiddleware` durch `$middleware->alias([...]);`."
+    - "Middleware für eine Route: `Route::get('/notizen', ...)->middleware('abilities:notizen:lesen');` – die Gruppe davor: `Route::middleware('auth:sanctum')->group(function () { ... });`."
+    - "Hinter der schließenden Klammer der Route `POST /tokens` ergänzt du `->middleware('throttle:5,1')`."
+  solution: |
+    ```php title="bootstrap/app.php (Ausschnitt)"
+    ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+            'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
+        ]);
+    })
+    ```
+
+    ```php title="routes/api.php (ergänzen)"
+    Route::post('/tokens', function (Request $request) {
+        // … wie bisher …
+    })->middleware('throttle:5,1');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/notizen', function () {
+            return ['notizen' => []];
+        })->middleware('abilities:notizen:lesen');
+
+        Route::post('/notizen', function (Request $request) {
+            $daten = $request->validate(['text' => ['required', 'string', 'max:500']]);
+
+            return response()->json(['notiz' => $daten], 201);
+        })->middleware('abilities:notizen:schreiben');
+
+        Route::post('/logout', function (Request $request) {
+            $request->user()->currentAccessToken()->delete();
+
+            return response()->noContent();
+        });
+    });
+    ```

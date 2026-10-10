@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <title>Die zwei Wege von Laravel Sanctum</title>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="ps" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/></marker>
+  </defs>
+  <text x="480" y="40" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Eine Middleware, zwei Wege: auth:sanctum</text>
+
+  <rect x="30" y="70" width="230" height="110" rx="10" fill="#22d3ee" fill-opacity="0.15" stroke="#22d3ee" stroke-width="2"/>
+  <text x="145" y="104" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Eigene SPA</text>
+  <text x="145" y="128" text-anchor="middle" font-size="13" fill="#1e1b3a">app.example.com</text>
+  <text x="145" y="150" text-anchor="middle" font-size="13" fill="#1e1b3a">gleiche Hauptdomain</text>
+  <line x1="262" y1="125" x2="568" y2="125" stroke="#1e1b3a" stroke-width="2" marker-end="url(#ps)"/>
+  <text x="415" y="112" text-anchor="middle" font-size="13" fill="#1e1b3a">Session-Cookie + X-XSRF-TOKEN</text>
+  <text x="415" y="146" text-anchor="middle" font-size="12" fill="#6b6889">vorher: GET /sanctum/csrf-cookie, POST /login</text>
+
+  <rect x="30" y="250" width="230" height="110" rx="10" fill="#f59e0b" fill-opacity="0.15" stroke="#f59e0b" stroke-width="2"/>
+  <text x="145" y="284" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Mobile App, CLI,</text>
+  <text x="145" y="306" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Integration</text>
+  <text x="145" y="332" text-anchor="middle" font-size="13" fill="#1e1b3a">beliebiger Ort</text>
+  <line x1="262" y1="305" x2="568" y2="305" stroke="#1e1b3a" stroke-width="2" marker-end="url(#ps)"/>
+  <text x="415" y="292" text-anchor="middle" font-size="13" fill="#1e1b3a">Authorization: Bearer 7|Xy9…</text>
+  <text x="415" y="326" text-anchor="middle" font-size="12" fill="#6b6889">Token mit Fähigkeiten, z. B. notizen:lesen</text>
+
+  <rect x="570" y="70" width="360" height="290" rx="12" fill="#a78bfa" fill-opacity="0.12" stroke="#a78bfa" stroke-width="2"/>
+  <text x="750" y="104" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Laravel-API mit Sanctum</text>
+  <rect x="595" y="122" width="310" height="80" rx="8" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="750" y="152" text-anchor="middle" font-size="14" fill="#1e1b3a">1. Stateful-Domain + Cookie?</text>
+  <text x="750" y="176" text-anchor="middle" font-size="13" fill="#6b6889">→ Session prüfen (Guard „web“)</text>
+  <rect x="595" y="222" width="310" height="80" rx="8" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+  <text x="750" y="252" text-anchor="middle" font-size="14" fill="#1e1b3a">2. Sonst: Bearer-Token?</text>
+  <text x="750" y="276" text-anchor="middle" font-size="13" fill="#6b6889">→ SHA-256-Hash in personal_access_tokens</text>
+  <text x="750" y="336" text-anchor="middle" font-size="13" fill="#1e1b3a">keins von beiden → 401 Unauthorized</text>
+
+  <rect x="30" y="390" width="900" height="50" rx="10" fill="#34d399" fill-opacity="0.12" stroke="#34d399" stroke-width="2"/>
+  <text x="480" y="421" text-anchor="middle" font-size="15" fill="#1e1b3a">Faustregel: Eigene Browser-App → Cookies. Alles andere → Tokens.</text>
+</svg>

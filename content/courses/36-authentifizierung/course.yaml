@@ -1,0 +1,31 @@
+title: Authentifizierung
+subtitle: Sessions, JWT, OAuth, Sanctum und 2FA – Logins bauen, die Angriffen standhalten
+description: >
+  Fast jede Anwendung muss eine Frage beantworten: **Wer bist du – und darfst du das?** In diesem Kurs
+  lernst du, wie Logins wirklich funktionieren und wo sie typischerweise kaputtgehen. Du speicherst
+  Passwörter mit Argon2id und bcrypt, verstehst Sessions und Cookie-Flags, schützt Formulare vor CSRF
+  und zerlegst JSON Web Tokens bis auf das letzte Byte.
+
+
+  Danach folgst du dem Weg eines Logins über „Mit … anmelden“: OAuth 2.0 mit Authorization Code und
+  PKCE, OpenID Connect und ID-Tokens. Zum Schluss baust du mit **Laravel Sanctum** eine abgesicherte
+  API mit Tokens, Fähigkeiten und Rate Limiting und lernst, wie Zwei-Faktor-Anmeldung, Passkeys und ein
+  sicherer Passwort-Reset funktionieren. Alles mit echten Befehlen im Übungs-Terminal.
+category: backend
+level: fortgeschritten
+icon: key-round
+color: "#a78bfa"
+estimated_hours: 5
+workspace_dir: authentifizierung
+prerequisites: [http-https, laravel]
+learning_goals:
+  - Du unterscheidest Authentifizierung und Autorisierung und antwortest mit dem richtigen Statuscode (401 oder 403).
+  - Du speicherst Passwörter mit langsamen, gesalzenen Hashes (Argon2id, bcrypt) und erneuerst alte Hashes beim Login.
+  - Du erklärst Sessions und Cookie-Flags (HttpOnly, Secure, SameSite) und schützt Formulare vor CSRF.
+  - Du unterscheidest opake Tokens und JWTs, liest JWTs aus und prüfst Signatur und Claims korrekt.
+  - Du erklärst OAuth 2.0 mit Authorization Code und PKCE sowie die Rolle von OpenID Connect.
+  - Du baust mit Laravel Sanctum Token- und SPA-Authentifizierung samt Fähigkeiten und Token-Widerruf.
+  - Du schützt Konten mit Rate Limiting, Zwei-Faktor-Anmeldung, Passkeys und einem sicheren Passwort-Reset.
+references:
+  - Login-Endpunkte mit Rate Limiting pro Konto und IP, wie sie in großen Laravel-Projekten üblich sind
+  - Getrennte Anmeldung für die eigene SPA (Session-Cookie) und für Integrationen (API-Tokens mit Fähigkeiten)

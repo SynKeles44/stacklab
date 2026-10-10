@@ -1,0 +1,123 @@
+title: Tokens und OAuth
+description: Opake Tokens und JWTs verstehen, JWTs sicher prüfen und den OAuth-2.0-Code-Flow mit PKCE und OpenID Connect nachvollziehen.
+exercise:
+  id: modul-uebung-pkce-client
+  type: code
+  language: php
+  title: Die Client-Seite von OAuth mit PKCE
+  description: |
+    Baue die Bausteine, die deine App für einen Login per Authorization Code Flow mit PKCE braucht.
+
+    1. `erzeugeVerifier(): string` liefert einen zufälligen `code_verifier`: 32 zufällige Bytes
+       (`random_bytes(32)`), Base64URL-kodiert ohne `=` – das ergibt 43 Zeichen aus `A–Z a–z 0–9 - _`.
+    2. `codeChallenge(string $verifier): string` berechnet `BASE64URL(SHA-256(verifier))` (Methode `S256`).
+       Achtung: Der SHA-256-Hash muss als **Rohbytes** kodiert werden, nicht als Hex-String.
+    3. `autorisierungsUrl(string $basis, string $clientId, string $redirectUri, string $scope, string $state, string $challenge): string`
+       baut die Login-URL `<basis>?…` mit den Parametern `response_type=code`, `client_id`, `redirect_uri`,
+       `scope`, `state`, `code_challenge` und `code_challenge_method=S256`. Nutze
+       `http_build_query($parameter, '', '&', PHP_QUERY_RFC3986)`, damit Leerzeichen als `%20` kodiert werden.
+    4. `pruefeState(?string $erwartet, ?string $erhalten): bool` vergleicht den gespeicherten und den
+       zurückgekommenen `state` zeitkonstant mit `hash_equals()`. Fehlt einer oder ist einer leer: `false`.
+  starter: |
+    <?php
+    declare(strict_types=1);
+
+    function erzeugeVerifier(): string
+    {
+        return '';
+    }
+
+    function codeChallenge(string $verifier): string
+    {
+        return '';
+    }
+
+    function autorisierungsUrl(string $basis, string $clientId, string $redirectUri, string $scope, string $state, string $challenge): string
+    {
+        return $basis;
+    }
+
+    function pruefeState(?string $erwartet, ?string $erhalten): bool
+    {
+        return false;
+    }
+  tests:
+    - name: der Verifier hat 43 URL-sichere Zeichen und ist jedes Mal anders
+      code: |
+        $a = erzeugeVerifier();
+        $b = erzeugeVerifier();
+        assert_same(1, preg_match('/^[A-Za-z0-9_-]{43}$/', $a));
+        assert_true($a !== $b);
+    - name: die Challenge passt zum Testvektor aus RFC 7636
+      code: assert_same('E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM', codeChallenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'));
+    - name: die Challenge enthält kein = und kein + oder /
+      code: |
+        $c = codeChallenge(erzeugeVerifier());
+        assert_same(43, strlen($c));
+        assert_same(0, preg_match('/[=+\/]/', $c));
+    - name: die Login-URL enthält alle Parameter korrekt kodiert
+      code: |
+        $url = autorisierungsUrl('https://auth.example.com/authorize', 'notizen-app', 'https://app.example.com/callback', 'openid email', 'af0ifjsldkj', 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
+        assert_true(str_starts_with($url, 'https://auth.example.com/authorize?'));
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $q);
+        assert_same('code', $q['response_type'] ?? null);
+        assert_same('notizen-app', $q['client_id'] ?? null);
+        assert_same('https://app.example.com/callback', $q['redirect_uri'] ?? null);
+        assert_same('openid email', $q['scope'] ?? null);
+        assert_same('af0ifjsldkj', $q['state'] ?? null);
+        assert_same('E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM', $q['code_challenge'] ?? null);
+        assert_same('S256', $q['code_challenge_method'] ?? null);
+        assert_true(str_contains($url, 'scope=openid%20email'));
+    - name: state wird nur bei exakter Übereinstimmung akzeptiert
+      code: |
+        assert_same(true, pruefeState('af0ifjsldkj', 'af0ifjsldkj'));
+        assert_same(false, pruefeState('af0ifjsldkj', 'af0ifjsldkJ'));
+        assert_same(false, pruefeState('af0ifjsldkj', null));
+        assert_same(false, pruefeState(null, 'af0ifjsldkj'));
+        assert_same(false, pruefeState('', ''));
+  hints:
+    - "Base64URL: `rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=')`."
+    - "`hash('sha256', $verifier, true)` liefert die 32 Rohbytes – das dritte Argument `true` ist entscheidend."
+    - "Prüfe in `pruefeState()` zuerst `$erwartet === null || $erwartet === ''` (und dasselbe für `$erhalten`), dann `hash_equals()`."
+  solution: |
+    <?php
+    declare(strict_types=1);
+
+    function b64url(string $bytes): string
+    {
+        return rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
+    }
+
+    function erzeugeVerifier(): string
+    {
+        return b64url(random_bytes(32));
+    }
+
+    function codeChallenge(string $verifier): string
+    {
+        return b64url(hash('sha256', $verifier, true));
+    }
+
+    function autorisierungsUrl(string $basis, string $clientId, string $redirectUri, string $scope, string $state, string $challenge): string
+    {
+        $parameter = [
+            'response_type' => 'code',
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'scope' => $scope,
+            'state' => $state,
+            'code_challenge' => $challenge,
+            'code_challenge_method' => 'S256',
+        ];
+
+        return $basis . '?' . http_build_query($parameter, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    function pruefeState(?string $erwartet, ?string $erhalten): bool
+    {
+        if ($erwartet === null || $erwartet === '' || $erhalten === null || $erhalten === '') {
+            return false;
+        }
+
+        return hash_equals($erwartet, $erhalten);
+    }

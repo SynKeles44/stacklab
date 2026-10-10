@@ -1,0 +1,447 @@
+- slug: authentifizierungsfaktor
+  term: Authentifizierungsfaktor
+  short: Ein Nachweis für die eigene Identität – etwas, das man weiß, besitzt oder ist.
+  explanation: >
+    Faktoren werden in drei Arten eingeteilt: Wissen (Passwort, PIN), Besitz (Smartphone, Sicherheitsschlüssel)
+    und Inhärenz (Fingerabdruck, Gesicht). Eine Mehr-Faktor-Anmeldung kombiniert mindestens zwei verschiedene
+    Arten, damit ein einzelner gestohlener Nachweis nicht reicht.
+  example: "Passwort (Wissen) plus Code aus der Authenticator-App (Besitz) sind zwei Faktoren."
+  category: sicherheit
+  aliases: [Faktor, Faktoren, Authentifizierungsfaktoren]
+  related: [authentifizierung, zwei-faktor-authentifizierung, passkey]
+  lesson: authentifizierung/wer-bist-du-was-darfst-du
+- slug: passwort-hash
+  term: Passwort-Hash
+  short: Ein absichtlich langsamer, gesalzener Hash, mit dem Passwörter gespeichert werden.
+  explanation: >
+    Ein Passwort-Hash lässt sich nicht umkehren. Beim Login wird die Eingabe erneut gehasht und verglichen.
+    Verfahren wie Argon2id oder bcrypt kosten bewusst Rechenzeit und Speicher, damit Angreifer nach einem
+    Datenleck nur sehr langsam raten können.
+  example: "`password_hash('geheim', PASSWORD_ARGON2ID)` liefert z. B. `$argon2id$v=19$m=65536,t=4,p=1$…`."
+  category: sicherheit
+  aliases: [Passwort-Hashes, Passwort-Hashing, Password Hashing]
+  related: [hash, salt, argon2id, bcrypt]
+  lesson: authentifizierung/passwoerter-sicher-speichern
+- slug: salt
+  term: Salt
+  short: Ein zufälliger Wert pro Passwort, der vor dem Hashen hinzugefügt wird.
+  explanation: >
+    Durch das Salt ergeben gleiche Passwörter unterschiedliche Hashes, und vorberechnete Tabellen werden
+    nutzlos. Das Salt ist nicht geheim: Es steht bei `password_hash()` direkt im Ergebnis-String und wird
+    automatisch erzeugt.
+  example: "Ada und Linus nutzen beide `sommer-2026-urlaub`, ihre Argon2id-Hashes unterscheiden sich trotzdem."
+  category: sicherheit
+  aliases: [Salz, Salts]
+  related: [passwort-hash, pepper, rainbow-table]
+  lesson: authentifizierung/passwoerter-sicher-speichern
+- slug: pepper
+  term: Pepper
+  short: Ein zusätzliches Geheimnis für alle Passwort-Hashes, das getrennt von der Datenbank aufbewahrt wird.
+  explanation: >
+    Anders als das Salt ist der Pepper geheim und für alle Passwörter gleich. Er liegt z. B. in einem
+    Secret-Speicher, nicht in der Datenbank. Wird nur die Datenbank gestohlen, fehlt dem Angreifer der Pepper.
+    Er ist eine zusätzliche Schutzschicht, kein Ersatz für einen guten Passwort-Hash.
+  example: "Der Pepper kommt aus einer Umgebungsvariablen und fließt per HMAC in jeden Passwort-Hash ein."
+  category: sicherheit
+  aliases: [Pfeffer]
+  related: [salt, passwort-hash, secret]
+  lesson: authentifizierung/passwoerter-sicher-speichern
+- slug: rainbow-table
+  term: Rainbow Table
+  short: Eine vorberechnete Tabelle, die Hashes häufiger Passwörter ihren Klartexten zuordnet.
+  explanation: >
+    Mit einer solchen Tabelle findet ein Angreifer zu einem ungesalzenen Hash sofort das Passwort, ohne selbst
+    rechnen zu müssen. Ein Salt pro Passwort macht vorberechnete Tabellen wertlos, weil jede Tabelle nur für
+    ein bestimmtes Salt gelten würde.
+  example: "Der MD5-Hash von `passwort123` steht in jeder Rainbow Table – mit Salt nicht mehr."
+  category: sicherheit
+  aliases: [Rainbow Tables, Regenbogentabelle]
+  related: [salt, hash, brute-force]
+  lesson: authentifizierung/passwoerter-sicher-speichern
+- slug: argon2id
+  term: Argon2id
+  short: Der heute empfohlene Passwort-Hash, der viel Arbeitsspeicher pro Versuch verlangt.
+  explanation: >
+    Argon2id hat 2015 die Password Hashing Competition gewonnen und ist die erste Wahl laut OWASP. Er ist
+    speicherhart: Jeder Rateversuch braucht viel RAM, was Angriffe mit Grafikkarten teuer macht. Parameter
+    sind Speicher (m), Durchläufe (t) und Parallelität (p).
+  example: "`password_hash($passwort, PASSWORD_ARGON2ID)` oder in Laravel `HASH_DRIVER=argon2id`."
+  category: sicherheit
+  aliases: [Argon2]
+  related: [passwort-hash, bcrypt, salt]
+  lesson: authentifizierung/passwoerter-sicher-speichern
+- slug: bcrypt
+  term: bcrypt
+  short: Ein bewährter Passwort-Hash mit einstellbarem Kostenfaktor, Standard in Laravel.
+  explanation: >
+    bcrypt verdoppelt mit jeder Stufe des Kostenfaktors die Rechenzeit. Laravel und PHP nutzen standardmäßig
+    Kosten 12. Eine Eigenheit: bcrypt beachtet nur die ersten 72 Byte eines Passworts. Für neue Systeme
+    empfiehlt OWASP Argon2id, bcrypt ist für bestehende Systeme in Ordnung.
+  example: "Ein bcrypt-Hash beginnt mit `$2y$12$` – 12 ist der Kostenfaktor."
+  category: sicherheit
+  related: [passwort-hash, argon2id]
+  lesson: authentifizierung/passwoerter-sicher-speichern
+- slug: session-fixation
+  term: Session Fixation
+  short: Ein Angriff, bei dem dem Opfer eine bekannte Session-ID untergeschoben wird.
+  explanation: >
+    Der Angreifer besorgt sich eine gültige, anonyme Session-ID und bringt das Opfer dazu, sie zu benutzen.
+    Bleibt die ID beim Login gleich, ist der Angreifer mit angemeldet. Die Abwehr: nach dem Login immer eine
+    neue Session-ID vergeben.
+  example: "In Laravel verhindert `$request->session()->regenerate()` nach dem Login Session Fixation."
+  category: sicherheit
+  related: [session, session-id, session-hijacking]
+  lesson: authentifizierung/sessions-und-cookie-flags
+- slug: session-hijacking
+  term: Session Hijacking
+  short: Die Übernahme einer fremden Sitzung durch Diebstahl der Session-ID.
+  explanation: >
+    Wer die Session-ID kennt, ist für den Server angemeldet. Typische Wege sind XSS, unverschlüsselte
+    Verbindungen oder Logs, in denen IDs stehen. Schutz bieten die Cookie-Flags HttpOnly und Secure, HTTPS
+    überall und kurze Laufzeiten.
+  example: "Ein eingeschleustes Skript liest `document.cookie` – mit HttpOnly geht das nicht."
+  category: sicherheit
+  aliases: [Sitzungsübernahme]
+  related: [session-fixation, httponly, secure-attribut, xss]
+  lesson: authentifizierung/sessions-und-cookie-flags
+- slug: auth-guard
+  term: Guard (Laravel)
+  short: Der Baustein in Laravel, der festlegt, wie eine Anfrage authentifiziert wird.
+  explanation: >
+    Ein Guard prüft für jede Anfrage, wer angemeldet ist – der Guard `web` über die Session, der Guard
+    `sanctum` über Session oder API-Token. Welche Guards es gibt, steht in `config/auth.php`. Woher die Nutzer
+    kommen, regelt der zugehörige Provider.
+  example: "`Auth::guard('web')->check()` oder die Middleware `auth:sanctum`."
+  category: laravel
+  aliases: [Guard, Guards, Auth-Guard]
+  related: [authentifizierung, session, sanctum]
+  lesson: authentifizierung/login-und-logout-in-laravel
+- slug: user-enumeration
+  term: User Enumeration
+  short: Das Ausforschen, welche E-Mail-Adressen oder Nutzernamen ein Konto haben.
+  explanation: >
+    Verraten Login, Registrierung oder Passwort-Reset durch unterschiedliche Meldungen oder Antwortzeiten, ob
+    ein Konto existiert, können Angreifer gezielt Listen gültiger Konten erstellen. Die Abwehr ist eine
+    einheitliche Antwort für alle Fälle.
+  example: "„Diese Zugangsdaten sind ungültig.“ statt „Diese E-Mail ist nicht registriert.“"
+  category: sicherheit
+  aliases: [Benutzer-Enumeration, Account Enumeration]
+  related: [brute-force, credential-stuffing, passwort-reset]
+  lesson: authentifizierung/login-und-logout-in-laravel
+- slug: opakes-token
+  term: Opakes Token
+  short: Ein zufälliges Token ohne lesbaren Inhalt, das der Server in seiner Datenbank nachschlägt.
+  explanation: >
+    Opak heißt undurchsichtig: Das Token selbst verrät nichts über Nutzer oder Rechte. Der Server speichert
+    meist nur einen Hash davon. Vorteil: Es lässt sich sofort widerrufen. Nachteil: Jede Prüfung kostet eine
+    Datenbankabfrage.
+  example: "Ein Sanctum-Token wie `7|kq3VbZ9xYtR2mN8pL0wQ…` ist ein opakes Token."
+  category: sicherheit
+  aliases: [opake Tokens, opaken Token, Opaque Token, Referenz-Token]
+  related: [jwt, bearer-token, sanctum]
+  lesson: authentifizierung/opake-tokens-und-jwt
+- slug: jwt
+  term: JSON Web Token (JWT)
+  short: Ein signiertes, selbsttragendes Token aus Header, Payload und Signatur.
+  explanation: >
+    Ein JWT enthält Informationen (Claims) selbst und ist digital signiert, sodass der Server es ohne
+    Datenbank prüfen kann. Die drei Teile sind Base64URL-kodiert und durch Punkte getrennt. Der Inhalt ist
+    lesbar für jeden – die Signatur schützt nur vor Veränderung.
+  example: "`eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0MiJ9.<signatur>`"
+  category: sicherheit
+  aliases: [JWT, JWTs, JSON Web Tokens]
+  related: [claim, base64url, signatur, opakes-token]
+  lesson: authentifizierung/opake-tokens-und-jwt
+- slug: claim
+  term: Claim
+  short: Eine Angabe im Payload eines JWT, zum Beispiel sub, exp oder iss.
+  explanation: >
+    Claims sind Name-Wert-Paare im JSON des Payloads. RFC 7519 legt registrierte Claims fest, etwa `iss`
+    (Aussteller), `sub` (Subjekt), `aud` (Empfänger) und `exp` (Ablauf). Eigene Claims wie `role` dürfen
+    ergänzt werden, sind aber für jeden lesbar.
+  example: "`{\"sub\": \"42\", \"exp\": 1791550800}` enthält die Claims sub und exp."
+  category: sicherheit
+  aliases: [Claims]
+  related: [jwt, id-token]
+  lesson: authentifizierung/opake-tokens-und-jwt
+- slug: base64url
+  term: Base64URL
+  short: Eine Base64-Variante mit `-` und `_` statt `+` und `/`, ohne `=` am Ende.
+  explanation: >
+    Normale Base64-Zeichen wie `+`, `/` und `=` haben in URLs eine Sonderbedeutung. Base64URL ersetzt sie,
+    damit kodierte Daten gefahrlos in URLs, Headern und Dateinamen stehen können. JWTs und PKCE nutzen
+    dieses Format.
+  example: "In PHP: `rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=')`."
+  category: web
+  aliases: [base64url, Base64 URL]
+  related: [base64, jwt, pkce]
+  lesson: authentifizierung/opake-tokens-und-jwt
+- slug: refresh-token
+  term: Refresh-Token
+  short: Ein langlebiges Token, mit dem ein Client neue, kurzlebige Access-Tokens holt.
+  explanation: >
+    Weil Access-Tokens (oft JWTs) kurz gelten, braucht der Client einen Weg, ohne neuen Login an frische
+    Tokens zu kommen. Das Refresh-Token wird nur beim Autorisierungsserver eingelöst, sicher gespeichert und
+    lässt sich widerrufen. Gute Server tauschen es bei jeder Nutzung aus (Rotation).
+  example: "`grant_type=refresh_token&refresh_token=rt_8hFqW3nYc0LpA6sD`"
+  category: sicherheit
+  aliases: [Refresh-Tokens, Refresh Token]
+  related: [access-token, jwt, oauth2]
+  lesson: authentifizierung/opake-tokens-und-jwt
+- slug: timing-angriff
+  term: Timing-Angriff
+  short: Ein Angriff, der aus der Antwortzeit eines Vergleichs Rückschlüsse auf ein Geheimnis zieht.
+  explanation: >
+    Ein normaler Stringvergleich bricht beim ersten abweichenden Zeichen ab. Misst ein Angreifer die Laufzeit
+    vieler Versuche, kann er ein Geheimnis Zeichen für Zeichen erraten. Geheimnisse vergleicht man deshalb
+    zeitkonstant.
+  example: "`hash_equals($erwartet, $eingabe)` statt `$erwartet == $eingabe`."
+  category: sicherheit
+  aliases: [Timing-Angriffe, Timing Attack, Seitenkanalangriff]
+  related: [hmac, signatur]
+  lesson: authentifizierung/jwt-pruefen-und-fallstricke
+- slug: access-token
+  term: Access-Token
+  short: Ein Token, das einem Client begrenzten Zugriff auf eine API gewährt.
+  explanation: >
+    In OAuth stellt der Autorisierungsserver Access-Tokens aus, die der Client als Bearer-Token an die API
+    schickt. Sie gelten nur kurz und nur für die freigegebenen Scopes. Ein Access-Token beweist Zugriff, aber
+    nicht zuverlässig, wer sich angemeldet hat.
+  example: "`Authorization: Bearer at_Zt7Kq2vX9pLmN4wR`"
+  category: sicherheit
+  aliases: [Access-Tokens, Access Token, Zugriffstoken]
+  related: [oauth2, bearer-token, refresh-token, id-token]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: authorization-server
+  term: Authorization Server
+  short: Der Dienst, der in OAuth Nutzer anmeldet und Tokens ausstellt.
+  explanation: >
+    Der Authorization Server (Autorisierungsserver) zeigt die Login- und Zustimmungsseite, gibt
+    Autorisierungscodes aus und tauscht sie am Token-Endpunkt gegen Access-, Refresh- und ID-Tokens. Bei
+    „Mit … anmelden“ ist das der Login-Anbieter.
+  example: "`https://auth.example.com/authorize` und `https://auth.example.com/token`"
+  category: sicherheit
+  aliases: [Autorisierungsserver, Authorization Servers]
+  related: [oauth2, access-token, authorization-code-flow]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: oauth-scope
+  term: Scope (OAuth)
+  short: Ein Name für eine Berechtigung, die eine App bei OAuth anfordert.
+  explanation: >
+    Mit dem Parameter `scope` sagt die App, welche Rechte sie braucht. Der Nutzer stimmt zu, und das
+    Access-Token gilt nur für diese Scopes. Bei OpenID Connect schaltet der Scope `openid` das ID-Token ein.
+  example: "`scope=openid email profile`"
+  category: sicherheit
+  aliases: [Scopes, OAuth-Scope]
+  related: [oauth2, access-token, token-faehigkeit]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: client-id
+  term: Client-ID
+  short: Die öffentliche Kennung, unter der eine App bei einem OAuth-Anbieter registriert ist.
+  explanation: >
+    Bei der Registrierung bekommt jede App eine Client-ID und eine Liste erlaubter Redirect-URIs. Die
+    Client-ID ist nicht geheim. Server-Apps erhalten zusätzlich ein Client-Secret, Apps im Browser oder auf
+    dem Handy nutzen stattdessen PKCE.
+  example: "`client_id=notizen-app`"
+  category: sicherheit
+  aliases: [client_id, Client-IDs]
+  related: [oauth2, redirect-uri, pkce]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: redirect-uri
+  term: Redirect-URI
+  short: Die Adresse, an die der Autorisierungsserver den Browser nach dem Login zurückschickt.
+  explanation: >
+    Die Redirect-URI wird bei der Registrierung der App festgelegt und muss bei jeder Anfrage exakt passen.
+    Sonst könnte ein Angreifer den Autorisierungscode an seine eigene Adresse umleiten lassen.
+  example: "`redirect_uri=https://app.example.com/callback`"
+  category: sicherheit
+  aliases: [redirect_uri, Callback-URL, Redirect-URIs]
+  related: [oauth2, client-id, authorization-code-flow]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: authorization-code-flow
+  term: Authorization Code Flow
+  short: Der empfohlene OAuth-Ablauf, bei dem ein kurzlebiger Code gegen Tokens getauscht wird.
+  explanation: >
+    Die App leitet zum Autorisierungsserver, der Browser kommt mit einem Code zurück, und die App tauscht ihn
+    direkt am Token-Endpunkt gegen Tokens. Zusammen mit PKCE ist das heute der Standard für alle Arten von
+    Apps; Implicit Flow und Password Grant gelten als veraltet.
+  example: "`response_type=code` beim Aufruf von `/authorize`."
+  category: sicherheit
+  aliases: [Code Flow, Autorisierungscode, Authorization Code]
+  related: [oauth2, pkce, state-parameter]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: pkce
+  term: PKCE
+  short: Eine OAuth-Erweiterung, die abgefangene Autorisierungscodes wertlos macht.
+  explanation: >
+    PKCE („Pixie“, Proof Key for Code Exchange, RFC 7636) lässt die App einen geheimen `code_verifier`
+    würfeln und nur dessen SHA-256-Hash als `code_challenge` mitschicken. Beim Code-Tausch muss sie den
+    Verifier vorlegen – nur der echte Client kennt ihn.
+  example: "`code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256`"
+  category: sicherheit
+  aliases: [Proof Key for Code Exchange, code_verifier, code_challenge]
+  related: [authorization-code-flow, oauth2, base64url]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: state-parameter
+  term: state-Parameter
+  short: Ein Zufallswert, mit dem eine OAuth-App den Rückweg vom Login gegen CSRF absichert.
+  explanation: >
+    Die App merkt sich den Wert in ihrer Session, schickt ihn beim Login mit und prüft beim Callback, dass
+    genau dieser Wert zurückkommt. So kann ein Angreifer dem Opfer keinen fremden Autorisierungscode
+    unterschieben.
+  example: "`/callback?code=…&state=af0ifjsldkj` – `af0ifjsldkj` muss zur Session passen."
+  category: sicherheit
+  aliases: [state, State]
+  related: [csrf, authorization-code-flow, pkce]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: openid-connect
+  term: OpenID Connect
+  short: Eine Schicht auf OAuth 2.0, die zusätzlich verrät, wer sich angemeldet hat.
+  explanation: >
+    OpenID Connect (OIDC) ergänzt OAuth um das ID-Token, den Endpunkt `/userinfo` und eine automatische
+    Konfiguration unter `/.well-known/openid-configuration`. Damit eignet sich OAuth für „Mit … anmelden“
+    und Single Sign-on.
+  example: "`scope=openid email` liefert zusätzlich ein ID-Token."
+  category: sicherheit
+  aliases: [OIDC]
+  related: [oauth2, id-token, single-sign-on]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: id-token
+  term: ID-Token
+  short: Ein JWT aus OpenID Connect mit Angaben dazu, wer sich wann angemeldet hat.
+  explanation: >
+    Das ID-Token ist für die App selbst bestimmt, nicht für eine API. Die App prüft Signatur, `iss`, `aud`
+    (ihre Client-ID) und `exp`. Die stabile Nutzerkennung ist die Kombination aus `iss` und `sub`.
+  example: "`{\"iss\": \"https://auth.example.com\", \"sub\": \"42\", \"aud\": \"notizen-app\", \"exp\": …}`"
+  category: sicherheit
+  aliases: [ID-Tokens, id_token, ID Token]
+  related: [openid-connect, jwt, claim]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: single-sign-on
+  term: Single Sign-on
+  short: Eine Anmeldung, die für viele Anwendungen gleichzeitig gilt.
+  explanation: >
+    Beim Single Sign-on (SSO) meldest du dich einmal bei einem zentralen Identitätsanbieter an und bist danach
+    in allen angeschlossenen Anwendungen angemeldet. Technisch läuft das heute meist über OpenID Connect oder
+    SAML.
+  example: "Ein Firmenkonto öffnet E-Mail, Ticketsystem und Wiki ohne weitere Passwörter."
+  category: sicherheit
+  aliases: [SSO, Single Sign-On]
+  related: [openid-connect, oauth2]
+  lesson: authentifizierung/oauth-und-openid-connect
+- slug: token-faehigkeit
+  term: Token-Fähigkeit
+  short: Eine Berechtigung, die an ein einzelnes Sanctum-Token gebunden ist.
+  explanation: >
+    Fähigkeiten (abilities) begrenzen, was ein Token tun darf – Sanctums Gegenstück zu OAuth-Scopes. Sie
+    werden beim Erstellen vergeben und mit `tokenCan()` oder den Middlewares `abilities`/`ability` geprüft.
+    Ob der Nutzer selbst etwas darf, regeln zusätzlich Policies.
+  example: "`$user->createToken('export', ['notizen:lesen'])`"
+  category: laravel
+  aliases: [Fähigkeiten, Fähigkeit, Abilities, Ability]
+  related: [sanctum, oauth-scope, autorisierung]
+  lesson: authentifizierung/sanctum-api-tokens
+- slug: stateful-domain
+  term: Stateful-Domain
+  short: Eine Domain, von der Sanctum Anfragen per Session-Cookie statt per Token authentifiziert.
+  explanation: >
+    Sanctum vergleicht den Header `Origin` oder `Referer` einer Anfrage mit der Liste
+    `SANCTUM_STATEFUL_DOMAINS`. Passt die Domain (inklusive Port), gilt die Anfrage als „stateful“ und wird
+    über Session und CSRF-Schutz geprüft.
+  example: "`SANCTUM_STATEFUL_DOMAINS=app.example.com,localhost:5173`"
+  category: laravel
+  aliases: [Stateful-Domains, stateful]
+  related: [sanctum, session, cors]
+  lesson: authentifizierung/sanctum-fuer-die-eigene-spa
+- slug: totp
+  term: TOTP
+  short: Ein Einmalcode, der aus einem gemeinsamen Geheimnis und der aktuellen Zeit berechnet wird.
+  explanation: >
+    TOTP (Time-based One-Time Password, RFC 6238) ist das Verfahren hinter Authenticator-Apps. App und Server
+    rechnen HMAC-SHA1 über die Nummer des aktuellen 30-Sekunden-Fensters und kürzen das Ergebnis auf meist
+    sechs Ziffern. Es braucht kein Netzwerk, ist aber per Phishing abfangbar.
+  example: "Die App zeigt `287082`, der Server rechnet denselben Code und vergleicht."
+  category: sicherheit
+  aliases: [TOTP-Code, Einmalpasswort, Authenticator-Code]
+  related: [zwei-faktor-authentifizierung, hmac, base32]
+  lesson: authentifizierung/zwei-faktor-und-passkeys
+- slug: base32
+  term: Base32
+  short: Eine Kodierung mit 32 Zeichen (A–Z, 2–7), die sich gut abtippen lässt.
+  explanation: >
+    Base32 nutzt nur Großbuchstaben und die Ziffern 2 bis 7, damit es keine Verwechslungen wie 0/O oder 1/l
+    gibt. TOTP-Geheimnisse werden so angezeigt, falls jemand den QR-Code nicht scannen kann.
+  example: "`secret=JBSWY3DPEHPK3PXP` in einer `otpauth://`-URI."
+  category: sicherheit
+  related: [totp, base64]
+  lesson: authentifizierung/zwei-faktor-und-passkeys
+- slug: wiederherstellungscode
+  term: Wiederherstellungscode
+  short: Ein einmalig nutzbarer Notfallcode, falls der zweite Faktor verloren geht.
+  explanation: >
+    Beim Einrichten der Zwei-Faktor-Anmeldung bekommt der Nutzer meist acht bis zehn solcher Codes zum sicheren
+    Aufbewahren. Jeder funktioniert genau einmal. Der Server speichert sie wie Passwörter nur gehasht.
+  example: "`7KQ2-ZT9X` – nach der Nutzung ist dieser Code verbraucht."
+  category: sicherheit
+  aliases: [Wiederherstellungscodes, Recovery-Code, Recovery-Codes, Backup-Code]
+  related: [zwei-faktor-authentifizierung, totp]
+  lesson: authentifizierung/zwei-faktor-und-passkeys
+- slug: webauthn
+  term: WebAuthn
+  short: Der Web-Standard, über den Browser Passkeys und Sicherheitsschlüssel nutzen.
+  explanation: >
+    WebAuthn (Web Authentication) ist ein W3C-Standard. Bei der Registrierung erzeugt das Gerät ein
+    Schlüsselpaar für genau eine Domain, bei der Anmeldung signiert es eine Challenge des Servers. Weil der
+    Browser die Domain prüft, ist WebAuthn resistent gegen Phishing.
+  example: "`navigator.credentials.get({ publicKey: … })` startet eine Anmeldung per Passkey."
+  category: sicherheit
+  aliases: [Web Authentication, FIDO2]
+  related: [passkey, oeffentlicher-schluessel, phishing]
+  lesson: authentifizierung/zwei-faktor-und-passkeys
+- slug: phishing
+  term: Phishing
+  short: Ein Betrug, bei dem gefälschte Mails oder Webseiten Zugangsdaten abgreifen.
+  explanation: >
+    Phishing-Seiten sehen aus wie das Original und fangen Passwörter und oft auch 2FA-Codes ab, die sie sofort
+    an die echte Seite weiterreichen. Schutz bieten vor allem phishingresistente Verfahren wie Passkeys, bei
+    denen nichts abgetippt wird.
+  example: "Eine Mail führt auf `notizen-login.example.net` statt auf die echte Login-Seite."
+  category: sicherheit
+  aliases: [Phishing-Mail, Phishing-Seite]
+  related: [passkey, webauthn, totp]
+  lesson: authentifizierung/zwei-faktor-und-passkeys
+- slug: credential-stuffing
+  term: Credential Stuffing
+  short: Ein Angriff mit geleakten E-Mail-Passwort-Paaren aus anderen Diensten.
+  explanation: >
+    Viele Menschen nutzen ein Passwort mehrfach. Angreifer probieren deshalb Millionen Zugangsdaten aus
+    fremden Datenlecks automatisiert bei anderen Diensten durch. Rate Limiting, Zwei-Faktor-Anmeldung und das
+    Prüfen gegen bekannte Leaks helfen dagegen.
+  example: "Ein Bot testet 50 000 Paare pro Stunde gegen `POST /login`."
+  category: sicherheit
+  related: [brute-force, rate-limiting, user-enumeration]
+  lesson: authentifizierung/konten-schuetzen
+- slug: account-lockout
+  term: Kontosperre
+  short: Das vorübergehende Sperren eines Kontos nach zu vielen Fehlversuchen.
+  explanation: >
+    Eine Sperre bremst Rateversuche, kann aber selbst missbraucht werden, um fremde Konten auszusperren.
+    Besser sind zeitlich begrenzte Sperren, wachsende Wartezeiten und zusätzliche Hürden statt dauerhafter
+    Sperren.
+  example: "Nach fünf Fehlversuchen 15 Minuten warten – statt Konto dauerhaft sperren."
+  category: sicherheit
+  aliases: [Sperre, Account Lockout, Login-Sperre]
+  related: [rate-limiting, brute-force]
+  lesson: authentifizierung/konten-schuetzen
+- slug: passwort-reset
+  term: Passwort-Reset
+  short: Der Ablauf, mit dem Nutzer bei vergessenem Passwort ein neues setzen.
+  explanation: >
+    Ein sicherer Reset antwortet für alle E-Mail-Adressen gleich, verschickt einen Link mit einem zufälligen,
+    kurzlebigen und einmalig nutzbaren Token und beendet nach dem Reset alle anderen Sitzungen. In Laravel
+    erledigen das `Password::sendResetLink()` und `Password::reset()`.
+  example: "`https://notizen.example.com/reset/<token>?email=ada%40example.com`, gültig 60 Minuten."
+  category: sicherheit
+  aliases: [Passwort vergessen, Reset-Token, Password Reset]
+  related: [user-enumeration, passwort-hash]
+  lesson: authentifizierung/konten-schuetzen

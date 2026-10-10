@@ -1,0 +1,204 @@
+title: Sessions und Cookies
+description: Wie Sessions dich angemeldet halten, welche Cookie-Flags sie schützen, wie du CSRF abwehrst und einen Login in Laravel von Hand baust.
+exercise:
+  id: modul-uebung-passwort-aendern
+  type: terminal
+  title: Passwort ändern – sicher und mit CSRF-Schutz
+  description: |
+    In `passwort-app` liegt eine Laravel-Anwendung mit dem Login aus der letzten Lektion und ein Test
+    `tests/Feature/PasswortTest.php`. Baue die Seite, auf der angemeldete Nutzer ihr Passwort ändern.
+    Klicke zuerst auf **Aufgabe vorbereiten** (beim ersten Mal kann das eine Minute dauern) und wechsle mit
+    `cd passwort-app` hinein.
+
+    1. Lege die View `resources/views/passwort.blade.php` an: ein Formular mit `method="POST"` auf
+       `/passwort`, darin `@csrf`, `@method('PUT')` und die Felder `current_password`, `password` und
+       `password_confirmation` (alle `type="password"`).
+    2. Ergänze in `routes/web.php` eine Gruppe mit der Middleware `auth`:
+       - `GET /passwort` zeigt die View.
+       - `PUT /passwort` validiert: `current_password` ist Pflicht und muss mit der Regel `current_password`
+         zum aktuellen Passwort passen; `password` ist Pflicht, `confirmed` und mindestens 12 Zeichen lang
+         (`Password::min(12)`).
+    3. Speichere das neue Passwort über `$request->user()->update(['password' => …])` – der `hashed`-Cast
+       im Model hasht es automatisch.
+    4. Erneuere danach die Session und leite zu `/passwort` zurück.
+    5. Prüfe mit `./vendor/bin/pest tests/Feature/PasswortTest.php`.
+  workdir: passwort-app
+  setup: |
+    # Laravel-13-Basis einmal bauen und zwischenspeichern, dann hierher kopieren
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      (cd "$T" && timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null)
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > "$T/tests/Pest.php"
+      touch "$T/.fertig"; rm -rf "$B"; mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+    mkdir -p "$(dirname 'routes/web.php')"
+    cat > 'routes/web.php' <<'STACKLAB_EOF'
+    <?php
+
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\Auth;
+    use Illuminate\Support\Facades\Route;
+
+    Route::get('/', function () {
+        return view('welcome');
+    });
+
+    Route::get('/login', function () {
+        return 'Bitte melde dich an.';
+    })->name('login');
+
+    Route::post('/login', function (Request $request) {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        if (! Auth::attempt($credentials)) {
+            return back()->withErrors(['email' => 'Diese Zugangsdaten sind ungültig.'])->onlyInput('email');
+        }
+
+        $request->session()->regenerate();
+
+        return redirect()->intended('/dashboard');
+    });
+
+    Route::get('/dashboard', function (Request $request) {
+        return 'Hallo, '.e($request->user()->name).'!';
+    })->middleware('auth');
+
+    Route::post('/logout', function (Request $request) {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    });
+    STACKLAB_EOF
+    mkdir -p "$(dirname 'tests/Feature/PasswortTest.php')"
+    cat > 'tests/Feature/PasswortTest.php' <<'STACKLAB_EOF'
+    <?php
+
+    use App\Models\User;
+    use Illuminate\Foundation\Testing\RefreshDatabase;
+    use Illuminate\Support\Facades\Hash;
+
+    uses(RefreshDatabase::class);
+
+    test('Gäste werden von /passwort zu /login umgeleitet', function () {
+        $this->get('/passwort')->assertRedirect('/login');
+    });
+
+    test('die Seite /passwort enthält ein Formular mit CSRF-Feld', function () {
+        $this->actingAs(User::factory()->create())
+            ->get('/passwort')
+            ->assertOk()
+            ->assertSee('name="_token"', false)
+            ->assertSee('name="current_password"', false);
+    });
+
+    test('mit richtigem aktuellem Passwort wird das neue gespeichert', function () {
+        $user = User::factory()->create(['password' => 'altes-passwort-123']);
+
+        $this->actingAs($user)->put('/passwort', [
+            'current_password' => 'altes-passwort-123',
+            'password' => 'neues-passwort-456',
+            'password_confirmation' => 'neues-passwort-456',
+        ])->assertRedirect('/passwort')->assertSessionHasNoErrors();
+
+        expect(Hash::check('neues-passwort-456', $user->fresh()->password))->toBeTrue();
+    });
+
+    test('ein falsches aktuelles Passwort wird abgelehnt', function () {
+        $user = User::factory()->create(['password' => 'altes-passwort-123']);
+
+        $this->actingAs($user)->put('/passwort', [
+            'current_password' => 'geraten',
+            'password' => 'neues-passwort-456',
+            'password_confirmation' => 'neues-passwort-456',
+        ])->assertSessionHasErrors('current_password');
+
+        expect(Hash::check('altes-passwort-123', $user->fresh()->password))->toBeTrue();
+    });
+
+    test('ein zu kurzes oder nicht bestätigtes Passwort wird abgelehnt', function () {
+        $user = User::factory()->create(['password' => 'altes-passwort-123']);
+
+        $this->actingAs($user)->put('/passwort', [
+            'current_password' => 'altes-passwort-123',
+            'password' => 'kurz',
+            'password_confirmation' => 'kurz',
+        ])->assertSessionHasErrors('password');
+
+        $this->actingAs($user)->put('/passwort', [
+            'current_password' => 'altes-passwort-123',
+            'password' => 'neues-passwort-456',
+            'password_confirmation' => 'etwas-anderes-789',
+        ])->assertSessionHasErrors('password');
+    });
+
+    test('das Passwort landet nie im Klartext in der Datenbank', function () {
+        $user = User::factory()->create(['password' => 'altes-passwort-123']);
+
+        $this->actingAs($user)->put('/passwort', [
+            'current_password' => 'altes-passwort-123',
+            'password' => 'neues-passwort-456',
+            'password_confirmation' => 'neues-passwort-456',
+        ]);
+
+        expect($user->fresh()->password)->not->toBe('neues-passwort-456');
+    });
+    STACKLAB_EOF
+  checks:
+    - type: file_contains
+      path: resources/views/passwort.blade.php
+      pattern: "@csrf"
+      message: Das Formular in resources/views/passwort.blade.php braucht @csrf.
+    - type: file_contains
+      path: resources/views/passwort.blade.php
+      pattern: "@method\\(\\s*['\"]PUT['\"]\\s*\\)"
+      message: HTML-Formulare kennen nur GET und POST. Ergänze @method('PUT') im Formular.
+    - type: file_contains
+      path: routes/web.php
+      pattern: "current_password"
+      message: Die PUT-Route soll das aktuelle Passwort mit der Validierungsregel current_password prüfen.
+    - type: command
+      run: ./vendor/bin/pest tests/Feature/PasswortTest.php --colors=never
+      message: Noch nicht alle Tests in tests/Feature/PasswortTest.php sind grün. Führe sie aus und lies die erste Fehlermeldung.
+  hints:
+    - "Die Regel `'current_password'` vergleicht die Eingabe mit dem Passwort des angemeldeten Nutzers – du musst nicht selbst `Hash::check()` aufrufen."
+    - "Für die Mindestlänge: `use Illuminate\\Validation\\Rules\\Password;` und `['required', 'confirmed', Password::min(12)]`."
+    - "`confirmed` erwartet ein zweites Feld mit dem Namen `password_confirmation`."
+  solution: |
+    ```blade title="resources/views/passwort.blade.php"
+    <form method="POST" action="/passwort">
+        @csrf
+        @method('PUT')
+        <input type="password" name="current_password" autocomplete="current-password">
+        <input type="password" name="password" autocomplete="new-password">
+        <input type="password" name="password_confirmation" autocomplete="new-password">
+        <button type="submit">Passwort ändern</button>
+    </form>
+    ```
+
+    ```php title="routes/web.php (ergänzen)"
+    Route::middleware('auth')->group(function () {
+        Route::get('/passwort', function () {
+            return view('passwort');
+        });
+
+        Route::put('/passwort', function (Request $request) {
+            $validated = $request->validate([
+                'current_password' => ['required', 'current_password'],
+                'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(12)],
+            ]);
+
+            $request->user()->update(['password' => $validated['password']]);
+            $request->session()->regenerate();
+
+            return redirect('/passwort')->with('status', 'Passwort geändert.');
+        });
+    });
+    ```
