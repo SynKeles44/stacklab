@@ -1,0 +1,138 @@
+title: Den Server einrichten
+description: Einen frischen VPS härten, den Laufzeit-Stack per Skript installieren und eine sichere nginx-Site für Laravel schreiben.
+exercise:
+  id: modul-uebung-setup-reparieren
+  type: terminal
+  title: Ein unsicheres Server-Setup reparieren
+  description: |
+    Ein Kollege hat die Dateien für einen neuen Server vorbereitet und bittet dich um ein Review. Im Ordner
+    `server-setup` liegen drei Dateien – jede enthält gefährliche Fehler. Repariere sie:
+
+    1. `10-haertung.conf`: Passwort-Anmeldung und root-Login müssen aus sein (`no`). Die übrigen Zeilen
+       bleiben.
+    2. `firewall.sh`: Die Firewall wird zu früh eingeschaltet, und der PostgreSQL-Port 5432 ist für das
+       Internet freigegeben. Entferne die Freigabe und sorge dafür, dass `ufw --force enable` die letzte
+       Anweisung ist.
+    3. `example.com.conf`: `root` zeigt auf den Projektordner statt auf `public`, PHP-Dateien werden alle
+       ausgeführt (`location ~ \.php$`) statt nur `index.php`, `SCRIPT_FILENAME` nutzt `$document_root`, und
+       der Block, der versteckte Dateien sperrt, fehlt.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Dateien angelegt werden.
+  workdir: server-setup
+  setup: |
+    cat > 10-haertung.conf <<'CONF'
+    PasswordAuthentication yes
+    KbdInteractiveAuthentication no
+    PermitRootLogin yes
+    AllowUsers deploy
+    MaxAuthTries 3
+    CONF
+    cat > firewall.sh <<'SH'
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    ufw default deny incoming
+    ufw default allow outgoing
+    ufw --force enable
+    ufw allow OpenSSH
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw allow 5432/tcp
+    SH
+    cat > example.com.conf <<'NGINX'
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name example.com www.example.com;
+        root /var/www/example.com/current;
+        index index.php;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+    }
+    NGINX
+  checks:
+    - type: command
+      run: grep -Eic '^\s*(PasswordAuthentication|PermitRootLogin)\s+no\s*$' 10-haertung.conf
+      stdout_equals: "2"
+      message: In 10-haertung.conf müssen PasswordAuthentication und PermitRootLogin auf no stehen.
+    - type: command
+      run: grep -Eic '^\s*(KbdInteractiveAuthentication\s+no|AllowUsers\s+deploy|MaxAuthTries\s+3)\s*$' 10-haertung.conf
+      stdout_equals: "3"
+      message: Die übrigen drei Zeilen (KbdInteractiveAuthentication, AllowUsers, MaxAuthTries) sollen erhalten bleiben.
+    - type: command
+      run: bash -n firewall.sh && grep -Eq '^\s*ufw\s+allow\s+OpenSSH' firewall.sh && grep -Eq '^\s*ufw\s+allow\s+443/tcp' firewall.sh && grep -Eq '^\s*ufw\s+allow\s+80/tcp' firewall.sh
+      message: firewall.sh hat einen Syntaxfehler oder erlaubt SSH, 80/tcp und 443/tcp nicht mehr.
+    - type: command
+      run: grep -Eq '5432' firewall.sh
+      expect_exit: 1
+      message: Der Port 5432 darf in firewall.sh nicht mehr vorkommen.
+    - type: command
+      run: grep -vE '^\s*(#|$)' firewall.sh | tail -n 1 | grep -Eq '^\s*ufw\s+(--force\s+)?enable\s*$'
+      message: "`ufw --force enable` muss die letzte Anweisung in firewall.sh sein."
+    - type: command
+      run: grep -Ec '^\s*ufw\s+(--force\s+)?enable' firewall.sh
+      stdout_equals: "1"
+      message: ufw enable soll genau einmal vorkommen – am Ende.
+    - type: command
+      run: grep -Eq '^\s*root\s+/var/www/example\.com/current/public/?\s*;' example.com.conf
+      message: root muss auf /var/www/example.com/current/public zeigen.
+    - type: command
+      run: grep -Fq 'location ~ ^/index\.php(/|$)' example.com.conf && ! grep -Fq 'location ~ \.php$' example.com.conf
+      message: "Ersetze `location ~ \\.php$` durch `location ~ ^/index\\.php(/|$)` – nur der Front-Controller darf ausgeführt werden."
+    - type: command
+      run: grep -Eq 'SCRIPT_FILENAME\s+\$realpath_root\$fastcgi_script_name' example.com.conf && ! grep -Fq '$document_root' example.com.conf
+      message: SCRIPT_FILENAME soll $realpath_root$fastcgi_script_name nutzen, nicht $document_root.
+    - type: command
+      run: grep -Fq 'location ~ /\.(?!well-known).*' example.com.conf && grep -Eq 'deny\s+all\s*;' example.com.conf && [ "$(tr -cd '{' < example.com.conf | wc -c)" -eq "$(tr -cd '}' < example.com.conf | wc -c)" ]
+      message: "Es fehlt `location ~ /\\.(?!well-known).* { deny all; }` – oder die geschweiften Klammern passen nicht zusammen."
+  hints:
+    - "Arbeite Datei für Datei mit `nano` und vergleiche mit den Beispielen aus den drei Lektionen."
+    - "In firewall.sh verschiebst du die enable-Zeile ans Ende und löschst die Zeile mit 5432."
+    - "Im nginx-Block änderst du drei Zeilen und fügst vor der letzten `}` den Sperr-Block ein."
+  solution: |
+    ```bash
+    cd server-setup
+    sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/; s/^PermitRootLogin yes/PermitRootLogin no/' 10-haertung.conf
+    cat > firewall.sh <<'EOF'
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    ufw default deny incoming
+    ufw default allow outgoing
+    ufw allow OpenSSH
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw --force enable
+    EOF
+    cat > example.com.conf <<'EOF'
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name example.com www.example.com;
+        root /var/www/example.com/current/public;
+        index index.php;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ ^/index\.php(/|$) {
+            fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+
+        location ~ /\.(?!well-known).* {
+            deny all;
+        }
+    }
+    EOF
+    ```

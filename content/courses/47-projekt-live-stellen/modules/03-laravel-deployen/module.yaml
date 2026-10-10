@@ -1,0 +1,154 @@
+title: Laravel deployen
+description: Die Produktions-.env anlegen, mit Release-Ordnern atomar deployen und Queue-Worker sowie Scheduler dauerhaft betreiben.
+exercise:
+  id: modul-uebung-deploy-reparieren
+  type: terminal
+  title: Ein kaputtes Deploy-Skript reparieren
+  description: |
+    Im Ordner `deploy-reparatur` liegt ein `deploy.sh`, das schon einmal die Produktion lahmgelegt hat. Damit
+    du es gefahrlos testen kannst, gibt es ein nachgebautes Repository unter `.quelle/shop`: Dessen `artisan`
+    ist eine **Attrappe**, die nur aufschreibt, welche Befehle aufgerufen wurden, und dabei vermerkt, ob das
+    Release schon live war.
+
+    Starte einen Testlauf so (der Ordner `testserver` simuliert `/var/www/example.com`):
+
+    ```bash
+    mkdir -p testserver/shared/storage && touch testserver/shared/.env
+    REPO="$PWD/.quelle/shop" BASE="$PWD/testserver" bash deploy.sh
+    cat testserver/artisan.log
+    ```
+
+    Repariere das Skript, bis alles stimmt:
+
+    1. `composer install` darf nur Produktionspakete installieren (`--no-dev`).
+    2. Migrationen müssen ohne Rückfrage laufen (`--force`).
+    3. `storage` im Release muss ein Symlink auf `$BASE/shared/storage` sein (vorher den Ordner aus dem
+       Repository löschen).
+    4. `current` darf erst **nach** Migrationen und `optimize` umgeschaltet werden – und zwar atomar mit
+       `ln -sfn … "$BASE/current.neu"` und `mv -T "$BASE/current.neu" "$BASE/current"`.
+    5. Nach dem Umschalten fehlt `php artisan queue:restart`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: deploy-reparatur
+  setup: |
+    mkdir -p .quelle/shop
+    (
+      cd .quelle/shop
+      git init -q -b main
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      mkdir -p public storage/app/public storage/logs bootstrap/cache
+      echo '<?php echo "Shop";' > public/index.php
+      touch storage/app/public/.gitkeep storage/logs/.gitkeep bootstrap/cache/.gitkeep
+      echo '{"name": "example/shop", "require": {}}' > composer.json
+      cat > artisan <<'PHP'
+    <?php
+    // Attrappe von artisan: schreibt nur auf, was aufgerufen wurde.
+    $release = __DIR__;
+    $base = dirname($release, 2);
+    $args = implode(' ', array_slice($argv, 1));
+    if (str_starts_with($args, 'migrate')) {
+        if (!is_file($release . '/.env')) {
+            fwrite(STDERR, "Keine .env gefunden – ist shared/.env verlinkt?\n");
+            exit(1);
+        }
+        if (!str_contains($args, '--force')) {
+            fwrite(STDERR, "APPLICATION IN PRODUCTION. Ohne --force wird nicht migriert.\n");
+            exit(1);
+        }
+    }
+    $phase = realpath($base . '/current') === realpath($release) ? 'live' : 'vorbereitung';
+    file_put_contents($base . '/artisan.log', "$args [$phase]\n", FILE_APPEND);
+    PHP
+      git add -A
+      git commit -q -m "feat: shop"
+    )
+    cat > deploy.sh <<'SH'
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    REPO="${REPO:-git@github.com:example/shop.git}"
+    BASE="${BASE:-/var/www/example.com}"
+    RELEASE="$BASE/releases/$(date +%Y%m%d%H%M%S)"
+
+    mkdir -p "$BASE/releases"
+    git clone --quiet --depth 1 --branch main "$REPO" "$RELEASE"
+    ln -sfn "$RELEASE" "$BASE/current"
+    ln -s "$BASE/shared/.env" "$RELEASE/.env"
+
+    cd "$RELEASE"
+    composer install --optimize-autoloader --no-interaction
+    php artisan migrate
+    php artisan optimize
+    SH
+  checks:
+    - type: command
+      run: bash -n deploy.sh && grep -Eq 'composer\s+install\b.*--no-dev' deploy.sh
+      message: deploy.sh hat einen Syntaxfehler, oder composer install läuft noch ohne --no-dev.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/shared/storage"; touch "$d/shared/.env"
+        REPO="$PWD/.quelle/shop" BASE="$d" bash deploy.sh >/dev/null 2>&1; rc=$?
+        echo "exit=$rc"; cat "$d/artisan.log" 2>/dev/null; rm -rf "$d"
+      stdout_matches: "^exit=0$"
+      message: Das Skript bricht ab. Starte den Testlauf aus der Beschreibung und lies die Fehlermeldung – fehlt --force?
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/shared/storage"; touch "$d/shared/.env"
+        REPO="$PWD/.quelle/shop" BASE="$d" bash deploy.sh >/dev/null 2>&1
+        cat "$d/artisan.log" 2>/dev/null; rm -rf "$d"
+      stdout_matches: "^migrate --force \\[vorbereitung\\]$"
+      message: "Im Log fehlt `migrate --force [vorbereitung]` – die Migration muss mit --force laufen, bevor das Release live ist."
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/shared/storage"; touch "$d/shared/.env"
+        REPO="$PWD/.quelle/shop" BASE="$d" bash deploy.sh >/dev/null 2>&1
+        cat "$d/artisan.log" 2>/dev/null; rm -rf "$d"
+      stdout_matches: "^optimize \\[vorbereitung\\]$"
+      message: "Im Log fehlt `optimize [vorbereitung]` – current wird noch zu früh umgeschaltet."
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/shared/storage"; touch "$d/shared/.env"
+        REPO="$PWD/.quelle/shop" BASE="$d" bash deploy.sh >/dev/null 2>&1
+        tail -n 1 "$d/artisan.log" 2>/dev/null; rm -rf "$d"
+      stdout_equals: "queue:restart [live]"
+      message: "Der letzte artisan-Aufruf soll `queue:restart` sein – nachdem current umgeschaltet ist."
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/shared/storage"; touch "$d/shared/.env"
+        REPO="$PWD/.quelle/shop" BASE="$d" bash deploy.sh >/dev/null 2>&1
+        [ -L "$d/current" ] && [ -L "$d/current/storage" ] && [ "$(readlink -f "$d/current/storage")" = "$(readlink -f "$d/shared/storage")" ] && echo ok
+        rm -rf "$d"
+      stdout_equals: ok
+      message: current/storage soll ein Symlink auf shared/storage sein.
+    - type: command
+      run: grep -Eq '\bmv\s+(-[a-zA-Z]*T[a-zA-Z]*|--no-target-directory)\b.*current' deploy.sh && ! grep -Eq 'ln\s+-sfn\s+"\$RELEASE"\s+"\$BASE/current"\s*$' deploy.sh
+      message: "Schalte atomar um: `ln -sfn \"$RELEASE\" \"$BASE/current.neu\"` und dann `mv -T \"$BASE/current.neu\" \"$BASE/current\"`."
+  hints:
+    - "Lies nach jedem Testlauf `testserver/artisan.log`: Steht dort `[live]` vor `optimize`, wird zu früh umgeschaltet."
+    - "Für storage: `rm -rf \"$RELEASE/storage\"` und danach `ln -s \"$BASE/shared/storage\" \"$RELEASE/storage\"`."
+    - "Die Umschalt-Zeilen gehören hinter `php artisan optimize`, danach kommt `php artisan queue:restart`."
+  solution: |
+    ```bash title="deploy-reparatur/deploy.sh"
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    REPO="${REPO:-git@github.com:example/shop.git}"
+    BASE="${BASE:-/var/www/example.com}"
+    RELEASE="$BASE/releases/$(date +%Y%m%d%H%M%S)"
+
+    mkdir -p "$BASE/releases"
+    git clone --quiet --depth 1 --branch main "$REPO" "$RELEASE"
+    ln -s "$BASE/shared/.env" "$RELEASE/.env"
+    rm -rf "$RELEASE/storage"
+    ln -s "$BASE/shared/storage" "$RELEASE/storage"
+
+    cd "$RELEASE"
+    composer install --no-dev --optimize-autoloader --no-interaction
+    php artisan migrate --force
+    php artisan optimize
+
+    ln -sfn "$RELEASE" "$BASE/current.neu"
+    mv -T "$BASE/current.neu" "$BASE/current"
+    php artisan queue:restart
+    ```

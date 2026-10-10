@@ -1,0 +1,382 @@
+title: Abschlussprüfung – Ein Projekt live stellen
+description: |
+  Zeig, dass du eine Laravel-App sicher vom Laptop auf einen eigenen Server bringst: Hosting und DNS planen,
+  den Server härten und einrichten, mit Release-Ordnern deployen, Worker und Scheduler betreiben, HTTPS
+  einschalten und Backups samt Restore-Probe aufsetzen. Die Praxis-Aufgaben laufen im echten Übungs-Terminal
+  bzw. im PHP-Editor.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  - module: planung
+    type: single
+    question: Welche Frage trennt VPS, Managed Server und Plattform (PaaS) am klarsten?
+    options:
+      - Welche Programmiersprache unterstützt wird
+      - Wer das Betriebssystem pflegt und Sicherheitsupdates einspielt
+      - Wie viele Domains man verbinden darf
+      - Ob es eine Weboberfläche gibt
+    answer: 1
+    explanation: Beim VPS machst du alles ab dem Betriebssystem selbst, beim Managed Server der Anbieter, bei der Plattform siehst du das Betriebssystem gar nicht.
+  - module: planung
+    type: multiple
+    question: Was gehört zu einer fairen Kostenrechnung für einen VPS?
+    options:
+      - der Monatspreis des Servers
+      - deine Arbeitszeit für Updates und Pflege
+      - Speicher für Backups außer Haus
+      - die Lizenzkosten für Laravel
+    answers: [0, 1, 2]
+    explanation: Laravel ist kostenlos. Arbeitszeit und Backup-Speicher werden dagegen oft vergessen.
+  - module: planung
+    type: match
+    question: Ordne jedem DNS-Eintrag zu, wofür du ihn beim Live-Stellen nutzt.
+    pairs:
+      - { left: "A", right: "example.com → 203.0.113.10" }
+      - { left: "AAAA", right: "example.com → 2001:db8::10" }
+      - { left: "CNAME", right: "www.example.com → example.com." }
+      - { left: "MX", right: "bleibt beim Umzug der Website unverändert" }
+    explanation: A und AAAA zeigen auf die Server-Adressen, www wird ein Alias, Mail-Einträge betreffen den Website-Umzug nicht.
+  - module: planung
+    type: single
+    question: Die TTL deines A-Eintrags beträgt 86400 Sekunden. Wann senkst du sie vor einem Umzug?
+    options:
+      - Direkt beim Umstellen der IP
+      - Mindestens einen Tag vorher, damit die alte, lange TTL in allen Caches abläuft
+      - Gar nicht, das bringt nichts
+      - Eine Woche nach dem Umzug
+    answer: 1
+    explanation: Eine Senkung wirkt erst, wenn die zwischengespeicherten Antworten mit der alten TTL abgelaufen sind – hier nach bis zu 24 Stunden.
+  - module: planung
+    type: find-bug
+    question: Welche Zeile dieser Zone ist ungültig?
+    language: text
+    code: |
+      @        300  IN  A      203.0.113.10
+      @        300  IN  CNAME  www.example.com.
+      www      300  IN  A      203.0.113.10
+      staging  300  IN  A      203.0.113.11
+    bug_line: 2
+    explanation: Auf der Apex-Domain darf kein CNAME stehen – sie hat bereits andere Einträge (A, NS, SOA).
+  - module: server-einrichten
+    type: single
+    question: In welcher Reihenfolge richtest du die Firewall per SSH ein?
+    options:
+      - ufw enable, dann ufw allow OpenSSH
+      - ufw allow OpenSSH, 80/tcp und 443/tcp, dann ufw enable
+      - Nur ufw enable, SSH ist immer erlaubt
+      - ufw disable, dann ufw allow all
+    answer: 1
+    explanation: Erst erlauben, dann einschalten – sonst kappt die Firewall deine eigene Verbindung.
+  - module: server-einrichten
+    type: multiple
+    question: Welche Zeilen gehören in eine sshd-Härtung?
+    options:
+      - PasswordAuthentication no
+      - PermitRootLogin no
+      - PermitRootLogin yes
+      - AllowUsers deploy
+    answers: [0, 1, 3]
+    explanation: Kein Passwort-Login, kein direkter root-Zugang und nur benannte Benutzer.
+  - module: server-einrichten
+    type: cloze
+    text: "Nach einer Änderung prüfst du nginx mit `sudo nginx ___` und lädst ihn mit `sudo systemctl ___ nginx` neu, ohne laufende Anfragen abzubrechen."
+    blanks:
+      - ["-t"]
+      - [reload]
+    explanation: nginx -t findet Fehler vorher, reload übernimmt die Konfiguration sanft.
+  - module: server-einrichten
+    type: find-bug
+    question: Welche Zeile dieser Site macht die .env der App womöglich öffentlich abrufbar?
+    language: nginx
+    code: |
+      server {
+          listen 80;
+          server_name example.com;
+          root /var/www/example.com/current;
+          index index.php;
+      }
+    bug_line: 4
+    explanation: Der Document Root muss current/public sein. Sonst liegen .env, storage und der Quellcode im öffentlichen Bereich.
+  - module: server-einrichten
+    type: single
+    question: Warum steht in der nginx-Site `$realpath_root` statt `$document_root`?
+    options:
+      - Weil $document_root in neuen nginx-Versionen entfernt wurde.
+      - Weil $realpath_root den current-Symlink auflöst und PHP-FPM sowie OPcache nach jedem Deploy den echten Release-Pfad sehen.
+      - Weil es kürzer ist.
+      - Weil sonst kein HTTPS möglich ist.
+    answer: 1
+    explanation: Mit dem Symlink-Pfad könnte OPcache nach dem Umschalten noch alten Code ausliefern.
+  - module: laravel-deployen
+    type: multiple
+    question: Welche Werte gehören in eine Produktions-.env?
+    options:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://example.com
+      - APP_DEBUG=true, damit man Fehler schneller findet
+    answers: [0, 1, 2]
+    explanation: APP_DEBUG=true zeigt Besuchern Stacktraces und Konfigurationswerte.
+  - module: laravel-deployen
+    type: single
+    question: Warum liegt die .env in shared/ und nicht im Release-Ordner?
+    options:
+      - Weil Laravel sie sonst nicht findet.
+      - Damit sie jeden Deploy überlebt, nur an einer Stelle gepflegt wird und nie aus dem Repository kommen muss.
+      - Weil Release-Ordner keine versteckten Dateien enthalten dürfen.
+      - Weil sie dort schneller geladen wird.
+    answer: 1
+    explanation: Jedes Release bekommt nur einen Symlink auf shared/.env.
+  - module: laravel-deployen
+    type: find-bug
+    question: In welcher Zeile wird zu früh umgeschaltet?
+    language: bash
+    code: |
+      git clone --depth 1 "$REPO" "$RELEASE"
+      ln -s "$BASE/shared/.env" "$RELEASE/.env"
+      ln -sfn "$RELEASE" "$BASE/current.neu" && mv -T "$BASE/current.neu" "$BASE/current"
+      cd "$RELEASE" && composer install --no-dev --no-interaction
+      php artisan migrate --force
+      php artisan optimize
+      php artisan queue:restart
+    bug_line: 3
+    explanation: Umschalten gehört hinter composer install, migrate und optimize – erst wenn das Release vollständig vorbereitet ist.
+  - module: laravel-deployen
+    type: cloze
+    text: "Damit Queue-Worker nach einem Deploy den neuen Code verwenden, rufst du `php artisan ___` auf. Einen Neustart nach einer Stunde erzwingt die Option `--max-___=3600`."
+    blanks:
+      - ["queue:restart", "reload"]
+      - [time]
+    explanation: queue:restart lässt die Worker nach dem aktuellen Job enden, Supervisor startet sie neu. --max-time sorgt zusätzlich für regelmäßige Neustarts.
+  - module: laravel-deployen
+    type: match
+    question: Ordne jedes Werkzeug seiner Aufgabe auf dem Server zu.
+    pairs:
+      - { left: "Supervisor", right: "hält Queue-Worker am Leben" }
+      - { left: "Cron", right: "ruft jede Minute schedule:run auf" }
+      - { left: "mv -T", right: "schaltet current atomar um" }
+      - { left: "composer install --no-dev", right: "installiert nur Produktionspakete" }
+    explanation: Jedes Werkzeug erledigt genau einen Teil des Betriebs.
+  - module: betrieb
+    type: single
+    question: Warum muss Port 80 auch nach der Umstellung auf HTTPS offen bleiben?
+    options:
+      - Weil HTTPS über Port 80 läuft.
+      - Weil Let's Encrypt die HTTP-01-Challenge über Port 80 abruft und die Weiterleitung auf HTTPS dort beginnt.
+      - Weil SSH Port 80 braucht.
+      - Muss er nicht.
+    answer: 1
+    explanation: Ohne Port 80 scheitert die automatische Erneuerung, und Besucher mit http:// erreichen die Weiterleitung nicht.
+  - module: betrieb
+    type: multiple
+    question: Was gehört zu einem verlässlichen Backup-Konzept?
+    options:
+      - Datenbank-Dump und Uploads sichern
+      - eine Kopie außer Haus (3-2-1-Regel)
+      - Prüfsummen und eine regelmäßige Restore-Probe
+      - nur Snapshots beim selben Anbieter
+    answers: [0, 1, 2]
+    explanation: Snapshots beim selben Anbieter sind eine Ergänzung, ersetzen aber kein eigenes Backup außer Haus.
+  - module: betrieb
+    type: single
+    question: Ein Uptime-Monitor soll eine Laravel-App prüfen. Welche Adresse eignet sich von Haus aus?
+    options:
+      - https://example.com/.env
+      - https://example.com/up
+      - http://203.0.113.10:22
+      - https://example.com/storage/logs
+    answer: 1
+    explanation: Laravel bringt den Health-Check /up mit. Er antwortet mit 200, wenn die App ohne Fehler startet.
+  - module: betrieb
+    type: cloze
+    text: "Ob die automatische Zertifikats-Erneuerung funktioniert, testest du mit `sudo certbot renew ___`. Die geplante Laufzeit von Let's Encrypt-Zertifikaten sinkt bis 2028 auf ___ Tage."
+    blanks:
+      - ["--dry-run"]
+      - ["45"]
+    explanation: Mit kurzen Laufzeiten ist automatische, getestete Erneuerung Pflicht.
+tasks:
+  - module: laravel-deployen
+    id: pruefung-rollback
+    type: terminal
+    title: Ein Rollback-Skript
+    description: |
+      Im Ordner `rollback` liegt unter `server/` ein Deploy-Ordner mit drei Releases; `current` zeigt auf das
+      neueste. Klicke zuerst auf **Aufgabe vorbereiten**.
+
+      Schreibe `rollback.sh` (Shebang, `set -euo pipefail`, `BASE="${BASE:-/var/www/example.com}"`), das
+      `current` auf das Release **vor** dem aktuellen umschaltet:
+
+      1. Bestimme das aktuelle Release mit `basename "$(readlink -f "$BASE/current")"`.
+      2. Suche in der sortierten Liste von `$BASE/releases` den Eintrag direkt davor.
+      3. Gibt es keinen Vorgänger, gib eine Fehlermeldung aus und beende mit `exit 1`, ohne etwas zu ändern.
+      4. Schalte atomar um (`current.neu` und `mv -T`) und gib `Zurück auf <release>` aus.
+
+      Test: `BASE=./server bash rollback.sh` und danach `readlink server/current`.
+    workdir: rollback
+    setup: |
+      for r in 20261008090000 20261009090000 20261010090000; do mkdir -p "server/releases/$r/public"; done
+      ln -s "$PWD/server/releases/20261010090000" server/current
+    checks:
+      - type: command
+        run: bash -n rollback.sh && head -n1 rollback.sh
+        stdout_matches: "^#!/usr/bin/env bash$"
+        message: rollback.sh fehlt, hat einen Syntaxfehler oder beginnt nicht mit #!/usr/bin/env bash.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          for r in 20261008090000 20261009090000 20261010090000; do mkdir -p "$d/releases/$r"; done
+          ln -s "$d/releases/20261010090000" "$d/current"
+          BASE="$d" bash rollback.sh >/dev/null 2>&1; echo "exit=$?"
+          basename "$(readlink -f "$d/current")"; [ -L "$d/current" ] && echo symlink; [ -e "$d/current.neu" ] && echo rest
+          rm -rf "${d:?}"
+        stdout_equals: "exit=0\n20261009090000\nsymlink"
+        message: Von 20261010090000 aus soll current danach ein Symlink auf 20261009090000 sein (und kein current.neu übrig bleiben).
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          for r in 20261008090000 20261009090000 20261010090000; do mkdir -p "$d/releases/$r"; done
+          ln -s "$d/releases/20261009090000" "$d/current"
+          BASE="$d" bash rollback.sh >/dev/null 2>&1
+          basename "$(readlink -f "$d/current")"
+          rm -rf "${d:?}"
+        stdout_equals: "20261008090000"
+        message: Zeigt current auf 20261009090000, soll das Skript auf 20261008090000 zurückschalten – nicht einfach auf das älteste oder ein festes Release.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          for r in 20261008090000 20261009090000; do mkdir -p "$d/releases/$r"; done
+          ln -s "$d/releases/20261008090000" "$d/current"
+          BASE="$d" bash rollback.sh >/dev/null 2>&1; echo "exit=$?"
+          basename "$(readlink -f "$d/current")"
+          rm -rf "${d:?}"
+        stdout_matches: "^exit=[1-9]\\d*\\n20261008090000$"
+        message: Gibt es kein älteres Release, muss das Skript mit einem Fehler enden und current unverändert lassen.
+      - type: command
+        run: grep -Eq '\bmv\s+(-[a-zA-Z]*T[a-zA-Z]*|--no-target-directory)\b' rollback.sh
+        message: Schalte atomar mit mv -T um.
+    hints:
+      - "`aktuell=$(basename \"$(readlink -f \"$BASE/current\")\")`"
+      - "`vorher=$(ls -1 \"$BASE/releases\" | sort | grep -B1 -x \"$aktuell\" | head -n 1)` – ist das Ergebnis gleich `$aktuell`, gibt es keinen Vorgänger."
+    solution: |
+      ```bash title="rollback/rollback.sh"
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      BASE="${BASE:-/var/www/example.com}"
+      aktuell=$(basename "$(readlink -f "$BASE/current")")
+      vorher=$(ls -1 "$BASE/releases" | sort | grep -B1 -x "$aktuell" | head -n 1)
+
+      if [ -z "$vorher" ] || [ "$vorher" = "$aktuell" ]; then
+        echo "Kein älteres Release vorhanden" >&2
+        exit 1
+      fi
+
+      ln -sfn "$BASE/releases/$vorher" "$BASE/current.neu"
+      mv -T "$BASE/current.neu" "$BASE/current"
+      echo "Zurück auf $vorher"
+      ```
+  - module: laravel-deployen
+    id: pruefung-aufraeumen
+    type: code
+    language: php
+    title: Welche Releases dürfen weg?
+    description: |
+      Schreibe `loeschkandidaten(array $releases, string $aktuell, int $behalten): array`. `$releases` enthält
+      Ordnernamen mit Zeitstempel in beliebiger Reihenfolge. Die Funktion gibt die Namen zurück, die gelöscht
+      werden dürfen – aufsteigend sortiert:
+
+      - Die `$behalten` neuesten Releases bleiben.
+      - Das aktuelle Release (`$aktuell`) wird **nie** gelöscht, auch wenn es älter ist (z. B. nach einem Rollback).
+      - Ist `$behalten` 0 oder kleiner, bleibt trotzdem mindestens das aktuelle Release stehen.
+    starter: |
+      <?php
+      declare(strict_types=1);
+
+      function loeschkandidaten(array $releases, string $aktuell, int $behalten): array
+      {
+          return [];
+      }
+    tests:
+      - name: behält die drei neuesten
+        code: |
+          $r = ['20261005', '20261001', '20261003', '20261004', '20261002'];
+          assert_same(['20261001', '20261002'], loeschkandidaten($r, '20261005', 3));
+      - name: das aktuelle Release bleibt nach einem Rollback stehen
+        code: |
+          $r = ['20261001', '20261002', '20261003', '20261004', '20261005'];
+          assert_same(['20261002'], loeschkandidaten($r, '20261001', 3));
+      - name: nichts zu löschen, wenn es wenige Releases gibt
+        code: |
+          assert_same([], loeschkandidaten(['20261001', '20261002'], '20261002', 5));
+      - name: leere Liste
+        code: |
+          assert_same([], loeschkandidaten([], '20261001', 3));
+      - name: behalten 0 löscht alles außer dem aktuellen
+        code: |
+          assert_same(['20261001', '20261003'], loeschkandidaten(['20261003', '20261002', '20261001'], '20261002', 0));
+    solution: |
+      <?php
+      declare(strict_types=1);
+
+      function loeschkandidaten(array $releases, string $aktuell, int $behalten): array
+      {
+          sort($releases);
+          $alte = array_slice($releases, 0, max(0, count($releases) - max(0, $behalten)));
+          return array_values(array_filter($alte, fn (string $r): bool => $r !== $aktuell));
+      }
+    hints:
+      - "`sort()` sortiert die Zeitstempel aufsteigend, `array_slice()` schneidet die neuesten ab."
+      - "Mit `array_filter` entfernst du danach das aktuelle Release; `array_values` setzt die Indizes neu."
+  - module: server-einrichten
+    id: pruefung-firewall
+    type: terminal
+    title: Eine Firewall mit SSH nur aus dem Büro
+    description: |
+      Das Büro hat die feste Adresse `198.51.100.7`. Schreibe im Ordner `firewall` ein Skript `firewall.sh`
+      (Shebang, `set -euo pipefail`), das mit `ufw`:
+
+      1. eingehend alles verbietet und ausgehend alles erlaubt,
+      2. SSH (Port 22/tcp) **nur** von `198.51.100.7` erlaubt: `ufw allow from 198.51.100.7 to any port 22 proto tcp`,
+      3. `80/tcp` und `443/tcp` für alle erlaubt,
+      4. als letzte Anweisung `ufw --force enable` ausführt.
+
+      Eine allgemeine Freigabe für SSH (`ufw allow OpenSSH`, `ufw allow 22`, `ufw allow ssh`) darf es nicht geben.
+    workdir: firewall
+    checks:
+      - type: command
+        run: bash -n firewall.sh && head -n1 firewall.sh && grep -c 'set -euo pipefail' firewall.sh
+        stdout_matches: "^#!/usr/bin/env bash\\n[1-9]"
+        message: firewall.sh fehlt, hat einen Syntaxfehler oder es fehlen Shebang bzw. set -euo pipefail.
+      - type: command
+        run: grep -Eq '^\s*ufw\s+default\s+deny\s+incoming' firewall.sh && grep -Eq '^\s*ufw\s+default\s+allow\s+outgoing' firewall.sh
+        message: Es fehlen die Standardregeln für eingehend (deny) und ausgehend (allow).
+      - type: command
+        run: grep -Eq '^\s*ufw\s+allow\s+from\s+198\.51\.100\.7\s+to\s+any\s+port\s+22\s+proto\s+tcp\s*$' firewall.sh
+        message: "Es fehlt `ufw allow from 198.51.100.7 to any port 22 proto tcp`."
+      - type: command
+        run: grep -Eq '^\s*ufw\s+allow\s+(OpenSSH|ssh|22(/tcp)?)\s*$' firewall.sh
+        expect_exit: 1
+        message: SSH darf nicht für alle freigegeben sein – entferne die allgemeine Regel.
+      - type: command
+        run: grep -Eq '^\s*ufw\s+allow\s+80/tcp\s*$' firewall.sh && grep -Eq '^\s*ufw\s+allow\s+443/tcp\s*$' firewall.sh
+        message: Erlaube 80/tcp und 443/tcp.
+      - type: command
+        run: grep -vE '^\s*(#|$)' firewall.sh | tail -n 1 | grep -Eq '^\s*ufw\s+(--force\s+)?enable\s*$'
+        message: ufw --force enable muss die letzte Anweisung sein.
+    hints:
+      - "Die Reihenfolge ist: default-Regeln, allow-Regeln, enable."
+    solution: |
+      ```bash
+      cd firewall
+      cat > firewall.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      ufw default deny incoming
+      ufw default allow outgoing
+      ufw allow from 198.51.100.7 to any port 22 proto tcp
+      ufw allow 80/tcp
+      ufw allow 443/tcp
+      ufw --force enable
+      EOF
+      ```

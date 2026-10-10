@@ -1,0 +1,696 @@
+title: Dein Deploy-Kit
+description: |
+  Du baust ein wiederverwendbares **Deploy-Kit** für eine Laravel-App auf einem eigenen Server: eine
+  Vorlage für die Produktions-`.env`, die nginx-Site, die Konfiguration für Queue-Worker und Scheduler, ein
+  Deploy-Skript mit Release-Ordnern, ein Backup-Skript, eine automatische Restore-Probe und eine
+  Go-live-Checkliste.
+
+  Einen echten Server brauchst du dafür nicht. Stacklab legt beim Vorbereiten ein nachgebautes Repository
+  `.quelle/shop` an (mit einer `artisan`-Attrappe, die nur aufschreibt, was aufgerufen wird) und unter
+  `daten/` eine kleine SQLite-Datenbank samt Uploads. Deine Skripte laufen bei jeder Prüfung **wirklich** –
+  gegen einen Testordner, der `/var/www/example.com` nachbildet.
+goal: Ein Ordner `deploy-kit` mit env-Vorlage, nginx-Site, Supervisor- und Cron-Datei, getesteten Skripten für Deploy, Backup und Restore-Probe sowie einer Go-live-Checkliste.
+workdir: deploy-kit
+setup: |
+  mkdir -p .quelle/shop
+  (
+    cd .quelle/shop
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    mkdir -p public storage/app/public storage/logs bootstrap/cache
+    echo '<?php echo "Shop";' > public/index.php
+    touch storage/app/public/.gitkeep storage/logs/.gitkeep bootstrap/cache/.gitkeep
+    echo '{"name": "example/shop", "require": {}}' > composer.json
+    cat > artisan <<'PHP'
+  <?php
+  // Attrappe von artisan: schreibt nur auf, was aufgerufen wurde.
+  $release = __DIR__;
+  $base = dirname($release, 2);
+  $args = implode(' ', array_slice($argv, 1));
+  if (str_starts_with($args, 'migrate')) {
+      if (!is_file($release . '/.env')) {
+          fwrite(STDERR, "Keine .env gefunden – ist shared/.env verlinkt?\n");
+          exit(1);
+      }
+      if (!str_contains($args, '--force')) {
+          fwrite(STDERR, "APPLICATION IN PRODUCTION. Ohne --force wird nicht migriert.\n");
+          exit(1);
+      }
+  }
+  $phase = realpath($base . '/current') === realpath($release) ? 'live' : 'vorbereitung';
+  file_put_contents($base . '/artisan.log', "$args [$phase]\n", FILE_APPEND);
+  PHP
+    git add -A
+    git commit -q -m "feat: shop"
+  )
+  mkdir -p daten/storage/app/public/rechnungen
+  sqlite3 daten/database.sqlite "CREATE TABLE orders (id INTEGER PRIMARY KEY, total INTEGER NOT NULL);"
+  for i in $(seq 1 42); do echo "INSERT INTO orders (total) VALUES ($((i * 250)));"; done | sqlite3 daten/database.sqlite
+  printf 'Rechnung 1\n' > daten/storage/app/public/rechnungen/rechnung-1.txt
+steps:
+  - id: env-vorlage
+    title: Die Vorlage für die Produktions-.env
+    description: |
+      Lege `env/.env.production.example` an – die Vorlage, die ins Repository darf. Echte Geheimnisse stehen
+      dort **nicht**, sondern Platzhalter in spitzen Klammern.
+
+      Die Datei enthält mindestens: `APP_NAME=Shop`, `APP_ENV=production`, `APP_DEBUG=false`,
+      `APP_URL=https://example.com`, `APP_KEY=<dein-app-key>`, `LOG_CHANNEL=stack`, `LOG_STACK=daily`,
+      `LOG_LEVEL=warning`, `DB_CONNECTION=pgsql`, `DB_HOST=127.0.0.1`, `DB_DATABASE=shop`, `DB_USERNAME=shop`,
+      `DB_PASSWORD=<dein-db-passwort>`, `SESSION_SECURE_COOKIE=true` und `QUEUE_CONNECTION=database`.
+    checklist:
+      - Ordner env angelegt
+      - Produktionswerte für APP_ENV, APP_DEBUG und APP_URL gesetzt
+      - Geheimnisse nur als Platzhalter
+      - Logging auf daily und warning gestellt
+    hints:
+      - "Schreib die Datei mit `mkdir -p env && nano env/.env.production.example` oder mit `cat > … <<'EOF'`."
+      - "Platzhalter sehen so aus: `APP_KEY=<dein-app-key>` – kein echter Schlüssel."
+    checks:
+      - type: file_exists
+        path: env/.env.production.example
+        message: env/.env.production.example fehlt noch.
+      - type: command
+        run: |
+          f=env/.env.production.example
+          for z in APP_NAME=Shop APP_ENV=production APP_DEBUG=false APP_URL=https://example.com LOG_CHANNEL=stack LOG_STACK=daily LOG_LEVEL=warning DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_DATABASE=shop DB_USERNAME=shop SESSION_SECURE_COOKIE=true QUEUE_CONNECTION=database; do
+            grep -qx "$z" "$f" || echo "fehlt $z"
+          done
+        stdout_equals: ""
+        message: Mindestens eine Zeile fehlt oder hat einen anderen Wert (die Ausgabe der Prüfung nennt sie).
+      - type: command
+        run: grep -Ex 'APP_KEY=<[^>]+>' env/.env.production.example && grep -Ex 'DB_PASSWORD=<[^>]+>' env/.env.production.example
+        message: APP_KEY und DB_PASSWORD müssen Platzhalter in spitzen Klammern sein, z. B. APP_KEY=<dein-app-key>.
+      - type: command
+        run: grep -E '^APP_KEY=base64:' env/.env.production.example
+        expect_exit: 1
+        message: In der Vorlage darf kein echter APP_KEY stehen.
+    solution: |
+      ```bash
+      mkdir -p env
+      cat > env/.env.production.example <<'EOF'
+      APP_NAME=Shop
+      APP_ENV=production
+      APP_DEBUG=false
+      APP_URL=https://example.com
+      APP_KEY=<dein-app-key>
+
+      LOG_CHANNEL=stack
+      LOG_STACK=daily
+      LOG_LEVEL=warning
+
+      DB_CONNECTION=pgsql
+      DB_HOST=127.0.0.1
+      DB_PORT=5432
+      DB_DATABASE=shop
+      DB_USERNAME=shop
+      DB_PASSWORD=<dein-db-passwort>
+
+      SESSION_DRIVER=database
+      SESSION_SECURE_COOKIE=true
+      QUEUE_CONNECTION=database
+      EOF
+      ```
+    solve: |
+      mkdir -p env
+      cat > env/.env.production.example <<'EOF'
+      APP_NAME=Shop
+      APP_ENV=production
+      APP_DEBUG=false
+      APP_URL=https://example.com
+      APP_KEY=<dein-app-key>
+
+      LOG_CHANNEL=stack
+      LOG_STACK=daily
+      LOG_LEVEL=warning
+
+      DB_CONNECTION=pgsql
+      DB_HOST=127.0.0.1
+      DB_PORT=5432
+      DB_DATABASE=shop
+      DB_USERNAME=shop
+      DB_PASSWORD=<dein-db-passwort>
+
+      SESSION_DRIVER=database
+      SESSION_SECURE_COOKIE=true
+      QUEUE_CONNECTION=database
+      EOF
+  - id: nginx-site
+    title: Die nginx-Site
+    description: |
+      Schreibe `nginx/example.com.conf` – die Site für `example.com` und `www.example.com` auf Port 80 (IPv4
+      und IPv6). Certbot ergänzt HTTPS später selbst.
+
+      - `root /var/www/example.com/current/public;` und `index index.php;`
+      - `try_files $uri $uri/ /index.php?$query_string;`
+      - nur `index.php` per `location ~ ^/index\.php(/|$)` an `unix:/run/php/php8.5-fpm.sock`, mit
+        `SCRIPT_FILENAME $realpath_root$fastcgi_script_name` und `include fastcgi_params;`
+      - versteckte Dateien sperren: `location ~ /\.(?!well-known).* { deny all; }`
+      - zusätzlich die Header `X-Frame-Options "SAMEORIGIN"` und `X-Content-Type-Options "nosniff"`
+    checklist:
+      - server-Block für beide Namen auf Port 80
+      - root zeigt auf current/public
+      - nur index.php wird an PHP-FPM übergeben
+      - versteckte Dateien gesperrt, Sicherheits-Header gesetzt
+    hints:
+      - "Nimm deine Datei aus der Lektion „Die nginx-Site für Laravel“ als Ausgangspunkt."
+      - "Header setzt du mit `add_header X-Content-Type-Options \"nosniff\";`."
+    checks:
+      - type: command
+        run: '[ "$(tr -cd "{" < nginx/example.com.conf | wc -c)" -eq "$(tr -cd "}" < nginx/example.com.conf | wc -c)" ] && grep -Eq "^\s*server\s*\{" nginx/example.com.conf'
+        message: nginx/example.com.conf fehlt, hat keinen server-Block, oder die geschweiften Klammern passen nicht.
+      - type: command
+        run: |
+          f=nginx/example.com.conf
+          grep -Eq '^\s*listen\s+80\s*;' $f || echo "listen 80"
+          grep -Eq '^\s*listen\s+\[::\]:80\s*;' $f || echo "listen [::]:80"
+          grep -E '^\s*server_name\s' $f | grep -Eq '[[:space:]]example\.com([[:space:]]|;)' || echo "server_name example.com"
+          grep -E '^\s*server_name\s' $f | grep -Eq '[[:space:]]www\.example\.com([[:space:]]|;)' || echo "server_name www.example.com"
+          grep -Eq '^\s*root\s+/var/www/example\.com/current/public/?\s*;' $f || echo "root"
+          grep -Eq '^\s*index\s+index\.php\s*;' $f || echo "index"
+        stdout_equals: ""
+        message: Es fehlen listen, server_name, root oder index (die Ausgabe der Prüfung nennt sie).
+      - type: command
+        run: |
+          f=nginx/example.com.conf
+          grep -Eq 'try_files\s+\$uri\s+\$uri/\s+/index\.php\?\$query_string\s*;' $f || echo "try_files"
+          grep -Fq 'location ~ ^/index\.php(/|$)' $f || echo "location index.php"
+          grep -Eq 'fastcgi_pass\s+unix:(/var)?/run/php/php8\.5-fpm\.sock\s*;' $f || echo "fastcgi_pass"
+          grep -Eq 'SCRIPT_FILENAME\s+\$realpath_root\$fastcgi_script_name' $f || echo "SCRIPT_FILENAME"
+          grep -Eq '^\s*include\s+fastcgi_params\s*;' $f || echo "include fastcgi_params"
+          grep -Fq 'location ~ /\.(?!well-known).*' $f || echo "Sperr-Block"
+          grep -Fq '$document_root' $f && echo "document_root"
+          grep -Fq 'location ~ \.php$' $f && echo "alle .php"
+          true
+        stdout_equals: ""
+        message: Der PHP-Teil oder der Sperr-Block stimmt noch nicht (die Ausgabe der Prüfung nennt die Stelle).
+      - type: command
+        run: grep -Eq 'add_header\s+X-Frame-Options\s+"?SAMEORIGIN"?' nginx/example.com.conf && grep -Eq 'add_header\s+X-Content-Type-Options\s+"?nosniff"?' nginx/example.com.conf
+        message: Es fehlen die Header X-Frame-Options SAMEORIGIN und X-Content-Type-Options nosniff.
+    solution: |
+      ```nginx title="nginx/example.com.conf"
+      server {
+          listen 80;
+          listen [::]:80;
+          server_name example.com www.example.com;
+          root /var/www/example.com/current/public;
+
+          add_header X-Frame-Options "SAMEORIGIN";
+          add_header X-Content-Type-Options "nosniff";
+
+          index index.php;
+          charset utf-8;
+
+          location / {
+              try_files $uri $uri/ /index.php?$query_string;
+          }
+
+          error_page 404 /index.php;
+
+          location ~ ^/index\.php(/|$) {
+              fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+              fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+              include fastcgi_params;
+              fastcgi_hide_header X-Powered-By;
+          }
+
+          location ~ /\.(?!well-known).* {
+              deny all;
+          }
+      }
+      ```
+    solve: |
+      mkdir -p nginx
+      cat > nginx/example.com.conf <<'EOF'
+      server {
+          listen 80;
+          listen [::]:80;
+          server_name example.com www.example.com;
+          root /var/www/example.com/current/public;
+
+          add_header X-Frame-Options "SAMEORIGIN";
+          add_header X-Content-Type-Options "nosniff";
+
+          index index.php;
+          charset utf-8;
+
+          location / {
+              try_files $uri $uri/ /index.php?$query_string;
+          }
+
+          error_page 404 /index.php;
+
+          location ~ ^/index\.php(/|$) {
+              fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+              fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+              include fastcgi_params;
+              fastcgi_hide_header X-Powered-By;
+          }
+
+          location ~ /\.(?!well-known).* {
+              deny all;
+          }
+      }
+      EOF
+  - id: prozesse
+    title: Worker und Scheduler
+    description: |
+      Lege zwei Dateien an:
+
+      1. `supervisor/laravel-worker.conf` mit `[program:laravel-worker]`, dem Befehl
+         `php /var/www/example.com/current/artisan queue:work --sleep=3 --tries=3 --max-time=3600`,
+         `process_name=%(program_name)s_%(process_num)02d`, `autostart=true`, `autorestart=true`,
+         `stopasgroup=true`, `killasgroup=true`, `user=deploy`, `numprocs=2`, `redirect_stderr=true`,
+         `stdout_logfile=/var/www/example.com/shared/storage/logs/worker.log` und `stopwaitsecs=3600`.
+      2. `cron/laravel-scheduler` mit genau einer Zeile für `/etc/cron.d/`: jede Minute als `deploy`
+         `cd /var/www/example.com/current && php artisan schedule:run >> /dev/null 2>&1`.
+    checklist:
+      - Supervisor-Konfiguration mit zwei Workern
+      - Worker-Befehl zeigt auf current/artisan
+      - Cron-Zeile mit Benutzer deploy
+    hints:
+      - "Beide Dateien kennst du aus der Lektion „Queue-Worker und Scheduler dauerhaft betreiben“."
+    checks:
+      - type: command
+        run: |
+          php -r '$i = @parse_ini_file("supervisor/laravel-worker.conf", true, INI_SCANNER_RAW); $p = $i["program:laravel-worker"] ?? null; if (!$p) { echo "Abschnitt fehlt\n"; exit; } $soll = ["command" => "php /var/www/example.com/current/artisan queue:work --sleep=3 --tries=3 --max-time=3600", "process_name" => "%(program_name)s_%(process_num)02d", "autostart" => "true", "autorestart" => "true", "stopasgroup" => "true", "killasgroup" => "true", "user" => "deploy", "numprocs" => "2", "redirect_stderr" => "true", "stdout_logfile" => "/var/www/example.com/shared/storage/logs/worker.log", "stopwaitsecs" => "3600"]; foreach ($soll as $k => $v) { if (trim($p[$k] ?? "") !== $v) { echo "$k\n"; } }'
+        stdout_equals: ""
+        message: In supervisor/laravel-worker.conf fehlt etwas oder ein Wert weicht ab (die Ausgabe der Prüfung nennt ihn).
+      - type: command
+        run: grep -vE '^\s*(#|$)' cron/laravel-scheduler
+        stdout_matches: "^\\* \\* \\* \\* \\* deploy cd /var/www/example\\.com/current && php artisan schedule:run >> /dev/null 2>&1\\s*$"
+        message: "cron/laravel-scheduler braucht genau die Zeile `* * * * * deploy cd /var/www/example.com/current && php artisan schedule:run >> /dev/null 2>&1`."
+    solution: |
+      ```bash
+      mkdir -p supervisor cron
+      cat > supervisor/laravel-worker.conf <<'EOF'
+      [program:laravel-worker]
+      process_name=%(program_name)s_%(process_num)02d
+      command=php /var/www/example.com/current/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+      autostart=true
+      autorestart=true
+      stopasgroup=true
+      killasgroup=true
+      user=deploy
+      numprocs=2
+      redirect_stderr=true
+      stdout_logfile=/var/www/example.com/shared/storage/logs/worker.log
+      stopwaitsecs=3600
+      EOF
+      echo '* * * * * deploy cd /var/www/example.com/current && php artisan schedule:run >> /dev/null 2>&1' > cron/laravel-scheduler
+      ```
+    solve: |
+      mkdir -p supervisor cron
+      cat > supervisor/laravel-worker.conf <<'EOF'
+      [program:laravel-worker]
+      process_name=%(program_name)s_%(process_num)02d
+      command=php /var/www/example.com/current/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+      autostart=true
+      autorestart=true
+      stopasgroup=true
+      killasgroup=true
+      user=deploy
+      numprocs=2
+      redirect_stderr=true
+      stdout_logfile=/var/www/example.com/shared/storage/logs/worker.log
+      stopwaitsecs=3600
+      EOF
+      echo '* * * * * deploy cd /var/www/example.com/current && php artisan schedule:run >> /dev/null 2>&1' > cron/laravel-scheduler
+  - id: deploy-skript
+    title: Das Deploy-Skript
+    description: |
+      Schreibe `scripts/deploy.sh` (mit `#!/usr/bin/env bash` und `set -euo pipefail`). Variablen mit
+      Standardwerten: `REPO` (`git@github.com:example/shop.git`), `BRANCH` (`main`),
+      `BASE` (`/var/www/example.com`) und `KEEP` (`5`).
+
+      1. Fehlt `$BASE/shared/.env`, bricht das Skript mit Fehlermeldung ab, **bevor** es etwas anlegt.
+      2. Neues Release `$BASE/releases/$(date +%Y%m%d%H%M%S)`, Code per `git clone --depth 1 --branch "$BRANCH"`.
+      3. `.env` und `storage` aus `shared/` per Symlink einbinden.
+      4. `composer install --no-dev --optimize-autoloader --no-interaction`, dann `php artisan migrate --force`,
+         `php artisan storage:link` und `php artisan optimize`.
+      5. `current` atomar umschalten (`current.neu` + `mv -T`), danach `php artisan queue:restart`.
+      6. Nur die `$KEEP` neuesten Releases behalten (Löschpfade mit `${…:?}` absichern).
+
+      Testlauf:
+
+      ```bash
+      mkdir -p testserver/shared/storage && touch testserver/shared/.env
+      REPO="$PWD/.quelle/shop" BASE="$PWD/testserver" bash scripts/deploy.sh
+      cat testserver/artisan.log
+      ```
+    checklist:
+      - Abbruch ohne shared/.env
+      - Release-Ordner mit Symlinks auf shared
+      - Composer, Migrationen, storage:link und Caches vor dem Umschalten
+      - atomares Umschalten und queue:restart
+      - alte Releases werden aufgeräumt
+    hints:
+      - "Starte mit dem reparierten Skript aus der Modul-Übung „Ein kaputtes Deploy-Skript reparieren“ und ergänze, was fehlt."
+      - "Die Prüfung auf die .env: `[ -f \"$BASE/shared/.env\" ] || { echo \"shared/.env fehlt\" >&2; exit 1; }`"
+      - "Aufräumen: `ls -1 \"$BASE/releases\" | sort | head -n -\"$KEEP\" | while read -r alt; do rm -rf \"${BASE:?}/releases/${alt:?}\"; done`"
+    checks:
+      - type: command
+        run: bash -n scripts/deploy.sh && head -n1 scripts/deploy.sh && grep -c 'set -euo pipefail' scripts/deploy.sh
+        stdout_matches: "^#!/usr/bin/env bash\\n[1-9]"
+        message: scripts/deploy.sh fehlt, hat einen Syntaxfehler oder es fehlen Shebang bzw. set -euo pipefail.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          REPO="$PWD/.quelle/shop" BASE="$d" bash scripts/deploy.sh >/dev/null 2>&1; rc=$?
+          echo "exit=$rc releases=$(ls "$d/releases" 2>/dev/null | wc -l) current=$([ -e "$d/current" ] && echo ja || echo nein)"
+          rm -rf "${d:?}"
+        stdout_matches: "^exit=[1-9]\\d* releases=0 current=nein$"
+        message: Ohne shared/.env muss das Skript mit einem Fehler abbrechen, bevor es ein Release anlegt.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/shared/storage"; touch "$d/shared/.env"
+          REPO="$PWD/.quelle/shop" BASE="$d" bash scripts/deploy.sh >/dev/null 2>&1; echo "exit=$?"
+          cat "$d/artisan.log" 2>/dev/null
+          rm -rf "${d:?}"
+        stdout_equals: "exit=0\nmigrate --force [vorbereitung]\nstorage:link [vorbereitung]\noptimize [vorbereitung]\nqueue:restart [live]"
+        message: "Das artisan-Log soll genau so aussehen: migrate --force, storage:link und optimize vor dem Umschalten [vorbereitung], danach queue:restart [live]."
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/shared/storage"; touch "$d/shared/.env"
+          REPO="$PWD/.quelle/shop" BASE="$d" bash scripts/deploy.sh >/dev/null 2>&1
+          c="$d/current"
+          [ -L "$c" ] || echo "current ist kein Symlink"
+          [ "$(readlink -f "$c/.env")" = "$(readlink -f "$d/shared/.env")" ] || echo ".env nicht verlinkt"
+          [ "$(readlink -f "$c/storage")" = "$(readlink -f "$d/shared/storage")" ] || echo "storage nicht verlinkt"
+          [ -f "$c/vendor/autoload.php" ] || echo "composer install fehlt"
+          rm -rf "${d:?}"
+        stdout_equals: ""
+        message: current muss ein Symlink sein, .env und storage müssen auf shared/ zeigen, und composer install muss gelaufen sein.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/shared/storage"; touch "$d/shared/.env"
+          for r in 20200101000001 20200101000002 20200101000003 20200101000004 20200101000005 20200101000006; do mkdir -p "$d/releases/$r"; done
+          REPO="$PWD/.quelle/shop" BASE="$d" KEEP=3 bash scripts/deploy.sh >/dev/null 2>&1
+          ls "$d/releases" | wc -l | tr -d ' '; ls "$d/releases" | grep -c '^20200101000006$'; ls "$d/releases" | grep -c '^20200101000004$'; [ -d "$(readlink -f "$d/current")" ] && echo current-ok
+          rm -rf "${d:?}"
+        stdout_equals: "3\n1\n0\ncurrent-ok"
+        message: Mit KEEP=3 sollen nur die drei neuesten Releases (inklusive des neuen) übrig bleiben.
+      - type: command
+        run: grep -Eq 'composer\s+install\b.*--no-dev' scripts/deploy.sh && grep -Eq '\bmv\s+(-[a-zA-Z]*T[a-zA-Z]*|--no-target-directory)\b' scripts/deploy.sh
+        message: Es fehlen composer install --no-dev oder das atomare Umschalten mit mv -T.
+    solution: |
+      ```bash title="scripts/deploy.sh"
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      REPO="${REPO:-git@github.com:example/shop.git}"
+      BRANCH="${BRANCH:-main}"
+      BASE="${BASE:-/var/www/example.com}"
+      KEEP="${KEEP:-5}"
+
+      if [ ! -f "$BASE/shared/.env" ]; then
+        echo "Abbruch: $BASE/shared/.env fehlt" >&2
+        exit 1
+      fi
+
+      RELEASE="$BASE/releases/$(date +%Y%m%d%H%M%S)"
+      mkdir -p "$BASE/releases" "$BASE/shared/storage"
+      git clone --quiet --depth 1 --branch "$BRANCH" "$REPO" "$RELEASE"
+
+      ln -s "$BASE/shared/.env" "$RELEASE/.env"
+      rm -rf "${RELEASE:?}/storage"
+      ln -s "$BASE/shared/storage" "$RELEASE/storage"
+
+      cd "$RELEASE"
+      composer install --no-dev --optimize-autoloader --no-interaction
+      php artisan migrate --force
+      php artisan storage:link
+      php artisan optimize
+
+      ln -sfn "$RELEASE" "$BASE/current.neu"
+      mv -T "$BASE/current.neu" "$BASE/current"
+      php artisan queue:restart
+
+      ls -1 "$BASE/releases" | sort | head -n -"$KEEP" | while read -r alt; do
+        rm -rf "${BASE:?}/releases/${alt:?}"
+      done
+      echo "Deploy fertig: $RELEASE"
+      ```
+    solve: |
+      mkdir -p scripts
+      cat > scripts/deploy.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      REPO="${REPO:-git@github.com:example/shop.git}"
+      BRANCH="${BRANCH:-main}"
+      BASE="${BASE:-/var/www/example.com}"
+      KEEP="${KEEP:-5}"
+
+      if [ ! -f "$BASE/shared/.env" ]; then
+        echo "Abbruch: $BASE/shared/.env fehlt" >&2
+        exit 1
+      fi
+
+      RELEASE="$BASE/releases/$(date +%Y%m%d%H%M%S)"
+      mkdir -p "$BASE/releases" "$BASE/shared/storage"
+      git clone --quiet --depth 1 --branch "$BRANCH" "$REPO" "$RELEASE"
+
+      ln -s "$BASE/shared/.env" "$RELEASE/.env"
+      rm -rf "${RELEASE:?}/storage"
+      ln -s "$BASE/shared/storage" "$RELEASE/storage"
+
+      cd "$RELEASE"
+      composer install --no-dev --optimize-autoloader --no-interaction
+      php artisan migrate --force
+      php artisan storage:link
+      php artisan optimize
+
+      ln -sfn "$RELEASE" "$BASE/current.neu"
+      mv -T "$BASE/current.neu" "$BASE/current"
+      php artisan queue:restart
+
+      ls -1 "$BASE/releases" | sort | head -n -"$KEEP" | while read -r alt; do
+        rm -rf "${BASE:?}/releases/${alt:?}"
+      done
+      echo "Deploy fertig: $RELEASE"
+      EOF
+      chmod +x scripts/deploy.sh
+  - id: backup-skript
+    title: Das Backup-Skript
+    description: |
+      Schreibe `scripts/backup.sh` (Shebang, `set -euo pipefail`) mit den Variablen `DB_FILE`
+      (`/var/www/example.com/shared/database.sqlite`), `STORAGE_DIR` (`/var/www/example.com/shared/storage`),
+      `BACKUP_DIR` (`/var/backups/example.com`) und `KEEP` (`7`). Es sichert die Datenbank mit
+      `sqlite3 … ".backup …"`, packt sie zusammen mit `storage/app` als `backup-<zeitstempel>.tar.gz`
+      (im Archiv: `db.sqlite` und `storage/`), legt `backup-<zeitstempel>.tar.gz.sha256` an und behält nur
+      die `$KEEP` neuesten Archive.
+
+      Test: `mkdir -p sicherungen && DB_FILE=daten/database.sqlite STORAGE_DIR=daten/storage BACKUP_DIR=sicherungen bash scripts/backup.sh`
+    checklist:
+      - Datenbank konsistent mit .backup gesichert
+      - Uploads im Archiv
+      - Prüfsumme angelegt
+      - Rotation mit KEEP
+    hints:
+      - "Das Skript aus der Lektion „Backups und die Restore-Probe“ passt fast unverändert."
+    checks:
+      - type: command
+        run: bash -n scripts/backup.sh && head -n1 scripts/backup.sh && grep -c 'set -euo pipefail' scripts/backup.sh
+        stdout_matches: "^#!/usr/bin/env bash\\n[1-9]"
+        message: scripts/backup.sh fehlt, hat einen Syntaxfehler oder es fehlen Shebang bzw. set -euo pipefail.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/b" "$d/x"
+          DB_FILE=daten/database.sqlite STORAGE_DIR=daten/storage BACKUP_DIR="$d/b" bash scripts/backup.sh >/dev/null 2>&1
+          (cd "$d/b" && sha256sum -c backup-*.tar.gz.sha256 >/dev/null 2>&1) && echo pruefsumme
+          tar -xzf "$d"/b/backup-*.tar.gz -C "$d/x" 2>/dev/null && sqlite3 "$d/x/db.sqlite" "SELECT COUNT(*) FROM orders;" && cat "$d/x/storage/app/public/rechnungen/rechnung-1.txt"
+          rm -rf "${d:?}"
+        stdout_equals: "pruefsumme\n42\nRechnung 1"
+        message: Das Archiv braucht eine passende .sha256-Datei und muss db.sqlite (42 Bestellungen) und storage/app enthalten.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); mkdir -p "$d/b"
+          for t in 20260101000001 20260101000002 20260101000003 20260101000004; do touch "$d/b/backup-$t.tar.gz" "$d/b/backup-$t.tar.gz.sha256"; done
+          DB_FILE=daten/database.sqlite STORAGE_DIR=daten/storage BACKUP_DIR="$d/b" KEEP=2 bash scripts/backup.sh >/dev/null 2>&1
+          ls "$d/b" | grep -c '\.tar\.gz$'; ls "$d/b" | grep -c '\.sha256$'; ls "$d/b" | grep -c '^backup-20260101000004\.tar\.gz$'; ls "$d/b" | grep -c '20260101000003'
+          rm -rf "${d:?}"
+        stdout_equals: "2\n2\n1\n0"
+        message: Mit KEEP=2 sollen nur das neue und das jüngste alte Archiv (jeweils mit .sha256) übrig bleiben.
+    solution: |
+      Siehe Lektion „Backups und die Restore-Probe“ – das Skript wird dort Zeile für Zeile erklärt.
+    solve: |
+      mkdir -p scripts
+      cat > scripts/backup.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      DB_FILE="${DB_FILE:-/var/www/example.com/shared/database.sqlite}"
+      STORAGE_DIR="${STORAGE_DIR:-/var/www/example.com/shared/storage}"
+      BACKUP_DIR="${BACKUP_DIR:-/var/backups/example.com}"
+      KEEP="${KEEP:-7}"
+
+      ts=$(date +%Y%m%d%H%M%S)
+      mkdir -p "$BACKUP_DIR"
+      tmp=$(mktemp -d "$BACKUP_DIR/.tmp-XXXXXX")
+
+      sqlite3 "$DB_FILE" ".backup '$tmp/db.sqlite'"
+      mkdir -p "$tmp/storage"
+      cp -a "$STORAGE_DIR/app" "$tmp/storage/"
+
+      tar -czf "$BACKUP_DIR/backup-$ts.tar.gz" -C "$tmp" db.sqlite storage
+      rm -rf "${tmp:?}"
+
+      (cd "$BACKUP_DIR" && sha256sum "backup-$ts.tar.gz" > "backup-$ts.tar.gz.sha256")
+
+      ls -1 "$BACKUP_DIR" | grep -E '^backup-[0-9]+\.tar\.gz$' | sort | head -n -"$KEEP" | while read -r alt; do
+        rm -f "${BACKUP_DIR:?}/${alt:?}" "${BACKUP_DIR:?}/${alt:?}.sha256"
+      done
+      EOF
+      chmod +x scripts/backup.sh
+  - id: restore-probe
+    title: Die automatische Restore-Probe
+    description: |
+      Schreibe `scripts/restore-probe.sh`, das ein Archiv als erstes Argument bekommt und es wie in der
+      Modul-Übung prüft: Prüfsumme (`FEHLER: Prüfsumme`), Entpacken in `mktemp -d "$PWD/.probe-XXXXXX"` mit
+      `trap … EXIT`, `PRAGMA integrity_check` (`FEHLER: Datenbank`), Anzahl der Bestellungen
+      (`FEHLER: keine Bestellungen`) und bei Erfolg `OK: <anzahl> Bestellungen` mit Exit-Code 0.
+
+      Probiere es an einem Archiv aus, das dein Backup-Skript gerade erzeugt hat.
+    checklist:
+      - Prüfsumme wird geprüft
+      - Arbeitsordner wird immer aufgeräumt
+      - Datenbank und Zeilenzahl werden geprüft
+    hints:
+      - "Dein Skript aus der Modul-Übung „Eine automatische Restore-Probe“ passt unverändert."
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          DB_FILE=daten/database.sqlite STORAGE_DIR=daten/storage BACKUP_DIR="$d" bash scripts/backup.sh >/dev/null 2>&1
+          bash scripts/restore-probe.sh "$d"/backup-*.tar.gz 2>&1; echo "exit=$?"
+          rm -rf "${d:?}"
+        stdout_equals: "OK: 42 Bestellungen\nexit=0"
+        message: Für ein frisches Backup soll das Skript „OK 42 Bestellungen“ (mit Doppelpunkt) ausgeben und mit 0 enden.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          DB_FILE=daten/database.sqlite STORAGE_DIR=daten/storage BACKUP_DIR="$d" bash scripts/backup.sh >/dev/null 2>&1
+          printf 'kaputt' >> "$(ls "$d"/backup-*.tar.gz)"
+          bash scripts/restore-probe.sh "$d"/backup-*.tar.gz 2>/dev/null; echo "exit=$?"
+          rm -rf "${d:?}"
+        stdout_matches: "FEHLER: Prüfsumme[\\s\\S]*exit=1$"
+        message: Ein verändertes Archiv muss „FEHLER Prüfsumme“ melden und mit 1 enden.
+      - type: command
+        run: |
+          test -f scripts/restore-probe.sh || exit 1
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          DB_FILE=daten/database.sqlite STORAGE_DIR=daten/storage BACKUP_DIR="$d" bash scripts/backup.sh >/dev/null 2>&1
+          bash scripts/restore-probe.sh "$d"/backup-*.tar.gz >/dev/null 2>&1 || true
+          rm -rf "${d:?}"
+          ls -A | grep -c '^\.probe-' || true
+        stdout_equals: "0"
+        message: Nach dem Lauf liegt noch ein .probe-Arbeitsordner herum – räume mit trap … EXIT auf.
+    solution: |
+      Siehe Modul-Übung „Eine automatische Restore-Probe“ im Modul „Sicher betreiben“.
+    solve: |
+      mkdir -p scripts
+      cat > scripts/restore-probe.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      archiv="${1:?Bitte ein Archiv angeben}"
+      ordner=$(dirname "$archiv")
+      name=$(basename "$archiv")
+
+      if [ ! -f "$archiv.sha256" ] || ! (cd "$ordner" && sha256sum -c "$name.sha256") >/dev/null 2>&1; then
+        echo "FEHLER: Prüfsumme"
+        exit 1
+      fi
+
+      tmp=$(mktemp -d "$PWD/.probe-XXXXXX")
+      trap 'rm -rf "${tmp:?}"' EXIT
+      tar -xzf "$archiv" -C "$tmp"
+
+      if [ "$(sqlite3 "$tmp/db.sqlite" "PRAGMA integrity_check;")" != "ok" ]; then
+        echo "FEHLER: Datenbank"
+        exit 1
+      fi
+
+      anzahl=$(sqlite3 "$tmp/db.sqlite" "SELECT COUNT(*) FROM orders;")
+      if [ "$anzahl" -eq 0 ]; then
+        echo "FEHLER: keine Bestellungen"
+        exit 1
+      fi
+
+      echo "OK: $anzahl Bestellungen"
+      EOF
+      chmod +x scripts/restore-probe.sh
+  - id: go-live-checkliste
+    title: Die Go-live-Checkliste
+    description: |
+      Schreibe `GO-LIVE.md` – die Checkliste, die du vor jedem Go-live abhakst. Sie hat Überschriften für die
+      Bereiche **Server**, **App**, **Prozesse**, **HTTPS**, **Daten**, **Überwachung** und **DNS** (je eine
+      Zeile `## …`) und darunter insgesamt mindestens **14** offene Punkte im Format `- [ ] …`.
+
+      Diese Begriffe müssen irgendwo vorkommen: `ufw`, `APP_DEBUG=false`, `supervisorctl status`,
+      `certbot renew --dry-run`, `restore-probe.sh`, `/up` und `TTL`.
+    checklist:
+      - Sieben Bereiche als Überschriften
+      - Mindestens 14 Punkte
+      - Alle Pflichtbegriffe enthalten
+    hints:
+      - "Die Tabelle am Ende der Lektion „Überwachung und der Go-live“ liefert dir die Punkte."
+      - "Ein Punkt sieht so aus: `- [ ] Firewall aktiv: sudo ufw status zeigt 22, 80, 443`"
+    checks:
+      - type: file_exists
+        path: GO-LIVE.md
+        message: GO-LIVE.md fehlt noch.
+      - type: command
+        run: for b in Server App Prozesse HTTPS Daten Überwachung DNS; do grep -Eq "^##\s+$b\b" GO-LIVE.md || echo "fehlt $b"; done
+        stdout_equals: ""
+        message: Es fehlt mindestens eine der sieben Überschriften (## Server, ## App, ## Prozesse, ## HTTPS, ## Daten, ## Überwachung, ## DNS).
+      - type: command
+        run: grep -cE '^\s*- \[ \] \S' GO-LIVE.md
+        stdout_matches: "^(1[4-9]|[2-9][0-9])$"
+        message: Es braucht mindestens 14 Punkte im Format „- [ ] …“.
+      - type: command
+        run: for w in ufw APP_DEBUG=false 'supervisorctl status' 'certbot renew --dry-run' restore-probe.sh /up TTL; do grep -Fq -- "$w" GO-LIVE.md || echo "fehlt $w"; done
+        stdout_equals: ""
+        message: Mindestens ein Pflichtbegriff fehlt (die Ausgabe der Prüfung nennt ihn).
+    solution: |
+      Eine mögliche Checkliste findest du, wenn du auf „Für mich erledigen“ klickst – passe sie danach an
+      dein Projekt an.
+    solve: |
+      cat > GO-LIVE.md <<'EOF'
+      # Go-live-Checkliste für example.com
+
+      ## Server
+      - [ ] Alle Updates eingespielt (apt-get update && apt-get upgrade)
+      - [ ] SSH nur mit Schlüssel, PermitRootLogin no
+      - [ ] Firewall aktiv: sudo ufw status zeigt nur 22, 80 und 443
+      - [ ] unattended-upgrades aktiv
+
+      ## App
+      - [ ] shared/.env mit APP_ENV=production und APP_DEBUG=false, Rechte 640
+      - [ ] APP_KEY im Passwort-Manager gesichert
+      - [ ] Letzter Deploy mit scripts/deploy.sh erfolgreich
+
+      ## Prozesse
+      - [ ] Worker laufen: sudo supervisorctl status zeigt RUNNING
+      - [ ] Cron-Datei /etc/cron.d/laravel-scheduler aktiv
+
+      ## HTTPS
+      - [ ] Zertifikat für example.com und www.example.com ausgestellt
+      - [ ] HTTP leitet auf HTTPS um
+      - [ ] sudo certbot renew --dry-run erfolgreich
+
+      ## Daten
+      - [ ] Nächtliches Backup per Cron, Kopie außer Haus
+      - [ ] scripts/restore-probe.sh mit dem neuesten Backup erfolgreich
+
+      ## Überwachung
+      - [ ] Uptime-Monitor ruft https://example.com/up jede Minute auf
+      - [ ] Warnung bei Zertifikat unter 14 Tagen, Platte über 80 %, Backup älter als 26 Stunden
+
+      ## DNS
+      - [ ] TTL einen Tag vorher auf 300 Sekunden gesenkt
+      - [ ] A- und AAAA-Eintrag zeigen auf den neuen Server
+      - [ ] Alter Server bleibt ein paar Tage erreichbar
+      EOF

@@ -1,0 +1,36 @@
+title: Ein lokales Projekt live stellen
+subtitle: Vom Laptop auf einen echten Server – Hosting, DNS, Härtung, Laravel-Deployment, HTTPS und Backups
+description: >
+  Deine Laravel-App läuft auf `localhost` – und jetzt? Zwischen „läuft bei mir“ und „läuft für alle“
+  liegen Entscheidungen, die viele Entwickler:innen nur einmal im Jahr treffen und deshalb nie richtig
+  lernen: Welches Hosting passt? Welche DNS-Einträge brauche ich? Wie sichere ich einen frischen Server ab?
+  Und wie spiele ich eine neue Version ein, ohne dass die Seite kaputtgeht?
+
+
+  Dieser Kurs geht den kompletten Weg einmal gründlich durch: Hosting wählen, Domain und DNS einrichten,
+  den Server härten, den Laufzeit-Stack installieren, eine Laravel-App mit Queue-Worker und Scheduler
+  deployen, HTTPS mit Let's Encrypt einschalten und Backups samt Wiederherstellung testen. Alles, was auf
+  einem echten Server passiert, übst du in realistischen Simulationen. Konfigurationsdateien und Skripte
+  schreibst du dagegen im echten Übungs-Terminal – und Stacklab führt deine Skripte gegen einen
+  nachgebauten Server-Ordner aus. Am Ende steht ein **Deploy-Kit**, das du für dein nächstes Projekt
+  wiederverwenden kannst.
+category: infrastruktur
+level: fortgeschritten
+icon: rocket
+color: "#34d399"
+estimated_hours: 5
+workspace_dir: live-stellen
+prerequisites: [ssh, nginx-webserver, deployments-cicd, laravel]
+learning_goals:
+  - Du wählst begründet zwischen VPS, Plattform (PaaS) und Managed Hosting und schätzt Kosten und Aufwand ab.
+  - Du legst A-, AAAA- und CNAME-Einträge an und planst einen Umzug mit niedriger TTL.
+  - Du härtest einen frischen Linux-Server mit SSH-Schlüsseln, eigenem Benutzer, Firewall und automatischen Sicherheitsupdates.
+  - Du installierst den Laufzeit-Stack (nginx, PHP-FPM, Datenbank, Supervisor) und schreibst eine nginx-Site für Laravel.
+  - Du deployst eine Laravel-App mit Release-Ordnern, Migrationen, Caches, Queue-Worker und Scheduler.
+  - Du schaltest HTTPS mit Let's Encrypt ein und weißt, wie die automatische Erneuerung funktioniert.
+  - Du schreibst Backup-Skripte, testest die Wiederherstellung und richtest einfache Überwachung ein.
+  - Du gehst mit einer Go-live-Checkliste strukturiert live.
+references:
+  - Deployments mit Release-Ordnern und einem current-Symlink, wie sie viele PHP-Teams ohne Container nutzen
+  - Queue-Worker unter Supervisor und der Laravel-Scheduler per Cron auf klassischen Servern
+  - Regelmäßige Restore-Proben, weil ungetestete Backups im Ernstfall oft unbrauchbar sind

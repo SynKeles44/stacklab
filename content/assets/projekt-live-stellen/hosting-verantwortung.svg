@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 430" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="400" y="26" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Wer kümmert sich um was?</text>
+  <text x="130" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">Schicht</text>
+  <text x="340" y="62" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">VPS</text>
+  <text x="520" y="62" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Managed Server</text>
+  <text x="700" y="62" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Plattform (PaaS)</text>
+  <g font-size="13" fill="#1e1b3a">
+    <text x="30" y="100">Dein Code und deine Daten</text>
+    <text x="30" y="150">Deploy, Worker, Cron</text>
+    <text x="30" y="200">PHP, nginx, Datenbank</text>
+    <text x="30" y="250">Betriebssystem-Updates</text>
+    <text x="30" y="300">Firewall, Härtung</text>
+    <text x="30" y="350">Hardware, Strom, Netz</text>
+  </g>
+  <g stroke="#1e1b3a" stroke-width="1">
+    <rect x="260" y="80" width="160" height="34" rx="6" fill="#fef3c7"/>
+    <rect x="260" y="130" width="160" height="34" rx="6" fill="#fef3c7"/>
+    <rect x="260" y="180" width="160" height="34" rx="6" fill="#fef3c7"/>
+    <rect x="260" y="230" width="160" height="34" rx="6" fill="#fef3c7"/>
+    <rect x="260" y="280" width="160" height="34" rx="6" fill="#fef3c7"/>
+    <rect x="260" y="330" width="160" height="34" rx="6" fill="#d1fae5"/>
+    <rect x="440" y="80" width="160" height="34" rx="6" fill="#fef3c7"/>
+    <rect x="440" y="130" width="160" height="34" rx="6" fill="#fef3c7"/>
+    <rect x="440" y="180" width="160" height="34" rx="6" fill="#d1fae5"/>
+    <rect x="440" y="230" width="160" height="34" rx="6" fill="#d1fae5"/>
+    <rect x="440" y="280" width="160" height="34" rx="6" fill="#d1fae5"/>
+    <rect x="440" y="330" width="160" height="34" rx="6" fill="#d1fae5"/>
+    <rect x="620" y="80" width="160" height="34" rx="6" fill="#fef3c7"/>
+    <rect x="620" y="130" width="160" height="34" rx="6" fill="#d1fae5"/>
+    <rect x="620" y="180" width="160" height="34" rx="6" fill="#d1fae5"/>
+    <rect x="620" y="230" width="160" height="34" rx="6" fill="#d1fae5"/>
+    <rect x="620" y="280" width="160" height="34" rx="6" fill="#d1fae5"/>
+    <rect x="620" y="330" width="160" height="34" rx="6" fill="#d1fae5"/>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#1e1b3a">
+    <text x="340" y="102">du</text><text x="340" y="152">du</text><text x="340" y="202">du</text>
+    <text x="340" y="252">du</text><text x="340" y="302">du</text><text x="340" y="352">Anbieter</text>
+    <text x="520" y="102">du</text><text x="520" y="152">du (mit Hilfe)</text><text x="520" y="202">Anbieter</text>
+    <text x="520" y="252">Anbieter</text><text x="520" y="302">Anbieter</text><text x="520" y="352">Anbieter</text>
+    <text x="700" y="102">du</text><text x="700" y="152">Plattform</text><text x="700" y="202">Plattform</text>
+    <text x="700" y="252">Plattform</text><text x="700" y="302">Plattform</text><text x="700" y="352">Plattform</text>
+  </g>
+  <rect x="260" y="385" width="18" height="14" fill="#fef3c7" stroke="#1e1b3a"/>
+  <text x="285" y="397" font-size="12" fill="#1e1b3a">deine Arbeit</text>
+  <rect x="400" y="385" width="18" height="14" fill="#d1fae5" stroke="#1e1b3a"/>
+  <text x="425" y="397" font-size="12" fill="#1e1b3a">übernimmt jemand anderes</text>
+  <text x="400" y="422" text-anchor="middle" font-size="12" fill="#1e1b3a">Je mehr Grün, desto weniger Arbeit – aber desto weniger Kontrolle und meist höhere Kosten pro Leistung.</text>
+</svg>

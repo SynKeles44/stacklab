@@ -1,0 +1,109 @@
+title: Sicher betreiben
+description: HTTPS mit Let's Encrypt einschalten, Backups samt Restore-Probe automatisieren, den Server überwachen und mit einer Checkliste live gehen.
+exercise:
+  id: modul-uebung-restore-probe
+  type: terminal
+  title: Eine automatische Restore-Probe
+  description: |
+    Im Ordner `restore` liegen unter `archiv/` drei nächtliche Backups samt `.sha256`-Datei. Mindestens eines
+    davon ist unbrauchbar – welche, findest du mit deinem Skript heraus. Klicke zuerst auf
+    **Aufgabe vorbereiten**.
+
+    Schreibe `restore-probe.sh`, aufgerufen als `bash restore-probe.sh archiv/backup-<zeitstempel>.tar.gz`:
+
+    1. `#!/usr/bin/env bash` und `set -euo pipefail`.
+    2. **Prüfsumme**: Fehlt `<archiv>.sha256` oder schlägt `sha256sum -c` fehl (im Ordner des Archivs
+       ausführen!), gib `FEHLER: Prüfsumme` aus und beende mit `exit 1`.
+    3. Entpacke das Archiv in einen Arbeitsordner `mktemp -d "$PWD/.probe-XXXXXX"` und sorge mit
+       `trap 'rm -rf "${tmp:?}"' EXIT` dafür, dass er in jedem Fall wieder verschwindet.
+    4. `sqlite3 "$tmp/db.sqlite" "PRAGMA integrity_check;"` muss `ok` liefern, sonst `FEHLER: Datenbank`
+       und `exit 1`.
+    5. Zähle die Zeilen in `orders`. Sind es 0, gib `FEHLER: keine Bestellungen` aus und beende mit `exit 1`.
+    6. Sonst gib `OK: <anzahl> Bestellungen` aus (z. B. `OK: 42 Bestellungen`) und ende mit `exit 0`.
+
+    Probiere dein Skript an allen drei Archiven aus.
+  workdir: restore
+  setup: |
+    mkdir -p archiv .bau
+    baue() {
+      local ts="$1" anzahl="$2"
+      rm -rf .bau/*
+      mkdir -p .bau/storage/app/public
+      printf 'Rechnung\n' > .bau/storage/app/public/rechnung.txt
+      sqlite3 .bau/db.sqlite "CREATE TABLE orders (id INTEGER PRIMARY KEY, total INTEGER NOT NULL);"
+      if [ "$anzahl" -gt 0 ]; then
+        for i in $(seq 1 "$anzahl"); do echo "INSERT INTO orders (total) VALUES ($i);"; done | sqlite3 .bau/db.sqlite
+      fi
+      tar -czf "archiv/backup-$ts.tar.gz" -C .bau db.sqlite storage
+      (cd archiv && sha256sum "backup-$ts.tar.gz" > "backup-$ts.tar.gz.sha256")
+    }
+    baue 20261008020000 42
+    baue 20261009020000 57
+    printf 'beschaedigt' >> archiv/backup-20261009020000.tar.gz
+    baue 20261010020000 0
+    rm -rf .bau
+  checks:
+    - type: command
+      run: bash -n restore-probe.sh && head -n1 restore-probe.sh
+      stdout_matches: "^#!/usr/bin/env bash$"
+      message: restore-probe.sh fehlt, hat einen Syntaxfehler oder beginnt nicht mit #!/usr/bin/env bash.
+    - type: command
+      run: bash restore-probe.sh archiv/backup-20261008020000.tar.gz 2>&1; echo "exit=$?"
+      stdout_matches: "^OK: 42 Bestellungen\\s*\\nexit=0$"
+      message: Das intakte Backup vom 8. Oktober soll „OK 42 Bestellungen“ ausgeben (mit Doppelpunkt nach OK) und mit 0 enden.
+    - type: command
+      run: bash restore-probe.sh archiv/backup-20261009020000.tar.gz 2>/dev/null; echo "exit=$?"
+      stdout_matches: "FEHLER: Prüfsumme[\\s\\S]*exit=1$"
+      message: Das Archiv vom 9. Oktober wurde nachträglich verändert – dein Skript muss „FEHLER Prüfsumme“ melden und mit 1 enden.
+    - type: command
+      run: bash restore-probe.sh archiv/backup-20261010020000.tar.gz 2>/dev/null; echo "exit=$?"
+      stdout_matches: "FEHLER: keine Bestellungen[\\s\\S]*exit=1$"
+      message: Im Backup vom 10. Oktober ist die Tabelle orders leer – dein Skript muss „FEHLER keine Bestellungen“ melden und mit 1 enden.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp archiv/backup-20261008020000.tar.gz "$d/"
+        bash restore-probe.sh "$d/backup-20261008020000.tar.gz" 2>/dev/null; echo "exit=$?"; rm -rf "${d:?}"
+      stdout_matches: "FEHLER: Prüfsumme[\\s\\S]*exit=1$"
+      message: Fehlt die .sha256-Datei, muss das Skript ebenfalls „FEHLER Prüfsumme“ melden und mit 1 enden.
+    - type: command
+      run: |
+        test -f restore-probe.sh || exit 1
+        for a in archiv/*.tar.gz; do bash restore-probe.sh "$a" >/dev/null 2>&1 || true; done
+        ls -A | grep -c '^\.probe-' || true
+      stdout_equals: "0"
+      message: Nach den Läufen liegen noch .probe-Arbeitsordner herum. Räume mit trap … EXIT auf.
+  hints:
+    - "Prüfsumme im Ordner des Archivs prüfen: `(cd \"$(dirname \"$archiv\")\" && sha256sum -c \"$(basename \"$archiv\").sha256\") >/dev/null 2>&1`."
+    - "Mit `if ! … ; then echo \"FEHLER: Prüfsumme\"; exit 1; fi` beendet das Skript sauber, auch mit `set -e`."
+    - "Die Anzahl liest du mit `anzahl=$(sqlite3 \"$tmp/db.sqlite\" \"SELECT COUNT(*) FROM orders;\")`."
+  solution: |
+    ```bash title="restore/restore-probe.sh"
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    archiv="${1:?Bitte ein Archiv angeben}"
+    ordner=$(dirname "$archiv")
+    name=$(basename "$archiv")
+
+    if [ ! -f "$archiv.sha256" ] || ! (cd "$ordner" && sha256sum -c "$name.sha256") >/dev/null 2>&1; then
+      echo "FEHLER: Prüfsumme"
+      exit 1
+    fi
+
+    tmp=$(mktemp -d "$PWD/.probe-XXXXXX")
+    trap 'rm -rf "${tmp:?}"' EXIT
+    tar -xzf "$archiv" -C "$tmp"
+
+    if [ "$(sqlite3 "$tmp/db.sqlite" "PRAGMA integrity_check;")" != "ok" ]; then
+      echo "FEHLER: Datenbank"
+      exit 1
+    fi
+
+    anzahl=$(sqlite3 "$tmp/db.sqlite" "SELECT COUNT(*) FROM orders;")
+    if [ "$anzahl" -eq 0 ]; then
+      echo "FEHLER: keine Bestellungen"
+      exit 1
+    fi
+
+    echo "OK: $anzahl Bestellungen"
+    ```

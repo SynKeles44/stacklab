@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="400" y="26" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Release-Ordner: umschalten statt überschreiben</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a">
+    <text x="30" y="70" font-weight="700">/var/www/example.com/</text>
+    <rect x="50" y="88" width="300" height="190" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+    <text x="65" y="112" font-weight="700">releases/</text>
+    <rect x="75" y="125" width="260" height="34" rx="6" fill="#ffffff" stroke="#1e1b3a"/>
+    <text x="88" y="147">20261008093000/</text>
+    <rect x="75" y="170" width="260" height="34" rx="6" fill="#ffffff" stroke="#1e1b3a"/>
+    <text x="88" y="192">20261009141500/</text>
+    <rect x="75" y="215" width="260" height="34" rx="6" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+    <text x="88" y="237">20261010120000/  (neu)</text>
+    <rect x="50" y="300" width="300" height="80" rx="10" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+    <text x="65" y="324" font-weight="700">shared/</text>
+    <text x="80" y="348">.env</text>
+    <text x="80" y="368">storage/</text>
+    <rect x="500" y="200" width="240" height="56" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="520" y="226" font-weight="700">current →</text>
+    <text x="520" y="246" font-size="12">Symlink auf ein Release</text>
+  </g>
+  <path d="M500 220 L338 187" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 4" fill="none" marker-end="url(#pf)"/>
+  <text x="420" y="180" font-size="12" fill="#1e1b3a">vorher</text>
+  <path d="M500 232 L338 232" stroke="#1e1b3a" stroke-width="2.5" fill="none" marker-end="url(#pf)"/>
+  <text x="420" y="250" font-size="12" fill="#1e1b3a">nachher</text>
+  <path d="M335 240 Q 380 300 352 330" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="4 3" fill="none" marker-end="url(#pf)"/>
+  <text x="372" y="292" font-size="12" fill="#1e1b3a">Symlinks .env, storage</text>
+  <text x="500" y="300" font-size="13" fill="#1e1b3a">nginx zeigt immer auf</text>
+  <text x="500" y="320" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">current/public</text>
+  <text x="500" y="345" font-size="13" fill="#1e1b3a">Rollback = Symlink zurück</text>
+  <text x="500" y="365" font-size="13" fill="#1e1b3a">auf das vorige Release.</text>
+</svg>

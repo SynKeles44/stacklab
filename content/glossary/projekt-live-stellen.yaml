@@ -1,0 +1,283 @@
+- slug: vps
+  term: VPS
+  short: Ein Virtual Private Server – ein virtueller Rechner mit eigenem Betriebssystem und root-Zugang, den du mietest.
+  explanation: >
+    Ein großer physischer Server wird in mehrere virtuelle Rechner aufgeteilt. Jeder VPS verhält sich wie ein
+    eigener Server mit öffentlicher IP-Adresse. Du installierst und pflegst alles ab dem Betriebssystem selbst –
+    Updates, Firewall, Webserver und Datenbank.
+  example: "Ein VPS mit 2 CPU-Kernen und 4 GB RAM unter `203.0.113.10`, auf dem du dich per `ssh deploy@203.0.113.10` anmeldest."
+  category: betrieb
+  aliases: [Virtual Private Server, virtueller Server, VPS-Server]
+  related: [hosting, managed-hosting, paas]
+  lesson: projekt-live-stellen/hosting-waehlen
+
+- slug: managed-hosting
+  term: Managed Server
+  short: Ein Server, dessen Betriebssystem, Webserver und PHP der Hosting-Anbieter für dich pflegt.
+  explanation: >
+    Beim Managed Hosting spielt der Anbieter Sicherheitsupdates ein, überwacht den Server und hält Dienste wie
+    nginx und PHP aktuell. Du kümmerst dich um deinen Code und das Deployment. Das kostet mehr als ein VPS,
+    spart aber Admin-Zeit.
+  example: Eine Agentur ohne eigene Admins deployt ihre Laravel-Apps per SSH auf einen Managed Server.
+  category: betrieb
+  aliases: [Managed Hosting, Managed Server]
+  related: [vps, paas, hosting]
+  lesson: projekt-live-stellen/hosting-waehlen
+
+- slug: paas
+  term: PaaS
+  short: Platform as a Service – eine Plattform, die deinen Code oder dein Container-Image entgegennimmt und selbst betreibt.
+  explanation: >
+    Du verbindest dein Repository oder lädst ein Image hoch, und die Plattform baut, startet und skaliert die
+    App. Betriebssystem, Webserver und Prozessverwaltung siehst du nicht. Das ist bequem, bindet dich aber oft
+    an anbieterspezifische Funktionen.
+  example: Nach jedem `git push` auf `main` baut die Plattform die App neu und startet zwei Instanzen.
+  category: betrieb
+  aliases: [Platform as a Service, Plattform]
+  related: [vps, managed-hosting, vendor-lock-in, skalierung]
+  lesson: projekt-live-stellen/hosting-waehlen
+
+- slug: skalierung
+  term: Skalierung
+  short: Das Anpassen der Rechenleistung an die Last – durch einen größeren Server oder mehr Instanzen.
+  explanation: >
+    Vertikal skalieren heißt, einem Server mehr CPU und RAM zu geben. Horizontal skalieren heißt, mehrere
+    Instanzen hinter einen Load Balancer zu stellen. Plattformen können horizontal oft automatisch skalieren,
+    wenn die Last steigt.
+  example: Am Black Friday startet die Plattform automatisch sechs statt zwei Instanzen der Shop-App.
+  category: betrieb
+  aliases: [skalieren, Skalierbarkeit]
+  related: [paas, load-balancer]
+  lesson: projekt-live-stellen/hosting-waehlen
+
+- slug: vendor-lock-in
+  term: Vendor-Lock-in
+  short: Die Abhängigkeit von einem Anbieter, die einen späteren Wechsel teuer oder schwierig macht.
+  explanation: >
+    Je mehr anbieterspezifische Dienste, Formate und Werkzeuge du nutzt, desto mehr musst du bei einem Wechsel
+    umbauen. Standardtechnik wie eine `.env`-Konfiguration, Container-Images und eigene Backups halten einen
+    Umzug möglich.
+  example: Eine App, die eine proprietäre Datenbank der Plattform nutzt, lässt sich nicht einfach auf einen VPS umziehen.
+  category: betrieb
+  aliases: [Lock-in, Anbieterbindung]
+  related: [paas, hosting]
+  lesson: projekt-live-stellen/hosting-waehlen
+
+- slug: zonendatei
+  term: Zone
+  short: Die Gesamtheit aller DNS-Einträge einer Domain, oft im klassischen Zonen-Format dargestellt.
+  explanation: >
+    Eine Zone enthält Einträge wie A, AAAA, CNAME, MX und TXT einer Domain. Im Zonen-Format hat jede Zeile die
+    Spalten Name, TTL, Klasse, Typ und Wert. `@` steht für die Domain selbst, ein Punkt am Ende markiert einen
+    vollständigen Namen.
+  example: "`www 3600 IN CNAME example.com.` ist eine Zeile der Zone von example.com."
+  category: internet
+  aliases: [Zonendatei, DNS-Zone, Zonen-Format]
+  related: [dns, dns-record, ttl]
+  lesson: projekt-live-stellen/domain-und-dns
+
+- slug: apex-domain
+  term: Apex-Domain
+  short: Die Domain selbst ohne Subdomain, also example.com statt www.example.com.
+  explanation: >
+    Die Apex-Domain (auch Root- oder nackte Domain) trägt immer SOA- und NS-Einträge. Deshalb darf dort kein
+    CNAME stehen, denn ein CNAME schließt alle anderen Einträge für denselben Namen aus. Für die Apex-Domain
+    setzt du A- und AAAA-Einträge.
+  example: "`example.com` ist die Apex-Domain, `www.example.com` und `staging.example.com` sind Subdomains."
+  category: internet
+  aliases: [Apex, nackte Domain, Root-Domain]
+  related: [domain, cname, a-record, subdomain]
+  lesson: projekt-live-stellen/domain-und-dns
+
+- slug: server-haertung
+  term: Server-Härtung
+  short: Das Absichern eines Servers durch Abschalten unnötiger Zugänge und Dienste.
+  explanation: >
+    Zur Grundhärtung gehören ein eigener Benutzer statt root, SSH nur mit Schlüsseln, eine Firewall mit
+    möglichst wenigen offenen Ports und automatische Sicherheitsupdates. Ziel ist eine kleine Angriffsfläche,
+    bevor die eigentliche Anwendung auf den Server kommt.
+  example: "`PermitRootLogin no`, `PasswordAuthentication no` und `ufw` mit den Ports 22, 80 und 443."
+  category: sicherheit
+  aliases: [Härtung, härten, Hardening]
+  related: [sshd, ufw, unattended-upgrades, least-privilege]
+  lesson: projekt-live-stellen/server-haerten
+
+- slug: apt
+  term: apt
+  short: Der Paketmanager von Debian und Ubuntu, mit dem du Software installierst und aktualisierst.
+  explanation: >
+    apt lädt Pakete aus den Paketquellen der Distribution und löst Abhängigkeiten auf. `apt` ist für Menschen am
+    Terminal gedacht; in Skripten nutzt man `apt-get`, dessen Ausgabe stabil bleibt. Vor einer Installation
+    aktualisiert `apt-get update` die Paketlisten.
+  example: "`sudo apt-get update && sudo apt-get install -y nginx`"
+  category: betrieb
+  aliases: [apt-get, APT]
+  related: [paketmanager, unattended-upgrades]
+  lesson: projekt-live-stellen/server-haerten
+
+- slug: unattended-upgrades
+  term: unattended-upgrades
+  short: Ein Paket für Debian und Ubuntu, das Sicherheitsupdates automatisch einspielt.
+  explanation: >
+    unattended-upgrades läuft täglich und installiert Updates aus den Sicherheitsquellen ohne Rückfrage. Auf
+    Ubuntu Server ist es meist vorinstalliert. Manche Updates wie neue Kernel wirken erst nach einem Neustart,
+    den die Datei /var/run/reboot-required anzeigt.
+  example: "`sudo apt-get install -y unattended-upgrades` und `sudo dpkg-reconfigure -plow unattended-upgrades`"
+  category: sicherheit
+  aliases: [automatische Updates]
+  related: [sicherheitsupdate, apt, server-haertung]
+  lesson: projekt-live-stellen/server-haerten
+
+- slug: sicherheitsupdate
+  term: Sicherheitsupdate
+  short: Eine Aktualisierung, die eine bekannt gewordene Sicherheitslücke schließt.
+  explanation: >
+    Sobald eine Lücke öffentlich ist, suchen Angreifer automatisiert nach Servern, die sie noch haben. Deshalb
+    sollten Sicherheitsupdates schnell und am besten automatisch eingespielt werden. Die meisten Einbrüche
+    nutzen Lücken, für die es längst einen Patch gibt.
+  example: Ein Update für OpenSSL wird über Nacht von unattended-upgrades installiert.
+  category: sicherheit
+  aliases: [Sicherheitsupdates, Security-Update, Patch]
+  related: [unattended-upgrades, cve]
+  lesson: projekt-live-stellen/server-haerten
+
+- slug: provisionierung
+  term: Provisionierung
+  short: Das automatische Einrichten eines Servers mit allen Paketen, Diensten und Ordnern, die eine Anwendung braucht.
+  explanation: >
+    Statt Pakete von Hand zu installieren, beschreibt ein Skript oder Werkzeug den gewünschten Zustand. So lässt
+    sich jeder Server gleich und wiederholbar aufsetzen – auch ein Ersatzserver nach einem Ausfall. Größere
+    Teams nutzen dafür Werkzeuge wie Ansible.
+  example: "`provision.sh` installiert nginx, PHP-FPM, PostgreSQL und Supervisor und legt /var/www/example.com an."
+  category: betrieb
+  aliases: [Provisionierungs-Skript, provisionieren]
+  related: [systemd, apt]
+  lesson: projekt-live-stellen/laufzeit-stack
+
+- slug: release-ordner
+  term: Release-Ordner-Deployment
+  short: Ein Deploy-Verfahren, bei dem jede Version in einen eigenen Ordner kommt und ein Symlink current auf die aktive zeigt.
+  explanation: >
+    Das neue Release wird vollständig vorbereitet – Code, Abhängigkeiten, Migrationen, Caches – während die alte
+    Version weiterläuft. Danach wird der Symlink current in einem Schritt umgeschaltet. Gemeinsame Daten wie
+    .env und storage liegen in shared und werden eingebunden; ein Rollback ist ein erneutes Umschalten.
+  example: "`current -> releases/20261010120000`, nginx zeigt auf `current/public`."
+  category: betrieb
+  aliases: [Release-Ordner, Releases-Ordner, atomares Deployment]
+  related: [deployment, symlink]
+  lesson: projekt-live-stellen/deploy-skript
+
+- slug: backup
+  term: Backup
+  short: Eine Sicherheitskopie von Daten, aus der sich ein früherer Stand wiederherstellen lässt.
+  explanation: >
+    Bei einer Webanwendung sichert man vor allem Datenbank, hochgeladene Dateien und Geheimnisse – Code und
+    Abhängigkeiten lassen sich aus dem Repository neu erzeugen. Ein Backup gilt erst als verlässlich, wenn die
+    Wiederherstellung geprobt wurde.
+  example: "`backup-20261010020000.tar.gz` mit Datenbank-Dump und `storage/app`, dazu eine `.sha256`-Datei."
+  category: betrieb
+  aliases: [Backups, Datensicherung, Sicherung]
+  related: [datenbank-dump, restore-probe, 3-2-1-regel]
+  lesson: projekt-live-stellen/backups-und-restore
+
+- slug: rpo
+  term: RPO
+  short: Recovery Point Objective – wie viele Daten im schlimmsten Fall verloren gehen dürfen.
+  explanation: >
+    Das RPO bestimmt, wie oft gesichert werden muss. Bei einem nächtlichen Backup können bis zu 24 Stunden an
+    Daten verloren gehen. Wer weniger verlieren darf, sichert häufiger oder repliziert die Datenbank.
+  example: Ein Shop mit RPO von einer Stunde braucht mindestens stündliche Sicherungen.
+  category: betrieb
+  aliases: [Recovery Point Objective]
+  related: [rto, backup]
+  lesson: projekt-live-stellen/backups-und-restore
+
+- slug: rto
+  term: RTO
+  short: Recovery Time Objective – wie lange die Wiederherstellung nach einem Ausfall höchstens dauern darf.
+  explanation: >
+    Das RTO umfasst alles vom Ausfall bis zum wieder laufenden Betrieb: Server bereitstellen, deployen, Backup
+    einspielen, prüfen. Wie lange das wirklich dauert, erfährst du nur durch eine geprobte Wiederherstellung.
+  example: Die letzte Restore-Probe dauerte 40 Minuten – das RTO von zwei Stunden ist also realistisch.
+  category: betrieb
+  aliases: [Recovery Time Objective]
+  related: [rpo, restore-probe]
+  lesson: projekt-live-stellen/backups-und-restore
+
+- slug: datenbank-dump
+  term: Datenbank-Dump
+  short: Eine konsistente Kopie einer Datenbank, erzeugt mit dem Sicherungswerkzeug des Datenbanksystems.
+  explanation: >
+    Ein Dump enthält Schema und Daten zu einem einheitlichen Zeitpunkt, auch wenn die App weiterläuft. Einfaches
+    Kopieren der Datendateien kann einen halb geschriebenen Zustand erwischen. Jedes System hat sein eigenes
+    Werkzeug zum Erzeugen und Wiederherstellen.
+  example: "`pg_dump -Fc shop > shop.dump` und später `pg_restore -d shop shop.dump`."
+  category: datenbanken
+  aliases: [Dump, Dumps, SQL-Dump]
+  related: [backup, postgresql, sqlite]
+  lesson: projekt-live-stellen/backups-und-restore
+
+- slug: 3-2-1-regel
+  term: 3-2-1-Regel
+  short: Eine Faustregel für Backups – drei Kopien, auf zwei verschiedenen Speichern, eine davon außer Haus.
+  explanation: >
+    Die Regel schützt vor unterschiedlichen Schäden: defekte Platte, gelöschte Dateien, Ausfall eines ganzen
+    Rechenzentrums oder Anbieters. Die Kopie außer Haus liegt bei einem anderen Anbieter oder an einem anderen
+    Standort und ist idealerweise verschlüsselt.
+  example: Original auf dem Server, ein Backup auf einer zweiten Platte, eine Kopie im Objektspeicher eines anderen Anbieters.
+  category: betrieb
+  aliases: [3-2-1-Backup-Regel]
+  related: [backup, snapshot]
+  lesson: projekt-live-stellen/backups-und-restore
+
+- slug: restore-probe
+  term: Restore-Probe
+  short: Das regelmäßige, testweise Wiederherstellen eines Backups, um zu beweisen, dass es brauchbar ist.
+  explanation: >
+    Bei einer Restore-Probe prüfst du die Prüfsumme, entpackst das Archiv, spielst die Datenbank ein und
+    kontrollierst Stichproben wie die Zeilenzahl wichtiger Tabellen. Die gemessene Dauer zeigt dein echtes RTO.
+    Viele Teams automatisieren die Probe jede Nacht.
+  example: "`sqlite3 probe/db.sqlite \"SELECT COUNT(*) FROM orders;\"` liefert 42 – das Backup ist vollständig."
+  category: betrieb
+  aliases: [Wiederherstellungstest, Restore-Test, Wiederherstellungsprobe]
+  related: [backup, rto, pruefsumme]
+  lesson: projekt-live-stellen/backups-und-restore
+
+- slug: snapshot
+  term: Snapshot
+  short: Eine Momentaufnahme eines ganzen Server-Datenträgers, die der Hosting-Anbieter speichert.
+  explanation: >
+    Ein Snapshot lässt sich schnell anlegen und zurückspielen, etwa vor einem großen Update. Er liegt aber beim
+    selben Anbieter und sichert auch einen fehlerhaften Zustand mit. Deshalb ergänzt er ein eigenes Backup außer
+    Haus, ersetzt es aber nicht.
+  example: Vor dem Upgrade auf eine neue Ubuntu-Version legst du im Webportal des Anbieters einen Snapshot an.
+  category: betrieb
+  aliases: [Snapshots, Server-Snapshot]
+  related: [backup, 3-2-1-regel]
+  lesson: projekt-live-stellen/backups-und-restore
+
+- slug: uptime-monitoring
+  term: Uptime-Monitoring
+  short: Eine regelmäßige Prüfung von außen, ob eine Website erreichbar ist und richtig antwortet.
+  explanation: >
+    Ein Uptime-Monitor ruft eine Adresse wie /up etwa jede Minute auf und schlägt Alarm, wenn kein Status 200
+    zurückkommt. Weil er von außen prüft, erkennt er auch Probleme mit DNS, Firewall, Zertifikat oder Netz.
+    Viele Monitore prüfen zusätzlich die Restlaufzeit des TLS-Zertifikats.
+  example: "Der Monitor ruft `https://example.com/up` jede Minute auf und schickt bei zwei Fehlschlägen hintereinander eine Nachricht."
+  category: betrieb
+  aliases: [Uptime-Monitor, Erreichbarkeitsprüfung, Verfügbarkeitsüberwachung]
+  related: [alerting, go-live]
+  lesson: projekt-live-stellen/ueberwachung-und-go-live
+
+- slug: go-live
+  term: Go-live
+  short: Der Moment, in dem eine Anwendung für echte Nutzer:innen erreichbar wird.
+  explanation: >
+    Beim Go-live wird meist die Domain auf den neuen Server umgestellt. Eine Checkliste deckt vorher Server,
+    App-Konfiguration, Prozesse, HTTPS, Backups, Überwachung und DNS ab. Man wählt dafür eine ruhige Zeit und
+    lässt den alten Server noch ein paar Tage laufen.
+  example: Go-live am Dienstagvormittag, nachdem die TTL am Montag auf 300 Sekunden gesenkt wurde.
+  category: betrieb
+  aliases: [Livegang, live gehen, Launch]
+  related: [deployment, uptime-monitoring]
+  lesson: projekt-live-stellen/ueberwachung-und-go-live

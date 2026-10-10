@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="400" y="22" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Der Weg einer Anfrage auf einen eigenen Server</text>
+  <rect x="20" y="190" width="130" height="60" rx="10" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="85" y="216" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Browser</text>
+  <text x="85" y="236" text-anchor="middle" font-size="12" fill="#1e1b3a">example.com</text>
+  <rect x="210" y="40" width="250" height="50" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="335" y="62" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">DNS</text>
+  <text x="335" y="80" text-anchor="middle" font-size="12" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">example.com → 203.0.113.10</text>
+  <path d="M110 190 L230 92" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6 4" fill="none" marker-end="url(#pfeil)"/>
+  <text x="128" y="138" font-size="12" fill="#1e1b3a">1. Name auflösen</text>
+  <rect x="200" y="115" width="585" height="335" rx="14" fill="#f8fafc" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="770" y="137" text-anchor="end" font-size="13" font-weight="700" fill="#1e1b3a">Server 203.0.113.10</text>
+  <rect x="215" y="150" width="70" height="285" rx="8" fill="#fef2f2" stroke="#f87171" stroke-width="2"/>
+  <text x="250" y="285" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a" class="slot">Firewall</text>
+  <text x="250" y="305" text-anchor="middle" font-size="11" fill="#1e1b3a" class="slot">22 · 80 · 443</text>
+  <path d="M150 220 L213 220" stroke="#1e1b3a" stroke-width="2" fill="none" marker-end="url(#pfeil)"/>
+  <text x="153" y="210" font-size="12" fill="#1e1b3a">2. HTTPS</text>
+  <rect x="310" y="190" width="130" height="60" rx="10" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="375" y="225" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" class="slot">nginx</text>
+  <rect x="470" y="190" width="130" height="60" rx="10" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="535" y="225" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" class="slot">PHP-FPM</text>
+  <rect x="630" y="190" width="140" height="60" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="700" y="216" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Laravel-App</text>
+  <text x="700" y="236" text-anchor="middle" font-size="11" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">current/public</text>
+  <path d="M285 220 L308 220" stroke="#1e1b3a" stroke-width="2" fill="none" marker-end="url(#pfeil)"/>
+  <path d="M440 220 L468 220" stroke="#1e1b3a" stroke-width="2" fill="none" marker-end="url(#pfeil)"/>
+  <path d="M600 220 L628 220" stroke="#1e1b3a" stroke-width="2" fill="none" marker-end="url(#pfeil)"/>
+  <text x="375" y="275" text-anchor="middle" font-size="11" fill="#1e1b3a">TLS, statische Dateien</text>
+  <text x="535" y="275" text-anchor="middle" font-size="11" fill="#1e1b3a">führt PHP aus</text>
+  <rect x="310" y="340" width="130" height="60" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="375" y="375" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" class="slot">Queue-Worker</text>
+  <text x="375" y="420" text-anchor="middle" font-size="11" fill="#1e1b3a">gestartet von Supervisor</text>
+  <rect x="470" y="340" width="130" height="60" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="535" y="375" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" class="slot">Scheduler</text>
+  <text x="535" y="420" text-anchor="middle" font-size="11" fill="#1e1b3a">jede Minute per Cron</text>
+  <rect x="630" y="340" width="140" height="60" rx="10" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="700" y="375" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" class="slot">Datenbank</text>
+  <path d="M700 250 L700 338" stroke="#1e1b3a" stroke-width="2" fill="none" marker-end="url(#pfeil)"/>
+  <path d="M440 370 Q 455 320 640 252" stroke="#1e1b3a" stroke-width="1.5" stroke-dasharray="5 4" fill="none" marker-end="url(#pfeil)"/>
+  <path d="M600 370 L628 370" stroke="#1e1b3a" stroke-width="1.5" stroke-dasharray="5 4" fill="none" marker-end="url(#pfeil)"/>
+</svg>

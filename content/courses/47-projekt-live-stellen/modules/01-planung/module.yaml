@@ -1,0 +1,73 @@
+title: Planen, bevor es losgeht
+description: Hosting-Modell wählen, Domain und DNS-Einträge vorbereiten und das Gesamtbild eines Produktionsservers verstehen.
+exercise:
+  id: modul-uebung-dns-umzug
+  type: terminal
+  title: Einen DNS-Umzug vorbereiten
+  description: |
+    Die Website von `example.com` zieht vom alten Server `198.51.100.20` auf den neuen Server `203.0.113.10`
+    (IPv6 neu: `2001:db8::10`). Im Ordner `dns-umzug` liegt die aktuelle Zone `zone.txt`.
+
+    Bereite die Datei so vor, wie sie **am Umzugstag** aussehen soll:
+
+    1. Der A-Eintrag von `@` zeigt auf `203.0.113.10`, der AAAA-Eintrag von `@` auf `2001:db8::10`.
+    2. `www` hat heute einen eigenen A-Eintrag. Ersetze ihn durch einen CNAME auf `example.com.`.
+    3. A, AAAA und `www` bekommen für den Umzug die TTL `300`.
+    4. Die Mail-Einträge (MX) und der TXT-Eintrag bleiben **unverändert** – E-Mail zieht nicht mit um.
+    5. Notiere in einer Datei `notiz.txt` die alte TTL dieser Einträge in Sekunden (nur die Zahl). So lange
+       musst du nach dem Senken warten, bevor du umstellst.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit `zone.txt` angelegt wird.
+  workdir: dns-umzug
+  setup: |
+    cat > zone.txt <<'ZONE'
+    ; Zone für example.com – Stand vor dem Umzug
+    @      86400  IN  A      198.51.100.20
+    @      86400  IN  AAAA   2001:db8::20
+    www    86400  IN  A      198.51.100.20
+    @      86400  IN  MX     10 mail.example.net.
+    @      86400  IN  TXT    "v=spf1 include:mail.example.net -all"
+    ZONE
+    cp zone.txt .original-zone.txt
+  checks:
+    - type: command
+      run: awk '$1 !~ /^;/ && $1=="@" && $4=="A" {print $2, $5}' zone.txt
+      stdout_equals: "300 203.0.113.10"
+      message: "Der A-Eintrag von @ soll `@ 300 IN A 203.0.113.10` lauten – genau einmal."
+    - type: command
+      run: awk '$1 !~ /^;/ && $1=="@" && $4=="AAAA" {print $2, $5}' zone.txt
+      stdout_equals: "300 2001:db8::10"
+      message: "Der AAAA-Eintrag von @ soll `@ 300 IN AAAA 2001:db8::10` lauten."
+    - type: command
+      run: awk '$1 !~ /^;/ && $1=="www" {print $2, $4, $5}' zone.txt
+      stdout_equals: "300 CNAME example.com."
+      message: "www braucht genau einen Eintrag: einen CNAME auf example.com. mit TTL 300 – der alte A-Eintrag muss weg."
+    - type: command
+      run: diff <(grep -E '\s(MX|TXT)\s' .original-zone.txt) <(grep -E '\s(MX|TXT)\s' zone.txt)
+      message: Die MX- und TXT-Einträge müssen exakt so bleiben, wie sie waren.
+    - type: command
+      run: grep -c '198\.51\.100\.20' zone.txt
+      expect_exit: 1
+      message: In zone.txt steht noch die alte IP 198.51.100.20.
+    - type: command
+      run: tr -d '[:space:]' < notiz.txt
+      stdout_equals: "86400"
+      message: "In notiz.txt gehört die alte TTL der Einträge – schau in die ursprüngliche zweite Spalte."
+  hints:
+    - "Öffne die Datei mit `nano zone.txt` und ändere Zeile für Zeile. Die Spalten sind: Name, TTL, IN, Typ, Wert."
+    - "Für www tauschst du Typ und Wert: aus `A 198.51.100.20` wird `CNAME example.com.`."
+    - "Die alte TTL steht in der zweiten Spalte: 86400 Sekunden sind ein Tag. `echo 86400 > notiz.txt`."
+  solution: |
+    ```bash
+    cd dns-umzug
+    cat > zone.txt <<'EOF'
+    ; Zone für example.com – Umzugstag
+    @      300    IN  A      203.0.113.10
+    @      300    IN  AAAA   2001:db8::10
+    www    300    IN  CNAME  example.com.
+    @      86400  IN  MX     10 mail.example.net.
+    @      86400  IN  TXT    "v=spf1 include:mail.example.net -all"
+    EOF
+    echo 86400 > notiz.txt
+    ```
+    Die TTL von 86400 Sekunden (ein Tag) bedeutet: Senke sie mindestens einen Tag vor dem Umzug auf 300.
