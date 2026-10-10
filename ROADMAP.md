@@ -7,7 +7,7 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 
 - **Zuletzt erledigt (2026-10-10):** Fundament komplett und getestet; Lektionen seitenweise (Blättern); zwei UI-Varianten (Standard + Apple, wählbar unter Einstellungen → Darstellung, gespeichert in users.ui_variant); Kursdauer wird aus Lektionsdauern berechnet; Kurs-Größenregel 10–12 Lektionen / 4–6 h (Laravel bis 10 h) in docs/AUTHORING.md.
 - **Kursstand:** alle 52 Kurse fertig, siehe Abschnitt „Kursstand 2026-10-10“.
-- **Als Nächstes:** lokale Commits nach GitHub pushen (nur auf Anweisung); Testkonto e2e-solve@example.com löschen; Screenshots aus MISSING_SCREENSHOTS.md ergänzen; lose Testdateien früherer Autoren im Workspace aufräumen (nur nach Rückfrage); Phase 7/8 abhaken (frischer Klon, Abschlusszusammenfassung).
+- **Als Nächstes:** Screenshots aus MISSING_SCREENSHOTS.md ergänzen (macht der Owner); optional Frontend auf JavaScript umstellen (vom Owner zurückgestellt).
 - **2026-10-10 (Nachtrag):** Tests leerten die Entwicklungs-DB (Docker-Env überschrieb phpunit.xml) – behoben, danach Neu-Import nötig (Konten waren weg). Neu: „Für mich erledigen“ bei Projektschritten (`solve:`-Skripte, Prüfwerkzeug `stacklab:solve-check --require-all`), Fortschritt zurücksetzen (Einstellungen), `make workspace` (Ordner-Dialog), Suche repariert, Module starten eingeklappt.
 - **Hinweise für Autoren:** Jeder Projektschritt braucht ein `solve`-Skript, `stacklab:solve-check <kurs> --require-all` muss grün sein. Sandbox /tmp ist noexec; kein man/sudo/zsh/python3/rsync; `nvm install` höchstens einmal mit `timeout 300` (Prozesslimit 512).
 
@@ -153,10 +153,10 @@ Stichproben-Review.
 - [x] Backend-Tests (Pest) – 46 Tests grün, phpstan + pint sauber
 - [x] Frontend-Tests (Vitest) – 17 Tests grün, tsc sauber
 - [x] Content-Validierung in CI – erster GitHub-Lauf grün (2026-10-10)
-- [ ] Frischer Klon: `docker compose up` getestet
+- [x] Frischer Klon: `docker compose up` getestet – 52 Kurse importiert, Sandbox, Terminal und „Für mich erledigen“ funktionieren (2026-10-10)
 - [x] Übungs-Terminal mit Workspace getestet – alle Terminal-Aufgaben und Projektschritte in der Sandbox durchgespielt
 
 ## Phase 8 – Doku & Abschluss
-- [ ] SOURCES.md, MISSING_SCREENSHOTS.md
-- [ ] GitHub-Repo SynKeles44/stacklab anlegen und pushen
-- [ ] Abgleich gegen den Ursprungs-Prompt
+- [x] SOURCES.md, MISSING_SCREENSHOTS.md – fehlende Screenshots gibt es nur im PhpStorm-Kurs (32 Stellen); alle 237 Grafikverweise der Kurse existieren
+- [x] GitHub-Repo SynKeles44/stacklab anlegen und pushen
+- [x] Abgleich gegen den Ursprungs-Prompt – 52 Kurse, Laravel größter Kurs (8 h), Zertifikate, Lexikon, Suche, Lesezeichen, Notizen, Übungs-Terminal, `docker compose up` im frischen Klon
