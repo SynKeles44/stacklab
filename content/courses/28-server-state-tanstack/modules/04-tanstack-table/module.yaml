@@ -1,0 +1,115 @@
+title: Tabellen mit TanStack Table
+description: Headless-Tabellen mit Features und Spaltendefinitionen, Sortieren, Filtern und Blättern im Browser – und serverseitige Tabellen im Zusammenspiel mit TanStack Query.
+exercise:
+  id: modul-uebung-tabelle
+  type: terminal
+  title: Eine sortier-, filter- und blätterbare Tabelle konfigurieren
+  description: |
+    Im Ordner `tabelle` liegt ein Node-Projekt mit React und `@tanstack/react-table`. `src/daten.ts` enthält den Typ
+    `Mitarbeiter` (`id`, `name`, `team`, `alter`) und sieben Beispielzeilen.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit das Projekt angelegt wird.
+
+    Lege `src/tabelle.ts` an und exportiere daraus:
+
+    1. `features`: ein `tableFeatures({...})` mit **clientseitigem** Filtern (`columnFilteringFeature` +
+       `filteredRowModel: createFilteredRowModel()` + `filterFns: { includesString: filterFn_includesString }`),
+       Sortieren (`rowSortingFeature` + `sortedRowModel: createSortedRowModel()` +
+       `sortFns: { alphanumeric: sortFn_alphanumeric }`) und Blättern (`rowPaginationFeature` +
+       `paginatedRowModel: createPaginatedRowModel()`).
+    2. `columns`: Accessor-Spalten für `name` (Überschrift `Name`, `filterFn: 'includesString'`), `team` (`Team`)
+       und `alter` (`Alter`).
+    3. `initialState`: `{ pagination: { pageIndex: 0, pageSize: 3 } }`.
+
+    Die Prüfung baut daraus eine echte Tabelle, sortiert nach dem Alter, filtert nach Namen und blättert.
+  workdir: tabelle
+  setup: |
+    npm init -y >/dev/null
+    npm pkg set type=module
+    npm install --no-audit --no-fund react @tanstack/react-table >/dev/null 2>&1
+    mkdir -p src
+    cat > src/daten.ts <<'EOF'
+    export type Mitarbeiter = { id: number; name: string; team: string; alter: number }
+
+    export const mitarbeiter: Mitarbeiter[] = [
+      { id: 1, name: 'Mira', team: 'Web', alter: 31 },
+      { id: 2, name: 'Ada', team: 'API', alter: 36 },
+      { id: 3, name: 'Linus', team: 'Web', alter: 28 },
+      { id: 4, name: 'Grace', team: 'API', alter: 45 },
+      { id: 5, name: 'Alan', team: 'Data', alter: 41 },
+      { id: 6, name: 'Hedy', team: 'Web', alter: 39 },
+      { id: 7, name: 'Tim', team: 'Data', alter: 25 },
+    ]
+    EOF
+  checks:
+    - type: file_exists
+      path: src/tabelle.ts
+      message: Die Datei src/tabelle.ts gibt es noch nicht.
+    - type: file_contains
+      path: src/tabelle.ts
+      pattern: "sortedRowModel:\\s*createSortedRowModel\\(\\)"
+      message: In features fehlt das Zeilenmodell sortedRowModel – ohne es sortiert die Tabelle nicht im Browser.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        cat > "$d/p.mjs" <<'EOF'
+        import { constructTable } from '@tanstack/table-core'
+        import { storeReactivityBindings } from '@tanstack/table-core/store-reactivity-bindings'
+        import { features, columns, initialState } from '../src/tabelle.ts'
+        import { mitarbeiter } from '../src/daten.ts'
+        const table = constructTable({
+          features: { ...features, coreReactivityFeature: storeReactivityBindings() },
+          columns, data: mitarbeiter, initialState, getRowId: (m) => String(m.id),
+        })
+        const namen = () => table.getRowModel().rows.map((r) => r.original.name).join(',')
+        const teile = [table.getAllLeafColumns().map((c) => c.id).join(','), String(table.getPageCount()), namen()]
+        table.setSorting([{ id: 'alter', desc: false }])
+        teile.push(namen())
+        table.nextPage()
+        teile.push(namen())
+        table.getColumn('name').setFilterValue('A')
+        table.getRowModel()
+        await new Promise((r) => setTimeout(r, 20))
+        teile.push(namen(), String(table.getPageCount()))
+        console.log(teile.join('|'))
+        EOF
+        node "$d/p.mjs" 2>/dev/null; r=$?
+        rm -rf "$d"
+        exit $r
+      stdout_equals: "name,team,alter|3|Mira,Ada,Linus|Tim,Linus,Mira|Ada,Hedy,Alan|Mira,Ada,Alan|2"
+      message: "Die Tabelle verhält sich noch nicht wie erwartet. Erwartet: Spalten name, team, alter; drei Zeilen pro Seite; Sortieren nach alter; Filtern von name mit includesString (Groß-/Kleinschreibung egal) – und nach dem Filtern zurück auf Seite 1."
+  hints:
+    - "Alle Bausteine importierst du aus `@tanstack/react-table`, z. B. `import { tableFeatures, createColumnHelper, rowSortingFeature, createSortedRowModel, … } from '@tanstack/react-table'`."
+    - "In `tableFeatures` steht jedes Feature **vor** seinem Zeilenmodell: `columnFilteringFeature, filteredRowModel: createFilteredRowModel(), …`."
+    - "`export const initialState = { pagination: { pageIndex: 0, pageSize: 3 } }` und die Namensspalte `helper.accessor('name', { header: 'Name', filterFn: 'includesString' })`."
+  solution: |
+    ```ts title="src/tabelle.ts"
+    import {
+      tableFeatures, createColumnHelper,
+      columnFilteringFeature, createFilteredRowModel, filterFn_includesString,
+      rowSortingFeature, createSortedRowModel, sortFn_alphanumeric,
+      rowPaginationFeature, createPaginatedRowModel,
+    } from '@tanstack/react-table'
+    import type { Mitarbeiter } from './daten.ts'
+
+    export const features = tableFeatures({
+      columnFilteringFeature,
+      filteredRowModel: createFilteredRowModel(),
+      filterFns: { includesString: filterFn_includesString },
+      rowSortingFeature,
+      sortedRowModel: createSortedRowModel(),
+      sortFns: { alphanumeric: sortFn_alphanumeric },
+      rowPaginationFeature,
+      paginatedRowModel: createPaginatedRowModel(),
+    })
+
+    const helper = createColumnHelper<typeof features, Mitarbeiter>()
+
+    export const columns = helper.columns([
+      helper.accessor('name', { header: 'Name', filterFn: 'includesString' }),
+      helper.accessor('team', { header: 'Team' }),
+      helper.accessor('alter', { header: 'Alter' }),
+    ])
+
+    export const initialState = { pagination: { pageIndex: 0, pageSize: 3 } }
+    ```

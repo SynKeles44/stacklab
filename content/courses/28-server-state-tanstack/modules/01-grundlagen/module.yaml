@@ -1,0 +1,113 @@
+title: Server-State verstehen
+description: Warum Server-Daten einen eigenen Cache brauchen, wie du mit useQuery lädst und wie Query Keys, staleTime und gcTime zusammenspielen.
+exercise:
+  id: modul-uebung-mini-cache
+  type: code
+  language: ts
+  title: Ein Mini-Cache nach dem Vorbild von TanStack Query
+  description: |
+    Bau die drei Entscheidungen nach, die TanStack Query bei jedem `useQuery` trifft. Zeiten sind Millisekunden.
+
+    1. `hashKey(key)` macht aus einem Query Key einen eindeutigen Text. Arrays behalten ihre Reihenfolge, die
+       **Eigenschaften von Objekten werden alphabetisch sortiert** – so ergeben `{ a: 1, b: 2 }` und
+       `{ b: 2, a: 1 }` denselben Hash. Nutze `JSON.stringify` mit einer Ersetzungsfunktion.
+    2. `zustand(eintrag, jetzt, optionen)` liefert:
+       - `'fehlt'`, wenn es keinen Eintrag gibt (`undefined`),
+       - `'entfernbar'`, wenn der Eintrag inaktiv ist (`beobachter === 0`) und seit `inaktivSeit` mindestens
+         `gcTime` vergangen ist,
+       - `'frisch'`, wenn seit `aktualisiertUm` **weniger** als `staleTime` vergangen ist,
+       - sonst `'veraltet'`.
+    3. `beimMount(eintrag, jetzt, optionen)` liefert `{ anzeigen, laden }`: Daten werden angezeigt, wenn der
+       Zustand `frisch` oder `veraltet` ist. Geladen wird, wenn der Zustand **nicht** `frisch` ist.
+  starter: |
+    type Eintrag = {
+      daten: unknown
+      aktualisiertUm: number
+      beobachter: number
+      inaktivSeit: number | null
+    }
+    type Optionen = { staleTime: number; gcTime: number }
+    type Zustand = 'fehlt' | 'frisch' | 'veraltet' | 'entfernbar'
+
+    function hashKey(key: readonly unknown[]): string {
+      return ''
+    }
+
+    function zustand(eintrag: Eintrag | undefined, jetzt: number, optionen: Optionen): Zustand {
+      return 'fehlt'
+    }
+
+    function beimMount(eintrag: Eintrag | undefined, jetzt: number, optionen: Optionen) {
+      return { anzeigen: false, laden: true }
+    }
+  tests:
+    - name: hashKey sortiert Objekt-Eigenschaften
+      code: |
+        assertEqual(hashKey(['aufgaben', { b: 2, a: 1 }]), hashKey(['aufgaben', { a: 1, b: 2 }]))
+        assertEqual(hashKey(['aufgaben', { status: 'offen' }]), '["aufgaben",{"status":"offen"}]')
+    - name: hashKey beachtet die Array-Reihenfolge
+      code: |
+        assertTrue(hashKey(['a', 'b']) !== hashKey(['b', 'a']), 'Array-Elemente dürfen nicht sortiert werden.')
+        assertEqual(hashKey([]), '[]')
+    - name: zustand erkennt fehlende und frische Einträge
+      code: |
+        const opt = { staleTime: 1000, gcTime: 5000 }
+        assertEqual(zustand(undefined, 0, opt), 'fehlt')
+        assertEqual(zustand({ daten: 1, aktualisiertUm: 100, beobachter: 1, inaktivSeit: null }, 500, opt), 'frisch')
+    - name: zustand erkennt veraltete Einträge – auch bei staleTime 0
+      code: |
+        const e = { daten: 1, aktualisiertUm: 100, beobachter: 1, inaktivSeit: null }
+        assertEqual(zustand(e, 1100, { staleTime: 1000, gcTime: 5000 }), 'veraltet')
+        assertEqual(zustand(e, 100, { staleTime: 0, gcTime: 5000 }), 'veraltet')
+    - name: zustand erkennt entfernbare Einträge
+      code: |
+        const opt = { staleTime: 1000, gcTime: 5000 }
+        assertEqual(zustand({ daten: 1, aktualisiertUm: 0, beobachter: 0, inaktivSeit: 2000 }, 7000, opt), 'entfernbar')
+        assertEqual(zustand({ daten: 1, aktualisiertUm: 0, beobachter: 0, inaktivSeit: 2000 }, 6999, opt), 'veraltet')
+        assertEqual(zustand({ daten: 1, aktualisiertUm: 6500, beobachter: 0, inaktivSeit: 6600 }, 7000, opt), 'frisch')
+    - name: beimMount zeigt Cache-Daten und lädt nur bei Bedarf
+      code: |
+        const opt = { staleTime: 1000, gcTime: 5000 }
+        assertDeepEqual(beimMount(undefined, 0, opt), { anzeigen: false, laden: true })
+        assertDeepEqual(beimMount({ daten: 1, aktualisiertUm: 0, beobachter: 1, inaktivSeit: null }, 500, opt), { anzeigen: true, laden: false })
+        assertDeepEqual(beimMount({ daten: 1, aktualisiertUm: 0, beobachter: 1, inaktivSeit: null }, 2000, opt), { anzeigen: true, laden: true })
+        assertDeepEqual(beimMount({ daten: 1, aktualisiertUm: 0, beobachter: 0, inaktivSeit: 0 }, 9000, opt), { anzeigen: false, laden: true })
+  hints:
+    - "`JSON.stringify(key, (_k, wert) => …)`: Ist `wert` ein Objekt, aber kein Array, gib ein neues Objekt mit sortierten Schlüsseln zurück – z. B. mit `Object.keys(wert).sort().reduce(…)`."
+    - "Reihenfolge in `zustand`: zuerst `undefined`, dann die gcTime-Prüfung (nur wenn `beobachter === 0` und `inaktivSeit !== null`), dann die staleTime."
+    - "`beimMount`: `const z = zustand(…)`, dann `{ anzeigen: z === 'frisch' || z === 'veraltet', laden: z !== 'frisch' }`."
+  solution: |
+    type Eintrag = {
+      daten: unknown
+      aktualisiertUm: number
+      beobachter: number
+      inaktivSeit: number | null
+    }
+    type Optionen = { staleTime: number; gcTime: number }
+    type Zustand = 'fehlt' | 'frisch' | 'veraltet' | 'entfernbar'
+
+    function hashKey(key: readonly unknown[]): string {
+      return JSON.stringify(key, (_k, wert) => {
+        if (wert === null || typeof wert !== 'object' || Array.isArray(wert)) return wert
+        return Object.keys(wert)
+          .sort()
+          .reduce<Record<string, unknown>>((sortiert, k) => {
+            sortiert[k] = (wert as Record<string, unknown>)[k]
+            return sortiert
+          }, {})
+      })
+    }
+
+    function zustand(eintrag: Eintrag | undefined, jetzt: number, optionen: Optionen): Zustand {
+      if (eintrag === undefined) return 'fehlt'
+      if (eintrag.beobachter === 0 && eintrag.inaktivSeit !== null && jetzt - eintrag.inaktivSeit >= optionen.gcTime) {
+        return 'entfernbar'
+      }
+      if (jetzt - eintrag.aktualisiertUm < optionen.staleTime) return 'frisch'
+      return 'veraltet'
+    }
+
+    function beimMount(eintrag: Eintrag | undefined, jetzt: number, optionen: Optionen) {
+      const z = zustand(eintrag, jetzt, optionen)
+      return { anzeigen: z === 'frisch' || z === 'veraltet', laden: z !== 'frisch' }
+    }

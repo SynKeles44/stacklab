@@ -1,0 +1,37 @@
+title: Server-State mit TanStack Query & Table
+subtitle: Daten vom Server laden, zwischenspeichern, ändern und als Tabelle zeigen – ohne selbstgebauten Cache
+description: >
+  Fast jede React-App zeigt Daten, die eigentlich auf einem Server liegen: Aufgaben, Bestellungen,
+  Nutzerlisten. Wer sie mit `fetch` in `useEffect` lädt, baut sich nach und nach einen eigenen Cache mit
+  Ladezuständen, Fehlerbehandlung, doppelten Requests und veralteten Daten – und meistens mit Bugs.
+
+
+  In diesem Kurs lernst du, warum **Server-State** etwas grundlegend anderes ist als Client-State, und wie
+  **TanStack Query** (Version 5) ihn für dich verwaltet: Query Keys, `staleTime` und `gcTime`, Mutationen,
+  Invalidierung, optimistische Updates, Paginierung und Infinite Queries. Du verbindest Query mit den
+  Loadern von React Router und typisierst alles sauber mit TypeScript.
+
+
+  Im letzten Modul baust du mit **TanStack Table** (Version 9) Tabellen nach dem Headless-Prinzip: Du
+  definierst Spalten und Features, die Bibliothek sortiert, filtert und blättert – und du entscheidest, ob
+  das im Browser oder auf dem Server passiert. Im begleitenden Projekt entsteht eine Aufgabenverwaltung mit
+  Liste, Detailseite und sortierbarer Tabelle.
+category: frontend
+level: fortgeschritten
+icon: refresh-cw
+color: "#ef4444"
+estimated_hours: 5
+workspace_dir: server-state-tanstack
+prerequisites: [react, typescript, apis-endpunkte]
+learning_goals:
+  - Du unterscheidest Client-State und Server-State und erklärst, welche Probleme ein Daten-Cache lösen muss.
+  - Du lädst Daten mit useQuery, wählst sprechende Query Keys und stellst staleTime und gcTime bewusst ein.
+  - Du änderst Daten mit useMutation, invalidierst betroffene Queries und baust optimistische Updates mit Rollback.
+  - Du behandelst Lade- und Fehlerzustände sauber und nutzt Retries, Suspense und die Devtools.
+  - Du baust Paginierung und Endlos-Listen mit placeholderData und useInfiniteQuery.
+  - Du lädst Daten in React-Router-Loadern über den QueryClient vor und teilst Optionen mit queryOptions.
+  - Du baust Headless-Tabellen mit TanStack Table und entscheidest zwischen client- und serverseitigem Sortieren, Filtern und Blättern.
+references:
+  - Admin-Oberflächen mit großen, serverseitig paginierten Tabellen und Filtern in der URL
+  - Query-Key-Fabriken pro Fachbereich als Teamkonvention in größeren React-Codebasen
+  - Kombination aus React Router Data Mode und TanStack Query als Datenschicht einer SPA

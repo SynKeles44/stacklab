@@ -1,0 +1,152 @@
+title: Listen, Routing und Typen
+description: Paginierung und Endlos-Listen, Datenladen in React-Router-Loadern mit queryOptions und eine durchgehend typsichere Datenschicht.
+exercise:
+  id: modul-uebung-blaettern
+  type: code
+  language: tsx
+  title: Blättern mit Cache und Platzhalterdaten – selbst gebaut
+  description: |
+    Um wirklich zu verstehen, was `placeholderData: keepPreviousData` tut, baust du es einmal selbst. `App` ist
+    fertig: Sie zeigt eine Seite mit drei Einträgen und die Buttons „Zurück“ und „Weiter“. `ladeSeite(seite)`
+    simuliert den Server (30 ms Wartezeit) und zählt in `anfragen` mit. Bereits geladene Seiten liegen in `cache`.
+
+    Schreibe den Hook `useSeite(seite)`. Er gibt `{ daten, isPlaceholderData }` zurück:
+
+    1. Liegt die Seite im `cache`, ist `daten` der Cache-Eintrag und `isPlaceholderData` `false` – **ohne** neue Anfrage.
+    2. Fehlt die Seite, startet ein Effekt `ladeSeite(seite)`, legt das Ergebnis in den `cache` und sorgt für ein
+       neues Rendern (z. B. mit einem Zähler in `useState`).
+    3. Solange die neue Seite lädt, liefert der Hook die **zuletzt angezeigten** Daten weiter (merke sie dir in
+       einem `useRef`) und `isPlaceholderData: true`. Beim allerersten Laden gibt es noch nichts – dann ist `daten`
+       `undefined` und `isPlaceholderData` `false`.
+    4. Wechselt die Seite, bevor eine alte Antwort ankommt, darf die alte Antwort kein Rendern mehr auslösen
+       (Aufräumfunktion im Effekt).
+  starter: |
+    type Seite = { eintraege: string[]; hatMehr: boolean }
+
+    const ALLE = Array.from({ length: 7 }, (_, i) => 'Eintrag ' + (i + 1))
+    let anfragen = 0
+
+    function ladeSeite(seite: number): Promise<Seite> {
+      anfragen++
+      return new Promise((fertig) =>
+        setTimeout(() => fertig({ eintraege: ALLE.slice((seite - 1) * 3, seite * 3), hatMehr: seite * 3 < ALLE.length }), 30),
+      )
+    }
+
+    const cache = new Map<number, Seite>()
+
+    function useSeite(seite: number): { daten: Seite | undefined; isPlaceholderData: boolean } {
+      return { daten: undefined, isPlaceholderData: false }
+    }
+
+    function App() {
+      const [seite, setSeite] = React.useState(1)
+      const { daten, isPlaceholderData } = useSeite(seite)
+      return (
+        <section>
+          <p className="seite">Seite {seite}</p>
+          <p className="anfragen">Anfragen: {anfragen}</p>
+          {daten === undefined ? (
+            <p className="laden">Lädt …</p>
+          ) : (
+            <ul style={{ opacity: isPlaceholderData ? 0.5 : 1 }}>
+              {daten.eintraege.map((e) => <li key={e}>{e}</li>)}
+            </ul>
+          )}
+          <button id="zurueck" disabled={seite === 1} onClick={() => setSeite((s) => s - 1)}>Zurück</button>
+          <button id="weiter" disabled={isPlaceholderData || !daten?.hatMehr} onClick={() => setSeite((s) => s + 1)}>Weiter</button>
+        </section>
+      )
+    }
+  tests:
+    - name: die erste Seite wird geladen
+      code: |
+        await new Promise((r) => setTimeout(r, 80))
+        const li = queryAll('li')
+        assertEqual(li.length, 3, 'Nach dem Laden sollen drei Einträge erscheinen.')
+        assertEqual(li[0].textContent, 'Eintrag 1')
+        assertEqual(query('.anfragen').textContent, 'Anfragen: 1')
+    - name: beim Blättern bleiben die alten Daten als Platzhalter stehen
+      code: |
+        await click('#weiter')
+        assertEqual(text().includes('Seite 2'), true)
+        assertTrue(query('.laden') === null, 'Während Seite 2 lädt, soll die alte Liste stehen bleiben – kein Ladehinweis.')
+        assertEqual(queryAll('li')[0].textContent, 'Eintrag 1', 'Als Platzhalter sollen die Daten von Seite 1 sichtbar sein.')
+        assertEqual(query('#weiter').disabled, true, 'Während Platzhalterdaten angezeigt werden, muss Weiter gesperrt sein.')
+        await new Promise((r) => setTimeout(r, 80))
+        assertEqual(queryAll('li')[0].textContent, 'Eintrag 4')
+        assertEqual(query('#weiter').disabled, false)
+    - name: eine Seite aus dem Cache kommt ohne neue Anfrage
+      code: |
+        await click('#zurueck')
+        assertEqual(queryAll('li')[0].textContent, 'Eintrag 1', 'Seite 1 liegt im Cache und soll sofort erscheinen.')
+        await new Promise((r) => setTimeout(r, 50))
+        assertEqual(query('.anfragen').textContent, 'Anfragen: 2', 'Für eine Seite im Cache darf keine neue Anfrage starten.')
+    - name: auf der letzten Seite ist Weiter gesperrt
+      code: |
+        await click('#weiter')
+        await new Promise((r) => setTimeout(r, 10))
+        await click('#weiter')
+        await new Promise((r) => setTimeout(r, 80))
+        assertEqual(queryAll('li').length, 1, 'Seite 3 hat nur noch einen Eintrag.')
+        assertEqual(queryAll('li')[0].textContent, 'Eintrag 7')
+        assertEqual(query('#weiter').disabled, true)
+  hints:
+    - "Gerüst: `const [, setVersion] = React.useState(0)` zum Neu-Rendern und `const letzte = React.useRef<Seite | undefined>(undefined)` für die zuletzt angezeigten Daten."
+    - "Im Effekt: `if (cache.has(seite)) return`, sonst `let aktiv = true; ladeSeite(seite).then((d) => { cache.set(seite, d); if (aktiv) setVersion((v) => v + 1) }); return () => { aktiv = false }` – Abhängigkeit: `[seite]`."
+    - "Beim Rendern: `const aktuell = cache.get(seite)`. Ist sie da, merkst du sie in `letzte.current`. Zurück gibst du `{ daten: aktuell ?? letzte.current, isPlaceholderData: aktuell === undefined && letzte.current !== undefined }`."
+  solution: |
+    type Seite = { eintraege: string[]; hatMehr: boolean }
+
+    const ALLE = Array.from({ length: 7 }, (_, i) => 'Eintrag ' + (i + 1))
+    let anfragen = 0
+
+    function ladeSeite(seite: number): Promise<Seite> {
+      anfragen++
+      return new Promise((fertig) =>
+        setTimeout(() => fertig({ eintraege: ALLE.slice((seite - 1) * 3, seite * 3), hatMehr: seite * 3 < ALLE.length }), 30),
+      )
+    }
+
+    const cache = new Map<number, Seite>()
+
+    function useSeite(seite: number): { daten: Seite | undefined; isPlaceholderData: boolean } {
+      const [, setVersion] = React.useState(0)
+      const letzte = React.useRef<Seite | undefined>(undefined)
+
+      React.useEffect(() => {
+        if (cache.has(seite)) return
+        let aktiv = true
+        ladeSeite(seite).then((d) => {
+          cache.set(seite, d)
+          if (aktiv) setVersion((v) => v + 1)
+        })
+        return () => {
+          aktiv = false
+        }
+      }, [seite])
+
+      const aktuell = cache.get(seite)
+      if (aktuell) letzte.current = aktuell
+      return { daten: aktuell ?? letzte.current, isPlaceholderData: aktuell === undefined && letzte.current !== undefined }
+    }
+
+    function App() {
+      const [seite, setSeite] = React.useState(1)
+      const { daten, isPlaceholderData } = useSeite(seite)
+      return (
+        <section>
+          <p className="seite">Seite {seite}</p>
+          <p className="anfragen">Anfragen: {anfragen}</p>
+          {daten === undefined ? (
+            <p className="laden">Lädt …</p>
+          ) : (
+            <ul style={{ opacity: isPlaceholderData ? 0.5 : 1 }}>
+              {daten.eintraege.map((e) => <li key={e}>{e}</li>)}
+            </ul>
+          )}
+          <button id="zurueck" disabled={seite === 1} onClick={() => setSeite((s) => s - 1)}>Zurück</button>
+          <button id="weiter" disabled={isPlaceholderData || !daten?.hatMehr} onClick={() => setSeite((s) => s + 1)}>Weiter</button>
+        </section>
+      )
+    }

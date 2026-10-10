@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="500" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Wer sortiert, filtert und blättert?</text>
+  <rect x="20" y="60" width="470" height="390" rx="14" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <rect x="510" y="60" width="470" height="390" rx="14" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="255" y="92" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Clientseitig</text>
+  <text x="745" y="92" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Serverseitig</text>
+  <rect x="155" y="112" width="200" height="54" rx="10" fill="#ffffff" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="255" y="144" text-anchor="middle" font-size="15" fill="#1e1b3a">Server / API</text>
+  <line x1="255" y1="168" x2="255" y2="218" stroke="#1e1b3a" stroke-width="2.5" marker-end="url(#pc)"/>
+  <text x="265" y="197" font-size="13" fill="#1e1b3a">einmal alle 800 Zeilen</text>
+  <rect x="60" y="222" width="390" height="130" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2.5"/>
+  <text x="255" y="250" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Browser: TanStack Table</text>
+  <text x="255" y="276" text-anchor="middle" font-size="14" fill="#1e1b3a">filteredRowModel → sortedRowModel</text>
+  <text x="255" y="298" text-anchor="middle" font-size="14" fill="#1e1b3a">→ paginatedRowModel</text>
+  <text x="255" y="330" text-anchor="middle" font-size="13" fill="#1e1b3a">Klick auf „Weiter“: kein Request</text>
+  <text x="40" y="390" font-size="14" fill="#1e1b3a">+ sofortige Reaktion, keine Server-Logik nötig</text>
+  <text x="40" y="414" font-size="14" fill="#1e1b3a">– nur für Datenmengen, die sich problemlos</text>
+  <text x="40" y="434" font-size="14" fill="#1e1b3a">   komplett laden lassen (bis einige tausend Zeilen)</text>
+  <rect x="645" y="112" width="200" height="54" rx="10" fill="#ffffff" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="745" y="136" text-anchor="middle" font-size="15" fill="#1e1b3a">Server / API</text>
+  <text x="745" y="156" text-anchor="middle" font-size="12" fill="#1e1b3a">WHERE, ORDER BY, LIMIT</text>
+  <line x1="705" y1="218" x2="705" y2="170" stroke="#1e1b3a" stroke-width="2.5" marker-end="url(#pc)"/>
+  <line x1="785" y1="168" x2="785" y2="218" stroke="#1e1b3a" stroke-width="2.5" marker-end="url(#pc)"/>
+  <text x="695" y="190" text-anchor="end" font-size="12" fill="#1e1b3a">?seite=3&amp;sort=alter</text>
+  <text x="695" y="206" text-anchor="end" font-size="12" fill="#1e1b3a">&amp;name=ad</text>
+  <text x="795" y="190" font-size="12" fill="#1e1b3a">20 Zeilen</text>
+  <text x="795" y="206" font-size="12" fill="#1e1b3a">+ rowCount</text>
+  <rect x="550" y="222" width="390" height="130" rx="10" fill="#ffffff" stroke="#a78bfa" stroke-width="2.5"/>
+  <text x="745" y="250" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Browser: TanStack Query + Table</text>
+  <text x="745" y="276" text-anchor="middle" font-size="14" fill="#1e1b3a">Zustand im queryKey,</text>
+  <text x="745" y="298" text-anchor="middle" font-size="14" fill="#1e1b3a">manualSorting / manualFiltering / manualPagination</text>
+  <text x="745" y="330" text-anchor="middle" font-size="13" fill="#1e1b3a">Klick auf „Weiter“: neuer Request (oder Cache)</text>
+  <text x="530" y="390" font-size="14" fill="#1e1b3a">+ beliebig große Datenmengen</text>
+  <text x="530" y="414" font-size="14" fill="#1e1b3a">– jede Änderung braucht eine Server-Antwort,</text>
+  <text x="530" y="434" font-size="14" fill="#1e1b3a">   die API muss Sortieren und Filtern können</text>
+</svg>

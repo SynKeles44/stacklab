@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="500" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Optimistisches Update: erst anzeigen, dann bestätigen</text>
+  <rect x="20" y="70" width="960" height="110" rx="10" fill="#ecfeff"/>
+  <rect x="20" y="190" width="960" height="110" rx="10" fill="#f5f3ff"/>
+  <rect x="20" y="310" width="960" height="110" rx="10" fill="#fffbeb"/>
+  <text x="40" y="132" font-size="17" font-weight="700" fill="#1e1b3a">Oberfläche</text>
+  <text x="40" y="252" font-size="17" font-weight="700" fill="#1e1b3a">Cache</text>
+  <text x="40" y="372" font-size="17" font-weight="700" fill="#1e1b3a">Server</text>
+  <rect x="160" y="95" width="160" height="60" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2.5"/>
+  <text x="240" y="121" text-anchor="middle" font-size="14" fill="#1e1b3a">Klick auf</text>
+  <text x="240" y="140" text-anchor="middle" font-size="14" fill="#1e1b3a">Checkbox</text>
+  <rect x="160" y="215" width="160" height="60" rx="10" fill="#ffffff" stroke="#a78bfa" stroke-width="2.5"/>
+  <text x="240" y="236" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">onMutate</text>
+  <text x="240" y="254" text-anchor="middle" font-size="12" fill="#1e1b3a">cancel + Schnappschuss</text>
+  <text x="240" y="270" text-anchor="middle" font-size="12" fill="#1e1b3a">+ setQueryData</text>
+  <rect x="370" y="95" width="160" height="60" rx="10" fill="#d1fae5" stroke="#34d399" stroke-width="2.5"/>
+  <text x="450" y="121" text-anchor="middle" font-size="14" fill="#1e1b3a">Haken sofort</text>
+  <text x="450" y="140" text-anchor="middle" font-size="14" fill="#1e1b3a">sichtbar</text>
+  <rect x="370" y="335" width="160" height="60" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="2.5"/>
+  <text x="450" y="361" text-anchor="middle" font-size="14" fill="#1e1b3a">mutationFn:</text>
+  <text x="450" y="380" text-anchor="middle" font-size="14" fill="#1e1b3a">PATCH-Request</text>
+  <line x1="240" y1="157" x2="240" y2="211" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <line x1="322" y1="235" x2="380" y2="159" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <line x1="322" y1="260" x2="380" y2="331" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <rect x="600" y="335" width="150" height="60" rx="10" fill="#d1fae5" stroke="#34d399" stroke-width="2.5"/>
+  <text x="675" y="370" text-anchor="middle" font-size="14" fill="#1e1b3a">200 OK</text>
+  <rect x="800" y="335" width="160" height="60" rx="10" fill="#fee2e2" stroke="#f87171" stroke-width="2.5"/>
+  <text x="880" y="370" text-anchor="middle" font-size="14" fill="#1e1b3a">500 Fehler</text>
+  <line x1="532" y1="365" x2="596" y2="365" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <path d="M532,380 C620,410 760,410 800,375" fill="none" stroke="#1e1b3a" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#pf)"/>
+  <rect x="800" y="215" width="160" height="60" rx="10" fill="#ffffff" stroke="#f87171" stroke-width="2.5"/>
+  <text x="880" y="236" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">onError</text>
+  <text x="880" y="256" text-anchor="middle" font-size="12" fill="#1e1b3a">Schnappschuss</text>
+  <text x="880" y="270" text-anchor="middle" font-size="12" fill="#1e1b3a">zurückschreiben</text>
+  <line x1="880" y1="331" x2="880" y2="279" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <rect x="800" y="95" width="160" height="60" rx="10" fill="#fee2e2" stroke="#f87171" stroke-width="2.5"/>
+  <text x="880" y="121" text-anchor="middle" font-size="14" fill="#1e1b3a">Haken weg +</text>
+  <text x="880" y="140" text-anchor="middle" font-size="14" fill="#1e1b3a">Fehlermeldung</text>
+  <line x1="880" y1="211" x2="880" y2="159" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <rect x="600" y="215" width="150" height="60" rx="10" fill="#ffffff" stroke="#34d399" stroke-width="2.5"/>
+  <text x="675" y="241" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">onSettled</text>
+  <text x="675" y="260" text-anchor="middle" font-size="12" fill="#1e1b3a">invalidateQueries</text>
+  <line x1="675" y1="331" x2="675" y2="279" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <text x="500" y="455" text-anchor="middle" font-size="15" fill="#1e1b3a">onSettled läuft in beiden Fällen und holt den echten Server-Stand – auch nach einem Rollback.</text>
+  <text x="500" y="482" text-anchor="middle" font-size="15" fill="#1e1b3a">Die Oberfläche folgt immer dem Cache: Was im Cache steht, wird gerendert.</text>
+</svg>

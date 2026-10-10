@@ -1,0 +1,145 @@
+title: Daten ändern
+description: Mutationen mit useMutation, Invalidierung, optimistische Updates mit Rollback sowie sauberer Umgang mit Fehlern, Retries, Suspense und den Devtools.
+exercise:
+  id: modul-uebung-optimistisch
+  type: terminal
+  title: Eine echte optimistische Mutation – geprüft mit dem echten QueryClient
+  description: |
+    Im Ordner `optimistisch` liegt ein Node-Projekt mit `@tanstack/react-query`. Die Datei `src/toggleTodo.ts`
+    exportiert `toggleTodoOptions(saveTodo)`: eine Funktion, die mit `mutationOptions(...)` die Optionen für eine
+    Mutation baut. `saveTodo` ist die Funktion, die zum Server spricht – die Prüfung übergibt dort mal einen
+    erfolgreichen, mal einen scheiternden Server.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit das Projekt angelegt und die Pakete installiert werden.
+
+    Ergänze `toggleTodoOptions` so, dass die Mutation ein Todo optimistisch abhakt:
+
+    1. `mutationFn` schickt das Todo mit **umgedrehtem** `done` an `saveTodo`.
+    2. `onMutate(todo, context)`: `await context.client.cancelQueries(...)` für `todoKeys.all`, Schnappschuss mit
+       `getQueryData`, dann mit `setQueryData` eine neue Liste schreiben, in der `done` beim passenden Todo
+       umgedreht ist. Gib `{ vorher }` zurück.
+    3. `onError(fehler, todo, onMutateResult, context)`: den Schnappschuss zurückschreiben.
+    4. `onSettled(...)`: `todoKeys.all` invalidieren. Der Kontext mit `client` ist hier der **fünfte** Parameter.
+
+    Die Prüfung startet deine Mutation mit einem echten `QueryClient` und kontrolliert den Cache während und nach
+    dem Request. Selbst testen kannst du mit `node --check src/toggleTodo.ts` (nur Syntax) oder indem du ein
+    eigenes Skript schreibst.
+  workdir: optimistisch
+  setup: |
+    npm init -y >/dev/null
+    npm pkg set type=module
+    npm install --no-audit --no-fund react @tanstack/react-query >/dev/null 2>&1
+    mkdir -p src
+    cat > src/toggleTodo.ts <<'EOF'
+    import { mutationOptions } from '@tanstack/react-query'
+
+    export type Todo = { id: number; title: string; done: boolean }
+
+    export const todoKeys = {
+      all: ['todos'] as const,
+    }
+
+    export function toggleTodoOptions(saveTodo: (todo: Todo) => Promise<Todo>) {
+      return mutationOptions({
+        mutationFn: (todo: Todo) => saveTodo(todo),
+      })
+    }
+    EOF
+  checks:
+    - type: file_contains
+      path: src/toggleTodo.ts
+      pattern: "onMutate"
+      message: In src/toggleTodo.ts fehlt noch der Callback onMutate.
+    - type: file_contains
+      path: src/toggleTodo.ts
+      pattern: "cancelQueries"
+      message: onMutate soll zuerst laufende Queries mit cancelQueries abbrechen.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        cat > "$d/p.mjs" <<'EOF'
+        import { QueryClient, MutationObserver } from '@tanstack/react-query'
+        import { toggleTodoOptions } from '../src/toggleTodo.ts'
+        const start = () => [{ id: 1, title: 'Einkaufen', done: false }, { id: 2, title: 'Lesen', done: true }]
+        const qc = new QueryClient()
+        qc.setQueryData(['todos'], start())
+        let gesendet
+        let freigeben
+        const speichern = (todo) => new Promise((r) => { gesendet = todo; freigeben = () => r(todo) })
+        const p = new MutationObserver(qc, toggleTodoOptions(speichern)).mutate(start()[0])
+        await new Promise((r) => setTimeout(r, 30))
+        const liste = qc.getQueryData(['todos'])
+        if (liste?.[0]?.done !== true || liste?.[1]?.done !== true) process.exit(1)
+        if (gesendet?.done !== true) process.exit(1)
+        freigeben()
+        await p
+        EOF
+        node "$d/p.mjs" >/dev/null 2>&1; r=$?
+        rm -rf "$d"
+        exit $r
+      message: Während der Request läuft, soll das Todo im Cache schon abgehakt sein, und an saveTodo soll das Todo mit umgedrehtem done gehen.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        cat > "$d/p.mjs" <<'EOF'
+        import { QueryClient, MutationObserver } from '@tanstack/react-query'
+        import { toggleTodoOptions } from '../src/toggleTodo.ts'
+        const start = () => [{ id: 1, title: 'Einkaufen', done: false }, { id: 2, title: 'Lesen', done: true }]
+        const qc = new QueryClient()
+        qc.setQueryData(['todos'], start())
+        const kaputt = () => new Promise((_, rej) => setTimeout(() => rej(new Error('Server weg')), 10))
+        await new MutationObserver(qc, toggleTodoOptions(kaputt)).mutate(start()[0]).catch(() => {})
+        if (qc.getQueryData(['todos'])?.[0]?.done !== false) process.exit(1)
+        EOF
+        node "$d/p.mjs" >/dev/null 2>&1; r=$?
+        rm -rf "$d"
+        exit $r
+      message: Scheitert der Server, muss onError den Schnappschuss zurückschreiben – das Todo darf danach nicht mehr abgehakt sein.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        cat > "$d/p.mjs" <<'EOF'
+        import { QueryClient, MutationObserver } from '@tanstack/react-query'
+        import { toggleTodoOptions } from '../src/toggleTodo.ts'
+        const qc = new QueryClient()
+        qc.setQueryData(['todos'], [{ id: 1, title: 'Einkaufen', done: false }])
+        await new MutationObserver(qc, toggleTodoOptions(async (t) => t)).mutate({ id: 1, title: 'Einkaufen', done: false })
+        if (!qc.getQueryState(['todos'])?.isInvalidated) process.exit(1)
+        EOF
+        node "$d/p.mjs" >/dev/null 2>&1; r=$?
+        rm -rf "$d"
+        exit $r
+      message: Nach der Mutation soll onSettled die Todo-Liste mit invalidateQueries als veraltet markieren.
+  hints:
+    - "`onMutate: async (todo, context) => { await context.client.cancelQueries({ queryKey: todoKeys.all }); const vorher = context.client.getQueryData<Todo[]>(todoKeys.all); … }`"
+    - "Neue Liste: `context.client.setQueryData<Todo[]>(todoKeys.all, (alt) => alt?.map((t) => (t.id === todo.id ? { ...t, done: !t.done } : t)))`."
+    - "`onError: (_fehler, _todo, onMutateResult, context) => context.client.setQueryData(todoKeys.all, onMutateResult?.vorher)` und `onSettled: (_d, _f, _t, _r, context) => context.client.invalidateQueries({ queryKey: todoKeys.all })`."
+  solution: |
+    ```ts title="src/toggleTodo.ts"
+    import { mutationOptions } from '@tanstack/react-query'
+
+    export type Todo = { id: number; title: string; done: boolean }
+
+    export const todoKeys = {
+      all: ['todos'] as const,
+    }
+
+    export function toggleTodoOptions(saveTodo: (todo: Todo) => Promise<Todo>) {
+      return mutationOptions({
+        mutationFn: (todo: Todo) => saveTodo({ ...todo, done: !todo.done }),
+        onMutate: async (todo, context) => {
+          await context.client.cancelQueries({ queryKey: todoKeys.all })
+          const vorher = context.client.getQueryData<Todo[]>(todoKeys.all)
+          context.client.setQueryData<Todo[]>(todoKeys.all, (alt) =>
+            alt?.map((t) => (t.id === todo.id ? { ...t, done: !t.done } : t)),
+          )
+          return { vorher }
+        },
+        onError: (_fehler, _todo, onMutateResult, context) => {
+          context.client.setQueryData(todoKeys.all, onMutateResult?.vorher)
+        },
+        onSettled: (_daten, _fehler, _todo, _onMutateResult, context) =>
+          context.client.invalidateQueries({ queryKey: todoKeys.all }),
+      })
+    }
+    ```

@@ -1,0 +1,453 @@
+title: Abschlussprüfung Server-State mit TanStack Query & Table
+description: |
+  Diese Prüfung deckt alle vier Module ab: Server-State und erste Queries, Mutationen und Fehlerbehandlung,
+  Listen, Routing und Typen sowie Tabellen mit TanStack Table. Zuerst beantwortest du Fragen, danach löst du drei
+  Praxis-Aufgaben – zwei direkt im Browser und eine im echten Übungs-Terminal mit einem echten QueryClient.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast, und kannst
+  gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Server-State verstehen ---
+  - module: grundlagen
+    type: single
+    question: Warum gehören die Bestellungen aus einer API nicht einfach in einen globalen Client-Store?
+    options:
+      - Weil globale Stores keine Arrays speichern können.
+      - Weil es Server-State ist – eine Kopie, die veralten kann und Laden, Aktualisieren und Fehler braucht.
+      - Weil Bestellungen nie angezeigt werden.
+      - Weil React keine globalen Stores erlaubt.
+    answer: 1
+    explanation: Server-State gehört dem Server. Ein Cache wie TanStack Query weiß, wie alt seine Kopie ist, und aktualisiert sie. Ein von Hand gepflegter Store bildet eine zweite Wahrheit, die auseinanderläuft.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen über Query Keys stimmen?
+    options:
+      - Ein Query Key ist immer ein Array.
+      - Alles, wovon die Query-Funktion abhängt, gehört in den Key.
+      - "`['a', { x: 1, y: 2 }]` und `['a', { y: 2, x: 1 }]` sind derselbe Eintrag."
+      - "`['a', 'b']` und `['b', 'a']` sind derselbe Eintrag."
+    answers: [0, 1, 2]
+    explanation: Bei Objekten spielt die Reihenfolge der Eigenschaften keine Rolle, bei Array-Elementen schon.
+  - module: grundlagen
+    type: match
+    question: Ordne jeder Option ihren Standardwert zu.
+    pairs:
+      - { left: "staleTime", right: "0 Millisekunden" }
+      - { left: "gcTime", right: "5 Minuten" }
+      - { left: "retry (Queries im Browser)", right: "3 Wiederholungen" }
+      - { left: "refetchOnWindowFocus", right: "true" }
+    explanation: Daten sind sofort veraltet, ungenutzte Einträge bleiben 5 Minuten, Fehler werden dreimal wiederholt und beim Fensterfokus wird veraltetes nachgeladen.
+  - module: grundlagen
+    type: single
+    question: "Eine Liste hat Daten, und gerade läuft ein Hintergrund-Refetch. Welche Kombination liefert `useQuery`?"
+    options:
+      - "isPending: true, isFetching: true"
+      - "isSuccess: true, isFetching: true"
+      - "isSuccess: true, isFetching: false"
+      - "isError: true, isFetching: false"
+    answer: 1
+    explanation: status beschreibt, ob Daten da sind, fetchStatus bzw. isFetching, ob gerade geladen wird. Beides ist unabhängig.
+  - module: grundlagen
+    type: find-bug
+    question: Bei einem 500er-Fehler landet die Query nicht im Fehlerzustand. In welcher Zeile liegt die Ursache?
+    language: ts
+    code: |
+      async function ladeProfil(): Promise<Profil> {
+        const res = await fetch('/api/profil')
+        return res.json()
+      }
+    bug_line: 2
+    explanation: "fetch lehnt bei HTTP-Fehlern nicht ab. Nach Zeile 2 fehlt `if (!res.ok) throw new Error(...)` – nur ein abgelehntes Promise erkennt TanStack Query als Fehler."
+  # --- Daten ändern ---
+  - module: mutationen
+    type: single
+    question: Wann startet eine mit useMutation definierte Mutation?
+    options:
+      - Sobald die Komponente gemountet wird
+      - Erst, wenn du mutate oder mutateAsync aufrufst
+      - Bei jedem Fensterfokus
+      - Wenn der Query Key sich ändert
+    answer: 1
+    explanation: Mutationen ändern Daten auf dem Server und laufen deshalb nur auf ausdrücklichen Befehl.
+  - module: mutationen
+    type: multiple
+    question: "Was bewirkt `invalidateQueries({ queryKey: ['aufgaben'] })`?"
+    options:
+      - Passende Einträge werden als veraltet markiert.
+      - Aktive passende Queries werden im Hintergrund neu geladen.
+      - "Auch `['aufgaben', 'detail', 3]` ist betroffen."
+      - Die Daten werden sofort gelöscht und die Liste wird leer.
+    answers: [0, 1, 2]
+    explanation: Invalidieren arbeitet mit Präfixen und löscht nichts – die alten Daten bleiben sichtbar, bis die neuen da sind.
+  - module: mutationen
+    type: match
+    question: Ordne jedem Callback einer Mutation seine typische Aufgabe bei einem optimistischen Update zu.
+    pairs:
+      - { left: "onMutate", right: "Queries abbrechen, Schnappschuss merken, Cache ändern" }
+      - { left: "onError", right: "Schnappschuss zurückschreiben" }
+      - { left: "onSettled", right: "Betroffene Keys invalidieren" }
+      - { left: "mutationFn", right: "Den Request an den Server senden" }
+    explanation: onSettled läuft in beiden Fällen und bringt den Cache wieder auf den Stand des Servers.
+  - module: mutationen
+    type: cloze
+    text: "In `onMutate` rufst du zuerst `___` auf, damit kein laufender Refetch dein optimistisches Update überschreibt. Schlägt die Mutation fehl, schreibt `___` den Schnappschuss zurück."
+    blanks:
+      - [cancelQueries, queryClient.cancelQueries]
+      - [onError]
+    explanation: Erst abbrechen, dann Schnappschuss, dann den Cache ändern. onError rollt zurück, onSettled invalidiert.
+  - module: mutationen
+    type: single
+    question: Was ist der Vorteil von `useSuspenseQuery` gegenüber `useQuery`?
+    options:
+      - Es lädt schneller.
+      - "`data` ist in der Komponente immer definiert; Laden und Fehler übernehmen Suspense- und Error-Boundary-Grenzen."
+      - Es braucht keinen QueryClient.
+      - Es lädt nie im Hintergrund nach.
+    answer: 1
+    explanation: Die Komponente kennt keinen Ladezustand mehr. Hintergrund-Updates gibt es trotzdem.
+  - module: mutationen
+    type: find-bug
+    question: Ein 404 wird viermal angefragt, bevor der Fehler erscheint. Welche Zeile solltest du ändern?
+    language: ts
+    code: |
+      new QueryClient({
+        defaultOptions: {
+          queries: { retry: 3, staleTime: 10_000 },
+        },
+      })
+    bug_line: 3
+    explanation: "Mit einer Funktion wie `retry: (anzahl, fehler) => fehler.status >= 500 && anzahl < 3` wiederholst du nur Fehler, die vorübergehend sein können."
+  # --- Listen, Routing und Typen ---
+  - module: listen-und-routing
+    type: single
+    question: "Wozu dient `placeholderData: keepPreviousData` bei paginierten Listen?"
+    options:
+      - Alle Seiten werden zusammengeführt.
+      - Beim Wechsel auf eine neue Seite bleibt die alte sichtbar, bis die neue geladen ist.
+      - Alte Seiten werden nie neu geladen.
+      - Die Seite wird im localStorage gespeichert.
+    answer: 1
+    explanation: Ohne Platzhalter wäre die neue Seite kurz leer. isPlaceholderData zeigt, dass gerade alte Daten angezeigt werden.
+  - module: listen-und-routing
+    type: match
+    question: Ordne die Teile von useInfiniteQuery zu.
+    pairs:
+      - { left: "initialPageParam", right: "Parameter der ersten Seite" }
+      - { left: "getNextPageParam", right: "Nächster Parameter oder undefined für das Ende" }
+      - { left: "data.pages", right: "Alle bisher geladenen Seiten" }
+      - { left: "fetchNextPage", right: "Lädt eine weitere Seite und hängt sie an" }
+    explanation: hasNextPage ist false, sobald getNextPageParam undefined oder null liefert.
+  - module: listen-und-routing
+    type: single
+    question: Was gibt ein Router-Loader in Kombination mit TanStack Query idealerweise zurück?
+    options:
+      - Die kompletten Daten, die die Komponente mit useLoaderData anzeigt
+      - Nur IDs oder Parameter – die Daten liegen im Query-Cache und werden mit useSuspenseQuery gelesen
+      - Einen neuen QueryClient
+      - Nichts, Loader dürfen keine Werte zurückgeben
+    answer: 1
+    explanation: So bleibt der Cache die einzige Quelle der Wahrheit, und die Seite aktualisiert sich bei Refetches und nach Mutationen.
+  - module: listen-und-routing
+    type: multiple
+    question: Welche Maßnahmen machen eine Datenschicht mit TanStack Query typsicher?
+    options:
+      - Den Rückgabetyp der Query-Funktion angeben
+      - Queries mit queryOptions beschreiben
+      - "Den Fehlertyp über `interface Register { defaultError }` registrieren"
+      - "Überall `useQuery<any>` verwenden"
+    answers: [0, 1, 2]
+    explanation: Mit any verlierst du jede Prüfung. Typisiere die Funktion, nutze queryOptions und registriere den Fehlertyp.
+  - module: listen-und-routing
+    type: find-bug
+    question: "Der Button „Mehr laden“ verschwindet nie. Welche Zeile ist falsch?"
+    language: ts
+    code: |
+      useInfiniteQuery({
+        queryKey: ['kommentare'],
+        queryFn: ({ pageParam }) => ladeKommentare(pageParam),
+        initialPageParam: 1,
+        getNextPageParam: (letzte) => letzte.naechsteSeite || 1,
+      })
+    bug_line: 5
+    explanation: "Auf der letzten Seite liefert der Ausdruck 1 statt undefined – es gibt also immer eine nächste Seite. Richtig: `letzte.naechsteSeite ?? undefined`."
+  # --- Tabellen mit TanStack Table ---
+  - module: tanstack-table
+    type: single
+    question: Was bedeutet „headless“ bei TanStack Table?
+    options:
+      - Die Tabelle hat keine Spaltenköpfe.
+      - Die Bibliothek liefert Logik und Zustand, Markup und Styling kommen von dir.
+      - Die Tabelle läuft ohne Browser.
+      - Die Bibliothek rendert fertige HTML-Tabellen.
+    answer: 1
+    explanation: Deshalb passt TanStack Table zu jedem Design-System, zum Beispiel zu den Table-Komponenten von shadcn/ui.
+  - module: tanstack-table
+    type: multiple
+    question: Was brauchst du in Version 9, damit die Tabelle im Browser sortiert?
+    options:
+      - "`rowSortingFeature` in tableFeatures"
+      - "`sortedRowModel: createSortedRowModel()` in tableFeatures"
+      - "`manualSorting: true`"
+      - "Einen Klick-Handler wie `column.getToggleSortingHandler()` im Spaltenkopf"
+    answers: [0, 1, 3]
+    explanation: manualSorting würde die Sortierung im Browser abschalten – das ist nur für serverseitige Tabellen gedacht.
+  - module: tanstack-table
+    type: single
+    question: Eine Tabelle blättert serverseitig durch 2 Millionen Zeilen. Was gilt für das Sortieren?
+    options:
+      - Es reicht, die geladene Seite im Browser zu sortieren.
+      - Auch der Server muss sortieren – manualSorting true und die Sortierung in den Query Key.
+      - Sortieren ist bei Paginierung nicht möglich.
+      - Die Tabelle lädt automatisch alle Zeilen, wenn man sortiert.
+    answer: 1
+    explanation: Im Browser liegen nur 20 Zeilen. Eine globale Reihenfolge kann nur der Server berechnen.
+  - module: tanstack-table
+    type: find-bug
+    question: Die Tabelle rendert endlos neu, solange die Query lädt. Welche Zeile ist schuld?
+    language: tsx
+    code: |
+      function Tabelle() {
+        const { data } = useQuery(kundenQuery())
+        const table = useTable({ features, columns, data: data ?? [] })
+        return <KundenTabelle table={table} />
+      }
+    bug_line: 3
+    explanation: "`data ?? []` erzeugt bei jedem Rendern ein neues Array. Eine Konstante `const leer: Kunde[] = []` auf Modulebene hält die Referenz stabil."
+tasks:
+  - module: mutationen
+    id: pruefung-invalidierung
+    type: code
+    language: ts
+    title: Welche Einträge trifft die Invalidierung?
+    description: |
+      Schreibe `betroffen(keys, filter)`. Sie bekommt alle Query Keys im Cache und einen Filter
+      `{ queryKey, exact? }` und gibt die Keys zurück, die TanStack Query bei `invalidateQueries(filter)` als
+      veraltet markieren würde – in der ursprünglichen Reihenfolge.
+
+      1. Ohne `exact` (oder bei `exact: false`) passt jeder Key, der mit allen Elementen von `filter.queryKey`
+         beginnt.
+      2. Bei `exact: true` passt nur ein Key, der genau gleich lang ist und in allen Elementen übereinstimmt.
+      3. Vergleiche einzelne Elemente mit `JSON.stringify`.
+    starter: |
+      type Key = readonly unknown[]
+
+      function betroffen(keys: Key[], filter: { queryKey: Key; exact?: boolean }): Key[] {
+        return []
+      }
+    tests:
+      - name: Präfix trifft Listen und Details
+        code: |
+          const keys = [['aufgaben'], ['aufgaben', 'liste', { status: 'offen' }], ['aufgaben', 'detail', 3], ['projekte', 'liste']]
+          assertEqual(betroffen(keys, { queryKey: ['aufgaben'] }).length, 3)
+          assertDeepEqual(betroffen(keys, { queryKey: ['aufgaben', 'detail'] }), [['aufgaben', 'detail', 3]])
+      - name: exact trifft nur den genauen Key
+        code: |
+          const keys = [['aufgaben'], ['aufgaben', 'liste'], ['aufgaben', 'liste', { seite: 2 }]]
+          assertDeepEqual(betroffen(keys, { queryKey: ['aufgaben', 'liste'], exact: true }), [['aufgaben', 'liste']])
+          assertDeepEqual(betroffen(keys, { queryKey: ['aufgaben', 'liste'], exact: false }).length, 2)
+      - name: Objekte im Key werden verglichen
+        code: |
+          const keys = [['aufgaben', { status: 'offen' }], ['aufgaben', { status: 'erledigt' }]]
+          assertDeepEqual(betroffen(keys, { queryKey: ['aufgaben', { status: 'offen' }] }), [['aufgaben', { status: 'offen' }]])
+          assertDeepEqual(betroffen([], { queryKey: ['aufgaben'] }), [])
+    hints:
+      - "Ein Präfix passt, wenn `praefix.length <= key.length` und `praefix.every((teil, i) => JSON.stringify(teil) === JSON.stringify(key[i]))`."
+      - "Bei `exact` muss zusätzlich `key.length === filter.queryKey.length` gelten."
+    solution: |
+      type Key = readonly unknown[]
+
+      function betroffen(keys: Key[], filter: { queryKey: Key; exact?: boolean }): Key[] {
+        const praefix = filter.queryKey
+        return keys.filter((key) => {
+          if (filter.exact && key.length !== praefix.length) return false
+          if (praefix.length > key.length) return false
+          return praefix.every((teil, i) => JSON.stringify(teil) === JSON.stringify(key[i]))
+        })
+      }
+  - module: tanstack-table
+    id: pruefung-sortierkopf
+    type: code
+    language: tsx
+    title: Ein sortierbarer Spaltenkopf mit aria-sort
+    description: |
+      Baue nach, was `getToggleSortingHandler()` und `getIsSorted()` für eine Spalte tun. Die Tabelle zeigt drei
+      Mitarbeitende mit ihrem Alter.
+
+      1. Halte die Sortierung in `React.useState` – Werte: `false` (unsortiert), `'asc'` oder `'desc'`.
+      2. Der Spaltenkopf `<th>` enthält einen `<button className="sortieren">Alter</button>`. Jeder Klick schaltet
+         weiter: `false` → `'asc'` → `'desc'` → `false`.
+      3. Das `<th>` bekommt `aria-sort` mit `ascending`, `descending` oder `none`.
+      4. Die Zeilen (`<tbody>` mit je einem `<tr>`, darin `<td>` Name und `<td>` Alter) erscheinen entsprechend
+         sortiert. Unsortiert gilt die ursprüngliche Reihenfolge. Verändere `team` dabei nicht.
+    starter: |
+      const team = [
+        { name: 'Mira', alter: 31 },
+        { name: 'Linus', alter: 28 },
+        { name: 'Grace', alter: 45 },
+      ]
+
+      function App() {
+        return (
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Alter</th>
+              </tr>
+            </thead>
+            <tbody>
+              {team.map((m) => (
+                <tr key={m.name}>
+                  <td>{m.name}</td>
+                  <td>{m.alter}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
+      }
+    tests:
+      - name: unsortiert am Anfang
+        code: |
+          const th = queryAll('th')[1]
+          assertEqual(th.getAttribute('aria-sort'), 'none', 'Unsortiert braucht das th aria-sort="none".')
+          assertEqual(queryAll('tbody tr td:first-child').map((td) => td.textContent).join(','), 'Mira,Linus,Grace')
+      - name: erster Klick sortiert aufsteigend
+        code: |
+          await click('.sortieren')
+          assertEqual(queryAll('th')[1].getAttribute('aria-sort'), 'ascending')
+          assertEqual(queryAll('tbody tr td:first-child').map((td) => td.textContent).join(','), 'Linus,Mira,Grace')
+      - name: zweiter Klick sortiert absteigend
+        code: |
+          await click('.sortieren')
+          assertEqual(queryAll('th')[1].getAttribute('aria-sort'), 'descending')
+          assertEqual(queryAll('tbody tr td:first-child').map((td) => td.textContent).join(','), 'Grace,Mira,Linus')
+      - name: dritter Klick hebt die Sortierung auf
+        code: |
+          await click('.sortieren')
+          assertEqual(queryAll('th')[1].getAttribute('aria-sort'), 'none')
+          assertEqual(queryAll('tbody tr td:first-child').map((td) => td.textContent).join(','), 'Mira,Linus,Grace', 'Unsortiert muss wieder die ursprüngliche Reihenfolge erscheinen – wurde team verändert?')
+    hints:
+      - "`const [sortierung, setSortierung] = React.useState<false | 'asc' | 'desc'>(false)` und beim Klick `setSortierung((s) => (s === false ? 'asc' : s === 'asc' ? 'desc' : false))`."
+      - "Sortiere eine Kopie: `const zeilen = sortierung === false ? team : [...team].sort((a, b) => (sortierung === 'asc' ? a.alter - b.alter : b.alter - a.alter))`."
+    solution: |
+      const team = [
+        { name: 'Mira', alter: 31 },
+        { name: 'Linus', alter: 28 },
+        { name: 'Grace', alter: 45 },
+      ]
+
+      function App() {
+        const [sortierung, setSortierung] = React.useState<false | 'asc' | 'desc'>(false)
+        const zeilen =
+          sortierung === false
+            ? team
+            : [...team].sort((a, b) => (sortierung === 'asc' ? a.alter - b.alter : b.alter - a.alter))
+        const ariaSort = sortierung === 'asc' ? 'ascending' : sortierung === 'desc' ? 'descending' : 'none'
+
+        return (
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th aria-sort={ariaSort}>
+                  <button
+                    className="sortieren"
+                    onClick={() => setSortierung((s) => (s === false ? 'asc' : s === 'asc' ? 'desc' : false))}
+                  >
+                    Alter
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {zeilen.map((m) => (
+                <tr key={m.name}>
+                  <td>{m.name}</td>
+                  <td>{m.alter}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
+      }
+  - module: listen-und-routing
+    id: pruefung-infinite
+    type: terminal
+    title: Eine Infinite Query mit infiniteQueryOptions
+    description: |
+      Im Ordner `pruefung-feed` liegt ein Node-Projekt mit TanStack Query. `src/api.ts` exportiert
+      `ladeSeite(cursor)`: Sie liefert drei Beiträge ab Position `cursor` und `naechsterCursor` – oder `null`, wenn
+      keine weiteren Beiträge folgen.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+
+      1. Lege `src/feed.ts` an und exportiere `feedQuery()`. Sie gibt `infiniteQueryOptions({...})` zurück mit:
+         Key `['feed']`, einer Query-Funktion, die `ladeSeite(pageParam)` aufruft, `initialPageParam: 0` und
+         `getNextPageParam`, das `naechsterCursor` liefert – oder `undefined`, wenn er `null` ist.
+      2. Importiere `ladeSeite` mit `import { ladeSeite } from './api.ts'`.
+
+      Die Prüfung lädt mit deinen Optionen über einen echten QueryClient so lange Seiten nach, bis `hasNextPage`
+      false ist, und zählt die Beiträge.
+    workdir: pruefung-feed
+    setup: |
+      npm init -y >/dev/null
+      npm pkg set type=module
+      npm install --no-audit --no-fund react @tanstack/react-query >/dev/null 2>&1
+      mkdir -p src
+      cat > src/api.ts <<'EOF'
+      export type Beitrag = { id: number; titel: string }
+      export type Seite = { eintraege: Beitrag[]; naechsterCursor: number | null }
+
+      const alle: Beitrag[] = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, titel: 'Beitrag ' + (i + 1) }))
+
+      export async function ladeSeite(cursor: number): Promise<Seite> {
+        const eintraege = alle.slice(cursor, cursor + 3)
+        const naechster = cursor + 3
+        return { eintraege, naechsterCursor: naechster < alle.length ? naechster : null }
+      }
+      EOF
+    checks:
+      - type: file_contains
+        path: src/feed.ts
+        pattern: "infiniteQueryOptions\\("
+        message: Baue feedQuery mit infiniteQueryOptions(...).
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cat > "$d/p.mjs" <<'EOF'
+          import { QueryClient, InfiniteQueryObserver } from '@tanstack/react-query'
+          import { feedQuery } from '../src/feed.ts'
+          const qc = new QueryClient()
+          const obs = new InfiniteQueryObserver(qc, feedQuery())
+          const abmelden = obs.subscribe(() => {})
+          await new Promise((r) => setTimeout(r, 30))
+          let runden = 0
+          while (obs.getCurrentResult().hasNextPage && runden < 10) { await obs.fetchNextPage(); runden++ }
+          const r = obs.getCurrentResult()
+          abmelden()
+          console.log(JSON.stringify(feedQuery().queryKey) + '|' + r.data.pages.length + '|' + r.data.pages.flatMap((s) => s.eintraege).map((b) => b.id).join(','))
+          EOF
+          node "$d/p.mjs" 2>/dev/null; r=$?
+          rm -rf "$d"
+          exit $r
+        stdout_equals: '["feed"]|3|1,2,3,4,5,6,7'
+        message: "Die Infinite Query stimmt noch nicht. Erwartet: Key ['feed'], Start bei 0, und getNextPageParam liefert undefined, sobald naechsterCursor null ist – dann sind es 3 Seiten mit den Beiträgen 1 bis 7."
+    hints:
+      - "`import { infiniteQueryOptions } from '@tanstack/react-query'`"
+      - "`getNextPageParam: (letzteSeite) => letzteSeite.naechsterCursor ?? undefined`"
+    solution: |
+      ```ts title="src/feed.ts"
+      import { infiniteQueryOptions } from '@tanstack/react-query'
+      import { ladeSeite } from './api.ts'
+
+      export const feedQuery = () =>
+        infiniteQueryOptions({
+          queryKey: ['feed'],
+          queryFn: ({ pageParam }) => ladeSeite(pageParam),
+          initialPageParam: 0,
+          getNextPageParam: (letzteSeite) => letzteSeite.naechsterCursor ?? undefined,
+        })
+      ```

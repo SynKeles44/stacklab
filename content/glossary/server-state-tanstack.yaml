@@ -1,0 +1,325 @@
+# Begriffe aus dem Kurs "Server-State mit TanStack Query & Table".
+- slug: client-state
+  term: Client-State
+  short: Zustand, der nur im Browser existiert und ausschließlich der eigenen App gehört.
+  explanation: >
+    Client-State entsteht und lebt im Browser-Tab, zum Beispiel ob ein Menü offen ist oder was im Suchfeld steht.
+    Nur deine App ändert ihn, deshalb ist er immer aktuell und synchron verfügbar. Für ihn reichen useState,
+    useReducer oder Context.
+  example: "`const [menueOffen, setMenueOffen] = useState(false)` hält Client-State."
+  category: server-state
+  aliases: [Client State, UI-State]
+  related: [server-state, react-state, usestate]
+  lesson: server-state-tanstack/client-und-server-state
+- slug: server-state
+  term: Server-State
+  short: Daten, die auf einem Server liegen und von denen die App nur eine Kopie mit Zeitstempel hält.
+  explanation: >
+    Server-State gehört dem Server, meist einer Datenbank hinter einer API. Andere Nutzer oder Hintergrundjobs
+    können ihn jederzeit ändern, deshalb kann jede geladene Kopie veralten. Er wird asynchron geladen und braucht
+    einen Cache, der Laden, Fehler, Aktualität und Wiederholungen verwaltet – etwa TanStack Query.
+  example: "Die Liste der offenen Bestellungen aus `/api/bestellungen` ist Server-State."
+  category: server-state
+  aliases: [Server State, Serverzustand]
+  related: [client-state, tanstack-query, cache]
+  lesson: server-state-tanstack/client-und-server-state
+- slug: request-deduplizierung
+  term: Request-Deduplizierung
+  short: Gleichzeitige Anfragen nach denselben Daten werden zu einem einzigen Request zusammengefasst.
+  explanation: >
+    Brauchen mehrere Komponenten gleichzeitig dieselben Daten, wäre es Verschwendung, für jede einen eigenen
+    Request zu senden. Ein Cache wie TanStack Query erkennt am gleichen Query Key, dass schon ein Request läuft,
+    und lässt alle Komponenten auf dessen Antwort warten.
+  example: "Zehn Komponenten mit `queryKey: ['profil']` lösen beim Laden nur einen Request aus."
+  category: server-state
+  aliases: [Deduplizierung, Dedupe]
+  related: [query-key, cache, tanstack-query]
+  lesson: server-state-tanstack/client-und-server-state
+- slug: query-key
+  term: Query Key
+  short: Ein Array, unter dem TanStack Query die Daten einer Query im Cache ablegt.
+  explanation: >
+    Der Query Key benennt einen Cache-Eintrag eindeutig. Er enthält alles, wovon die Query-Funktion abhängt,
+    etwa IDs, Filter oder die Seitennummer. Ändert sich ein Wert im Key, ist es ein neuer Eintrag, und TanStack
+    Query lädt automatisch. Bei Objekten im Key spielt die Reihenfolge der Eigenschaften keine Rolle.
+  example: "`['aufgaben', { status: 'offen', seite: 2 }]` ist der Key für Seite 2 der offenen Aufgaben."
+  category: server-state
+  aliases: [queryKey, Query Keys, Cache-Key]
+  related: [query-function, query-key-fabrik, invalidierung]
+  lesson: server-state-tanstack/query-keys-und-cache
+- slug: query-function
+  term: Query-Funktion
+  short: Die Funktion, die TanStack Query aufruft, um die Daten einer Query zu laden.
+  explanation: >
+    Die Query-Funktion (Option queryFn) gibt ein Promise zurück. Wird es erfüllt, landen die Daten im Cache;
+    wird es abgelehnt, gilt die Query als fehlgeschlagen. Weil fetch bei HTTP-Fehlern nicht von selbst ablehnt,
+    prüft die Funktion res.ok und wirft bei Bedarf einen Fehler.
+  example: "`queryFn: () => fetch('/api/aufgaben').then((r) => r.json())`"
+  category: server-state
+  aliases: [queryFn, Query Function]
+  related: [query-key, promise, fetch-api]
+  lesson: server-state-tanstack/die-erste-query
+- slug: tanstack-table
+  term: TanStack Table
+  short: Eine Headless-Bibliothek, die Tabellen sortiert, filtert und blättert, aber kein Markup vorgibt.
+  explanation: >
+    TanStack Table rechnet aus Daten und Spaltendefinitionen Kopfzeilen und Zeilen aus und verwaltet Zustände
+    wie Sortierung, Filter und aktuelle Seite. Wie die Tabelle aussieht, bestimmt deine Komponente. Ab Version 9
+    meldest du Fähigkeiten ausdrücklich mit tableFeatures an und erzeugst die Tabelle mit useTable.
+  example: "`const table = useTable({ features, columns, data })` liefert `table.getRowModel().rows`."
+  category: server-state
+  aliases: [React Table, TanStack Table v9]
+  related: [headless-komponente, spaltendefinition, row-model]
+  lesson: server-state-tanstack/headless-tabellen
+- slug: query-client
+  term: QueryClient
+  short: Das zentrale Objekt von TanStack Query, das den Cache und alle Standardoptionen enthält.
+  explanation: >
+    Der QueryClient wird einmal pro App angelegt und über den QueryClientProvider allen Komponenten
+    bereitgestellt. Über ihn liest und schreibt man auch außerhalb von Komponenten in den Cache, etwa mit
+    getQueryData, setQueryData, invalidateQueries oder query in einem Router-Loader.
+  example: "`export const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } })`"
+  category: server-state
+  aliases: [Query Client, QueryClientProvider]
+  related: [tanstack-query, cache, react-context]
+  lesson: server-state-tanstack/die-erste-query
+- slug: stale-time
+  term: staleTime
+  short: Die Zeit, in der geladene Daten als frisch gelten und nicht automatisch neu geladen werden.
+  explanation: >
+    Nach dem Laden sind Daten frisch. Ist die staleTime abgelaufen, gelten sie als veraltet (stale) und werden bei
+    der nächsten Gelegenheit – Mount, Fensterfokus, Reconnect – im Hintergrund neu geladen. Standard ist 0, also
+    sofort veraltet. Mit dem Wert 'static' veralten Daten nie, auch nicht durch Invalidierung.
+  example: "`staleTime: 30_000` hält eine Liste 30 Sekunden lang frisch."
+  category: server-state
+  aliases: [stale, veraltet, Stale Time]
+  related: [gc-time, refetch, cache]
+  lesson: server-state-tanstack/query-keys-und-cache
+- slug: refetch
+  term: Refetch
+  short: Das erneute Laden einer Query, deren Daten schon im Cache liegen.
+  explanation: >
+    TanStack Query lädt veraltete Daten automatisch neu, wenn eine Komponente gemountet wird, das Fenster den Fokus
+    bekommt oder das Netzwerk zurückkehrt. Während des Refetches bleiben die alten Daten sichtbar, isFetching ist
+    true. Von Hand löst du einen Refetch mit refetch() oder durch Invalidierung aus.
+  example: "`refetchOnWindowFocus` lädt beim Zurückkehren in den Browser-Tab veraltete Daten neu."
+  category: server-state
+  aliases: [Refetching, Neuladen, Hintergrund-Update]
+  related: [stale-time, invalidierung, query-key]
+  lesson: server-state-tanstack/query-keys-und-cache
+- slug: gc-time
+  term: gcTime
+  short: Wie lange ein ungenutzter Cache-Eintrag aufbewahrt wird, bevor er gelöscht wird.
+  explanation: >
+    Nutzt keine Komponente mehr eine Query, wird ihr Eintrag inaktiv, bleibt aber im Cache. Erst nach Ablauf der
+    gcTime – standardmäßig 5 Minuten – entfernt die Garbage Collection ihn. Kehrt der Nutzer vorher zurück,
+    erscheinen die Daten sofort. In älteren Versionen hieß die Option cacheTime.
+  example: "`gcTime: 10 * 60 * 1000` hebt ungenutzte Daten 10 Minuten auf."
+  category: server-state
+  aliases: [cacheTime, gc time]
+  related: [stale-time, garbage-collection, cache]
+  lesson: server-state-tanstack/query-keys-und-cache
+- slug: garbage-collection
+  term: Garbage Collection
+  short: Das automatische Aufräumen von Daten im Speicher, die niemand mehr braucht.
+  explanation: >
+    Garbage Collection („Müllabfuhr“) gibt Speicher frei, der nicht mehr verwendet wird. JavaScript macht das für
+    Objekte ohne Referenzen selbst. TanStack Query hat eine eigene Garbage Collection für den Cache: Inaktive
+    Einträge werden nach Ablauf der gcTime entfernt.
+  example: "Nach 5 Minuten ohne Komponente entfernt die Garbage Collection den Eintrag `['aufgaben']` aus dem Cache."
+  category: server-state
+  aliases: [GC, Speicherbereinigung]
+  related: [gc-time, cache]
+  lesson: server-state-tanstack/query-keys-und-cache
+- slug: exponential-backoff
+  term: Exponential Backoff
+  short: Eine Wiederholungsstrategie, bei der die Wartezeit nach jedem Fehlversuch wächst.
+  explanation: >
+    Statt einen fehlgeschlagenen Request sofort und immer wieder zu senden, wartet man nach jedem Versuch länger,
+    etwa 1, 2 und 4 Sekunden. So bekommt ein überlasteter Server Luft zum Erholen. TanStack Query nutzt diese
+    Strategie für seine standardmäßig drei Wiederholungen.
+  example: "Versuch 1 scheitert → 1 s warten, Versuch 2 scheitert → 2 s warten, Versuch 3 scheitert → 4 s warten."
+  category: server-state
+  aliases: [Backoff, retryDelay, Retry]
+  related: [query-function, timeout]
+  lesson: server-state-tanstack/query-keys-und-cache
+- slug: query-key-fabrik
+  term: Query-Key-Fabrik
+  short: Ein Objekt mit Funktionen, das alle Query Keys eines Fachbereichs zentral erzeugt.
+  explanation: >
+    Statt Keys an vielen Stellen von Hand zu tippen, baut eine Key-Fabrik sie hierarchisch zusammen, etwa
+    aufgabenKeys.all, aufgabenKeys.listen() und aufgabenKeys.detail(id). Das verhindert Tippfehler und erlaubt,
+    mit einem kurzen Präfix-Key alle zugehörigen Einträge auf einmal zu invalidieren.
+  example: "`aufgabenKeys.detail(5)` liefert `['aufgaben', 'detail', 5]`."
+  category: server-state
+  aliases: [Key-Fabrik, Query Key Factory]
+  related: [query-key, invalidierung]
+  lesson: server-state-tanstack/query-keys-und-cache
+- slug: query-mutation
+  term: Mutation (Server-State)
+  short: Eine Operation, die Daten auf dem Server anlegt, ändert oder löscht.
+  explanation: >
+    In TanStack Query beschreibst du Mutationen mit useMutation. Anders als Queries laufen sie nicht automatisch,
+    sondern erst beim Aufruf von mutate oder mutateAsync. Danach invalidierst du betroffene Queries oder schreibst
+    die Antwort direkt in den Cache. Nicht zu verwechseln mit dem direkten Verändern eines JavaScript-Objekts.
+  example: "`const anlegen = useMutation({ mutationFn: aufgabeAnlegen })` und dann `anlegen.mutate({ titel })`."
+  category: server-state
+  aliases: [useMutation, mutate, mutateAsync]
+  related: [invalidierung, optimistisches-update, http-post]
+  lesson: server-state-tanstack/mutationen-und-invalidierung
+- slug: invalidierung
+  term: Invalidierung
+  short: Cache-Einträge als veraltet markieren, damit sie neu geladen werden.
+  explanation: >
+    Nach einer Mutation weiß der Cache nicht von selbst, dass sich Daten auf dem Server geändert haben. Mit
+    queryClient.invalidateQueries markierst du alle Einträge mit passendem Key-Präfix als veraltet. Gerade
+    angezeigte Queries werden sofort im Hintergrund neu geladen, die anderen beim nächsten Gebrauch.
+  example: "`queryClient.invalidateQueries({ queryKey: ['aufgaben'] })` trifft Listen und Details aller Aufgaben."
+  category: server-state
+  aliases: [invalidateQueries, Cache-Invalidierung, invalidieren]
+  related: [query-key, query-mutation, refetch]
+  lesson: server-state-tanstack/mutationen-und-invalidierung
+- slug: optimistisches-update
+  term: Optimistisches Update
+  short: Die Oberfläche zeigt das erwartete Ergebnis sofort an, bevor der Server die Änderung bestätigt.
+  explanation: >
+    Bei einem optimistischen Update änderst du den Cache schon vor dem Request, damit sich die App sofort anfühlt.
+    Vorher merkst du dir einen Schnappschuss. Schlägt der Request fehl, schreibst du ihn zurück (Rollback), und
+    zum Schluss invalidierst du, damit der Cache wieder dem Server entspricht.
+  example: "Ein Haken erscheint sofort beim Klick, obwohl der PATCH-Request noch unterwegs ist."
+  category: server-state
+  aliases: [Optimistic Update, optimistische UI]
+  related: [query-mutation, rollback, invalidierung]
+  lesson: server-state-tanstack/optimistische-updates
+- slug: react-suspense
+  term: Suspense
+  short: Eine React-Komponente, die einen Platzhalter zeigt, bis ihre Kinder fertig geladen sind.
+  explanation: >
+    Mit <Suspense fallback={…}> legst du eine Grenze um Komponenten, die auf Daten warten. Solange eine von ihnen
+    lädt, zeigt React das fallback. Mit useSuspenseQuery gibt TanStack Query den Ladezustand an diese Grenze ab;
+    in der Komponente ist data dann immer definiert.
+  example: "`<Suspense fallback={<p>Lädt …</p>}><Profil /></Suspense>`"
+  category: server-state
+  aliases: [React Suspense, useSuspenseQuery]
+  related: [react, komponente, query-function]
+  lesson: server-state-tanstack/fehler-und-ladezustaende
+- slug: react-query-devtools
+  term: Query Devtools
+  short: Ein Entwicklerwerkzeug, das alle Einträge im Cache von TanStack Query mit ihrem Zustand anzeigt.
+  explanation: >
+    Die Devtools aus dem Paket @tanstack/react-query-devtools blenden in der App ein Panel ein. Dort siehst du
+    jeden Query Key, ob er frisch, veraltet, inaktiv oder gerade beim Laden ist, und seine Daten. Du kannst
+    Queries invalidieren, neu laden oder Fehler simulieren. Im Produktions-Build fehlen sie automatisch.
+  example: "`<ReactQueryDevtools initialIsOpen={false} />` im QueryClientProvider einbinden."
+  category: server-state
+  aliases: [React Query Devtools, ReactQueryDevtools, TanStack Query Devtools]
+  related: [devtools, tanstack-query, query-key]
+  lesson: server-state-tanstack/fehler-und-ladezustaende
+- slug: placeholder-data
+  term: placeholderData
+  short: Vorläufige Daten, die eine Query anzeigt, bis die echten Daten geladen sind.
+  explanation: >
+    placeholderData füllt die Lücke beim ersten Laden eines Eintrags, ohne im Cache gespeichert zu werden. Mit dem
+    Helfer keepPreviousData bleiben beim Blättern die Daten der vorigen Seite sichtbar. Solange Platzhalter
+    angezeigt werden, ist isPlaceholderData true.
+  example: "`placeholderData: keepPreviousData` verhindert eine leere Tabelle beim Wechsel auf Seite 2."
+  category: server-state
+  aliases: [keepPreviousData, isPlaceholderData, Platzhalterdaten]
+  related: [paginierung, query-key]
+  lesson: server-state-tanstack/paginierung-und-infinite-queries
+- slug: prefetching
+  term: Prefetching
+  short: Daten laden, bevor sie gebraucht werden, damit sie später sofort aus dem Cache kommen.
+  explanation: >
+    Beim Prefetching (Vorladen) holst du zum Beispiel die nächste Seite einer Liste oder die Daten einer Route
+    schon im Voraus. In TanStack Query geht das mit queryClient.query(...), ältere Codebasen nutzen
+    prefetchQuery. Scheitert das Vorladen, lädt die Komponente später einfach normal.
+  example: "`queryClient.query(seiteQuery(seite + 1)).catch(() => {})` lädt die nächste Seite vor."
+  category: server-state
+  aliases: [Vorladen, prefetchQuery, Prefetch]
+  related: [query-client, request-wasserfall, cache]
+  lesson: server-state-tanstack/paginierung-und-infinite-queries
+- slug: infinite-query
+  term: Infinite Query
+  short: Eine Query, die beliebig viele Seiten nacheinander lädt und gemeinsam im Cache hält.
+  explanation: >
+    Infinite Queries eignen sich für „Mehr laden“-Listen und Endlos-Scrollen. Mit useInfiniteQuery gibst du einen
+    initialPageParam und eine Funktion getNextPageParam an, die aus der letzten Seite den Parameter der nächsten
+    berechnet. Alle geladenen Seiten liegen in data.pages; fetchNextPage hängt eine weitere an.
+  example: "`data.pages.flatMap((seite) => seite.eintraege)` ergibt die flache Liste aller geladenen Beiträge."
+  category: server-state
+  aliases: [useInfiniteQuery, Endlos-Liste, Infinite Scrolling]
+  related: [cursor-paginierung, paginierung, query-key]
+  lesson: server-state-tanstack/paginierung-und-infinite-queries
+- slug: request-wasserfall
+  term: Request-Wasserfall
+  short: Requests, die nacheinander statt gleichzeitig starten, weil jeder auf den vorigen wartet.
+  explanation: >
+    Lädt jede Komponente ihre Daten erst beim Rendern, startet eine Kind-Komponente ihren Request erst, wenn die
+    Eltern-Komponente ihre Daten hat. Die Wartezeiten addieren sich. Router-Loader oder Prefetching starten alle
+    Requests einer Seite gleichzeitig und vermeiden so den Wasserfall.
+  example: "Aufgabe laden (300 ms), danach Kommentare laden (300 ms) – zusammen 600 ms statt 300 ms."
+  category: server-state
+  aliases: [Wasserfall, Waterfall, Request Waterfall]
+  related: [prefetching, latenz]
+  lesson: server-state-tanstack/react-router-loader
+- slug: query-options
+  term: queryOptions
+  short: Ein Helfer, der queryKey, queryFn und weitere Optionen einer Query typsicher bündelt.
+  explanation: >
+    queryOptions gibt zur Laufzeit einfach das übergebene Objekt zurück. Sein Nutzen liegt bei TypeScript: Der Key
+    wird mit dem Datentyp versehen, sodass auch getQueryData und setQueryData den richtigen Typ kennen. Dieselben
+    Optionen nutzt du im Router-Loader, in useQuery und in useSuspenseQuery.
+  example: "`const aufgabeQuery = (id: number) => queryOptions({ queryKey: ['aufgaben', id], queryFn: () => ladeAufgabe(id) })`"
+  category: server-state
+  aliases: [Query Options, infiniteQueryOptions, mutationOptions]
+  related: [query-key, query-function, typinferenz]
+  lesson: server-state-tanstack/react-router-loader
+- slug: spaltendefinition
+  term: Spaltendefinition
+  short: Die Beschreibung einer Tabellenspalte – woher ihr Wert kommt und wie Kopf und Zellen aussehen.
+  explanation: >
+    In TanStack Table beschreibt eine Spaltendefinition (Column Def), welcher Wert aus einer Zeile gelesen wird,
+    welche Überschrift die Spalte hat und wie Zellen gerendert werden. Mit createColumnHelper entstehen typsichere
+    Accessor-Spalten für Werte und Display-Spalten für reine Anzeigen wie Aktions-Buttons.
+  example: "`helper.accessor('alter', { header: 'Alter', cell: (info) => info.getValue() + ' Jahre' })`"
+  category: server-state
+  aliases: [Column Definition, ColumnDef, columns, createColumnHelper]
+  related: [tanstack-table, row-model]
+  lesson: server-state-tanstack/headless-tabellen
+- slug: row-model
+  term: Row Model
+  short: Eine Rechenstufe in TanStack Table, die aus den Zeilen der vorigen Stufe neue Zeilen erzeugt.
+  explanation: >
+    Die Zeilen durchlaufen eine Pipeline aus Row Models: Core, gefiltert, sortiert, geblättert. Jede Stufe meldest
+    du in tableFeatures an, zum Beispiel sortedRowModel mit createSortedRowModel(). Das Ergebnis der letzten Stufe
+    liefert table.getRowModel().
+  example: "`sortedRowModel: createSortedRowModel()` sortiert die Zeilen im Browser."
+  category: server-state
+  aliases: [Zeilenmodell, getRowModel, Row Models]
+  related: [tanstack-table, manueller-modus, spaltendefinition]
+  lesson: server-state-tanstack/sortieren-filtern-blaettern
+- slug: manueller-modus
+  term: Manueller Modus (TanStack Table)
+  short: Optionen wie manualPagination, mit denen die Tabelle eine Rechenstufe dem Server überlässt.
+  explanation: >
+    Mit manualPagination, manualSorting oder manualFiltering überspringt TanStack Table die jeweilige Stufe und
+    zeigt data so an, wie es kommt. Der Server muss die Zeilen also schon geblättert, sortiert oder gefiltert
+    liefern. Die Optionen laden selbst nichts – das übernimmt meist TanStack Query.
+  example: "`useTable({ …, manualPagination: true, rowCount: 1234 })` zeigt eine vom Server gelieferte Seite."
+  category: server-state
+  aliases: [manualPagination, manualSorting, manualFiltering, serverseitige Tabelle]
+  related: [row-model, tanstack-table, paginierung]
+  lesson: server-state-tanstack/serverseitige-tabellen
+- slug: debounce
+  term: Debounce
+  short: Eine Aktion erst ausführen, wenn eine Weile lang keine neue Eingabe mehr kam.
+  explanation: >
+    Beim Entprellen (Debounce) wird jede neue Eingabe abgewartet; erst nach einer kurzen Pause, etwa 300 ms, wird
+    der Wert übernommen. So löst schnelles Tippen in einem Suchfeld nicht für jeden Buchstaben einen eigenen
+    Request aus.
+  example: "Wer „Müller“ tippt, erzeugt mit 300 ms Debounce einen Request statt sechs."
+  category: server-state
+  aliases: [Entprellen, debouncing, debounced]
+  related: [request-deduplizierung, settimeout]
+  lesson: server-state-tanstack/serverseitige-tabellen

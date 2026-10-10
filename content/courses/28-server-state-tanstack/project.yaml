@@ -1,0 +1,1072 @@
+title: Deine Aufgabenverwaltung mit TanStack Query und Table
+description: |
+  In diesem Projekt baust du mit Vite, React 19 und TypeScript eine Aufgabenverwaltung, deren Daten von einem
+  „Server“ kommen: eine Liste mit Ladezuständen, ein Formular zum Anlegen, optimistisches Abhaken, eine
+  Detailseite mit Router-Loader und eine sortier- und filterbare Tabelle.
+
+  Damit du keinen echten Server brauchst, legt die Vorbereitung die Datei `src/api.ts` an. Sie simuliert eine API
+  mit Verzögerung: `ladeAufgaben()`, `ladeAufgabe(id)`, `aufgabeAnlegen({ titel })` und
+  `aufgabeAktualisieren(aufgabe)`. Über das exportierte Objekt `server` lassen sich Verzögerung
+  (`server.verzoegerung`) und Ausfälle (`server.kaputt = true`) steuern – die Prüfungen nutzen das, um dein
+  optimistisches Update auch im Fehlerfall zu testen.
+
+  Klicke zuerst auf **Projekt vorbereiten**: Das legt im Ordner `aufgaben-app` ein frisches Vite-Projekt (Vorlage
+  `react-ts`) an, installiert die Abhängigkeiten und schreibt `src/api.ts`. Öffne dann das Übungs-Terminal und
+  wechsle mit `cd aufgaben-app` hinein. Dateien bearbeitest du mit `nano`, `vim` oder per `cat > datei <<'EOF'`.
+
+  Fast jeder Schritt wird mit `npm run build` geprüft (TypeScript-Compiler plus Vite-Build). Schlägt er fehl,
+  zeigt er Datei und Zeile. Häufigste Ursache: ein ungenutzter Import oder eine ungenutzte Variable. Importe
+  eigener Dateien schreibst du **mit** Endung, z. B. `./api.ts` – so können die Prüfungen deine Dateien auch
+  direkt mit Node.js ausführen.
+
+  Zum Ausprobieren im Browser startest du `npm run dev -- --host` und beendest den Server mit `Strg+C`.
+goal: >
+  Ein Vite-React-Projekt `aufgaben-app` mit QueryClient und Devtools, einer Query-Key-Fabrik und queryOptions,
+  einer Aufgabenliste mit allen Ladezuständen, einer Mutation mit Invalidierung, optimistischem Abhaken mit
+  Rollback, einer Detailseite mit React-Router-Loader und einer sortier- und filterbaren TanStack-Table-Tabelle –
+  und einem erfolgreichen Produktions-Build.
+workdir: aufgaben-app
+setup: |
+  npm create vite@latest . -- --template react-ts --no-interactive >/dev/null 2>&1
+  npm install --no-audit --no-fund >/dev/null 2>&1
+  cat > src/api.ts <<'EOF'
+  export type Aufgabe = { id: number; titel: string; erledigt: boolean }
+
+  export const server = { kaputt: false, verzoegerung: 400 }
+
+  let aufgaben: Aufgabe[] = [
+    { id: 1, titel: 'Steuererklärung abgeben', erledigt: false },
+    { id: 2, titel: 'Zahnarzttermin machen', erledigt: true },
+    { id: 3, titel: 'Fahrrad reparieren', erledigt: false },
+  ]
+  let naechsteId = 4
+
+  function warte(): Promise<void> {
+    return new Promise((fertig) => setTimeout(fertig, server.verzoegerung))
+  }
+
+  function pruefeServer(): void {
+    if (server.kaputt) throw new Error('Server nicht erreichbar')
+  }
+
+  export async function ladeAufgaben(): Promise<Aufgabe[]> {
+    await warte()
+    pruefeServer()
+    return aufgaben.map((a) => ({ ...a }))
+  }
+
+  export async function ladeAufgabe(id: number): Promise<Aufgabe> {
+    await warte()
+    pruefeServer()
+    const gefunden = aufgaben.find((a) => a.id === id)
+    if (!gefunden) throw new Error('Aufgabe nicht gefunden')
+    return { ...gefunden }
+  }
+
+  export async function aufgabeAnlegen(neu: { titel: string }): Promise<Aufgabe> {
+    await warte()
+    pruefeServer()
+    const aufgabe: Aufgabe = { id: naechsteId++, titel: neu.titel, erledigt: false }
+    aufgaben = [...aufgaben, aufgabe]
+    return { ...aufgabe }
+  }
+
+  export async function aufgabeAktualisieren(geaendert: Aufgabe): Promise<Aufgabe> {
+    await warte()
+    pruefeServer()
+    aufgaben = aufgaben.map((a) => (a.id === geaendert.id ? { ...geaendert } : a))
+    return { ...geaendert }
+  }
+  EOF
+steps:
+  - id: pakete
+    title: Die Bibliotheken installieren
+    description: |
+      Installiere die vier Pakete, die du im Projekt brauchst:
+
+      1. `@tanstack/react-query` – der Server-State-Cache
+      2. `@tanstack/react-query-devtools` – das Devtools-Panel
+      3. `@tanstack/react-table` – die Headless-Tabelle
+      4. `react-router` – das Routing im Data Mode
+
+      Alle vier gehören unter `dependencies` (also ohne `-D`). Schau dir danach `src/api.ts` an: Welche Funktionen
+      gibt es, und was liefern sie zurück?
+    checklist:
+      - Alle vier Pakete installiert
+      - "`src/api.ts` gelesen"
+    hints:
+      - Du kannst mehrere Pakete in einem Befehl installieren.
+      - "`npm install @tanstack/react-query @tanstack/react-query-devtools @tanstack/react-table react-router`"
+    checks:
+      - type: dir_exists
+        path: node_modules/@tanstack/react-query
+        message: "@tanstack/react-query ist noch nicht installiert."
+      - type: dir_exists
+        path: node_modules/@tanstack/react-query-devtools
+        message: "@tanstack/react-query-devtools ist noch nicht installiert."
+      - type: dir_exists
+        path: node_modules/@tanstack/react-table
+        message: "@tanstack/react-table ist noch nicht installiert."
+      - type: dir_exists
+        path: node_modules/react-router
+        message: react-router ist noch nicht installiert.
+      - type: command
+        run: jq -e '.dependencies["@tanstack/react-query"] and .dependencies["@tanstack/react-table"] and .dependencies["react-router"]' package.json >/dev/null
+        message: Die Pakete müssen in package.json unter dependencies stehen (nicht devDependencies).
+    solution: |
+      ```bash
+      cd aufgaben-app
+      npm install @tanstack/react-query @tanstack/react-query-devtools @tanstack/react-table react-router
+      ```
+    solve: |
+      npm install --no-audit --no-fund @tanstack/react-query @tanstack/react-query-devtools @tanstack/react-table react-router >/dev/null 2>&1
+
+  - id: query-client
+    title: QueryClient, Provider und Devtools
+    description: |
+      1. Lege `src/queryClient.ts` an. Sie exportiert `queryClient`, einen `new QueryClient(...)` mit der
+         Standardoption `staleTime: 30_000` für alle Queries.
+      2. Ändere `src/main.tsx`: Umschließe `<App />` mit `<QueryClientProvider client={queryClient}>` und füge
+         innerhalb des Providers `<ReactQueryDevtools initialIsOpen={false} />` hinzu.
+      3. Prüfe mit `npm run build`.
+    checklist:
+      - queryClient.ts exportiert den QueryClient mit staleTime 30 Sekunden
+      - App steckt im QueryClientProvider
+      - Devtools eingebunden
+    hints:
+      - "`new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } })`"
+      - "In main.tsx: `import { QueryClientProvider } from '@tanstack/react-query'`, `import { ReactQueryDevtools } from '@tanstack/react-query-devtools'` und `import { queryClient } from './queryClient.ts'`."
+    checks:
+      - type: command
+        run: node -e "import('./src/queryClient.ts').then((m) => console.log(m.queryClient.getDefaultOptions().queries?.staleTime))" 2>/dev/null
+        stdout_equals: "30000"
+        message: "src/queryClient.ts soll queryClient exportieren – mit defaultOptions: { queries: { staleTime: 30_000 } }."
+      - type: file_contains
+        path: src/main.tsx
+        pattern: "<QueryClientProvider\\s+client=\\{queryClient\\}"
+        message: In src/main.tsx fehlt <QueryClientProvider client={queryClient}>.
+      - type: file_contains
+        path: src/main.tsx
+        pattern: "<ReactQueryDevtools"
+        message: Binde in src/main.tsx die <ReactQueryDevtools /> ein.
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Führe den Befehl aus und lies die Fehlermeldung.
+    solution: |
+      ```ts title="src/queryClient.ts"
+      import { QueryClient } from '@tanstack/react-query'
+
+      export const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 30_000 },
+        },
+      })
+      ```
+
+      ```tsx title="src/main.tsx"
+      import { StrictMode } from 'react'
+      import { createRoot } from 'react-dom/client'
+      import { QueryClientProvider } from '@tanstack/react-query'
+      import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+      import { queryClient } from './queryClient.ts'
+      import './index.css'
+      import App from './App.tsx'
+
+      createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+          <QueryClientProvider client={queryClient}>
+            <App />
+            <ReactQueryDevtools initialIsOpen={false} />
+          </QueryClientProvider>
+        </StrictMode>,
+      )
+      ```
+    solve: |
+      cat > src/queryClient.ts <<'EOF'
+      import { QueryClient } from '@tanstack/react-query'
+
+      export const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 30_000 },
+        },
+      })
+      EOF
+      cat > src/main.tsx <<'EOF'
+      import { StrictMode } from 'react'
+      import { createRoot } from 'react-dom/client'
+      import { QueryClientProvider } from '@tanstack/react-query'
+      import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+      import { queryClient } from './queryClient.ts'
+      import './index.css'
+      import App from './App.tsx'
+
+      createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+          <QueryClientProvider client={queryClient}>
+            <App />
+            <ReactQueryDevtools initialIsOpen={false} />
+          </QueryClientProvider>
+        </StrictMode>,
+      )
+      EOF
+
+  - id: queries
+    title: Key-Fabrik und queryOptions
+    description: |
+      Lege `src/queries.ts` an:
+
+      1. `aufgabenKeys` mit `all: ['aufgaben']`, `listen()` → `['aufgaben', 'liste']` und
+         `detail(id)` → `['aufgaben', 'detail', id]` (jeweils mit `as const`, aus `all` aufgebaut).
+      2. `aufgabenQuery()` – mit `queryOptions(...)`: Key `aufgabenKeys.listen()`, Funktion `ladeAufgaben`.
+      3. `aufgabeQuery(id)` – mit `queryOptions(...)`: Key `aufgabenKeys.detail(id)`, Funktion
+         `() => ladeAufgabe(id)`.
+
+      Importiere die Funktionen mit `import { ladeAufgaben, ladeAufgabe } from './api.ts'`. Die Prüfung lädt mit
+      deinen Optionen über einen echten QueryClient Daten aus der simulierten API.
+    checklist:
+      - Key-Fabrik mit all, listen und detail
+      - aufgabenQuery und aufgabeQuery mit queryOptions
+    hints:
+      - "`listen: () => [...aufgabenKeys.all, 'liste'] as const`"
+      - "`export const aufgabeQuery = (id: number) => queryOptions({ queryKey: aufgabenKeys.detail(id), queryFn: () => ladeAufgabe(id) })`"
+    checks:
+      - type: file_contains
+        path: src/queries.ts
+        pattern: "queryOptions\\("
+        message: Baue aufgabenQuery und aufgabeQuery mit queryOptions(...).
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cat > "$d/p.mjs" <<'EOF'
+          import { QueryClient } from '@tanstack/react-query'
+          import { aufgabenKeys, aufgabenQuery, aufgabeQuery } from '../src/queries.ts'
+          import { server } from '../src/api.ts'
+          server.verzoegerung = 0
+          const qc = new QueryClient()
+          const liste = await qc.query(aufgabenQuery())
+          const eine = await qc.query(aufgabeQuery(2))
+          console.log([
+            JSON.stringify(aufgabenKeys.all), JSON.stringify(aufgabenKeys.listen()), JSON.stringify(aufgabenKeys.detail(2)),
+            JSON.stringify(aufgabenQuery().queryKey), String(liste.length), eine.titel,
+          ].join('|'))
+          EOF
+          node "$d/p.mjs" 2>/dev/null; r=$?
+          rm -rf "$d"
+          exit $r
+        stdout_equals: '["aufgaben"]|["aufgaben","liste"]|["aufgaben","detail",2]|["aufgaben","liste"]|3|Zahnarzttermin machen'
+        message: "Keys oder Queries stimmen noch nicht. Erwartet: all = ['aufgaben'], listen() = ['aufgaben', 'liste'], detail(2) = ['aufgaben', 'detail', 2]; aufgabenQuery lädt alle Aufgaben, aufgabeQuery(2) die Aufgabe mit der ID 2."
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Lies die Fehlermeldung – stimmen die Importe?
+    solution: |
+      ```ts title="src/queries.ts"
+      import { queryOptions } from '@tanstack/react-query'
+      import { ladeAufgabe, ladeAufgaben } from './api.ts'
+
+      export const aufgabenKeys = {
+        all: ['aufgaben'] as const,
+        listen: () => [...aufgabenKeys.all, 'liste'] as const,
+        detail: (id: number) => [...aufgabenKeys.all, 'detail', id] as const,
+      }
+
+      export const aufgabenQuery = () =>
+        queryOptions({
+          queryKey: aufgabenKeys.listen(),
+          queryFn: ladeAufgaben,
+        })
+
+      export const aufgabeQuery = (id: number) =>
+        queryOptions({
+          queryKey: aufgabenKeys.detail(id),
+          queryFn: () => ladeAufgabe(id),
+        })
+      ```
+    solve: |
+      cat > src/queries.ts <<'EOF'
+      import { queryOptions } from '@tanstack/react-query'
+      import { ladeAufgabe, ladeAufgaben } from './api.ts'
+
+      export const aufgabenKeys = {
+        all: ['aufgaben'] as const,
+        listen: () => [...aufgabenKeys.all, 'liste'] as const,
+        detail: (id: number) => [...aufgabenKeys.all, 'detail', id] as const,
+      }
+
+      export const aufgabenQuery = () =>
+        queryOptions({
+          queryKey: aufgabenKeys.listen(),
+          queryFn: ladeAufgaben,
+        })
+
+      export const aufgabeQuery = (id: number) =>
+        queryOptions({
+          queryKey: aufgabenKeys.detail(id),
+          queryFn: () => ladeAufgabe(id),
+        })
+      EOF
+
+  - id: liste
+    title: Die Aufgabenliste mit allen Zuständen
+    description: |
+      1. Lege `src/AufgabenListe.tsx` an und exportiere `function AufgabenListe`. Sie nutzt
+         `useQuery(aufgabenQuery())`.
+      2. Bei `isPending` rendert sie `<p>Lädt …</p>`, bei `isError` ein `<p role="alert">` mit `error.message`.
+      3. Sonst rendert sie eine `<ul>` mit einem `<li key={aufgabe.id}>` je Aufgabe, darin der Titel.
+      4. Läuft ein Hintergrund-Update (`isFetching`), zeigt sie über der Liste ein kleines `<small>aktualisiert …</small>`.
+      5. Ersetze `src/App.tsx` durch eine Komponente `App`, die eine `<main>` mit `<h1>Aufgaben</h1>` und
+         `<AufgabenListe />` rendert (`export default App`). Entferne die alten Imports der Vorlage.
+    checklist:
+      - AufgabenListe mit useQuery(aufgabenQuery())
+      - Lade-, Fehler- und Datenzustand
+      - App rendert die Liste
+    hints:
+      - "Gerüst: `const { data, isPending, isError, error, isFetching } = useQuery(aufgabenQuery())`."
+      - "Nach `if (isPending) return …` und `if (isError) return …` ist `data` garantiert ein Array."
+    checks:
+      - type: file_contains
+        path: src/AufgabenListe.tsx
+        pattern: "useQuery\\(\\s*aufgabenQuery\\(\\)\\s*\\)"
+        message: AufgabenListe soll die Daten mit useQuery(aufgabenQuery()) laden.
+      - type: file_contains
+        path: src/AufgabenListe.tsx
+        pattern: "isPending"
+        message: Behandle den Zustand isPending (erstes Laden) in AufgabenListe.
+      - type: file_contains
+        path: src/AufgabenListe.tsx
+        pattern: "role=\"alert\""
+        message: Bei einem Fehler soll AufgabenListe ein Element mit role="alert" rendern.
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "<AufgabenListe\\s*/>"
+        message: App soll <AufgabenListe /> rendern.
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Oft sind es übrig gebliebene Imports in App.tsx.
+    solution: |
+      ```tsx title="src/AufgabenListe.tsx"
+      import { useQuery } from '@tanstack/react-query'
+      import { aufgabenQuery } from './queries.ts'
+
+      export function AufgabenListe() {
+        const { data, isPending, isError, error, isFetching } = useQuery(aufgabenQuery())
+
+        if (isPending) return <p>Lädt …</p>
+        if (isError) return <p role="alert">Fehler: {error.message}</p>
+
+        return (
+          <section>
+            {isFetching && <small>aktualisiert …</small>}
+            <ul>
+              {data.map((aufgabe) => (
+                <li key={aufgabe.id}>{aufgabe.titel}</li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+      ```
+
+      ```tsx title="src/App.tsx"
+      import { AufgabenListe } from './AufgabenListe.tsx'
+
+      function App() {
+        return (
+          <main>
+            <h1>Aufgaben</h1>
+            <AufgabenListe />
+          </main>
+        )
+      }
+
+      export default App
+      ```
+    solve: |
+      cat > src/AufgabenListe.tsx <<'EOF'
+      import { useQuery } from '@tanstack/react-query'
+      import { aufgabenQuery } from './queries.ts'
+
+      export function AufgabenListe() {
+        const { data, isPending, isError, error, isFetching } = useQuery(aufgabenQuery())
+
+        if (isPending) return <p>Lädt …</p>
+        if (isError) return <p role="alert">Fehler: {error.message}</p>
+
+        return (
+          <section>
+            {isFetching && <small>aktualisiert …</small>}
+            <ul>
+              {data.map((aufgabe) => (
+                <li key={aufgabe.id}>{aufgabe.titel}</li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+      EOF
+      cat > src/App.tsx <<'EOF'
+      import { AufgabenListe } from './AufgabenListe.tsx'
+
+      function App() {
+        return (
+          <main>
+            <h1>Aufgaben</h1>
+            <AufgabenListe />
+          </main>
+        )
+      }
+
+      export default App
+      EOF
+
+  - id: anlegen
+    title: Neue Aufgaben anlegen
+    description: |
+      1. Lege `src/NeueAufgabe.tsx` an und exportiere `function NeueAufgabe`: ein `<form>` mit einem Eingabefeld
+         (kontrolliert über `useState`) und einem Button „Anlegen“.
+      2. Die Komponente nutzt `useMutation` mit `mutationFn: aufgabeAnlegen` aus `./api.ts`. In `onSuccess`
+         gibt sie `queryClient.invalidateQueries({ queryKey: aufgabenKeys.all })` zurück (den Client holst du mit
+         `useQueryClient()`).
+      3. Beim Absenden: `event.preventDefault()`, dann `mutate({ titel }, { onSuccess: () => setTitel('') })`.
+      4. Solange die Mutation läuft (`isPending`), ist der Button deaktiviert und zeigt „Speichert …“.
+      5. Rendere `<NeueAufgabe />` in `App` über der Liste.
+    checklist:
+      - Formular mit kontrolliertem Eingabefeld
+      - useMutation mit Invalidierung von aufgabenKeys.all
+      - Button während des Speicherns deaktiviert
+    hints:
+      - "`const anlegen = useMutation({ mutationFn: aufgabeAnlegen, onSuccess: () => queryClient.invalidateQueries({ queryKey: aufgabenKeys.all }) })`"
+      - "Das Absenden: `onSubmit={(e) => { e.preventDefault(); anlegen.mutate({ titel }, { onSuccess: () => setTitel('') }) }}`."
+    checks:
+      - type: file_contains
+        path: src/NeueAufgabe.tsx
+        pattern: "useMutation\\("
+        message: NeueAufgabe soll useMutation nutzen.
+      - type: file_contains
+        path: src/NeueAufgabe.tsx
+        pattern: "invalidateQueries\\(\\s*\\{\\s*queryKey:\\s*aufgabenKeys\\.all"
+        message: "Nach dem Anlegen soll die Mutation invalidateQueries({ queryKey: aufgabenKeys.all }) aufrufen."
+      - type: file_contains
+        path: src/NeueAufgabe.tsx
+        pattern: "isPending"
+        message: Deaktiviere den Button, solange die Mutation läuft (isPending).
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "<NeueAufgabe\\s*/>"
+        message: App soll <NeueAufgabe /> rendern.
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Lies die Fehlermeldung.
+    solution: |
+      ```tsx title="src/NeueAufgabe.tsx"
+      import { useState } from 'react'
+      import { useMutation, useQueryClient } from '@tanstack/react-query'
+      import { aufgabeAnlegen } from './api.ts'
+      import { aufgabenKeys } from './queries.ts'
+
+      export function NeueAufgabe() {
+        const [titel, setTitel] = useState('')
+        const queryClient = useQueryClient()
+        const anlegen = useMutation({
+          mutationFn: aufgabeAnlegen,
+          onSuccess: () => queryClient.invalidateQueries({ queryKey: aufgabenKeys.all }),
+        })
+
+        return (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              anlegen.mutate({ titel }, { onSuccess: () => setTitel('') })
+            }}
+          >
+            <input value={titel} onChange={(e) => setTitel(e.target.value)} aria-label="Neue Aufgabe" />
+            <button disabled={anlegen.isPending || titel.trim() === ''}>
+              {anlegen.isPending ? 'Speichert …' : 'Anlegen'}
+            </button>
+          </form>
+        )
+      }
+      ```
+
+      In `App` ergänzt du `import { NeueAufgabe } from './NeueAufgabe.tsx'` und rendert `<NeueAufgabe />` über der Liste.
+    solve: |
+      cat > src/NeueAufgabe.tsx <<'EOF'
+      import { useState } from 'react'
+      import { useMutation, useQueryClient } from '@tanstack/react-query'
+      import { aufgabeAnlegen } from './api.ts'
+      import { aufgabenKeys } from './queries.ts'
+
+      export function NeueAufgabe() {
+        const [titel, setTitel] = useState('')
+        const queryClient = useQueryClient()
+        const anlegen = useMutation({
+          mutationFn: aufgabeAnlegen,
+          onSuccess: () => queryClient.invalidateQueries({ queryKey: aufgabenKeys.all }),
+        })
+
+        return (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              anlegen.mutate({ titel }, { onSuccess: () => setTitel('') })
+            }}
+          >
+            <input value={titel} onChange={(e) => setTitel(e.target.value)} aria-label="Neue Aufgabe" />
+            <button disabled={anlegen.isPending || titel.trim() === ''}>
+              {anlegen.isPending ? 'Speichert …' : 'Anlegen'}
+            </button>
+          </form>
+        )
+      }
+      EOF
+      cat > src/App.tsx <<'EOF'
+      import { AufgabenListe } from './AufgabenListe.tsx'
+      import { NeueAufgabe } from './NeueAufgabe.tsx'
+
+      function App() {
+        return (
+          <main>
+            <h1>Aufgaben</h1>
+            <NeueAufgabe />
+            <AufgabenListe />
+          </main>
+        )
+      }
+
+      export default App
+      EOF
+
+  - id: optimistisch
+    title: Optimistisch abhaken mit Rollback
+    description: |
+      1. Lege `src/mutations.ts` an und exportiere `umschaltenOptions()`. Sie gibt `mutationOptions({...})` zurück:
+         - `mutationFn: (aufgabe: Aufgabe) => aufgabeAktualisieren({ ...aufgabe, erledigt: !aufgabe.erledigt })`
+         - `onMutate(aufgabe, context)`: `cancelQueries` für `aufgabenKeys.listen()`, Schnappschuss mit
+           `getQueryData`, dann mit `setQueryData` eine neue Liste, in der `erledigt` bei dieser Aufgabe umgedreht
+           ist. Rückgabe `{ vorher }`.
+         - `onError(fehler, aufgabe, onMutateResult, context)`: Schnappschuss zurückschreiben.
+         - `onSettled(...)`: `aufgabenKeys.all` invalidieren (Kontext ist der fünfte Parameter).
+         Nutze jeweils `context.client` – so funktioniert die Datei auch ohne React.
+      2. Erweitere `AufgabenListe`: `const umschalten = useMutation(umschaltenOptions())`. Jedes `<li>` bekommt ein
+         `<label>` mit einer Checkbox (`checked={aufgabe.erledigt}`, `onChange={() => umschalten.mutate(aufgabe)}`)
+         und dem Titel.
+
+      Die Prüfung startet deine Mutation mit einem echten QueryClient – einmal mit funktionierendem und einmal mit
+      ausgefallenem Server (`server.kaputt = true`).
+    checklist:
+      - umschaltenOptions mit onMutate, onError und onSettled
+      - Checkbox in jeder Zeile
+      - Rollback bei Serverfehler
+    hints:
+      - "Importe in mutations.ts: `mutationOptions` aus `@tanstack/react-query`, `aufgabeAktualisieren` und `type Aufgabe` aus `./api.ts`, `aufgabenKeys` aus `./queries.ts`."
+      - "Ungenutzte Parameter beginnst du mit `_`, z. B. `onError: (_fehler, _aufgabe, onMutateResult, context) => …` – sonst meldet der Build einen Fehler."
+      - "In onMutate: `context.client.setQueryData<Aufgabe[]>(aufgabenKeys.listen(), (alt) => alt?.map((a) => (a.id === aufgabe.id ? { ...a, erledigt: !a.erledigt } : a)))`."
+    checks:
+      - type: file_contains
+        path: src/mutations.ts
+        pattern: "cancelQueries"
+        message: onMutate soll zuerst laufende Queries mit cancelQueries abbrechen.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cat > "$d/p.mjs" <<'EOF'
+          import { QueryClient, MutationObserver } from '@tanstack/react-query'
+          import { umschaltenOptions } from '../src/mutations.ts'
+          import { aufgabenKeys } from '../src/queries.ts'
+          import { server } from '../src/api.ts'
+          const start = () => [{ id: 1, titel: 'Steuererklärung abgeben', erledigt: false }, { id: 3, titel: 'Fahrrad reparieren', erledigt: false }]
+          server.verzoegerung = 40
+          const qc = new QueryClient()
+          qc.setQueryData(aufgabenKeys.listen(), start())
+          const p = new MutationObserver(qc, umschaltenOptions()).mutate(start()[0])
+          await new Promise((r) => setTimeout(r, 10))
+          const optimistisch = qc.getQueryData(aufgabenKeys.listen())?.map((a) => a.erledigt).join(',')
+          await p
+          const invalidiert = qc.getQueryState(aufgabenKeys.listen())?.isInvalidated
+          server.kaputt = true
+          const qc2 = new QueryClient()
+          qc2.setQueryData(aufgabenKeys.listen(), start())
+          await new MutationObserver(qc2, umschaltenOptions()).mutate(start()[0]).catch(() => {})
+          const nachFehler = qc2.getQueryData(aufgabenKeys.listen())?.map((a) => a.erledigt).join(',')
+          console.log(optimistisch + '|' + invalidiert + '|' + nachFehler)
+          EOF
+          node "$d/p.mjs" 2>/dev/null; r=$?
+          rm -rf "$d"
+          exit $r
+        stdout_equals: "true,false|true|false,false"
+        message: "Die Mutation verhält sich noch nicht richtig. Erwartet: sofort abgehakt im Cache (nur die passende Aufgabe), danach invalidiert, und bei Serverfehler zurückgerollt."
+      - type: file_contains
+        path: src/AufgabenListe.tsx
+        pattern: "useMutation\\(\\s*umschaltenOptions\\(\\)\\s*\\)"
+        message: AufgabenListe soll die Mutation mit useMutation(umschaltenOptions()) nutzen.
+      - type: file_contains
+        path: src/AufgabenListe.tsx
+        pattern: "type=\"checkbox\""
+        message: Jede Aufgabe braucht eine Checkbox (input type="checkbox").
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Häufig sind es ungenutzte Parameter – beginne sie mit einem Unterstrich.
+    solution: |
+      ```ts title="src/mutations.ts"
+      import { mutationOptions } from '@tanstack/react-query'
+      import { aufgabeAktualisieren, type Aufgabe } from './api.ts'
+      import { aufgabenKeys } from './queries.ts'
+
+      export const umschaltenOptions = () =>
+        mutationOptions({
+          mutationFn: (aufgabe: Aufgabe) => aufgabeAktualisieren({ ...aufgabe, erledigt: !aufgabe.erledigt }),
+          onMutate: async (aufgabe, context) => {
+            await context.client.cancelQueries({ queryKey: aufgabenKeys.listen() })
+            const vorher = context.client.getQueryData<Aufgabe[]>(aufgabenKeys.listen())
+            context.client.setQueryData<Aufgabe[]>(aufgabenKeys.listen(), (alt) =>
+              alt?.map((a) => (a.id === aufgabe.id ? { ...a, erledigt: !a.erledigt } : a)),
+            )
+            return { vorher }
+          },
+          onError: (_fehler, _aufgabe, onMutateResult, context) => {
+            context.client.setQueryData(aufgabenKeys.listen(), onMutateResult?.vorher)
+          },
+          onSettled: (_daten, _fehler, _aufgabe, _onMutateResult, context) =>
+            context.client.invalidateQueries({ queryKey: aufgabenKeys.all }),
+        })
+      ```
+
+      In `AufgabenListe` ergänzt du `const umschalten = useMutation(umschaltenOptions())` und in jedem `<li>`:
+
+      ```tsx
+      <label>
+        <input type="checkbox" checked={aufgabe.erledigt} onChange={() => umschalten.mutate(aufgabe)} />
+        {aufgabe.titel}
+      </label>
+      ```
+    solve: |
+      cat > src/mutations.ts <<'EOF'
+      import { mutationOptions } from '@tanstack/react-query'
+      import { aufgabeAktualisieren, type Aufgabe } from './api.ts'
+      import { aufgabenKeys } from './queries.ts'
+
+      export const umschaltenOptions = () =>
+        mutationOptions({
+          mutationFn: (aufgabe: Aufgabe) => aufgabeAktualisieren({ ...aufgabe, erledigt: !aufgabe.erledigt }),
+          onMutate: async (aufgabe, context) => {
+            await context.client.cancelQueries({ queryKey: aufgabenKeys.listen() })
+            const vorher = context.client.getQueryData<Aufgabe[]>(aufgabenKeys.listen())
+            context.client.setQueryData<Aufgabe[]>(aufgabenKeys.listen(), (alt) =>
+              alt?.map((a) => (a.id === aufgabe.id ? { ...a, erledigt: !a.erledigt } : a)),
+            )
+            return { vorher }
+          },
+          onError: (_fehler, _aufgabe, onMutateResult, context) => {
+            context.client.setQueryData(aufgabenKeys.listen(), onMutateResult?.vorher)
+          },
+          onSettled: (_daten, _fehler, _aufgabe, _onMutateResult, context) =>
+            context.client.invalidateQueries({ queryKey: aufgabenKeys.all }),
+        })
+      EOF
+      cat > src/AufgabenListe.tsx <<'EOF'
+      import { useMutation, useQuery } from '@tanstack/react-query'
+      import { aufgabenQuery } from './queries.ts'
+      import { umschaltenOptions } from './mutations.ts'
+
+      export function AufgabenListe() {
+        const { data, isPending, isError, error, isFetching } = useQuery(aufgabenQuery())
+        const umschalten = useMutation(umschaltenOptions())
+
+        if (isPending) return <p>Lädt …</p>
+        if (isError) return <p role="alert">Fehler: {error.message}</p>
+
+        return (
+          <section>
+            {isFetching && <small>aktualisiert …</small>}
+            <ul>
+              {data.map((aufgabe) => (
+                <li key={aufgabe.id}>
+                  <label>
+                    <input type="checkbox" checked={aufgabe.erledigt} onChange={() => umschalten.mutate(aufgabe)} />
+                    {aufgabe.titel}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+      EOF
+
+  - id: router
+    title: Detailseite mit React-Router-Loader
+    description: |
+      Jetzt bekommt jede Aufgabe eine eigene Seite, deren Daten schon beim Navigieren geladen werden.
+
+      1. Lege `src/router.tsx` an. Darin:
+         - `aufgabeLoader({ params }: LoaderFunctionArgs)`: wandelt `params.id` in eine Zahl um, wartet
+           `await queryClient.query(aufgabeQuery(id))` ab und gibt `{ id }` zurück.
+         - `function AufgabeDetail()`: liest die ID mit `useLoaderData<typeof aufgabeLoader>()`, die Daten mit
+           `useSuspenseQuery(aufgabeQuery(id))` und zeigt den Titel in einem `<h1>` sowie einen
+           `<Link to="/">Zurück</Link>`.
+         - `export const router = createBrowserRouter([...])` mit den Routen `/` (Component `App`) und
+           `/aufgaben/:id` (loader `aufgabeLoader`, Component `AufgabeDetail`).
+      2. In `AufgabenListe` verlinkt jeder Titel mit `<Link to={'/aufgaben/' + aufgabe.id}>` auf die Detailseite.
+      3. In `src/main.tsx` ersetzt `<RouterProvider router={router} />` (aus `react-router/dom`) das bisherige
+         `<App />` – der QueryClientProvider bleibt außen herum.
+    checklist:
+      - Router mit zwei Routen
+      - Loader lädt die Aufgabe über den QueryClient
+      - Detailseite liest mit useSuspenseQuery
+      - RouterProvider in main.tsx
+    hints:
+      - "Importe in router.tsx: `createBrowserRouter`, `Link`, `useLoaderData` und `type LoaderFunctionArgs` aus `react-router`, `useSuspenseQuery` aus `@tanstack/react-query`."
+      - "Den QueryClient importierst du aus `./queryClient.ts` – es darf nur einen geben."
+      - "In main.tsx: `import { RouterProvider } from 'react-router/dom'` und `import { router } from './router.tsx'`; den Import von App brauchst du dort nicht mehr."
+    checks:
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "createBrowserRouter\\("
+        message: Lege den Router in src/router.tsx mit createBrowserRouter an.
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "queryClient\\.query\\(\\s*aufgabeQuery\\("
+        message: Der Loader soll die Aufgabe mit await queryClient.query(aufgabeQuery(id)) in den Cache laden.
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "useSuspenseQuery\\(\\s*aufgabeQuery\\("
+        message: AufgabeDetail soll die Daten mit useSuspenseQuery(aufgabeQuery(id)) aus dem Cache lesen.
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "/aufgaben/:id"
+        message: Es fehlt die Route /aufgaben/:id.
+      - type: file_contains
+        path: src/main.tsx
+        pattern: "<RouterProvider\\s+router=\\{router\\}"
+        message: In src/main.tsx fehlt <RouterProvider router={router} />.
+      - type: file_contains
+        path: src/AufgabenListe.tsx
+        pattern: "<Link"
+        message: In der Liste soll jeder Titel mit <Link> auf die Detailseite verweisen.
+      - type: command
+        run: npm run build >/dev/null 2>&1
+        message: npm run build schlägt fehl. Prüfe die Importe in router.tsx und main.tsx.
+    solution: |
+      ```tsx title="src/router.tsx"
+      import { createBrowserRouter, Link, useLoaderData, type LoaderFunctionArgs } from 'react-router'
+      import { useSuspenseQuery } from '@tanstack/react-query'
+      import { queryClient } from './queryClient.ts'
+      import { aufgabeQuery } from './queries.ts'
+      import App from './App.tsx'
+
+      export async function aufgabeLoader({ params }: LoaderFunctionArgs) {
+        const id = Number(params.id)
+        await queryClient.query(aufgabeQuery(id))
+        return { id }
+      }
+
+      function AufgabeDetail() {
+        const { id } = useLoaderData<typeof aufgabeLoader>()
+        const { data } = useSuspenseQuery(aufgabeQuery(id))
+        return (
+          <main>
+            <h1>{data.titel}</h1>
+            <p>{data.erledigt ? 'Erledigt' : 'Offen'}</p>
+            <Link to="/">Zurück</Link>
+          </main>
+        )
+      }
+
+      export const router = createBrowserRouter([
+        { path: '/', Component: App },
+        { path: '/aufgaben/:id', loader: aufgabeLoader, Component: AufgabeDetail },
+      ])
+      ```
+
+      In `main.tsx` steht im Provider jetzt `<RouterProvider router={router} />` statt `<App />`, und in der Liste
+      `<Link to={'/aufgaben/' + aufgabe.id}>{aufgabe.titel}</Link>`.
+    solve: |
+      cat > src/router.tsx <<'EOF'
+      import { createBrowserRouter, Link, useLoaderData, type LoaderFunctionArgs } from 'react-router'
+      import { useSuspenseQuery } from '@tanstack/react-query'
+      import { queryClient } from './queryClient.ts'
+      import { aufgabeQuery } from './queries.ts'
+      import App from './App.tsx'
+
+      export async function aufgabeLoader({ params }: LoaderFunctionArgs) {
+        const id = Number(params.id)
+        await queryClient.query(aufgabeQuery(id))
+        return { id }
+      }
+
+      function AufgabeDetail() {
+        const { id } = useLoaderData<typeof aufgabeLoader>()
+        const { data } = useSuspenseQuery(aufgabeQuery(id))
+        return (
+          <main>
+            <h1>{data.titel}</h1>
+            <p>{data.erledigt ? 'Erledigt' : 'Offen'}</p>
+            <Link to="/">Zurück</Link>
+          </main>
+        )
+      }
+
+      export const router = createBrowserRouter([
+        { path: '/', Component: App },
+        { path: '/aufgaben/:id', loader: aufgabeLoader, Component: AufgabeDetail },
+      ])
+      EOF
+      cat > src/main.tsx <<'EOF'
+      import { StrictMode } from 'react'
+      import { createRoot } from 'react-dom/client'
+      import { QueryClientProvider } from '@tanstack/react-query'
+      import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+      import { RouterProvider } from 'react-router/dom'
+      import { queryClient } from './queryClient.ts'
+      import { router } from './router.tsx'
+      import './index.css'
+
+      createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+            <ReactQueryDevtools initialIsOpen={false} />
+          </QueryClientProvider>
+        </StrictMode>,
+      )
+      EOF
+      cat > src/AufgabenListe.tsx <<'EOF'
+      import { useMutation, useQuery } from '@tanstack/react-query'
+      import { Link } from 'react-router'
+      import { aufgabenQuery } from './queries.ts'
+      import { umschaltenOptions } from './mutations.ts'
+
+      export function AufgabenListe() {
+        const { data, isPending, isError, error, isFetching } = useQuery(aufgabenQuery())
+        const umschalten = useMutation(umschaltenOptions())
+
+        if (isPending) return <p>Lädt …</p>
+        if (isError) return <p role="alert">Fehler: {error.message}</p>
+
+        return (
+          <section>
+            {isFetching && <small>aktualisiert …</small>}
+            <ul>
+              {data.map((aufgabe) => (
+                <li key={aufgabe.id}>
+                  <label>
+                    <input type="checkbox" checked={aufgabe.erledigt} onChange={() => umschalten.mutate(aufgabe)} />
+                    <Link to={`/aufgaben/${aufgabe.id}`}>{aufgabe.titel}</Link>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+      EOF
+
+  - id: tabelle
+    title: Eine sortier- und filterbare Tabelle
+    description: |
+      Zum Schluss bekommt die App eine Tabellenansicht unter `/tabelle`.
+
+      1. Lege `src/AufgabenTabelle.tsx` an. Auf Modulebene: `features` mit clientseitigem Sortieren
+         (`rowSortingFeature` + `sortedRowModel: createSortedRowModel()` + `sortFns: { alphanumeric: sortFn_alphanumeric }`)
+         und Filtern (`columnFilteringFeature` + `filteredRowModel: createFilteredRowModel()` +
+         `filterFns: { includesString: filterFn_includesString }`), die Spalten `titel` (Überschrift `Titel`,
+         `filterFn: 'includesString'`) und `erledigt` (Überschrift `Status`, Zelle `Erledigt` oder `Offen`) sowie
+         `const leer: Aufgabe[] = []`.
+      2. `export function AufgabenTabelle()` lädt mit `useQuery(aufgabenQuery())` und erzeugt die Tabelle mit
+         `useTable({ features, columns, data: data ?? leer, getRowId: (a) => String(a.id) })`.
+      3. Darüber ein Suchfeld, das den Filter der Spalte `titel` setzt. Die Spaltenköpfe sortieren per Klick
+         (`getToggleSortingHandler()`) und zeigen ▲ oder ▼ (`getIsSorted()`).
+      4. Ergänze im Router die Route `/tabelle` mit `Component: AufgabenTabelle` und in `App` einen
+         `<Link to="/tabelle">Als Tabelle</Link>`.
+    checklist:
+      - Features und Spalten auf Modulebene
+      - Sortieren per Klick auf den Spaltenkopf
+      - Suchfeld filtert die Titel
+      - Route /tabelle
+    hints:
+      - "Spalten: `const helper = createColumnHelper<typeof features, Aufgabe>()` und `helper.columns([...])`."
+      - "Den Status rendert `cell: (info) => (info.getValue() ? 'Erledigt' : 'Offen')`."
+      - "Suchfeld: `value={(table.getColumn('titel')?.getFilterValue() as string) ?? ''}` und `onChange={(e) => table.getColumn('titel')?.setFilterValue(e.target.value)}`."
+    checks:
+      - type: file_contains
+        path: src/AufgabenTabelle.tsx
+        pattern: "useTable\\("
+        message: AufgabenTabelle soll die Tabelle mit useTable erzeugen.
+      - type: file_contains
+        path: src/AufgabenTabelle.tsx
+        pattern: "sortedRowModel:\\s*createSortedRowModel\\(\\)"
+        message: In features fehlt sortedRowModel – ohne Zeilenmodell sortiert die Tabelle nicht im Browser.
+      - type: file_contains
+        path: src/AufgabenTabelle.tsx
+        pattern: "getToggleSortingHandler\\(\\)"
+        message: Die Spaltenköpfe sollen per getToggleSortingHandler() sortieren.
+      - type: file_contains
+        path: src/AufgabenTabelle.tsx
+        pattern: "setFilterValue\\("
+        message: Das Suchfeld soll mit setFilterValue den Filter der Spalte titel setzen.
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "/tabelle"
+        message: Im Router fehlt die Route /tabelle.
+      - type: command
+        run: npm run build >/dev/null 2>&1 && test -f dist/index.html
+        message: npm run build schlägt fehl. Lies die Fehlermeldung – oft fehlt ein Import oder ein Typ.
+    solution: |
+      ```tsx title="src/AufgabenTabelle.tsx"
+      import { useQuery } from '@tanstack/react-query'
+      import {
+        columnFilteringFeature, createColumnHelper, createFilteredRowModel, createSortedRowModel,
+        filterFn_includesString, rowSortingFeature, sortFn_alphanumeric, tableFeatures, useTable,
+      } from '@tanstack/react-table'
+      import type { Aufgabe } from './api.ts'
+      import { aufgabenQuery } from './queries.ts'
+
+      const features = tableFeatures({
+        columnFilteringFeature,
+        filteredRowModel: createFilteredRowModel(),
+        filterFns: { includesString: filterFn_includesString },
+        rowSortingFeature,
+        sortedRowModel: createSortedRowModel(),
+        sortFns: { alphanumeric: sortFn_alphanumeric },
+      })
+
+      const helper = createColumnHelper<typeof features, Aufgabe>()
+
+      const columns = helper.columns([
+        helper.accessor('titel', { header: 'Titel', filterFn: 'includesString' }),
+        helper.accessor('erledigt', { header: 'Status', cell: (info) => (info.getValue() ? 'Erledigt' : 'Offen') }),
+      ])
+
+      const leer: Aufgabe[] = []
+
+      export function AufgabenTabelle() {
+        const { data } = useQuery(aufgabenQuery())
+        const table = useTable({ features, columns, data: data ?? leer, getRowId: (a) => String(a.id) })
+        const titelSpalte = table.getColumn('titel')
+
+        return (
+          <main>
+            <input
+              placeholder="Titel suchen …"
+              value={(titelSpalte?.getFilterValue() as string) ?? ''}
+              onChange={(e) => titelSpalte?.setFilterValue(e.target.value)}
+            />
+            <table>
+              <thead>
+                {table.getHeaderGroups().map((gruppe) => (
+                  <tr key={gruppe.id}>
+                    {gruppe.headers.map((kopf) => (
+                      <th key={kopf.id}>
+                        <button onClick={kopf.column.getToggleSortingHandler()}>
+                          <table.FlexRender header={kopf} />
+                          {{ asc: ' ▲', desc: ' ▼' }[kopf.column.getIsSorted() as string] ?? null}
+                        </button>
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((zeile) => (
+                  <tr key={zeile.id}>
+                    {zeile.getAllCells().map((zelle) => (
+                      <td key={zelle.id}><table.FlexRender cell={zelle} /></td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </main>
+        )
+      }
+      ```
+
+      Im Router: `{ path: '/tabelle', Component: AufgabenTabelle }`. In `App`: `<Link to="/tabelle">Als Tabelle</Link>`.
+    solve: |
+      cat > src/AufgabenTabelle.tsx <<'EOF'
+      import { useQuery } from '@tanstack/react-query'
+      import {
+        columnFilteringFeature, createColumnHelper, createFilteredRowModel, createSortedRowModel,
+        filterFn_includesString, rowSortingFeature, sortFn_alphanumeric, tableFeatures, useTable,
+      } from '@tanstack/react-table'
+      import type { Aufgabe } from './api.ts'
+      import { aufgabenQuery } from './queries.ts'
+
+      const features = tableFeatures({
+        columnFilteringFeature,
+        filteredRowModel: createFilteredRowModel(),
+        filterFns: { includesString: filterFn_includesString },
+        rowSortingFeature,
+        sortedRowModel: createSortedRowModel(),
+        sortFns: { alphanumeric: sortFn_alphanumeric },
+      })
+
+      const helper = createColumnHelper<typeof features, Aufgabe>()
+
+      const columns = helper.columns([
+        helper.accessor('titel', { header: 'Titel', filterFn: 'includesString' }),
+        helper.accessor('erledigt', { header: 'Status', cell: (info) => (info.getValue() ? 'Erledigt' : 'Offen') }),
+      ])
+
+      const leer: Aufgabe[] = []
+
+      export function AufgabenTabelle() {
+        const { data } = useQuery(aufgabenQuery())
+        const table = useTable({ features, columns, data: data ?? leer, getRowId: (a) => String(a.id) })
+        const titelSpalte = table.getColumn('titel')
+
+        return (
+          <main>
+            <input
+              placeholder="Titel suchen …"
+              value={(titelSpalte?.getFilterValue() as string) ?? ''}
+              onChange={(e) => titelSpalte?.setFilterValue(e.target.value)}
+            />
+            <table>
+              <thead>
+                {table.getHeaderGroups().map((gruppe) => (
+                  <tr key={gruppe.id}>
+                    {gruppe.headers.map((kopf) => (
+                      <th key={kopf.id}>
+                        <button onClick={kopf.column.getToggleSortingHandler()}>
+                          <table.FlexRender header={kopf} />
+                          {{ asc: ' ▲', desc: ' ▼' }[kopf.column.getIsSorted() as string] ?? null}
+                        </button>
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((zeile) => (
+                  <tr key={zeile.id}>
+                    {zeile.getAllCells().map((zelle) => (
+                      <td key={zelle.id}><table.FlexRender cell={zelle} /></td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </main>
+        )
+      }
+      EOF
+      sed -i "s|import App from './App.tsx'|import App from './App.tsx'\nimport { AufgabenTabelle } from './AufgabenTabelle.tsx'|" src/router.tsx
+      sed -i "s|  { path: '/aufgaben/:id', loader: aufgabeLoader, Component: AufgabeDetail },|  { path: '/aufgaben/:id', loader: aufgabeLoader, Component: AufgabeDetail },\n  { path: '/tabelle', Component: AufgabenTabelle },|" src/router.tsx
+      cat > src/App.tsx <<'EOF'
+      import { Link } from 'react-router'
+      import { AufgabenListe } from './AufgabenListe.tsx'
+      import { NeueAufgabe } from './NeueAufgabe.tsx'
+
+      function App() {
+        return (
+          <main>
+            <h1>Aufgaben</h1>
+            <Link to="/tabelle">Als Tabelle</Link>
+            <NeueAufgabe />
+            <AufgabenListe />
+          </main>
+        )
+      }
+
+      export default App
+      EOF
