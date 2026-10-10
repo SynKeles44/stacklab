@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="480" y="32" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Ein typischer Observability-Stack</text>
+
+  <rect x="30" y="170" width="170" height="150" rx="14" fill="#ede9fe" stroke="#a78bfa" stroke-width="2.5"/>
+  <text x="115" y="238" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Laravel-App</text>
+  <text x="115" y="260" text-anchor="middle" font-size="12" fill="#1e1b3a">Logs, Metriken, Spans</text>
+
+  <rect x="270" y="60" width="170" height="64" rx="12" fill="#cffafe" stroke="#22d3ee" stroke-width="2"/>
+  <text class="slot" x="355" y="90" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Alloy</text>
+  <text class="slot" x="355" y="110" text-anchor="middle" font-size="12" fill="#1e1b3a">Log-Agent</text>
+
+  <rect x="500" y="60" width="170" height="64" rx="12" fill="#cffafe" stroke="#22d3ee" stroke-width="2"/>
+  <text class="slot" x="585" y="90" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Loki</text>
+  <text class="slot" x="585" y="110" text-anchor="middle" font-size="12" fill="#1e1b3a">Log-Speicher</text>
+
+  <rect x="270" y="213" width="170" height="64" rx="12" fill="#ede9fe" stroke="#a78bfa" stroke-width="2"/>
+  <text class="slot" x="355" y="243" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Prometheus</text>
+  <text class="slot" x="355" y="263" text-anchor="middle" font-size="12" fill="#1e1b3a">Metrik-Datenbank</text>
+
+  <rect x="500" y="213" width="170" height="64" rx="12" fill="#fee2e2" stroke="#f87171" stroke-width="2"/>
+  <text class="slot" x="585" y="243" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Alertmanager</text>
+  <text class="slot" x="585" y="263" text-anchor="middle" font-size="12" fill="#1e1b3a">bündelt Alarme</text>
+
+  <rect x="510" y="300" width="150" height="36" rx="10" fill="#ffffff" stroke="#f87171" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="585" y="323" text-anchor="middle" font-size="13" fill="#1e1b3a">Bereitschaft</text>
+
+  <rect x="270" y="366" width="170" height="64" rx="12" fill="#d1fae5" stroke="#34d399" stroke-width="2"/>
+  <text x="355" y="396" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">OTel Collector</text>
+  <text x="355" y="416" text-anchor="middle" font-size="12" fill="#1e1b3a">sammelt Spans</text>
+
+  <rect x="500" y="366" width="170" height="64" rx="12" fill="#d1fae5" stroke="#34d399" stroke-width="2"/>
+  <text x="585" y="396" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Tempo</text>
+  <text x="585" y="416" text-anchor="middle" font-size="12" fill="#1e1b3a">Trace-Speicher</text>
+
+  <rect x="760" y="60" width="170" height="370" rx="14" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.5"/>
+  <text class="slot" x="845" y="238" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Grafana</text>
+  <text class="slot" x="845" y="260" text-anchor="middle" font-size="12" fill="#1e1b3a">Dashboards</text>
+
+  <g stroke="#1e1b3a" stroke-width="1.8" fill="none">
+    <line x1="200" y1="190" x2="268" y2="100" marker-end="url(#pfeil)"/>
+    <line x1="440" y1="92" x2="498" y2="92" marker-end="url(#pfeil)"/>
+    <line x1="670" y1="92" x2="758" y2="92" marker-end="url(#pfeil)"/>
+    <line x1="270" y1="245" x2="202" y2="245" marker-end="url(#pfeil)"/>
+    <line x1="440" y1="245" x2="498" y2="245" marker-end="url(#pfeil)"/>
+    <line x1="585" y1="277" x2="585" y2="298" marker-end="url(#pfeil)"/>
+    <path d="M355,213 L355,180 L758,180" marker-end="url(#pfeil)"/>
+    <line x1="200" y1="300" x2="268" y2="390" marker-end="url(#pfeil)"/>
+    <line x1="440" y1="398" x2="498" y2="398" marker-end="url(#pfeil)"/>
+    <line x1="670" y1="398" x2="758" y2="398" marker-end="url(#pfeil)"/>
+  </g>
+  <g font-size="11.5" fill="#1e1b3a">
+    <text x="150" y="140">JSON-Logs</text>
+    <text x="470" y="84" text-anchor="middle">push</text>
+    <text x="714" y="84" text-anchor="middle">LogQL</text>
+    <text x="236" y="236" text-anchor="middle">/metrics</text>
+    <text x="236" y="262" text-anchor="middle">(Pull)</text>
+    <text x="470" y="237" text-anchor="middle">Alerts</text>
+    <text x="560" y="174" text-anchor="middle">PromQL</text>
+    <text x="150" y="352">OTLP</text>
+    <text x="470" y="390" text-anchor="middle">push</text>
+    <text x="714" y="390" text-anchor="middle">TraceQL</text>
+  </g>
+  <text x="480" y="475" text-anchor="middle" font-size="12.5" fill="#1e1b3a">Logs (oben) · Metriken (Mitte) · Traces (unten) – Grafana zeigt alle drei an einem Ort.</text>
+</svg>

@@ -1,0 +1,341 @@
+title: Abschlussprüfung Observability
+description: |
+  Diese Prüfung deckt alle vier Module ab: Grundlagen und strukturiertes Logging, Metriken und
+  Dashboards, Loki und Tracing sowie Alerting, SLOs und Incidents. Zuerst beantwortest du Fragen, danach
+  löst du drei Praxis-Aufgaben – zwei im echten Übungs-Terminal, eine als Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Grundlagen und Logs ---
+  - module: grundlagen-und-logs
+    type: single
+    question: Was ist der Kern von Observability im Vergleich zu klassischem Monitoring?
+    options:
+      - Mehr Diagramme auf dem Dashboard.
+      - Auch unerwartete Fragen über das System beantworten zu können, ohne neuen Code auszurollen.
+      - Nur noch Logs statt Metriken zu sammeln.
+      - Alarme ausschließlich per E-Mail zu verschicken.
+    answer: 1
+    explanation: Monitoring überwacht bekannte Werte. Observability erlaubt neue Fragen, weil die Telemetrie reichhaltig und verknüpft ist.
+  - module: grundlagen-und-logs
+    type: match
+    question: Ordne jedem Signal seine größte Stärke zu.
+    pairs:
+      - { left: "Logs", right: "genaue Details zu einem einzelnen Ereignis" }
+      - { left: "Metriken", right: "billige Trends und Grundlage für Alarme" }
+      - { left: "Traces", right: "zeigen, wo im Weg einer Anfrage Zeit verloren geht" }
+    explanation: Erst zusammen – verbunden über gemeinsame IDs – ergeben die drei Signale eine Diagnose.
+  - module: grundlagen-und-logs
+    type: find-bug
+    question: Welche Logzeile verstößt gegen die Regeln für strukturiertes Logging?
+    language: php
+    code: |
+      Log::info('Order created', ['order_id' => $order->id]);
+      Log::warning('Payment retry', ['attempt' => 2, 'order_id' => $order->id]);
+      Log::error("Payment failed for order {$order->id} with card {$card->number}");
+      Log::info('Request finished', ['duration_ms' => 120]);
+    bug_line: 3
+    explanation: Zeile 3 mischt veränderliche Werte in die Message und schreibt die Kartennummer ins Log. Richtig wäre eine feste Message mit `order_id` im Kontext – und keine Kartendaten.
+  - module: grundlagen-und-logs
+    type: multiple
+    question: Was gehört niemals im Klartext in ein Log?
+    options:
+      - Passwörter
+      - Bearer-Tokens und Session-IDs
+      - Die Dauer einer Anfrage in Millisekunden
+      - Vollständige Kreditkartennummern
+    answers: [0, 1, 3]
+    explanation: Geheimnisse und Zahlungsdaten haben in Logs nichts verloren. Die Dauer ist ein harmloser, wertvoller Messwert.
+  - module: grundlagen-und-logs
+    type: cloze
+    text: In einem Container schreibt eine Laravel-App ihre Logs als JSON nach ___. Den Kanal dafür baust du mit dem Treiber `monolog`, dem `StreamHandler` und dem ___.
+    blanks:
+      - [stderr, "php://stderr", stdout]
+      - [JsonFormatter, "Monolog\\Formatter\\JsonFormatter"]
+    explanation: Die Container-Plattform sammelt stdout/stderr ein. Der JsonFormatter macht aus jeder Meldung eine JSON-Zeile.
+  # --- Metriken und Dashboards ---
+  - module: metriken-und-dashboards
+    type: match
+    question: Welcher Metrik-Typ passt?
+    pairs:
+      - { left: "Anzahl versendeter E-Mails seit dem Start", right: "Counter" }
+      - { left: "Freier Speicherplatz", right: "Gauge" }
+      - { left: "Antwortzeiten für p95", right: "Histogramm" }
+    explanation: Counter zählen hoch, Gauges sind ein Stand, Histogramme beschreiben Verteilungen.
+  - module: metriken-und-dashboards
+    type: single
+    question: Für welche Art von Komponente ist die USE-Methode gedacht?
+    options:
+      - Für Dienste, die Anfragen beantworten, z. B. eine API.
+      - Für Ressourcen wie CPU, Arbeitsspeicher, Festplatten oder Worker-Pools.
+      - Für Logzeilen.
+      - Für Postmortems.
+    answer: 1
+    explanation: USE (Utilization, Saturation, Errors) beschreibt Ressourcen. Für Dienste nutzt du RED (Rate, Errors, Duration).
+  - module: metriken-und-dashboards
+    type: single
+    question: Welche PromQL-Abfrage zeigt sinnvoll die Anfragen pro Sekunde?
+    options:
+      - "http_requests_total"
+      - "sum(rate(http_requests_total[5m]))"
+      - "max(http_requests_total) / 300"
+      - "histogram_quantile(0.95, http_requests_total)"
+    answer: 1
+    explanation: Ein Counter wächst endlos. rate() berechnet daraus die Steigung pro Sekunde, sum() fasst alle Zeitreihen zusammen.
+  - module: metriken-und-dashboards
+    type: multiple
+    question: Welche Aussagen zum Prometheus-Textformat stimmen?
+    options:
+      - "`# TYPE` steht vor der ersten Zeitreihe einer Metrik."
+      - Der Bucket `le="+Inf"` hat denselben Wert wie `_count`.
+      - Counter enden laut Konvention auf `_total`.
+      - Label-Werte dürfen beliebig viele verschiedene Werte haben, z. B. User-IDs.
+    answers: [0, 1, 2]
+    explanation: Label mit unbegrenzt vielen Werten erzeugen hohe Kardinalität und gehören nicht in Metriken.
+  - module: metriken-und-dashboards
+    type: cloze
+    text: Grafana-Dashboards versionierst du als ___-Modell im Repository und lädst sie beim Start per ___.
+    blanks:
+      - [JSON]
+      - [Provisioning, provisioning]
+    explanation: Dashboards als Code sind prüfbar und auf allen Umgebungen gleich.
+  # --- Loki und Tracing ---
+  - module: loki-und-tracing
+    type: single
+    question: Warum sollte `request_id` kein Loki-Label sein?
+    options:
+      - Loki kann keine Bindestriche in Labels speichern.
+      - Jeder neue Wert erzeugt einen eigenen Stream – Millionen kleiner Streams machen Loki langsam und teuer.
+      - Request-IDs sind geheim.
+      - Labels werden nicht indexiert.
+    answer: 1
+    explanation: Labels brauchen wenige, feste Werte. Die request_id bleibt im Inhalt und wird mit `|= "req-b2"` gefunden.
+  - module: loki-und-tracing
+    type: find-bug
+    question: Diese LogQL-Abfrage soll die Fehler pro Route über 5 Minuten zählen. In welcher Zeile steckt der Fehler?
+    language: text
+    code: |
+      sum by (route) (
+        count_over_time(
+          app="shop" | json | level="error" [5m]
+        )
+      )
+    bug_line: 3
+    explanation: "Der Stream-Selektor braucht geschweifte Klammern: `{app=\"shop\"}`. Jede LogQL-Abfrage beginnt mit einem Selektor in `{…}`."
+  - module: loki-und-tracing
+    type: single
+    question: "Was steht im dritten Teil von `traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`?"
+    options:
+      - Die Trace-ID.
+      - Die Span-ID des Aufrufers, die beim Empfänger zur Parent-ID wird.
+      - Das Sampling-Flag.
+      - Die Version des Standards.
+    answer: 1
+    explanation: Aufbau version-traceid-parentid-flags. Der dritte Teil ist die ID des aufrufenden Spans.
+  - module: loki-und-tracing
+    type: multiple
+    question: Welche Aussagen zu OpenTelemetry stimmen?
+    options:
+      - Anwendungen schicken Telemetrie per OTLP.
+      - Der Collector kann Daten verarbeiten und an mehrere Speicher exportieren.
+      - Tail Sampling entscheidet erst nach Ende eines Traces, ob er behalten wird.
+      - OpenTelemetry funktioniert nur mit Grafana.
+    answers: [0, 1, 2]
+    explanation: OpenTelemetry ist herstellerneutral – die Daten können in Tempo, Jaeger oder bei kommerziellen Anbietern landen.
+  # --- Alerting und Incidents ---
+  - module: alerting-und-incidents
+    type: single
+    question: Ein Dienst hat ein SLO von 99,9 % über 30 Tage. Wie groß ist das Fehlerbudget als Zeit?
+    options:
+      - 4,32 Minuten
+      - 43,2 Minuten
+      - 7,2 Stunden
+      - 1 Tag
+    answer: 1
+    explanation: 30 × 24 × 60 = 43 200 Minuten, davon 0,1 % = 43,2 Minuten.
+  - module: alerting-und-incidents
+    type: cloze
+    text: Bei 500 000 Anfragen und einem SLO von 99,9 % sind ___ Fehler erlaubt. Eine aktuelle Fehlerquote von 0,5 % entspricht einer Burn Rate von ___.
+    blanks:
+      - ["500"]
+      - ["5"]
+    explanation: Budget = 500 000 × 0,001 = 500. Burn Rate = 0,005 ÷ 0,001 = 5.
+  - module: alerting-und-incidents
+    type: single
+    question: Welcher Alarm sollte nachts jemanden wecken?
+    options:
+      - CPU eines Servers für 30 Sekunden bei 95 %.
+      - Das Fehlerbudget wird mit Burn Rate 14,4 über 1 Stunde und 5 Minuten verbraucht.
+      - Ein TLS-Zertifikat läuft in 20 Tagen ab.
+      - Ein Deployment wurde erfolgreich abgeschlossen.
+    answer: 1
+    explanation: Ein Page muss dringend, wichtig und handlungsfähig sein. Eine hohe Burn Rate in beiden Fenstern ist ein Symptom, das Nutzer:innen jetzt trifft.
+  - module: alerting-und-incidents
+    type: match
+    question: Ordne die Begriffe zu.
+    pairs:
+      - { left: "for: 5m", right: "Bedingung muss 5 Minuten gelten, bevor der Alarm feuert" }
+      - { left: "Inhibition", right: "unterdrückt Folgealarme eines übergeordneten Ausfalls" }
+      - { left: "runbook_url", right: "Link zu den ersten Schritten für die Bereitschaft" }
+      - { left: "Postmortem", right: "schuldfreier Bericht mit Folgeaufgaben" }
+    explanation: Gute Alarme filtern Spitzen, bündeln Folgealarme und sagen, was zu tun ist. Das Postmortem sorgt dafür, dass das Team lernt.
+  - module: alerting-und-incidents
+    type: single
+    question: Mitten im Incident ist klar, dass das letzte Deployment den Fehler ausgelöst hat. Was tust du zuerst?
+    options:
+      - Den Fehler im Code suchen und einen Hotfix schreiben.
+      - Zurückrollen, um den Schaden zu stoppen; die Ursache klärst du danach.
+      - Ein Postmortem beginnen.
+      - Die Person ermitteln, die das Deployment gemacht hat.
+    answer: 1
+    explanation: Eindämmen vor Verstehen. Ein Rollback stoppt den Schaden schnell; die Analyse folgt im Postmortem – schuldfrei.
+tasks:
+  - module: grundlagen-und-logs
+    id: pruefung-logs
+    type: terminal
+    title: Langsame Anfragen in JSON-Logs finden
+    description: |
+      Im Ordner `pruefung-logs` liegt `access.jsonl` mit Logzeilen eines Webservers (eine JSON-Zeile pro
+      Anfrage mit `request_id`, `route`, `status` und `duration_ms`).
+
+      1. Schreibe die `request_id`s aller Anfragen mit `duration_ms` **größer als 1000** – in der Reihenfolge
+         der Datei, eine pro Zeile – nach `langsam.txt`.
+      2. Schreibe nach `pro-route.json` ein JSON-Objekt, das für jede Route die Anzahl der Anfragen mit einem
+         Status ab 500 enthält. Routen ohne solche Fehler lässt du weg.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-logs
+    setup: |
+      cat > access.jsonl <<'EOF'
+      {"request_id":"r1","route":"GET /","status":200,"duration_ms":35}
+      {"request_id":"r2","route":"POST /checkout","status":200,"duration_ms":1450}
+      {"request_id":"r3","route":"POST /checkout","status":503,"duration_ms":10010}
+      {"request_id":"r4","route":"GET /search","status":200,"duration_ms":980}
+      {"request_id":"r5","route":"GET /search","status":500,"duration_ms":120}
+      {"request_id":"r6","route":"POST /checkout","status":502,"duration_ms":10005}
+      {"request_id":"r7","route":"GET /","status":404,"duration_ms":12}
+      EOF
+    checks:
+      - type: command
+        run: cat langsam.txt | tr '\n' ' '
+        stdout_matches: "^r2 r3 r6 ?$"
+        message: langsam.txt soll die request_ids r2, r3 und r6 enthalten – alle mit duration_ms > 1000, in der Reihenfolge der Datei.
+      - type: command
+        run: jq -c -S . pro-route.json
+        stdout_equals: '{"GET /search":1,"POST /checkout":2}'
+        message: 'pro-route.json soll {"GET /search": 1, "POST /checkout": 2} ergeben – nur Status ab 500, 404 zählt nicht.'
+    hints:
+      - "`jq -r 'select(.duration_ms > 1000) | .request_id' access.jsonl`"
+      - "`jq -s 'map(select(.status >= 500)) | group_by(.route) | map({(.[0].route): length}) | add' access.jsonl`"
+    solution: |
+      ```bash
+      cd pruefung-logs
+      jq -r 'select(.duration_ms > 1000) | .request_id' access.jsonl > langsam.txt
+      jq -s 'map(select(.status >= 500)) | group_by(.route) | map({(.[0].route): length}) | add' access.jsonl > pro-route.json
+      ```
+  - module: metriken-und-dashboards
+    id: pruefung-fehlerquote
+    type: code
+    language: js
+    title: Fehlerquote aus /metrics berechnen
+    description: |
+      Schreibe `errorRatio(text)`. Die Funktion bekommt den Text einer `/metrics`-Antwort und berechnet aus
+      allen Zeilen der Metrik `http_requests_total` den Anteil der Anfragen mit einem **5xx**-Status
+      (Label `status`) an allen Anfragen.
+
+      - Kommentarzeilen (`#`) und andere Metriken werden ignoriert.
+      - Gibt es keine Anfragen, ist das Ergebnis `0`.
+    starter: |
+      function errorRatio(text) {
+        let total = 0
+        let errors = 0
+        // werte jede Zeile aus
+        return 0
+      }
+    tests:
+      - name: berechnet den 5xx-Anteil
+        code: |
+          const t = '# TYPE http_requests_total counter\nhttp_requests_total{route="/",status="200"} 950\nhttp_requests_total{route="/",status="503"} 50'
+          assertTrue(Math.abs(errorRatio(t) - 0.05) < 1e-9)
+      - name: 404 zählt nicht als Fehler, andere Metriken werden ignoriert
+        code: |
+          const t = 'http_requests_total{route="/a",status="404"} 10\nhttp_requests_total{route="/a",status="500"} 10\nhttp_requests_total{route="/a",status="200"} 80\nup 1'
+          assertTrue(Math.abs(errorRatio(t) - 0.1) < 1e-9)
+      - name: keine Anfragen ergibt 0
+        code: |
+          assertEqual(errorRatio('# HELP http_requests_total Total.\n'), 0)
+          assertEqual(errorRatio(''), 0)
+    solution: |
+      function errorRatio(text) {
+        let total = 0
+        let errors = 0
+        for (const line of text.split('\n')) {
+          const match = /^http_requests_total\{([^}]*)\}\s+([0-9.eE+-]+)/.exec(line.trim())
+          if (!match) continue
+          const value = Number(match[2])
+          total += value
+          if (/status="5\d\d"/.test(match[1])) errors += value
+        }
+        return total === 0 ? 0 : errors / total
+      }
+  - module: alerting-und-incidents
+    id: pruefung-slo
+    type: terminal
+    title: SLO-Status und Alarmregel
+    description: |
+      Im Ordner `pruefung-slo` liegt `monat.json` mit Anfragen und Fehlern eines Dienstes in den bisherigen
+      Tagen des Monats. Das SLO beträgt **99,5 %**.
+
+      1. Schreibe nach `status.json` ein Objekt mit `budget` (erlaubte Fehler = Anfragen × 0,005),
+         `used` (Summe der Fehler) und `remaining` (übriger Anteil, `1 - used / budget`).
+      2. Schreibe `api.rules.yml` mit einer Gruppe `api` und dem Alarm `ApiHighErrorRate`: `expr` vergleicht
+         den 5xx-Anteil von `http_requests_total` mit `> 0.02`, `for: 10m`, `severity: page`, Annotation
+         `runbook_url`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-slo
+    setup: |
+      cat > monat.json <<'EOF'
+      [
+        { "day": 1, "requests": 40000, "errors": 60 },
+        { "day": 2, "requests": 35000, "errors": 90 },
+        { "day": 3, "requests": 45000, "errors": 150 }
+      ]
+      EOF
+    checks:
+      - type: command
+        run: jq -e '((.budget - 600) | fabs) < 0.001 and .used == 300 and ((.remaining - 0.5) | fabs) < 0.001' status.json
+        message: status.json fehlt oder stimmt nicht – budget = Summe der Anfragen × 0.005, used = Summe der Fehler, remaining = 1 - used / budget.
+      - type: command
+        run: awk '/- alert:/ {a=$NF} a == "ApiHighErrorRate"' api.rules.yml | grep -E 'expr:.*status=~"5\.\.".*/.*> *0\.02'
+        message: ApiHighErrorRate braucht einen expr, der den 5xx-Anteil mit > 0.02 vergleicht.
+      - type: command
+        run: awk '/- alert:/ {a=$NF} a == "ApiHighErrorRate"' api.rules.yml | grep -E '^\s*for:\s*10m\s*$' && awk '/- alert:/ {a=$NF} a == "ApiHighErrorRate"' api.rules.yml | grep -E '^\s*severity:\s*["'"'"']?page' && awk '/- alert:/ {a=$NF} a == "ApiHighErrorRate"' api.rules.yml | grep -E '^\s*runbook_url:\s*\S'
+        message: "ApiHighErrorRate braucht for: 10m, severity: page und eine runbook_url."
+      - type: file_contains
+        path: api.rules.yml
+        pattern: "^\\s*- name:\\s*[\"']?api[\"']?\\s*$"
+        message: In api.rules.yml fehlt die Gruppe api.
+    hints:
+      - "`jq '(map(.requests) | add * 0.005) as $b | (map(.errors) | add) as $u | {budget: $b, used: $u, remaining: (1 - $u / $b)}' monat.json`"
+      - "Der expr: `sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])) > 0.02`."
+    solution: |
+      ```bash
+      cd pruefung-slo
+      jq '(map(.requests) | add * 0.005) as $b | (map(.errors) | add) as $u | {budget: $b, used: $u, remaining: (1 - $u / $b)}' monat.json > status.json
+      cat > api.rules.yml <<'EOF'
+      groups:
+        - name: api
+          rules:
+            - alert: ApiHighErrorRate
+              expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.02
+              for: 10m
+              labels:
+                severity: page
+              annotations:
+                summary: "Mehr als 2 % der API-Anfragen schlagen fehl"
+                runbook_url: https://wiki.example.com/runbooks/api-errors
+      EOF
+      ```

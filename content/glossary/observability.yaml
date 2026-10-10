@@ -1,0 +1,666 @@
+# Lexikon des Kurses „Observability“
+- slug: observability
+  term: Observability
+  short: Wie gut du aus den Daten, die ein System nach außen gibt, auf seinen inneren Zustand schließen kannst.
+  explanation: >
+    Observability (Beobachtbarkeit) geht über klassisches Monitoring hinaus: Du kannst auch Fragen beantworten,
+    an die vorher niemand gedacht hat, ohne neuen Code auszurollen. Grundlage ist reichhaltige, verknüpfte
+    Telemetrie aus Logs, Metriken und Traces.
+  example: "„Betrifft der Fehler nur Bestellungen mit Gutschein?“ lässt sich mit guter Observability in Minuten beantworten."
+  category: observability
+  aliases: [Beobachtbarkeit, O11y]
+  related: [monitoring, telemetrie, metrik, trace]
+  lesson: observability/monitoring-und-observability
+
+- slug: monitoring
+  term: Monitoring
+  short: Das Überwachen vorher festgelegter Messwerte, um zu erkennen, dass etwas nicht stimmt.
+  explanation: >
+    Monitoring prüft bekannte Zustände – läuft der Prozess, ist die Festplatte voll, antwortet der Health-Check?
+    Es sagt dir, dass etwas kaputt ist, aber selten warum. Monitoring ist ein Teil von Observability.
+  example: "Ein Check, der alle 30 Sekunden `/health` aufruft und bei Status 500 Alarm schlägt."
+  category: observability
+  aliases: [Überwachung]
+  related: [observability, alerting, metrik]
+  lesson: observability/monitoring-und-observability
+
+- slug: telemetrie
+  term: Telemetrie
+  short: Alle Daten, die ein laufendes System über sich selbst nach außen gibt – vor allem Logs, Metriken und Traces.
+  explanation: >
+    Telemetrie entsteht, wenn Code instrumentiert ist und seine Ereignisse, Messwerte und Abläufe meldet.
+    Sie wird gesammelt, gespeichert und in Werkzeugen wie Grafana ausgewertet. Ohne Telemetrie ist ein System
+    in Produktion eine Blackbox.
+  example: "JSON-Logs auf stderr, ein `/metrics`-Endpunkt und Spans per OTLP sind die Telemetrie einer Laravel-App."
+  category: observability
+  aliases: [Telemetriedaten]
+  related: [observability, instrumentierung, opentelemetry]
+  lesson: observability/monitoring-und-observability
+
+- slug: metrik
+  term: Metrik
+  short: Ein benannter Zahlenwert, der regelmäßig gemessen und über die Zeit gespeichert wird.
+  explanation: >
+    Metriken sind verdichtet und daher billig zu speichern und schnell abzufragen. Sie eignen sich für Trends,
+    Dashboards und Alarme, enthalten aber keine Details zu einzelnen Ereignissen. Über Labels lassen sie sich
+    aufteilen, etwa nach Route oder Statuscode.
+  example: "`http_requests_total{route=\"/checkout\"}` zählt alle Anfragen an den Checkout."
+  category: observability
+  aliases: [Metriken, Messwert]
+  related: [zeitreihe, counter-metrik, gauge-metrik, histogramm-metrik]
+  lesson: observability/metrik-typen-red-und-use
+
+- slug: zeitreihe
+  term: Zeitreihe
+  short: Eine Folge von Messwerten mit Zeitstempeln für genau eine Metrik mit genau einer Label-Kombination.
+  explanation: >
+    Prometheus speichert jede Kombination aus Metrikname und Labels als eigene Zeitreihe. Je mehr verschiedene
+    Label-Werte es gibt, desto mehr Zeitreihen entstehen – deshalb dürfen Labels nur wenige Werte haben.
+  example: "`http_requests_total{status=\"200\"}` und `http_requests_total{status=\"500\"}` sind zwei Zeitreihen."
+  category: observability
+  aliases: [Zeitreihen, Time Series]
+  related: [metrik, metrik-label, prometheus]
+  lesson: observability/metrik-typen-red-und-use
+
+- slug: metrik-label
+  term: Metrik-Label
+  short: Ein Schlüssel-Wert-Paar, das eine Metrik oder einen Log-Stream genauer beschreibt und aufteilt.
+  explanation: >
+    Labels wie `route`, `status` oder `env` machen aus einer Metrik mehrere Zeitreihen, die du filtern und
+    gruppieren kannst. Sie brauchen wenige, feste Werte; IDs von Nutzer:innen oder Anfragen gehören nicht
+    hinein, weil sonst die Zahl der Zeitreihen explodiert (hohe Kardinalität).
+  example: "In `{app=\"shop\", env=\"production\"}` sind `app` und `env` Labels."
+  category: observability
+  aliases: [Labels, Label-Kardinalität]
+  related: [zeitreihe, metrik, log-stream]
+  lesson: observability/metrik-typen-red-und-use
+
+- slug: counter-metrik
+  term: Counter
+  short: Ein Metrik-Typ, der nur nach oben zählt und beim Neustart wieder bei null beginnt.
+  explanation: >
+    Counter zählen Ereignisse wie Anfragen, Fehler oder versendete Mails. Interessant ist nicht der absolute
+    Stand, sondern wie schnell er wächst – in PromQL berechnest du das mit `rate()`. Namen von Countern enden
+    auf `_total`.
+  example: "`sum(rate(http_requests_total[5m]))` ergibt die Anfragen pro Sekunde."
+  category: observability
+  aliases: [Counter, Zähler]
+  related: [metrik, gauge-metrik, promql]
+  lesson: observability/metrik-typen-red-und-use
+
+- slug: gauge-metrik
+  term: Gauge
+  short: Ein Metrik-Typ für einen aktuellen Stand, der steigen und fallen kann.
+  explanation: >
+    Gauges beschreiben Zustände wie belegten Arbeitsspeicher, die Länge einer Queue oder offene Verbindungen.
+    Man zeigt sie direkt an, ohne `rate()`.
+  example: "`queue_jobs_waiting` steht gerade auf 42."
+  category: observability
+  aliases: [Gauge, Messanzeige]
+  related: [metrik, counter-metrik]
+  lesson: observability/metrik-typen-red-und-use
+
+- slug: histogramm-metrik
+  term: Histogramm
+  short: Ein Metrik-Typ, der Messwerte in Eimer (Buckets) einsortiert, um ihre Verteilung zu zeigen.
+  explanation: >
+    Ein Prometheus-Histogramm besteht aus kumulativen Bucket-Zählern (`_bucket{le="…"}`), einer Summe (`_sum`)
+    und einer Anzahl (`_count`). Daraus lassen sich Perzentile wie p95 schätzen und über viele Server
+    zusammenfassen.
+  example: "`histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))`"
+  category: observability
+  aliases: [Histogram, Histogramme, Bucket]
+  related: [metrik, perzentil, promql]
+  lesson: observability/metrik-typen-red-und-use
+
+- slug: red-methode
+  term: RED-Methode
+  short: "Eine Methode, Dienste über drei Werte zu messen: Rate, Errors und Duration."
+  explanation: >
+    RED beschreibt einen Dienst aus Sicht seiner Nutzer:innen: wie viele Anfragen pro Sekunde, wie viele davon
+    fehlschlagen und wie lange sie dauern. Ein RED-Dashboard pro Dienst ist der übliche Startpunkt im Incident.
+  example: "Rate 120 req/s, Fehlerquote 0,4 %, p95 280 ms."
+  category: observability
+  aliases: [RED, Rate Errors Duration]
+  related: [use-methode, metrik, dashboard]
+  lesson: observability/metrik-typen-red-und-use
+
+- slug: use-methode
+  term: USE-Methode
+  short: "Eine Methode, Ressourcen über drei Werte zu messen: Utilization, Saturation und Errors."
+  explanation: >
+    USE eignet sich für CPU, Arbeitsspeicher, Festplatten, Verbindungspools oder Worker. Utilization ist die
+    Auslastung, Saturation die wartende Arbeit, Errors sind Fehler der Ressource. USE erklärt oft, warum die
+    RED-Werte schlecht sind.
+  example: "Alle 20 PHP-FPM-Worker belegt (Utilization 100 %), 40 Anfragen warten (Saturation)."
+  category: observability
+  aliases: [USE, Utilization Saturation Errors]
+  related: [red-methode, metrik]
+  lesson: observability/metrik-typen-red-und-use
+
+- slug: prometheus
+  term: Prometheus
+  short: Ein Open-Source-System, das Metriken per Scraping einsammelt, als Zeitreihen speichert und mit PromQL abfragbar macht.
+  explanation: >
+    Prometheus ruft in festen Abständen die `/metrics`-Endpunkte seiner Ziele ab, wertet Alarmregeln aus und
+    gibt aktive Alarme an den Alertmanager weiter. Sein Textformat ist zum Standard für Metriken geworden.
+  example: "`prometheus.yml` legt fest, dass alle 15 Sekunden `app:8000/metrics` abgefragt wird."
+  category: observability
+  aliases: [Prom]
+  related: [scraping, promql, exposition-format, alertmanager]
+  lesson: observability/prometheus-format-und-scraping
+
+- slug: scraping
+  term: Scraping
+  short: Das regelmäßige Abholen von Metriken durch Prometheus per HTTP (Pull-Prinzip).
+  explanation: >
+    Statt dass die App ihre Werte verschickt, ruft Prometheus sie in festen Abständen ab (`scrape_interval`).
+    Jede Antwort enthält den aktuellen Stand aller Metriken. Ist ein Ziel nicht erreichbar, setzt Prometheus
+    die Metrik `up` auf 0.
+  example: "Alle 15 Sekunden: `GET http://app:8000/metrics`."
+  category: observability
+  aliases: [scrapen, Scrape, Pull-Modell]
+  related: [prometheus, scrape-target, exposition-format]
+  lesson: observability/prometheus-format-und-scraping
+
+- slug: scrape-target
+  term: Scrape-Target
+  short: Ein Ziel, dessen Metriken Prometheus regelmäßig abruft – meist Host und Port eines Dienstes.
+  explanation: >
+    Targets stehen in `prometheus.yml` unter `scrape_configs`, statisch oder per Service Discovery. Zu jedem
+    Target erzeugt Prometheus die Metrik `up` sowie die Labels `job` und `instance`.
+  example: "`targets: [\"app:8000\"]` im Job `laravel`."
+  category: observability
+  aliases: [Target, Ziel]
+  related: [scraping, prometheus]
+  lesson: observability/prometheus-format-und-scraping
+
+- slug: exposition-format
+  term: Exposition-Format
+  short: Das Textformat, in dem eine Anwendung ihre Metriken unter /metrics für Prometheus anbietet.
+  explanation: >
+    Jede Zeile enthält eine Messung `name{label="wert"} zahl`, davor stehen `# HELP` mit einer Beschreibung
+    und `# TYPE` mit dem Metrik-Typ. Histogramme bestehen aus `_bucket`, `_sum` und `_count`. OpenMetrics ist
+    eine standardisierte Weiterentwicklung.
+  example: "`# TYPE http_requests_total counter` gefolgt von `http_requests_total{status=\"200\"} 950`."
+  category: observability
+  aliases: [Prometheus-Textformat, Expositionsformat, OpenMetrics]
+  related: [prometheus, scraping, metrik]
+  lesson: observability/prometheus-format-und-scraping
+
+- slug: exporter
+  term: Exporter
+  short: Ein kleines Programm, das Messwerte eines fremden Systems im Prometheus-Format anbietet.
+  explanation: >
+    Für Software, die du nicht selbst instrumentierst – Betriebssystem, Datenbank, Webserver, PHP-FPM – gibt
+    es fertige Exporter. Prometheus scrapt sie wie jede andere Anwendung.
+  example: "`node_exporter` liefert CPU-, Speicher- und Festplattenwerte eines Linux-Servers auf Port 9100."
+  category: observability
+  aliases: [Exporters, node_exporter]
+  related: [prometheus, scrape-target]
+  lesson: observability/prometheus-format-und-scraping
+
+- slug: promql
+  term: PromQL
+  short: Die Abfragesprache von Prometheus für Zeitreihen.
+  explanation: >
+    Mit PromQL wählst du Zeitreihen über Namen und Labels aus und rechnest mit ihnen: `rate()` für Counter,
+    `sum by (…)` zum Zusammenfassen, `histogram_quantile()` für Perzentile. Grafana-Panels und Alarmregeln
+    nutzen PromQL.
+  example: "`sum by (route) (rate(http_requests_total[5m]))`"
+  category: observability
+  aliases: [Prometheus Query Language]
+  related: [prometheus, logql, counter-metrik]
+  lesson: observability/prometheus-format-und-scraping
+
+- slug: grafana
+  term: Grafana
+  short: Eine Weboberfläche, die Daten aus vielen Quellen abfragt und als Dashboards darstellt.
+  explanation: >
+    Grafana speichert selbst keine Messwerte, sondern fragt Datenquellen wie Prometheus, Loki oder Tempo ab.
+    Es bietet Dashboards, Variablen, Explore-Ansicht und Alarmierung und lässt sich per Provisioning als Code
+    konfigurieren.
+  example: "Grafana läuft lokal als Container `grafana/grafana` auf Port 3000."
+  category: observability
+  aliases: [Grafana-Dashboard]
+  related: [dashboard, prometheus, loki, provisioning]
+  lesson: observability/dashboards-mit-grafana
+
+- slug: dashboard
+  term: Dashboard
+  short: Eine Seite mit mehreren Diagrammen und Kennzahlen, die den Zustand eines Systems auf einen Blick zeigt.
+  explanation: >
+    Ein gutes Dashboard beantwortet eine klare Frage, etwa „Wie geht es dem Checkout?“. Oben stehen die Werte
+    aus Nutzersicht, darunter Details für die Ursachensuche. Zu viele Panels machen es im Ernstfall unbrauchbar.
+  example: "Ein RED-Dashboard mit den Panels Anfragen pro Sekunde, Fehlerquote und p95-Dauer."
+  category: observability
+  aliases: [Dashboards]
+  related: [grafana, dashboard-panel, red-methode]
+  lesson: observability/dashboards-mit-grafana
+
+- slug: dashboard-panel
+  term: Panel
+  short: Ein einzelnes Element eines Grafana-Dashboards, etwa ein Zeitverlauf, eine Zahl oder eine Tabelle.
+  explanation: >
+    Jedes Panel hat einen Typ (z. B. Time series, Stat, Gauge, Table), eine oder mehrere Abfragen und
+    Einstellungen wie Einheit und Schwellenwerte. Im JSON-Modell steht es im Array `panels`.
+  example: "Ein Stat-Panel zeigt die aktuelle Fehlerquote „0,4 %“ in Grün."
+  category: observability
+  aliases: [Panels, Grafana-Panel]
+  related: [dashboard, grafana]
+  lesson: observability/dashboards-mit-grafana
+
+- slug: provisioning
+  term: Provisioning
+  short: Das automatische Einrichten von Konfiguration aus Dateien beim Start, etwa von Grafana-Datenquellen und Dashboards.
+  explanation: >
+    Statt Einstellungen in der Oberfläche zusammenzuklicken, legst du YAML- und JSON-Dateien ins Repository.
+    Grafana liest sie beim Start ein. So sind Dashboards versioniert, prüfbar und auf allen Umgebungen gleich.
+  example: "`provisioning/datasources/prometheus.yaml` legt die Prometheus-Datenquelle an."
+  category: observability
+  aliases: [provisionieren, Dashboards als Code]
+  related: [grafana, dashboard]
+  lesson: observability/dashboards-mit-grafana
+
+- slug: loki
+  term: Loki
+  short: Ein Log-Speicher von Grafana Labs, der Logs nur über Labels indexiert und mit LogQL abfragbar macht.
+  explanation: >
+    Loki speichert Logzeilen in Streams, die durch ihre Labels bestimmt sind. Weil der Inhalt nicht indexiert
+    wird, ist das Speichern günstig; bei der Abfrage grenzt der Stream-Selektor die Daten ein, dann wird der
+    Inhalt durchsucht.
+  example: "`{app=\"shop\", env=\"production\"} |= \"Payment\"` durchsucht die Logs der Shop-App."
+  category: observability
+  aliases: [Grafana Loki]
+  related: [logql, log-stream, grafana-alloy, grafana]
+  lesson: observability/logs-mit-loki
+
+- slug: log-stream
+  term: Log-Stream
+  short: Alle Logzeilen mit genau derselben Kombination von Labels in Loki.
+  explanation: >
+    Jede neue Label-Kombination erzeugt einen neuen Stream. Viele winzige Streams machen Loki langsam, deshalb
+    brauchen Labels wenige, feste Werte. Felder wie Request-IDs bleiben im Inhalt der Zeile.
+  example: "`{app=\"shop\", env=\"production\", container=\"web\"}` ist ein Stream."
+  category: observability
+  aliases: [Stream, Streams]
+  related: [loki, metrik-label]
+  lesson: observability/logs-mit-loki
+
+- slug: logql
+  term: LogQL
+  short: Die Abfragesprache von Loki, angelehnt an PromQL.
+  explanation: >
+    Jede LogQL-Abfrage beginnt mit einem Stream-Selektor in geschweiften Klammern. Danach folgt eine Pipeline
+    aus Zeilenfiltern (`|=`, `!=`, `|~`), Parsern (`| json`, `| logfmt`) und Feldfiltern. Mit Funktionen wie
+    `count_over_time` macht LogQL aus Logs Kennzahlen.
+  example: "`sum by (route) (count_over_time({app=\"shop\"} | json | level=\"error\" [5m]))`"
+  category: observability
+  aliases: [Log Query Language]
+  related: [loki, promql]
+  lesson: observability/logs-mit-loki
+
+- slug: grafana-alloy
+  term: Grafana Alloy
+  short: Ein Agent von Grafana Labs, der Logs, Metriken und Traces einsammelt und an Speicher wie Loki weiterleitet.
+  explanation: >
+    Alloy liest zum Beispiel die Logs von Containern, vergibt Labels und schickt die Zeilen an Loki. Er ist
+    der empfohlene Nachfolger von Promtail, dessen Unterstützung im März 2026 endete, und kann auch
+    OpenTelemetry-Daten verarbeiten.
+  example: "Alloy liest die stderr-Ausgabe des Containers `web` und schickt sie mit `app=\"shop\"` an Loki."
+  category: observability
+  aliases: [Alloy, Promtail]
+  related: [loki, otel-collector]
+  lesson: observability/logs-mit-loki
+
+- slug: trace
+  term: Trace
+  short: Die Aufzeichnung des Wegs einer einzelnen Anfrage durch alle beteiligten Dienste.
+  explanation: >
+    Ein Trace besteht aus Spans, die über ihre Parent-IDs einen Baum bilden und alle dieselbe Trace-ID tragen.
+    Als Wasserfall dargestellt zeigt er, wo die Zeit einer Anfrage verloren geht.
+  example: "Der Trace von `POST /checkout` zeigt, dass der Aufruf an den Zahlungsdienst 340 von 480 ms dauert."
+  category: observability
+  aliases: [Traces, Tracing, verteiltes Tracing]
+  related: [span, trace-id, opentelemetry]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: span
+  term: Span
+  short: Ein einzelner, zeitlich begrenzter Arbeitsschritt innerhalb eines Traces.
+  explanation: >
+    Ein Span hat einen Namen, Start und Dauer, Attribute, einen Status sowie eine eigene ID und die ID seines
+    Eltern-Spans. Der oberste Span ohne Eltern heißt Root-Span.
+  example: "Der Span `SELECT carts` dauerte 40 ms und ist ein Kind von `POST /checkout`."
+  category: observability
+  aliases: [Spans, Root-Span]
+  related: [trace, trace-id]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: trace-id
+  term: Trace-ID
+  short: Die eindeutige Kennung eines Traces, die alle seine Spans und passenden Logzeilen teilen.
+  explanation: >
+    In OpenTelemetry ist die Trace-ID 16 Byte lang und wird als 32 Hex-Zeichen geschrieben. Sie wird über
+    Dienstgrenzen hinweg weitergegeben und sollte in jeder Logzeile stehen, damit du vom Trace zu den Logs
+    springen kannst.
+  example: "`4bf92f3577b34da6a3ce929d0e0e4736`"
+  category: observability
+  aliases: [trace_id, TraceID]
+  related: [trace, traceparent, korrelations-id]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: korrelations-id
+  term: Korrelations-ID
+  short: Eine Kennung, die alle Logzeilen und Aufrufe zusammenhängender Arbeit verbindet – auch über mehrere Dienste hinweg.
+  explanation: >
+    Eine Korrelations-ID wird am Anfang einer Anfrage erzeugt oder aus einem Header übernommen, an den
+    Log-Kontext gehängt und bei Aufrufen anderer Dienste mitgeschickt. So lassen sich die Spuren einer Anfrage
+    in allen Logs finden. Mit Tracing übernimmt meist die Trace-ID diese Rolle.
+  example: "Header `X-Request-Id: req-b2` und Feld `\"request_id\":\"req-b2\"` in jeder Logzeile."
+  category: observability
+  aliases: [Correlation ID, Korrelations-IDs]
+  related: [request-id, trace-id, strukturiertes-logging]
+  lesson: observability/strukturiertes-logging
+
+- slug: kontext-propagation
+  term: Kontext-Weitergabe
+  short: Das Mitgeben von Trace-Informationen von einem Dienst zum nächsten, damit alle Spans in denselben Trace fallen.
+  explanation: >
+    Bei HTTP geschieht das über Header wie `traceparent`, bei Queues über die Nachrichtendaten. Fehlt die
+    Weitergabe, startet der nächste Dienst einen neuen Trace und die Kette reißt ab.
+  example: "Der HTTP-Client der Laravel-App setzt `traceparent` beim Aufruf des Zahlungsdienstes."
+  category: observability
+  aliases: [Context Propagation, Propagation]
+  related: [traceparent, trace-id, opentelemetry]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: traceparent
+  term: traceparent
+  short: Der standardisierte HTTP-Header aus W3C Trace Context, der Trace-ID, Parent-Span-ID und Sampling-Flag überträgt.
+  explanation: >
+    Das Format ist `version-traceid-parentid-flags`, also vier durch Bindestriche getrennte Hex-Werte. Das
+    Flag `01` bedeutet, dass der Trace gesampelt wird. Fast alle Tracing-Werkzeuge verstehen diesen Header.
+  example: "`traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01`"
+  category: observability
+  aliases: [W3C Trace Context, traceparent-Header]
+  related: [kontext-propagation, trace-id]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: opentelemetry
+  term: OpenTelemetry
+  short: Ein herstellerneutraler Open-Source-Standard mit APIs, SDKs und Werkzeugen für Traces, Metriken und Logs.
+  explanation: >
+    OpenTelemetry (OTel) legt fest, wie Telemetrie erzeugt, beschrieben und übertragen wird. Apps sprechen
+    das Protokoll OTLP, und der Collector entscheidet, in welchen Speicher die Daten gehen – ohne Bindung an
+    einen Anbieter.
+  example: "`OTEL_SERVICE_NAME=shop` und `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318` konfigurieren das PHP-SDK."
+  category: observability
+  aliases: [OTel]
+  related: [otlp, otel-collector, instrumentierung, trace]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: instrumentierung
+  term: Instrumentierung
+  short: Code oder Bausteine, die eine Anwendung dazu bringen, Telemetrie wie Spans, Metriken und Logs zu erzeugen.
+  explanation: >
+    Automatische Instrumentierung hängt sich ohne Codeänderung in Frameworks, HTTP-Clients und Datenbanktreiber.
+    Manuelle Instrumentierung ergänzt eigene Spans oder Metriken für fachliche Schritte.
+  example: "Ein Span „Preise berechnen“ um die Preislogik herum ist manuelle Instrumentierung."
+  category: observability
+  aliases: [instrumentieren, Auto-Instrumentierung]
+  related: [opentelemetry, telemetrie]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: otlp
+  term: OTLP
+  short: Das OpenTelemetry Protocol, mit dem Anwendungen und Collector Telemetrie verschicken.
+  explanation: >
+    OTLP überträgt Traces, Metriken und Logs per gRPC (Standardport 4317) oder HTTP (Standardport 4318).
+    Weil fast alle Speicher und Anbieter OTLP verstehen, muss die App nur ein Protokoll sprechen.
+  example: "`OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318`"
+  category: observability
+  aliases: [OpenTelemetry Protocol]
+  related: [opentelemetry, otel-collector]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: otel-collector
+  term: OpenTelemetry Collector
+  short: Ein Dienst, der Telemetrie empfängt, verarbeitet und an einen oder mehrere Speicher weiterleitet.
+  explanation: >
+    Der Collector besteht aus Receivern (z. B. OTLP), Processors (bündeln, filtern, sampeln) und Exportern
+    (z. B. zu Tempo, Prometheus oder Loki). Er entkoppelt die Anwendung vom konkreten Speicher.
+  example: "Die Laravel-App schickt Spans an den Collector, der sie an Tempo exportiert."
+  category: observability
+  aliases: [Collector, OTel Collector]
+  related: [opentelemetry, otlp, sampling]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: sampling
+  term: Sampling
+  short: Das bewusste Auswählen eines Teils der Traces, um Datenmenge und Kosten zu begrenzen.
+  explanation: >
+    Beim Head Sampling wird am Anfang eines Traces entschieden, etwa „10 % behalten“. Beim Tail Sampling
+    entscheidet der Collector erst am Ende und kann so gezielt alle fehlerhaften oder langsamen Traces behalten.
+  example: "Tail Sampling: alle Traces mit Status ERROR behalten, von den übrigen 5 %."
+  category: observability
+  aliases: [Head Sampling, Tail Sampling, sampeln]
+  related: [trace, otel-collector, traceparent]
+  lesson: observability/tracing-mit-opentelemetry
+
+- slug: monolog
+  term: Monolog
+  short: Die PHP-Logging-Bibliothek, auf der das Logging von Laravel aufbaut.
+  explanation: >
+    Monolog besteht aus Handlern (wohin geschrieben wird), Formattern (wie eine Zeile aussieht) und Processors
+    (welche Zusatzdaten angehängt werden). Laravel-Kanäle mit dem Treiber `monolog` nutzen diese Bausteine direkt.
+  example: "`Monolog\\Formatter\\JsonFormatter` schreibt jede Meldung als JSON-Zeile."
+  category: observability
+  aliases: [Monolog-Handler, JsonFormatter, StreamHandler]
+  related: [log-channel, log-processor]
+  lesson: observability/laravel-logging-und-datenschutz
+
+- slug: log-processor
+  term: Log-Processor
+  short: Ein Baustein, der jede Logmeldung vor dem Schreiben verändert oder ergänzt.
+  explanation: >
+    In Monolog fügen Processors Felder hinzu – etwa Speicherverbrauch oder Request-ID – oder schwärzen
+    sensible Werte zentral. So musst du Schutzmaßnahmen nicht an jeder Stelle im Code wiederholen.
+  example: "Ein Processor ersetzt alle Felder `password` und `token` durch `[REDACTED]`."
+  category: observability
+  aliases: [Processor, Monolog-Processor]
+  related: [monolog, personenbezogene-daten]
+  lesson: observability/laravel-logging-und-datenschutz
+
+- slug: personenbezogene-daten
+  term: Personenbezogene Daten
+  short: Alle Informationen, die sich auf eine bestimmte oder bestimmbare Person beziehen.
+  explanation: >
+    Dazu gehören Name, E-Mail-Adresse, Anschrift, Telefonnummer und oft auch IP-Adressen. Die DSGVO verlangt,
+    dass du sie nur verarbeitest, wenn es nötig ist, und nicht länger aufbewahrst als erforderlich – auch in Logs.
+  example: "Statt `user@example.com` loggst du die interne User-ID oder einen Hash der Adresse."
+  category: observability
+  aliases: [PII, personenbezogene Informationen]
+  related: [log-processor, strukturiertes-logging]
+  lesson: observability/laravel-logging-und-datenschutz
+
+- slug: sli
+  term: SLI
+  short: Service Level Indicator – eine Messgröße für Zuverlässigkeit aus Sicht der Nutzer:innen.
+  explanation: >
+    Ein SLI ist meist ein Anteil guter Ereignisse an allen Ereignissen, etwa Anfragen ohne 5xx-Fehler oder
+    Anfragen schneller als 300 ms. Er misst, was Nutzer:innen spüren, nicht was Server spüren.
+  example: "99,93 % der Checkout-Anfragen der letzten 30 Tage waren erfolgreich."
+  category: observability
+  aliases: [Service Level Indicator, SLIs]
+  related: [slo, fehlerbudget]
+  lesson: observability/slis-slos-und-fehlerbudgets
+
+- slug: slo
+  term: SLO
+  short: Service Level Objective – ein internes Ziel für einen SLI über einen festen Zeitraum.
+  explanation: >
+    Ein SLO legt fest, wie zuverlässig ein Dienst sein soll, etwa „99,9 % erfolgreiche Anfragen in 30 Tagen“.
+    Aus ihm ergibt sich das Fehlerbudget. Es ist strenger als ein SLA, damit du Probleme früh bemerkst.
+  example: "SLO Checkout: 99,9 % Verfügbarkeit und 95 % der Anfragen unter 500 ms, jeweils über 30 Tage."
+  category: observability
+  aliases: [Service Level Objective, SLOs]
+  related: [sli, sla, fehlerbudget, burn-rate]
+  lesson: observability/slis-slos-und-fehlerbudgets
+
+- slug: sla
+  term: SLA
+  short: Service Level Agreement – ein Vertrag mit Kund:innen über zugesicherte Verfügbarkeit, oft mit Gutschriften bei Verstoß.
+  explanation: >
+    Ein SLA ist ein Versprechen nach außen und hat rechtliche oder finanzielle Folgen. Es ist üblicherweise
+    lockerer als das interne SLO, damit ein drohender Verstoß rechtzeitig auffällt.
+  example: "„99,5 % monatliche Verfügbarkeit, sonst 10 % Gutschrift“ – intern gilt ein SLO von 99,9 %."
+  category: observability
+  aliases: [Service Level Agreement, SLAs]
+  related: [slo, sli]
+  lesson: observability/slis-slos-und-fehlerbudgets
+
+- slug: fehlerbudget
+  term: Fehlerbudget
+  short: Die Menge an Unzuverlässigkeit, die ein SLO erlaubt – also 1 minus das SLO.
+  explanation: >
+    Bei 99,9 % über 30 Tage darfst du 0,1 % der Anfragen verlieren oder rund 43 Minuten komplett ausfallen.
+    Ist viel Budget übrig, darf das Team Risiken eingehen; ist es leer, hat Stabilität Vorrang vor Features.
+  example: "1 000 000 Anfragen × 0,1 % = 1 000 erlaubte Fehler; 750 sind verbraucht, 25 % bleiben."
+  category: observability
+  aliases: [Error Budget, Fehlerbudgets]
+  related: [slo, burn-rate]
+  lesson: observability/slis-slos-und-fehlerbudgets
+
+- slug: burn-rate
+  term: Burn Rate
+  short: Wie schnell das Fehlerbudget gerade verbraucht wird – aktuelle Fehlerquote geteilt durch erlaubte Fehlerquote.
+  explanation: >
+    Bei einer Burn Rate von 1 reicht das Budget genau bis zum Ende des Zeitraums, bei 14,4 sind in einer Stunde
+    2 % eines 30-Tage-Budgets verbraucht. Burn-Rate-Alarme mit zwei Zeitfenstern gelten als besonders zuverlässig.
+  example: "Fehlerquote 1,6 % bei SLO 99,9 % ergibt eine Burn Rate von 16."
+  category: observability
+  aliases: [Burn-Rate, Verbrauchsrate]
+  related: [fehlerbudget, slo, alert-regel]
+  lesson: observability/slis-slos-und-fehlerbudgets
+
+- slug: alarmmuedigkeit
+  term: Alarmmüdigkeit
+  short: Der Zustand, in dem Menschen wegen zu vieler unnötiger Alarme abstumpfen und auch echte Alarme übersehen.
+  explanation: >
+    Alarmmüdigkeit entsteht durch Fehlalarme, Ursachen- statt Symptom-Alarme und Alarme ohne mögliche Handlung.
+    Sie ist gefährlich, weil sie die Reaktion auf echte Störungen verlangsamt.
+  example: "Nach zwanzig nächtlichen CPU-Alarmen ohne Folgen schaltet jemand den Pager stumm."
+  category: observability
+  aliases: [Alert Fatigue, Alarmflut]
+  related: [symptombasierter-alert, alerting]
+  lesson: observability/alerting-ohne-alarmmuedigkeit
+
+- slug: symptombasierter-alert
+  term: Symptombasierter Alarm
+  short: Ein Alarm, der auf das reagiert, was Nutzer:innen spüren – Fehler und Langsamkeit – statt auf vermutete Ursachen.
+  explanation: >
+    Symptom-Alarme fangen auch unbekannte Ursachen und feuern nur, wenn wirklich jemand betroffen ist. Ursachen
+    wie hohe CPU zeigt man auf Dashboards für die Diagnose.
+  example: "„Mehr als 5 % der Checkouts schlagen seit 5 Minuten fehl“ statt „CPU über 80 %“."
+  category: observability
+  aliases: [Symptom-Alarm, symptombasiertes Alerting]
+  related: [alarmmuedigkeit, alert-regel, red-methode]
+  lesson: observability/alerting-ohne-alarmmuedigkeit
+
+- slug: alert-regel
+  term: Alarmregel
+  short: Eine Bedingung, die Prometheus regelmäßig auswertet und bei Erfüllung einen Alarm auslöst.
+  explanation: >
+    Eine Prometheus-Alarmregel besteht aus `expr` (PromQL-Bedingung), `for` (wie lange sie gelten muss),
+    `labels` (etwa `severity`) und `annotations` (Text und Runbook-Link für Menschen).
+  example: "`alert: CheckoutHighErrorRate` mit `for: 5m` und `severity: page`."
+  category: observability
+  aliases: [Alerting Rule, Alarmregeln, Alert-Regel]
+  related: [prometheus, alertmanager, runbook]
+  lesson: observability/alerting-ohne-alarmmuedigkeit
+
+- slug: alertmanager
+  term: Alertmanager
+  short: Der Dienst, der aktive Alarme von Prometheus empfängt und entscheidet, wer wann wie benachrichtigt wird.
+  explanation: >
+    Der Alertmanager bündelt gleichartige Alarme (Grouping), unterdrückt Folgealarme (Inhibition), schaltet
+    Alarme bei Wartung stumm (Silences) und leitet sie anhand von Labels an Pager, Chat oder E-Mail weiter.
+  example: "Alarme mit `severity=\"page\"` gehen an die Bereitschaft, alle anderen in den Team-Chat."
+  category: observability
+  aliases: [Prometheus Alertmanager]
+  related: [prometheus, alert-regel, bereitschaft]
+  lesson: observability/alerting-ohne-alarmmuedigkeit
+
+- slug: runbook
+  term: Runbook
+  short: Eine Anleitung, was bei einem bestimmten Alarm zu prüfen und zu tun ist.
+  explanation: >
+    Ein Runbook erklärt die Bedeutung eines Alarms, verlinkt das passende Dashboard und nennt die ersten Schritte
+    wie Rollback oder Skalieren. Es wird über die Annotation `runbook_url` direkt im Alarm verlinkt.
+  example: "`runbook_url: https://wiki.example.com/runbooks/checkout-errors`"
+  category: observability
+  aliases: [Runbooks, Playbook]
+  related: [alert-regel, incident, bereitschaft]
+  lesson: observability/alerting-ohne-alarmmuedigkeit
+
+- slug: bereitschaft
+  term: Bereitschaft
+  short: Die Person oder Rolle, die außerhalb der Arbeitszeit auf dringende Alarme reagiert.
+  explanation: >
+    Wer Bereitschaft hat, wird bei Pages geweckt und muss innerhalb einer vereinbarten Zeit reagieren. Gute
+    Alarme und Runbooks machen Bereitschaft erträglich; Fehlalarme machen sie zur Belastung.
+  example: "Diese Woche hat Ada Bereitschaft für den Checkout."
+  category: observability
+  aliases: [On-Call, Rufbereitschaft, On-Call-Dienst]
+  related: [alertmanager, incident, runbook]
+  lesson: observability/alerting-ohne-alarmmuedigkeit
+
+- slug: incident
+  term: Incident
+  short: Eine ungeplante Störung, die Nutzer:innen betrifft oder bald betrifft und eine koordinierte Reaktion braucht.
+  explanation: >
+    Incidents bekommen einen Schweregrad und klare Rollen wie Incident Commander und Kommunikation. Oberste Regel
+    ist, zuerst den Schaden einzudämmen und erst danach die Ursache zu klären.
+  example: "SEV2: 5 % der Checkouts schlagen seit 13:55 fehl."
+  category: observability
+  aliases: [Incidents, Störung, Incident Commander]
+  related: [postmortem, mttr, runbook]
+  lesson: observability/incidents-und-postmortems
+
+- slug: mttr
+  term: MTTR
+  short: Mean Time to Restore – die durchschnittliche Zeit von Beginn einer Störung bis zur Wiederherstellung.
+  explanation: >
+    Die MTTR zeigt, wie schnell ein Team Störungen eindämmen kann. Gute Alarme, Dashboards, geübte Rollbacks
+    und Runbooks senken sie. Verwandte Kennzahlen sind die Zeit bis zur Erkennung und bis zur Bestätigung.
+  example: "Drei Incidents mit 12, 30 und 18 Minuten Dauer ergeben eine MTTR von 20 Minuten."
+  category: observability
+  aliases: [Mean Time to Restore, Mean Time to Recovery]
+  related: [incident, postmortem]
+  lesson: observability/incidents-und-postmortems
+
+- slug: postmortem
+  term: Postmortem
+  short: Ein schriftlicher Bericht nach einem Incident mit Zeitleiste, Auswirkung, Ursachen und Folgeaufgaben.
+  explanation: >
+    Ein Postmortem soll verhindern, dass sich ein Incident wiederholt. Es ist schuldfrei, sucht nach Ursachen
+    in Systemen und Abläufen und endet mit konkreten Folgeaufgaben, die eine verantwortliche Person und einen
+    Termin haben.
+  example: "„Integrationstest für den Zahlungs-Timeout – Ada – bis 15.10.“ als Folgeaufgabe."
+  category: observability
+  aliases: [Post-Mortem, Postmortems, Incident-Review]
+  related: [incident, blameless]
+  lesson: observability/incidents-und-postmortems
+
+- slug: blameless
+  term: Schuldfrei (blameless)
+  short: Eine Haltung, bei der nach Fehlern in Systemen und Abläufen gesucht wird statt nach schuldigen Personen.
+  explanation: >
+    Wer keine Strafe fürchtet, erzählt offen, was passiert ist. Genau diese Details braucht ein Team, um
+    Wiederholungen zu verhindern. Kann ein einzelner Fehler die Produktion lahmlegen, ist das ein Systemproblem.
+  example: "Statt „Ben hat falsch gemergt“ fragt das Postmortem: „Warum haben Tests und Review das nicht gefunden?“"
+  category: observability
+  aliases: [schuldfrei, blameless Postmortem, Blameless Culture]
+  related: [postmortem, incident]
+  lesson: observability/incidents-und-postmortems

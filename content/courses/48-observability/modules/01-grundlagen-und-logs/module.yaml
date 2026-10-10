@@ -1,0 +1,68 @@
+title: Grundlagen und strukturiertes Logging
+description: Was Observability von Monitoring unterscheidet, welche drei Signale es gibt und wie du saubere, sichere JSON-Logs in Laravel schreibst.
+exercise:
+  id: modul-uebung-log-hygiene
+  type: terminal
+  title: Log-Hygiene-Audit
+  description: |
+    Bei einem Audit fällt auf: In den Logs der App stehen Passwörter, ein Token und ein
+    `Authorization`-Header im Klartext. Deine Aufgabe ist, die Datei `roh.jsonl` zu bereinigen und
+    gleichzeitig eine kleine Fehlerauswertung zu erstellen – alles mit `jq`.
+
+    1. Erzeuge `bereinigt.jsonl` mit **genauso vielen Zeilen** wie `roh.jsonl`. Jeder Schlüssel `password`,
+       `token` oder `authorization` – egal, auf welcher Ebene er steht – bekommt den Wert `"[REDACTED]"`.
+       Alle anderen Felder bleiben unverändert.
+    2. Erzeuge `fehler-pro-route.json`: ein JSON-Objekt, das für jede Route die Anzahl der Zeilen mit
+       Level `error` enthält, z. B. `{"POST /login": 1, …}`.
+    3. Schreibe die `request_id`s aller error-Zeilen **sortiert und ohne Duplikate**, eine pro Zeile, in
+       `fehler-ids.txt`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit `roh.jsonl` angelegt wird.
+  workdir: log-hygiene
+  setup: |
+    cat > roh.jsonl <<'EOF'
+    {"time":"2026-10-05T09:00:01Z","level":"info","message":"Login attempt","request_id":"req-101","route":"POST /login","context":{"email_hash":"5f2b","password":"Sommer2026!"}}
+    {"time":"2026-10-05T09:00:02Z","level":"error","message":"Login failed","request_id":"req-101","route":"POST /login","context":{"password":"Sommer2026!","reason":"invalid credentials"}}
+    {"time":"2026-10-05T09:00:03Z","level":"info","message":"Request finished","request_id":"req-102","route":"GET /api/orders","status":200,"authorization":"Bearer abc123geheim"}
+    {"time":"2026-10-05T09:00:04Z","level":"error","message":"Payment request failed","request_id":"req-103","route":"POST /checkout","context":{"order_id":4711,"token":"tok_test_geheim"}}
+    {"time":"2026-10-05T09:00:05Z","level":"error","message":"Payment request failed","request_id":"req-104","route":"POST /checkout","context":{"order_id":4712}}
+    {"time":"2026-10-05T09:00:06Z","level":"warning","message":"Retry payment","request_id":"req-104","route":"POST /checkout","attempt":2}
+    EOF
+  checks:
+    - type: file_exists
+      path: bereinigt.jsonl
+      message: Lege die Datei bereinigt.jsonl an.
+    - type: command
+      run: jq -c . bereinigt.jsonl | wc -l
+      stdout_matches: "^\\s*6\\s*$"
+      message: bereinigt.jsonl muss genau sechs gültige JSON-Zeilen enthalten – eine pro Zeile aus roh.jsonl.
+    - type: command
+      run: grep -E 'Sommer2026|geheim' bereinigt.jsonl | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: In bereinigt.jsonl stehen noch Geheimnisse im Klartext (Passwort, Token oder Authorization-Header).
+    - type: command
+      run: jq -r '.. | objects | to_entries[] | select(.key == "password" or .key == "token" or .key == "authorization") | .value' bereinigt.jsonl | sort | uniq -c | tr -s ' '
+      stdout_matches: "^\\s*4 \\[REDACTED\\]\\s*$"
+      message: Alle vier sensiblen Schlüssel sollen erhalten bleiben und den Wert "[REDACTED]" haben – nicht gelöscht werden.
+    - type: command
+      run: diff <(jq -c 'del(.. | objects | .password?, .token?, .authorization?)' roh.jsonl) <(jq -c 'del(.. | objects | .password?, .token?, .authorization?)' bereinigt.jsonl)
+      message: Außer den sensiblen Feldern darf sich in bereinigt.jsonl nichts ändern – Reihenfolge und Inhalt der übrigen Felder müssen gleich bleiben.
+    - type: command
+      run: jq -c -S . fehler-pro-route.json
+      stdout_equals: '{"POST /checkout":2,"POST /login":1}'
+      message: 'fehler-pro-route.json soll {"POST /checkout": 2, "POST /login": 1} ergeben – zähle nur Zeilen mit level "error" pro route.'
+    - type: command
+      run: cat fehler-ids.txt | tr '\n' ' '
+      stdout_matches: "^req-101 req-103 req-104 ?$"
+      message: fehler-ids.txt soll die request_ids req-101, req-103 und req-104 enthalten – sortiert, ohne Duplikate, eine pro Zeile.
+  hints:
+    - "`walk(f)` wendet einen Filter auf jeden Wert im Dokument an – ideal, um verschachtelte Objekte zu bearbeiten."
+    - "Für Schritt 1: `jq -c 'walk(if type == \"object\" then with_entries(if (.key == \"password\" or .key == \"token\" or .key == \"authorization\") then .value = \"[REDACTED]\" else . end) else . end)' roh.jsonl > bereinigt.jsonl`"
+    - "Für Schritt 2 liest `jq -s` alle Zeilen als Array: `map(select(.level == \"error\")) | group_by(.route) | map({(.[0].route): length}) | add`."
+  solution: |
+    ```bash
+    cd log-hygiene
+    jq -c 'walk(if type == "object" then with_entries(if (.key == "password" or .key == "token" or .key == "authorization") then .value = "[REDACTED]" else . end) else . end)' roh.jsonl > bereinigt.jsonl
+    jq -s 'map(select(.level == "error")) | group_by(.route) | map({(.[0].route): length}) | add' roh.jsonl > fehler-pro-route.json
+    jq -r 'select(.level == "error") | .request_id' roh.jsonl | sort -u > fehler-ids.txt
+    ```

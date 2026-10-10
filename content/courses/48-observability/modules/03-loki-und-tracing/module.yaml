@@ -1,0 +1,72 @@
+title: Logs in Loki und Tracing
+description: Logs zentral in Loki sammeln und mit LogQL durchsuchen, verteilte Anfragen mit OpenTelemetry-Traces verfolgen und alle Signale über die Trace-ID verbinden.
+exercise:
+  id: modul-uebung-korrelation
+  type: terminal
+  title: Vom langsamen Trace zur Logzeile
+  description: |
+    Im Ordner `korrelation` liegen zwei Exporte aus deinem Observability-Stack:
+
+    - `spans.jsonl` – Spans aus Tempo, eine pro Zeile, mit `trace_id`, `span_id`, `parent_span_id`
+      (bei Root-Spans `null`), `name`, `service`, `duration_ms` und `status`.
+    - `logs.jsonl` – Logzeilen aus Loki, jede mit `trace_id`.
+
+    Verbinde die Signale mit `jq`:
+
+    1. Finde den Root-Span (`parent_span_id` ist `null`) mit der größten `duration_ms`. Schreibe seine
+       `trace_id` in `langsamster-trace.txt`.
+    2. Schreibe den `name` des langsamsten **Nicht-Root**-Spans dieses Traces in `engpass.txt`.
+    3. Schreibe alle Logzeilen dieses Traces mit `level` `error` nach `fehler-logs.jsonl`.
+    4. Schreibe die Anzahl aller Spans mit `status` `ERROR` (über alle Traces) in `fehler-spans.txt`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die beiden Dateien angelegt werden.
+  workdir: korrelation
+  setup: |
+    cat > spans.jsonl <<'EOF'
+    {"trace_id":"0af7651916cd43dd8448eb211c80319c","span_id":"b7ad6b7169203331","parent_span_id":null,"name":"GET /products","service":"shop","duration_ms":45,"status":"OK"}
+    {"trace_id":"0af7651916cd43dd8448eb211c80319c","span_id":"c1a2b3c4d5e6f701","parent_span_id":"b7ad6b7169203331","name":"SELECT products","service":"shop","duration_ms":20,"status":"OK"}
+    {"trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","span_id":"00f067aa0ba902b7","parent_span_id":null,"name":"POST /checkout","service":"shop","duration_ms":10120,"status":"ERROR"}
+    {"trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","span_id":"1f2e3d4c5b6a7980","parent_span_id":"00f067aa0ba902b7","name":"SELECT carts","service":"shop","duration_ms":40,"status":"OK"}
+    {"trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","span_id":"2a3b4c5d6e7f8091","parent_span_id":"00f067aa0ba902b7","name":"POST payment-api/charges","service":"shop","duration_ms":10010,"status":"ERROR"}
+    {"trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","span_id":"3b4c5d6e7f809102","parent_span_id":"2a3b4c5d6e7f8091","name":"payment-api: charge","service":"payment-api","duration_ms":9995,"status":"OK"}
+    {"trace_id":"5b8efff798038103d269b633813fc60c","span_id":"4c5d6e7f80910213","parent_span_id":null,"name":"GET /cart","service":"shop","duration_ms":910,"status":"OK"}
+    {"trace_id":"5b8efff798038103d269b633813fc60c","span_id":"5d6e7f8091021324","parent_span_id":"4c5d6e7f80910213","name":"SELECT cart_items","service":"shop","duration_ms":850,"status":"OK"}
+    EOF
+    cat > logs.jsonl <<'EOF'
+    {"time":"2026-10-05T13:55:01Z","level":"info","message":"Request finished","trace_id":"0af7651916cd43dd8448eb211c80319c","route":"GET /products"}
+    {"time":"2026-10-05T13:55:03Z","level":"info","message":"Cart loaded","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","route":"POST /checkout"}
+    {"time":"2026-10-05T13:55:13Z","level":"error","message":"Payment request failed","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","route":"POST /checkout","error":"connection timed out after 10000 ms"}
+    {"time":"2026-10-05T13:55:13Z","level":"error","message":"Checkout aborted","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","route":"POST /checkout"}
+    {"time":"2026-10-05T13:55:05Z","level":"warning","message":"Slow query","trace_id":"5b8efff798038103d269b633813fc60c","route":"GET /cart"}
+    {"time":"2026-10-05T13:55:31Z","level":"error","message":"Mail transport unavailable","trace_id":"9d3c1e0a7b2f4c6e8a1b3d5f7e9c0a2b","route":"POST /contact"}
+    EOF
+  checks:
+    - type: command
+      run: cat langsamster-trace.txt
+      stdout_matches: "^\\s*4bf92f3577b34da6a3ce929d0e0e4736\\s*$"
+      message: langsamster-trace.txt enthält noch nicht die trace_id des Root-Spans mit der größten Dauer.
+    - type: command
+      run: cat engpass.txt
+      stdout_matches: "^\\s*POST payment-api/charges\\s*$"
+      message: engpass.txt enthält noch nicht den Namen des langsamsten Nicht-Root-Spans in diesem Trace.
+    - type: command
+      run: jq -r '.message' fehler-logs.jsonl | tr '\n' '|'
+      stdout_equals: "Payment request failed|Checkout aborted|"
+      message: fehler-logs.jsonl soll genau die beiden error-Zeilen des langsamsten Traces enthalten – nicht die Fehler anderer Traces.
+    - type: command
+      run: tr -d '[:space:]' < fehler-spans.txt
+      stdout_equals: "2"
+      message: fehler-spans.txt enthält nicht die richtige Anzahl Spans mit status ERROR.
+  hints:
+    - "Mit `jq -s` liest du alle Zeilen in ein Array. `map(select(.parent_span_id == null)) | max_by(.duration_ms) | .trace_id` findet den langsamsten Root-Span."
+    - "Für den Engpass: `jq -s -r --arg t \"$(cat langsamster-trace.txt)\" 'map(select(.trace_id == $t and .parent_span_id != null)) | max_by(.duration_ms) | .name' spans.jsonl`."
+    - "Den Trace-Wert an jq übergeben: `--arg t <wert>` und im Filter `$t` nutzen."
+  solution: |
+    ```bash
+    cd korrelation
+    jq -s -r 'map(select(.parent_span_id == null)) | max_by(.duration_ms) | .trace_id' spans.jsonl > langsamster-trace.txt
+    T=$(cat langsamster-trace.txt)
+    jq -s -r --arg t "$T" 'map(select(.trace_id == $t and .parent_span_id != null)) | max_by(.duration_ms) | .name' spans.jsonl > engpass.txt
+    jq -c --arg t "$T" 'select(.trace_id == $t and .level == "error")' logs.jsonl > fehler-logs.jsonl
+    jq -c 'select(.status == "ERROR")' spans.jsonl | wc -l > fehler-spans.txt
+    ```

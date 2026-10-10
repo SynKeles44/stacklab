@@ -1,0 +1,95 @@
+title: Alerting, SLOs und Incidents
+description: Zuverlässigkeit mit SLIs, SLOs und Fehlerbudgets messbar machen, Alarme ohne Alarmmüdigkeit schreiben und Incidents strukturiert bis zum schuldfreien Postmortem führen.
+exercise:
+  id: modul-uebung-burn-rate
+  type: terminal
+  title: Burn-Rate-Alarme für den Checkout
+  description: |
+    Der Checkout hat ein SLO von **99,9 %**. Im Ordner `burn-rate` liegt `messung.json` mit Anfragen und
+    Fehlern in drei Zeitfenstern (`5m`, `1h`, `6h`).
+
+    1. Berechne für jedes Fenster die Burn Rate (`errors / requests / (1 - slo)`) und schreibe sie als
+       JSON-Objekt nach `burn.json`, z. B. `{"5m": …, "1h": …, "6h": …}` (Zahlen, gern gerundet).
+    2. Entscheide nach dieser Regel und schreibe nur das Ergebnis-Wort in `entscheidung.txt`:
+       - `page`, wenn die Burn Rate in **1h und 5m** jeweils über **14.4** liegt,
+       - sonst `ticket`, wenn sie in **6h** über **6** liegt,
+       - sonst `ok`.
+    3. Schreibe die Regeldatei `slo.rules.yml` mit einer Gruppe `checkout-slo` und zwei Alarmen:
+       - `CheckoutBudgetFastBurn`: `expr` vergleicht die Fehlerquote über `[1h]` **und** über `[5m]` mit
+         `14.4 * 0.001` (beide Bedingungen mit `and` verbunden), `for: 2m`, `severity: page`, Annotation `runbook_url`.
+       - `CheckoutBudgetSlowBurn`: `expr` vergleicht die Fehlerquote über `[6h]` mit `6 * 0.001`, `for: 15m`,
+         `severity: ticket`.
+
+    Die Fehlerquote berechnest du in PromQL wie gewohnt:
+    `sum(rate(http_requests_total{route="/checkout",status=~"5.."}[1h])) / sum(rate(http_requests_total{route="/checkout"}[1h]))`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: burn-rate
+  setup: |
+    cat > messung.json <<'EOF'
+    {
+      "slo": 0.999,
+      "windows": {
+        "5m": { "requests": 12000, "errors": 240 },
+        "1h": { "requests": 150000, "errors": 2400 },
+        "6h": { "requests": 900000, "errors": 2700 }
+      }
+    }
+    EOF
+  checks:
+    - type: command
+      run: jq -e '((."5m" - 20) | fabs) < 0.05 and ((."1h" - 16) | fabs) < 0.05 and ((."6h" - 3) | fabs) < 0.05' burn.json
+      message: burn.json fehlt oder die Burn Rates stimmen nicht. Rechne errors / requests / (1 - slo) für jedes Fenster.
+    - type: command
+      run: tr -d '[:space:]' < entscheidung.txt
+      stdout_equals: page
+      message: entscheidung.txt stimmt nicht. Liegen die Burn Rates in 1h und 5m beide über 14.4?
+    - type: file_contains
+      path: slo.rules.yml
+      pattern: "^\\s*- name:\\s*[\"']?checkout-slo[\"']?\\s*$"
+      message: In slo.rules.yml fehlt die Gruppe checkout-slo.
+    - type: command
+      run: awk '/- alert:/ {a=$NF} a == "CheckoutBudgetFastBurn"' slo.rules.yml | grep -E 'expr:.*\[1h\].*14\.4.*\band\b.*\[5m\].*14\.4|expr:.*\[5m\].*14\.4.*\band\b.*\[1h\].*14\.4'
+      message: CheckoutBudgetFastBurn braucht einen expr in einer Zeile, der die Fehlerquote über [1h] und über [5m] jeweils mit 14.4 * 0.001 vergleicht und beide mit and verbindet.
+    - type: command
+      run: awk '/- alert:/ {a=$NF} a == "CheckoutBudgetFastBurn"' slo.rules.yml | grep -E '^\s*for:\s*2m\s*$'
+      message: "CheckoutBudgetFastBurn braucht for: 2m."
+    - type: command
+      run: awk '/- alert:/ {a=$NF} a == "CheckoutBudgetFastBurn"' slo.rules.yml | grep -E '^\s*severity:\s*["'"'"']?page' && awk '/- alert:/ {a=$NF} a == "CheckoutBudgetFastBurn"' slo.rules.yml | grep -E '^\s*runbook_url:\s*\S'
+      message: "CheckoutBudgetFastBurn braucht severity: page und eine runbook_url."
+    - type: command
+      run: awk '/- alert:/ {a=$NF} a == "CheckoutBudgetSlowBurn"' slo.rules.yml | grep -E 'expr:.*\[6h\].*>\s*\(?\s*6\s*\*\s*0\.001'
+      message: CheckoutBudgetSlowBurn braucht einen expr, der die Fehlerquote über [6h] mit 6 * 0.001 vergleicht.
+    - type: command
+      run: awk '/- alert:/ {a=$NF} a == "CheckoutBudgetSlowBurn"' slo.rules.yml | grep -E '^\s*for:\s*15m\s*$' && awk '/- alert:/ {a=$NF} a == "CheckoutBudgetSlowBurn"' slo.rules.yml | grep -E '^\s*severity:\s*["'"'"']?ticket'
+      message: "CheckoutBudgetSlowBurn braucht for: 15m und severity: ticket."
+  hints:
+    - "`jq '.slo as $s | .windows | map_values(.errors / .requests / (1 - $s))' messung.json > burn.json` rechnet alle drei Fenster auf einmal."
+    - "Die Entscheidung kannst du mit jq treffen: `if .\"1h\" > 14.4 and .\"5m\" > 14.4 then \"page\" elif .\"6h\" > 6 then \"ticket\" else \"ok\" end` – mit `-r` ohne Anführungszeichen."
+    - "Im Regel-expr: `(Fehlerquote mit [1h]) > (14.4 * 0.001) and (Fehlerquote mit [5m]) > (14.4 * 0.001)` – alles in einer Zeile."
+  solution: |
+    ```bash
+    cd burn-rate
+    jq '.slo as $s | .windows | map_values(.errors / .requests / (1 - $s))' messung.json > burn.json
+    jq -r 'if ."1h" > 14.4 and ."5m" > 14.4 then "page" elif ."6h" > 6 then "ticket" else "ok" end' burn.json > entscheidung.txt
+    cat > slo.rules.yml <<'EOF'
+    groups:
+      - name: checkout-slo
+        rules:
+          - alert: CheckoutBudgetFastBurn
+            expr: (sum(rate(http_requests_total{route="/checkout",status=~"5.."}[1h])) / sum(rate(http_requests_total{route="/checkout"}[1h]))) > (14.4 * 0.001) and (sum(rate(http_requests_total{route="/checkout",status=~"5.."}[5m])) / sum(rate(http_requests_total{route="/checkout"}[5m]))) > (14.4 * 0.001)
+            for: 2m
+            labels:
+              severity: page
+            annotations:
+              summary: "Checkout verbraucht das Fehlerbudget sehr schnell"
+              runbook_url: https://wiki.example.com/runbooks/checkout-slo
+          - alert: CheckoutBudgetSlowBurn
+            expr: (sum(rate(http_requests_total{route="/checkout",status=~"5.."}[6h])) / sum(rate(http_requests_total{route="/checkout"}[6h]))) > (6 * 0.001)
+            for: 15m
+            labels:
+              severity: ticket
+            annotations:
+              summary: "Checkout verbraucht das Fehlerbudget dauerhaft zu schnell"
+    EOF
+    ```

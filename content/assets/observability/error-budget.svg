@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="450" y="30" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Fehlerbudget über 30 Tage (SLO 99,9 % → 43,2 Minuten)</text>
+
+  <g stroke="#e2e8f0" stroke-width="1">
+    <line x1="80" y1="60" x2="840" y2="60"/>
+    <line x1="80" y1="120" x2="840" y2="120"/>
+    <line x1="80" y1="180" x2="840" y2="180"/>
+    <line x1="80" y1="240" x2="840" y2="240"/>
+  </g>
+  <line x1="80" y1="60" x2="80" y2="300" stroke="#1e1b3a" stroke-width="1.5"/>
+  <line x1="80" y1="300" x2="840" y2="300" stroke="#1e1b3a" stroke-width="1.5"/>
+
+  <g font-size="11.5" fill="#1e1b3a" text-anchor="end">
+    <text x="72" y="64">100 %</text>
+    <text x="72" y="124">75 %</text>
+    <text x="72" y="184">50 %</text>
+    <text x="72" y="244">25 %</text>
+    <text x="72" y="304">0 %</text>
+  </g>
+  <g font-size="11.5" fill="#1e1b3a" text-anchor="middle">
+    <text x="80" y="320">Tag 0</text>
+    <text x="333" y="320">Tag 10</text>
+    <text x="587" y="320">Tag 20</text>
+    <text x="840" y="320">Tag 30</text>
+  </g>
+
+  <line x1="80" y1="60" x2="840" y2="300" stroke="#1e1b3a" stroke-width="2" stroke-dasharray="7 6"/>
+  <polyline points="80,60 359,79 384,175 587,187 840,209" fill="none" stroke="#a78bfa" stroke-width="4"/>
+  <circle cx="384" cy="175" r="6" fill="#f87171"/>
+
+  <rect x="400" y="98" width="250" height="44" rx="8" fill="#fee2e2" stroke="#f87171" stroke-width="1.5"/>
+  <text x="412" y="116" font-size="12.5" fill="#1e1b3a">Tag 12: Incident verbraucht</text>
+  <text x="412" y="134" font-size="12.5" fill="#1e1b3a">40 % des Budgets in 2 Stunden</text>
+
+  <text x="700" y="232" font-size="12.5" fill="#1e1b3a">38 % übrig</text>
+  <text x="96" y="288" font-size="12" fill="#1e1b3a">gestrichelt: gleichmäßiger Verbrauch</text>
+
+  <rect x="80" y="338" width="760" height="32" rx="8" fill="#f1f5f9"/>
+  <text x="460" y="359" text-anchor="middle" font-size="12.5" fill="#1e1b3a">Liegt die Linie über der gestrichelten Linie, darfst du Risiko eingehen. Ist das Budget leer, hat Stabilität Vorrang.</text>
+</svg>

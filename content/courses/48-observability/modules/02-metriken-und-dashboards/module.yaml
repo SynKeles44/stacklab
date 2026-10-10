@@ -1,0 +1,106 @@
+title: Metriken und Dashboards
+description: Metrik-Typen, die Methoden RED und USE, das Prometheus-Format mit Scraping und PromQL sowie Dashboards in Grafana – inklusive Dashboards als Code.
+exercise:
+  id: modul-uebung-metrik-stack
+  type: terminal
+  title: Prometheus und Grafana für die App vorbereiten
+  description: |
+    Du bereitest die Konfiguration für einen lokalen Metrik-Stack vor und wertest einen Scrape aus.
+
+    1. Lege `prometheus/prometheus.yml` an: globales `scrape_interval` von `15s` und zwei Jobs in
+       `scrape_configs` – `job_name: laravel` mit dem Ziel `app:8000` und `job_name: node` mit dem Ziel
+       `node-exporter:9100`.
+    2. Lege `grafana/provisioning/datasources/datasources.yaml` an (`apiVersion: 1`) mit einer Datenquelle
+       `name: Prometheus`, `type: prometheus` und `url: http://prometheus:9090`.
+    3. In `scrape.prom` liegt ein Ausschnitt aus `/metrics`. Berechne mit `awk` den Anteil der Anfragen mit
+       einem **5xx**-Status an allen Anfragen und schreibe ihn mit vier Nachkommastellen (z. B. `0.0420`)
+       in `fehlerquote.txt`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit `scrape.prom` angelegt wird.
+
+    **Auf deinem eigenen Rechner** kannst du den Stack danach mit Docker Compose starten – etwa mit den
+    Images `prom/prometheus` (Port 9090) und `grafana/grafana` (Port 3000), die deine beiden Dateien per
+    Volume einbinden. Im Übungs-Terminal laufen keine Container.
+  workdir: metrik-stack
+  setup: |
+    cat > scrape.prom <<'EOF'
+    # HELP http_requests_total Total number of HTTP requests.
+    # TYPE http_requests_total counter
+    http_requests_total{route="/",status="200"} 5200
+    http_requests_total{route="/checkout",status="200"} 1900
+    http_requests_total{route="/checkout",status="502"} 80
+    http_requests_total{route="/api/orders",status="200"} 2700
+    http_requests_total{route="/api/orders",status="500"} 40
+    http_requests_total{route="/api/orders",status="404"} 80
+    EOF
+  checks:
+    - type: file_exists
+      path: prometheus/prometheus.yml
+      message: Lege die Datei prometheus/prometheus.yml an.
+    - type: file_contains
+      path: prometheus/prometheus.yml
+      pattern: "^global:\\s*$"
+      message: In prometheus.yml fehlt der Abschnitt global.
+    - type: file_contains
+      path: prometheus/prometheus.yml
+      pattern: "^\\s+scrape_interval:\\s*15s\\s*$"
+      message: Setze unter global ein scrape_interval von 15s.
+    - type: file_contains
+      path: prometheus/prometheus.yml
+      pattern: "^scrape_configs:\\s*$"
+      message: In prometheus.yml fehlt der Abschnitt scrape_configs.
+    - type: command
+      run: awk '/job_name:/ {job=$NF; gsub(/["'"'"']/, "", job)} /targets:/ {print job, $0}' prometheus/prometheus.yml | grep -E "^laravel .*app:8000"
+      message: Der Job laravel braucht das Ziel app:8000 unter static_configs → targets.
+    - type: command
+      run: awk '/job_name:/ {job=$NF; gsub(/["'"'"']/, "", job)} /targets:/ {print job, $0}' prometheus/prometheus.yml | grep -E "^node .*node-exporter:9100"
+      message: Der Job node braucht das Ziel node-exporter:9100 unter static_configs → targets.
+    - type: file_contains
+      path: grafana/provisioning/datasources/datasources.yaml
+      pattern: "^apiVersion:\\s*1\\s*$"
+      message: datasources.yaml braucht in der ersten Ebene apiVersion 1.
+    - type: file_contains
+      path: grafana/provisioning/datasources/datasources.yaml
+      pattern: "type:\\s*[\"']?prometheus[\"']?\\s*$"
+      message: In datasources.yaml fehlt type prometheus.
+    - type: file_contains
+      path: grafana/provisioning/datasources/datasources.yaml
+      pattern: "url:\\s*[\"']?http://prometheus:9090[\"']?\\s*$"
+      message: In datasources.yaml fehlt url http://prometheus:9090 – im Compose-Netz heißt der Dienst einfach prometheus.
+    - type: command
+      run: tr -d '[:space:]' < fehlerquote.txt
+      stdout_equals: "0.0120"
+      message: fehlerquote.txt stimmt noch nicht. Zähle nur Status 5xx (nicht 404!) und teile durch die Summe aller Anfragen, ausgegeben mit printf "%.4f".
+  hints:
+    - "Achte in YAML auf Einrückung mit Leerzeichen: `scrape_configs:` → `- job_name: laravel` → `static_configs:` → `- targets: [\"app:8000\"]`."
+    - "Im Label steht `status=\"502\"`. Mit `awk '/status=\"5/ {e+=$2} /^http_requests_total/ {t+=$2} END {printf \"%.4f\\n\", e/t}' scrape.prom` zählst du nur 5xx."
+    - "`mkdir -p grafana/provisioning/datasources` legt alle Ordner auf einmal an."
+  solution: |
+    ```bash
+    cd metrik-stack
+    mkdir -p prometheus grafana/provisioning/datasources
+    cat > prometheus/prometheus.yml <<'EOF'
+    global:
+      scrape_interval: 15s
+
+    scrape_configs:
+      - job_name: laravel
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["app:8000"]
+      - job_name: node
+        static_configs:
+          - targets: ["node-exporter:9100"]
+    EOF
+    cat > grafana/provisioning/datasources/datasources.yaml <<'EOF'
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+    EOF
+    awk '/status="5/ {e+=$2} /^http_requests_total/ {t+=$2} END {printf "%.4f\n", e/t}' scrape.prom > fehlerquote.txt
+    cat fehlerquote.txt
+    ```

@@ -1,0 +1,769 @@
+title: Dein Observability-Kit für eine Laravel-App
+description: |
+  In diesem Projekt stellst du ein **Observability-Kit** zusammen, das du in jedes Laravel-Projekt
+  übernehmen kannst: JSON-Logging mit Request-IDs, ein Auswerte-Skript für Logs, Metriken im
+  Prometheus-Format, die Konfiguration von Prometheus und Grafana samt RED-Dashboard, SLO und
+  Alarmregeln, eine Compose-Datei für den lokalen Stack und eine Postmortem-Vorlage.
+
+  Alles entsteht im Ordner `kit` deines Observability-Workspaces. Klicke zuerst auf **Projekt
+  vorbereiten** – dann liegt dort eine Beispiel-Logdatei `logs/app.jsonl`. Öffne das Übungs-Terminal und
+  wechsle mit `cd kit` hinein. Nach jedem Schritt prüft Stacklab die Dateien.
+
+  Die Container selbst laufen im Übungs-Terminal nicht. Den fertigen Stack startest du am Ende auf
+  deinem eigenen Rechner mit Docker Compose.
+goal: >
+  Ein Ordner `kit` mit Logging-Konfiguration, Request-ID-Middleware, Log-Report-Skript, Beispielmetriken,
+  Prometheus- und Grafana-Konfiguration inklusive RED-Dashboard, SLO-Definition, Alarmregeln,
+  Compose-Datei und Postmortem-Vorlage.
+workdir: kit
+setup: |
+  mkdir -p logs
+  cat > logs/app.jsonl <<'EOF'
+  {"time":"2026-10-05T13:55:01Z","level":"info","message":"Request finished","request_id":"req-a1","route":"GET /products","status":200,"duration_ms":42}
+  {"time":"2026-10-05T13:55:03Z","level":"info","message":"Cart loaded","request_id":"req-b2","route":"POST /checkout","items":3}
+  {"time":"2026-10-05T13:55:13Z","level":"error","message":"Payment request failed","request_id":"req-b2","route":"POST /checkout","error":"connection timed out after 10000 ms"}
+  {"time":"2026-10-05T13:55:13Z","level":"info","message":"Request finished","request_id":"req-b2","route":"POST /checkout","status":502,"duration_ms":10120}
+  {"time":"2026-10-05T13:55:04Z","level":"warning","message":"Slow query","request_id":"req-c3","route":"GET /cart","duration_ms":850}
+  {"time":"2026-10-05T13:55:30Z","level":"error","message":"Payment request failed","request_id":"req-d4","route":"POST /checkout","error":"connection timed out after 10000 ms"}
+  {"time":"2026-10-05T13:55:31Z","level":"error","message":"Mail transport unavailable","request_id":"req-e5","route":"POST /contact","error":"smtp connect failed"}
+  EOF
+steps:
+  - id: logging-kanal
+    title: JSON-Logging auf stderr konfigurieren
+    description: |
+      Lege `config/logging.php` an. Die Datei gibt ein Array zurück mit:
+
+      - `'default' => env('LOG_CHANNEL', 'stack')`,
+      - einem Kanal `stack` mit `'channels' => explode(',', (string) env('LOG_STACK', 'single,stderr_json'))`,
+      - einem Kanal `single` (Treiber `single`, Pfad `storage_path('logs/laravel.log')`),
+      - einem Kanal `stderr_json` mit Treiber `monolog`, `StreamHandler::class`, `handler_with` →
+        `stream` = `php://stderr`, `formatter` = `JsonFormatter::class` und `level` = `env('LOG_LEVEL', 'info')`.
+
+      Vergiss die `use`-Zeilen für `Monolog\Formatter\JsonFormatter` und `Monolog\Handler\StreamHandler` nicht.
+    checklist:
+      - "`config/logging.php` ist gültiges PHP (`php -l`)"
+      - Kanal `stderr_json` schreibt JSON nach stderr
+      - "`stack` enthält standardmäßig `single` und `stderr_json`"
+    hints:
+      - Die Lektion „Logging in Laravel“ zeigt den kompletten Kanal.
+      - Schreibe die Datei mit `cat > config/logging.php <<'EOF'` … `EOF` und prüfe mit `php -l config/logging.php`.
+    checks:
+      - type: command
+        run: php -l config/logging.php
+        message: config/logging.php fehlt oder enthält einen Syntaxfehler.
+      - type: command
+        run: php -r 'function env($k, $d = null) { return $d; } function storage_path($p = "") { return "/storage/" . $p; } echo json_encode((require "config/logging.php")["channels"]["stderr_json"] ?? null);' | jq -r '[.driver, .handler, .handler_with.stream, .formatter, .level] | join(" ")'
+        stdout_equals: "monolog Monolog\\Handler\\StreamHandler php://stderr Monolog\\Formatter\\JsonFormatter info"
+        message: Der Kanal stderr_json ist noch nicht vollständig – driver monolog, StreamHandler, stream php://stderr, JsonFormatter und level info.
+      - type: command
+        run: php -r 'function env($k, $d = null) { return $d; } function storage_path($p = "") { return "/storage/" . $p; } echo json_encode((require "config/logging.php")["channels"]["stack"]["channels"] ?? null);' | jq -r 'sort | join(",")'
+        stdout_equals: "single,stderr_json"
+        message: Der Kanal stack soll standardmäßig single und stderr_json bündeln.
+    solution: |
+      ```php
+      <?php
+
+      use Monolog\Formatter\JsonFormatter;
+      use Monolog\Handler\StreamHandler;
+
+      return [
+          'default' => env('LOG_CHANNEL', 'stack'),
+          'channels' => [
+              'stack' => [
+                  'driver' => 'stack',
+                  'channels' => explode(',', (string) env('LOG_STACK', 'single,stderr_json')),
+                  'ignore_exceptions' => false,
+              ],
+              'single' => [
+                  'driver' => 'single',
+                  'path' => storage_path('logs/laravel.log'),
+                  'level' => env('LOG_LEVEL', 'debug'),
+              ],
+              'stderr_json' => [
+                  'driver' => 'monolog',
+                  'level' => env('LOG_LEVEL', 'info'),
+                  'handler' => StreamHandler::class,
+                  'handler_with' => ['stream' => 'php://stderr'],
+                  'formatter' => JsonFormatter::class,
+              ],
+          ],
+      ];
+      ```
+    solve: |
+      mkdir -p config
+      cat > config/logging.php <<'PHPEOF'
+      <?php
+
+      use Monolog\Formatter\JsonFormatter;
+      use Monolog\Handler\StreamHandler;
+
+      return [
+          'default' => env('LOG_CHANNEL', 'stack'),
+          'channels' => [
+              'stack' => [
+                  'driver' => 'stack',
+                  'channels' => explode(',', (string) env('LOG_STACK', 'single,stderr_json')),
+                  'ignore_exceptions' => false,
+              ],
+              'single' => [
+                  'driver' => 'single',
+                  'path' => storage_path('logs/laravel.log'),
+                  'level' => env('LOG_LEVEL', 'debug'),
+              ],
+              'stderr_json' => [
+                  'driver' => 'monolog',
+                  'level' => env('LOG_LEVEL', 'info'),
+                  'handler' => StreamHandler::class,
+                  'handler_with' => ['stream' => 'php://stderr'],
+                  'formatter' => JsonFormatter::class,
+              ],
+          ],
+      ];
+      PHPEOF
+
+  - id: request-id-middleware
+    title: Request-IDs per Middleware vergeben
+    description: |
+      Lege `app/Http/Middleware/AssignRequestId.php` an – eine Middleware mit der Methode `handle`, die:
+
+      1. die ID aus dem Header `X-Request-Id` übernimmt oder sonst mit `Str::uuid()` eine neue erzeugt,
+      2. sie mit `Context::add('request_id', …)` (oder `Log::shareContext([...])`) an alle Logzeilen hängt,
+      3. die ID mit `$response->headers->set('X-Request-Id', …)` an die Antwort schreibt.
+
+      Die Datei muss gültiges PHP sein. Laravel selbst ist im Übungs-Terminal nicht installiert – geprüft
+      werden Syntax und Inhalt.
+    checklist:
+      - Middleware-Klasse `AssignRequestId` im Namespace `App\Http\Middleware`
+      - Vorhandene Request-ID wird übernommen
+      - ID landet im Log-Kontext und im Antwort-Header
+    hints:
+      - "`$id = $request->header('X-Request-Id') ?? (string) Str::uuid();`"
+      - "Imports: `Closure`, `Illuminate\\Http\\Request`, `Illuminate\\Support\\Facades\\Context`, `Illuminate\\Support\\Str`, `Symfony\\Component\\HttpFoundation\\Response`."
+    checks:
+      - type: command
+        run: php -l app/Http/Middleware/AssignRequestId.php
+        message: app/Http/Middleware/AssignRequestId.php fehlt oder enthält einen Syntaxfehler.
+      - type: file_contains
+        path: app/Http/Middleware/AssignRequestId.php
+        pattern: "class\\s+AssignRequestId"
+        message: Die Datei braucht die Klasse AssignRequestId.
+      - type: file_contains
+        path: app/Http/Middleware/AssignRequestId.php
+        pattern: "header\\(\\s*['\"]X-Request-Id['\"]\\s*\\)"
+        message: Lies eine mitgeschickte ID mit $request->header('X-Request-Id') aus.
+      - type: file_contains
+        path: app/Http/Middleware/AssignRequestId.php
+        pattern: "Context::add\\(|Log::shareContext\\(|Log::withContext\\("
+        message: Hänge die ID mit Context::add(...) oder Log::shareContext([...]) an den Log-Kontext.
+      - type: file_contains
+        path: app/Http/Middleware/AssignRequestId.php
+        pattern: "headers->set\\(\\s*['\"]X-Request-Id['\"]"
+        message: Schreibe die ID mit $response->headers->set('X-Request-Id', ...) in die Antwort.
+    solution: |
+      ```php
+      <?php
+
+      namespace App\Http\Middleware;
+
+      use Closure;
+      use Illuminate\Http\Request;
+      use Illuminate\Support\Facades\Context;
+      use Illuminate\Support\Str;
+      use Symfony\Component\HttpFoundation\Response;
+
+      class AssignRequestId
+      {
+          public function handle(Request $request, Closure $next): Response
+          {
+              $id = $request->header('X-Request-Id') ?? (string) Str::uuid();
+
+              Context::add('request_id', $id);
+
+              $response = $next($request);
+              $response->headers->set('X-Request-Id', $id);
+
+              return $response;
+          }
+      }
+      ```
+    solve: |
+      mkdir -p app/Http/Middleware
+      cat > app/Http/Middleware/AssignRequestId.php <<'PHPEOF'
+      <?php
+
+      namespace App\Http\Middleware;
+
+      use Closure;
+      use Illuminate\Http\Request;
+      use Illuminate\Support\Facades\Context;
+      use Illuminate\Support\Str;
+      use Symfony\Component\HttpFoundation\Response;
+
+      class AssignRequestId
+      {
+          public function handle(Request $request, Closure $next): Response
+          {
+              $id = $request->header('X-Request-Id') ?? (string) Str::uuid();
+
+              Context::add('request_id', $id);
+
+              $response = $next($request);
+              $response->headers->set('X-Request-Id', $id);
+
+              return $response;
+          }
+      }
+      PHPEOF
+
+  - id: log-report
+    title: Ein Fehler-Report-Skript für Logs
+    description: |
+      Schreibe das ausführbare Skript `bin/fehler-report.sh`. Es bekommt den Pfad einer JSON-Lines-Datei als
+      erstes Argument und gibt für jede Route die Anzahl der Zeilen mit `level` `error` aus:
+
+      - eine Zeile pro Route im Format `ANZAHL ROUTE`, z. B. `2 POST /checkout`,
+      - absteigend nach Anzahl sortiert.
+
+      Teste es mit `bin/fehler-report.sh logs/app.jsonl`. Stacklab prüft es zusätzlich mit einer eigenen Datei.
+    checklist:
+      - Skript mit Shebang `#!/usr/bin/env bash` und `chmod +x`
+      - Nutzt `jq` und liest den Pfad aus `$1`
+      - Ausgabe `ANZAHL ROUTE`, absteigend sortiert
+    hints:
+      - "`jq -r 'select(.level == \"error\") | .route' \"$1\" | sort | uniq -c` zählt pro Route."
+      - "`uniq -c` rückt die Zahl ein. Mit `sort -rn` sortierst du absteigend, mit `awk '{$1=$1; print}'` entfernst du überzählige Leerzeichen."
+    checks:
+      - type: command
+        run: test -x bin/fehler-report.sh
+        message: bin/fehler-report.sh fehlt oder ist nicht ausführbar (chmod +x bin/fehler-report.sh).
+      - type: command
+        run: bin/fehler-report.sh logs/app.jsonl | tr '\n' '|'
+        stdout_equals: "2 POST /checkout|1 POST /contact|"
+        message: 'Für logs/app.jsonl erwartet: "2 POST /checkout" und darunter "1 POST /contact".'
+      - type: command
+        run: d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); printf '%s\n' '{"level":"error","route":"GET /a"}' '{"level":"info","route":"GET /b"}' '{"level":"error","route":"GET /c"}' '{"level":"error","route":"GET /c"}' '{"level":"error","route":"GET /c"}' > "$d/t.jsonl"; bin/fehler-report.sh "$d/t.jsonl" | tr '\n' '|'; rm -rf "$d"
+        stdout_equals: "3 GET /c|1 GET /a|"
+        message: Das Skript soll mit jeder Datei funktionieren, die als erstes Argument übergeben wird, und absteigend sortieren.
+    solution: |
+      ```bash
+      mkdir -p bin
+      cat > bin/fehler-report.sh <<'EOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+      jq -r 'select(.level == "error") | .route' "$1" | sort | uniq -c | sort -rn | awk '{$1=$1; print}'
+      EOF
+      chmod +x bin/fehler-report.sh
+      bin/fehler-report.sh logs/app.jsonl
+      ```
+    solve: |
+      mkdir -p bin
+      cat > bin/fehler-report.sh <<'SHEOF'
+      #!/usr/bin/env bash
+      set -euo pipefail
+      jq -r 'select(.level == "error") | .route' "$1" | sort | uniq -c | sort -rn | awk '{$1=$1; print}'
+      SHEOF
+      chmod +x bin/fehler-report.sh
+
+  - id: beispiel-metriken
+    title: Beispiel-Metriken im Prometheus-Format
+    description: |
+      Damit du Dashboards und Alarme auch ohne laufende App testen kannst, schreibst du
+      `metrics/beispiel.prom` im Prometheus-Textformat:
+
+      - einen Counter `http_requests_total` mit `# HELP`, `# TYPE` und mindestens zwei Zeitreihen mit den
+        Labels `route` und `status` – mindestens eine davon mit einem 5xx-Status,
+      - ein Histogramm `http_request_duration_seconds` mit `# HELP`, `# TYPE`, mindestens zwei Buckets plus
+        `le="+Inf"`, dazu `_sum` und `_count`. Der `+Inf`-Bucket muss gleich `_count` sein.
+    checklist:
+      - Counter mit HELP und TYPE
+      - Mindestens eine 5xx-Zeitreihe
+      - Histogramm mit +Inf-Bucket, _sum und _count
+    hints:
+      - Die Lektion „Prometheus – Textformat“ zeigt ein vollständiges Beispiel.
+      - Die Bucket-Werte sind kumulativ und müssen von Bucket zu Bucket gleich bleiben oder steigen.
+    checks:
+      - type: file_contains
+        path: metrics/beispiel.prom
+        pattern: "^# TYPE http_requests_total counter$"
+        message: In metrics/beispiel.prom fehlt "# TYPE http_requests_total counter".
+      - type: file_contains
+        path: metrics/beispiel.prom
+        pattern: "^# HELP http_requests_total \\S"
+        message: Es fehlt eine "# HELP"-Zeile für http_requests_total.
+      - type: command
+        run: grep -cE '^http_requests_total\{.*route="[^"]+".*\} [0-9.]+$' metrics/beispiel.prom
+        stdout_matches: "^([2-9]|[1-9][0-9]+)$"
+        message: Es braucht mindestens zwei Zeitreihen http_requests_total{route="…",status="…"} mit Wert.
+      - type: file_contains
+        path: metrics/beispiel.prom
+        pattern: "^http_requests_total\\{.*status=\"5[0-9][0-9]\".*\\} [0-9.]+$"
+        message: Mindestens eine Zeitreihe von http_requests_total braucht einen 5xx-Status.
+      - type: file_contains
+        path: metrics/beispiel.prom
+        pattern: "^# TYPE http_request_duration_seconds histogram$"
+        message: In metrics/beispiel.prom fehlt "# TYPE http_request_duration_seconds histogram".
+      - type: command
+        run: awk '/^http_request_duration_seconds_bucket/ {n++; if ($2 < last) bad=1; last=$2} /le="\+Inf"/ {i=$2} /^http_request_duration_seconds_count/ {c=$2} /^http_request_duration_seconds_sum/ {s=1} END {exit !(n >= 3 && !bad && i != "" && i == c && s)}' metrics/beispiel.prom
+        message: Das Histogramm braucht mindestens drei Buckets (inklusive le="+Inf") mit steigenden Werten sowie _sum und _count – und +Inf muss gleich _count sein.
+    solution: |
+      ```text
+      # HELP http_requests_total Total number of HTTP requests.
+      # TYPE http_requests_total counter
+      http_requests_total{route="/checkout",status="200"} 1900
+      http_requests_total{route="/checkout",status="502"} 80
+      # HELP http_request_duration_seconds HTTP request duration.
+      # TYPE http_request_duration_seconds histogram
+      http_request_duration_seconds_bucket{le="0.1"} 1200
+      http_request_duration_seconds_bucket{le="0.5"} 1850
+      http_request_duration_seconds_bucket{le="+Inf"} 1980
+      http_request_duration_seconds_sum 412.5
+      http_request_duration_seconds_count 1980
+      ```
+    solve: |
+      mkdir -p metrics
+      cat > metrics/beispiel.prom <<'PROMEOF'
+      # HELP http_requests_total Total number of HTTP requests.
+      # TYPE http_requests_total counter
+      http_requests_total{route="/checkout",status="200"} 1900
+      http_requests_total{route="/checkout",status="502"} 80
+      # HELP http_request_duration_seconds HTTP request duration.
+      # TYPE http_request_duration_seconds histogram
+      http_request_duration_seconds_bucket{le="0.1"} 1200
+      http_request_duration_seconds_bucket{le="0.5"} 1850
+      http_request_duration_seconds_bucket{le="+Inf"} 1980
+      http_request_duration_seconds_sum 412.5
+      http_request_duration_seconds_count 1980
+      PROMEOF
+
+  - id: prometheus-konfiguration
+    title: Prometheus konfigurieren
+    description: |
+      Lege `prometheus/prometheus.yml` an:
+
+      - `global` mit `scrape_interval: 15s` und `evaluation_interval: 15s`,
+      - `rule_files` mit dem Eintrag `/etc/prometheus/rules/*.yml` (dort binden wir später die Alarmregeln ein),
+      - `scrape_configs` mit dem Job `laravel` (Ziel `app:8000`, `metrics_path: /metrics`) und dem Job
+        `prometheus` (Ziel `localhost:9090` – Prometheus beobachtet sich selbst).
+    checklist:
+      - scrape_interval und evaluation_interval gesetzt
+      - rule_files zeigt auf den Regel-Ordner
+      - Jobs laravel und prometheus mit ihren Zielen
+    hints:
+      - "`rule_files:` ist eine Liste: `rule_files: [\"/etc/prometheus/rules/*.yml\"]`."
+      - Einrückung mit Leerzeichen, nie mit Tabs.
+    checks:
+      - type: file_contains
+        path: prometheus/prometheus.yml
+        pattern: "^\\s+scrape_interval:\\s*15s\\s*$"
+        message: Setze unter global scrape_interval auf 15s.
+      - type: file_contains
+        path: prometheus/prometheus.yml
+        pattern: "^\\s+evaluation_interval:\\s*15s\\s*$"
+        message: Setze unter global evaluation_interval auf 15s – so oft werden die Alarmregeln ausgewertet.
+      - type: file_contains
+        path: prometheus/prometheus.yml
+        pattern: "/etc/prometheus/rules/\\*\\.yml"
+        message: rule_files soll /etc/prometheus/rules/*.yml enthalten.
+      - type: command
+        run: awk '/job_name:/ {job=$NF; gsub(/["'"'"']/, "", job)} /targets:/ {print job, $0}' prometheus/prometheus.yml | grep -E "^laravel .*app:8000"
+        message: Der Job laravel braucht das Ziel app:8000.
+      - type: command
+        run: awk '/job_name:/ {job=$NF; gsub(/["'"'"']/, "", job)} /targets:/ {print job, $0}' prometheus/prometheus.yml | grep -E "^prometheus .*localhost:9090"
+        message: Der Job prometheus braucht das Ziel localhost:9090.
+    solution: |
+      ```yaml
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+
+      rule_files:
+        - /etc/prometheus/rules/*.yml
+
+      scrape_configs:
+        - job_name: laravel
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["app:8000"]
+        - job_name: prometheus
+          static_configs:
+            - targets: ["localhost:9090"]
+      ```
+    solve: |
+      mkdir -p prometheus
+      cat > prometheus/prometheus.yml <<'YMLEOF'
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+
+      rule_files:
+        - /etc/prometheus/rules/*.yml
+
+      scrape_configs:
+        - job_name: laravel
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["app:8000"]
+        - job_name: prometheus
+          static_configs:
+            - targets: ["localhost:9090"]
+      YMLEOF
+
+  - id: grafana-dashboard
+    title: Grafana-Datenquelle und RED-Dashboard
+    description: |
+      1. Lege `grafana/provisioning/datasources/prometheus.yaml` an (`apiVersion: 1`, Datenquelle
+         `Prometheus`, `type: prometheus`, `url: http://prometheus:9090`).
+      2. Lege `grafana/dashboards/checkout.json` an: Titel beliebig, `uid` `checkout-red` und genau drei
+         Panels vom Typ `timeseries`:
+         - `Anfragen pro Sekunde` – `expr` mit `rate(http_requests_total`, Einheit `reqps`,
+         - `Fehlerquote` – `expr` mit `status=~"5.."` und einem `/`, Einheit `percentunit`,
+         - `p95-Dauer` – `expr` mit `histogram_quantile(0.95`, Einheit `s`.
+    checklist:
+      - Datenquelle per Provisioning
+      - Dashboard-JSON mit uid checkout-red
+      - Drei RED-Panels mit passenden Einheiten
+    hints:
+      - Die Lektion „Dashboards mit Grafana“ enthält eine fertige jq-Lösung, die du anpassen kannst.
+      - "Prüfe dein JSON mit `jq '.panels[] | {title, unit: .fieldConfig.defaults.unit}' grafana/dashboards/checkout.json`."
+    checks:
+      - type: file_contains
+        path: grafana/provisioning/datasources/prometheus.yaml
+        pattern: "url:\\s*[\"']?http://prometheus:9090"
+        message: In grafana/provisioning/datasources/prometheus.yaml fehlt url http://prometheus:9090.
+      - type: file_contains
+        path: grafana/provisioning/datasources/prometheus.yaml
+        pattern: "type:\\s*[\"']?prometheus"
+        message: Die Datenquelle braucht type prometheus.
+      - type: command
+        run: jq -r '.uid' grafana/dashboards/checkout.json
+        stdout_equals: checkout-red
+        message: grafana/dashboards/checkout.json fehlt, ist ungültig oder hat nicht die uid checkout-red.
+      - type: command
+        run: jq -r '[.panels[] | .type] | join(",")' grafana/dashboards/checkout.json
+        stdout_equals: timeseries,timeseries,timeseries
+        message: Das Dashboard braucht genau drei Panels vom Typ timeseries.
+      - type: command
+        run: jq -r '.panels[] | select(.title == "Anfragen pro Sekunde") | [.fieldConfig.defaults.unit, .targets[0].expr] | join(" ")' grafana/dashboards/checkout.json
+        stdout_matches: "^reqps .*rate\\(http_requests_total"
+        message: Das Panel "Anfragen pro Sekunde" braucht die Einheit reqps und einen expr mit rate(http_requests_total…).
+      - type: command
+        run: jq -r '.panels[] | select(.title == "Fehlerquote") | [.fieldConfig.defaults.unit, .targets[0].expr] | join(" ")' grafana/dashboards/checkout.json
+        stdout_matches: "^percentunit .*status=~\"5\\.\\.\".*/"
+        message: Das Panel "Fehlerquote" braucht die Einheit percentunit und einen expr, der die 5xx-Rate durch die Gesamt-Rate teilt.
+      - type: command
+        run: jq -r '.panels[] | select(.title == "p95-Dauer") | [.fieldConfig.defaults.unit, .targets[0].expr] | join(" ")' grafana/dashboards/checkout.json
+        stdout_matches: "^s .*histogram_quantile\\(0\\.95"
+        message: Das Panel "p95-Dauer" braucht die Einheit s und einen expr mit histogram_quantile(0.95, …).
+    solution: |
+      ```bash
+      mkdir -p grafana/provisioning/datasources grafana/dashboards
+      cat > grafana/provisioning/datasources/prometheus.yaml <<'EOF'
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus:9090
+          isDefault: true
+      EOF
+      jq -n '{
+        title: "Checkout – RED", uid: "checkout-red",
+        panels: [
+          {type: "timeseries", title: "Anfragen pro Sekunde", gridPos: {x: 0, y: 0, w: 8, h: 8},
+           targets: [{refId: "A", expr: "sum(rate(http_requests_total{route=\"/checkout\"}[5m]))"}],
+           fieldConfig: {defaults: {unit: "reqps"}}},
+          {type: "timeseries", title: "Fehlerquote", gridPos: {x: 8, y: 0, w: 8, h: 8},
+           targets: [{refId: "A", expr: "sum(rate(http_requests_total{route=\"/checkout\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{route=\"/checkout\"}[5m]))"}],
+           fieldConfig: {defaults: {unit: "percentunit"}}},
+          {type: "timeseries", title: "p95-Dauer", gridPos: {x: 16, y: 0, w: 8, h: 8},
+           targets: [{refId: "A", expr: "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{route=\"/checkout\"}[5m])))"}],
+           fieldConfig: {defaults: {unit: "s"}}}
+        ]
+      }' > grafana/dashboards/checkout.json
+      ```
+    solve: |
+      mkdir -p grafana/provisioning/datasources grafana/dashboards
+      cat > grafana/provisioning/datasources/prometheus.yaml <<'YMLEOF'
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus:9090
+          isDefault: true
+      YMLEOF
+      jq -n '{
+        title: "Checkout – RED", uid: "checkout-red",
+        panels: [
+          {type: "timeseries", title: "Anfragen pro Sekunde", gridPos: {x: 0, y: 0, w: 8, h: 8},
+           targets: [{refId: "A", expr: "sum(rate(http_requests_total{route=\"/checkout\"}[5m]))"}],
+           fieldConfig: {defaults: {unit: "reqps"}}},
+          {type: "timeseries", title: "Fehlerquote", gridPos: {x: 8, y: 0, w: 8, h: 8},
+           targets: [{refId: "A", expr: "sum(rate(http_requests_total{route=\"/checkout\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{route=\"/checkout\"}[5m]))"}],
+           fieldConfig: {defaults: {unit: "percentunit"}}},
+          {type: "timeseries", title: "p95-Dauer", gridPos: {x: 16, y: 0, w: 8, h: 8},
+           targets: [{refId: "A", expr: "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{route=\"/checkout\"}[5m])))"}],
+           fieldConfig: {defaults: {unit: "s"}}}
+        ]
+      }' > grafana/dashboards/checkout.json
+
+  - id: slo-und-alarme
+    title: SLO festlegen und Alarmregeln schreiben
+    description: |
+      1. Lege `slo.json` an mit den Feldern `service` (`checkout`), `objective` (`0.999`), `window_days` (`30`)
+         und `budget_minutes` – dem erlaubten Komplettausfall in Minuten. Rechne ihn mit `jq` aus statt im Kopf.
+      2. Lege `prometheus/rules/checkout.yml` an mit einer Gruppe `checkout` und zwei Alarmen:
+         - `CheckoutHighErrorRate`: 5xx-Anteil `> 0.05`, `for: 5m`, `severity: page`, Annotation `runbook_url`,
+         - `CheckoutSlow`: `histogram_quantile(0.95, …)` `> 1`, `for: 15m`, `severity: ticket`.
+    checklist:
+      - slo.json mit korrekt berechnetem Fehlerbudget
+      - Page-Alarm auf die Fehlerquote mit Runbook
+      - Ticket-Alarm auf die p95-Dauer
+    hints:
+      - "`jq -n '{service: \"checkout\", objective: 0.999, window_days: 30} | .budget_minutes = (.window_days * 24 * 60 * (1 - .objective))' > slo.json`"
+      - Die Alarmregeln aus der Lektion „Alerting ohne Alarmmüdigkeit“ passen fast unverändert.
+    checks:
+      - type: command
+        run: jq -e '.service == "checkout" and .objective == 0.999 and .window_days == 30 and ((.budget_minutes - 43.2) | fabs) < 0.01' slo.json
+        message: slo.json fehlt oder stimmt nicht – erwartet service checkout, objective 0.999, window_days 30 und budget_minutes ≈ 43.2.
+      - type: command
+        run: awk '/- alert:/ {a=$NF} a == "CheckoutHighErrorRate"' prometheus/rules/checkout.yml | grep -E 'expr:.*status=~"5\.\.".*/.*> *0\.05' && awk '/- alert:/ {a=$NF} a == "CheckoutHighErrorRate"' prometheus/rules/checkout.yml | grep -E '^\s*for:\s*5m\s*$'
+        message: "CheckoutHighErrorRate braucht einen expr mit 5xx-Anteil > 0.05 und for: 5m."
+      - type: command
+        run: awk '/- alert:/ {a=$NF} a == "CheckoutHighErrorRate"' prometheus/rules/checkout.yml | grep -E '^\s*severity:\s*["'"'"']?page' && awk '/- alert:/ {a=$NF} a == "CheckoutHighErrorRate"' prometheus/rules/checkout.yml | grep -E '^\s*runbook_url:\s*\S'
+        message: "CheckoutHighErrorRate braucht severity: page und eine runbook_url."
+      - type: command
+        run: awk '/- alert:/ {a=$NF} a == "CheckoutSlow"' prometheus/rules/checkout.yml | grep -E 'expr:.*histogram_quantile\(0\.95.*> *1' && awk '/- alert:/ {a=$NF} a == "CheckoutSlow"' prometheus/rules/checkout.yml | grep -E '^\s*for:\s*15m\s*$' && awk '/- alert:/ {a=$NF} a == "CheckoutSlow"' prometheus/rules/checkout.yml | grep -E '^\s*severity:\s*["'"'"']?ticket'
+        message: "CheckoutSlow braucht einen expr mit histogram_quantile(0.95, …) > 1, for: 15m und severity: ticket."
+    solution: |
+      ```bash
+      jq -n '{service: "checkout", objective: 0.999, window_days: 30}
+        | .budget_minutes = (.window_days * 24 * 60 * (1 - .objective))' > slo.json
+      mkdir -p prometheus/rules
+      cat > prometheus/rules/checkout.yml <<'EOF'
+      groups:
+        - name: checkout
+          rules:
+            - alert: CheckoutHighErrorRate
+              expr: sum(rate(http_requests_total{route="/checkout",status=~"5.."}[5m])) / sum(rate(http_requests_total{route="/checkout"}[5m])) > 0.05
+              for: 5m
+              labels:
+                severity: page
+              annotations:
+                summary: "Mehr als 5 % der Checkout-Anfragen schlagen fehl"
+                runbook_url: https://wiki.example.com/runbooks/checkout-errors
+            - alert: CheckoutSlow
+              expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{route="/checkout"}[5m]))) > 1
+              for: 15m
+              labels:
+                severity: ticket
+              annotations:
+                summary: "p95 des Checkouts liegt seit 15 Minuten über 1 Sekunde"
+      EOF
+      ```
+    solve: |
+      jq -n '{service: "checkout", objective: 0.999, window_days: 30} | .budget_minutes = (.window_days * 24 * 60 * (1 - .objective))' > slo.json
+      mkdir -p prometheus/rules
+      cat > prometheus/rules/checkout.yml <<'YMLEOF'
+      groups:
+        - name: checkout
+          rules:
+            - alert: CheckoutHighErrorRate
+              expr: sum(rate(http_requests_total{route="/checkout",status=~"5.."}[5m])) / sum(rate(http_requests_total{route="/checkout"}[5m])) > 0.05
+              for: 5m
+              labels:
+                severity: page
+              annotations:
+                summary: "Mehr als 5 % der Checkout-Anfragen schlagen fehl"
+                runbook_url: https://wiki.example.com/runbooks/checkout-errors
+            - alert: CheckoutSlow
+              expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{route="/checkout"}[5m]))) > 1
+              for: 15m
+              labels:
+                severity: ticket
+              annotations:
+                summary: "p95 des Checkouts liegt seit 15 Minuten über 1 Sekunde"
+      YMLEOF
+
+  - id: compose-stack
+    title: Den Stack als Compose-Datei beschreiben
+    description: |
+      Lege `compose.observability.yaml` an. Sie beschreibt drei Dienste, die deine Dateien per Volume einbinden:
+
+      - `prometheus` mit dem Image `prom/prometheus`, Port `9090:9090` und den Volumes
+        `./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro` und `./prometheus/rules:/etc/prometheus/rules:ro`,
+      - `grafana` mit dem Image `grafana/grafana`, Port `3000:3000` und den Volumes
+        `./grafana/provisioning:/etc/grafana/provisioning:ro` und `./grafana/dashboards:/var/lib/grafana/dashboards:ro`,
+      - `loki` mit dem Image `grafana/loki`, Port `3100:3100`.
+
+      **Auf deinem eigenen Rechner** startest du den Stack danach mit
+      `docker compose -f compose.observability.yaml up -d` und öffnest Grafana unter `http://localhost:3000`.
+      Damit Grafana das Dashboard aus dem Ordner lädt, braucht es zusätzlich einen Dashboard-Provider unter
+      `grafana/provisioning/dashboards/` – siehe die Provisioning-Dokumentation von Grafana.
+    checklist:
+      - Drei Dienste prometheus, grafana und loki
+      - Konfiguration und Regeln per Volume eingebunden
+      - Stack lokal mit docker compose gestartet (auf deinem Rechner)
+    hints:
+      - "Aufbau: `services:` → `prometheus:` → `image:`, `ports:`, `volumes:` – jeweils als Liste mit `-`."
+      - Pinne in echten Projekten eine feste Image-Version statt `latest`, damit Updates bewusst passieren.
+    checks:
+      - type: file_contains
+        path: compose.observability.yaml
+        pattern: "^services:\\s*$"
+        message: compose.observability.yaml fehlt oder hat keinen Abschnitt services.
+      - type: file_contains
+        path: compose.observability.yaml
+        pattern: "image:\\s*[\"']?prom/prometheus"
+        message: Es fehlt der Dienst mit dem Image prom/prometheus.
+      - type: file_contains
+        path: compose.observability.yaml
+        pattern: "image:\\s*[\"']?grafana/grafana"
+        message: Es fehlt der Dienst mit dem Image grafana/grafana.
+      - type: file_contains
+        path: compose.observability.yaml
+        pattern: "image:\\s*[\"']?grafana/loki"
+        message: Es fehlt der Dienst mit dem Image grafana/loki.
+      - type: file_contains
+        path: compose.observability.yaml
+        pattern: "\\./prometheus/prometheus\\.yml:/etc/prometheus/prometheus\\.yml"
+        message: Binde ./prometheus/prometheus.yml nach /etc/prometheus/prometheus.yml ein.
+      - type: file_contains
+        path: compose.observability.yaml
+        pattern: "\\./prometheus/rules:/etc/prometheus/rules"
+        message: Binde ./prometheus/rules nach /etc/prometheus/rules ein, sonst findet Prometheus die Alarmregeln nicht.
+      - type: file_contains
+        path: compose.observability.yaml
+        pattern: "\\./grafana/provisioning:/etc/grafana/provisioning"
+        message: Binde ./grafana/provisioning nach /etc/grafana/provisioning ein.
+      - type: file_contains
+        path: compose.observability.yaml
+        pattern: "[\"']?3000:3000[\"']?"
+        message: Grafana braucht die Port-Freigabe 3000:3000.
+    solution: |
+      ```yaml
+      services:
+        prometheus:
+          image: prom/prometheus
+          ports:
+            - "9090:9090"
+          volumes:
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+            - ./prometheus/rules:/etc/prometheus/rules:ro
+        grafana:
+          image: grafana/grafana
+          ports:
+            - "3000:3000"
+          volumes:
+            - ./grafana/provisioning:/etc/grafana/provisioning:ro
+            - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+        loki:
+          image: grafana/loki
+          ports:
+            - "3100:3100"
+      ```
+    solve: |
+      cat > compose.observability.yaml <<'YMLEOF'
+      services:
+        prometheus:
+          image: prom/prometheus
+          ports:
+            - "9090:9090"
+          volumes:
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+            - ./prometheus/rules:/etc/prometheus/rules:ro
+        grafana:
+          image: grafana/grafana
+          ports:
+            - "3000:3000"
+          volumes:
+            - ./grafana/provisioning:/etc/grafana/provisioning:ro
+            - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+        loki:
+          image: grafana/loki
+          ports:
+            - "3100:3100"
+      YMLEOF
+
+  - id: postmortem-vorlage
+    title: Eine Postmortem-Vorlage für das Team
+    description: |
+      Damit nach dem nächsten Incident niemand bei null anfängt, legst du `docs/postmortem-vorlage.md` an.
+      Sie braucht diese Überschriften der zweiten Ebene (`##`):
+
+      `Zusammenfassung`, `Auswirkung`, `Zeitleiste`, `Ursachen`, `Was gut lief`, `Was schlecht lief` und
+      `Folgeaufgaben`.
+
+      Unter `Folgeaufgaben` steht eine Markdown-Tabelle mit den Spalten `Aufgabe`, `Verantwortlich` und
+      `Termin`. Füge außerdem einen Hinweis ein, dass das Postmortem **schuldfrei** ist.
+    checklist:
+      - Alle sieben Abschnitte vorhanden
+      - Folgeaufgaben-Tabelle mit Verantwortlich und Termin
+      - Hinweis auf die schuldfreie Haltung
+    hints:
+      - Die Lektion „Incidents führen und Postmortems schreiben“ zeigt die Gliederung.
+      - "Tabellenkopf: `| Aufgabe | Verantwortlich | Termin |` und darunter `|---|---|---|`."
+    checks:
+      - type: command
+        run: for h in Zusammenfassung Auswirkung Zeitleiste Ursachen "Was gut lief" "Was schlecht lief" Folgeaufgaben; do grep -qE "^## +$h\s*$" docs/postmortem-vorlage.md || echo "fehlt $h"; done
+        stdout_equals: ""
+        message: In docs/postmortem-vorlage.md fehlen Abschnitte. Benötigt werden die ##-Überschriften Zusammenfassung, Auswirkung, Zeitleiste, Ursachen, Was gut lief, Was schlecht lief und Folgeaufgaben.
+      - type: file_contains
+        path: docs/postmortem-vorlage.md
+        pattern: "^\\|\\s*Aufgabe\\s*\\|\\s*Verantwortlich\\s*\\|\\s*Termin\\s*\\|"
+        message: Unter Folgeaufgaben fehlt die Tabelle mit den Spalten Aufgabe, Verantwortlich und Termin.
+      - type: file_contains
+        path: docs/postmortem-vorlage.md
+        pattern: "[Ss]chuldfrei|[Bb]lameless"
+        message: Füge einen Hinweis ein, dass das Postmortem schuldfrei (blameless) ist.
+    solution: |
+      ```markdown
+      # Postmortem: <Titel> am <Datum>
+
+      > Dieses Postmortem ist schuldfrei: Wir suchen Ursachen in Systemen und Abläufen, nicht bei Personen.
+
+      ## Zusammenfassung
+      ## Auswirkung
+      ## Zeitleiste
+      ## Ursachen
+      ## Was gut lief
+      ## Was schlecht lief
+      ## Folgeaufgaben
+
+      | Aufgabe | Verantwortlich | Termin |
+      |---|---|---|
+      | | | |
+      ```
+    solve: |
+      mkdir -p docs
+      cat > docs/postmortem-vorlage.md <<'MDEOF'
+      # Postmortem: <Titel> am <Datum>
+
+      > Dieses Postmortem ist schuldfrei: Wir suchen Ursachen in Systemen und Abläufen, nicht bei Personen.
+
+      ## Zusammenfassung
+
+      Zwei bis drei Sätze: Was ist passiert, wie lange, wie wurde es behoben?
+
+      ## Auswirkung
+
+      Betroffene Nutzer:innen, Dauer, verbrauchtes Fehlerbudget.
+
+      ## Zeitleiste
+
+      - hh:mm – Ereignis
+
+      ## Ursachen
+
+      Auslöser und beitragende Faktoren (mehrmals „Warum?“ fragen).
+
+      ## Was gut lief
+
+      ## Was schlecht lief
+
+      ## Folgeaufgaben
+
+      | Aufgabe | Verantwortlich | Termin |
+      |---|---|---|
+      | | | |
+      MDEOF

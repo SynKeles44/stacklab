@@ -1,0 +1,36 @@
+title: Observability
+subtitle: Logs, Metriken, Traces, Grafana, Loki und Alerting – sehen, was deine App in Produktion wirklich tut
+description: >
+  Deine Laravel-App ist live. Und dann meldet jemand: „Der Checkout ist heute irgendwie langsam.“ Ohne
+  gute Beobachtbarkeit stocherst du jetzt im Nebel. Mit ihr öffnest du ein Dashboard, siehst die
+  Fehlerquote steigen, springst zum passenden Trace und liest die eine Logzeile, die den Fehler erklärt.
+
+
+  Dieser Kurs bringt dir das Handwerk dahinter bei: strukturiertes Logging mit Korrelations-IDs,
+  Logging-Kanäle in Laravel, Metriken nach der RED- und USE-Methode, das Prometheus-Format, Dashboards in
+  Grafana, Logs in Loki mit LogQL, Tracing mit OpenTelemetry und schließlich Alerting mit SLOs und
+  Fehlerbudgets – inklusive Incident-Ablauf und Postmortem. Im Übungs-Terminal schreibst und prüfst du
+  echte Konfigurationen, wertest JSON-Logs und Metriken mit `jq` und `awk` aus und rechnest SLOs nach.
+  Den kompletten Stack startest du anschließend auf deinem eigenen Rechner. Am Ende steht ein
+  **Observability-Kit**, das du in dein nächstes Projekt mitnehmen kannst.
+category: infrastruktur
+level: fortgeschritten
+icon: activity
+color: "#f59e0b"
+estimated_hours: 5
+workspace_dir: observability
+prerequisites: [laravel, docker, projekt-live-stellen]
+learning_goals:
+  - Du erklärst den Unterschied zwischen Monitoring und Observability und wann du Logs, Metriken oder Traces brauchst.
+  - Du schreibst strukturierte JSON-Logs mit Kontext und Korrelations-IDs und weißt, was niemals ins Log gehört.
+  - Du konfigurierst Logging-Kanäle in Laravel, inklusive JSON-Ausgabe auf stderr für Container.
+  - Du wählst den passenden Metrik-Typ (Counter, Gauge, Histogramm) und misst Dienste nach RED und Ressourcen nach USE.
+  - Du liest und schreibst das Prometheus-Textformat, konfigurierst Scraping und baust Grafana-Dashboards mit PromQL.
+  - Du durchsuchst Logs in Loki mit LogQL und verstehst Spans, Traces und Kontext-Weitergabe mit OpenTelemetry.
+  - Du definierst SLIs und SLOs, rechnest Fehlerbudgets aus und schreibst symptombasierte Alarme ohne Alarmmüdigkeit.
+  - Du führst einen Incident strukturiert durch und schreibst ein schuldfreies Postmortem.
+references:
+  - JSON-Logs auf stderr mit Request-ID-Middleware, wie sie in containerisierten Laravel-Projekten üblich sind
+  - Grafana-Dashboards nach der RED-Methode pro Dienst, die das Team im Incident als Startpunkt nutzt
+  - SLO-basierte Alarme mit mehreren Zeitfenstern statt Dutzender CPU-Schwellenwerte
+  - Schuldfreie Postmortems mit konkreten, terminierten Folgeaufgaben
