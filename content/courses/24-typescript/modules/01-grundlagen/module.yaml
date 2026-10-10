@@ -1,0 +1,137 @@
+title: Grundlagen und Werkzeuge
+description: Warum TypeScript, wie du tsc und eine strenge tsconfig.json einsetzt und welche Typen du täglich brauchst.
+exercise:
+  id: modul-uebung-strenge-regeln
+  type: terminal
+  title: Ein Projekt auf strenge Regeln umstellen
+  description: |
+    Im Ordner `strenge-regeln` liegt ein kleines Projekt zur Benutzerverwaltung. Jemand hat die
+    `tsconfig.json` gerade auf moderne, strenge Einstellungen umgestellt – jetzt meldet `tsc` lauter
+    Fehler. Deine Aufgabe: Mach den Code fit für die neuen Regeln, **ohne** die tsconfig.json zu ändern.
+
+    1. Wechsle in den Ordner und führe `npx tsc --noEmit` aus. Lies jede Meldung.
+    2. `src/roles.ts` nutzt ein `enum`, das `erasableSyntaxOnly` verbietet. Ersetze es durch einen
+       Union-Typ: `export type Role = "admin" | "editor";` – und passe die Stellen an, die `Role.Admin`
+       benutzen.
+    3. Ein Import holt nur noch einen Typ – markiere ihn mit `import type`.
+    4. Gib dem Parameter von `displayName` einen Typ.
+    5. Behandle die Fälle, in denen etwas `undefined` sein kann: Gibt es keinen Admin, liefert
+       `firstAdmin` den Text `niemand`. Hat ein User keine E-Mail, liefert `domain` den Text `unbekannt`.
+    6. Prüfe mit `npx tsc --noEmit` und starte `node src/main.ts`. Die Ausgabe soll lauten:
+
+       ```text
+       Ada: example.com
+       Grace: unbekannt
+       Admin: Ada
+       Admin: niemand
+       ```
+
+    Benutze kein `any` und keine `// @ts-ignore`-Kommentare. Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: strenge-regeln
+  setup: |
+    npm init -y >/dev/null
+    npm pkg set type=module
+    npm install --save-dev --no-audit --no-fund typescript@7.0.2 >/dev/null
+    cat > tsconfig.json <<'JSON'
+    {
+      "compilerOptions": {
+        "target": "es2024",
+        "module": "nodenext",
+        "strict": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "erasableSyntaxOnly": true,
+        "noUncheckedIndexedAccess": true,
+        "skipLibCheck": true
+      },
+      "include": ["src"]
+    }
+    JSON
+    sha256sum tsconfig.json > .tsconfig.sha256
+    mkdir -p src
+    cat > src/roles.ts <<'TS'
+    export enum Role {
+      Admin = "admin",
+      Editor = "editor",
+    }
+    TS
+    cat > src/users.ts <<'TS'
+    import { Role } from "./roles.ts";
+
+    export type User = { name: string; role: Role; email?: string };
+
+    export function displayName(user) {
+      return user.name.trim();
+    }
+
+    export function firstAdmin(users: User[]): string {
+      const admins = users.filter((user) => user.role === Role.Admin);
+      return admins[0].name;
+    }
+
+    export function domain(user: User): string {
+      return user.email.split("@")[1];
+    }
+    TS
+    cat > src/main.ts <<'TS'
+    import { displayName, domain, firstAdmin } from "./users.ts";
+    import type { User } from "./users.ts";
+
+    const users: User[] = [
+      { name: "Ada", role: "admin", email: "ada@example.com" },
+      { name: "Grace", role: "editor" },
+    ];
+
+    for (const user of users) {
+      console.log(`${displayName(user)}: ${domain(user)}`);
+    }
+    console.log(`Admin: ${firstAdmin(users)}`);
+    console.log(`Admin: ${firstAdmin([])}`);
+    TS
+  checks:
+    - type: command
+      run: sha256sum -c --quiet .tsconfig.sha256
+      message: Die tsconfig.json wurde verändert. Setze sie zurück – die Fehler sollen im Code behoben werden.
+    - type: command
+      run: "! grep -rnE 'enum |@ts-ignore|@ts-expect-error|:\\s*any\\b' src"
+      message: In src steckt noch ein enum, ein any oder ein @ts-ignore. Löse die Fehler mit echten Typen.
+    - type: command
+      run: npx tsc --noEmit
+      expect_exit: 0
+      message: "`npx tsc --noEmit` meldet noch Fehler. Arbeite die Meldungen von oben nach unten ab."
+    - type: command
+      run: node src/main.ts
+      stdout_matches: "^Ada: example\\.com\\nGrace: unbekannt\\nAdmin: Ada\\nAdmin: niemand$"
+      message: Die Ausgabe von `node src/main.ts` stimmt noch nicht. Denk an die Ersatztexte „niemand“ und „unbekannt“.
+  hints:
+    - "Die Fehler TS1294 (enum), TS1484 (Typ-Import), TS7006 (implizites any) sowie TS2532 und TS18048 (möglicherweise undefined) führen dich durch die Aufgabe."
+    - "Nach dem Umbau ist `Role` nur noch ein Typ: `import type { Role } from \"./roles.ts\";` und statt `Role.Admin` vergleichst du mit `\"admin\"`."
+    - "Optional Chaining mit Ersatzwert: `admins[0]?.name ?? \"niemand\"` und `user.email?.split(\"@\")[1] ?? \"unbekannt\"`."
+  solution: |
+    `src/roles.ts`:
+
+    ```ts
+    export type Role = "admin" | "editor";
+    ```
+
+    `src/users.ts`:
+
+    ```ts
+    import type { Role } from "./roles.ts";
+
+    export type User = { name: string; role: Role; email?: string };
+
+    export function displayName(user: User): string {
+      return user.name.trim();
+    }
+
+    export function firstAdmin(users: User[]): string {
+      const admins = users.filter((user) => user.role === "admin");
+      return admins[0]?.name ?? "niemand";
+    }
+
+    export function domain(user: User): string {
+      return user.email?.split("@")[1] ?? "unbekannt";
+    }
+    ```

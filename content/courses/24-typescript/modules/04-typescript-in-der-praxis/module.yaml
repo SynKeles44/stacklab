@@ -1,0 +1,188 @@
+title: TypeScript in der Praxis
+description: Fremden JavaScript-Code mit Deklarationsdateien typisieren und Daten von außen mit Zod zur Laufzeit prüfen.
+exercise:
+  id: modul-uebung-bestellimport
+  type: terminal
+  title: Bestellungen sicher importieren
+  description: |
+    Im Ordner `bestellimport` soll ein Import für Bestellungen entstehen, die als JSON von einem
+    Partner-System kommen. Dafür gibt es zwei Bausteine: die alte, untypisierte Bibliothek
+    `legacy/currency.js` und Zod 4 (bereits installiert). Die Tests in `src/orders.test.ts` sind fertig.
+
+    1. Schreibe `legacy/currency.d.ts` für `legacy/currency.js`: `formatCents(cents, currency?)` liefert
+       einen Text, `SUPPORTED_CURRENCIES` ist eine Liste von Texten.
+    2. Schreibe `src/orders.ts` mit diesen Exporten:
+       - `OrderSchema`: `id` (Text, mindestens 1 Zeichen), `customerEmail` (E-Mail), `currency`
+         (`"EUR"`, `"USD"` oder `"CHF"`) und `items` – mindestens ein Eintrag mit `sku` (Text),
+         `quantity` (ganze Zahl größer 0) und `priceCents` (ganze Zahl ab 0).
+       - `type Order`, abgeleitet aus dem Schema.
+       - `parseOrders(input: unknown): Order[]` – prüft eine Liste von Bestellungen und wirft bei Fehlern.
+       - `orderTotalCents(order: Order): number` – Summe aus Menge mal Preis.
+       - `formatOrder(order: Order): string` – z. B. `A-1: 12.50 EUR`, mit `formatCents` aus der
+         Bibliothek.
+    3. `npx tsc --noEmit` und `node --test` müssen erfolgreich sein. Ändere weder die Tests noch
+       `legacy/currency.js`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** (die Installation dauert einige Sekunden).
+  workdir: bestellimport
+  setup: |
+    npm init -y >/dev/null
+    npm pkg set type=module
+    npm install --save-dev --no-audit --no-fund typescript@7.0.2 @types/node@24 >/dev/null
+    npm install --no-audit --no-fund zod@4.6.5 >/dev/null
+    cat > tsconfig.json <<'JSON'
+    {
+      "compilerOptions": {
+        "target": "es2024",
+        "module": "nodenext",
+        "strict": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "erasableSyntaxOnly": true,
+        "noUncheckedIndexedAccess": true,
+        "types": ["node"],
+        "skipLibCheck": true
+      },
+      "include": ["src"]
+    }
+    JSON
+    mkdir -p src legacy
+    cat > legacy/currency.js <<'JS'
+    export const SUPPORTED_CURRENCIES = ["EUR", "USD", "CHF"];
+
+    export function formatCents(cents, currency = "EUR") {
+      return `${(cents / 100).toFixed(2)} ${currency}`;
+    }
+    JS
+    printf 'import * as z from "zod";\nimport { formatCents } from "../legacy/currency.js";\n\n// Schreibe hier OrderSchema, Order, parseOrders, orderTotalCents und formatOrder.\n' > src/orders.ts
+    cat > src/orders.test.ts <<'TS'
+    import { test } from "node:test";
+    import assert from "node:assert/strict";
+    import { formatCents, SUPPORTED_CURRENCIES } from "../legacy/currency.js";
+    import { formatOrder, orderTotalCents, parseOrders } from "./orders.ts";
+    import type { Order } from "./orders.ts";
+
+    const valid = [
+      {
+        id: "A-1",
+        customerEmail: "kunde@example.com",
+        currency: "EUR",
+        items: [
+          { sku: "TEE-01", quantity: 2, priceCents: 350 },
+          { sku: "MUG-02", quantity: 1, priceCents: 550 },
+        ],
+      },
+      { id: "B-7", customerEmail: "b@example.org", currency: "CHF", items: [{ sku: "X", quantity: 3, priceCents: 0 }] },
+    ];
+
+    test("gültige Bestellungen werden geparst", () => {
+      const orders: Order[] = parseOrders(valid);
+      assert.equal(orders.length, 2);
+      assert.equal(orders[0]?.items[1]?.sku, "MUG-02");
+    });
+
+    test("Summe und Formatierung", () => {
+      const [first, second] = parseOrders(valid);
+      assert.ok(first && second);
+      assert.equal(orderTotalCents(first), 1250);
+      assert.equal(formatOrder(first), "A-1: 12.50 EUR");
+      assert.equal(formatOrder(second), "B-7: 0.00 CHF");
+    });
+
+    test("ungültige Bestellungen werden abgelehnt", () => {
+      const broken = (patch: object) => [{ ...valid[0], ...patch }];
+      assert.throws(() => parseOrders(broken({ customerEmail: "kein-at" })));
+      assert.throws(() => parseOrders(broken({ currency: "GBP" })));
+      assert.throws(() => parseOrders(broken({ items: [] })));
+      assert.throws(() => parseOrders(broken({ items: [{ sku: "X", quantity: 0, priceCents: 100 }] })));
+      assert.throws(() => parseOrders(broken({ items: [{ sku: "X", quantity: 1, priceCents: 9.99 }] })));
+      assert.throws(() => parseOrders({ id: "keine Liste" }));
+    });
+
+    test("die Bibliothek ist typisiert nutzbar", () => {
+      const text: string = formatCents(1999);
+      const list: string[] = SUPPORTED_CURRENCIES;
+      assert.equal(text, "19.99 EUR");
+      assert.equal(list.length, 3);
+    });
+
+    // @ts-expect-error – formatCents erwartet Cent als Zahl
+    formatCents("1999");
+    // @ts-expect-error – GBP ist keine erlaubte Währung
+    const gbp: Order["currency"] = "GBP";
+    // @ts-expect-error – items ist eine Liste
+    const singleItem: Order["items"] = { sku: "X", quantity: 1, priceCents: 1 };
+
+    export { gbp, singleItem };
+    TS
+    sha256sum src/orders.test.ts legacy/currency.js > .original.sha256
+  checks:
+    - type: command
+      run: sha256sum -c --quiet .original.sha256
+      message: Die Tests oder legacy/currency.js wurden verändert. Stelle sie wieder her – ändern sollst du nur deine eigenen Dateien.
+    - type: file_exists
+      path: legacy/currency.d.ts
+      message: Die Deklarationsdatei legacy/currency.d.ts fehlt noch.
+    - type: file_contains
+      path: src/orders.ts
+      pattern: "z\\.infer<typeof OrderSchema>"
+      message: "Leite den Typ mit `export type Order = z.infer<typeof OrderSchema>;` aus dem Schema ab."
+    - type: command
+      run: "! grep -nE '\\bany\\b|@ts-ignore' src/orders.ts legacy/currency.d.ts"
+      message: In deinen Dateien steht any oder @ts-ignore. Beschreibe die Typen genau.
+    - type: command
+      run: npx tsc --noEmit
+      expect_exit: 0
+      message: "`npx tsc --noEmit` meldet noch Fehler. Fehlt ein Export oder ist eine Deklaration zu großzügig?"
+    - type: command
+      run: node --test
+      expect_exit: 0
+      message: "`node --test` meldet fehlgeschlagene Tests. Welche Regel im Schema fehlt noch?"
+  hints:
+    - "`legacy/currency.d.ts`: `export declare const SUPPORTED_CURRENCIES: string[];` und `export declare function formatCents(cents: number, currency?: string): string;`"
+    - "Positionen: `z.array(z.object({ sku: z.string(), quantity: z.number().int().positive(), priceCents: z.number().int().nonnegative() })).min(1)`."
+    - "`parseOrders` prüft mit `z.array(OrderSchema).parse(input)`. Die Summe bildest du mit `reduce`."
+  solution: |
+    `legacy/currency.d.ts`:
+
+    ```ts
+    export declare const SUPPORTED_CURRENCIES: string[];
+    export declare function formatCents(cents: number, currency?: string): string;
+    ```
+
+    `src/orders.ts`:
+
+    ```ts
+    import * as z from "zod";
+    import { formatCents } from "../legacy/currency.js";
+
+    export const OrderSchema = z.object({
+      id: z.string().min(1),
+      customerEmail: z.email(),
+      currency: z.enum(["EUR", "USD", "CHF"]),
+      items: z
+        .array(
+          z.object({
+            sku: z.string(),
+            quantity: z.number().int().positive(),
+            priceCents: z.number().int().nonnegative(),
+          }),
+        )
+        .min(1),
+    });
+
+    export type Order = z.infer<typeof OrderSchema>;
+
+    export function parseOrders(input: unknown): Order[] {
+      return z.array(OrderSchema).parse(input);
+    }
+
+    export function orderTotalCents(order: Order): number {
+      return order.items.reduce((sum, item) => sum + item.quantity * item.priceCents, 0);
+    }
+
+    export function formatOrder(order: Order): string {
+      return `${order.id}: ${formatCents(orderTotalCents(order), order.currency)}`;
+    }
+    ```

@@ -1,0 +1,847 @@
+title: Ein Lagermodul nach striktem TypeScript migrieren
+description: |
+  Ein kleiner Online-Shop verwaltet seinen Lagerbestand mit einem JavaScript-Modul. Es funktioniert –
+  aber niemand traut sich, es anzufassen: Welche Felder hat ein Produkt? Was liefert `findProduct`, wenn
+  es nichts findet? Was passiert, wenn die JSON-Datei kaputt ist? In diesem Projekt machst du daraus
+  Schritt für Schritt ein Modul in **striktem TypeScript** – genau so, wie Teams große Codebasen migrieren:
+  erst die Werkzeuge, dann die Typen, dann Datei für Datei, ohne dass das Programm zwischendurch kaputtgeht.
+
+  Alles passiert im Ordner `lager` in deinem TypeScript-Workspace. Klicke zuerst auf
+  **Projekt vorbereiten**: Dann liegen dort eine `package.json`, die Produktdaten in `data/products.json`
+  und die beiden JavaScript-Dateien `src/inventory.js` und `src/main.js`. Öffne das Übungs-Terminal und
+  wechsle mit `cd lager` hinein. Probiere zuerst `npm start` aus – so sieht die Ausgabe aus, die am Ende
+  immer noch (und um zwei Zeilen erweitert) herauskommen soll.
+
+  Die Schritte bauen aufeinander auf. Lösche nichts, was ein früherer Schritt angelegt hat, und benutze
+  nirgends `any`, `@ts-ignore` oder `@ts-expect-error` in deinem Code.
+goal: >
+  Ein Projekt `lager` ohne eine einzige JavaScript-Datei in `src`: Typen in `src/types.ts`, das typisierte
+  Lagermodul `src/inventory.ts` mit einem `Result`-Typ für Verkäufe, eine generische Hilfsfunktion in
+  `src/collections.ts`, eine Zod-Validierung in `src/schema.ts` und ein Einstiegspunkt `src/main.ts`, den
+  `npm run check` fehlerfrei prüft und `npm start` direkt mit Node.js ausführt.
+workdir: lager
+setup: |
+  npm init -y >/dev/null
+  npm pkg set name=lager type=module scripts.start="node src/main.js"
+  npm pkg delete scripts.test
+  mkdir -p src data
+  cat > data/products.json <<'JSON'
+  [
+    { "id": "p1", "name": "TypeScript-Handbuch", "priceCents": 2990, "stock": 4, "category": "buch" },
+    { "id": "p2", "name": "Mechanische Tastatur", "priceCents": 8900, "stock": 2, "category": "technik" },
+    { "id": "p3", "name": "Brettspiel Kompass", "priceCents": 3450, "stock": 0, "category": "spiel" },
+    { "id": "p4", "name": "USB-C-Kabel", "priceCents": 990, "stock": 10, "category": "technik" }
+  ]
+  JSON
+  cat > src/inventory.js <<'JS'
+  export function totalValueCents(products) {
+    return products.reduce((sum, product) => sum + product.priceCents * product.stock, 0);
+  }
+
+  export function findProduct(products, id) {
+    return products.find((product) => product.id === id);
+  }
+
+  export function inStock(products) {
+    return products.filter((product) => product.stock > 0);
+  }
+
+  export function restock(product, amount) {
+    if (amount <= 0) {
+      throw new Error("amount must be positive");
+    }
+    return { ...product, stock: product.stock + amount };
+  }
+
+  export function formatPrice(cents) {
+    return (cents / 100).toFixed(2).replace(".", ",") + " €";
+  }
+  JS
+  cat > src/main.js <<'JS'
+  import { readFileSync } from "node:fs";
+  import { findProduct, formatPrice, inStock, restock, totalValueCents } from "./inventory.js";
+
+  const products = JSON.parse(readFileSync(new URL("../data/products.json", import.meta.url), "utf8"));
+
+  console.log(`Lagerwert: ${formatPrice(totalValueCents(products))}`);
+  console.log(`Verfügbar: ${inStock(products).map((product) => product.name).join(", ")}`);
+  const game = findProduct(products, "p3");
+  console.log(`Nachbestellt: ${game.name} -> ${restock(game, 5).stock}`);
+  JS
+steps:
+  - id: typescript-einrichten
+    title: TypeScript ins Projekt holen
+    description: |
+      Eine Migration beginnt nie mit dem Umbenennen von Dateien, sondern mit dem Werkzeug. Du installierst
+      TypeScript als Entwicklungsabhängigkeit und schreibst eine strenge `tsconfig.json`. Weil noch alles
+      JavaScript ist, erlaubst du mit `allowJs` vorübergehend auch `.js`-Dateien – ohne sie zu prüfen.
+
+      1. Installiere TypeScript 7 als devDependency: `npm install --save-dev typescript@7.0.2`.
+      2. Lege `tsconfig.json` an (reines JSON, ohne Kommentare) mit `target` `es2024`, `module`
+         `nodenext`, `strict`, `noEmit`, `allowJs`, `allowImportingTsExtensions`, `verbatimModuleSyntax`,
+         `erasableSyntaxOnly`, `noUncheckedIndexedAccess` und `skipLibCheck` (alle Schalter auf `true`) sowie
+         `"include": ["src"]`.
+      3. Lege in der `package.json` das Skript `check` mit dem Befehl `tsc --noEmit` an.
+      4. `npm run check` muss fehlerfrei durchlaufen, `npm start` funktioniert unverändert.
+    checklist:
+      - typescript@7 steht unter devDependencies
+      - tsconfig.json mit strict, noEmit und allowJs
+      - Skript check führt tsc --noEmit aus und läuft fehlerfrei
+    hints:
+      - "`npm install --save-dev typescript@7.0.2` trägt das Paket unter `devDependencies` ein."
+      - "`npm pkg set scripts.check=\"tsc --noEmit\"` legt das Skript an, ohne dass du die package.json öffnen musst."
+      - Ohne `allowJs` findet `tsc` in `src` keine Eingabedateien und bricht mit TS18003 ab.
+    checks:
+      - type: command
+        run: jq -r '.devDependencies.typescript // ""' package.json
+        stdout_matches: "7\\."
+        message: TypeScript 7 fehlt in den devDependencies. Installiere es mit `npm install --save-dev typescript@7.0.2`.
+      - type: command
+        run: jq -r '.compilerOptions.strict, .compilerOptions.noEmit, .compilerOptions.allowJs' tsconfig.json | tr '\n' ' '
+        stdout_matches: "^true true true\\s*$"
+        message: In der tsconfig.json sollen strict, noEmit und allowJs auf true stehen (reines JSON ohne Kommentare).
+      - type: command
+        run: jq -r '.scripts.check // ""' package.json
+        stdout_equals: tsc --noEmit
+        message: Lege in der package.json das Skript check mit dem Befehl `tsc --noEmit` an.
+      - type: command
+        run: npm run check --silent
+        expect_exit: 0
+        message: "`npm run check` meldet Fehler. Fehlt `allowJs` oder `\"include\": [\"src\"]`?"
+    solution: |
+      ```bash
+      npm install --save-dev typescript@7.0.2
+      npm pkg set scripts.check="tsc --noEmit"
+      ```
+
+      `tsconfig.json`:
+
+      ```json
+      {
+        "compilerOptions": {
+          "target": "es2024",
+          "module": "nodenext",
+          "strict": true,
+          "noEmit": true,
+          "allowJs": true,
+          "allowImportingTsExtensions": true,
+          "verbatimModuleSyntax": true,
+          "erasableSyntaxOnly": true,
+          "noUncheckedIndexedAccess": true,
+          "skipLibCheck": true
+        },
+        "include": ["src"]
+      }
+      ```
+    solve: |
+      npm install --save-dev --no-audit --no-fund typescript@7.0.2 >/dev/null
+      npm pkg set scripts.check="tsc --noEmit"
+      cat > tsconfig.json <<'JSON'
+      {
+        "compilerOptions": {
+          "target": "es2024",
+          "module": "nodenext",
+          "strict": true,
+          "noEmit": true,
+          "allowJs": true,
+          "allowImportingTsExtensions": true,
+          "verbatimModuleSyntax": true,
+          "erasableSyntaxOnly": true,
+          "noUncheckedIndexedAccess": true,
+          "skipLibCheck": true
+        },
+        "include": ["src"]
+      }
+      JSON
+      npm run check --silent
+
+  - id: typen-definieren
+    title: Die Datenform als Typ beschreiben
+    description: |
+      Bevor du eine Funktion typisierst, schreibst du auf, wie ein Produkt aussieht. Sieh dir dafür
+      `data/products.json` an. Die Kategorien sollen nicht doppelt gepflegt werden: Eine Liste existiert
+      zur Laufzeit, der Typ wird daraus abgeleitet.
+
+      1. Lege `src/types.ts` an.
+      2. Exportiere die Konstante `CATEGORIES` mit den Werten `"buch"`, `"technik"` und `"spiel"` (in dieser
+         Reihenfolge) und mache sie mit `as const` unveränderlich.
+      3. Exportiere den Typ `Category`, abgeleitet aus `CATEGORIES` – nicht abgetippt.
+      4. Exportiere `interface Product` mit `id` und `name` (Text), `priceCents` und `stock` (Zahl) sowie
+         `category` vom Typ `Category`.
+    checklist:
+      - CATEGORIES mit as const exportiert
+      - Category aus CATEGORIES abgeleitet
+      - interface Product mit allen fünf Feldern
+    hints:
+      - "`export const CATEGORIES = [\"buch\", \"technik\", \"spiel\"] as const;`"
+      - "Den Typ der Elemente liefert Indexed Access: `(typeof CATEGORIES)[number]`."
+      - Alle Felder von Product sind Pflichtfelder – kein Fragezeichen.
+    checks:
+      - type: file_contains
+        path: src/types.ts
+        pattern: "as const"
+        message: Lege CATEGORIES in src/types.ts mit `as const` an.
+      - type: file_contains
+        path: src/types.ts
+        pattern: "typeof CATEGORIES"
+        message: Leite Category mit `typeof CATEGORIES` aus der Liste ab, statt die Werte abzutippen.
+      - type: command
+        run: |
+          node --input-type=module -e 'import { CATEGORIES } from "./src/types.ts"; console.log(CATEGORIES.join(","));'
+        stdout_equals: buch,technik,spiel
+        message: CATEGORIES soll zur Laufzeit genau buch, technik und spiel enthalten – in dieser Reihenfolge.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT
+          cat > "$d/check.ts" <<'TS'
+          import type { Category, Product } from "../src/types.ts";
+          const ok: Product = { id: "a", name: "A", priceCents: 100, stock: 0, category: "buch" };
+          const category: Category = "spiel";
+          // @ts-expect-error – essen ist keine Kategorie
+          const wrongCategory: Category = "essen";
+          // @ts-expect-error – category fehlt
+          const missing: Product = { id: "a", name: "A", priceCents: 100, stock: 0 };
+          // @ts-expect-error – stock ist eine Zahl
+          const wrongStock: Product = { id: "a", name: "A", priceCents: 100, stock: "3", category: "buch" };
+          export { ok, category, wrongCategory, missing, wrongStock };
+          TS
+          npx tsc --noEmit --ignoreConfig --strict --target es2024 --module nodenext --allowImportingTsExtensions --verbatimModuleSyntax --skipLibCheck "$d/check.ts"
+        expect_exit: 0
+        message: Product oder Category passen noch nicht. Hat Product alle fünf Pflichtfelder mit den richtigen Typen, und erlaubt Category nur die drei Kategorien?
+      - type: command
+        run: npm run check --silent
+        expect_exit: 0
+        message: "`npm run check` meldet Fehler in src/types.ts."
+    solution: |
+      `src/types.ts`:
+
+      ```ts
+      export const CATEGORIES = ["buch", "technik", "spiel"] as const;
+
+      export type Category = (typeof CATEGORIES)[number];
+
+      export interface Product {
+        id: string;
+        name: string;
+        priceCents: number;
+        stock: number;
+        category: Category;
+      }
+      ```
+    solve: |
+      cat > src/types.ts <<'TS'
+      export const CATEGORIES = ["buch", "technik", "spiel"] as const;
+
+      export type Category = (typeof CATEGORIES)[number];
+
+      export interface Product {
+        id: string;
+        name: string;
+        priceCents: number;
+        stock: number;
+        category: Category;
+      }
+      TS
+
+  - id: modul-migrieren
+    title: Das Lagermodul migrieren
+    description: |
+      Jetzt kommt die erste echte Datei dran. Du benennst `src/inventory.js` in `src/inventory.ts` um und
+      gibst jeder Funktion Parameter- und Rückgabetypen. `src/main.js` bleibt vorerst JavaScript – es
+      importiert nur die neue Datei.
+
+      1. Benenne die Datei um: `mv src/inventory.js src/inventory.ts`.
+      2. Importiere `Product` mit `import type` aus `./types.ts` und typisiere alle fünf Funktionen.
+         `findProduct` liefert ehrlich `Product | undefined`, `restock` gibt ein **neues** Produkt zurück.
+      3. Ändere in `src/main.js` den Import auf `./inventory.ts`.
+      4. `npm run check` ist fehlerfrei, und `npm start` gibt dieselben drei Zeilen aus wie vorher.
+    checklist:
+      - src/inventory.js gibt es nicht mehr, src/inventory.ts ist vollständig typisiert
+      - main.js importiert ./inventory.ts
+      - npm run check und npm start funktionieren
+    hints:
+      - "`strict` meldet jeden untypisierten Parameter als TS7006 – arbeite die Meldungen von oben ab."
+      - "Eine Liste von Produkten nimmst du am besten als `readonly Product[]` entgegen – die Funktionen ändern sie ja nicht."
+      - "`export function findProduct(products: readonly Product[], id: string): Product | undefined`"
+    checks:
+      - type: file_absent
+        path: src/inventory.js
+        message: src/inventory.js gibt es noch. Benenne die Datei in src/inventory.ts um.
+      - type: file_contains
+        path: src/inventory.ts
+        pattern: "import type .*Product.* from \"\\./types\\.ts\""
+        message: "Importiere den Typ mit `import type { Product } from \"./types.ts\";`."
+      - type: command
+        run: "! grep -nE '\\bany\\b|@ts-ignore|@ts-expect-error' src/inventory.ts"
+        message: In src/inventory.ts steht any oder ein @ts-Kommentar. Gib jeder Funktion echte Typen.
+      - type: command
+        run: npm run check --silent
+        expect_exit: 0
+        message: "`npm run check` meldet noch Fehler. Hat jeder Parameter einen Typ?"
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT
+          cat > "$d/check.ts" <<'TS'
+          import { findProduct, formatPrice, restock, totalValueCents } from "../src/inventory.ts";
+          import type { Product } from "../src/types.ts";
+          const products: Product[] = [];
+          // @ts-expect-error – findProduct kann undefined liefern
+          const found: Product = findProduct(products, "p1");
+          const total: number = totalValueCents(products);
+          const text: string = formatPrice(100);
+          // @ts-expect-error – restock braucht ein Produkt
+          restock({ id: "x" }, 2);
+          export { found, total, text };
+          TS
+          npx tsc --noEmit --ignoreConfig --strict --target es2024 --module nodenext --allowImportingTsExtensions --verbatimModuleSyntax --skipLibCheck "$d/check.ts"
+        expect_exit: 0
+        message: Die Signaturen in src/inventory.ts sind noch zu großzügig. Liefert findProduct `Product | undefined` und erwartet restock ein Product?
+      - type: command
+        run: |
+          node --input-type=module -e 'import { restock, totalValueCents } from "./src/inventory.ts"; const p = { id: "a", name: "A", priceCents: 100, stock: 2, category: "buch" }; console.log(totalValueCents([p]), restock(p, 3).stock, p.stock);'
+        stdout_equals: 200 5 2
+        message: Die Funktionen rechnen nicht mehr richtig. restock soll ein neues Produkt liefern und das alte unverändert lassen.
+      - type: command
+        run: npm start --silent
+        stdout_matches: "^Lagerwert: 396,60 €\\nVerfügbar: TypeScript-Handbuch, Mechanische Tastatur, USB-C-Kabel\\nNachbestellt: Brettspiel Kompass -> 5$"
+        message: "`npm start` liefert nicht mehr die ursprüngliche Ausgabe. Importiert src/main.js schon ./inventory.ts?"
+    solution: |
+      `src/inventory.ts`:
+
+      ```ts
+      import type { Product } from "./types.ts";
+
+      export function totalValueCents(products: readonly Product[]): number {
+        return products.reduce((sum, product) => sum + product.priceCents * product.stock, 0);
+      }
+
+      export function findProduct(products: readonly Product[], id: string): Product | undefined {
+        return products.find((product) => product.id === id);
+      }
+
+      export function inStock(products: readonly Product[]): Product[] {
+        return products.filter((product) => product.stock > 0);
+      }
+
+      export function restock(product: Product, amount: number): Product {
+        if (amount <= 0) {
+          throw new Error("amount must be positive");
+        }
+        return { ...product, stock: product.stock + amount };
+      }
+
+      export function formatPrice(cents: number): string {
+        return (cents / 100).toFixed(2).replace(".", ",") + " €";
+      }
+      ```
+
+      In `src/main.js` lautet der Import jetzt `from "./inventory.ts"`.
+    solve: |
+      rm -f src/inventory.js
+      cat > src/inventory.ts <<'TS'
+      import type { Product } from "./types.ts";
+
+      export function totalValueCents(products: readonly Product[]): number {
+        return products.reduce((sum, product) => sum + product.priceCents * product.stock, 0);
+      }
+
+      export function findProduct(products: readonly Product[], id: string): Product | undefined {
+        return products.find((product) => product.id === id);
+      }
+
+      export function inStock(products: readonly Product[]): Product[] {
+        return products.filter((product) => product.stock > 0);
+      }
+
+      export function restock(product: Product, amount: number): Product {
+        if (amount <= 0) {
+          throw new Error("amount must be positive");
+        }
+        return { ...product, stock: product.stock + amount };
+      }
+
+      export function formatPrice(cents: number): string {
+        return (cents / 100).toFixed(2).replace(".", ",") + " €";
+      }
+      TS
+      sed -i 's#"./inventory.js"#"./inventory.ts"#' src/main.js
+
+  - id: ergebnis-typ
+    title: Verkäufe mit einem Result-Typ
+    description: |
+      Ein Verkauf kann scheitern – zu wenig Bestand oder eine unsinnige Menge. Statt eine Exception zu
+      werfen, soll `sell` das Ergebnis als **Discriminated Union** zurückgeben. Wer die Funktion aufruft,
+      muss dann per Narrowing prüfen, ob es geklappt hat – vergessen geht nicht.
+
+      1. Ergänze in `src/types.ts` den generischen Typ
+         `Result<T> = { ok: true; value: T } | { ok: false; error: string }`.
+      2. Schreibe in `src/inventory.ts` die Funktion `sell(product: Product, quantity: number): Result<Product>`:
+         - Ist `quantity` keine positive ganze Zahl, lautet der Fehler `Menge muss eine positive ganze Zahl sein`.
+         - Ist `quantity` größer als der Bestand, lautet der Fehler `Nur 0 auf Lager` (mit dem echten Bestand).
+         - Sonst liefert sie `ok: true` und ein **neues** Produkt mit verringertem Bestand.
+    checklist:
+      - Result<T> als Union mit dem Diskriminator ok
+      - sell liefert für alle drei Fälle das passende Ergebnis
+      - Das übergebene Produkt bleibt unverändert
+    hints:
+      - "`export type Result<T> = { ok: true; value: T } | { ok: false; error: string };`"
+      - "`Number.isInteger(quantity) && quantity > 0` prüft die Menge."
+      - "Erfolg: `return { ok: true, value: { ...product, stock: product.stock - quantity } };`"
+    checks:
+      - type: command
+        run: npm run check --silent
+        expect_exit: 0
+        message: "`npm run check` meldet Fehler. Ist Result exportiert und importiert inventory.ts ihn mit `import type`?"
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT
+          cat > "$d/check.ts" <<'TS'
+          import { sell } from "../src/inventory.ts";
+          import type { Product, Result } from "../src/types.ts";
+          const product: Product = { id: "a", name: "A", priceCents: 100, stock: 3, category: "buch" };
+          const result: Result<Product> = sell(product, 1);
+          // @ts-expect-error – value gibt es erst nach dem Narrowing
+          const early = result.value;
+          if (result.ok) {
+            const stock: number = result.value.stock;
+            // @ts-expect-error – im Erfolgsfall gibt es keinen Fehlertext
+            const noError = result.error;
+            console.log(stock, noError);
+          } else {
+            const message: string = result.error;
+            console.log(message);
+          }
+          export { early };
+          TS
+          npx tsc --noEmit --ignoreConfig --strict --target es2024 --module nodenext --allowImportingTsExtensions --verbatimModuleSyntax --skipLibCheck "$d/check.ts"
+        expect_exit: 0
+        message: "Result ist noch keine Discriminated Union. Die beiden Varianten sollen sich über `ok: true` und `ok: false` unterscheiden."
+      - type: command
+        run: |
+          node --input-type=module -e '
+          import { sell } from "./src/inventory.ts";
+          const p = { id: "a", name: "A", priceCents: 100, stock: 3, category: "buch" };
+          const show = (r) => (r.ok ? "ok " + r.value.stock : "fehler " + r.error);
+          console.log(show(sell(p, 2)));
+          console.log(show(sell(p, 4)));
+          console.log(show(sell(p, 0)));
+          console.log(show(sell(p, 1.5)));
+          console.log(p.stock);
+          '
+        stdout_matches: "^ok 1\\nfehler Nur 3 auf Lager\\nfehler Menge muss eine positive ganze Zahl sein\\nfehler Menge muss eine positive ganze Zahl sein\\n3$"
+        message: sell verhält sich noch nicht wie beschrieben. Prüfe die Fehlertexte, die Mengenprüfung und ob das alte Produkt unverändert bleibt.
+    solution: |
+      In `src/types.ts`:
+
+      ```ts
+      export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+      ```
+
+      In `src/inventory.ts` (Import ergänzen: `import type { Product, Result } from "./types.ts";`):
+
+      ```ts
+      export function sell(product: Product, quantity: number): Result<Product> {
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+          return { ok: false, error: "Menge muss eine positive ganze Zahl sein" };
+        }
+        if (quantity > product.stock) {
+          return { ok: false, error: `Nur ${product.stock} auf Lager` };
+        }
+        return { ok: true, value: { ...product, stock: product.stock - quantity } };
+      }
+      ```
+    solve: |
+      cat >> src/types.ts <<'TS'
+
+      export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+      TS
+      sed -i 's#^import type { Product } from "./types.ts";#import type { Product, Result } from "./types.ts";#' src/inventory.ts
+      cat >> src/inventory.ts <<'TS'
+
+      export function sell(product: Product, quantity: number): Result<Product> {
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+          return { ok: false, error: "Menge muss eine positive ganze Zahl sein" };
+        }
+        if (quantity > product.stock) {
+          return { ok: false, error: `Nur ${product.stock} auf Lager` };
+        }
+        return { ok: true, value: { ...product, stock: product.stock - quantity } };
+      }
+      TS
+
+  - id: generics-und-utility-types
+    title: Generische Helfer und abgeleitete Typen
+    description: |
+      Der Shop will Produkte nach Kategorie gruppieren und einzelne Felder ändern können. Beide Helfer
+      schreibst du so, dass sie aus den vorhandenen Typen abgeleitet sind.
+
+      1. Lege `src/collections.ts` mit der generischen Funktion
+         `groupBy<T, K extends string>(items: readonly T[], getKey: (item: T) => K): Partial<Record<K, T[]>>`
+         an. Sie sammelt die Elemente je Schlüssel in der ursprünglichen Reihenfolge.
+      2. Exportiere in `src/types.ts` den Typ `ProductUpdate`: alle Felder von `Product` **außer** `id`, und
+         alle optional – mit Utility Types, nicht abgetippt.
+      3. Schreibe in `src/inventory.ts` `updateProduct(product: Product, patch: ProductUpdate): Product`. Sie
+         liefert ein neues Produkt; die `id` bleibt immer erhalten.
+    checklist:
+      - groupBy ist generisch und funktioniert für beliebige Elemente
+      - ProductUpdate aus Partial und Omit gebaut
+      - updateProduct ändert Felder, aber nie die id
+    hints:
+      - "`Partial<Record<K, T[]>>` sagt ehrlich: Nicht jeder mögliche Schlüssel muss eine Gruppe haben."
+      - "In der Schleife: `const group = groups[key] ?? [];` dann `group.push(item);` und `groups[key] = group;`."
+      - "`export type ProductUpdate = Partial<Omit<Product, \"id\">>;` und `{ ...product, ...patch, id: product.id }`."
+    checks:
+      - type: file_contains
+        path: src/types.ts
+        pattern: "ProductUpdate\\s*=\\s*Partial<\\s*Omit<\\s*Product"
+        message: "Baue ProductUpdate aus Utility Types: `Partial<Omit<Product, \"id\">>`."
+      - type: command
+        run: npm run check --silent
+        expect_exit: 0
+        message: "`npm run check` meldet Fehler. Sind groupBy, ProductUpdate und updateProduct exportiert und typisiert?"
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); trap 'rm -rf "$d"' EXIT
+          cat > "$d/check.ts" <<'TS'
+          import { groupBy } from "../src/collections.ts";
+          import { updateProduct } from "../src/inventory.ts";
+          import type { Product, ProductUpdate } from "../src/types.ts";
+          const words = groupBy(["apfel", "birne", "aprikose"], (word) => (word.startsWith("a") ? "a" : "b"));
+          const firstA: string[] | undefined = words.a;
+          // @ts-expect-error – c ist kein möglicher Schlüssel
+          const c = words.c;
+          const product: Product = { id: "a", name: "A", priceCents: 100, stock: 3, category: "buch" };
+          const patch: ProductUpdate = { stock: 5 };
+          // @ts-expect-error – die id darf nicht geändert werden
+          const badPatch: ProductUpdate = { id: "b" };
+          const updated: Product = updateProduct(product, patch);
+          export { firstA, c, badPatch, updated };
+          TS
+          npx tsc --noEmit --ignoreConfig --strict --target es2024 --module nodenext --allowImportingTsExtensions --verbatimModuleSyntax --skipLibCheck "$d/check.ts"
+        expect_exit: 0
+        message: Die Typen von groupBy, ProductUpdate oder updateProduct passen noch nicht. Darf ProductUpdate etwa noch eine id enthalten?
+      - type: command
+        run: |
+          node --input-type=module -e '
+          import { groupBy } from "./src/collections.ts";
+          import { updateProduct } from "./src/inventory.ts";
+          const groups = groupBy([1, 2, 3, 4, 5], (n) => (n % 2 === 0 ? "gerade" : "ungerade"));
+          console.log(JSON.stringify(groups));
+          console.log(JSON.stringify(groupBy([], (n) => "x")));
+          const p = { id: "a", name: "A", priceCents: 100, stock: 3, category: "buch" };
+          console.log(JSON.stringify(updateProduct(p, { stock: 9, id: "z" })), p.stock);
+          '
+        stdout_matches: "^\\{\"ungerade\":\\[1,3,5\\],\"gerade\":\\[2,4\\]\\}\\n\\{\\}\\n\\{\"id\":\"a\",\"name\":\"A\",\"priceCents\":100,\"stock\":9,\"category\":\"buch\"\\} 3$"
+        message: groupBy oder updateProduct liefern noch falsche Ergebnisse. Bleibt die Reihenfolge erhalten, und gewinnt bei updateProduct immer die alte id?
+    solution: |
+      `src/collections.ts`:
+
+      ```ts
+      export function groupBy<T, K extends string>(
+        items: readonly T[],
+        getKey: (item: T) => K,
+      ): Partial<Record<K, T[]>> {
+        const groups: Partial<Record<K, T[]>> = {};
+        for (const item of items) {
+          const key = getKey(item);
+          const group = groups[key] ?? [];
+          group.push(item);
+          groups[key] = group;
+        }
+        return groups;
+      }
+      ```
+
+      In `src/types.ts`:
+
+      ```ts
+      export type ProductUpdate = Partial<Omit<Product, "id">>;
+      ```
+
+      In `src/inventory.ts` (Import um `ProductUpdate` ergänzen):
+
+      ```ts
+      export function updateProduct(product: Product, patch: ProductUpdate): Product {
+        return { ...product, ...patch, id: product.id };
+      }
+      ```
+    solve: |
+      cat > src/collections.ts <<'TS'
+      export function groupBy<T, K extends string>(
+        items: readonly T[],
+        getKey: (item: T) => K,
+      ): Partial<Record<K, T[]>> {
+        const groups: Partial<Record<K, T[]>> = {};
+        for (const item of items) {
+          const key = getKey(item);
+          const group = groups[key] ?? [];
+          group.push(item);
+          groups[key] = group;
+        }
+        return groups;
+      }
+      TS
+      cat >> src/types.ts <<'TS'
+
+      export type ProductUpdate = Partial<Omit<Product, "id">>;
+      TS
+      sed -i 's#^import type { Product, Result } from "./types.ts";#import type { Product, ProductUpdate, Result } from "./types.ts";#' src/inventory.ts
+      cat >> src/inventory.ts <<'TS'
+
+      export function updateProduct(product: Product, patch: ProductUpdate): Product {
+        return { ...product, ...patch, id: product.id };
+      }
+      TS
+
+  - id: daten-pruefen
+    title: Die JSON-Daten an der Grenze prüfen
+    description: |
+      Typen helfen nur, wenn die Daten wirklich so aussehen. `JSON.parse` liefert aber, was in der Datei
+      steht – vielleicht einen Preis als Text oder eine unbekannte Kategorie. An dieser Systemgrenze prüfst
+      du die Daten deshalb zur Laufzeit mit Zod.
+
+      1. Installiere Zod 4 als normale Abhängigkeit: `npm install zod@4`.
+      2. Lege `src/schema.ts` an und exportiere `ProductSchema`: `id` und `name` sind Texte mit mindestens
+         einem Zeichen, `priceCents` und `stock` ganze Zahlen ab 0, `category` einer der Werte aus `CATEGORIES`
+         (verwende die Konstante, schreibe die Kategorien nicht ab).
+      3. Exportiere `parseProducts(input: unknown): Product[]`. Sie prüft eine Liste von Produkten und wirft
+         bei ungültigen Daten einen Fehler.
+    checklist:
+      - zod steht unter dependencies
+      - ProductSchema nutzt CATEGORIES
+      - parseProducts akzeptiert gültige und lehnt ungültige Daten ab
+    hints:
+      - "`import * as z from \"zod\";` – dazu `import { CATEGORIES } from \"./types.ts\";` und `import type { Product } from \"./types.ts\";`."
+      - "`z.enum(CATEGORIES)` nimmt die `as const`-Liste direkt entgegen."
+      - "`z.number().int().nonnegative()` und für die Liste `z.array(ProductSchema).parse(input)`."
+    checks:
+      - type: command
+        run: jq -r '.dependencies.zod // ""' package.json
+        stdout_matches: "4\\."
+        message: Zod 4 fehlt unter dependencies. Installiere es mit `npm install zod@4`.
+      - type: file_contains
+        path: src/schema.ts
+        pattern: "z\\.enum\\(\\s*CATEGORIES\\s*\\)"
+        message: "Verwende für die Kategorie `z.enum(CATEGORIES)` – so gibt es die Liste nur einmal."
+      - type: command
+        run: "! grep -nE '\\bany\\b|@ts-ignore|@ts-expect-error' src/schema.ts"
+        message: In src/schema.ts steht any oder ein @ts-Kommentar.
+      - type: command
+        run: npm run check --silent
+        expect_exit: 0
+        message: "`npm run check` meldet Fehler in src/schema.ts. Liefert parseProducts wirklich `Product[]`?"
+      - type: command
+        run: |
+          node --input-type=module -e '
+          import { readFileSync } from "node:fs";
+          import { parseProducts } from "./src/schema.ts";
+          const good = JSON.parse(readFileSync("data/products.json", "utf8"));
+          console.log(parseProducts(good).length);
+          const base = { id: "a", name: "A", priceCents: 100, stock: 1, category: "buch" };
+          const cases = [
+            [{ ...base, priceCents: "100" }],
+            [{ ...base, category: "essen" }],
+            [{ ...base, stock: -1 }],
+            [{ ...base, stock: 1.5 }],
+            [{ ...base, name: "" }],
+            { ...base },
+          ];
+          for (const input of cases) {
+            try { parseProducts(input); console.log("angenommen"); } catch { console.log("abgelehnt"); }
+          }
+          '
+        stdout_matches: "^4\\n(abgelehnt\\n){5}abgelehnt$"
+        message: parseProducts nimmt noch ungültige Daten an. Prüfe Preis, Kategorie, Bestand (ganzzahlig, ab 0), leere Namen und ob überhaupt eine Liste kommt.
+    solution: |
+      ```bash
+      npm install zod@4
+      ```
+
+      `src/schema.ts`:
+
+      ```ts
+      import * as z from "zod";
+      import { CATEGORIES } from "./types.ts";
+      import type { Product } from "./types.ts";
+
+      export const ProductSchema = z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        priceCents: z.number().int().nonnegative(),
+        stock: z.number().int().nonnegative(),
+        category: z.enum(CATEGORIES),
+      });
+
+      export function parseProducts(input: unknown): Product[] {
+        return z.array(ProductSchema).parse(input);
+      }
+      ```
+
+      Das von Zod abgeleitete Objekt passt genau auf `Product` – sonst würde `tsc` die Rückgabe ablehnen.
+    solve: |
+      npm install --no-audit --no-fund zod@4 >/dev/null
+      cat > src/schema.ts <<'TS'
+      import * as z from "zod";
+      import { CATEGORIES } from "./types.ts";
+      import type { Product } from "./types.ts";
+
+      export const ProductSchema = z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        priceCents: z.number().int().nonnegative(),
+        stock: z.number().int().nonnegative(),
+        category: z.enum(CATEGORIES),
+      });
+
+      export function parseProducts(input: unknown): Product[] {
+        return z.array(ProductSchema).parse(input);
+      }
+      TS
+
+  - id: einstieg-migrieren
+    title: Den Einstiegspunkt migrieren und allowJs abschalten
+    description: |
+      Die letzte JavaScript-Datei ist `src/main.js`. Sie liest Dateien mit `node:fs` – dafür braucht
+      TypeScript die Typen von Node.js. In TypeScript 7 bindet `tsc` globale `@types`-Pakete nur ein, wenn du
+      sie unter `types` einträgst.
+
+      1. Installiere die Node-Typen: `npm install --save-dev @types/node@24`.
+      2. Benenne `src/main.js` in `src/main.ts` um. Prüfe das eingelesene JSON mit `parseProducts` und
+         behandle den Fall, dass `findProduct` nichts findet.
+      3. Ergänze am Ende drei Zeilen: Verkaufe 2 Stück von `p1` und 1 Stück von `p3` mit `sell` und gib
+         das Ergebnis aus. Gruppiere die Produkte mit `groupBy` nach Kategorie und gib je Kategorie (in der
+         Reihenfolge von `CATEGORIES`) die Anzahl aus.
+      4. In der `tsconfig.json`: entferne `allowJs` und trage `"types": ["node"]` ein. Ändere das Skript
+         `start` auf `node src/main.ts`.
+      5. `npm run check` ist fehlerfrei und `npm start` gibt genau aus:
+
+         ```text
+         Lagerwert: 396,60 €
+         Verfügbar: TypeScript-Handbuch, Mechanische Tastatur, USB-C-Kabel
+         Nachbestellt: Brettspiel Kompass -> 5
+         Verkauf p1: Bestand jetzt 2
+         Verkauf p3: Nur 0 auf Lager
+         Kategorien: buch 1, technik 2, spiel 1
+         ```
+    checklist:
+      - In src gibt es keine .js-Datei mehr
+      - tsconfig.json ohne allowJs, mit types node
+      - npm start führt src/main.ts aus und liefert alle sechs Zeilen
+    hints:
+      - "Gib dem Ergebnis von `JSON.parse` den Typ `unknown` und reiche es an `parseProducts` weiter."
+      - "Für die Verkäufe: `const result = sell(product, 2);` und dann `result.ok ? \\`Bestand jetzt ${result.value.stock}\\` : result.error`."
+      - "Mit `noUncheckedIndexedAccess` ist `groups[category]` vielleicht `undefined`: `groups[category]?.length ?? 0`."
+    checks:
+      - type: command
+        run: find src -name '*.js' | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: In src liegt noch eine .js-Datei. Benenne src/main.js in src/main.ts um.
+      - type: command
+        run: jq -r '(.compilerOptions.allowJs // false), (.compilerOptions.types // [] | join(","))' tsconfig.json | tr '\n' ' '
+        stdout_matches: "^false node\\s*$"
+        message: "Entferne allowJs aus der tsconfig.json und trage `\"types\": [\"node\"]` ein."
+      - type: command
+        run: jq -r '(.devDependencies["@types/node"] // ""), (.scripts.start // "")' package.json | tr '\n' '|'
+        stdout_matches: "^\\S*24.*\\|node src/main\\.ts\\|$"
+        message: "Installiere @types/node@24 als devDependency und setze das Skript start auf `node src/main.ts`."
+      - type: command
+        run: "! grep -rnE '\\bany\\b|@ts-ignore|@ts-expect-error' src"
+        message: In src steht noch any oder ein @ts-Kommentar.
+      - type: command
+        run: npm run check --silent
+        expect_exit: 0
+        message: "`npm run check` meldet Fehler. Fehlen die Node-Typen, oder wird ein möglicherweise undefinierter Wert benutzt?"
+      - type: command
+        run: npm start --silent
+        stdout_matches: "^Lagerwert: 396,60 €\\nVerfügbar: TypeScript-Handbuch, Mechanische Tastatur, USB-C-Kabel\\nNachbestellt: Brettspiel Kompass -> 5\\nVerkauf p1: Bestand jetzt 2\\nVerkauf p3: Nur 0 auf Lager\\nKategorien: buch 1, technik 2, spiel 1$"
+        message: Die Ausgabe von `npm start` stimmt noch nicht. Vergleiche sie Zeile für Zeile mit der Aufgabe.
+    solution: |
+      ```bash
+      npm install --save-dev @types/node@24
+      mv src/main.js src/main.ts
+      npm pkg set scripts.start="node src/main.ts"
+      ```
+
+      In der `tsconfig.json` fällt `"allowJs": true` weg, dafür kommt `"types": ["node"]` hinzu.
+
+      `src/main.ts`:
+
+      ```ts
+      import { readFileSync } from "node:fs";
+      import { groupBy } from "./collections.ts";
+      import { findProduct, formatPrice, inStock, restock, sell, totalValueCents } from "./inventory.ts";
+      import { parseProducts } from "./schema.ts";
+      import { CATEGORIES } from "./types.ts";
+
+      const raw: unknown = JSON.parse(readFileSync(new URL("../data/products.json", import.meta.url), "utf8"));
+      const products = parseProducts(raw);
+
+      console.log(`Lagerwert: ${formatPrice(totalValueCents(products))}`);
+      console.log(`Verfügbar: ${inStock(products).map((product) => product.name).join(", ")}`);
+
+      const game = findProduct(products, "p3");
+      if (game !== undefined) {
+        console.log(`Nachbestellt: ${game.name} -> ${restock(game, 5).stock}`);
+      }
+
+      for (const [id, quantity] of [["p1", 2], ["p3", 1]] as const) {
+        const product = findProduct(products, id);
+        if (product === undefined) continue;
+        const result = sell(product, quantity);
+        console.log(`Verkauf ${id}: ${result.ok ? `Bestand jetzt ${result.value.stock}` : result.error}`);
+      }
+
+      const groups = groupBy(products, (product) => product.category);
+      const counts = CATEGORIES.map((category) => `${category} ${groups[category]?.length ?? 0}`);
+      console.log(`Kategorien: ${counts.join(", ")}`);
+      ```
+    solve: |
+      npm install --save-dev --no-audit --no-fund @types/node@24 >/dev/null
+      rm -f src/main.js
+      cat > src/main.ts <<'TS'
+      import { readFileSync } from "node:fs";
+      import { groupBy } from "./collections.ts";
+      import { findProduct, formatPrice, inStock, restock, sell, totalValueCents } from "./inventory.ts";
+      import { parseProducts } from "./schema.ts";
+      import { CATEGORIES } from "./types.ts";
+
+      const raw: unknown = JSON.parse(readFileSync(new URL("../data/products.json", import.meta.url), "utf8"));
+      const products = parseProducts(raw);
+
+      console.log(`Lagerwert: ${formatPrice(totalValueCents(products))}`);
+      console.log(`Verfügbar: ${inStock(products).map((product) => product.name).join(", ")}`);
+
+      const game = findProduct(products, "p3");
+      if (game !== undefined) {
+        console.log(`Nachbestellt: ${game.name} -> ${restock(game, 5).stock}`);
+      }
+
+      for (const [id, quantity] of [["p1", 2], ["p3", 1]] as const) {
+        const product = findProduct(products, id);
+        if (product === undefined) continue;
+        const result = sell(product, quantity);
+        console.log(`Verkauf ${id}: ${result.ok ? `Bestand jetzt ${result.value.stock}` : result.error}`);
+      }
+
+      const groups = groupBy(products, (product) => product.category);
+      const counts = CATEGORIES.map((category) => `${category} ${groups[category]?.length ?? 0}`);
+      console.log(`Kategorien: ${counts.join(", ")}`);
+      TS
+      cat > tsconfig.json <<'JSON'
+      {
+        "compilerOptions": {
+          "target": "es2024",
+          "module": "nodenext",
+          "strict": true,
+          "noEmit": true,
+          "allowImportingTsExtensions": true,
+          "verbatimModuleSyntax": true,
+          "erasableSyntaxOnly": true,
+          "noUncheckedIndexedAccess": true,
+          "types": ["node"],
+          "skipLibCheck": true
+        },
+        "include": ["src"]
+      }
+      JSON
+      npm pkg set scripts.start="node src/main.ts"

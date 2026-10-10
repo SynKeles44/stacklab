@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <rect x="20" y="40" width="220" height="200" rx="14" fill="#fef2f2" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="130" y="70" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Außenwelt</text>
+  <text x="130" y="100" text-anchor="middle" font-size="13" fill="#1e1b3a">JSON von einer API</text>
+  <text x="130" y="122" text-anchor="middle" font-size="13" fill="#1e1b3a">Formulareingaben</text>
+  <text x="130" y="144" text-anchor="middle" font-size="13" fill="#1e1b3a">Umgebungsvariablen</text>
+  <text x="130" y="190" text-anchor="middle" font-size="13" fill="#1e1b3a">Typ zur Laufzeit:</text>
+  <text x="130" y="212" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">unknown</text>
+  <line x1="240" y1="140" x2="306" y2="140" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <rect x="310" y="95" width="180" height="90" rx="14" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="400" y="128" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Zod-Schema</text>
+  <text x="400" y="155" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Schema.parse(x)</text>
+  <line x1="400" y1="185" x2="400" y2="226" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <rect x="320" y="228" width="160" height="50" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="400" y="250" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">ungültig</text>
+  <text x="400" y="268" text-anchor="middle" font-size="12" fill="#1e1b3a">ZodError mit Details</text>
+  <line x1="490" y1="140" x2="556" y2="140" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <rect x="560" y="40" width="220" height="200" rx="14" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="670" y="70" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Dein Code</text>
+  <text x="670" y="100" text-anchor="middle" font-size="13" fill="#1e1b3a">Daten sind geprüft</text>
+  <text x="670" y="122" text-anchor="middle" font-size="13" fill="#1e1b3a">und haben einen echten Typ:</text>
+  <text x="670" y="160" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">type Config =</text>
+  <text x="670" y="182" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">z.infer&lt;typeof Schema&gt;</text>
+  <text x="523" y="130" text-anchor="middle" font-size="12" fill="#1e1b3a">gültig</text>
+  <text x="400" y="30" text-anchor="middle" font-size="13" fill="#1e1b3a">Systemgrenze: hier wird zur Laufzeit geprüft</text>
+</svg>

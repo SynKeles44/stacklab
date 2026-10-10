@@ -1,0 +1,498 @@
+# Begriffe aus dem Kurs "TypeScript".
+- slug: statische-typisierung
+  term: Statische Typisierung
+  short: Typen werden geprüft, bevor das Programm läuft – nicht erst beim Ausführen.
+  explanation: >
+    Bei statischer Typisierung liest ein Prüfprogramm den Quellcode und vergleicht, ob jeder Wert zu seinem
+    angegebenen Typ passt. Fehler fallen so schon im Editor oder im Build auf. Das Gegenstück ist die
+    dynamische Typisierung, bei der Fehler erst beim Ausführen der jeweiligen Zeile auftreten.
+  example: "`const n: number = \"5\";` meldet TypeScript sofort als Fehler – ohne den Code auszuführen."
+  category: typescript
+  aliases: [statische Typen, statisch typisiert]
+  related: [dynamische-typisierung, typescript, typ-annotation]
+  lesson: typescript/warum-typescript
+- slug: typ-annotation
+  term: Typ-Annotation
+  short: Eine ausdrückliche Typangabe hinter einem Namen, getrennt durch einen Doppelpunkt.
+  explanation: >
+    Mit einer Typ-Annotation sagst du TypeScript, welchen Typ eine Variable, ein Parameter oder ein
+    Rückgabewert haben soll. Beim Entfernen der Typen verschwindet sie komplett. Wo TypeScript den Typ selbst
+    erkennen kann, ist sie oft überflüssig.
+  example: "`let city: string = \"Hamburg\";` – `: string` ist die Annotation."
+  category: typescript
+  aliases: [Typangabe, Typannotation, Annotation]
+  related: [typinferenz, statische-typisierung]
+  lesson: typescript/warum-typescript
+- slug: type-stripping
+  term: Type Stripping
+  short: Das Entfernen aller Typangaben aus TypeScript-Code, sodass reines JavaScript übrig bleibt – ohne Typprüfung.
+  explanation: >
+    Node.js kann `.ts`-Dateien direkt ausführen, indem es die Typen einfach wegschneidet. Dabei wird nichts
+    geprüft und kein neuer Code erzeugt. Deshalb funktioniert das nur mit Syntax, die sich restlos entfernen
+    lässt – genau das erzwingt die Option `erasableSyntaxOnly`.
+  example: "`node src/main.ts` führt eine TypeScript-Datei in Node.js 24 direkt aus."
+  category: typescript
+  aliases: [Typen entfernen, Type-Stripping]
+  related: [nodejs, typescript, enum]
+  lesson: typescript/warum-typescript
+- slug: go-sprache
+  term: Go
+  short: Eine kompilierte Programmiersprache von Google, in der der Compiler von TypeScript 7 geschrieben ist.
+  explanation: >
+    Go übersetzt Programme vorab in Maschinencode und kann Arbeit gut auf mehrere Prozessorkerne verteilen.
+    Microsoft hat den TypeScript-Compiler für Version 7 nach Go portiert, damit Typprüfungen großer Projekte
+    deutlich schneller laufen. Für dich als TypeScript-Nutzer ändert sich dadurch nur die Geschwindigkeit.
+  example: "`npx tsc` startet in TypeScript 7 ein natives Go-Programm statt eines JavaScript-Programms."
+  category: typescript
+  aliases: [Golang]
+  related: [compiler, typescript]
+  lesson: typescript/warum-typescript
+- slug: enum
+  term: Enum
+  short: Eine TypeScript-Syntax für eine feste Menge benannter Konstanten, die echten JavaScript-Code erzeugt.
+  explanation: >
+    `enum Role { Admin, User }` legt zur Laufzeit ein Objekt an. Weil es sich nicht einfach entfernen lässt,
+    ist ein Enum mit `erasableSyntaxOnly` verboten. Moderne Projekte nehmen stattdessen Union-Typen aus
+    Literal-Typen.
+  example: "Statt `enum Theme { Light, Dark }` schreibst du `type Theme = \"light\" | \"dark\";`."
+  category: typescript
+  aliases: [Enums, Aufzählungstyp]
+  related: [union-typ, literal-typ, type-stripping]
+  lesson: typescript/tsc-und-tsconfig
+- slug: type-only-import
+  term: Type-only-Import
+  short: Ein Import mit `import type`, der nur Typen holt und beim Entfernen der Typen komplett verschwindet.
+  explanation: >
+    Mit der Option `verbatimModuleSyntax` müssen Importe, die nur Typen enthalten, als `import type`
+    markiert sein. So weiß jedes Werkzeug ohne eigene Typprüfung, welche Importe es löschen darf. Importe von
+    Funktionen oder Konstanten bleiben normale Importe.
+  example: "`import type { User } from \"./types.ts\";`"
+  category: typescript
+  aliases: [import type, Typ-Import]
+  related: [es-module, tsconfig]
+  lesson: typescript/tsc-und-tsconfig
+- slug: modulaufloesung
+  term: Modulauflösung
+  short: Die Regeln, nach denen TypeScript aus einem Import-Pfad die passende Datei findet.
+  explanation: >
+    Die Option `moduleResolution` legt fest, ob TypeScript wie ein Bundler (`bundler`) oder wie Node.js
+    (`nodenext`) sucht. Sie muss zu dem Werkzeug passen, das den Code später ausführt. Über die
+    Modulauflösung findet TypeScript auch die Typen importierter npm-Pakete.
+  example: "`\"moduleResolution\": \"bundler\"` passt zu einem Vite-Projekt."
+  category: typescript
+  aliases: [moduleResolution, Module Resolution]
+  related: [tsconfig, bundler, es-module]
+  lesson: typescript/tsc-und-tsconfig
+- slug: typinferenz
+  term: Typinferenz
+  short: TypeScript ermittelt den Typ eines Werts selbst, ohne dass du ihn hinschreibst.
+  explanation: >
+    Aus dem Startwert einer Variable, dem Rückgabewert einer Funktion oder dem Zusammenhang eines Callbacks
+    leitet TypeScript den Typ automatisch ab. Annotationen brauchst du vor allem an den Rändern deines Codes,
+    etwa bei Funktionsparametern.
+  example: "`const prices = [9.99, 4.5];` hat automatisch den Typ `number[]`."
+  category: typescript
+  aliases: [Inferenz, inferieren, Type Inference]
+  related: [typ-annotation, literal-typ]
+  lesson: typescript/alltaegliche-typen
+- slug: tupel
+  term: Tupel
+  short: Ein Array mit fester Länge, bei dem jede Position einen eigenen Typ hat.
+  explanation: >
+    Ein Tupel beschreibt kleine, geordnete Wertepaare wie Koordinaten oder Name und Alter. TypeScript prüft
+    sowohl die Anzahl als auch den Typ jeder Position. Zur Laufzeit ist ein Tupel ein ganz normales Array.
+  example: "`const point: [number, number] = [3, 4];`"
+  category: typescript
+  aliases: [Tupel-Typ, Tuple]
+  related: [array, as-const]
+  lesson: typescript/alltaegliche-typen
+- slug: optionale-eigenschaft
+  term: Optionale Eigenschaft
+  short: Eine Eigenschaft mit `?` hinter dem Namen, die in einem Objekt fehlen darf.
+  explanation: >
+    Eine optionale Eigenschaft hat zusätzlich den Typ `undefined`. Bevor du sie benutzt, prüfst du, ob sie
+    gesetzt ist – zum Beispiel mit Optional Chaining `?.` oder einem Ersatzwert über `??`.
+  example: "`type User = { name: string; email?: string };` – `email` darf fehlen."
+  category: typescript
+  aliases: [optionales Feld, optionale Eigenschaften]
+  related: [eigenschaft, undefined]
+  lesson: typescript/alltaegliche-typen
+- slug: readonly
+  term: readonly
+  short: Ein Schlüsselwort, das eine Eigenschaft oder ein Array in TypeScript vor dem Überschreiben schützt.
+  explanation: >
+    Eine `readonly`-Eigenschaft darf nach dem Anlegen nicht mehr geändert werden; TypeScript meldet jeden
+    Versuch als Fehler. Der Schutz gilt nur bei der Typprüfung – zur Laufzeit ist das Objekt ganz normal
+    veränderbar.
+  example: "`interface User { readonly id: number }` – `user.id = 2` ist ein Fehler."
+  category: typescript
+  aliases: [schreibgeschützt, Readonly]
+  related: [eigenschaft, utility-type]
+  lesson: typescript/alltaegliche-typen
+- slug: any-typ
+  term: any
+  short: Ein Typ, der die Typprüfung für einen Wert komplett abschaltet.
+  explanation: >
+    Mit `any` darfst du alles mit einem Wert tun – TypeScript prüft nichts mehr. Fehler, die dadurch
+    durchrutschen, tauchen erst zur Laufzeit auf. Mit `strict` sind implizite `any` verboten; für unbekannte
+    Werte ist `unknown` die sichere Wahl.
+  example: "`let x: any = 5; x.toUpperCase();` – kein Fehler beim Prüfen, Absturz beim Ausführen."
+  category: typescript
+  aliases: [any-Typ, Typ any]
+  related: [unknown-typ, typescript]
+  lesson: typescript/alltaegliche-typen
+- slug: typ-alias
+  term: Type Alias
+  short: Ein selbst gewählter Name für einen beliebigen Typ, angelegt mit dem Schlüsselwort `type`.
+  explanation: >
+    Ein Type Alias erzeugt keinen neuen Typ, sondern gibt einem vorhandenen einen Namen. Damit benennst du
+    Objektformen, Unions, Tupel oder Funktionstypen und musst sie nicht mehrfach abschreiben.
+  example: "`type Point = { x: number; y: number };`"
+  category: typescript
+  aliases: [Typ-Alias, Typalias, type]
+  related: [ts-interface, union-typ]
+  lesson: typescript/interfaces-und-type-aliases
+- slug: ts-interface
+  term: Interface (TypeScript)
+  short: Eine benannte Beschreibung der Form eines Objekts in TypeScript.
+  explanation: >
+    Ein TypeScript-Interface legt fest, welche Eigenschaften und Methoden ein Objekt hat. Anders als in PHP
+    beschreibt es jedes passende Objekt, nicht nur Klassen. Interfaces lassen sich mit `extends` erweitern und
+    gleichnamige Interfaces werden zusammengeführt.
+  example: "`interface User { id: number; name: string }`"
+  category: typescript
+  aliases: [TypeScript-Interface]
+  related: [typ-alias, interface, declaration-merging]
+  lesson: typescript/interfaces-und-type-aliases
+- slug: strukturelle-typisierung
+  term: Strukturelle Typisierung
+  short: Ob ein Wert zu einem Typ passt, entscheidet seine Form – nicht der Name des Typs.
+  explanation: >
+    TypeScript vergleicht Eigenschaften und ihre Typen. Hat ein Objekt alles, was ein Interface verlangt,
+    passt es – egal, wo es herkommt oder wie sein Typ heißt. Man nennt das auch „Duck Typing“ zur
+    Prüfzeit.
+  example: "Ein Objekt `{ id: 1, name: \"Ada\" }` passt zu jedem Typ mit genau diesen Eigenschaften."
+  category: typescript
+  aliases: [Structural Typing, strukturell]
+  related: [ts-interface, typ-alias]
+  lesson: typescript/interfaces-und-type-aliases
+- slug: intersection-typ
+  term: Intersection-Typ
+  short: Ein Typ, der mit `&` mehrere Typen verbindet – ein Wert muss alle gleichzeitig erfüllen.
+  explanation: >
+    Mit `A & B` entsteht ein Typ mit allen Eigenschaften von A und B. So erweiterst du Type Aliases, ähnlich
+    wie `extends` bei Interfaces. Das Gegenstück ist der Union-Typ, bei dem einer der Typen genügt.
+  example: "`type Moderator = User & { channels: string[] };`"
+  category: typescript
+  aliases: [Intersection, Schnittmengentyp]
+  related: [union-typ, typ-alias]
+  lesson: typescript/interfaces-und-type-aliases
+- slug: index-signatur
+  term: Index-Signatur
+  short: Beschreibt ein Objekt mit beliebigen Schlüsseln eines Typs und Werten eines anderen Typs.
+  explanation: >
+    Kennst du die Schlüssel eines Objekts vorher nicht, beschreibst du nur ihren Typ und den Typ der Werte.
+    `Record<K, V>` ist eine gleichwertige Kurzschreibweise. Mit `noUncheckedIndexedAccess` kann jeder Zugriff
+    zusätzlich `undefined` liefern.
+  example: "`interface Prices { [sku: string]: number }`"
+  category: typescript
+  aliases: [Index Signature, Indexsignatur]
+  related: [utility-type, objekt]
+  lesson: typescript/interfaces-und-type-aliases
+- slug: declaration-merging
+  term: Declaration Merging
+  short: Mehrere gleichnamige Interface-Deklarationen werden von TypeScript zu einer zusammengeführt.
+  explanation: >
+    Schreibst du ein Interface mit einem Namen, den es schon gibt, ergänzt TypeScript das vorhandene. So
+    erweitern Bibliotheken globale Typen wie `Window`. Bei Type Aliases ist ein doppelter Name dagegen ein
+    Fehler.
+  example: "`interface Window { myApp: App }` fügt dem globalen Window eine Eigenschaft hinzu."
+  category: typescript
+  aliases: [Zusammenführen von Deklarationen]
+  related: [ts-interface, typdeklaration]
+  lesson: typescript/interfaces-und-type-aliases
+- slug: ts-expect-error
+  term: "@ts-expect-error"
+  short: Ein Kommentar, der eine Zeile markiert, in der TypeScript einen Fehler melden muss.
+  explanation: >
+    Steht `// @ts-expect-error` über einer Zeile, unterdrückt TypeScript dort den erwarteten Fehler. Gibt es
+    keinen Fehler, meldet `tsc` die unnötige Markierung. Damit testet man, ob Typen streng genug sind – im
+    Gegensatz zu `@ts-ignore`, das Fehler einfach verschluckt.
+  example: "`// @ts-expect-error` über `const n: number = \"x\";` ist korrekt, weil die Zeile wirklich falsch ist."
+  category: typescript
+  aliases: [ts-expect-error, Expect-Error-Kommentar]
+  related: [typescript, compiler]
+  lesson: typescript/interfaces-und-type-aliases
+- slug: union-typ
+  term: Union-Typ
+  short: Ein Typ, der mit `|` mehrere Typen verbindet – ein Wert muss zu mindestens einem passen.
+  explanation: >
+    `string | number` erlaubt Texte und Zahlen. Ohne weitere Prüfung darfst du nur nutzen, was alle
+    Mitglieder gemeinsam haben. Erst Narrowing grenzt den Typ so ein, dass mehr erlaubt ist.
+  example: "`function formatId(id: string | number)`"
+  category: typescript
+  aliases: [Union, Unions, Vereinigungstyp]
+  related: [literal-typ, narrowing, intersection-typ]
+  lesson: typescript/union-und-literal-typen
+- slug: literal-typ
+  term: Literal-Typ
+  short: Ein Typ, der genau einen konkreten Wert erlaubt, etwa `"dark"` oder `42`.
+  explanation: >
+    Allein ist ein Literal-Typ selten nützlich, als Union aber sehr: `"light" | "dark"` erlaubt genau zwei
+    Texte. Bei `const` inferiert TypeScript Literal-Typen, bei `let` den allgemeinen Typ.
+  example: "`type Theme = \"light\" | \"dark\" | \"system\";`"
+  category: typescript
+  aliases: [Literal Type, Literaltyp, Literal-Typen]
+  related: [union-typ, as-const, enum]
+  lesson: typescript/union-und-literal-typen
+- slug: as-const
+  term: as const
+  short: Friert einen Wert ein, sodass TypeScript die engsten, schreibgeschützten Literal-Typen inferiert.
+  explanation: >
+    Mit `as const` werden Arrays zu schreibgeschützten Tupeln und Objekteigenschaften zu `readonly`-Literalen.
+    Daraus lassen sich Union-Typen ableiten, sodass die erlaubten Werte nur an einer Stelle gepflegt werden.
+  example: "`const SIZES = [\"S\", \"M\"] as const; type Size = (typeof SIZES)[number];`"
+  category: typescript
+  aliases: [const assertion, Const Assertion]
+  related: [literal-typ, tupel, readonly]
+  lesson: typescript/union-und-literal-typen
+- slug: satisfies
+  term: satisfies
+  short: Ein Operator, der einen Wert gegen einen Typ prüft, ohne seinen genauen inferierten Typ zu verlieren.
+  explanation: >
+    Eine Annotation ersetzt den Typ eines Werts durch den angegebenen Typ. `satisfies` prüft dagegen nur, ob
+    der Wert passt, und behält die präzise Information. Das ist praktisch für Konfigurationen und Tabellen.
+  example: "`const routes = { home: \"/\" } satisfies Record<string, string>;` – `routes.home` hat den Typ `\"/\"`."
+  category: typescript
+  aliases: [satisfies-Operator]
+  related: [typ-annotation, type-assertion]
+  lesson: typescript/union-und-literal-typen
+- slug: narrowing
+  term: Narrowing
+  short: Das Eingrenzen eines Typs durch Prüfungen wie `typeof`, `in` oder `===` im Code.
+  explanation: >
+    TypeScript wertet ganz normale JavaScript-Prüfungen aus. Nach `if (typeof x === "string")` weiß es,
+    dass `x` im if-Zweig ein Text ist. So arbeitest du mit Union-Typen und `unknown` sicher weiter.
+  example: "Nach `if (value === undefined) return;` ist `undefined` aus dem Typ von `value` verschwunden."
+  category: typescript
+  aliases: [Typeingrenzung, eingrenzen, Type Narrowing]
+  related: [kontrollflussanalyse, type-guard, union-typ]
+  lesson: typescript/narrowing
+- slug: kontrollflussanalyse
+  term: Kontrollflussanalyse
+  short: TypeScript verfolgt alle Wege durch den Code und weiß an jeder Stelle, welche Typen noch möglich sind.
+  explanation: >
+    Bei jeder Verzweigung, jedem `return` und jeder Zuweisung aktualisiert TypeScript sein Wissen über die
+    Typen. Das ist die Grundlage für Narrowing. Fälle, die vorher schon behandelt wurden, streicht es aus der
+    Union.
+  example: "Nach `if (!user) return;` ist `user` im restlichen Code nicht mehr `undefined`."
+  category: typescript
+  aliases: [Control Flow Analysis]
+  related: [narrowing]
+  lesson: typescript/narrowing
+- slug: discriminated-union
+  term: Discriminated Union
+  short: Eine Union aus Objekttypen, die sich an einer gemeinsamen Literal-Eigenschaft wie `kind` unterscheiden.
+  explanation: >
+    Jedes Mitglied hat dieselbe Eigenschaft mit einem anderen Literal-Wert. Eine Prüfung darauf, etwa im
+    `switch`, grenzt sofort den ganzen Typ ein. So lassen sich Zustände wie Laden, Erfolg und Fehler sauber
+    modellieren.
+  example: "`type Result = { status: \"ok\"; data: string } | { status: \"error\"; message: string };`"
+  category: typescript
+  aliases: [Tagged Union, unterscheidbare Union, Discriminated Unions]
+  related: [union-typ, narrowing, never-typ]
+  lesson: typescript/narrowing
+- slug: never-typ
+  term: never
+  short: Ein Typ ohne einen einzigen möglichen Wert – für Code, der nie erreicht werden darf.
+  explanation: >
+    Sind alle Fälle einer Union behandelt, bleibt im `default` eines `switch` nur `never` übrig. Kommt ein
+    neuer Fall hinzu, passt er nicht mehr zu `never`, und TypeScript meldet einen Fehler. Funktionen, die
+    immer werfen, haben ebenfalls den Rückgabetyp `never`.
+  example: "`function assertNever(value: never): never { throw new Error(); }`"
+  category: typescript
+  aliases: [never-Typ, Exhaustiveness Check]
+  related: [discriminated-union, void-typ]
+  lesson: typescript/narrowing
+- slug: unknown-typ
+  term: unknown
+  short: Der sichere Typ für Werte, deren Typ du noch nicht kennst – nutzbar erst nach einer Prüfung.
+  explanation: >
+    Einer `unknown`-Variable kannst du jeden Wert zuweisen, darfst aber nichts damit tun, bevor du den Typ
+    eingegrenzt hast. Damit ist `unknown` die sichere Alternative zu `any` für Daten von außen.
+  example: "`const data: unknown = JSON.parse(text); if (typeof data === \"string\") …`"
+  category: typescript
+  aliases: [unknown-Typ]
+  related: [any-typ, narrowing, type-guard]
+  lesson: typescript/narrowing
+- slug: type-guard
+  term: Type Guard
+  short: Eine Funktion mit dem Rückgabetyp `wert is Typ`, die eine wiederverwendbare Typprüfung kapselt.
+  explanation: >
+    Gibt ein Type Guard `true` zurück, behandelt TypeScript den geprüften Wert danach als den genannten Typ.
+    So bündelst du längere Prüfungen an einer Stelle. Die Prüfung selbst musst du korrekt schreiben – TypeScript
+    glaubt dem Ergebnis.
+  example: "`function isUser(v: unknown): v is User { … }`"
+  category: typescript
+  aliases: [Typwächter, Type Predicate, Type Guards]
+  related: [narrowing, unknown-typ]
+  lesson: typescript/narrowing
+- slug: void-typ
+  term: void
+  short: Der Rückgabetyp einer Funktion, deren Ergebnis keine Rolle spielt.
+  explanation: >
+    Eine Funktion ohne `return`-Wert hat den Rückgabetyp `void`. Bei Callback-Typen heißt `void`: Das
+    Ergebnis wird ignoriert – du darfst also auch eine Funktion übergeben, die etwas zurückgibt.
+  example: "`function log(msg: string): void { console.log(msg); }`"
+  category: typescript
+  aliases: [void-Typ]
+  related: [never-typ, rueckgabewert]
+  lesson: typescript/funktionen-typisieren
+- slug: rest-parameter
+  term: Rest-Parameter
+  short: Ein Parameter mit `...` davor, der beliebig viele Argumente als Array sammelt.
+  explanation: >
+    Rest-Parameter stehen immer an letzter Stelle einer Parameterliste. In TypeScript bekommen sie einen
+    Array-Typ. Ohne passende Argumente ist das Array einfach leer.
+  example: "`function sum(...numbers: number[]): number`"
+  category: typescript
+  aliases: [Restparameter, Rest-Parameters]
+  related: [parameter, spread-operator, array]
+  lesson: typescript/funktionen-typisieren
+- slug: funktionsueberladung
+  term: Funktionsüberladung
+  short: Mehrere Signaturen für eine Funktion, die verschiedene erlaubte Aufrufformen beschreiben.
+  explanation: >
+    Bei Überladungen stehen mehrere Signaturen ohne Körper über genau einer Implementierung. Von außen
+    sichtbar sind nur die Signaturen. Sie lohnen sich, wenn der Rückgabetyp vom Typ des Arguments abhängt.
+  example: "`function parse(v: string): number; function parse(v: string[]): number[];`"
+  category: typescript
+  aliases: [Overload, Overloads, Überladung, Überladungen]
+  related: [funktion, generics]
+  lesson: typescript/funktionen-typisieren
+- slug: generics
+  term: Generics
+  short: Funktionen und Typen mit Typparametern, die für viele Typen funktionieren und dabei Typinformation behalten.
+  explanation: >
+    Statt `any` nutzt eine generische Funktion einen Platzhalter wie `T`, den TypeScript bei jedem Aufruf
+    passend einsetzt. So weiß der Aufrufer genau, was zurückkommt. Bekannte generische Typen sind `Array<T>`,
+    `Promise<T>` und `Record<K, V>`.
+  example: "`function first<T>(items: T[]): T | undefined`"
+  category: typescript
+  aliases: [Generic, generisch, generische Typen]
+  related: [typparameter, typ-constraint]
+  lesson: typescript/generics
+- slug: typparameter
+  term: Typparameter
+  short: Ein Platzhalter wie `T` in spitzen Klammern, für den bei jeder Verwendung ein konkreter Typ eingesetzt wird.
+  explanation: >
+    Typparameter machen Funktionen, Klassen und Typen generisch. Meist leitet TypeScript sie aus den
+    Argumenten ab. Mit `= Typ` bekommen sie einen Standardwert, mit `extends` eine Einschränkung.
+  example: "In `type Box<T = string> = { value: T };` ist `T` der Typparameter mit Standard `string`."
+  category: typescript
+  aliases: [Type Parameter, Typargument, Standard-Typparameter]
+  related: [generics, typ-constraint]
+  lesson: typescript/generics
+- slug: typ-constraint
+  term: Constraint (Generics)
+  short: Eine Einschränkung mit `extends`, die festlegt, was ein Typparameter mindestens können muss.
+  explanation: >
+    Ohne Constraint weiß TypeScript nichts über `T` und erlaubt keine Zugriffe. `T extends { length: number }`
+    verlangt eine Eigenschaft `length`. `K extends keyof T` erlaubt nur Schlüssel eines anderen Typs.
+  example: "`function longest<T extends { length: number }>(a: T, b: T): T`"
+  category: typescript
+  aliases: [Generic Constraint, Constraints, Einschränkung]
+  related: [generics, typparameter, keyof]
+  lesson: typescript/generics
+- slug: keyof
+  term: keyof
+  short: Ein Operator, der die Schlüssel eines Objekttyps als Union von Literal-Typen liefert.
+  explanation: >
+    Aus `{ id: number; name: string }` macht `keyof` den Typ `"id" | "name"`. Zusammen mit Generics stellst
+    du so sicher, dass nur echte Schlüssel verwendet werden. Für Werte schreibst du `keyof typeof wert`.
+  example: "`type Key = keyof User;` – ergibt `\"id\" | \"name\"`."
+  category: typescript
+  aliases: [keyof-Operator]
+  related: [typ-constraint, mapped-type, utility-type]
+  lesson: typescript/typen-aus-typen
+- slug: utility-type
+  term: Utility Type
+  short: Ein eingebauter generischer Hilfstyp, der aus einem vorhandenen Typ einen neuen berechnet.
+  explanation: >
+    TypeScript bringt Utility Types wie `Partial`, `Pick`, `Omit`, `Record`, `ReturnType` und `Awaited` mit.
+    Damit leitest du Varianten eines Typs ab, statt sie abzutippen. Ändert sich der Ursprungstyp, wandern
+    alle Varianten automatisch mit.
+  example: "`type UserPatch = Partial<Omit<User, \"id\">>;`"
+  category: typescript
+  aliases: [Utility Types, Hilfstyp, Hilfstypen]
+  related: [mapped-type, keyof, generics]
+  lesson: typescript/typen-aus-typen
+- slug: mapped-type
+  term: Mapped Type
+  short: Ein Typ, der mit `[K in keyof T]` jede Eigenschaft eines anderen Typs umwandelt.
+  explanation: >
+    Mapped Types laufen wie eine Schleife über alle Schlüssel eines Typs. Damit lassen sich alle Eigenschaften
+    optional, schreibgeschützt oder zu einem anderen Typ machen. `Partial` und `Readonly` sind so gebaut.
+  example: "`type Flags<T> = { [K in keyof T]: boolean };`"
+  category: typescript
+  aliases: [Mapped Types, abgebildeter Typ]
+  related: [keyof, utility-type, conditional-type]
+  lesson: typescript/typen-aus-typen
+- slug: conditional-type
+  term: Conditional Type
+  short: 'Ein Typ mit der Form `T extends U ? X : Y`, der auf Typebene eine Entscheidung trifft.'
+  explanation: >
+    Conditional Types funktionieren wie ein ternärer Operator für Typen. Mit `infer` lässt sich ein Teil eines
+    Typs herausziehen. Utility Types wie `ReturnType` und `Awaited` sind so gebaut.
+  example: "`type IsText<T> = T extends string ? \"ja\" : \"nein\";`"
+  category: typescript
+  aliases: [Conditional Types, bedingter Typ]
+  related: [mapped-type, utility-type, ternaerer-operator]
+  lesson: typescript/typen-aus-typen
+- slug: laufzeitvalidierung
+  term: Laufzeitvalidierung
+  short: Das Prüfen von Daten, während das Programm läuft – nötig für alles, was von außen kommt.
+  explanation: >
+    TypeScript-Typen gibt es zur Laufzeit nicht mehr. Daten aus APIs, Formularen oder Umgebungsvariablen
+    müssen deshalb beim Eintreffen geprüft werden. Bibliotheken wie Zod erledigen das und liefern danach
+    korrekt typisierte Daten.
+  example: "`const user = UserSchema.parse(await res.json());` prüft die Antwort einer API."
+  category: typescript
+  aliases: [Runtime Validation, Validierung zur Laufzeit]
+  related: [zod, schema-validierung, type-assertion]
+  lesson: typescript/laufzeitvalidierung-mit-zod
+- slug: type-assertion
+  term: Type Assertion
+  short: Mit `wert as Typ` behauptest du gegenüber TypeScript einen Typ – ohne dass etwas geprüft wird.
+  explanation: >
+    Eine Type Assertion ändert nur, was TypeScript über einen Wert annimmt. Stimmt die Behauptung nicht,
+    passieren Fehler erst zur Laufzeit. An Systemgrenzen ersetzt man sie deshalb durch Laufzeitvalidierung.
+  example: "`const user = data as User;` – nur behauptet, nicht geprüft."
+  category: typescript
+  aliases: [as, Typbehauptung, Type Cast]
+  related: [laufzeitvalidierung, satisfies]
+  lesson: typescript/laufzeitvalidierung-mit-zod
+- slug: zod
+  term: Zod
+  short: Eine TypeScript-Bibliothek, die Daten zur Laufzeit gegen ein Schema prüft und den passenden Typ daraus ableitet.
+  explanation: >
+    Mit Zod beschreibst du die erwartete Form von Daten als Schema. `parse` und `safeParse` prüfen echte
+    Daten dagegen, `z.infer` macht aus dem Schema einen TypeScript-Typ. So bleiben Prüfung und Typ immer
+    synchron.
+  example: "`const User = z.object({ name: z.string() }); type User = z.infer<typeof User>;`"
+  category: typescript
+  aliases: [Zod 4]
+  related: [schema-validierung, laufzeitvalidierung]
+  lesson: typescript/laufzeitvalidierung-mit-zod
+- slug: schema-validierung
+  term: Schema-Validierung
+  short: Daten werden gegen eine vorab beschriebene Struktur mit Regeln geprüft.
+  explanation: >
+    Ein Schema legt fest, welche Felder es gibt, welche Typen sie haben und welche Regeln gelten, etwa
+    Mindestlänge oder Wertebereich. Die Prüfung liefert entweder gültige Daten oder eine Liste aller
+    Probleme.
+  example: "Ein Schema verlangt für `port` eine ganze Zahl zwischen 1 und 65535."
+  category: typescript
+  aliases: [Schema, Schemavalidierung]
+  related: [zod, laufzeitvalidierung, json]
+  lesson: typescript/laufzeitvalidierung-mit-zod

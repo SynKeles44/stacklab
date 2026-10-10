@@ -1,0 +1,505 @@
+title: Abschlussprüfung TypeScript
+description: |
+  Zeig, dass du TypeScript sicher beherrschst: vom Compiler und der tsconfig.json über Union-Typen,
+  Narrowing und Generics bis zu Utility Types, Deklarationsdateien und Zod. Die Prüfung besteht aus
+  Wissensfragen und drei praktischen Aufgaben – zwei im Code-Editor und eine im Übungs-Terminal, wo `tsc`
+  deine Lösung prüft. Zum Bestehen brauchst du 70 %.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Was passiert mit deinen TypeScript-Typen, wenn das Programm ausgeführt wird?
+    options:
+      - Sie werden vorher entfernt – zur Laufzeit gibt es sie nicht mehr.
+      - Node.js prüft sie bei jedem Funktionsaufruf erneut.
+      - Sie werden in Kommentare umgewandelt und dann ausgewertet.
+      - Sie bremsen das Programm, weil jeder Wert zusätzlich geprüft wird.
+    answer: 0
+    explanation: Typen sind nur für die Prüfung vor dem Start da. Beim Übersetzen oder per Type Stripping fallen sie weg – zur Laufzeit läuft reines JavaScript.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen über `npx tsc --noEmit` stimmen?
+    options:
+      - Es prüft das Projekt, ohne JavaScript-Dateien zu schreiben.
+      - Ohne Fehler endet es ohne Ausgabe mit Exit-Code 0.
+      - Es führt das Programm anschließend automatisch aus.
+      - Bei Typfehlern endet es mit einem Exit-Code ungleich 0 – darauf verlassen sich CI-Pipelines.
+    answers: [0, 1, 3]
+    explanation: "`tsc --noEmit` ist ein reiner Prüflauf. Ausgeführt wird dabei nichts – das übernimmt Node.js oder ein Bundler."
+  - module: grundlagen
+    type: match
+    question: Ordne jeder Option der tsconfig.json ihre Wirkung zu.
+    pairs:
+      - { left: "noUncheckedIndexedAccess", right: "list[0] hat den Typ T | undefined" }
+      - { left: "verbatimModuleSyntax", right: "Reine Typ-Importe müssen import type heißen" }
+      - { left: "erasableSyntaxOnly", right: "Verbietet enum und andere Syntax, die JavaScript erzeugt" }
+      - { left: "noEmit", right: "tsc prüft nur und schreibt keine Dateien" }
+    explanation: Diese vier Schalter bilden zusammen mit `strict` die Grundlage eines modernen, strengen Projekts.
+  - module: grundlagen
+    type: cloze
+    text: "In TypeScript 7 ist `types` standardmäßig `___`. Damit `process` aus `@types/node` bekannt ist, trägst du `\"types\": [\"___\"]` ein."
+    blanks:
+      - ["[]"]
+      - ["node"]
+    explanation: Globale `@types`-Pakete werden in TypeScript 7 nicht mehr automatisch eingebunden – du listest sie ausdrücklich unter `types`.
+  - module: grundlagen
+    type: find-bug
+    question: Dieser Code soll mit `strict` und `noUncheckedIndexedAccess` fehlerfrei sein. Welche Zeile meldet `tsc`?
+    language: ts
+    code: |
+      const prices: number[] = [5, 12, 30];
+      const cheapest = prices[0];
+      const doubled: number = cheapest * 2;
+      console.log(doubled);
+    bug_line: 3
+    explanation: "`prices[0]` hat den Typ `number | undefined`, weil die Liste leer sein könnte. Zeile 3 rechnet damit, ohne `undefined` auszuschließen – z. B. mit `?? 0` oder einer `if`-Prüfung."
+  - module: typen-modellieren
+    type: single
+    question: "Welchen Typ leitet TypeScript für `const status = \"open\";` ab?"
+    options: ["string", "\"open\"", "any", "unknown"]
+    answer: 1
+    explanation: Eine `const`-Variable kann sich nie ändern, deshalb bekommt sie den Literal-Typ `"open"`. Mit `let` wäre es `string`.
+  - module: typen-modellieren
+    type: multiple
+    question: Was kann ein `interface`, was ein `type`-Alias nicht kann – oder umgekehrt? Wähle die richtigen Aussagen.
+    options:
+      - Nur ein type-Alias kann einen Union-Typ wie `"a" | "b"` benennen.
+      - Ein interface kann mit `extends` andere Objekttypen erweitern.
+      - Gleichnamige interfaces werden zu einem zusammengeführt (Declaration Merging).
+      - Nur ein interface kann Objektformen beschreiben.
+    answers: [0, 1, 2]
+    explanation: Beide beschreiben Objektformen. Unions, Literal-Typen und Tupel kann nur `type` benennen; Declaration Merging gibt es nur bei `interface`.
+  - module: typen-modellieren
+    type: single
+    question: "Was bewirkt `satisfies` in `const config = { port: 3000 } satisfies Config;`?"
+    options:
+      - Der Wert wird gegen `Config` geprüft, behält aber seinen genauen abgeleiteten Typ.
+      - Der Wert wird ungeprüft in den Typ `Config` umgewandelt.
+      - Der Wert wird zur Laufzeit gegen `Config` validiert.
+      - "`config` bekommt den Typ `any`."
+    answer: 0
+    explanation: Anders als eine Typannotation verengt `satisfies` den Typ nicht auf `Config` – du bekommst die Prüfung und behältst die genauen Literal-Typen.
+  - module: typen-modellieren
+    type: find-bug
+    question: "`Shape` ist `{ kind: \"circle\"; radius: number } | { kind: \"square\"; size: number }`. In welcher Zeile meldet `tsc` einen Fehler?"
+    language: ts
+    code: |
+      function area(shape: Shape): number {
+        if (shape.kind === "circle") {
+          return Math.PI * shape.radius ** 2;
+        }
+        return shape.radius * shape.size;
+      }
+    bug_line: 5
+    explanation: Nach dem `if` ist `shape` auf das Quadrat eingegrenzt – das hat kein `radius`. Richtig wäre `shape.size ** 2`.
+  - module: typen-modellieren
+    type: cloze
+    text: "Damit TypeScript meldet, wenn ein `case` fehlt, ruft der `default`-Zweig eine Funktion mit einem Parameter vom Typ `___` auf."
+    blanks:
+      - ["never"]
+    explanation: Sind alle Fälle behandelt, ist der Wert im `default`-Zweig `never`. Kommt ein neuer Fall dazu, passt er nicht mehr zu `never` – und `tsc` meldet die Stelle.
+  - module: funktionen-und-generics
+    type: single
+    question: "Was bedeutet `function first<T>(items: T[]): T | undefined`?"
+    options:
+      - Der Rückgabetyp hängt vom Elementtyp der übergebenen Liste ab.
+      - "`T` ist ein fester Typ namens T, der irgendwo definiert sein muss."
+      - Die Funktion akzeptiert nur Listen mit Texten.
+      - "`T` ist ein anderer Name für `any`."
+    answer: 0
+    explanation: "`T` ist ein Typparameter. Rufst du `first([1, 2])` auf, setzt TypeScript `T = number` ein und der Rückgabetyp ist `number | undefined`."
+  - module: funktionen-und-generics
+    type: multiple
+    question: "Welche Aufrufe akzeptiert `function longest<T extends { length: number }>(a: T, b: T): T`?"
+    options:
+      - "`longest(\"abc\", \"de\")`"
+      - "`longest([1, 2], [3])`"
+      - "`longest(10, 20)`"
+      - "`longest({ length: 2 }, { length: 5 })`"
+    answers: [0, 1, 3]
+    explanation: Der Constraint verlangt eine Eigenschaft `length` vom Typ `number`. Texte, Arrays und passende Objekte haben sie, Zahlen nicht.
+  - module: funktionen-und-generics
+    type: match
+    question: "Ordne jedem Ausdruck den Typ zu, der für `User = { id: number; name: string; email?: string }` herauskommt."
+    pairs:
+      - { left: "Pick<User, \"id\">", right: "{ id: number }" }
+      - { left: "Omit<User, \"email\">", right: "{ id: number; name: string }" }
+      - { left: "User[\"name\"]", right: "string" }
+      - { left: "keyof User", right: "\"id\" | \"name\" | \"email\"" }
+    explanation: Utility Types und Indexed Access leiten neue Typen aus vorhandenen ab – ändert sich `User`, wandern sie automatisch mit.
+  - module: funktionen-und-generics
+    type: cloze
+    text: "Den Typ, den `await loadUser()` liefert, leitest du mit `___<ReturnType<typeof loadUser>>` ab."
+    blanks:
+      - ["Awaited"]
+    explanation: "`ReturnType` liefert `Promise<User>`, `Awaited` packt das Promise aus."
+  - module: typescript-in-der-praxis
+    type: single
+    question: Was steht in einer `.d.ts`-Datei?
+    options:
+      - Nur Typinformationen wie Signaturen – keine ausführbare Logik.
+      - Der vollständige Quellcode einer Bibliothek in TypeScript.
+      - Die kompilierte, minimierte Version eines Pakets.
+      - Testfälle, die beim Import ausgeführt werden.
+    answer: 0
+    explanation: Eine Deklarationsdatei beschreibt Code, der woanders liegt. Sie wird nie ausgeführt.
+  - module: typescript-in-der-praxis
+    type: multiple
+    question: Warum prüfst du Daten aus einer API zusätzlich mit Zod, obwohl dein Projekt streng typisiert ist?
+    options:
+      - TypeScript-Typen gibt es zur Laufzeit nicht – sie können fremde Daten nicht prüfen.
+      - "`JSON.parse` liefert Daten, deren Form der Compiler nicht kennen kann."
+      - Zod ersetzt `tsc`, man braucht danach keinen Compiler mehr.
+      - Mit `z.infer` bekommst du den passenden TypeScript-Typ direkt aus dem Schema.
+    answers: [0, 1, 3]
+    explanation: An der Systemgrenze hilft nur eine Laufzeitprüfung. Zod liefert sie und leitet den Typ gleich mit ab – zwei Quellen für dieselbe Form entfallen.
+  - module: typescript-in-der-praxis
+    type: single
+    question: "Was ist der Unterschied zwischen `Schema.parse(data)` und `Schema.safeParse(data)`?"
+    options:
+      - "`parse` wirft bei ungültigen Daten einen Fehler, `safeParse` liefert ein Objekt mit `success`."
+      - "`safeParse` prüft nur die Typen, `parse` auch die Werte."
+      - "`parse` ist asynchron, `safeParse` synchron."
+      - Es gibt keinen Unterschied, beide werfen einen Fehler.
+    answer: 0
+    explanation: "`safeParse` liefert `{ success: true, data }` oder `{ success: false, error }` – eine Discriminated Union, die du per Narrowing auswertest."
+tasks:
+  - module: typen-modellieren
+    id: pruefung-ereignisse
+    type: code
+    language: ts
+    title: Ereignisse beschreiben
+    description: |
+      Ein Protokoll speichert drei Arten von Ereignissen als Discriminated Union `AppEvent`.
+
+      1. Vervollständige `describeEvent(event: AppEvent): string`:
+         - `login` → `Ada hat sich angemeldet` (mit `user`)
+         - `logout` → `Ada hat sich abgemeldet`
+         - `purchase` → `Ada hat für 12.50 € eingekauft` (Betrag aus `amountCents`, zwei Nachkommastellen)
+      2. Behalte den `default`-Zweig mit `assertNever(event)` – so meldet `tsc` später jeden vergessenen Fall.
+      3. Vervollständige `countByKind(events)`: Sie liefert für jede der drei Arten die Anzahl, auch wenn sie 0 ist.
+    starter: |
+      type AppEvent =
+        | { kind: "login"; user: string }
+        | { kind: "logout"; user: string }
+        | { kind: "purchase"; user: string; amountCents: number };
+
+      type EventKind = AppEvent["kind"];
+
+      function assertNever(value: never): never {
+        throw new Error(`Unbekanntes Ereignis: ${JSON.stringify(value)}`);
+      }
+
+      function describeEvent(event: AppEvent): string {
+        switch (event.kind) {
+          default:
+            return assertNever(event);
+        }
+      }
+
+      function countByKind(events: readonly AppEvent[]): Record<EventKind, number> {
+        return { login: 0, logout: 0, purchase: 0 };
+      }
+    tests:
+      - name: login und logout
+        code: |
+          assertEqual(describeEvent({ kind: "login", user: "Ada" }), "Ada hat sich angemeldet");
+          assertEqual(describeEvent({ kind: "logout", user: "Grace" }), "Grace hat sich abgemeldet");
+      - name: purchase formatiert den Betrag
+        code: |
+          assertEqual(describeEvent({ kind: "purchase", user: "Ada", amountCents: 1250 }), "Ada hat für 12.50 € eingekauft");
+          assertEqual(describeEvent({ kind: "purchase", user: "Linus", amountCents: 5 }), "Linus hat für 0.05 € eingekauft");
+      - name: unbekannte Art wirft einen Fehler
+        code: |
+          assertThrows(() => describeEvent({ kind: "refund", user: "Ada" } as unknown as AppEvent));
+      - name: countByKind zählt alle Arten
+        code: |
+          const events: AppEvent[] = [
+            { kind: "login", user: "Ada" },
+            { kind: "purchase", user: "Ada", amountCents: 100 },
+            { kind: "login", user: "Grace" },
+          ];
+          assertDeepEqual(countByKind(events), { login: 2, logout: 0, purchase: 1 });
+      - name: leere Liste liefert überall 0
+        code: |
+          assertDeepEqual(countByKind([]), { login: 0, logout: 0, purchase: 0 });
+    solution: |
+      type AppEvent =
+        | { kind: "login"; user: string }
+        | { kind: "logout"; user: string }
+        | { kind: "purchase"; user: string; amountCents: number };
+
+      type EventKind = AppEvent["kind"];
+
+      function assertNever(value: never): never {
+        throw new Error(`Unbekanntes Ereignis: ${JSON.stringify(value)}`);
+      }
+
+      function describeEvent(event: AppEvent): string {
+        switch (event.kind) {
+          case "login":
+            return `${event.user} hat sich angemeldet`;
+          case "logout":
+            return `${event.user} hat sich abgemeldet`;
+          case "purchase":
+            return `${event.user} hat für ${(event.amountCents / 100).toFixed(2)} € eingekauft`;
+          default:
+            return assertNever(event);
+        }
+      }
+
+      function countByKind(events: readonly AppEvent[]): Record<EventKind, number> {
+        const counts: Record<EventKind, number> = { login: 0, logout: 0, purchase: 0 };
+        for (const event of events) {
+          counts[event.kind] += 1;
+        }
+        return counts;
+      }
+    hints:
+      - "Im `case \"purchase\":` kennt TypeScript `event.amountCents` – vorher nicht."
+      - "`(event.amountCents / 100).toFixed(2)` liefert zwei Nachkommastellen."
+      - "In `countByKind` startest du mit allen drei Zählern auf 0 und erhöhst `counts[event.kind]`."
+  - module: funktionen-und-generics
+    id: pruefung-generics
+    type: code
+    language: ts
+    title: Generische Listenhelfer
+    description: |
+      Schreibe zwei generische Funktionen, die für Listen beliebiger Elemente funktionieren.
+
+      1. `partition<T>(items, predicate)` teilt eine Liste in zwei: Das erste Array enthält alle Elemente, für
+         die `predicate` `true` liefert, das zweite den Rest. Die Reihenfolge bleibt erhalten, die
+         Eingabeliste wird nicht verändert. Rückgabetyp: das Tupel `[T[], T[]]`.
+      2. `indexBy<T, K extends keyof T>(items, key)` liefert eine `Map`, die den Wert der Eigenschaft `key`
+         auf das Element abbildet. Kommt ein Schlüssel doppelt vor, gewinnt das **letzte** Element.
+    starter: |
+      function partition<T>(items: readonly T[], predicate: (item: T) => boolean): [T[], T[]] {
+        return [[], []];
+      }
+
+      function indexBy<T, K extends keyof T>(items: readonly T[], key: K): Map<T[K], T> {
+        return new Map();
+      }
+    tests:
+      - name: partition trennt Zahlen
+        code: |
+          assertDeepEqual(partition([1, 2, 3, 4, 5], (n) => n % 2 === 0), [[2, 4], [1, 3, 5]]);
+      - name: partition mit leerer Liste
+        code: |
+          assertDeepEqual(partition([], () => true), [[], []]);
+      - name: partition verändert die Eingabe nicht
+        code: |
+          const words = ["Apfel", "kiwi", "Birne"];
+          const [upper, lower] = partition(words, (w) => w[0] === w[0]?.toUpperCase());
+          assertDeepEqual(upper, ["Apfel", "Birne"]);
+          assertDeepEqual(lower, ["kiwi"]);
+          assertDeepEqual(words, ["Apfel", "kiwi", "Birne"]);
+      - name: indexBy bildet Schlüssel auf Elemente ab
+        code: |
+          const users = [{ id: 7, name: "Ada" }, { id: 9, name: "Grace" }];
+          const byId = indexBy(users, "id");
+          assertEqual(byId.get(9)?.name, "Grace");
+          assertEqual(byId.get(1), undefined);
+          assertEqual(byId.size, 2);
+      - name: bei doppelten Schlüsseln gewinnt das letzte Element
+        code: |
+          const items = [{ sku: "A", qty: 1 }, { sku: "B", qty: 2 }, { sku: "A", qty: 3 }];
+          assertEqual(indexBy(items, "sku").get("A")?.qty, 3);
+          assertEqual(indexBy([], "sku" as never).size, 0);
+    solution: |
+      function partition<T>(items: readonly T[], predicate: (item: T) => boolean): [T[], T[]] {
+        const yes: T[] = [];
+        const no: T[] = [];
+        for (const item of items) {
+          if (predicate(item)) {
+            yes.push(item);
+          } else {
+            no.push(item);
+          }
+        }
+        return [yes, no];
+      }
+
+      function indexBy<T, K extends keyof T>(items: readonly T[], key: K): Map<T[K], T> {
+        const result = new Map<T[K], T>();
+        for (const item of items) {
+          result.set(item[key], item);
+        }
+        return result;
+      }
+    hints:
+      - "Lege zwei leere Arrays `const yes: T[] = []` und `const no: T[] = []` an und verteile die Elemente in einer Schleife."
+      - "`item[key]` hat den Typ `T[K]` – genau der Schlüsseltyp der Map."
+      - "`Map.set` überschreibt einen vorhandenen Schlüssel, deshalb gewinnt automatisch das letzte Element."
+  - module: typescript-in-der-praxis
+    id: pruefung-terminal
+    type: terminal
+    title: Ein Modul typsicher machen
+    description: |
+      Im Ordner `pruefung` liegt ein kleines Node-Projekt mit strenger `tsconfig.json`. Es nutzt die
+      untypisierte Bibliothek `vendor/slug.js` und verarbeitet Artikel aus einer JSON-Datei – `tsc` meldet
+      mehrere Fehler.
+
+      1. Lege `vendor/slug.d.ts` an: `slugify(text, separator?)` liefert einen Text, `MAX_LENGTH` ist eine Zahl.
+      2. Schreibe in `src/articles.ts` das Zod-Schema `ArticleSchema` (`title`: Text mit mindestens
+         1 Zeichen, `tags`: Liste von Texten, `published`: Wahrheitswert) und leite `type Article` daraus ab.
+      3. Behebe die übrigen Fehler in `src/articles.ts`, ohne `any` oder `@ts-ignore` zu benutzen. Hat ein
+         Artikel keine Tags, liefert `firstTag` den Text `ohne-tag`.
+      4. Ändere weder `src/main.ts` noch `vendor/slug.js`. `npx tsc --noEmit` muss fehlerfrei sein und
+         `node src/main.ts` soll ausgeben:
+
+         ```text
+         hallo-typescript (typescript)
+         zweiter-beitrag (ohne-tag)
+         1 veröffentlicht
+         ```
+
+      Klicke zuerst auf **Aufgabe vorbereiten** (die Installation dauert einige Sekunden).
+    workdir: pruefung
+    setup: |
+      npm init -y >/dev/null
+      npm pkg set type=module
+      npm install --save-dev --no-audit --no-fund typescript@7.0.2 @types/node@24 >/dev/null
+      npm install --no-audit --no-fund zod@4.6.5 >/dev/null
+      cat > tsconfig.json <<'JSON'
+      {
+        "compilerOptions": {
+          "target": "es2024",
+          "module": "nodenext",
+          "strict": true,
+          "noEmit": true,
+          "allowImportingTsExtensions": true,
+          "verbatimModuleSyntax": true,
+          "erasableSyntaxOnly": true,
+          "noUncheckedIndexedAccess": true,
+          "types": ["node"],
+          "skipLibCheck": true
+        },
+        "include": ["src"]
+      }
+      JSON
+      mkdir -p src vendor data
+      cat > vendor/slug.js <<'JS'
+      export const MAX_LENGTH = 40;
+
+      export function slugify(text, separator = "-") {
+        return text.trim().toLowerCase().split(/\s+/).join(separator).slice(0, MAX_LENGTH);
+      }
+      JS
+      cat > data/articles.json <<'JSON'
+      [
+        { "title": "Hallo TypeScript", "tags": ["typescript", "einstieg"], "published": true },
+        { "title": "Zweiter Beitrag", "tags": [], "published": false }
+      ]
+      JSON
+      cat > src/articles.ts <<'TS'
+      import * as z from "zod";
+      import { slugify } from "../vendor/slug.js";
+
+      // Schreibe hier ArticleSchema und type Article.
+
+      export function parseArticles(input: unknown): Article[] {
+        return z.array(ArticleSchema).parse(input);
+      }
+
+      export function firstTag(article) {
+        return article.tags[0];
+      }
+
+      export function articleLine(article: Article): string {
+        return `${slugify(article.title)} (${firstTag(article)})`;
+      }
+
+      export function countPublished(articles: Article[]): number {
+        return articles.filter((article) => article.published).length;
+      }
+      TS
+      cat > src/main.ts <<'TS'
+      import { readFileSync } from "node:fs";
+      import { MAX_LENGTH, slugify } from "../vendor/slug.js";
+      import { articleLine, countPublished, parseArticles } from "./articles.ts";
+
+      const raw: unknown = JSON.parse(readFileSync(new URL("../data/articles.json", import.meta.url), "utf8"));
+      const articles = parseArticles(raw);
+
+      for (const article of articles) {
+        console.log(articleLine(article));
+      }
+      console.log(`${countPublished(articles)} veröffentlicht`);
+
+      // Wird nie aufgerufen – prüft nur, dass falsche Aufrufe als Fehler erkannt werden.
+      export function typeChecks(): void {
+        const max: number = MAX_LENGTH;
+        // @ts-expect-error – slugify erwartet einen Text
+        slugify(42);
+        // @ts-expect-error – slugify liefert einen Text
+        const wrong: number = slugify("a b");
+        console.log(max, wrong);
+      }
+      TS
+      sha256sum src/main.ts vendor/slug.js > .original.sha256
+    checks:
+      - type: command
+        run: sha256sum -c --quiet .original.sha256
+        message: src/main.ts oder vendor/slug.js wurde verändert. Stelle die Dateien wieder her.
+      - type: file_exists
+        path: vendor/slug.d.ts
+        message: Die Deklarationsdatei vendor/slug.d.ts fehlt noch.
+      - type: file_contains
+        path: src/articles.ts
+        pattern: "z\\.infer<typeof ArticleSchema>"
+        message: "Leite den Typ mit `export type Article = z.infer<typeof ArticleSchema>;` aus dem Schema ab."
+      - type: command
+        run: "! grep -nE '\\bany\\b|@ts-ignore|@ts-expect-error' src/articles.ts vendor/slug.d.ts"
+        message: In deinen Dateien steht any oder ein @ts-Kommentar. Beschreibe die Typen genau.
+      - type: command
+        run: npx tsc --noEmit
+        expect_exit: 0
+        message: "`npx tsc --noEmit` meldet noch Fehler. Hat firstTag Typen, und kann tags[0] undefined sein?"
+      - type: command
+        run: node src/main.ts
+        stdout_matches: "^hallo-typescript \\(typescript\\)\\nzweiter-beitrag \\(ohne-tag\\)\\n1 veröffentlicht$"
+        message: Die Ausgabe von `node src/main.ts` stimmt noch nicht. Denk an den Ersatztext „ohne-tag“.
+    hints:
+      - "`export declare const MAX_LENGTH: number;` und `export declare function slugify(text: string, separator?: string): string;`"
+      - "`z.object({ title: z.string().min(1), tags: z.array(z.string()), published: z.boolean() })` – den Typ leitest du mit `z.infer` ab."
+      - "`export function firstTag(article: Article): string { return article.tags[0] ?? \"ohne-tag\"; }`"
+    solution: |
+      `vendor/slug.d.ts`:
+
+      ```ts
+      export declare const MAX_LENGTH: number;
+      export declare function slugify(text: string, separator?: string): string;
+      ```
+
+      `src/articles.ts`:
+
+      ```ts
+      import * as z from "zod";
+      import { slugify } from "../vendor/slug.js";
+
+      export const ArticleSchema = z.object({
+        title: z.string().min(1),
+        tags: z.array(z.string()),
+        published: z.boolean(),
+      });
+
+      export type Article = z.infer<typeof ArticleSchema>;
+
+      export function parseArticles(input: unknown): Article[] {
+        return z.array(ArticleSchema).parse(input);
+      }
+
+      export function firstTag(article: Article): string {
+        return article.tags[0] ?? "ohne-tag";
+      }
+
+      export function articleLine(article: Article): string {
+        return `${slugify(article.title)} (${firstTag(article)})`;
+      }
+
+      export function countPublished(articles: Article[]): number {
+        return articles.filter((article) => article.published).length;
+      }
+      ```

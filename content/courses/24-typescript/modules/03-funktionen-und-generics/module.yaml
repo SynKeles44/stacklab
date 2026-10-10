@@ -1,0 +1,121 @@
+title: Funktionen und Generics
+description: Funktionen sauber typisieren, mit Generics wiederverwendbaren Code schreiben und neue Typen aus vorhandenen ableiten.
+exercise:
+  id: modul-uebung-store
+  type: code
+  language: ts
+  title: Ein generischer Datenspeicher
+  description: |
+    Baue eine kleine, wiederverwendbare Datenhaltung, wie sie in vielen Frontends steckt. Sie soll für
+    **jeden** Datentyp mit einer Text-`id` funktionieren – für Produkte genauso wie für Kommentare.
+
+    1. Die Klasse `Store<T extends { id: string }>` speichert Elemente in einer `Map<string, T>`.
+    2. `add(item)` speichert ein Element. Gibt es die `id` schon, wirft die Methode einen Fehler.
+    3. `get(id)` liefert das Element oder `undefined`.
+    4. `update(id, patch)` nimmt ein `Partial<Omit<T, "id">>`, liefert das **neue** Element und ersetzt das
+       alte. Fehlt die `id`, wirft die Methode einen Fehler. Die `id` selbst kann sich nie ändern.
+    5. `list(filter?)` liefert alle Elemente (in Einfügereihenfolge), optional gefiltert.
+    6. Die freie Funktion `pickFields(item, keys)` liefert ein neues Objekt nur mit den angegebenen
+       Schlüsseln – Typ `Pick<T, K>`.
+
+    Hinweis: Mit `erasableSyntaxOnly` sind Konstruktor-Kurzschreibweisen wie
+    `constructor(private items: …)` verboten. Deklariere Felder deshalb ganz normal in der Klasse.
+  starter: |
+    class Store<T extends { id: string }> {
+      #items = new Map<string, T>();
+
+      add(item: T): void {}
+
+      get(id: string): T | undefined {
+        return undefined;
+      }
+
+      update(id: string, patch: Partial<Omit<T, "id">>): T {
+        throw new Error("TODO");
+      }
+
+      list(filter?: (item: T) => boolean): T[] {
+        return [];
+      }
+    }
+
+    function pickFields<T, K extends keyof T>(item: T, keys: K[]): Pick<T, K> {
+      return {} as Pick<T, K>;
+    }
+  tests:
+    - name: add, get und list arbeiten zusammen
+      code: |
+        const store = new Store<{ id: string; title: string }>();
+        store.add({ id: "a", title: "Erster" });
+        store.add({ id: "b", title: "Zweiter" });
+        assertEqual(store.get("b")?.title, "Zweiter");
+        assertEqual(store.get("x"), undefined);
+        assertDeepEqual(store.list().map((i) => i.id), ["a", "b"]);
+    - name: doppelte id wirft einen Fehler
+      code: |
+        const store = new Store<{ id: string }>();
+        store.add({ id: "a" });
+        assertThrows(() => store.add({ id: "a" }));
+    - name: update ändert Felder, aber nie die id
+      code: |
+        const store = new Store<{ id: string; title: string; done: boolean }>();
+        store.add({ id: "t1", title: "Einkaufen", done: false });
+        const updated = store.update("t1", { done: true, id: "anders" } as { done: boolean });
+        assertDeepEqual(updated, { id: "t1", title: "Einkaufen", done: true });
+        assertDeepEqual(store.get("t1"), { id: "t1", title: "Einkaufen", done: true });
+    - name: update auf unbekannte id wirft
+      code: |
+        const store = new Store<{ id: string; title: string }>();
+        assertThrows(() => store.update("fehlt", { title: "x" }));
+    - name: list filtert, leerer Store liefert leeres Array
+      code: |
+        const store = new Store<{ id: string; price: number }>();
+        assertDeepEqual(store.list(), []);
+        store.add({ id: "p1", price: 5 });
+        store.add({ id: "p2", price: 50 });
+        assertDeepEqual(store.list((p) => p.price > 10), [{ id: "p2", price: 50 }]);
+    - name: pickFields liefert nur die gewünschten Schlüssel
+      code: |
+        assertDeepEqual(pickFields({ id: "u1", name: "Ada", email: "ada@example.com" }, ["id", "name"]), { id: "u1", name: "Ada" })
+  solution: |
+    class Store<T extends { id: string }> {
+      #items = new Map<string, T>();
+
+      add(item: T): void {
+        if (this.#items.has(item.id)) {
+          throw new Error(`Die id ${item.id} existiert bereits.`);
+        }
+        this.#items.set(item.id, item);
+      }
+
+      get(id: string): T | undefined {
+        return this.#items.get(id);
+      }
+
+      update(id: string, patch: Partial<Omit<T, "id">>): T {
+        const current = this.#items.get(id);
+        if (current === undefined) {
+          throw new Error(`Die id ${id} gibt es nicht.`);
+        }
+        const updated: T = { ...current, ...patch, id: current.id };
+        this.#items.set(id, updated);
+        return updated;
+      }
+
+      list(filter?: (item: T) => boolean): T[] {
+        const all = [...this.#items.values()];
+        return filter ? all.filter(filter) : all;
+      }
+    }
+
+    function pickFields<T, K extends keyof T>(item: T, keys: K[]): Pick<T, K> {
+      const result = {} as Pick<T, K>;
+      for (const key of keys) {
+        result[key] = item[key];
+      }
+      return result;
+    }
+  hints:
+    - "Eine `Map` behält die Einfügereihenfolge: `[...this.#items.values()]` liefert alle Elemente als Array."
+    - "Für update: `{ ...current, ...patch, id: current.id }` – die id kommt zuletzt und gewinnt immer."
+    - "In `pickFields` startest du mit `const result = {} as Pick<T, K>;` und kopierst jeden Schlüssel."

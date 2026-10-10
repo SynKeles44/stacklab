@@ -1,0 +1,170 @@
+title: Typen modellieren
+description: Datenformen mit interface und type beschreiben, erlaubte Werte mit Union- und Literal-Typen festlegen und Typen per Narrowing sicher eingrenzen.
+exercise:
+  id: modul-uebung-zahlungsarten
+  type: terminal
+  title: Eine neue Zahlungsart einführen
+  description: |
+    Im Ordner `zahlungsarten` liegt das Zahlungsmodul eines Shops. `Payment` ist eine Discriminated Union
+    mit den Arten `card` und `paypal`. Das Team will **Kauf auf Rechnung** anbieten. `src/main.ts` benutzt
+    die neue Zahlungsart schon – deshalb meldet `tsc` Fehler.
+
+    1. Ergänze in `src/payment.ts` die Variante `{ kind: "invoice"; dueDays: number }`.
+    2. Starte `npx tsc --noEmit`: Die beiden `assertNever`-Aufrufe zeigen dir, wo der neue Fall fehlt.
+       Behandle ihn in beiden `switch`-Anweisungen. Die Beschreibung lautet
+       `Rechnung, zahlbar in 14 Tagen` (mit dem Wert aus `dueDays`), die Gebühr ist `0`.
+       Lass die `default`-Zweige mit `assertNever(payment)` stehen.
+    3. Exportiere die Liste `PAYMENT_KINDS` mit allen drei Arten (`as const`), leite daraus den Typ
+       `PaymentKind` ab und schreibe `parseKind(text: string): PaymentKind | undefined`.
+    4. `node src/main.ts` soll ausgeben:
+
+       ```text
+       Karte endet auf 4242: 150 Cent Gebühr
+       PayPal (user@example.com): 285 Cent Gebühr
+       Rechnung, zahlbar in 14 Tagen: 0 Cent Gebühr
+       invoice
+       unbekannt
+       ```
+
+    Kein `any`, kein `@ts-ignore`. Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: zahlungsarten
+  setup: |
+    npm init -y >/dev/null
+    npm pkg set type=module
+    npm install --save-dev --no-audit --no-fund typescript@7.0.2 >/dev/null
+    cat > tsconfig.json <<'JSON'
+    {
+      "compilerOptions": {
+        "target": "es2024",
+        "module": "nodenext",
+        "strict": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "erasableSyntaxOnly": true,
+        "noUncheckedIndexedAccess": true,
+        "skipLibCheck": true
+      },
+      "include": ["src"]
+    }
+    JSON
+    mkdir -p src
+    cat > src/payment.ts <<'TS'
+    export type Payment =
+      | { kind: "card"; last4: string }
+      | { kind: "paypal"; email: string };
+
+    export function assertNever(value: never): never {
+      throw new Error(`Unbehandelte Zahlungsart: ${JSON.stringify(value)}`);
+    }
+
+    export function describePayment(payment: Payment): string {
+      switch (payment.kind) {
+        case "card":
+          return `Karte endet auf ${payment.last4}`;
+        case "paypal":
+          return `PayPal (${payment.email})`;
+        default:
+          return assertNever(payment);
+      }
+    }
+
+    export function feeCents(payment: Payment, amountCents: number): number {
+      switch (payment.kind) {
+        case "card":
+          return Math.round(amountCents * 0.015);
+        case "paypal":
+          return Math.round(amountCents * 0.025) + 35;
+        default:
+          return assertNever(payment);
+      }
+    }
+    TS
+    cat > src/main.ts <<'TS'
+    import { describePayment, feeCents, parseKind } from "./payment.ts";
+    import type { Payment } from "./payment.ts";
+
+    const payments: Payment[] = [
+      { kind: "card", last4: "4242" },
+      { kind: "paypal", email: "user@example.com" },
+      { kind: "invoice", dueDays: 14 },
+    ];
+
+    for (const payment of payments) {
+      console.log(`${describePayment(payment)}: ${feeCents(payment, 10000)} Cent Gebühr`);
+    }
+    console.log(parseKind("invoice") ?? "unbekannt");
+    console.log(parseKind("cash") ?? "unbekannt");
+    TS
+    sha256sum src/main.ts > .main.sha256
+  checks:
+    - type: command
+      run: sha256sum -c --quiet .main.sha256
+      message: src/main.ts wurde verändert. Ändere nur src/payment.ts.
+    - type: command
+      run: "! grep -nE '\\bany\\b|@ts-ignore|@ts-expect-error' src/payment.ts"
+      message: In src/payment.ts steht any oder ein @ts-Kommentar. Löse die Fehler mit echten Typen.
+    - type: command
+      run: grep -c 'assertNever(payment)' src/payment.ts
+      stdout_equals: "2"
+      message: Beide switch-Anweisungen sollen ihren default-Zweig mit `assertNever(payment)` behalten.
+    - type: file_contains
+      path: src/payment.ts
+      pattern: "as const"
+      message: Lege PAYMENT_KINDS mit `as const` an, damit der Typ PaymentKind daraus abgeleitet werden kann.
+    - type: command
+      run: npx tsc --noEmit
+      expect_exit: 0
+      message: "`npx tsc --noEmit` meldet noch Fehler. Fehlt ein case für \"invoice\" oder der Export von parseKind?"
+    - type: command
+      run: node src/main.ts
+      stdout_matches: "^Karte endet auf 4242: 150 Cent Gebühr\\nPayPal \\(user@example\\.com\\): 285 Cent Gebühr\\nRechnung, zahlbar in 14 Tagen: 0 Cent Gebühr\\ninvoice\\nunbekannt$"
+      message: Die Ausgabe von `node src/main.ts` stimmt noch nicht. Vergleiche sie Zeile für Zeile mit der Aufgabe.
+  hints:
+    - "Die Union bekommt eine dritte Zeile: `| { kind: \"invoice\"; dueDays: number }`."
+    - "Im neuen `case \"invoice\":` kennt TypeScript `payment.dueDays`: ``return `Rechnung, zahlbar in ${payment.dueDays} Tagen`;``"
+    - "`export const PAYMENT_KINDS = [\"card\", \"paypal\", \"invoice\"] as const;` und `export type PaymentKind = (typeof PAYMENT_KINDS)[number];` – parseKind sucht mit `find`."
+  solution: |
+    ```ts
+    export const PAYMENT_KINDS = ["card", "paypal", "invoice"] as const;
+    export type PaymentKind = (typeof PAYMENT_KINDS)[number];
+
+    export type Payment =
+      | { kind: "card"; last4: string }
+      | { kind: "paypal"; email: string }
+      | { kind: "invoice"; dueDays: number };
+
+    export function parseKind(text: string): PaymentKind | undefined {
+      return PAYMENT_KINDS.find((kind) => kind === text);
+    }
+
+    export function assertNever(value: never): never {
+      throw new Error(`Unbehandelte Zahlungsart: ${JSON.stringify(value)}`);
+    }
+
+    export function describePayment(payment: Payment): string {
+      switch (payment.kind) {
+        case "card":
+          return `Karte endet auf ${payment.last4}`;
+        case "paypal":
+          return `PayPal (${payment.email})`;
+        case "invoice":
+          return `Rechnung, zahlbar in ${payment.dueDays} Tagen`;
+        default:
+          return assertNever(payment);
+      }
+    }
+
+    export function feeCents(payment: Payment, amountCents: number): number {
+      switch (payment.kind) {
+        case "card":
+          return Math.round(amountCents * 0.015);
+        case "paypal":
+          return Math.round(amountCents * 0.025) + 35;
+        case "invoice":
+          return 0;
+        default:
+          return assertNever(payment);
+      }
+    }
+    ```

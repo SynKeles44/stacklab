@@ -1,0 +1,31 @@
+title: TypeScript
+subtitle: JavaScript mit Typen – Fehler finden, bevor dein Code überhaupt läuft
+description: >
+  TypeScript ist JavaScript mit einem Sicherheitsnetz: Du schreibst dazu, welche Art von Werten deine
+  Variablen und Funktionen erwarten, und der Compiler prüft dein ganzes Projekt, bevor auch nur eine
+  Zeile ausgeführt wird. Tippfehler in Eigenschaften, vergessene Sonderfälle und `undefined`, wo niemand
+  damit gerechnet hat, fallen so schon im Editor auf – nicht erst beim Kunden.
+
+
+  Du lernst TypeScript 7 mit dem neuen, nativen Compiler: von `tsc` und einer strengen `tsconfig.json`
+  über Union-Typen, Narrowing und Generics bis zu Utility Types, Deklarationsdateien und
+  Laufzeitvalidierung mit Zod. Typfehler übst du im echten Übungs-Terminal, wo `tsc` deine Lösung prüft.
+  Im Abschlussprojekt migrierst du ein JavaScript-Modul Schritt für Schritt nach striktem TypeScript.
+category: frontend
+level: fortgeschritten
+icon: file-code
+color: "#3178c6"
+estimated_hours: 5
+workspace_dir: typescript
+prerequisites: [javascript]
+learning_goals:
+  - Du erklärst, was statische Typen bringen und warum TypeScript-Typen zur Laufzeit verschwinden.
+  - Du richtest ein Projekt mit `tsc` und einer strengen `tsconfig.json` ein und verstehst die wichtigsten Optionen.
+  - Du beschreibst Daten mit Objekttypen, Interfaces, Union- und Literal-Typen, `as const` und `satisfies`.
+  - Du grenzt Typen per Narrowing ein und sicherst mit `never` ab, dass kein Fall vergessen wird.
+  - Du schreibst typsichere Funktionen und Generics mit Constraints und Standard-Typparametern.
+  - Du leitest Typen mit `keyof`, `typeof`, Indexed Access und Utility Types aus anderen Typen ab.
+  - Du typisierst fremden JavaScript-Code mit Deklarationsdateien und prüfst Daten von außen mit Zod.
+references:
+  - Schrittweise Migration großer JavaScript-Codebasen auf strict mode
+  - Validierung von API-Antworten und Formulardaten mit Schemas an der Systemgrenze

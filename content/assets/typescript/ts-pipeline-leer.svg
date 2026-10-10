@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <rect x="30" y="105" width="170" height="90" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="115" y="135" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Quellcode .ts</text>
+  <text x="115" y="160" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">let n: number = 5</text>
+  <text x="115" y="180" text-anchor="middle" font-size="12" fill="#1e1b3a">JavaScript + Typen</text>
+  <rect x="260" y="30" width="210" height="95" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <rect x="260" y="175" width="210" height="95" rx="12" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <rect x="570" y="30" width="200" height="95" rx="12" fill="#fef2f2" stroke="#f87171" stroke-width="2"/>
+  <rect x="570" y="175" width="200" height="95" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <path d="M200,135 C230,120 230,85 258,80" fill="none" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M200,165 C230,180 230,215 258,220" fill="none" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="470" y1="78" x2="566" y2="78" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="470" y1="222" x2="566" y2="222" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="518" y="68" text-anchor="middle" font-size="12" fill="#1e1b3a">bei Fehler</text>
+  <text x="518" y="212" text-anchor="middle" font-size="12" fill="#1e1b3a">Ausgabe</text>
+  <text x="400" y="150" text-anchor="middle" font-size="12" fill="#1e1b3a">zwei getrennte Aufgaben</text>
+</svg>
