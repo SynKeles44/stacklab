@@ -1,0 +1,135 @@
+title: Daten modellieren
+description: Entitäten und Beziehungen erkennen, Tabellen bis zur dritten Normalform zerlegen und mit Datentypen, Schlüsseln und Constraints sicher anlegen.
+exercise:
+  id: modul-uebung-tags
+  type: terminal
+  title: Produkte mit Schlagworten versehen
+  description: |
+    Der Shop möchte Produkte mit Schlagworten wie „neu“ oder „sale“ markieren. Ein Produkt kann mehrere
+    Schlagworte haben, ein Schlagwort gehört zu vielen Produkten – eine n:m-Beziehung. Im Ordner
+    `schlagworte` liegt `shop.db`.
+
+    Schreibe alles in die Datei `modell.sql` und führe sie mit `sqlite3 shop.db < modell.sql` aus:
+
+    1. Tabelle `tags` mit `id INTEGER PRIMARY KEY` und `name` (Pflichtfeld, eindeutig).
+    2. Zwischentabelle `product_tags` mit den Pflichtspalten `product_id` (Fremdschlüssel auf `products(id)`)
+       und `tag_id` (Fremdschlüssel auf `tags(id)`). Beide Fremdschlüssel löschen mit `ON DELETE CASCADE`.
+       Der Primärschlüssel besteht aus **beiden** Spalten.
+    3. Lege die Schlagworte `neu` und `sale` an.
+    4. Markiere `Tasse` und `Hoodie` mit `sale` und `Rucksack` mit `neu`. Nutze dafür die ids aus `products`
+       und `tags` – schau sie vorher mit `SELECT id, name FROM …` nach.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: schlagworte
+  setup: |
+    sqlite3 shop.db <<'SQL'
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE customers (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      city TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE products (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      price REAL NOT NULL CHECK (price >= 0),
+      stock INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE orders (
+      id INTEGER PRIMARY KEY,
+      customer_id INTEGER NOT NULL REFERENCES customers(id),
+      order_date TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('offen', 'bezahlt', 'versendet', 'storniert'))
+    );
+    CREATE TABLE order_items (
+      order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      product_id INTEGER NOT NULL REFERENCES products(id),
+      quantity INTEGER NOT NULL CHECK (quantity > 0),
+      unit_price REAL NOT NULL,
+      PRIMARY KEY (order_id, product_id)
+    );
+    INSERT INTO customers VALUES
+      (1, 'Ada Lovelace', 'ada@example.com', 'Berlin', '2026-01-15'),
+      (2, 'Grace Hopper', 'grace@example.com', 'Hamburg', '2026-02-03'),
+      (3, 'Alan Turing', 'alan@example.com', 'Berlin', '2026-02-20'),
+      (4, 'Margaret Hamilton', 'margaret@example.com', 'München', '2026-03-11'),
+      (5, 'Katherine Johnson', 'katherine@example.com', NULL, '2026-04-02'),
+      (6, 'Tim Berners-Lee', 'tim@example.com', 'Köln', '2026-05-19');
+    INSERT INTO products VALUES
+      (1, 'Tasse', 'Küche', 8.5, 40),
+      (2, 'T-Shirt', 'Kleidung', 19.5, 25),
+      (3, 'Hoodie', 'Kleidung', 39.0, 10),
+      (4, 'Notizbuch', 'Büro', 6.0, 100),
+      (5, 'Kugelschreiber', 'Büro', 1.5, 300),
+      (6, 'Rucksack', 'Taschen', 49.5, 0),
+      (7, 'Sticker-Set', 'Büro', 3.0, 150);
+    INSERT INTO orders VALUES
+      (1, 1, '2026-03-01', 'versendet'),
+      (2, 2, '2026-03-05', 'versendet'),
+      (3, 1, '2026-04-10', 'bezahlt'),
+      (4, 3, '2026-04-12', 'storniert'),
+      (5, 4, '2026-05-02', 'versendet'),
+      (6, 2, '2026-06-18', 'offen'),
+      (7, 5, '2026-07-01', 'bezahlt'),
+      (8, 1, '2026-08-21', 'offen');
+    INSERT INTO order_items VALUES
+      (1, 1, 2, 8.5), (1, 4, 3, 6.0),
+      (2, 2, 1, 19.5), (2, 3, 1, 39.0),
+      (3, 6, 1, 49.5),
+      (4, 2, 2, 19.5),
+      (5, 4, 5, 6.0), (5, 5, 10, 1.5),
+      (6, 3, 1, 39.0), (6, 1, 1, 8.5),
+      (7, 2, 3, 19.5),
+      (8, 5, 4, 1.5), (8, 1, 1, 8.5);
+    SQL
+  checks:
+    - type: command
+      run: sqlite3 shop.db "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('tags', 'product_tags') ORDER BY name;" | tr '\n' ' '
+      stdout_matches: "^product_tags tags\\s*$"
+      message: Es fehlen noch Tabellen. Erwartet werden tags und product_tags in shop.db – hast du modell.sql ausgeführt?
+    - type: command
+      run: sqlite3 shop.db "SELECT name FROM pragma_table_info('product_tags') WHERE pk > 0 AND \"notnull\" = 1 ORDER BY name;" | tr '\n' ' '
+      stdout_matches: "^product_id tag_id\\s*$"
+      message: product_tags braucht einen zusammengesetzten Primärschlüssel PRIMARY KEY (product_id, tag_id), und beide Spalten sind NOT NULL.
+    - type: command
+      run: sqlite3 shop.db "SELECT \"table\" || ':' || on_delete FROM pragma_foreign_key_list('product_tags') ORDER BY \"table\";" | tr '\n' ' '
+      stdout_matches: "^products:CASCADE tags:CASCADE\\s*$"
+      message: Die Fremdschlüssel von product_tags stimmen noch nicht. Beide brauchen REFERENCES … ON DELETE CASCADE.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp shop.db "$d/t.db"
+        if sqlite3 "$d/t.db" "INSERT INTO tags (name) VALUES ('sale');" 2>/dev/null; then echo doppelt; elif sqlite3 "$d/t.db" "INSERT INTO tags (name) VALUES (NULL);" 2>/dev/null; then echo leer; else echo ok; fi
+        rm -rf "$d"
+      stdout_equals: ok
+      message: tags.name muss NOT NULL und UNIQUE sein – ein zweites „sale“ oder ein leerer Name darf nicht möglich sein.
+    - type: command
+      run: |
+        ist=$(sqlite3 shop.db "SELECT p.name || ':' || t.name FROM product_tags pt JOIN products p ON p.id = pt.product_id JOIN tags t ON t.id = pt.tag_id ORDER BY p.name;" 2>&1 | tr '\n' ' ')
+        [ "$ist" = "Hoodie:sale Rucksack:neu Tasse:sale " ] && echo ok
+      stdout_equals: ok
+      message: Die Zuordnungen stimmen noch nicht. Erwartet werden genau Hoodie und Tasse mit sale sowie Rucksack mit neu.
+  hints:
+    - "Die Zwischentabelle sieht aus wie order_items im ER-Diagramm: zwei Spalten mit `REFERENCES`, am Ende `PRIMARY KEY (product_id, tag_id)`."
+    - "Schlagworte anlegen: `INSERT INTO tags (name) VALUES ('neu'), ('sale');` – die ids vergibt SQLite selbst (1 und 2)."
+    - "Tasse hat die id 1, Hoodie 3, Rucksack 6: `INSERT INTO product_tags (product_id, tag_id) VALUES (1, 2), (3, 2), (6, 1);`"
+  solution: |
+    ```bash
+    cd schlagworte
+    cat > modell.sql <<'SQL'
+    CREATE TABLE tags (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE
+    );
+    CREATE TABLE product_tags (
+      product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+      PRIMARY KEY (product_id, tag_id)
+    );
+    INSERT INTO tags (name) VALUES ('neu'), ('sale');
+    INSERT INTO product_tags (product_id, tag_id) VALUES (1, 2), (3, 2), (6, 1);
+    SQL
+    sqlite3 shop.db < modell.sql
+    ```

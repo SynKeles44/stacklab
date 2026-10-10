@@ -1,0 +1,139 @@
+title: Grundlagen und erste Abfragen
+description: Was eine relationale Datenbank ist, wie du sie mit sqlite3 erkundest und wie du mit SELECT, WHERE, ORDER BY, Aggregatfunktionen und GROUP BY Fragen beantwortest.
+exercise:
+  id: modul-uebung-bericht
+  type: terminal
+  title: Der Quartalsbericht
+  description: |
+    Die Shop-Betreiberin braucht drei Auswertungen für ihren Quartalsbericht. Im Ordner `quartalsbericht`
+    liegt `shop.db`. Schreibe jede Auswertung als **eine** Abfrage in die angegebene Datei. Spaltenreihenfolge
+    und Sortierung müssen genau stimmen.
+
+    1. `bericht1.sql` – große Bestellungen: Werte die Tabelle `order_items` aus. Gib pro `order_id` die
+       Anzahl der Positionen und den Bestellwert `SUM(quantity * unit_price)` aus. Zeige nur Bestellungen mit
+       einem Wert von **mindestens 40**. Sortiere nach Bestellwert absteigend, bei Gleichstand nach `order_id`.
+    2. `bericht2.sql` – zweites Quartal: `id`, `order_date` und `status` aller Bestellungen vom
+       `2026-04-01` bis einschließlich `2026-06-30`, die **nicht** storniert sind, sortiert nach `order_date`.
+    3. `bericht3.sql` – Lagerwert: Pro `category` die Summe `price * stock`. Zeige nur Kategorien mit einem
+       Lagerwert größer 0, sortiert nach Lagerwert absteigend.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: quartalsbericht
+  setup: |
+    sqlite3 shop.db <<'SQL'
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE customers (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      city TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE products (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      price REAL NOT NULL CHECK (price >= 0),
+      stock INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE orders (
+      id INTEGER PRIMARY KEY,
+      customer_id INTEGER NOT NULL REFERENCES customers(id),
+      order_date TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('offen', 'bezahlt', 'versendet', 'storniert'))
+    );
+    CREATE TABLE order_items (
+      order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      product_id INTEGER NOT NULL REFERENCES products(id),
+      quantity INTEGER NOT NULL CHECK (quantity > 0),
+      unit_price REAL NOT NULL,
+      PRIMARY KEY (order_id, product_id)
+    );
+    INSERT INTO customers VALUES
+      (1, 'Ada Lovelace', 'ada@example.com', 'Berlin', '2026-01-15'),
+      (2, 'Grace Hopper', 'grace@example.com', 'Hamburg', '2026-02-03'),
+      (3, 'Alan Turing', 'alan@example.com', 'Berlin', '2026-02-20'),
+      (4, 'Margaret Hamilton', 'margaret@example.com', 'München', '2026-03-11'),
+      (5, 'Katherine Johnson', 'katherine@example.com', NULL, '2026-04-02'),
+      (6, 'Tim Berners-Lee', 'tim@example.com', 'Köln', '2026-05-19');
+    INSERT INTO products VALUES
+      (1, 'Tasse', 'Küche', 8.5, 40),
+      (2, 'T-Shirt', 'Kleidung', 19.5, 25),
+      (3, 'Hoodie', 'Kleidung', 39.0, 10),
+      (4, 'Notizbuch', 'Büro', 6.0, 100),
+      (5, 'Kugelschreiber', 'Büro', 1.5, 300),
+      (6, 'Rucksack', 'Taschen', 49.5, 0),
+      (7, 'Sticker-Set', 'Büro', 3.0, 150);
+    INSERT INTO orders VALUES
+      (1, 1, '2026-03-01', 'versendet'),
+      (2, 2, '2026-03-05', 'versendet'),
+      (3, 1, '2026-04-10', 'bezahlt'),
+      (4, 3, '2026-04-12', 'storniert'),
+      (5, 4, '2026-05-02', 'versendet'),
+      (6, 2, '2026-06-18', 'offen'),
+      (7, 5, '2026-07-01', 'bezahlt'),
+      (8, 1, '2026-08-21', 'offen');
+    INSERT INTO order_items VALUES
+      (1, 1, 2, 8.5), (1, 4, 3, 6.0),
+      (2, 2, 1, 19.5), (2, 3, 1, 39.0),
+      (3, 6, 1, 49.5),
+      (4, 2, 2, 19.5),
+      (5, 4, 5, 6.0), (5, 5, 10, 1.5),
+      (6, 3, 1, 39.0), (6, 1, 1, 8.5),
+      (7, 2, 3, 19.5),
+      (8, 5, 4, 1.5), (8, 1, 1, 8.5);
+    SQL
+  checks:
+    - type: command
+      run: |
+        test -s bericht1.sql || exit 1
+        ist=$(sqlite3 shop.db < bericht1.sql 2>&1)
+        soll=$(sqlite3 shop.db "SELECT order_id, COUNT(*), SUM(quantity * unit_price) AS total FROM order_items GROUP BY order_id HAVING total >= 40 ORDER BY total DESC, order_id;")
+        [ "$ist" = "$soll" ] && echo ok
+      stdout_equals: ok
+      message: bericht1.sql stimmt noch nicht. Gruppiere nach order_id, filtere mit HAVING auf SUM(quantity * unit_price) >= 40 und sortiere nach dieser Summe absteigend, dann nach order_id.
+    - type: command
+      run: |
+        test -s bericht2.sql || exit 1
+        ist=$(sqlite3 shop.db < bericht2.sql 2>&1)
+        soll=$(sqlite3 shop.db "SELECT id, order_date, status FROM orders WHERE order_date BETWEEN '2026-04-01' AND '2026-06-30' AND status <> 'storniert' ORDER BY order_date;")
+        [ "$ist" = "$soll" ] && echo ok
+      stdout_equals: ok
+      message: bericht2.sql stimmt noch nicht. Du brauchst BETWEEN '2026-04-01' AND '2026-06-30', status <> 'storniert' und ORDER BY order_date.
+    - type: command
+      run: |
+        test -s bericht3.sql || exit 1
+        ist=$(sqlite3 shop.db < bericht3.sql 2>&1)
+        soll=$(sqlite3 shop.db "SELECT category, SUM(price * stock) AS wert FROM products GROUP BY category HAVING wert > 0 ORDER BY wert DESC;")
+        [ "$ist" = "$soll" ] && echo ok
+      stdout_equals: ok
+      message: bericht3.sql stimmt noch nicht. Gruppiere products nach category, berechne SUM(price * stock), filtere mit HAVING auf > 0 und sortiere absteigend.
+  hints:
+    - "Teste jede Datei einzeln mit `sqlite3 shop.db < bericht1.sql`. Mit `sqlite3 -header -column shop.db < bericht1.sql` siehst du die Spalten deutlicher – Stacklab prüft aber die normale Ausgabe."
+    - "In HAVING und ORDER BY darfst du die Aggregatfunktion wiederholen oder ihren Alias nutzen, z. B. `SUM(quantity * unit_price) AS total … HAVING total >= 40`."
+    - "Datumswerte liegen als Text `JJJJ-MM-TT` vor. Weil diese Form richtig sortiert, funktioniert `BETWEEN '2026-04-01' AND '2026-06-30'`."
+  solution: |
+    ```bash
+    cd quartalsbericht
+    cat > bericht1.sql <<'SQL'
+    SELECT order_id, COUNT(*) AS positionen, SUM(quantity * unit_price) AS total
+    FROM order_items
+    GROUP BY order_id
+    HAVING total >= 40
+    ORDER BY total DESC, order_id;
+    SQL
+    cat > bericht2.sql <<'SQL'
+    SELECT id, order_date, status
+    FROM orders
+    WHERE order_date BETWEEN '2026-04-01' AND '2026-06-30'
+      AND status <> 'storniert'
+    ORDER BY order_date;
+    SQL
+    cat > bericht3.sql <<'SQL'
+    SELECT category, SUM(price * stock) AS lagerwert
+    FROM products
+    GROUP BY category
+    HAVING lagerwert > 0
+    ORDER BY lagerwert DESC;
+    SQL
+    ```

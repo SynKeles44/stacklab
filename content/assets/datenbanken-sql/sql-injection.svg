@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="30" y="36" font-size="20" font-weight="700" fill="#1e1b3a">Dieselbe Eingabe – zwei Wege zur Datenbank</text>
+  <text x="30" y="60" font-size="13" fill="#1e1b3a">Eingabe im Suchfeld:</text>
+  <rect x="160" y="44" width="200" height="24" rx="4" fill="#f59e0b" fill-opacity="0.25" stroke="#1e1b3a"/>
+  <text x="170" y="61" font-size="14" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a">x' OR '1'='1</text>
+
+  <rect x="30" y="90" width="410" height="270" rx="10" fill="#f87171" fill-opacity="0.12" stroke="#f87171" stroke-width="2"/>
+  <text x="50" y="120" font-size="16" font-weight="700" fill="#1e1b3a">Zusammenkleben (unsicher)</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">
+    <text x="50" y="152">"… WHERE name = '" + eingabe + "'"</text>
+    <text x="50" y="196">SELECT name, price FROM products</text>
+    <text x="50" y="216">WHERE name = '<tspan fill="#b91c1c" font-weight="700">x' OR '1'='1</tspan>'</text>
+  </g>
+  <text x="50" y="176" font-size="12" fill="#1e1b3a">wird zu einem einzigen SQL-Text:</text>
+  <text x="50" y="256" font-size="13" fill="#1e1b3a">Die Datenbank liest die Eingabe als Code:</text>
+  <text x="50" y="276" font-size="13" fill="#1e1b3a">„… oder 1 ist gleich 1“ – das gilt für jede Zeile.</text>
+  <rect x="50" y="300" width="370" height="40" rx="6" fill="#f87171" fill-opacity="0.3" stroke="#1e1b3a"/>
+  <text x="235" y="325" font-size="14" font-weight="700" text-anchor="middle" fill="#1e1b3a">Ergebnis: alle 7 Produkte</text>
+
+  <rect x="460" y="90" width="410" height="270" rx="10" fill="#34d399" fill-opacity="0.12" stroke="#34d399" stroke-width="2"/>
+  <text x="480" y="120" font-size="16" font-weight="700" fill="#1e1b3a">Prepared Statement (sicher)</text>
+  <text x="480" y="148" font-size="12" fill="#1e1b3a">1. SQL mit Platzhalter wird vorbereitet:</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">
+    <text x="480" y="170">SELECT name, price FROM products</text>
+    <text x="480" y="190">WHERE name = <tspan fill="#0e7490" font-weight="700">?</tspan></text>
+    <text x="480" y="236"><tspan fill="#0e7490" font-weight="700">?</tspan> = "x' OR '1'='1"</text>
+  </g>
+  <text x="480" y="214" font-size="12" fill="#1e1b3a">2. Der Wert kommt getrennt als Daten hinterher:</text>
+  <text x="480" y="266" font-size="13" fill="#1e1b3a">Die Datenbank sucht ein Produkt, das wirklich</text>
+  <text x="480" y="286" font-size="13" fill="#1e1b3a">so heißt. Die Anführungszeichen sind nur Text.</text>
+  <rect x="480" y="300" width="370" height="40" rx="6" fill="#34d399" fill-opacity="0.35" stroke="#1e1b3a"/>
+  <text x="665" y="325" font-size="14" font-weight="700" text-anchor="middle" fill="#1e1b3a">Ergebnis: 0 Produkte</text>
+
+  <text x="30" y="388" font-size="13" fill="#1e1b3a">Merke: Beim Prepared Statement sind Befehl und Daten getrennt – Eingaben können den Befehl nie verändern.</text>
+</svg>

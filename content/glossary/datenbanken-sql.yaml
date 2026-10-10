@@ -1,0 +1,625 @@
+# Lexikon des Kurses „Datenbanken & SQL“
+- slug: relationale-datenbank
+  term: Relationale Datenbank
+  short: Eine Datenbank, die Daten in Tabellen speichert, die über Schlüssel miteinander verknüpft sind.
+  explanation: >
+    Jede Tabelle beschreibt eine Art von Ding, etwa Kunden oder Bestellungen. Jede Zeile ist ein Datensatz,
+    jede Spalte eine Eigenschaft. Über Primär- und Fremdschlüssel verweisen Tabellen aufeinander, und mit SQL
+    fragst du die Daten ab.
+  example: "Die Tabelle `orders` verweist mit `customer_id` auf die Tabelle `customers`."
+  category: datenbanken
+  aliases: [Relationale Datenbanken, relationales Datenbanksystem]
+  related: [tabelle, primaerschluessel, fremdschluessel, sql]
+  lesson: datenbanken-sql/relationale-datenbanken
+
+- slug: rdbms
+  term: RDBMS
+  short: Ein relationales Datenbankmanagementsystem – die Software, die relationale Datenbanken verwaltet.
+  explanation: >
+    Das RDBMS speichert die Daten, nimmt SQL-Anweisungen entgegen, prüft Regeln und sorgt für Transaktionen.
+    Bekannte Systeme sind PostgreSQL, MySQL, MariaDB und SQLite. Anwendungen sprechen nie direkt mit den
+    Dateien auf der Festplatte, sondern immer mit dem RDBMS.
+  example: "PostgreSQL 18 ist ein RDBMS, das als eigener Server-Prozess läuft."
+  category: datenbanken
+  aliases: [Datenbankmanagementsystem, DBMS, Datenbanksystem]
+  related: [relationale-datenbank, postgresql, mysql, sqlite]
+  lesson: datenbanken-sql/relationale-datenbanken
+
+- slug: mariadb
+  term: MariaDB
+  short: Ein freies relationales Datenbanksystem, das als Abspaltung von MySQL entstanden ist.
+  explanation: >
+    MariaDB ist weitgehend kompatibel zu MySQL: Viele Befehle, Treiber und Werkzeuge funktionieren mit beiden.
+    Es wird von einer eigenen Community und Stiftung weiterentwickelt. In vielen Linux-Distributionen ist es
+    die Standard-Datenbank anstelle von MySQL.
+  example: "Ein Hosting-Paket bietet „MySQL/MariaDB“ an – für einfache Anwendungen ist der Unterschied kaum spürbar."
+  category: datenbanken
+  related: [mysql, rdbms]
+  lesson: datenbanken-sql/relationale-datenbanken
+
+- slug: sqlite3-shell
+  term: sqlite3 (Kommandozeile)
+  short: Das Kommandozeilenprogramm, mit dem du eine SQLite-Datenbankdatei öffnest und SQL ausführst.
+  explanation: >
+    `sqlite3 shop.db` öffnet die Datei `shop.db` und zeigt eine Eingabeaufforderung `sqlite>`. Dort tippst du
+    SQL-Anweisungen mit Semikolon oder Punkt-Befehle. Du kannst auch eine Datei hineinleiten:
+    `sqlite3 shop.db < abfrage.sql`.
+  example: "`sqlite3 -header -column shop.db \"SELECT * FROM products;\"` zeigt die Produkte als Tabelle."
+  category: datenbanken
+  aliases: [sqlite3, SQLite-Shell]
+  related: [sqlite, punkt-befehl]
+  lesson: datenbanken-sql/relationale-datenbanken
+
+- slug: punkt-befehl
+  term: Punkt-Befehl
+  short: Ein Steuerbefehl des Programms sqlite3, der mit einem Punkt beginnt und kein SQL ist.
+  explanation: >
+    Punkt-Befehle steuern das Werkzeug selbst, nicht die Datenbank-Sprache. Sie brauchen kein Semikolon und
+    funktionieren nur in sqlite3, nicht in anderen Datenbanken. Wichtige Beispiele sind `.tables`, `.schema`,
+    `.headers on` und `.quit`.
+  example: "`.schema products` zeigt die CREATE-TABLE-Anweisung der Tabelle products."
+  category: datenbanken
+  aliases: [Punkt-Befehle, Dot-Command]
+  related: [sqlite3-shell]
+  lesson: datenbanken-sql/relationale-datenbanken
+
+- slug: select
+  term: SELECT
+  short: Die SQL-Anweisung, mit der du Daten aus einer oder mehreren Tabellen liest.
+  explanation: >
+    Nach SELECT nennst du die gewünschten Spalten, nach FROM die Tabelle. Mit WHERE, ORDER BY und LIMIT
+    filterst, sortierst und begrenzt du das Ergebnis. SELECT ändert nie Daten, es liefert nur eine
+    Ergebnismenge.
+  example: "`SELECT name, price FROM products WHERE price < 10;`"
+  category: datenbanken
+  aliases: [SELECT-Anweisung, SELECT-Abfrage]
+  related: [where-klausel, order-by, limit, ergebnismenge]
+  lesson: datenbanken-sql/daten-abfragen-mit-select
+
+- slug: spaltenalias
+  term: Spaltenalias
+  short: Ein neuer Name für eine Spalte im Ergebnis, vergeben mit AS.
+  explanation: >
+    Berechnete Spalten wie `price * stock` haben sonst unhandliche Namen. Mit `AS lagerwert` gibst du ihnen
+    einen sprechenden Namen. Den Alias kannst du in ORDER BY und oft auch in HAVING wieder verwenden.
+  example: "`SELECT name, price * stock AS lagerwert FROM products ORDER BY lagerwert DESC;`"
+  category: datenbanken
+  aliases: [Alias, AS, Spaltenaliasse]
+  related: [select]
+  lesson: datenbanken-sql/daten-abfragen-mit-select
+
+- slug: distinct
+  term: DISTINCT
+  short: Ein Schlüsselwort, das doppelte Zeilen aus dem Ergebnis entfernt.
+  explanation: >
+    `SELECT DISTINCT` liefert jede Kombination der gewählten Spalten nur einmal. Das ist praktisch, um zu sehen,
+    welche Werte überhaupt vorkommen. Es wirkt auf die ganze Zeile, nicht auf eine einzelne Spalte.
+  example: "`SELECT DISTINCT city FROM customers;` listet jede Stadt nur einmal."
+  category: datenbanken
+  related: [select]
+  lesson: datenbanken-sql/daten-abfragen-mit-select
+
+- slug: where-klausel
+  term: WHERE-Klausel
+  short: Der Teil einer Abfrage, der Zeilen nach einer Bedingung filtert.
+  explanation: >
+    Nur Zeilen, für die die Bedingung wahr ist, landen im Ergebnis. Bedingungen verknüpfst du mit AND, OR und
+    NOT und nutzt Vergleiche wie `=`, `<>`, `BETWEEN`, `IN` oder `LIKE`. WHERE wirkt in SELECT, UPDATE und DELETE.
+  example: "`SELECT * FROM orders WHERE status = 'offen' AND order_date >= '2026-06-01';`"
+  category: datenbanken
+  aliases: [WHERE, Filterbedingung]
+  related: [select, sql-null, having]
+  lesson: datenbanken-sql/daten-abfragen-mit-select
+
+- slug: sql-null
+  term: NULL (SQL)
+  short: Der Platzhalter für einen fehlenden oder unbekannten Wert in einer Datenbank.
+  explanation: >
+    NULL ist nicht 0 und nicht der leere Text, sondern „kein Wert“. Jeder Vergleich mit NULL ergibt „unbekannt“,
+    deshalb findet `= NULL` nie etwas. Du prüfst mit `IS NULL` oder `IS NOT NULL`.
+  example: "`SELECT name FROM customers WHERE city IS NULL;` findet Kunden ohne Stadt."
+  category: datenbanken
+  aliases: [IS NULL, NULL-Wert]
+  related: [where-klausel, not-null]
+  lesson: datenbanken-sql/daten-abfragen-mit-select
+
+- slug: order-by
+  term: ORDER BY
+  short: Die Klausel, die das Ergebnis einer Abfrage sortiert.
+  explanation: >
+    Ohne ORDER BY ist die Reihenfolge der Zeilen nicht garantiert. ASC sortiert aufsteigend (Standard), DESC
+    absteigend. Mehrere Spalten sortieren nacheinander, die zweite nur bei Gleichstand der ersten.
+  example: "`SELECT name, price FROM products ORDER BY price DESC, name;`"
+  category: datenbanken
+  aliases: [Sortierung, ASC, DESC]
+  related: [select, limit]
+  lesson: datenbanken-sql/daten-abfragen-mit-select
+
+- slug: limit
+  term: LIMIT
+  short: Die Klausel, die die Anzahl der zurückgegebenen Zeilen begrenzt.
+  explanation: >
+    LIMIT steht am Ende der Abfrage und ist meist mit ORDER BY kombiniert, etwa für „die drei teuersten
+    Produkte“. Mit OFFSET überspringst du Zeilen, was für einfache Seitenaufteilung genutzt wird.
+  example: "`SELECT name FROM products ORDER BY price DESC LIMIT 3;`"
+  category: datenbanken
+  aliases: [OFFSET]
+  related: [order-by, select]
+  lesson: datenbanken-sql/daten-abfragen-mit-select
+
+- slug: aggregatfunktion
+  term: Aggregatfunktion
+  short: Eine SQL-Funktion, die viele Zeilen zu einem einzigen Wert zusammenfasst.
+  explanation: >
+    Die wichtigsten sind COUNT, SUM, AVG, MIN und MAX. Ohne GROUP BY fassen sie die ganze Ergebnismenge
+    zusammen, mit GROUP BY jede Gruppe einzeln. NULL-Werte werden dabei – außer bei `COUNT(*)` – übersprungen.
+  example: "`SELECT COUNT(*), AVG(price) FROM products;`"
+  category: datenbanken
+  aliases: [Aggregatfunktionen, COUNT, SUM, AVG, MIN, MAX]
+  related: [group-by, having]
+  lesson: datenbanken-sql/aggregieren-und-gruppieren
+
+- slug: group-by
+  term: GROUP BY
+  short: Die Klausel, die Zeilen mit gleichen Werten zu Gruppen zusammenfasst.
+  explanation: >
+    Pro Gruppe entsteht eine Ergebniszeile, und Aggregatfunktionen rechnen je Gruppe. Im SELECT dürfen nur
+    Gruppierungsspalten und Aggregate stehen. So beantwortest du Fragen wie „Umsatz pro Kategorie“.
+  example: "`SELECT category, COUNT(*) FROM products GROUP BY category;`"
+  category: datenbanken
+  aliases: [Gruppierung]
+  related: [aggregatfunktion, having]
+  lesson: datenbanken-sql/aggregieren-und-gruppieren
+
+- slug: having
+  term: HAVING
+  short: Die Klausel, die Gruppen nach dem Gruppieren filtert.
+  explanation: >
+    WHERE filtert einzelne Zeilen vor dem Gruppieren, HAVING filtert ganze Gruppen danach. Deshalb darf in
+    HAVING eine Aggregatfunktion stehen, in WHERE nicht.
+  example: "`SELECT category, SUM(price * stock) AS wert FROM products GROUP BY category HAVING wert > 100;`"
+  category: datenbanken
+  related: [group-by, where-klausel, aggregatfunktion]
+  lesson: datenbanken-sql/aggregieren-und-gruppieren
+
+- slug: entitaet
+  term: Entität
+  short: Ein Ding der realen Welt, über das eine Anwendung Daten speichert – meist wird daraus eine Tabelle.
+  explanation: >
+    Beim Datenmodellieren suchst du zuerst die Entitäten: Kunde, Produkt, Bestellung. Jede bekommt Attribute
+    wie Name oder Preis und einen eindeutigen Schlüssel. Beziehungen zwischen Entitäten werden später zu
+    Fremdschlüsseln.
+  example: "Im Shop sind customers, products und orders Entitäten."
+  category: datenbanken
+  aliases: [Entitäten, Entity]
+  related: [er-diagramm, kardinalitaet, tabelle]
+  lesson: datenbanken-sql/entitaeten-und-beziehungen
+
+- slug: kardinalitaet
+  term: Kardinalität
+  short: Die Angabe, wie viele Datensätze auf jeder Seite einer Beziehung stehen können – 1:1, 1:n oder n:m.
+  explanation: >
+    Ein Kunde hat viele Bestellungen, eine Bestellung gehört zu genau einem Kunden – das ist 1:n. Bei n:m stehen
+    auf beiden Seiten viele, etwa Produkte und Bestellungen. Die Kardinalität entscheidet, wo der Fremdschlüssel
+    hinkommt oder ob du eine Zwischentabelle brauchst.
+  example: "customers 1:n orders · orders n:m products (über order_items)"
+  category: datenbanken
+  aliases: [1:n, n:m, 1:1, Beziehungstyp]
+  related: [entitaet, zwischentabelle, fremdschluessel]
+  lesson: datenbanken-sql/entitaeten-und-beziehungen
+
+- slug: referentielle-integritaet
+  term: Referentielle Integrität
+  short: Die Regel, dass jeder Fremdschlüssel auf einen tatsächlich existierenden Datensatz zeigt.
+  explanation: >
+    Die Datenbank verhindert dann Bestellungen für Kunden, die es nicht gibt. Mit ON DELETE legst du fest, was
+    beim Löschen des Ziels passiert: verbieten, mitlöschen (CASCADE) oder auf NULL setzen. In SQLite musst du die
+    Prüfung pro Verbindung mit `PRAGMA foreign_keys = ON;` einschalten.
+  example: "`customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE`"
+  category: datenbanken
+  aliases: [ON DELETE, CASCADE, Fremdschlüssel-Prüfung]
+  related: [fremdschluessel, constraint]
+  lesson: datenbanken-sql/entitaeten-und-beziehungen
+
+- slug: zwischentabelle
+  term: Zwischentabelle
+  short: Eine Tabelle, die eine n:m-Beziehung mit zwei Fremdschlüsseln abbildet.
+  explanation: >
+    Relationale Datenbanken können n:m nicht direkt speichern. Stattdessen bekommt jede Verbindung eine Zeile in
+    einer eigenen Tabelle. Oft trägt sie zusätzliche Daten der Beziehung, etwa Menge und Preis.
+  example: "`order_items(order_id, product_id, quantity, unit_price)` verbindet Bestellungen und Produkte."
+  category: datenbanken
+  aliases: [Verknüpfungstabelle, Pivot-Tabelle, Junction Table]
+  related: [kardinalitaet, zusammengesetzter-schluessel]
+  lesson: datenbanken-sql/entitaeten-und-beziehungen
+
+- slug: zusammengesetzter-schluessel
+  term: Zusammengesetzter Schlüssel
+  short: Ein Primärschlüssel, der aus mehreren Spalten zusammen besteht.
+  explanation: >
+    Erst die Kombination der Spalten ist eindeutig, nicht jede Spalte für sich. Typisch ist er in
+    Zwischentabellen: Ein Produkt darf in einer Bestellung nur einmal vorkommen.
+  example: "`PRIMARY KEY (order_id, product_id)`"
+  category: datenbanken
+  aliases: [Composite Key, zusammengesetzter Primärschlüssel]
+  related: [primaerschluessel, zwischentabelle]
+  lesson: datenbanken-sql/entitaeten-und-beziehungen
+
+- slug: er-diagramm
+  term: ER-Diagramm
+  short: Eine Zeichnung der Entitäten einer Datenbank und ihrer Beziehungen.
+  explanation: >
+    ER steht für Entity-Relationship. Kästen zeigen Tabellen mit ihren Spalten, Linien die Beziehungen samt
+    Kardinalität. Teams entwerfen damit ein Schema, bevor sie die erste Zeile SQL schreiben.
+  example: "Eine Linie von customers zu orders mit „1“ und „n“ an den Enden zeigt eine 1:n-Beziehung."
+  category: datenbanken
+  aliases: [ERD, Entity-Relationship-Diagramm, ER-Modell]
+  related: [entitaet, kardinalitaet, datenbank-schema]
+  lesson: datenbanken-sql/entitaeten-und-beziehungen
+
+- slug: normalisierung
+  term: Normalisierung
+  short: Das schrittweise Zerlegen von Tabellen, damit jede Information nur an einer Stelle gespeichert ist.
+  explanation: >
+    Normalisierung beseitigt Redundanz und damit Anomalien beim Einfügen, Ändern und Löschen. Sie folgt festen
+    Stufen, den Normalformen. Für die meisten Anwendungen ist die dritte Normalform das Ziel.
+  example: "Statt Kundenname und E-Mail in jeder Bestellung zu speichern, steht nur `customer_id` in orders."
+  category: datenbanken
+  aliases: [normalisieren]
+  related: [normalform, redundanz, anomalie, denormalisierung]
+  lesson: datenbanken-sql/normalisierung
+
+- slug: redundanz
+  term: Redundanz
+  short: Dieselbe Information ist mehrfach gespeichert.
+  explanation: >
+    Redundante Daten kosten Platz und vor allem Verlässlichkeit: Ändert man eine Kopie und vergisst eine andere,
+    widersprechen sich die Daten. Normalisierung entfernt ungewollte Redundanz.
+  example: "Die Stadt eines Kunden steht in jeder seiner Bestellungen statt einmal in customers."
+  category: datenbanken
+  aliases: [redundant]
+  related: [normalisierung, anomalie]
+  lesson: datenbanken-sql/normalisierung
+
+- slug: anomalie
+  term: Anomalie
+  short: Ein Widerspruch oder Datenverlust, der durch schlecht zerlegte Tabellen beim Ändern entsteht.
+  explanation: >
+    Man unterscheidet Einfüge-, Änderungs- und Lösch-Anomalien. Beispiel: Löscht man die letzte Bestellung eines
+    Kunden, verschwindet mit ihr auch seine Adresse. Sauber normalisierte Tabellen vermeiden das.
+  example: "Ein neues Produkt lässt sich nicht anlegen, weil die Tabelle eine Bestellnummer verlangt – eine Einfüge-Anomalie."
+  category: datenbanken
+  aliases: [Anomalien, Update-Anomalie, Lösch-Anomalie, Einfüge-Anomalie]
+  related: [redundanz, normalisierung]
+  lesson: datenbanken-sql/normalisierung
+
+- slug: normalform
+  term: Normalform
+  short: Eine Qualitätsstufe für Tabellen-Designs, von der ersten (1NF) bis zur dritten (3NF) und darüber hinaus.
+  explanation: >
+    1NF verlangt einzelne Werte pro Zelle, 2NF, dass alle Spalten vom ganzen Schlüssel abhängen, 3NF, dass keine
+    Spalte nur von einer anderen Nicht-Schlüssel-Spalte abhängt. Jede Stufe setzt die vorige voraus.
+  example: "`orders(id, customer_id, customer_city)` verletzt die 3NF, weil die Stadt vom Kunden abhängt."
+  category: datenbanken
+  aliases: [Normalformen, 1NF, 2NF, 3NF, dritte Normalform]
+  related: [normalisierung]
+  lesson: datenbanken-sql/normalisierung
+
+- slug: denormalisierung
+  term: Denormalisierung
+  short: Das bewusste Speichern redundanter Daten, um Abfragen schneller oder einfacher zu machen.
+  explanation: >
+    Manchmal ist es sinnvoll, Werte zu kopieren, etwa den Preis zum Zeitpunkt der Bestellung. Das ist eine
+    begründete Ausnahme, keine Nachlässigkeit. Wer denormalisiert, muss die Kopien gezielt pflegen.
+  example: "`order_items.unit_price` speichert den damaligen Preis, auch wenn sich `products.price` später ändert."
+  category: datenbanken
+  aliases: [denormalisieren]
+  related: [normalisierung, redundanz]
+  lesson: datenbanken-sql/normalisierung
+
+- slug: constraint
+  term: Constraint
+  short: Eine Regel im Tabellen-Schema, die die Datenbank bei jeder Änderung prüft.
+  explanation: >
+    Constraints halten ungültige Daten aus der Datenbank fern, egal welches Programm schreibt. Typische sind
+    PRIMARY KEY, FOREIGN KEY, NOT NULL, UNIQUE, CHECK und DEFAULT. Verletzt eine Anweisung eine Regel, bricht
+    sie mit einem Fehler ab.
+  example: "`price REAL NOT NULL CHECK (price >= 0)`"
+  category: datenbanken
+  aliases: [Constraints, Integritätsbedingung, Einschränkung]
+  related: [not-null, unique-constraint, check-constraint, default-wert, primaerschluessel]
+  lesson: datenbanken-sql/tabellen-und-constraints
+
+- slug: typaffinitaet
+  term: Typaffinität
+  short: Die Art, wie SQLite den deklarierten Datentyp einer Spalte als Empfehlung statt als strenge Regel behandelt.
+  explanation: >
+    SQLite ordnet jeder Spalte eine bevorzugte Typklasse zu (etwa INTEGER, REAL, TEXT) und wandelt Werte nach
+    Möglichkeit um. Passt ein Wert nicht, speichert SQLite ihn trotzdem. Mit `STRICT`-Tabellen lässt sich das
+    abschalten; PostgreSQL ist von sich aus streng.
+  example: "In einer INTEGER-Spalte landet `'42'` als Zahl 42, `'abc'` aber als Text."
+  category: datenbanken
+  aliases: [Type Affinity, STRICT-Tabelle]
+  related: [datentyp, sqlite]
+  lesson: datenbanken-sql/tabellen-und-constraints
+
+- slug: rowid
+  term: rowid
+  short: Die interne, fortlaufende Zeilennummer, die SQLite jeder normalen Tabellenzeile gibt.
+  explanation: >
+    Eine Spalte `INTEGER PRIMARY KEY` wird in SQLite automatisch zum Alias der rowid. Lässt du sie beim
+    INSERT weg, vergibt SQLite die nächste freie Nummer.
+  example: "`INSERT INTO products (name, category, price) VALUES ('Becher', 'Küche', 7.0);` bekommt automatisch die id 8."
+  category: datenbanken
+  aliases: [ROWID, oid]
+  related: [primaerschluessel, autoincrement]
+  lesson: datenbanken-sql/tabellen-und-constraints
+
+- slug: autoincrement
+  term: Auto-Increment
+  short: Die automatische Vergabe fortlaufender Nummern für den Primärschlüssel neuer Zeilen.
+  explanation: >
+    Jedes System schreibt es anders: SQLite nutzt `INTEGER PRIMARY KEY`, MySQL `AUTO_INCREMENT`, PostgreSQL
+    `GENERATED ALWAYS AS IDENTITY`. Die Datenbank garantiert eindeutige Nummern, aber nicht unbedingt lückenlose.
+  example: "`id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY` in PostgreSQL"
+  category: datenbanken
+  aliases: [AUTOINCREMENT, AUTO_INCREMENT, Identity-Spalte]
+  related: [primaerschluessel, rowid]
+  lesson: datenbanken-sql/tabellen-und-constraints
+
+- slug: not-null
+  term: NOT NULL
+  short: Ein Constraint, der verbietet, dass eine Spalte leer (NULL) bleibt.
+  explanation: >
+    Pflichtfelder wie Name oder E-Mail bekommen NOT NULL. Ein INSERT ohne Wert für diese Spalte schlägt dann
+    fehl, außer es gibt einen DEFAULT-Wert.
+  example: "`email TEXT NOT NULL`"
+  category: datenbanken
+  aliases: [Pflichtfeld]
+  related: [constraint, sql-null, default-wert]
+  lesson: datenbanken-sql/tabellen-und-constraints
+
+- slug: unique-constraint
+  term: UNIQUE
+  short: Ein Constraint, der doppelte Werte in einer Spalte oder Spaltenkombination verbietet.
+  explanation: >
+    UNIQUE eignet sich für fachlich eindeutige Werte wie E-Mail-Adressen. Die Datenbank legt dafür automatisch
+    einen Index an. Mehrere NULL-Werte sind meist trotzdem erlaubt.
+  example: "`email TEXT NOT NULL UNIQUE`"
+  category: datenbanken
+  aliases: [UNIQUE-Constraint, eindeutig]
+  related: [constraint, datenbank-index]
+  lesson: datenbanken-sql/tabellen-und-constraints
+
+- slug: check-constraint
+  term: CHECK-Constraint
+  short: Ein Constraint mit einer eigenen Bedingung, die jede Zeile erfüllen muss.
+  explanation: >
+    Mit CHECK formulierst du fachliche Regeln direkt im Schema, etwa „Preis nicht negativ“ oder „Status nur aus
+    einer festen Liste“. Ist die Bedingung falsch, lehnt die Datenbank die Änderung ab.
+  example: "`status TEXT CHECK (status IN ('offen', 'bezahlt', 'versendet', 'storniert'))`"
+  category: datenbanken
+  aliases: [CHECK]
+  related: [constraint]
+  lesson: datenbanken-sql/tabellen-und-constraints
+
+- slug: default-wert
+  term: DEFAULT-Wert
+  short: Der Wert, den eine Spalte automatisch bekommt, wenn ein INSERT sie nicht nennt.
+  explanation: >
+    Defaults sparen Tipparbeit und sorgen für sinnvolle Startwerte, etwa Lagerbestand 0 oder das aktuelle
+    Datum. Gibt das INSERT einen Wert an, wird der Default ignoriert.
+  example: "`stock INTEGER NOT NULL DEFAULT 0`"
+  category: datenbanken
+  aliases: [DEFAULT, Standardwert]
+  related: [constraint, not-null]
+  lesson: datenbanken-sql/tabellen-und-constraints
+
+- slug: kartesisches-produkt
+  term: Kartesisches Produkt
+  short: Die Kombination jeder Zeile einer Tabelle mit jeder Zeile einer anderen.
+  explanation: >
+    Es entsteht, wenn du zwei Tabellen ohne Verknüpfungsbedingung zusammenführst. Aus 6 Kunden und 8
+    Bestellungen werden so 48 Zeilen – fast immer ein Fehler. Ausdrücklich gewollt heißt es CROSS JOIN.
+  example: "`SELECT * FROM customers, orders;` ohne WHERE liefert alle Kombinationen."
+  category: datenbanken
+  aliases: [CROSS JOIN, Kreuzprodukt]
+  related: [join, inner-join]
+  lesson: datenbanken-sql/joins
+
+- slug: inner-join
+  term: INNER JOIN
+  short: Eine Verknüpfung, die nur Zeilen liefert, für die in beiden Tabellen ein passender Partner existiert.
+  explanation: >
+    Die Bedingung nach ON sagt, welche Zeilen zusammengehören, meist Fremdschlüssel gleich Primärschlüssel.
+    Zeilen ohne Partner fallen weg. `JOIN` allein bedeutet INNER JOIN.
+  example: "`SELECT c.name, o.order_date FROM orders o JOIN customers c ON c.id = o.customer_id;`"
+  category: datenbanken
+  aliases: [JOIN … ON]
+  related: [join, left-join]
+  lesson: datenbanken-sql/joins
+
+- slug: left-join
+  term: LEFT JOIN
+  short: Eine Verknüpfung, die alle Zeilen der linken Tabelle behält – auch ohne Partner rechts.
+  explanation: >
+    Fehlt rechts ein passender Datensatz, stehen dort NULL-Werte. So findest du zum Beispiel Kunden ohne
+    Bestellung. Bedingungen auf die rechte Tabelle gehören deshalb ins ON, nicht ins WHERE.
+  example: "`SELECT c.name, COUNT(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id;`"
+  category: datenbanken
+  aliases: [LEFT OUTER JOIN, RIGHT JOIN]
+  related: [inner-join, full-outer-join, sql-null]
+  lesson: datenbanken-sql/joins
+
+- slug: full-outer-join
+  term: FULL OUTER JOIN
+  short: Eine Verknüpfung, die alle Zeilen beider Tabellen liefert, mit oder ohne Partner.
+  explanation: >
+    Wo auf einer Seite kein Partner existiert, stehen NULL-Werte. Er wird selten gebraucht, etwa beim Abgleich
+    zweier Listen. PostgreSQL und SQLite ab Version 3.39 kennen ihn, MySQL nicht.
+  example: "`SELECT * FROM a FULL OUTER JOIN b ON a.key = b.key;`"
+  category: datenbanken
+  aliases: [FULL JOIN]
+  related: [left-join, inner-join]
+  lesson: datenbanken-sql/joins
+
+- slug: unterabfrage
+  term: Unterabfrage
+  short: Eine SELECT-Abfrage in Klammern, die innerhalb einer anderen Abfrage steht.
+  explanation: >
+    Eine Unterabfrage kann einen einzelnen Wert, eine Liste für IN oder eine ganze Tabelle im FROM liefern. Mit
+    EXISTS prüfst du, ob sie überhaupt eine Zeile findet. Sie wird auch Subquery genannt.
+  example: "`SELECT name FROM products WHERE price > (SELECT AVG(price) FROM products);`"
+  category: datenbanken
+  aliases: [Subquery, Unterabfragen, EXISTS]
+  related: [cte, select]
+  lesson: datenbanken-sql/unterabfragen-und-ctes
+
+- slug: cte
+  term: CTE (WITH-Klausel)
+  short: Eine benannte Zwischenabfrage, die mit WITH vor der eigentlichen Abfrage steht.
+  explanation: >
+    CTE steht für Common Table Expression. Du gibst einem Teilergebnis einen Namen und nutzt es danach wie eine
+    Tabelle. Das macht lange Auswertungen lesbar, weil sie in benannte Schritte zerfallen.
+  example: "`WITH umsatz AS (SELECT order_id, SUM(quantity * unit_price) AS total FROM order_items GROUP BY order_id) SELECT * FROM umsatz WHERE total > 40;`"
+  category: datenbanken
+  aliases: [WITH, Common Table Expression, CTEs]
+  related: [unterabfrage, rekursive-cte]
+  lesson: datenbanken-sql/unterabfragen-und-ctes
+
+- slug: insert
+  term: INSERT
+  short: Die SQL-Anweisung, mit der du neue Zeilen in eine Tabelle einfügst.
+  explanation: >
+    Nenne nach dem Tabellennamen die Spalten und nach VALUES die Werte in derselben Reihenfolge. Mehrere Zeilen
+    trennst du mit Kommas. Fehlende Spalten bekommen ihren DEFAULT-Wert oder NULL.
+  example: "`INSERT INTO products (name, category, price, stock) VALUES ('Trinkflasche', 'Küche', 12.5, 30);`"
+  category: datenbanken
+  aliases: [INSERT INTO, Einfügen]
+  related: [update-anweisung, delete-anweisung, default-wert]
+  lesson: datenbanken-sql/daten-aendern
+
+- slug: update-anweisung
+  term: UPDATE
+  short: Die SQL-Anweisung, die Werte in bestehenden Zeilen ändert.
+  explanation: >
+    Nach SET stehen die neuen Werte, nach WHERE die betroffenen Zeilen. Ohne WHERE ändert UPDATE jede Zeile der
+    Tabelle – einer der teuersten Fehler im Umgang mit Datenbanken.
+  example: "`UPDATE products SET price = 9.0 WHERE id = 1;`"
+  category: datenbanken
+  aliases: [UPDATE-Anweisung, SET]
+  related: [insert, delete-anweisung, where-klausel, transaktion]
+  lesson: datenbanken-sql/daten-aendern
+
+- slug: delete-anweisung
+  term: DELETE
+  short: Die SQL-Anweisung, die Zeilen aus einer Tabelle löscht.
+  explanation: >
+    DELETE entfernt alle Zeilen, auf die die WHERE-Bedingung zutrifft. Ohne WHERE ist die Tabelle danach leer.
+    Fremdschlüssel mit ON DELETE entscheiden, was mit abhängigen Zeilen passiert.
+  example: "`DELETE FROM orders WHERE status = 'storniert';`"
+  category: datenbanken
+  aliases: [DELETE FROM, Löschen]
+  related: [update-anweisung, referentielle-integritaet]
+  lesson: datenbanken-sql/daten-aendern
+
+- slug: seed-daten
+  term: Seed-Daten
+  short: Vorbereitete Start- oder Testdaten, die automatisch in eine leere Datenbank geladen werden.
+  explanation: >
+    Mit Seed-Daten hat jede Entwicklerin dieselbe Ausgangslage, und Tests laufen reproduzierbar. Sie bestehen
+    meist aus INSERT-Anweisungen oder Skripten, die solche erzeugen. Echte Kundendaten gehören nie hinein.
+  example: "`sqlite3 shop.db < seed.sql` legt die Beispiel-Shopdaten an."
+  category: datenbanken
+  aliases: [Seed, Seeder, Testdaten]
+  related: [insert]
+  lesson: datenbanken-sql/daten-aendern
+
+- slug: returning
+  term: RETURNING
+  short: Ein Zusatz zu INSERT, UPDATE oder DELETE, der die betroffenen Zeilen direkt zurückgibt.
+  explanation: >
+    So bekommst du etwa die neu vergebene id ohne zweite Abfrage. PostgreSQL und SQLite (ab 3.35) unterstützen
+    RETURNING, MariaDB nur für einen Teil der Anweisungen, MySQL gar nicht.
+  example: "`INSERT INTO products (name, category, price) VALUES ('Becher', 'Küche', 7.0) RETURNING id;`"
+  category: datenbanken
+  related: [insert, update-anweisung]
+  lesson: datenbanken-sql/daten-aendern
+
+- slug: b-baum
+  term: B-Baum
+  short: Eine sortierte Baumstruktur, in der Datenbanken die meisten Indizes speichern.
+  explanation: >
+    Von der Wurzel führen Zwischenknoten zu den Blättern, in denen die sortierten Werte mit Verweisen auf die
+    Zeilen stehen. Auch bei Millionen Einträgen sind nur wenige Sprünge nötig. Weil die Blätter verbunden sind,
+    eignet er sich auch für Bereiche und Sortierung.
+  example: "`CREATE INDEX idx_orders_customer_id ON orders(customer_id);` legt intern einen B-Baum an."
+  category: datenbanken
+  aliases: [B-Tree, B+-Baum, B-Bäume]
+  related: [datenbank-index, index-scan]
+  lesson: datenbanken-sql/indizes-und-explain
+
+- slug: sql-injection
+  term: SQL-Injection
+  short: Ein Angriff, bei dem eine Eingabe als SQL-Code ausgeführt wird, weil sie in eine Abfrage geklebt wurde.
+  explanation: >
+    Baut eine Anwendung Abfragen durch Zusammenkleben von Text, kann ein Angreifer mit Anführungszeichen und SQL
+    die Bedeutung der Abfrage ändern. Die Folgen reichen vom Auslesen fremder Daten bis zum Löschen ganzer
+    Tabellen. Prepared Statements verhindern das zuverlässig.
+  example: "Die Eingabe `x' OR '1'='1` macht aus `WHERE name = '…'` eine Bedingung, die immer wahr ist."
+  category: sicherheit
+  aliases: [SQL Injection, SQLi]
+  related: [prepared-statement, sql-parameter, allowlist]
+  lesson: datenbanken-sql/sql-injection
+
+- slug: prepared-statement
+  term: Prepared Statement
+  short: Eine Abfrage, die mit Platzhaltern vorbereitet wird und ihre Werte getrennt vom SQL-Text erhält.
+  explanation: >
+    Zuerst schickt die Anwendung den Befehl mit `?` oder `:name`, danach die Werte. Die Datenbank behandelt die
+    Werte nur als Daten, nie als Code – das schützt vor SQL-Injection. Nebenbei kann eine vorbereitete Abfrage
+    mehrfach mit anderen Werten laufen.
+  example: "`$stmt = $pdo->prepare('SELECT * FROM products WHERE name = ?'); $stmt->execute([$name]);`"
+  category: sicherheit
+  aliases: [Prepared Statements, vorbereitete Anweisung, parametrisierte Abfrage]
+  related: [sql-parameter, sql-injection]
+  lesson: datenbanken-sql/sql-injection
+
+- slug: allowlist
+  term: Allowlist
+  short: Eine feste Liste erlaubter Werte – alles, was nicht darauf steht, wird abgelehnt.
+  explanation: >
+    Statt gefährliche Eingaben zu erraten und zu verbieten, lässt eine Allowlist nur bekannte, sichere Werte zu.
+    Bei Datenbanken nutzt du sie für Spaltennamen oder Sortierrichtungen, die man nicht als Platzhalter übergeben
+    kann.
+  example: "`in_array($sort, ['name', 'price', 'stock'], true)` lässt nur drei Spalten zum Sortieren zu."
+  category: sicherheit
+  aliases: [Whitelist, Positivliste]
+  related: [sql-injection, validierung]
+  lesson: datenbanken-sql/sql-injection
+
+- slug: treiber
+  term: Treiber (Datenbank)
+  short: Eine Software-Komponente, über die ein Programm mit einem bestimmten Datenbanksystem spricht.
+  explanation: >
+    Jede Programmiersprache braucht für jede Datenbank einen passenden Treiber, der Befehle und Ergebnisse im
+    Protokoll der Datenbank überträgt. Viele Sprachen bieten eine einheitliche Schnittstelle, hinter der
+    austauschbare Treiber für SQLite, PostgreSQL oder MySQL stecken.
+  example: "Für den Zugriff auf `shop.db` aus einem Skript braucht die Sprache einen SQLite-Treiber."
+  category: datenbanken
+  aliases: [Datenbanktreiber, Treiber]
+  related: [rdbms, jdbc-treiber]
+  lesson: datenbanken-sql/sql-injection
+
+- slug: pdo
+  term: PDO
+  short: Die eingebaute Datenbankschnittstelle von PHP (PHP Data Objects).
+  explanation: >
+    PDO spricht mit derselben Programmierschnittstelle viele Datenbanken an, etwa SQLite, PostgreSQL oder MySQL.
+    Du baust eine Verbindung mit `new PDO(...)` auf und schickst Abfragen über `prepare` und `execute`.
+    So trennt PDO Befehl und Werte und schützt vor SQL-Injection.
+  example: "`$stmt = $pdo->prepare('SELECT * FROM products WHERE id = ?'); $stmt->execute([$id]);`"
+  category: datenbanken
+  aliases: [PHP Data Objects]
+  related: [prepared-statement, sql-injection, sql-parameter]
+  lesson: datenbanken-sql/sql-injection

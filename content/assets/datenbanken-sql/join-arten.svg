@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <clipPath id="cl1"><circle cx="85" cy="150" r="60"/></clipPath>
+    <clipPath id="cl2"><circle cx="305" cy="150" r="60"/></clipPath>
+    <clipPath id="cl3"><circle cx="575" cy="150" r="60"/></clipPath>
+    <clipPath id="cl4"><circle cx="795" cy="150" r="60"/></clipPath>
+  </defs>
+  <text x="30" y="34" font-size="20" font-weight="700" fill="#1e1b3a">Welche Zeilen liefert welcher JOIN?</text>
+  <text x="30" y="56" font-size="13" fill="#1e1b3a">Links: customers (A) · Rechts: orders (B) · Schnittmenge: Paare, bei denen die ON-Bedingung passt</text>
+
+  <!-- INNER -->
+  <circle cx="125" cy="150" r="60" fill="#34d399" fill-opacity="0.75" clip-path="url(#cl1)"/>
+  <circle cx="85" cy="150" r="60" fill="none" stroke="#1e1b3a" stroke-width="2"/>
+  <circle cx="125" cy="150" r="60" fill="none" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="105" y="240" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">INNER JOIN</text>
+  <text x="105" y="262" text-anchor="middle" font-size="12" fill="#1e1b3a">nur passende Paare</text>
+
+  <!-- LEFT -->
+  <circle cx="305" cy="150" r="60" fill="#22d3ee" fill-opacity="0.75"/>
+  <circle cx="345" cy="150" r="60" fill="#34d399" fill-opacity="0.75" clip-path="url(#cl2)"/>
+  <circle cx="305" cy="150" r="60" fill="none" stroke="#1e1b3a" stroke-width="2"/>
+  <circle cx="345" cy="150" r="60" fill="none" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="325" y="240" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">LEFT JOIN</text>
+  <text x="325" y="262" text-anchor="middle" font-size="12" fill="#1e1b3a">alle aus A, B-Spalten sonst NULL</text>
+
+  <!-- RIGHT -->
+  <circle cx="575" cy="150" r="60" fill="#a78bfa" fill-opacity="0.75"/>
+  <circle cx="535" cy="150" r="60" fill="#ffffff"/>
+  <circle cx="575" cy="150" r="60" fill="#34d399" fill-opacity="0.75" clip-path="url(#cl3)"/>
+  <circle cx="535" cy="150" r="60" fill="none" stroke="#1e1b3a" stroke-width="2"/>
+  <circle cx="575" cy="150" r="60" fill="none" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="555" y="240" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">RIGHT JOIN</text>
+  <text x="555" y="262" text-anchor="middle" font-size="12" fill="#1e1b3a">alle aus B, A-Spalten sonst NULL</text>
+
+  <!-- FULL -->
+  <circle cx="755" cy="150" r="60" fill="#22d3ee" fill-opacity="0.75"/>
+  <circle cx="795" cy="150" r="60" fill="#a78bfa" fill-opacity="0.75"/>
+  <circle cx="755" cy="150" r="60" fill="#34d399" fill-opacity="0.75" clip-path="url(#cl4)"/>
+  <circle cx="755" cy="150" r="60" fill="none" stroke="#1e1b3a" stroke-width="2"/>
+  <circle cx="795" cy="150" r="60" fill="none" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="775" y="240" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">FULL OUTER JOIN</text>
+  <text x="775" y="262" text-anchor="middle" font-size="12" fill="#1e1b3a">alle aus A und B</text>
+
+  <g font-size="14" font-weight="700" fill="#1e1b3a">
+    <text x="55" y="155">A</text><text x="150" y="155">B</text>
+    <text x="275" y="155">A</text><text x="370" y="155">B</text>
+    <text x="505" y="155">A</text><text x="600" y="155">B</text>
+    <text x="725" y="155">A</text><text x="820" y="155">B</text>
+  </g>
+  <rect x="30" y="290" width="16" height="16" fill="#34d399" fill-opacity="0.75" stroke="#1e1b3a"/>
+  <text x="54" y="303" font-size="12" fill="#1e1b3a">ON-Bedingung erfüllt</text>
+  <rect x="210" y="290" width="16" height="16" fill="#22d3ee" fill-opacity="0.75" stroke="#1e1b3a"/>
+  <text x="234" y="303" font-size="12" fill="#1e1b3a">Zeile nur aus A (rechte Spalten NULL)</text>
+  <rect x="490" y="290" width="16" height="16" fill="#a78bfa" fill-opacity="0.75" stroke="#1e1b3a"/>
+  <text x="514" y="303" font-size="12" fill="#1e1b3a">Zeile nur aus B (linke Spalten NULL)</text>
+</svg>

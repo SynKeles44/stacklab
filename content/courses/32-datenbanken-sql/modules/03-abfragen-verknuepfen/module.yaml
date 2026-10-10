@@ -1,0 +1,154 @@
+title: Tabellen verknüpfen und Daten ändern
+description: Mit JOINs Daten aus mehreren Tabellen zusammenführen, Abfragen mit Unterabfragen und CTEs strukturieren und Daten mit INSERT, UPDATE und DELETE sicher ändern.
+exercise:
+  id: modul-uebung-lager
+  type: terminal
+  title: Bericht und Lagerabgleich
+  description: |
+    Im Ordner `lagerabgleich` liegt `shop.db`. Erstelle zwei Auswertungen und gleiche danach den Lagerbestand ab.
+
+    1. `berlin.sql`: Alle Kunden aus `Berlin` mit dem Datum ihrer **letzten** Bestellung (egal welcher Status).
+       Spalten: Name, letztes Bestelldatum. Kunden ohne Bestellung sollen trotzdem erscheinen. Sortiert nach Name.
+    2. `top.sql`: Nutze eine CTE, die pro Kategorie den Umsatz `SUM(quantity * unit_price)` aller **nicht
+       stornierten** Bestellungen berechnet. Gib die **zwei** umsatzstärksten Kategorien mit ihrem Umsatz aus,
+       die stärkste zuerst.
+    3. `lager.sql`: Die Produkte aller **offenen** Bestellungen sind schon reserviert. Ziehe von `stock` jedes
+       Produkts die Summe seiner Mengen aus offenen Bestellungen ab. Produkte ohne offene Bestellung bleiben
+       unverändert. Führe die Datei **einmal** aus: `sqlite3 shop.db < lager.sql`.
+
+    Ging bei Schritt 3 etwas schief, bereite die Aufgabe neu vor. Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: lagerabgleich
+  setup: |
+    sqlite3 shop.db <<'SQL'
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE customers (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      city TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE products (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      price REAL NOT NULL CHECK (price >= 0),
+      stock INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE orders (
+      id INTEGER PRIMARY KEY,
+      customer_id INTEGER NOT NULL REFERENCES customers(id),
+      order_date TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('offen', 'bezahlt', 'versendet', 'storniert'))
+    );
+    CREATE TABLE order_items (
+      order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      product_id INTEGER NOT NULL REFERENCES products(id),
+      quantity INTEGER NOT NULL CHECK (quantity > 0),
+      unit_price REAL NOT NULL,
+      PRIMARY KEY (order_id, product_id)
+    );
+    INSERT INTO customers VALUES
+      (1, 'Ada Lovelace', 'ada@example.com', 'Berlin', '2026-01-15'),
+      (2, 'Grace Hopper', 'grace@example.com', 'Hamburg', '2026-02-03'),
+      (3, 'Alan Turing', 'alan@example.com', 'Berlin', '2026-02-20'),
+      (4, 'Margaret Hamilton', 'margaret@example.com', 'München', '2026-03-11'),
+      (5, 'Katherine Johnson', 'katherine@example.com', NULL, '2026-04-02'),
+      (6, 'Tim Berners-Lee', 'tim@example.com', 'Köln', '2026-05-19');
+    INSERT INTO products VALUES
+      (1, 'Tasse', 'Küche', 8.5, 40),
+      (2, 'T-Shirt', 'Kleidung', 19.5, 25),
+      (3, 'Hoodie', 'Kleidung', 39.0, 10),
+      (4, 'Notizbuch', 'Büro', 6.0, 100),
+      (5, 'Kugelschreiber', 'Büro', 1.5, 300),
+      (6, 'Rucksack', 'Taschen', 49.5, 0),
+      (7, 'Sticker-Set', 'Büro', 3.0, 150);
+    INSERT INTO orders VALUES
+      (1, 1, '2026-03-01', 'versendet'),
+      (2, 2, '2026-03-05', 'versendet'),
+      (3, 1, '2026-04-10', 'bezahlt'),
+      (4, 3, '2026-04-12', 'storniert'),
+      (5, 4, '2026-05-02', 'versendet'),
+      (6, 2, '2026-06-18', 'offen'),
+      (7, 5, '2026-07-01', 'bezahlt'),
+      (8, 1, '2026-08-21', 'offen');
+    INSERT INTO order_items VALUES
+      (1, 1, 2, 8.5), (1, 4, 3, 6.0),
+      (2, 2, 1, 19.5), (2, 3, 1, 39.0),
+      (3, 6, 1, 49.5),
+      (4, 2, 2, 19.5),
+      (5, 4, 5, 6.0), (5, 5, 10, 1.5),
+      (6, 3, 1, 39.0), (6, 1, 1, 8.5),
+      (7, 2, 3, 19.5),
+      (8, 5, 4, 1.5), (8, 1, 1, 8.5);
+    SQL
+  checks:
+    - type: command
+      run: |
+        test -s berlin.sql || exit 1
+        ist=$(sqlite3 shop.db < berlin.sql 2>&1)
+        soll=$(sqlite3 shop.db "SELECT c.name, MAX(o.order_date) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE c.city = 'Berlin' GROUP BY c.id, c.name ORDER BY c.name;")
+        [ "$ist" = "$soll" ] && echo ok
+      stdout_equals: ok
+      message: berlin.sql stimmt noch nicht. Erwartet werden Name und MAX(order_date) aller Berliner Kunden per LEFT JOIN, gruppiert pro Kunde und sortiert nach Name.
+    - type: file_contains
+      path: top.sql
+      pattern: "(WITH|with|With)\\s+\\w+"
+      message: top.sql soll eine CTE mit WITH … AS (…) verwenden.
+    - type: command
+      run: |
+        ist=$(sqlite3 shop.db < top.sql 2>&1)
+        soll=$(sqlite3 shop.db "WITH k AS (SELECT p.category, SUM(i.quantity * i.unit_price) AS umsatz FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.status <> 'storniert' GROUP BY p.category) SELECT category, umsatz FROM k ORDER BY umsatz DESC LIMIT 2;")
+        [ "$ist" = "$soll" ] && echo ok
+      stdout_equals: ok
+      message: top.sql liefert noch nicht die zwei umsatzstärksten Kategorien. Berechne den Umsatz pro category ohne stornierte Bestellungen, sortiere absteigend und begrenze mit LIMIT 2.
+    - type: command
+      run: sqlite3 shop.db "SELECT group_concat(name || '=' || stock, ' ') FROM (SELECT name, stock FROM products ORDER BY id);"
+      stdout_equals: Tasse=38 T-Shirt=25 Hoodie=9 Notizbuch=100 Kugelschreiber=296 Rucksack=0 Sticker-Set=150
+      message: Die Lagerbestände stimmen noch nicht. Nur Tasse (−2), Hoodie (−1) und Kugelschreiber (−4) haben offene Bestellungen. Wurde lager.sql vielleicht zweimal ausgeführt? Dann neu vorbereiten.
+  hints:
+    - "berlin.sql: Die Berlin-Bedingung bezieht sich auf die linke Tabelle customers – sie darf deshalb im WHERE stehen, ohne den LEFT JOIN auszuhebeln."
+    - "top.sql: `WITH k AS (SELECT p.category, SUM(…) AS umsatz FROM … GROUP BY p.category) SELECT category, umsatz FROM k ORDER BY umsatz DESC LIMIT 2;`"
+    - "lager.sql: `UPDATE products SET stock = stock - (SELECT SUM(i.quantity) FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.status = 'offen' AND i.product_id = products.id) WHERE id IN (SELECT …);` – ohne das äußere WHERE würde stock bei allen anderen Produkten NULL."
+  solution: |
+    ```bash
+    cd lagerabgleich
+    cat > berlin.sql <<'SQL'
+    SELECT c.name, MAX(o.order_date) AS letzte
+    FROM customers c
+    LEFT JOIN orders o ON o.customer_id = c.id
+    WHERE c.city = 'Berlin'
+    GROUP BY c.id, c.name
+    ORDER BY c.name;
+    SQL
+    cat > top.sql <<'SQL'
+    WITH kategorieumsatz AS (
+      SELECT p.category, SUM(i.quantity * i.unit_price) AS umsatz
+      FROM order_items i
+      JOIN orders o ON o.id = i.order_id
+      JOIN products p ON p.id = i.product_id
+      WHERE o.status <> 'storniert'
+      GROUP BY p.category
+    )
+    SELECT category, umsatz
+    FROM kategorieumsatz
+    ORDER BY umsatz DESC
+    LIMIT 2;
+    SQL
+    cat > lager.sql <<'SQL'
+    UPDATE products
+    SET stock = stock - (
+      SELECT SUM(i.quantity)
+      FROM order_items i
+      JOIN orders o ON o.id = i.order_id
+      WHERE o.status = 'offen' AND i.product_id = products.id
+    )
+    WHERE id IN (
+      SELECT i.product_id
+      FROM order_items i
+      JOIN orders o ON o.id = i.order_id
+      WHERE o.status = 'offen'
+    );
+    SQL
+    sqlite3 shop.db < lager.sql
+    ```

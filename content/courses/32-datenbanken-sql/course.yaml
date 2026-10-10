@@ -1,0 +1,33 @@
+title: Datenbanken & SQL
+subtitle: Relationale Datenbanken modellieren, abfragen und sicher betreiben – mit echtem SQL im Terminal
+description: >
+  Fast jede Web-Anwendung speichert ihre Daten in einer relationalen Datenbank: Nutzer, Bestellungen,
+  Artikel, Buchungen. In diesem Kurs lernst du, wie solche Datenbanken aufgebaut sind und wie du mit SQL
+  Fragen an sie stellst – von der ersten `SELECT`-Abfrage bis zu JOINs über vier Tabellen.
+
+
+  Du arbeitest durchgehend mit einer echten SQLite-Datenbank eines kleinen Beispiel-Shops. Du schreibst
+  Abfragen in Dateien, führst sie mit `sqlite3` aus, und Stacklab vergleicht dein Ergebnis mit einer
+  Referenzlösung. Dazu kommen Datenmodellierung (Beziehungen, Normalisierung, Constraints), Transaktionen,
+  Indizes mit `EXPLAIN` und der Schutz vor SQL-Injection. Am Ende entwirfst du eine eigene
+  Bibliotheks-Datenbank mit Schema, Testdaten, Auswertungen und einem begründeten Index.
+category: backend
+level: einsteiger
+icon: database
+color: "#336791"
+estimated_hours: 5
+workspace_dir: sql
+prerequisites: [programmieren-grundlagen, terminal-shell]
+learning_goals:
+  - Du erklärst, was eine relationale Datenbank ist, und wählst passend zwischen PostgreSQL, MySQL/MariaDB und SQLite.
+  - Du liest Daten mit SELECT, WHERE, ORDER BY, LIMIT, Aggregatfunktionen, GROUP BY und HAVING.
+  - Du modellierst Daten mit Entitäten, 1:n- und n:m-Beziehungen, Primär- und Fremdschlüsseln bis zur dritten Normalform.
+  - Du legst Tabellen mit passenden Datentypen und Constraints an (NOT NULL, UNIQUE, CHECK, DEFAULT, ON DELETE).
+  - Du verknüpfst Tabellen mit INNER und LEFT JOIN und strukturierst Abfragen mit Unterabfragen und CTEs.
+  - Du änderst Daten mit INSERT, UPDATE und DELETE sicher in Transaktionen.
+  - Du beschleunigst Abfragen mit Indizes und prüfst das mit EXPLAIN.
+  - Du schützt Anwendungen mit Prepared Statements vor SQL-Injection.
+references:
+  - Berichts-Abfragen über Bestellungen und Positionen, wie sie in Shop- und Buchungssystemen täglich laufen
+  - Versionierte Schemaänderungen per Migration in Web-Frameworks
+  - Indizes auf Fremdschlüssel-Spalten als häufigste Performance-Maßnahme in großen Anwendungen

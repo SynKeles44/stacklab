@@ -1,0 +1,160 @@
+title: Sicher und schnell
+description: Änderungen mit Transaktionen absichern, Abfragen mit Indizes und EXPLAIN beschleunigen und Anwendungen mit Prepared Statements vor SQL-Injection schützen.
+exercise:
+  id: modul-uebung-storno
+  type: terminal
+  title: Stornierung, Index und sichere Kundensuche
+  description: |
+    Im Ordner `storno` liegen `shop.db` und ein unfertiges Skript `bestellungen.php`. Kombiniere alles aus diesem Modul.
+
+    1. **Transaktion:** Grace storniert ihre offene Bestellung `6` (1 × Hoodie, 1 × Tasse). Schreibe
+       `storno.sql`: Zwischen `BEGIN;` und `COMMIT;` setzt du den Status von Bestellung 6 auf `storniert` und
+       erhöhst den Lagerbestand von Hoodie (id `3`) und Tasse (id `1`) um je 1. Führe die Datei **einmal** aus.
+    2. **Index:** Die Kundenseite sucht Bestellungen über `orders.customer_id`. Lege in `index.sql` einen Index
+       auf diese Spalte an und führe die Datei aus.
+    3. **Prepared Statement:** Ergänze `bestellungen.php`. Das Skript bekommt eine E-Mail-Adresse als Argument
+       und gibt pro Bestellung dieses Kunden eine Zeile `id order_date status` aus, sortiert nach `order_date`.
+       Verknüpfe dazu `orders` und `customers` per JOIN und übergib die E-Mail **nur** über einen Platzhalter.
+       Test: `php bestellungen.php ada@example.com`
+
+    Ging Schritt 1 schief, bereite die Aufgabe neu vor. Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: storno
+  setup: |
+    sqlite3 shop.db <<'SQL'
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE customers (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      city TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE products (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      price REAL NOT NULL CHECK (price >= 0),
+      stock INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE orders (
+      id INTEGER PRIMARY KEY,
+      customer_id INTEGER NOT NULL REFERENCES customers(id),
+      order_date TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('offen', 'bezahlt', 'versendet', 'storniert'))
+    );
+    CREATE TABLE order_items (
+      order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      product_id INTEGER NOT NULL REFERENCES products(id),
+      quantity INTEGER NOT NULL CHECK (quantity > 0),
+      unit_price REAL NOT NULL,
+      PRIMARY KEY (order_id, product_id)
+    );
+    INSERT INTO customers VALUES
+      (1, 'Ada Lovelace', 'ada@example.com', 'Berlin', '2026-01-15'),
+      (2, 'Grace Hopper', 'grace@example.com', 'Hamburg', '2026-02-03'),
+      (3, 'Alan Turing', 'alan@example.com', 'Berlin', '2026-02-20'),
+      (4, 'Margaret Hamilton', 'margaret@example.com', 'München', '2026-03-11'),
+      (5, 'Katherine Johnson', 'katherine@example.com', NULL, '2026-04-02'),
+      (6, 'Tim Berners-Lee', 'tim@example.com', 'Köln', '2026-05-19');
+    INSERT INTO products VALUES
+      (1, 'Tasse', 'Küche', 8.5, 40),
+      (2, 'T-Shirt', 'Kleidung', 19.5, 25),
+      (3, 'Hoodie', 'Kleidung', 39.0, 10),
+      (4, 'Notizbuch', 'Büro', 6.0, 100),
+      (5, 'Kugelschreiber', 'Büro', 1.5, 300),
+      (6, 'Rucksack', 'Taschen', 49.5, 0),
+      (7, 'Sticker-Set', 'Büro', 3.0, 150);
+    INSERT INTO orders VALUES
+      (1, 1, '2026-03-01', 'versendet'),
+      (2, 2, '2026-03-05', 'versendet'),
+      (3, 1, '2026-04-10', 'bezahlt'),
+      (4, 3, '2026-04-12', 'storniert'),
+      (5, 4, '2026-05-02', 'versendet'),
+      (6, 2, '2026-06-18', 'offen'),
+      (7, 5, '2026-07-01', 'bezahlt'),
+      (8, 1, '2026-08-21', 'offen');
+    INSERT INTO order_items VALUES
+      (1, 1, 2, 8.5), (1, 4, 3, 6.0),
+      (2, 2, 1, 19.5), (2, 3, 1, 39.0),
+      (3, 6, 1, 49.5),
+      (4, 2, 2, 19.5),
+      (5, 4, 5, 6.0), (5, 5, 10, 1.5),
+      (6, 3, 1, 39.0), (6, 1, 1, 8.5),
+      (7, 2, 3, 19.5),
+      (8, 5, 4, 1.5), (8, 1, 1, 8.5);
+    SQL
+    cat > bestellungen.php <<'PHP'
+    <?php
+    $pdo = new PDO('sqlite:' . __DIR__ . '/shop.db');
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $email = $argv[1] ?? '';
+
+    // Ergänze hier: prepare() mit Platzhalter, dann execute([$email]).
+    // Gesucht: o.id, o.order_date, o.status aller Bestellungen des Kunden mit dieser E-Mail, sortiert nach Datum.
+    $stmt = $pdo->prepare('SELECT 1 WHERE 0');
+    $stmt->execute();
+
+    foreach ($stmt as $row) {
+        echo $row['id'] . ' ' . $row['order_date'] . ' ' . $row['status'] . PHP_EOL;
+    }
+    PHP
+  checks:
+    - type: command
+      run: grep -Eiq '^\s*BEGIN' storno.sql && grep -Eiq '^\s*(COMMIT|END)' storno.sql && echo ok
+      stdout_equals: ok
+      message: storno.sql soll mit BEGIN; beginnen und mit COMMIT; enden.
+    - type: command
+      run: sqlite3 shop.db "SELECT status FROM orders WHERE id = 6;"
+      stdout_equals: storniert
+      message: Bestellung 6 ist noch nicht storniert. Hast du storno.sql ausgeführt?
+    - type: command
+      run: sqlite3 shop.db "SELECT group_concat(name || '=' || stock, ' ') FROM (SELECT name, stock FROM products WHERE id IN (1, 3) ORDER BY id);"
+      stdout_equals: Tasse=41 Hoodie=11
+      message: Die Lagerbestände stimmen noch nicht – erwartet Tasse 41 und Hoodie 11. Wurde storno.sql zweimal ausgeführt? Dann neu vorbereiten.
+    - type: command
+      run: sqlite3 shop.db "EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 1;"
+      stdout_matches: "SEARCH orders USING (COVERING )?INDEX"
+      message: Abfragen über orders.customer_id nutzen noch keinen Index. Lege CREATE INDEX … ON orders(customer_id) an.
+    - type: command
+      run: php bestellungen.php ada@example.com | tr '\n' '|'
+      stdout_equals: "1 2026-03-01 versendet|3 2026-04-10 bezahlt|8 2026-08-21 offen|"
+      message: "`php bestellungen.php ada@example.com` soll Adas drei Bestellungen als `id order_date status` ausgeben, sortiert nach Datum."
+    - type: command
+      run: php bestellungen.php "x' OR '1'='1" 2>&1 | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: Mit der Eingabe x' OR '1'='1 kommen noch Zeilen oder Fehler zurück. Übergib die E-Mail nur über einen Platzhalter.
+    - type: file_contains
+      path: bestellungen.php
+      pattern: "execute\\(\\s*\\[\\s*\\$email"
+      message: bestellungen.php soll die E-Mail mit execute([$email]) an den Platzhalter übergeben.
+  hints:
+    - "storno.sql: Ein `UPDATE orders SET status = 'storniert' WHERE id = 6;` und ein `UPDATE products SET stock = stock + 1 WHERE id IN (1, 3);` zwischen BEGIN und COMMIT."
+    - "index.sql: `CREATE INDEX idx_orders_customer_id ON orders(customer_id);`"
+    - "bestellungen.php: `SELECT o.id, o.order_date, o.status FROM orders o JOIN customers c ON c.id = o.customer_id WHERE c.email = ? ORDER BY o.order_date` in prepare(), danach `$stmt->execute([$email]);`."
+  solution: |
+    ```bash
+    cd storno
+    cat > storno.sql <<'SQL'
+    BEGIN;
+    UPDATE orders SET status = 'storniert' WHERE id = 6;
+    UPDATE products SET stock = stock + 1 WHERE id IN (1, 3);
+    COMMIT;
+    SQL
+    sqlite3 shop.db < storno.sql
+    echo "CREATE INDEX idx_orders_customer_id ON orders(customer_id);" > index.sql
+    sqlite3 shop.db < index.sql
+    ```
+
+    In `bestellungen.php` ersetzt du die beiden Zeilen mit `prepare` und `execute`:
+
+    ```php
+    $stmt = $pdo->prepare(
+        'SELECT o.id, o.order_date, o.status
+         FROM orders o
+         JOIN customers c ON c.id = o.customer_id
+         WHERE c.email = ?
+         ORDER BY o.order_date'
+    );
+    $stmt->execute([$email]);
+    ```

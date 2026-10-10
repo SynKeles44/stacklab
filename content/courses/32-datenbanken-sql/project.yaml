@@ -1,0 +1,429 @@
+title: Deine Bibliotheks-Datenbank
+description: |
+  In diesem Projekt entwirfst du die Datenbank einer kleinen Stadtbibliothek – vom leeren Ordner bis zur
+  fertigen, geprüften Datei. Du gehst dabei genau den Weg, den du auch im Beruf gehst: Schema entwerfen,
+  Beziehungen mit Fremdschlüsseln absichern, Testdaten einspielen, Auswertungen schreiben, Änderungen in
+  Transaktionen ausführen und am Ende einen Index begründet anlegen.
+
+  Alles passiert im Ordner `bibliothek` in deinem SQL-Workspace. Klicke auf **Projekt vorbereiten**, öffne das
+  Übungs-Terminal und wechsle mit `cd bibliothek` hinein. Jede Datei schreibst du mit `nano`, ausgeführt wird
+  sie mit `sqlite3 bibliothek.db < datei.sql`. Nach jedem Schritt prüft Stacklab die echte Datenbank.
+
+  Die Schritte bauen aufeinander auf. Ist ein Schritt schiefgegangen, lösche `bibliothek.db` und spiele deine
+  `.sql`-Dateien in der Reihenfolge der Schritte erneut ein.
+goal: >
+  Eine SQLite-Datenbank `bibliothek.db` mit den Tabellen authors, books, members und loans, sauberen Schlüsseln
+  und Constraints, Testdaten, drei Auswertungsabfragen, einer per Transaktion gebuchten Rückgabe und einem
+  begründeten Index auf loans(member_id).
+workdir: bibliothek
+setup: |
+  cat > README.md <<'EOF'
+  # Bibliotheks-Datenbank
+
+  Hier entsteht Schritt für Schritt die Datenbank `bibliothek.db`.
+  Ausführen: `sqlite3 bibliothek.db < datei.sql`
+  EOF
+steps:
+  - id: autoren-und-buecher
+    title: Autoren und Bücher anlegen
+    description: |
+      Jedes Buch hat genau einen Autor, ein Autor schreibt viele Bücher – eine 1:n-Beziehung. Der Fremdschlüssel
+      sitzt deshalb auf der n-Seite, also in `books`.
+
+      Schreibe `schema.sql` mit zwei Tabellen und führe sie aus:
+
+      1. `authors`: `id INTEGER PRIMARY KEY`, `name` (Text, Pflichtfeld).
+      2. `books`: `id INTEGER PRIMARY KEY`, `title` (Text, Pflichtfeld), `author_id` (Pflichtfeld, Fremdschlüssel
+         auf `authors(id)`) und `year` (Ganzzahl). Ein `CHECK` sorgt dafür, dass `year` größer als 1400 ist.
+      3. Ausführen: `sqlite3 bibliothek.db < schema.sql`
+    checklist:
+      - schema.sql enthält beide CREATE TABLE-Anweisungen
+      - books.author_id verweist auf authors(id)
+      - title und name sind NOT NULL, year hat einen CHECK
+    hints:
+      - "Ein Fremdschlüssel direkt an der Spalte: `author_id INTEGER NOT NULL REFERENCES authors(id)`."
+      - "Den CHECK kannst du direkt hinter die Spalte schreiben: `year INTEGER CHECK (year > 1400)`."
+      - "Mit `sqlite3 bibliothek.db \".schema\"` siehst du, was in der Datenbank angekommen ist."
+    checks:
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('authors', 'books') ORDER BY name;" | tr '\n' ' '
+        stdout_matches: "^authors books\\s*$"
+        message: In bibliothek.db fehlen noch die Tabellen authors und books. Hast du schema.sql ausgeführt?
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT \"from\" || '>' || \"table\" || '.' || \"to\" FROM pragma_foreign_key_list('books');"
+        stdout_equals: author_id>authors.id
+        message: books.author_id braucht einen Fremdschlüssel REFERENCES authors(id).
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT group_concat(name, ',') FROM (SELECT name FROM pragma_table_info('books') WHERE \"notnull\" = 1 ORDER BY name);"
+        stdout_equals: author_id,title
+        message: In books sollen title und author_id NOT NULL sein (year darf leer bleiben).
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp bibliothek.db "$d/t.db"
+          sqlite3 "$d/t.db" "INSERT INTO authors (id, name) VALUES (99, 'Test');"
+          if sqlite3 "$d/t.db" "INSERT INTO books (title, author_id, year) VALUES ('Alt', 99, 1200);" 2>/dev/null; then echo zu-alt; else echo ok; fi
+          rm -rf "$d"
+        stdout_equals: ok
+        message: Ein Buch aus dem Jahr 1200 lässt sich noch eintragen. Ergänze CHECK (year > 1400).
+    solution: |
+      ```sql
+      CREATE TABLE authors (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL
+      );
+      CREATE TABLE books (
+        id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        author_id INTEGER NOT NULL REFERENCES authors(id),
+        year INTEGER CHECK (year > 1400)
+      );
+      ```
+    solve: |
+      cat > schema.sql <<'SQL'
+      CREATE TABLE authors (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL
+      );
+      CREATE TABLE books (
+        id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        author_id INTEGER NOT NULL REFERENCES authors(id),
+        year INTEGER CHECK (year > 1400)
+      );
+      SQL
+      sqlite3 bibliothek.db < schema.sql
+  - id: mitglieder-und-ausleihen
+    title: Mitglieder und Ausleihen modellieren
+    description: |
+      Ein Mitglied leiht viele Bücher, ein Buch wird im Lauf der Zeit von vielen Mitgliedern geliehen. Die Tabelle
+      `loans` verbindet beide – und speichert zusätzlich, wann ausgeliehen und wann zurückgegeben wurde.
+
+      Schreibe `mitglieder.sql` und führe sie aus:
+
+      1. `members`: `id INTEGER PRIMARY KEY`, `name` (Pflichtfeld), `email` (Pflichtfeld, eindeutig).
+      2. `loans`: `id INTEGER PRIMARY KEY`, `book_id` (Pflichtfeld, Fremdschlüssel auf `books(id)`),
+         `member_id` (Pflichtfeld, Fremdschlüssel auf `members(id)` mit `ON DELETE CASCADE`),
+         `loaned_on` (Text, Pflichtfeld) und `returned_on` (Text, darf leer sein – leer heißt „noch ausgeliehen“).
+    checklist:
+      - members.email ist NOT NULL und UNIQUE
+      - loans hat zwei Fremdschlüssel
+      - returned_on darf NULL sein
+    hints:
+      - "Eindeutig und Pflicht zugleich: `email TEXT NOT NULL UNIQUE`."
+      - "Die CASCADE-Regel steht hinter dem Verweis: `member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE`."
+    checks:
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT \"table\" || ':' || on_delete FROM pragma_foreign_key_list('loans') ORDER BY \"table\";" | tr '\n' ' '
+        stdout_matches: "^books:NO ACTION members:CASCADE\\s*$"
+        message: loans braucht zwei Fremdschlüssel – auf books(id) und auf members(id) ON DELETE CASCADE.
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT group_concat(name, ',') FROM (SELECT name FROM pragma_table_info('loans') WHERE \"notnull\" = 1 ORDER BY name);"
+        stdout_equals: book_id,loaned_on,member_id
+        message: In loans sollen book_id, member_id und loaned_on NOT NULL sein, returned_on aber nicht.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp bibliothek.db "$d/t.db"
+          sqlite3 "$d/t.db" "INSERT INTO members (name, email) VALUES ('A', 'a@example.com');"
+          if sqlite3 "$d/t.db" "INSERT INTO members (name, email) VALUES ('B', 'a@example.com');" 2>/dev/null; then echo doppelt; elif sqlite3 "$d/t.db" "INSERT INTO members (name, email) VALUES ('C', NULL);" 2>/dev/null; then echo leer; else echo ok; fi
+          rm -rf "$d"
+        stdout_equals: ok
+        message: members.email muss NOT NULL und UNIQUE sein – doppelte oder fehlende Adressen dürfen nicht möglich sein.
+    solution: |
+      ```sql
+      CREATE TABLE members (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE
+      );
+      CREATE TABLE loans (
+        id INTEGER PRIMARY KEY,
+        book_id INTEGER NOT NULL REFERENCES books(id),
+        member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+        loaned_on TEXT NOT NULL,
+        returned_on TEXT
+      );
+      ```
+    solve: |
+      cat > mitglieder.sql <<'SQL'
+      CREATE TABLE members (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE
+      );
+      CREATE TABLE loans (
+        id INTEGER PRIMARY KEY,
+        book_id INTEGER NOT NULL REFERENCES books(id),
+        member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+        loaned_on TEXT NOT NULL,
+        returned_on TEXT
+      );
+      SQL
+      sqlite3 bibliothek.db < mitglieder.sql
+  - id: testdaten
+    title: Testdaten einspielen
+    description: |
+      Ohne Daten kannst du keine Abfrage testen. Schreibe `daten.sql` mit diesen Datensätzen und führe sie aus.
+      Die ids gibst du ausdrücklich an, damit spätere Schritte sich auf sie verlassen können.
+
+      | Tabelle | Datensätze |
+      |---|---|
+      | authors | (1, Mara Sommer), (2, Jonas Berg), (3, Lina Wolf) |
+      | books | (1, Der Leuchtturm, 1, 2019), (2, Nebelwald, 1, 2021), (3, Sternenküche, 2, 2015), (4, Das Uhrwerk, 2, 2023), (5, Winterlicht, 3, 2018), (6, Datenmeer, 3, 2024) |
+      | members | (1, Ada, ada@example.com), (2, Ben, ben@example.com), (3, Cem, cem@example.com), (4, Dana, dana@example.com) |
+      | loans | (1, Buch 1, Mitglied 1, 2026-08-01, 2026-08-15), (2, Buch 3, Mitglied 1, 2026-09-02, NULL), (3, Buch 5, Mitglied 2, 2026-09-10, NULL), (4, Buch 2, Mitglied 3, 2026-07-20, 2026-08-03), (5, Buch 1, Mitglied 3, 2026-09-20, NULL), (6, Buch 6, Mitglied 1, 2026-09-25, NULL) |
+
+      Die Spaltenreihenfolge in `loans` ist `id, book_id, member_id, loaned_on, returned_on`. Texte und Daten
+      stehen in einfachen Anführungszeichen, `NULL` ohne.
+    checklist:
+      - 3 Autoren, 6 Bücher, 4 Mitglieder, 6 Ausleihen
+      - Vier Ausleihen sind noch offen (returned_on ist NULL)
+    hints:
+      - "Mehrere Zeilen in einem INSERT: `INSERT INTO authors (id, name) VALUES (1, 'Mara Sommer'), (2, 'Jonas Berg'), (3, 'Lina Wolf');`"
+      - "Eine Ausleihe: `(2, 3, 1, '2026-09-02', NULL)` – NULL ohne Anführungszeichen, sonst ist es der Text „NULL“."
+      - "Doppelt eingespielt? Dann meldet SQLite UNIQUE-Fehler. Lösche bibliothek.db und spiele schema.sql, mitglieder.sql und daten.sql erneut ein."
+    checks:
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT (SELECT COUNT(*) FROM authors) || ' ' || (SELECT COUNT(*) FROM books) || ' ' || (SELECT COUNT(*) FROM members) || ' ' || (SELECT COUNT(*) FROM loans);"
+        stdout_equals: 3 6 4 6
+        message: Es sollen genau 3 Autoren, 6 Bücher, 4 Mitglieder und 6 Ausleihen in der Datenbank sein.
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT group_concat(id, ',') FROM (SELECT id FROM loans WHERE returned_on IS NULL ORDER BY id);"
+        stdout_equals: 2,3,5,6
+        message: Offen (returned_on IS NULL) sollen genau die Ausleihen 2, 3, 5 und 6 sein. Hast du NULL versehentlich in Anführungszeichen gesetzt?
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT b.title || '/' || a.name FROM books b JOIN authors a ON a.id = b.author_id WHERE b.id = 4;"
+        stdout_equals: Das Uhrwerk/Jonas Berg
+        message: Buch 4 soll „Das Uhrwerk“ von Jonas Berg (author_id 2) sein.
+    solution: |
+      ```sql
+      INSERT INTO authors (id, name) VALUES (1, 'Mara Sommer'), (2, 'Jonas Berg'), (3, 'Lina Wolf');
+      INSERT INTO books (id, title, author_id, year) VALUES
+        (1, 'Der Leuchtturm', 1, 2019), (2, 'Nebelwald', 1, 2021), (3, 'Sternenküche', 2, 2015),
+        (4, 'Das Uhrwerk', 2, 2023), (5, 'Winterlicht', 3, 2018), (6, 'Datenmeer', 3, 2024);
+      INSERT INTO members (id, name, email) VALUES
+        (1, 'Ada', 'ada@example.com'), (2, 'Ben', 'ben@example.com'),
+        (3, 'Cem', 'cem@example.com'), (4, 'Dana', 'dana@example.com');
+      INSERT INTO loans (id, book_id, member_id, loaned_on, returned_on) VALUES
+        (1, 1, 1, '2026-08-01', '2026-08-15'), (2, 3, 1, '2026-09-02', NULL),
+        (3, 5, 2, '2026-09-10', NULL), (4, 2, 3, '2026-07-20', '2026-08-03'),
+        (5, 1, 3, '2026-09-20', NULL), (6, 6, 1, '2026-09-25', NULL);
+      ```
+    solve: |
+      cat > daten.sql <<'SQL'
+      INSERT INTO authors (id, name) VALUES (1, 'Mara Sommer'), (2, 'Jonas Berg'), (3, 'Lina Wolf');
+      INSERT INTO books (id, title, author_id, year) VALUES
+        (1, 'Der Leuchtturm', 1, 2019), (2, 'Nebelwald', 1, 2021), (3, 'Sternenküche', 2, 2015),
+        (4, 'Das Uhrwerk', 2, 2023), (5, 'Winterlicht', 3, 2018), (6, 'Datenmeer', 3, 2024);
+      INSERT INTO members (id, name, email) VALUES
+        (1, 'Ada', 'ada@example.com'), (2, 'Ben', 'ben@example.com'),
+        (3, 'Cem', 'cem@example.com'), (4, 'Dana', 'dana@example.com');
+      INSERT INTO loans (id, book_id, member_id, loaned_on, returned_on) VALUES
+        (1, 1, 1, '2026-08-01', '2026-08-15'), (2, 3, 1, '2026-09-02', NULL),
+        (3, 5, 2, '2026-09-10', NULL), (4, 2, 3, '2026-07-20', '2026-08-03'),
+        (5, 1, 3, '2026-09-20', NULL), (6, 6, 1, '2026-09-25', NULL);
+      SQL
+      sqlite3 bibliothek.db < daten.sql
+  - id: katalog-abfrage
+    title: Der Katalog
+    description: |
+      Die Website der Bibliothek zeigt einen Katalog. Schreibe `katalog.sql` mit **einer** Abfrage:
+
+      - Spalten: Buchtitel, Name des Autors, Erscheinungsjahr – in dieser Reihenfolge.
+      - Nur Bücher ab dem Jahr **2018**.
+      - Sortiert nach Jahr, das neueste zuerst.
+
+      Teste mit `sqlite3 -header -column bibliothek.db < katalog.sql`.
+    checklist:
+      - books und authors sind per JOIN verknüpft
+      - Nur Bücher ab 2018, neueste zuerst
+    hints:
+      - "Verknüpfe über den Fremdschlüssel: `FROM books b JOIN authors a ON a.id = b.author_id`."
+      - "Filter und Sortierung: `WHERE b.year >= 2018 ORDER BY b.year DESC`."
+    checks:
+      - type: command
+        run: |
+          test -s katalog.sql || exit 1
+          ist=$(sqlite3 bibliothek.db < katalog.sql 2>&1)
+          soll=$(sqlite3 bibliothek.db "SELECT b.title, a.name, b.year FROM books b JOIN authors a ON a.id = b.author_id WHERE b.year >= 2018 ORDER BY b.year DESC;")
+          [ "$ist" = "$soll" ] && echo ok
+        stdout_equals: ok
+        message: katalog.sql liefert noch nicht das erwartete Ergebnis – title, Autorname, year für Bücher ab 2018, sortiert nach year absteigend.
+    solution: |
+      ```sql
+      SELECT b.title, a.name, b.year
+      FROM books b
+      JOIN authors a ON a.id = b.author_id
+      WHERE b.year >= 2018
+      ORDER BY b.year DESC;
+      ```
+    solve: |
+      cat > katalog.sql <<'SQL'
+      SELECT b.title, a.name, b.year
+      FROM books b
+      JOIN authors a ON a.id = b.author_id
+      WHERE b.year >= 2018
+      ORDER BY b.year DESC;
+      SQL
+  - id: ausleih-berichte
+    title: Ausleih-Berichte
+    description: |
+      Das Team am Ausleihtresen braucht zwei Berichte. Schreibe jeweils **eine** Abfrage:
+
+      1. `offen.sql` – alle noch nicht zurückgegebenen Ausleihen: Buchtitel, Name des Mitglieds, Ausleihdatum,
+         sortiert nach Ausleihdatum (älteste zuerst).
+      2. `aktivitaet.sql` – pro Mitglied der Name und die Anzahl seiner Ausleihen insgesamt. Auch Mitglieder
+         **ohne** Ausleihe erscheinen mit `0`. Sortiert nach Anzahl absteigend, bei Gleichstand nach Name.
+    checklist:
+      - offen.sql verknüpft drei Tabellen und filtert auf returned_on IS NULL
+      - aktivitaet.sql nutzt LEFT JOIN und zeigt Dana mit 0
+    hints:
+      - "Noch ausgeliehen heißt `returned_on IS NULL` – nicht `= NULL`, das ist nie wahr."
+      - "Für die Null-Zeilen brauchst du `members m LEFT JOIN loans l ON l.member_id = m.id` und `COUNT(l.id)` statt `COUNT(*)`."
+      - "`GROUP BY m.id, m.name ORDER BY COUNT(l.id) DESC, m.name`"
+    checks:
+      - type: command
+        run: |
+          test -s offen.sql || exit 1
+          ist=$(sqlite3 bibliothek.db < offen.sql 2>&1)
+          soll=$(sqlite3 bibliothek.db "SELECT b.title, m.name, l.loaned_on FROM loans l JOIN books b ON b.id = l.book_id JOIN members m ON m.id = l.member_id WHERE l.returned_on IS NULL ORDER BY l.loaned_on;")
+          [ "$ist" = "$soll" ] && echo ok
+        stdout_equals: ok
+        message: offen.sql stimmt noch nicht. Erwartet werden Titel, Mitgliedsname und loaned_on aller Ausleihen mit returned_on IS NULL, sortiert nach loaned_on.
+      - type: command
+        run: |
+          test -s aktivitaet.sql || exit 1
+          ist=$(sqlite3 bibliothek.db < aktivitaet.sql 2>&1)
+          soll=$(sqlite3 bibliothek.db "SELECT m.name, COUNT(l.id) FROM members m LEFT JOIN loans l ON l.member_id = m.id GROUP BY m.id, m.name ORDER BY COUNT(l.id) DESC, m.name;")
+          [ "$ist" = "$soll" ] && echo ok
+        stdout_equals: ok
+        message: aktivitaet.sql stimmt noch nicht. Nutze LEFT JOIN, COUNT(l.id), GROUP BY pro Mitglied und sortiere nach Anzahl absteigend, dann nach Name.
+    solution: |
+      ```sql
+      -- offen.sql
+      SELECT b.title, m.name, l.loaned_on
+      FROM loans l
+      JOIN books b ON b.id = l.book_id
+      JOIN members m ON m.id = l.member_id
+      WHERE l.returned_on IS NULL
+      ORDER BY l.loaned_on;
+
+      -- aktivitaet.sql
+      SELECT m.name, COUNT(l.id) AS ausleihen
+      FROM members m
+      LEFT JOIN loans l ON l.member_id = m.id
+      GROUP BY m.id, m.name
+      ORDER BY ausleihen DESC, m.name;
+      ```
+    solve: |
+      cat > offen.sql <<'SQL'
+      SELECT b.title, m.name, l.loaned_on
+      FROM loans l
+      JOIN books b ON b.id = l.book_id
+      JOIN members m ON m.id = l.member_id
+      WHERE l.returned_on IS NULL
+      ORDER BY l.loaned_on;
+      SQL
+      cat > aktivitaet.sql <<'SQL'
+      SELECT m.name, COUNT(l.id) AS ausleihen
+      FROM members m
+      LEFT JOIN loans l ON l.member_id = m.id
+      GROUP BY m.id, m.name
+      ORDER BY ausleihen DESC, m.name;
+      SQL
+  - id: rueckgabe-transaktion
+    title: Rückgabe und Neuausleihe als Transaktion
+    description: |
+      Am 5. Oktober 2026 bringt Ada „Sternenküche“ zurück (Ausleihe `2`), und Dana (Mitglied `4`) nimmt das Buch
+      direkt mit. Beide Buchungen gehören zusammen: Ohne Rückgabe darf es keine neue Ausleihe geben.
+
+      Schreibe `rueckgabe.sql`:
+
+      1. Beginne mit `BEGIN;`.
+      2. Setze bei Ausleihe `2` das Rückgabedatum auf `2026-10-05`.
+      3. Lege die Ausleihe mit der id `7` an: Buch `3`, Mitglied `4`, ausgeliehen am `2026-10-05`, noch nicht zurück.
+      4. Ende mit `COMMIT;` und führe die Datei **einmal** aus.
+    checklist:
+      - rueckgabe.sql ist in BEGIN und COMMIT eingeschlossen
+      - Ausleihe 2 hat ein Rückgabedatum
+      - Ausleihe 7 für Dana ist angelegt
+    hints:
+      - "`UPDATE loans SET returned_on = '2026-10-05' WHERE id = 2;` – das WHERE nie vergessen!"
+      - "`INSERT INTO loans (id, book_id, member_id, loaned_on) VALUES (7, 3, 4, '2026-10-05');` – returned_on bleibt automatisch NULL."
+    checks:
+      - type: command
+        run: grep -Eiq '^\s*BEGIN' rueckgabe.sql && grep -Eiq '^\s*(COMMIT|END)' rueckgabe.sql && echo ok
+        stdout_equals: ok
+        message: rueckgabe.sql soll mit BEGIN; beginnen und mit COMMIT; enden.
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT group_concat(id || '=' || ifnull(returned_on, 'offen'), ' ') FROM (SELECT id, returned_on FROM loans ORDER BY id);"
+        stdout_equals: 1=2026-08-15 2=2026-10-05 3=offen 4=2026-08-03 5=offen 6=offen 7=offen
+        message: Die Ausleihen stimmen noch nicht. Nur Ausleihe 2 bekommt das Rückgabedatum 2026-10-05, und Ausleihe 7 ist neu und offen.
+      - type: command
+        run: sqlite3 bibliothek.db "SELECT book_id || '|' || member_id || '|' || loaned_on FROM loans WHERE id = 7;"
+        stdout_equals: 3|4|2026-10-05
+        message: Ausleihe 7 fehlt oder hat falsche Werte – Buch 3, Mitglied 4, ausgeliehen am 2026-10-05.
+    solution: |
+      ```sql
+      BEGIN;
+      UPDATE loans SET returned_on = '2026-10-05' WHERE id = 2;
+      INSERT INTO loans (id, book_id, member_id, loaned_on) VALUES (7, 3, 4, '2026-10-05');
+      COMMIT;
+      ```
+    solve: |
+      cat > rueckgabe.sql <<'SQL'
+      BEGIN;
+      UPDATE loans SET returned_on = '2026-10-05' WHERE id = 2;
+      INSERT INTO loans (id, book_id, member_id, loaned_on) VALUES (7, 3, 4, '2026-10-05');
+      COMMIT;
+      SQL
+      sqlite3 bibliothek.db < rueckgabe.sql
+  - id: index-begruenden
+    title: Ein begründeter Index
+    description: |
+      Die Seite „Meine Ausleihen“ fragt bei jedem Aufruf `SELECT … FROM loans WHERE member_id = ?` ab. Bei
+      hunderttausend Ausleihen wird das ohne Index langsam.
+
+      1. Prüfe den Plan: `sqlite3 bibliothek.db "EXPLAIN QUERY PLAN SELECT * FROM loans WHERE member_id = 1;"`
+      2. Lege in `index.sql` einen Index auf `loans(member_id)` an und führe die Datei aus.
+      3. Prüfe den Plan erneut – jetzt steht dort `SEARCH … USING INDEX`.
+      4. Schreibe in `index.md` zwei bis drei Sätze: Welche Abfrage profitiert, warum gerade diese Spalte, und was
+         der Index kostet.
+    checklist:
+      - Index auf loans(member_id) angelegt
+      - EXPLAIN zeigt SEARCH statt SCAN
+      - index.md begründet die Entscheidung
+    hints:
+      - "`CREATE INDEX idx_loans_member_id ON loans(member_id);`"
+      - "Für die Begründung: member_id ist ein Fremdschlüssel, über den gesucht und gejoint wird. Kosten: Speicher und etwas langsameres Schreiben."
+    checks:
+      - type: command
+        run: sqlite3 bibliothek.db "EXPLAIN QUERY PLAN SELECT * FROM loans WHERE member_id = 1;"
+        stdout_matches: "SEARCH loans USING (COVERING )?INDEX"
+        message: Die Suche über member_id nutzt noch keinen Index. Lege CREATE INDEX … ON loans(member_id) an.
+      - type: file_exists
+        path: index.sql
+        message: Lege die Datei index.sql mit deiner CREATE INDEX-Anweisung an.
+      - type: command
+        run: test -f index.md && wc -w < index.md
+        stdout_matches: "^\\s*([2-9][0-9]|[1-9][0-9]{2,})\\s*$"
+        message: index.md fehlt oder ist zu kurz. Begründe den Index in zwei bis drei Sätzen (mindestens 20 Wörter).
+    solution: |
+      ```bash
+      echo "CREATE INDEX idx_loans_member_id ON loans(member_id);" > index.sql
+      sqlite3 bibliothek.db < index.sql
+      sqlite3 bibliothek.db "EXPLAIN QUERY PLAN SELECT * FROM loans WHERE member_id = 1;"
+      ```
+
+      Beispiel für `index.md`: „Die Seite Meine Ausleihen sucht bei jedem Aufruf alle Ausleihen eines Mitglieds
+      über `member_id`. Als Fremdschlüssel wird die Spalte auch in JOINs genutzt, deshalb lohnt sich der Index.
+      Er kostet etwas Speicher und macht INSERT und UPDATE auf loans minimal langsamer.“
+    solve: |
+      echo "CREATE INDEX idx_loans_member_id ON loans(member_id);" > index.sql
+      sqlite3 bibliothek.db < index.sql
+      cat > index.md <<'EOF'
+      # Index auf loans(member_id)
+
+      Die Seite Meine Ausleihen sucht bei jedem Aufruf alle Ausleihen eines Mitglieds über member_id.
+      Als Fremdschlüssel wird die Spalte auch in JOINs genutzt, deshalb lohnt sich der Index besonders.
+      Er kostet etwas Speicher und macht INSERT und UPDATE auf loans minimal langsamer.
+      EOF

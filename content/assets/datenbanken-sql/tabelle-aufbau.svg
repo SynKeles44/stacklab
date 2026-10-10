@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="30" y="36" font-size="20" font-weight="700" fill="#1e1b3a">Tabelle customers</text>
+  <text x="30" y="58" font-size="13" fill="#1e1b3a">Das Schema legt Spalten, Datentypen und Regeln fest – die Zeilen sind die Daten.</text>
+  <rect x="30" y="80" width="560" height="40" fill="#a78bfa" fill-opacity="0.25" stroke="#1e1b3a"/>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a">
+    <text x="45" y="105" font-weight="700">id</text>
+    <text x="110" y="105" font-weight="700">name</text>
+    <text x="270" y="105" font-weight="700">email</text>
+    <text x="490" y="105" font-weight="700">city</text>
+  </g>
+  <line x1="95" y1="80" x2="95" y2="280" stroke="#1e1b3a"/>
+  <line x1="255" y1="80" x2="255" y2="280" stroke="#1e1b3a"/>
+  <line x1="475" y1="80" x2="475" y2="280" stroke="#1e1b3a"/>
+  <rect x="30" y="120" width="560" height="40" fill="#ffffff" stroke="#1e1b3a"/>
+  <rect x="30" y="160" width="560" height="40" fill="#34d399" fill-opacity="0.25" stroke="#1e1b3a"/>
+  <rect x="30" y="200" width="560" height="40" fill="#ffffff" stroke="#1e1b3a"/>
+  <rect x="30" y="240" width="560" height="40" fill="#ffffff" stroke="#1e1b3a"/>
+  <line x1="95" y1="80" x2="95" y2="280" stroke="#1e1b3a"/>
+  <line x1="255" y1="80" x2="255" y2="280" stroke="#1e1b3a"/>
+  <line x1="475" y1="80" x2="475" y2="280" stroke="#1e1b3a"/>
+  <rect x="30" y="120" width="65" height="160" fill="#f59e0b" fill-opacity="0.25" stroke="#1e1b3a"/>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a">
+    <text x="55" y="145">1</text><text x="110" y="145">Ada Lovelace</text><text x="270" y="145">ada@example.com</text><text x="490" y="145">Berlin</text>
+    <text x="55" y="185">2</text><text x="110" y="185">Grace Hopper</text><text x="270" y="185">grace@example.com</text><text x="490" y="185">Hamburg</text>
+    <text x="55" y="225">3</text><text x="110" y="225">Alan Turing</text><text x="270" y="225">alan@example.com</text><text x="490" y="225">Berlin</text>
+    <text x="55" y="265">5</text><text x="110" y="265">Katherine J.</text><text x="270" y="265">katherine@exa…</text><text x="490" y="265" fill="#f87171">NULL</text>
+  </g>
+  <line x1="600" y1="100" x2="640" y2="100" stroke="#a78bfa" stroke-width="2"/>
+  <text x="648" y="96" font-size="14" font-weight="700" fill="#1e1b3a">Spalten</text>
+  <text x="648" y="113" font-size="12" fill="#1e1b3a">Name + Datentyp</text>
+  <line x1="600" y1="180" x2="640" y2="180" stroke="#34d399" stroke-width="2"/>
+  <text x="648" y="176" font-size="14" font-weight="700" fill="#1e1b3a">Zeile</text>
+  <text x="648" y="193" font-size="12" fill="#1e1b3a">ein Datensatz</text>
+  <line x1="62" y1="285" x2="62" y2="315" stroke="#f59e0b" stroke-width="2"/>
+  <text x="30" y="332" font-size="14" font-weight="700" fill="#1e1b3a">Primärschlüssel</text>
+  <text x="30" y="349" font-size="12" fill="#1e1b3a">eindeutig je Zeile</text>
+  <line x1="510" y1="285" x2="510" y2="315" stroke="#f87171" stroke-width="2"/>
+  <text x="440" y="332" font-size="14" font-weight="700" fill="#1e1b3a">NULL = Wert unbekannt</text>
+  <text x="440" y="349" font-size="12" fill="#1e1b3a">nicht 0 und nicht leerer Text</text>
+</svg>

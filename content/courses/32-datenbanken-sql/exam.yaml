@@ -1,0 +1,456 @@
+title: Abschlussprüfung Datenbanken & SQL
+description: |
+  Diese Prüfung deckt alle vier Module ab: Grundlagen und erste Abfragen, Datenmodellierung, JOINs und
+  Datenänderungen sowie Transaktionen, Indizes und SQL-Injection. Zuerst beantwortest du Fragen, danach löst du
+  drei Praxis-Aufgaben – zwei mit echtem SQL im Übungs-Terminal, eine als Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast, und kannst
+  gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Grundlagen ---
+  - module: grundlagen
+    type: single
+    question: Was ist der Unterschied zwischen SQLite und PostgreSQL?
+    options:
+      - SQLite versteht kein SQL.
+      - SQLite ist eine Bibliothek, die eine einzelne Datei liest; PostgreSQL läuft als eigener Server, mit dem sich viele Clients verbinden.
+      - PostgreSQL speichert Daten nur im Arbeitsspeicher.
+      - Es gibt keinen Unterschied, beides sind Namen für dasselbe Programm.
+    answer: 1
+    explanation: >
+      SQLite ist eingebettet und arbeitet direkt mit einer Datei – ideal für Tests, Apps und kleine Werkzeuge.
+      PostgreSQL ist ein Server-Datenbanksystem für viele gleichzeitige Verbindungen.
+  - module: grundlagen
+    type: cloze
+    text: "Kunden ohne Stadt findest du mit `SELECT name FROM customers WHERE city ___;`"
+    blanks:
+      - ["IS NULL"]
+    explanation: Vergleiche mit `= NULL` sind nie wahr. Fehlende Werte prüfst du mit IS NULL.
+  - module: grundlagen
+    type: single
+    question: "Was liefert `SELECT category, COUNT(*) FROM products GROUP BY category HAVING COUNT(*) > 1;`?"
+    options:
+      - Alle Produkte, die mehr als einmal vorkommen.
+      - Jede Kategorie mit mehr als einem Produkt und deren Anzahl.
+      - Einen Fehler, weil COUNT nicht in HAVING stehen darf.
+      - Die Anzahl aller Kategorien.
+    answer: 1
+    explanation: GROUP BY bildet pro Kategorie eine Gruppe, HAVING behält nur Gruppen mit mehr als einer Zeile.
+  - module: grundlagen
+    type: find-bug
+    question: Die Abfrage soll die Bestellwerte je Bestellung über 40 zeigen. In welcher Zeile steckt der Fehler?
+    language: sql
+    code: |
+      SELECT order_id, SUM(quantity * unit_price) AS total
+      FROM order_items
+      WHERE SUM(quantity * unit_price) > 40
+      GROUP BY order_id;
+    bug_line: 3
+    explanation: >
+      Aggregatfunktionen dürfen nicht in WHERE stehen, weil WHERE einzelne Zeilen vor dem Gruppieren filtert.
+      Die Bedingung gehört nach GROUP BY in ein HAVING.
+
+  # --- Datenmodellierung ---
+  - module: datenmodellierung
+    type: single
+    question: Ein Kunde hat viele Bestellungen, jede Bestellung gehört zu genau einem Kunden. Wo steht der Fremdschlüssel?
+    options:
+      - "In customers, als Spalte `order_id`."
+      - "In orders, als Spalte `customer_id`."
+      - In einer Zwischentabelle customer_orders.
+      - In beiden Tabellen.
+    answer: 1
+    explanation: Bei 1:n steht der Fremdschlüssel immer auf der n-Seite – hier in orders.
+  - module: datenmodellierung
+    type: match
+    question: Ordne jedem Constraint seine Wirkung zu.
+    pairs:
+      - { left: "NOT NULL", right: "Die Spalte darf nicht leer bleiben" }
+      - { left: "UNIQUE", right: "Kein Wert darf doppelt vorkommen" }
+      - { left: "CHECK (price >= 0)", right: "Jede Zeile muss eine eigene Bedingung erfüllen" }
+      - { left: "DEFAULT 0", right: "Startwert, wenn das INSERT die Spalte nicht nennt" }
+    explanation: Constraints sind Regeln im Schema, die die Datenbank bei jeder Änderung prüft.
+  - module: datenmodellierung
+    type: single
+    question: "Die Tabelle `orders(id, customer_id, customer_email)` – gegen welche Normalform verstößt sie?"
+    options:
+      - Gegen die erste, weil eine Zelle mehrere Werte enthält.
+      - Gegen die dritte, weil customer_email von customer_id abhängt statt vom Schlüssel id.
+      - Gegen keine, sie ist sauber normalisiert.
+    answer: 1
+    explanation: >
+      Die E-Mail beschreibt den Kunden, nicht die Bestellung. Sie hängt transitiv über customer_id vom Schlüssel
+      ab und gehört in die Tabelle customers.
+  - module: datenmodellierung
+    type: multiple
+    question: Was gilt für eine n:m-Beziehung zwischen Produkten und Schlagworten?
+    options:
+      - Sie braucht eine Zwischentabelle mit zwei Fremdschlüsseln.
+      - Der Primärschlüssel der Zwischentabelle besteht oft aus beiden Fremdschlüsseln.
+      - Man speichert alle Schlagworte als kommagetrennten Text in products.
+      - Mit ON DELETE CASCADE verschwinden Zuordnungen, wenn das Produkt gelöscht wird.
+    answers: [0, 1, 3]
+    explanation: >
+      Kommagetrennte Listen verletzen die erste Normalform und lassen sich weder sauber filtern noch prüfen.
+
+  # --- Abfragen verknüpfen ---
+  - module: abfragen-verknuepfen
+    type: single
+    question: Du willst alle Kunden sehen – auch die ohne Bestellung. Welcher JOIN passt?
+    options:
+      - "`customers c JOIN orders o ON o.customer_id = c.id`"
+      - "`customers c LEFT JOIN orders o ON o.customer_id = c.id`"
+      - "`customers c, orders o`"
+    answer: 1
+    explanation: LEFT JOIN behält alle Zeilen der linken Tabelle. Fehlt eine Bestellung, stehen rechts NULL-Werte.
+  - module: abfragen-verknuepfen
+    type: find-bug
+    question: Die Abfrage soll alle Kunden mit ihren versendeten Bestellungen zeigen – Kunden ohne solche Bestellung mit NULL. In welcher Zeile liegt der Fehler?
+    language: sql
+    code: |
+      SELECT c.name, o.id
+      FROM customers c
+      LEFT JOIN orders o ON o.customer_id = c.id
+      WHERE o.status = 'versendet';
+    bug_line: 4
+    explanation: >
+      Die Bedingung auf die rechte Tabelle im WHERE wirft alle NULL-Zeilen wieder heraus – aus dem LEFT JOIN wird
+      faktisch ein INNER JOIN. Sie gehört ins ON: `ON o.customer_id = c.id AND o.status = 'versendet'`.
+  - module: abfragen-verknuepfen
+    type: cloze
+    text: "Eine benannte Zwischenabfrage beginnt mit `___ umsatz ___ (SELECT …)`."
+    blanks:
+      - [WITH]
+      - [AS]
+    explanation: Eine CTE gibt einem Teilergebnis einen Namen, den die folgende Abfrage wie eine Tabelle nutzt.
+  - module: abfragen-verknuepfen
+    type: single
+    question: "Was passiert bei `UPDATE products SET price = 0;`?"
+    options:
+      - Nur das erste Produkt kostet danach 0.
+      - Alle Produkte kosten danach 0.
+      - SQLite verweigert ein UPDATE ohne WHERE.
+    answer: 1
+    explanation: Ohne WHERE gilt die Änderung für jede Zeile der Tabelle. Deshalb schreibst du das WHERE zuerst – und arbeitest bei Korrekturen in einer Transaktion.
+
+  # --- Sicher und schnell ---
+  - module: sicher-und-schnell
+    type: single
+    question: Mitten in einer Transaktion bricht die Verbindung ab, bevor COMMIT gesendet wurde. Was passiert?
+    options:
+      - Alle bis dahin ausgeführten Änderungen bleiben gespeichert.
+      - Die Datenbank verwirft alle Änderungen dieser Transaktion.
+      - Nur die letzte Anweisung wird zurückgenommen.
+    answer: 1
+    explanation: Atomarität bedeutet ganz oder gar nicht. Ohne COMMIT ist nichts dauerhaft.
+  - module: sicher-und-schnell
+    type: multiple
+    question: Welche Aussagen über Indizes stimmen?
+    options:
+      - Ein Index kann eine SELECT-Abfrage mit WHERE stark beschleunigen.
+      - Jeder Index macht INSERT, UPDATE und DELETE etwas langsamer.
+      - Ein Index ändert das Ergebnis einer Abfrage.
+      - "`EXPLAIN QUERY PLAN` zeigt in SQLite, ob ein Index genutzt wird."
+    answers: [0, 1, 3]
+    explanation: Ein Index ändert nie das Ergebnis, nur den Weg dorthin. Er muss bei jeder Änderung mitgepflegt werden.
+  - module: sicher-und-schnell
+    type: single
+    question: Welche Zeile ist sicher gegen SQL-Injection?
+    options:
+      - "`$pdo->query(\"SELECT * FROM customers WHERE email = '$email'\")`"
+      - "`$pdo->query('SELECT * FROM customers WHERE email = ' . addslashes($email))`"
+      - "`$stmt = $pdo->prepare('SELECT * FROM customers WHERE email = ?'); $stmt->execute([$email]);`"
+    answer: 2
+    explanation: Nur das Prepared Statement trennt Befehl und Wert zuverlässig. Selbstgebautes Maskieren übersieht Sonderfälle.
+  - module: sicher-und-schnell
+    type: match
+    question: Ordne jedem Problem die passende Lösung zu.
+    pairs:
+      - { left: "Bestellung und Lagerbuchung dürfen nicht halb gespeichert werden", right: "Transaktion mit BEGIN und COMMIT" }
+      - { left: "Die Suche über orders.customer_id liest die ganze Tabelle", right: "CREATE INDEX auf customer_id" }
+      - { left: "Eine Nutzereingabe landet in einer WHERE-Bedingung", right: "Prepared Statement mit Platzhalter" }
+      - { left: "Nutzer wählen die Sortierspalte per URL", right: "Allowlist erlaubter Spaltennamen" }
+    explanation: Jede Technik aus Modul 4 löst ein ganz bestimmtes Problem.
+tasks:
+  - module: abfragen-verknuepfen
+    id: pruefung-kundenumsatz
+    type: terminal
+    title: Umsatz pro Kunde
+    description: |
+      Im Ordner `pruefung-umsatz` liegt `shop.db`. Schreibe `umsatz.sql` mit **einer** Abfrage:
+
+      - Spalten: Name des Kunden und sein Umsatz `SUM(quantity * unit_price)` aus allen **nicht stornierten**
+        Bestellungen.
+      - **Alle** Kunden erscheinen – wer nichts gekauft hat, mit `0` (Tipp: `COALESCE(…, 0)`).
+      - Sortiert nach Umsatz absteigend, bei Gleichstand nach Name.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-umsatz
+    setup: |
+      sqlite3 shop.db <<'SQL'
+      PRAGMA foreign_keys = ON;
+      CREATE TABLE customers (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        city TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE TABLE products (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        price REAL NOT NULL CHECK (price >= 0),
+        stock INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE orders (
+        id INTEGER PRIMARY KEY,
+        customer_id INTEGER NOT NULL REFERENCES customers(id),
+        order_date TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('offen', 'bezahlt', 'versendet', 'storniert'))
+      );
+      CREATE TABLE order_items (
+        order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        product_id INTEGER NOT NULL REFERENCES products(id),
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        unit_price REAL NOT NULL,
+        PRIMARY KEY (order_id, product_id)
+      );
+      INSERT INTO customers VALUES
+        (1, 'Ada Lovelace', 'ada@example.com', 'Berlin', '2026-01-15'),
+        (2, 'Grace Hopper', 'grace@example.com', 'Hamburg', '2026-02-03'),
+        (3, 'Alan Turing', 'alan@example.com', 'Berlin', '2026-02-20'),
+        (4, 'Margaret Hamilton', 'margaret@example.com', 'München', '2026-03-11'),
+        (5, 'Katherine Johnson', 'katherine@example.com', NULL, '2026-04-02'),
+        (6, 'Tim Berners-Lee', 'tim@example.com', 'Köln', '2026-05-19');
+      INSERT INTO products VALUES
+        (1, 'Tasse', 'Küche', 8.5, 40),
+        (2, 'T-Shirt', 'Kleidung', 19.5, 25),
+        (3, 'Hoodie', 'Kleidung', 39.0, 10),
+        (4, 'Notizbuch', 'Büro', 6.0, 100),
+        (5, 'Kugelschreiber', 'Büro', 1.5, 300),
+        (6, 'Rucksack', 'Taschen', 49.5, 0),
+        (7, 'Sticker-Set', 'Büro', 3.0, 150);
+      INSERT INTO orders VALUES
+        (1, 1, '2026-03-01', 'versendet'),
+        (2, 2, '2026-03-05', 'versendet'),
+        (3, 1, '2026-04-10', 'bezahlt'),
+        (4, 3, '2026-04-12', 'storniert'),
+        (5, 4, '2026-05-02', 'versendet'),
+        (6, 2, '2026-06-18', 'offen'),
+        (7, 5, '2026-07-01', 'bezahlt'),
+        (8, 1, '2026-08-21', 'offen');
+      INSERT INTO order_items VALUES
+        (1, 1, 2, 8.5), (1, 4, 3, 6.0),
+        (2, 2, 1, 19.5), (2, 3, 1, 39.0),
+        (3, 6, 1, 49.5),
+        (4, 2, 2, 19.5),
+        (5, 4, 5, 6.0), (5, 5, 10, 1.5),
+        (6, 3, 1, 39.0), (6, 1, 1, 8.5),
+        (7, 2, 3, 19.5),
+        (8, 5, 4, 1.5), (8, 1, 1, 8.5);
+      SQL
+    checks:
+      - type: command
+        run: |
+          test -s umsatz.sql || exit 1
+          ist=$(sqlite3 shop.db < umsatz.sql 2>&1)
+          soll=$(sqlite3 shop.db "SELECT c.name, COALESCE(SUM(i.quantity * i.unit_price), 0) AS umsatz FROM customers c LEFT JOIN orders o ON o.customer_id = c.id AND o.status <> 'storniert' LEFT JOIN order_items i ON i.order_id = o.id GROUP BY c.id, c.name ORDER BY umsatz DESC, c.name;")
+          [ "$ist" = "$soll" ] && echo ok
+        stdout_equals: ok
+        message: umsatz.sql stimmt noch nicht. Alle sechs Kunden sollen erscheinen, der Storno-Filter gehört ins ON des LEFT JOIN, und Kunden ohne Umsatz zeigen 0.
+    hints:
+      - "Zwei LEFT JOINs: customers → orders → order_items."
+      - "Steht `o.status <> 'storniert'` im WHERE, fallen Kunden ohne Bestellung heraus. Setze die Bedingung ins ON."
+    solution: |
+      ```bash
+      cd pruefung-umsatz
+      cat > umsatz.sql <<'SQL'
+      SELECT c.name, COALESCE(SUM(i.quantity * i.unit_price), 0) AS umsatz
+      FROM customers c
+      LEFT JOIN orders o ON o.customer_id = c.id AND o.status <> 'storniert'
+      LEFT JOIN order_items i ON i.order_id = o.id
+      GROUP BY c.id, c.name
+      ORDER BY umsatz DESC, c.name;
+      SQL
+      ```
+  - module: datenmodellierung
+    id: pruefung-gutscheine
+    type: terminal
+    title: Gutscheine modellieren
+    description: |
+      Im Ordner `pruefung-gutscheine` liegt `shop.db`. Der Shop führt Gutscheine ein. Schreibe `gutscheine.sql` und
+      führe sie mit `sqlite3 shop.db < gutscheine.sql` aus:
+
+      1. Tabelle `coupons` mit `code` (Text, Primärschlüssel), `percent` (Ganzzahl, Pflichtfeld, nur Werte von 1
+         bis 90 erlaubt) und `valid_until` (Text, Pflichtfeld).
+      2. Tabelle `coupon_uses` mit `id INTEGER PRIMARY KEY`, `coupon_code` (Pflichtfeld, Fremdschlüssel auf
+         `coupons(code)`) und `order_id` (Pflichtfeld, Fremdschlüssel auf `orders(id)`, **eindeutig** – pro Bestellung
+         höchstens ein Gutschein).
+      3. Lege den Gutschein `HERBST10` mit 10 Prozent, gültig bis `2026-11-30`, an und löse ihn für Bestellung `8` ein.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-gutscheine
+    setup: |
+      sqlite3 shop.db <<'SQL'
+      PRAGMA foreign_keys = ON;
+      CREATE TABLE customers (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        city TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE TABLE products (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        price REAL NOT NULL CHECK (price >= 0),
+        stock INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE orders (
+        id INTEGER PRIMARY KEY,
+        customer_id INTEGER NOT NULL REFERENCES customers(id),
+        order_date TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('offen', 'bezahlt', 'versendet', 'storniert'))
+      );
+      CREATE TABLE order_items (
+        order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        product_id INTEGER NOT NULL REFERENCES products(id),
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        unit_price REAL NOT NULL,
+        PRIMARY KEY (order_id, product_id)
+      );
+      INSERT INTO customers VALUES
+        (1, 'Ada Lovelace', 'ada@example.com', 'Berlin', '2026-01-15'),
+        (2, 'Grace Hopper', 'grace@example.com', 'Hamburg', '2026-02-03'),
+        (3, 'Alan Turing', 'alan@example.com', 'Berlin', '2026-02-20'),
+        (4, 'Margaret Hamilton', 'margaret@example.com', 'München', '2026-03-11'),
+        (5, 'Katherine Johnson', 'katherine@example.com', NULL, '2026-04-02'),
+        (6, 'Tim Berners-Lee', 'tim@example.com', 'Köln', '2026-05-19');
+      INSERT INTO products VALUES
+        (1, 'Tasse', 'Küche', 8.5, 40),
+        (2, 'T-Shirt', 'Kleidung', 19.5, 25),
+        (3, 'Hoodie', 'Kleidung', 39.0, 10),
+        (4, 'Notizbuch', 'Büro', 6.0, 100),
+        (5, 'Kugelschreiber', 'Büro', 1.5, 300),
+        (6, 'Rucksack', 'Taschen', 49.5, 0),
+        (7, 'Sticker-Set', 'Büro', 3.0, 150);
+      INSERT INTO orders VALUES
+        (1, 1, '2026-03-01', 'versendet'),
+        (2, 2, '2026-03-05', 'versendet'),
+        (3, 1, '2026-04-10', 'bezahlt'),
+        (4, 3, '2026-04-12', 'storniert'),
+        (5, 4, '2026-05-02', 'versendet'),
+        (6, 2, '2026-06-18', 'offen'),
+        (7, 5, '2026-07-01', 'bezahlt'),
+        (8, 1, '2026-08-21', 'offen');
+      INSERT INTO order_items VALUES
+        (1, 1, 2, 8.5), (1, 4, 3, 6.0),
+        (2, 2, 1, 19.5), (2, 3, 1, 39.0),
+        (3, 6, 1, 49.5),
+        (4, 2, 2, 19.5),
+        (5, 4, 5, 6.0), (5, 5, 10, 1.5),
+        (6, 3, 1, 39.0), (6, 1, 1, 8.5),
+        (7, 2, 3, 19.5),
+        (8, 5, 4, 1.5), (8, 1, 1, 8.5);
+      SQL
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp shop.db "$d/t.db"
+          r=ok
+          sqlite3 "$d/t.db" "INSERT INTO coupons VALUES ('ZUVIEL', 95, '2026-12-31');" 2>/dev/null && r=check-fehlt
+          sqlite3 "$d/t.db" "INSERT INTO coupons VALUES ('NULL0', 0, '2026-12-31');" 2>/dev/null && r=check-fehlt
+          sqlite3 "$d/t.db" "INSERT INTO coupons (code, valid_until) VALUES ('LEER', '2026-12-31');" 2>/dev/null && r=notnull-fehlt
+          sqlite3 "$d/t.db" "INSERT INTO coupons VALUES ('HERBST10', 20, '2026-12-31');" 2>/dev/null && r=pk-fehlt
+          echo $r; rm -rf "$d"
+        stdout_equals: ok
+        message: coupons braucht code als PRIMARY KEY, percent NOT NULL mit CHECK (percent BETWEEN 1 AND 90).
+      - type: command
+        run: sqlite3 shop.db "SELECT \"table\" || '.' || \"to\" FROM pragma_foreign_key_list('coupon_uses') ORDER BY \"table\";" | tr '\n' ' '
+        stdout_matches: "^coupons\\.code orders\\.id\\s*$"
+        message: coupon_uses braucht zwei Fremdschlüssel – auf coupons(code) und auf orders(id).
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); cp shop.db "$d/t.db"
+          if sqlite3 "$d/t.db" "INSERT INTO coupon_uses (coupon_code, order_id) VALUES ('HERBST10', 8);" 2>/dev/null; then echo doppelt; else echo ok; fi
+          rm -rf "$d"
+        stdout_equals: ok
+        message: Eine Bestellung kann noch mehrere Gutscheine bekommen. order_id in coupon_uses muss UNIQUE sein.
+      - type: command
+        run: sqlite3 shop.db "SELECT c.code || '|' || c.percent || '|' || c.valid_until || '|' || u.order_id FROM coupons c JOIN coupon_uses u ON u.coupon_code = c.code;"
+        stdout_equals: HERBST10|10|2026-11-30|8
+        message: Es fehlt der Gutschein HERBST10 (10 Prozent, gültig bis 2026-11-30), eingelöst für Bestellung 8.
+    hints:
+      - "Ein Primärschlüssel aus Text: `code TEXT PRIMARY KEY`. Der Bereich: `percent INTEGER NOT NULL CHECK (percent BETWEEN 1 AND 90)`."
+      - "`order_id INTEGER NOT NULL UNIQUE REFERENCES orders(id)`"
+    solution: |
+      ```bash
+      cd pruefung-gutscheine
+      cat > gutscheine.sql <<'SQL'
+      CREATE TABLE coupons (
+        code TEXT PRIMARY KEY,
+        percent INTEGER NOT NULL CHECK (percent BETWEEN 1 AND 90),
+        valid_until TEXT NOT NULL
+      );
+      CREATE TABLE coupon_uses (
+        id INTEGER PRIMARY KEY,
+        coupon_code TEXT NOT NULL REFERENCES coupons(code),
+        order_id INTEGER NOT NULL UNIQUE REFERENCES orders(id)
+      );
+      INSERT INTO coupons (code, percent, valid_until) VALUES ('HERBST10', 10, '2026-11-30');
+      INSERT INTO coupon_uses (coupon_code, order_id) VALUES ('HERBST10', 8);
+      SQL
+      sqlite3 shop.db < gutscheine.sql
+      ```
+  - module: sicher-und-schnell
+    id: pruefung-platzhalter
+    type: code
+    language: php
+    title: Platzhalter für eine IN-Liste
+    description: |
+      Eine Anwendung will mehrere Produkte auf einmal laden:
+      `SELECT * FROM products WHERE id IN (?, ?, ?)`. Wie viele Platzhalter nötig sind, hängt von der Anzahl der
+      ids ab. Die ids selbst dürfen nie in den SQL-Text – sie gehen später an `execute()`.
+
+      Schreibe `platzhalter(int $anzahl): string`:
+
+      - Gibt so viele `?` zurück, wie `$anzahl` angibt, getrennt durch Komma und Leerzeichen: `?, ?, ?`.
+      - Ist `$anzahl` kleiner als 1, wirf eine `InvalidArgumentException` – eine leere Liste `IN ()` ist kein gültiges SQL.
+    starter: |
+      function platzhalter(int $anzahl): string
+      {
+          // Gib $anzahl Fragezeichen zurück, getrennt durch ", "
+          return '';
+      }
+    tests:
+      - name: drei Platzhalter
+        code: assert_same('?, ?, ?', platzhalter(3));
+      - name: ein Platzhalter ohne Komma
+        code: assert_same('?', platzhalter(1));
+      - name: passt in eine Abfrage
+        code: assert_same('SELECT * FROM products WHERE id IN (?, ?)', 'SELECT * FROM products WHERE id IN (' . platzhalter(2) . ')');
+      - name: null wirft eine Exception
+        code: |
+          $geworfen = false;
+          try {
+              platzhalter(0);
+          } catch (InvalidArgumentException $e) {
+              $geworfen = true;
+          }
+          assert_true($geworfen);
+    hints:
+      - "`array_fill(0, $anzahl, '?')` erzeugt ein Array mit lauter Fragezeichen."
+      - "`implode(', ', $array)` verbindet die Elemente."
+    solution: |
+      function platzhalter(int $anzahl): string
+      {
+          if ($anzahl < 1) {
+              throw new InvalidArgumentException('Mindestens ein Platzhalter nötig.');
+          }
+
+          return implode(', ', array_fill(0, $anzahl, '?'));
+      }
