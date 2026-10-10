@@ -1,0 +1,262 @@
+title: Sicher umbauen
+description: Nahtstellen in verklebten Code schneiden, in winzigen Schritten refaktorieren, eine SQL-Injection schließen und Composer-Autoloading in ein altes Projekt einführen.
+exercise:
+  id: modul-uebung-preisrechner
+  type: terminal
+  title: Die Preislogik bekommt eine Naht
+  description: |
+    Im Ordner `preisrechner` liegt die Gemüsekiste – schon mit Composer-Autoloading (`Gruenfeld\` → `src/`)
+    und einem Golden Master. Die Preisberechnung hängt aber noch an `global $PREISE` und `date('N')`.
+
+    1. Lege `src/Preisrechner.php` an: Klasse `Gruenfeld\Preisrechner` mit dem Konstruktor
+       `(array $preise, Closure $wochentag)` und der Methode `preis(string $kiste, int $menge, string $typ): float`.
+       Sie rechnet exakt wie `berechne_preis()` (Grundpreis × Menge, Stammkunde −10 %, mehr als 5 Kisten
+       −2 Euro, Samstag +1,50 Euro, auf zwei Stellen runden, unbekannte Kiste = 0).
+    2. Mach aus `berechne_preis()` in `inc/functions.php` eine dünne Hülle: Sie baut einen `Preisrechner` mit
+       `$PREISE` und `fn () => (int) date('N')` und gibt dessen Ergebnis zurück. Die alte Rechnung verschwindet
+       aus `inc/functions.php`.
+    3. Der Golden Master muss grün bleiben.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: preisrechner
+  setup: |
+    mkdir -p inc classes seiten tools data
+    cat > config.php <<'EOF'
+    <?php
+    $DB_PFAD = dirname(__FILE__) . '/data/app.db';
+    $SHOP_NAME = 'Gemüsekiste Grünfeld';
+    $PREISE = array('klein' => 14.9, 'mittel' => 21.5, 'gross' => 29.9);
+    EOF
+    cat > inc/db.php <<'EOF'
+    <?php
+    function db() {
+        global $DB_PFAD, $DB;
+        if (!$DB) {
+            $DB = new PDO('sqlite:' . $DB_PFAD);
+        }
+        return $DB;
+    }
+
+    function lade_bestellungen($kunde) {
+        $sql = "SELECT * FROM bestellungen";
+        if ($kunde != '') {
+            $sql .= " WHERE kunde = '" . $kunde . "'";
+        }
+        $sql .= " ORDER BY id";
+        $liste = array();
+        foreach (db()->query($sql) as $row) {
+            $liste[] = new Bestellung($row);
+        }
+        return $liste;
+    }
+    EOF
+    cat > inc/functions.php <<'EOF'
+    <?php
+    function berechne_preis($kiste, $menge, $typ) {
+        global $PREISE;
+        $preis = $PREISE[$kiste] * $menge;
+        if ($typ == 'stamm') {
+            $preis = $preis * 0.9;
+        }
+        if ($menge > 5) {
+            $preis = $preis - 2;
+        }
+        if (date('N') == 6) {
+            $preis = $preis + 1.5;
+        }
+        return round($preis, 2);
+    }
+
+    function formatiere_preis($preis) {
+        return number_format($preis, 2, ',', '.') . ' EUR';
+    }
+    EOF
+    cat > classes/Bestellung.php <<'EOF'
+    <?php
+    class Bestellung {
+        var $id;
+        var $kunde;
+        var $kiste;
+        var $menge;
+        var $typ;
+
+        function __construct($row) {
+            $this->id = $row['id'];
+            $this->kunde = $row['kunde'];
+            $this->kiste = $row['kiste'];
+            $this->menge = $row['menge'];
+            $this->typ = $row['typ'];
+        }
+
+        function preis() {
+            return berechne_preis($this->kiste, $this->menge, $this->typ);
+        }
+    }
+    EOF
+    cat > index.php <<'EOF'
+    <?php
+    require_once 'config.php';
+    require_once 'inc/db.php';
+    require_once 'inc/functions.php';
+    require_once 'classes/Bestellung.php';
+
+    $seite = isset($_GET['seite']) ? $_GET['seite'] : 'start';
+
+    if ($seite == 'start') {
+        include 'seiten/start.php';
+    } elseif ($seite == 'bestellungen') {
+        include 'seiten/bestellungen.php';
+    } elseif ($seite == 'preis') {
+        include 'seiten/preis.php';
+    } else {
+        echo "<h1>Seite nicht gefunden</h1>\n";
+    }
+    EOF
+    cat > seiten/start.php <<'EOF'
+    <h1><?php echo $SHOP_NAME; ?></h1>
+    <p>Willkommen! Frisches Gemüse jede Woche.</p>
+    EOF
+    cat > seiten/bestellungen.php <<'EOF'
+    <?php
+    $kunde = isset($_GET['kunde']) ? $_GET['kunde'] : '';
+    echo "<h1>Bestellungen</h1>\n<ul>\n";
+    foreach (lade_bestellungen($kunde) as $b) {
+        echo "<li>" . $b->kunde . ": " . $b->menge . "x " . $b->kiste . " = " . formatiere_preis($b->preis()) . "</li>\n";
+    }
+    echo "</ul>\n";
+    EOF
+    cat > seiten/preis.php <<'EOF'
+    <?php
+    $typ = isset($_GET['typ']) ? $_GET['typ'] : 'neu';
+    echo formatiere_preis(berechne_preis($_GET['kiste'], $_GET['menge'], $typ)) . "\n";
+    EOF
+    cat > tools/anfrage.php <<'EOF'
+    <?php
+    $url = $argv[1] ?? '/index.php';
+    parse_str((string) parse_url($url, PHP_URL_QUERY), $_GET);
+    $_SERVER['REQUEST_URI'] = $url;
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+    chdir(dirname(__DIR__));
+    require dirname(__DIR__) . '/index.php';
+    EOF
+    sqlite3 data/app.db "CREATE TABLE bestellungen (id INTEGER PRIMARY KEY, kunde TEXT, kiste TEXT, menge INTEGER, typ TEXT);
+    INSERT INTO bestellungen (kunde, kiste, menge, typ) VALUES ('Ada', 'klein', 2, 'stamm'), ('Linus', 'gross', 1, 'neu'), ('Grace', 'mittel', 7, 'stamm'), ('Ada', 'mittel', 1, 'stamm'), ('Margaret', 'gross', 12, 'neu'), ('Alan', 'klein', 3, 'neu');"
+    mkdir -p tests
+    cat > tests/golden.php <<'EOF'
+    <?php
+    $urls = array(
+        '/index.php',
+        '/index.php?seite=bestellungen',
+        '/index.php?seite=bestellungen&kunde=Ada',
+        '/index.php?seite=preis&kiste=klein&menge=1',
+        '/index.php?seite=preis&kiste=mittel&menge=6&typ=stamm',
+        '/index.php?seite=preis&kiste=gross&menge=12',
+        '/index.php?seite=gibtsnicht',
+    );
+    foreach ($urls as $url) {
+        echo "### " . $url . "\n";
+        echo shell_exec('php ' . escapeshellarg(__DIR__ . '/../tools/anfrage.php') . ' ' . escapeshellarg($url));
+    }
+    EOF
+    php tests/golden.php > tests/golden-master.txt
+    cat > composer.json <<'EOF'
+    {
+        "name": "gruenfeld/gemuesekiste",
+        "description": "Bestellsystem der Gemüsekiste Grünfeld",
+        "type": "project",
+        "require": {
+            "php": "^8.4"
+        },
+        "autoload": {
+            "psr-4": {
+                "Gruenfeld\\": "src/"
+            },
+            "classmap": ["classes/"],
+            "files": ["inc/db.php", "inc/functions.php"]
+        }
+    }
+    EOF
+    mkdir -p src
+    composer dump-autoload -q
+    sed -i "/require_once 'inc\/db.php';/d; /require_once 'inc\/functions.php';/d; s#require_once 'classes/Bestellung.php';#require __DIR__ . '/vendor/autoload.php';#" index.php
+  checks:
+    - type: file_exists
+      path: src/Preisrechner.php
+      message: Lege src/Preisrechner.php an.
+    - type: command
+      run: php -r 'require "vendor/autoload.php"; $r = new Gruenfeld\Preisrechner(["klein" => 14.9], fn () => 6); var_export($r->preis("klein", 1, "neu"));'
+      stdout_equals: "16.4"
+      message: Gruenfeld\Preisrechner liefert samstags für eine kleine Kiste nicht 16.4. Wird der Wochentag über die Closure abgefragt?
+    - type: command
+      run: php -r 'require "vendor/autoload.php"; $r = new Gruenfeld\Preisrechner(["mittel" => 21.5], fn () => 2); var_export($r->preis("mittel", 6, "stamm"));'
+      stdout_equals: "114.1"
+      message: Stammkunde mit sechs mittleren Kisten an einem Dienstag soll 114.1 kosten (erst −10 %, dann −2 Euro).
+    - type: command
+      run: php -r 'require "vendor/autoload.php"; $r = new Gruenfeld\Preisrechner(["klein" => 14.9], fn () => 1); var_export($r->preis("riesig", 2, "neu"));'
+      stdout_equals: "0.0"
+      message: Eine unbekannte Kiste soll 0.0 kosten – ohne Warnung (Tipp ?? 0.0).
+    - type: file_contains
+      path: inc/functions.php
+      pattern: "Preisrechner"
+      message: berechne_preis() soll den neuen Preisrechner benutzen.
+    - type: command
+      run: grep -cE "\* 0\.9|- 2;" inc/functions.php || true
+      stdout_equals: "0"
+      message: Die alte Rechnung steht noch in inc/functions.php. berechne_preis() soll nur noch an den Preisrechner weiterreichen.
+    - type: command
+      run: php tests/golden.php | diff -q - tests/golden-master.txt
+      message: Der Golden Master ist rot. Vergleiche mit php tests/golden.php | diff - tests/golden-master.txt.
+  hints:
+    - "Die Klasse aus der Code-Aufgabe der Lektion „Nahtstellen schaffen“ passt fast 1:1 – sie braucht nur `namespace Gruenfeld;`."
+    - "Die Werte aus `$_GET` sind Strings. Wandle sie in der Hülle um: `(string) $kiste`, `(int) $menge`, `(string) $typ`."
+    - "Hülle: `global $PREISE; $rechner = new \\Gruenfeld\\Preisrechner($PREISE, fn () => (int) date('N')); return $rechner->preis(…);`"
+  solution: |
+    ```bash
+    cd preisrechner
+    cat > src/Preisrechner.php <<'EOF'
+    <?php
+    declare(strict_types=1);
+
+    namespace Gruenfeld;
+
+    use Closure;
+
+    final class Preisrechner
+    {
+        public function __construct(
+            private array $preise,
+            private Closure $wochentag,
+        ) {
+        }
+
+        public function preis(string $kiste, int $menge, string $typ): float
+        {
+            $preis = ($this->preise[$kiste] ?? 0.0) * $menge;
+            if ($typ === 'stamm') {
+                $preis = $preis * 0.9;
+            }
+            if ($menge > 5) {
+                $preis = $preis - 2;
+            }
+            if (($this->wochentag)() === 6) {
+                $preis = $preis + 1.5;
+            }
+
+            return round($preis, 2);
+        }
+    }
+    EOF
+    cat > inc/functions.php <<'EOF'
+    <?php
+    function berechne_preis($kiste, $menge, $typ) {
+        global $PREISE;
+        $rechner = new \Gruenfeld\Preisrechner($PREISE, fn () => (int) date('N'));
+        return $rechner->preis((string) $kiste, (int) $menge, (string) $typ);
+    }
+
+    function formatiere_preis($preis) {
+        return number_format($preis, 2, ',', '.') . ' EUR';
+    }
+    EOF
+    php tests/golden.php | diff - tests/golden-master.txt && echo "Golden Master grün"
+    ```

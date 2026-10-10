@@ -1,0 +1,208 @@
+- slug: big-bang-rewrite
+  term: Big-Bang-Rewrite
+  short: Eine komplette Neuentwicklung einer Anwendung, die an einem einzigen Stichtag das alte System ersetzt.
+  explanation: >
+    Beim Big-Bang-Rewrite entsteht die neue Anwendung über Monate neben der alten und wird erst am Ende auf einen
+    Schlag umgeschaltet. Bis dahin gibt es keinen Nutzen, verborgene Regeln des Altsystems werden leicht übersehen,
+    und der Umschalttag ist sehr riskant. Die Alternative ist eine schrittweise Modernisierung, etwa nach dem
+    Strangler-Fig-Pattern.
+  example: "„Wir schreiben das Bestellsystem in einem halben Jahr neu und schalten am 1. Juli um.“"
+  category: programmierung
+  aliases: [Big Bang Rewrite, Big-Bang, Komplettneuentwicklung, Rewrite]
+  related: [legacy-code, strangler-fig-pattern, technische-schulden]
+  lesson: legacy-modernisieren/was-ist-legacy-code
+
+- slug: globale-variable
+  term: Globale Variable
+  short: Eine Variable, die außerhalb jeder Funktion angelegt wird und von überall im Programm erreichbar ist.
+  explanation: >
+    In PHP holt sich eine Funktion eine globale Variable mit dem Schlüsselwort `global` oder über `$GLOBALS`. Dadurch
+    hängt die Funktion von etwas ab, das nicht in ihrer Parameterliste steht – Tests und Änderungen werden schwierig.
+    In Altcode ersetzt man globale Variablen schrittweise durch Parameter oder Konstruktor-Abhängigkeiten.
+  example: "`function berechne_preis($kiste) { global $PREISE; return $PREISE[$kiste]; }`"
+  category: programmierung
+  aliases: [Globale Variablen, global]
+  related: [naht, dependency-injection, gueltigkeitsbereich]
+  lesson: legacy-modernisieren/erst-verstehen-dann-aendern
+
+- slug: include-anweisung
+  term: include und require
+  short: PHP-Anweisungen, die den Inhalt einer anderen PHP-Datei an dieser Stelle einbinden und ausführen.
+  explanation: >
+    `require` bricht mit einem Fehler ab, wenn die Datei fehlt, `include` gibt nur eine Warnung aus. Die Varianten
+    `require_once` und `include_once` binden eine Datei höchstens einmal ein. Alte PHP-Projekte laden so alle
+    Dateien von Hand; moderne Projekte überlassen das dem Composer-Autoloader.
+  example: "`require_once 'inc/functions.php';`"
+  category: programmierung
+  aliases: [require, require_once, include, include_once, Include-Anweisung]
+  related: [autoloading, composer, front-controller]
+  lesson: legacy-modernisieren/erst-verstehen-dann-aendern
+
+- slug: classmap
+  term: Classmap
+  short: Eine von Composer erzeugte Liste, die jedem Klassennamen die Datei zuordnet, in der die Klasse steht.
+  explanation: >
+    Für die Classmap durchsucht Composer die angegebenen Ordner nach Klassen und schreibt das Ergebnis nach
+    `vendor/composer/autoload_classmap.php`. So lassen sich auch alte Klassen ohne Namespace und mit beliebigen
+    Dateinamen automatisch laden. Neue Dateien kennt die Classmap erst nach einem erneuten `composer dump-autoload`.
+  example: "`\"autoload\": { \"classmap\": [\"classes/\"] }` in der composer.json"
+  category: pakete
+  aliases: [Class Map, Classmap-Autoloading]
+  related: [autoloading, psr-4, composer-json]
+  lesson: legacy-modernisieren/composer-und-autoloading-einfuehren
+
+- slug: deprecation
+  term: Deprecation
+  short: Die offizielle Ankündigung, dass eine Funktion oder Schreibweise veraltet ist und in einer späteren Version entfernt wird.
+  explanation: >
+    PHP und viele Bibliotheken entfernen Funktionen nicht überraschend, sondern markieren sie zuerst als veraltet und
+    geben eine Deprecation-Meldung aus. Das gibt Zeit, den Code anzupassen, bevor das Upgrade ihn bricht. Wer
+    Deprecation-Meldungen ignoriert, hat beim nächsten großen Versionssprung viel auf einmal zu tun.
+  example: "PHP 8.2 meldet „Creation of dynamic property … is deprecated“, wenn Code eine nicht deklarierte Eigenschaft setzt."
+  category: programmierung
+  aliases: [Deprecations, veraltet, deprecated, Veraltung]
+  related: [rector, phpstan, semantic-versioning]
+  lesson: legacy-modernisieren/php-upgrade-mit-rector
+
+- slug: rector
+  term: Rector
+  short: Ein Kommandozeilen-Werkzeug, das PHP-Code anhand von Regeln automatisch umschreibt, etwa auf eine neuere PHP-Version.
+  explanation: >
+    Rector liest PHP-Dateien, versteht sie als Syntaxbaum und wendet Regeln an – zum Beispiel „ersetze `array()` durch
+    `[]`“ oder „mache aus `var` ein `public`“. Regeln sind in Sets gebündelt, etwa für jede PHP-Version. Mit
+    `--dry-run` zeigt Rector nur an, was es ändern würde.
+  example: "`vendor/bin/rector process --dry-run`"
+  category: werkzeuge
+  aliases: [rector/rector, Rector PHP]
+  related: [refactoring, deprecation, phpstan, statische-analyse]
+  lesson: legacy-modernisieren/php-upgrade-mit-rector
+
+- slug: strangler-fig-pattern
+  term: Strangler-Fig-Pattern
+  short: Ein Vorgehen, bei dem eine Altanwendung Stück für Stück durch neuen Code ersetzt wird, während sie weiterläuft.
+  explanation: >
+    Benannt nach der Würgefeige, die einen Baum langsam umwächst. Eine Fassade vor der Anwendung leitet einzelne
+    Anfragen an neuen Code und alle anderen an den alten. Teil für Teil wandert in den neuen Code, bis der Altcode
+    leer ist und gelöscht werden kann – ohne einen riskanten Umschalttag.
+  example: "`index.php` gibt `seite=preis` an `PreisSeite` im neuen Code, alle anderen Seiten noch an `seiten/`."
+  category: programmierung
+  aliases: [Strangler Fig, Strangler-Pattern, Strangler Fig Application, Würgefeigen-Muster]
+  related: [big-bang-rewrite, front-controller, legacy-code, feature-flag]
+  lesson: legacy-modernisieren/strangler-fig-pattern
+
+- slug: illuminate-komponente
+  term: Illuminate-Komponente
+  short: Ein einzelner Baustein des Laravel-Frameworks, der als eigenes Composer-Paket unter illuminate/* veröffentlicht wird.
+  explanation: >
+    Laravel ist aus Komponenten wie `illuminate/database`, `illuminate/validation` oder `illuminate/container` gebaut.
+    Viele davon funktionieren auch ohne das Framework. So kann eine Altanwendung schon Laravel-Code nutzen, bevor sie
+    selbst eine Laravel-App ist.
+  example: "`composer require illuminate/database` bringt Query Builder und Eloquent in ein Projekt ohne Laravel."
+  category: laravel
+  aliases: [Illuminate, Illuminate-Komponenten, illuminate/*, Illuminate-Paket]
+  related: [laravel, composer, capsule-manager, query-builder]
+  lesson: legacy-modernisieren/illuminate-standalone
+
+- slug: capsule-manager
+  term: Capsule Manager
+  short: Die Klasse aus illuminate/database, mit der du Datenbankverbindungen und Eloquent ohne Laravel einrichtest.
+  explanation: >
+    `Illuminate\Database\Capsule\Manager` nimmt Verbindungsdaten mit `addConnection()` entgegen. `setAsGlobal()`
+    macht ihn über statische Aufrufe wie `Capsule::table()` erreichbar, `bootEloquent()` schaltet Eloquent-Models ein.
+    Er übernimmt damit, was Laravel sonst aus `config/database.php` liest.
+  example: "`$capsule->addConnection(['driver' => 'sqlite', 'database' => 'data/app.db']); $capsule->setAsGlobal();`"
+  category: laravel
+  aliases: [Capsule, Capsule\Manager]
+  related: [illuminate-komponente, query-builder, eloquent]
+  lesson: legacy-modernisieren/illuminate-standalone
+
+- slug: query-builder
+  term: Query Builder
+  short: Eine Programmierschnittstelle, die SQL-Abfragen aus Methodenaufrufen zusammensetzt, statt sie als Text zu schreiben.
+  explanation: >
+    Statt `"SELECT * FROM bestellungen WHERE kunde = ..."` schreibst du `table('bestellungen')->where('kunde', $kunde)`.
+    Der Query Builder erzeugt das passende SQL für die jeweilige Datenbank und bindet Werte automatisch als Parameter –
+    das schützt vor SQL-Injection, solange du keine Rohabfragen mit eingesetzten Werten baust.
+  example: "`Capsule::table('bestellungen')->where('kunde', 'Ada')->orderBy('id')->get();`"
+  category: datenbanken
+  aliases: [Querybuilder, Abfrage-Builder]
+  related: [capsule-manager, eloquent, prepared-statement, sql-injection]
+  lesson: legacy-modernisieren/illuminate-standalone
+
+- slug: parallelbetrieb
+  term: Parallelbetrieb
+  short: Alter und neuer Code verarbeiten dieselben echten Eingaben; ausgeliefert wird das alte Ergebnis, Abweichungen werden protokolliert.
+  explanation: >
+    Im Parallelbetrieb (auch Schattenbetrieb) läuft neuer Code unter echter Last mit, ohne dass Nutzer sein Ergebnis
+    sehen. Jede Abweichung zum alten Ergebnis landet im Protokoll und zeigt Fehler, die kein Test gefunden hat. Der
+    neue Code wird dabei in try/catch aufgerufen, damit er die Anfrage nie abbricht.
+  example: "Der neue Preisrechner rechnet bei jeder Anfrage mit, ausgeliefert wird weiter `berechne_preis()`."
+  category: deployment
+  aliases: [Schattenbetrieb, Parallel Run, Shadow Mode, Shadowing]
+  related: [feature-flag, dark-launch, golden-master]
+  lesson: legacy-modernisieren/feature-flags-und-parallelbetrieb
+
+- slug: dark-launch
+  term: Dark Launch
+  short: Neuer Code läuft im Produktivsystem unter echter Last, ohne dass Nutzer etwas davon sehen.
+  explanation: >
+    Beim Dark Launch wird eine neue Funktion ausgeliefert und mit echten Anfragen ausgeführt, ihr Ergebnis aber
+    verborgen. So lassen sich Fehler und Lastprobleme finden, bevor die Funktion sichtbar wird. Nebenwirkungen wie
+    E-Mails oder Zahlungen müssen dabei abgeschirmt werden.
+  example: "Die neue Suche bekommt alle Suchanfragen gespiegelt, angezeigt werden weiter die Ergebnisse der alten."
+  category: deployment
+  aliases: [Dark Launching, dunkler Start]
+  related: [parallelbetrieb, feature-flag, canary-release]
+  lesson: legacy-modernisieren/feature-flags-und-parallelbetrieb
+
+- slug: kill-switch
+  term: Kill-Switch
+  short: Ein Schalter, mit dem du eine neue Funktion im Notfall sofort abschaltest, ohne neu zu deployen.
+  explanation: >
+    Ein Kill-Switch ist meist ein Feature-Flag, dessen Standardwert den alten, sicheren Weg nimmt. Steigen nach einer
+    Umstellung die Fehler, wird er umgelegt – das dauert Sekunden, ein Hotfix dagegen Minuten bis Stunden. Danach kann
+    das Team in Ruhe die Ursache suchen.
+  example: "`NEUE_PREISE=aus` schaltet die neue Preisberechnung sofort ab."
+  category: deployment
+  aliases: [Killswitch, Notausschalter, Kill Switch]
+  related: [feature-flag, canary-release, rollback]
+  lesson: legacy-modernisieren/feature-flags-und-parallelbetrieb
+
+- slug: backfill
+  term: Backfill
+  short: Das nachträgliche Befüllen einer neuen Spalte oder Tabelle mit Werten aus den vorhandenen Daten.
+  explanation: >
+    Kommt bei einer Migration eine neue Spalte hinzu, ist sie für alte Zeilen zunächst leer. Der Backfill berechnet die
+    Werte aus den Altdaten und trägt sie ein, oft mit Normalisierung wie `lower(trim(...))`. Bei großen Tabellen läuft
+    er in kleinen Portionen, damit die Datenbank nicht lange blockiert ist.
+  example: "`UPDATE bestellungen SET kiste_id = (SELECT id FROM kisten WHERE name = lower(trim(bestellungen.kiste)));`"
+  category: datenbanken
+  aliases: [Backfilling, Nachbefüllen]
+  related: [expand-contract, migration, transaktion]
+  lesson: legacy-modernisieren/datenmigration
+
+- slug: hotspot
+  term: Hotspot
+  short: Eine Stelle im Code, die oft geändert wird und gleichzeitig schwer zu verstehen ist.
+  explanation: >
+    Hotspots verursachen die meisten Kosten, weil jede der vielen Änderungen dort mühsam und fehleranfällig ist. Die
+    Änderungshäufigkeit lässt sich aus der Git-Historie ablesen, die Komplexität aus Codegröße oder Verschachtelung.
+    Modernisierungen beginnen sinnvollerweise an Hotspots.
+  example: "`git log --since=\"1 year ago\" --format= --name-only | sort | uniq -c | sort -rn | head`"
+  category: werkzeuge
+  aliases: [Hotspots, Code-Hotspot, Hotspot-Analyse]
+  related: [technische-schulden, git-log, legacy-code]
+  lesson: legacy-modernisieren/modernisierung-planen-und-kommunizieren
+
+- slug: stakeholder
+  term: Stakeholder
+  short: Eine Person oder Gruppe, die ein berechtigtes Interesse an einem Projekt hat oder von ihm betroffen ist.
+  explanation: >
+    Bei einer Modernisierung sind das zum Beispiel Geschäftsführung, Fachbereich, Entwicklungsteam und
+    Sicherheitsverantwortliche. Jede Gruppe achtet auf etwas anderes – Kosten, Tempo, Arbeitsalltag oder Risiko. Gute
+    Kommunikation erklärt den Nutzen in der Sprache der jeweiligen Gruppe.
+  example: "Der Fachbereich will wissen, wann neue Rabattaktionen schneller live gehen."
+  category: teamarbeit
+  aliases: [Stakeholder, Interessengruppe, Beteiligte]
+  related: [adr, technische-schulden]
+  lesson: legacy-modernisieren/modernisierung-planen-und-kommunizieren

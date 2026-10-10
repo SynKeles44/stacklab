@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="500" y="38" text-anchor="middle" font-size="24" font-weight="700" fill="#1e1b3a">Golden Master: einmal festhalten, danach immer vergleichen</text>
+  <text x="40" y="95" font-size="17" font-weight="700" fill="#a78bfa">1. Einmal vor dem Umbau</text>
+  <rect x="40" y="115" width="200" height="90" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="3"/>
+  <text x="140" y="152" text-anchor="middle" font-size="18" font-weight="600" fill="#1e1b3a">Feste Eingaben</text>
+  <text x="140" y="180" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">7 URLs</text>
+  <rect x="330" y="115" width="200" height="90" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="3"/>
+  <text x="430" y="152" text-anchor="middle" font-size="18" font-weight="600" fill="#1e1b3a">Alte App</text>
+  <text x="430" y="180" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">unverändert</text>
+  <rect x="620" y="115" width="340" height="90" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="3"/>
+  <text x="790" y="152" text-anchor="middle" font-size="18" font-weight="600" fill="#1e1b3a">Golden Master speichern</text>
+  <text x="790" y="180" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">tests/golden-master.txt</text>
+  <line x1="240" y1="160" x2="326" y2="160" stroke="#1e1b3a" stroke-width="3" marker-end="url(#pfeil)"/>
+  <line x1="530" y1="160" x2="616" y2="160" stroke="#1e1b3a" stroke-width="3" marker-end="url(#pfeil)"/>
+  <text x="40" y="275" font-size="17" font-weight="700" fill="#34d399">2. Nach jedem Umbau-Schritt</text>
+  <rect x="40" y="295" width="200" height="90" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="3"/>
+  <text x="140" y="332" text-anchor="middle" font-size="18" font-weight="600" fill="#1e1b3a">Gleiche Eingaben</text>
+  <text x="140" y="360" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">7 URLs</text>
+  <rect x="330" y="295" width="200" height="90" rx="12" fill="#ecfdf5" stroke="#34d399" stroke-width="3"/>
+  <text x="430" y="332" text-anchor="middle" font-size="18" font-weight="600" fill="#1e1b3a">Umgebaute App</text>
+  <text x="430" y="360" text-anchor="middle" font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">neue Struktur</text>
+  <rect x="620" y="295" width="340" height="90" rx="12" fill="#ffffff" stroke="#1e1b3a" stroke-width="3"/>
+  <text x="790" y="332" text-anchor="middle" font-size="18" font-weight="600" fill="#1e1b3a">diff mit Golden Master</text>
+  <text x="790" y="360" text-anchor="middle" font-size="14" fill="#1e1b3a">gleich → weiter · anders → zurück</text>
+  <line x1="240" y1="340" x2="326" y2="340" stroke="#1e1b3a" stroke-width="3" marker-end="url(#pfeil)"/>
+  <line x1="530" y1="340" x2="616" y2="340" stroke="#1e1b3a" stroke-width="3" marker-end="url(#pfeil)"/>
+  <line x1="790" y1="205" x2="790" y2="291" stroke="#a78bfa" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#pfeil)"/>
+  <text x="805" y="255" font-size="14" fill="#1e1b3a">Referenz</text>
+  <text x="500" y="430" text-anchor="middle" font-size="16" fill="#1e1b3a">Der Golden Master sagt nicht, was richtig ist – nur, ob sich etwas verändert hat.</text>
+</svg>

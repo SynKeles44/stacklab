@@ -1,0 +1,231 @@
+title: Verstehen und absichern
+description: Was Legacy-Code ausmacht, wie du eine fremde Altanwendung erkundest und ihr Verhalten mit Charakterisierungstests und einem Golden Master festhältst.
+exercise:
+  id: modul-uebung-sicherheitsnetz
+  type: terminal
+  title: Ein Sicherheitsnetz für die Gemüsekiste
+  description: |
+    Im Ordner `sicherheitsnetz` liegt die Gemüsekiste. Das Team will nächste Woche die Preisformatierung und
+    die Seitenausgabe umbauen. Du baust vorher das Sicherheitsnetz.
+
+    1. Schreib `tests/charakterisierung.php`: Es bindet `inc/functions.php` ein und prüft
+       `formatiere_preis()` mit **mindestens vier** verschiedenen Werten – darunter `0`, eine negative Zahl
+       und eine Zahl über 1000. Bei Erfolg gibt das Skript `OK` aus und endet mit Exit-Code 0, bei einer
+       Abweichung endet es mit Exit-Code 1.
+    2. Leg den Golden Master `tests/golden-master.txt` mit `tests/golden.php` an (mindestens sieben URLs,
+       wie in der Lektion).
+    3. Halte in `tests/BEFUNDE.md` mindestens zwei auffällige Verhaltensweisen fest, die du **nicht**
+       repariert hast – jede als eigene Zeile, die mit `- ` beginnt.
+
+    Stacklab prüft auch, ob dein Charakterisierungstest wirklich anschlägt: In einer Kopie wird
+    `formatiere_preis()` verändert, und dein Test muss dann fehlschlagen.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: sicherheitsnetz
+  setup: |
+    mkdir -p inc classes seiten tools data
+    cat > config.php <<'EOF'
+    <?php
+    $DB_PFAD = dirname(__FILE__) . '/data/app.db';
+    $SHOP_NAME = 'Gemüsekiste Grünfeld';
+    $PREISE = array('klein' => 14.9, 'mittel' => 21.5, 'gross' => 29.9);
+    EOF
+    cat > inc/db.php <<'EOF'
+    <?php
+    function db() {
+        global $DB_PFAD, $DB;
+        if (!$DB) {
+            $DB = new PDO('sqlite:' . $DB_PFAD);
+        }
+        return $DB;
+    }
+
+    function lade_bestellungen($kunde) {
+        $sql = "SELECT * FROM bestellungen";
+        if ($kunde != '') {
+            $sql .= " WHERE kunde = '" . $kunde . "'";
+        }
+        $sql .= " ORDER BY id";
+        $liste = array();
+        foreach (db()->query($sql) as $row) {
+            $liste[] = new Bestellung($row);
+        }
+        return $liste;
+    }
+    EOF
+    cat > inc/functions.php <<'EOF'
+    <?php
+    function berechne_preis($kiste, $menge, $typ) {
+        global $PREISE;
+        $preis = $PREISE[$kiste] * $menge;
+        if ($typ == 'stamm') {
+            $preis = $preis * 0.9;
+        }
+        if ($menge > 5) {
+            $preis = $preis - 2;
+        }
+        if (date('N') == 6) {
+            $preis = $preis + 1.5;
+        }
+        return round($preis, 2);
+    }
+
+    function formatiere_preis($preis) {
+        return number_format($preis, 2, ',', '.') . ' EUR';
+    }
+    EOF
+    cat > classes/Bestellung.php <<'EOF'
+    <?php
+    class Bestellung {
+        var $id;
+        var $kunde;
+        var $kiste;
+        var $menge;
+        var $typ;
+
+        function __construct($row) {
+            $this->id = $row['id'];
+            $this->kunde = $row['kunde'];
+            $this->kiste = $row['kiste'];
+            $this->menge = $row['menge'];
+            $this->typ = $row['typ'];
+        }
+
+        function preis() {
+            return berechne_preis($this->kiste, $this->menge, $this->typ);
+        }
+    }
+    EOF
+    cat > index.php <<'EOF'
+    <?php
+    require_once 'config.php';
+    require_once 'inc/db.php';
+    require_once 'inc/functions.php';
+    require_once 'classes/Bestellung.php';
+
+    $seite = isset($_GET['seite']) ? $_GET['seite'] : 'start';
+
+    if ($seite == 'start') {
+        include 'seiten/start.php';
+    } elseif ($seite == 'bestellungen') {
+        include 'seiten/bestellungen.php';
+    } elseif ($seite == 'preis') {
+        include 'seiten/preis.php';
+    } else {
+        echo "<h1>Seite nicht gefunden</h1>\n";
+    }
+    EOF
+    cat > seiten/start.php <<'EOF'
+    <h1><?php echo $SHOP_NAME; ?></h1>
+    <p>Willkommen! Frisches Gemüse jede Woche.</p>
+    EOF
+    cat > seiten/bestellungen.php <<'EOF'
+    <?php
+    $kunde = isset($_GET['kunde']) ? $_GET['kunde'] : '';
+    echo "<h1>Bestellungen</h1>\n<ul>\n";
+    foreach (lade_bestellungen($kunde) as $b) {
+        echo "<li>" . $b->kunde . ": " . $b->menge . "x " . $b->kiste . " = " . formatiere_preis($b->preis()) . "</li>\n";
+    }
+    echo "</ul>\n";
+    EOF
+    cat > seiten/preis.php <<'EOF'
+    <?php
+    $typ = isset($_GET['typ']) ? $_GET['typ'] : 'neu';
+    echo formatiere_preis(berechne_preis($_GET['kiste'], $_GET['menge'], $typ)) . "\n";
+    EOF
+    cat > tools/anfrage.php <<'EOF'
+    <?php
+    $url = $argv[1] ?? '/index.php';
+    parse_str((string) parse_url($url, PHP_URL_QUERY), $_GET);
+    $_SERVER['REQUEST_URI'] = $url;
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+    chdir(dirname(__DIR__));
+    require dirname(__DIR__) . '/index.php';
+    EOF
+    sqlite3 data/app.db "CREATE TABLE bestellungen (id INTEGER PRIMARY KEY, kunde TEXT, kiste TEXT, menge INTEGER, typ TEXT);
+    INSERT INTO bestellungen (kunde, kiste, menge, typ) VALUES ('Ada', 'klein', 2, 'stamm'), ('Linus', 'gross', 1, 'neu'), ('Grace', 'mittel', 7, 'stamm'), ('Ada', 'mittel', 1, 'stamm'), ('Margaret', 'gross', 12, 'neu'), ('Alan', 'klein', 3, 'neu');"
+  checks:
+    - type: file_exists
+      path: tests/charakterisierung.php
+      message: Lege tests/charakterisierung.php an.
+    - type: command
+      run: grep -o "formatiere_preis(" tests/charakterisierung.php | wc -l
+      stdout_matches: "^\\s*([4-9]|[1-9][0-9]+)\\s*$"
+      message: Prüfe formatiere_preis() mit mindestens vier verschiedenen Werten.
+    - type: command
+      run: php tests/charakterisierung.php
+      stdout_matches: "OK"
+      message: tests/charakterisierung.php soll mit Exit-Code 0 durchlaufen und OK ausgeben. Trag die echten, heutigen Werte als Erwartung ein.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        cp -r inc config.php tests "$d"/
+        sed -i "s/number_format(\$preis, 2,/number_format(\$preis, 1,/" "$d/inc/functions.php"
+        php "$d/tests/charakterisierung.php" >/dev/null 2>&1
+        r=$?
+        rm -rf "$d"
+        test "$r" -ne 0
+      message: Dein Charakterisierungstest schlägt nicht an, wenn formatiere_preis() verändert wird. Er muss bei einer Abweichung mit exit(1) enden.
+    - type: command
+      run: grep -c '^### ' tests/golden-master.txt
+      stdout_matches: "^([7-9]|[1-9][0-9]+)$"
+      message: tests/golden-master.txt fehlt oder enthält weniger als sieben URLs.
+    - type: command
+      run: php tests/golden.php | diff -q - tests/golden-master.txt
+      message: Die aktuelle Ausgabe weicht vom Golden Master ab. Hast du etwas am Code geändert? Erzeuge den Master aus dem unveränderten Stand.
+    - type: command
+      run: grep -c '^- ' tests/BEFUNDE.md
+      stdout_matches: "^([2-9]|[1-9][0-9]+)$"
+      message: Halte in tests/BEFUNDE.md mindestens zwei Auffälligkeiten fest, jede in einer Zeile, die mit "- " beginnt.
+  hints:
+    - "Finde die heutigen Werte erst heraus: `php -r 'require \"inc/functions.php\"; var_dump(formatiere_preis(-3));'`"
+    - "Eine kleine Prüffunktion `pruefe($erwartet, $ist)`, die bei Abweichung `exit(1)` aufruft, reicht als Test-Werkzeug."
+    - "Auffälligkeiten aus den Lektionen: Samstagszuschlag über date(), SQL-Injection in lade_bestellungen(), unbekannte Kiste ergibt 0 EUR."
+  solution: |
+    ```bash
+    cd sicherheitsnetz
+    mkdir -p tests
+    cat > tests/charakterisierung.php <<'EOF'
+    <?php
+    require __DIR__ . '/../inc/functions.php';
+
+    function pruefe($erwartet, $ist) {
+        if ($erwartet !== $ist) {
+            echo "FEHLER: erwartet " . var_export($erwartet, true) . ", ist " . var_export($ist, true) . "\n";
+            exit(1);
+        }
+    }
+
+    pruefe('0,00 EUR', formatiere_preis(0));
+    pruefe('14,90 EUR', formatiere_preis(14.9));
+    pruefe('1.234,50 EUR', formatiere_preis(1234.5));
+    pruefe('-3,00 EUR', formatiere_preis(-3));
+    pruefe('0,01 EUR', formatiere_preis(0.005));
+    echo "OK\n";
+    EOF
+    php tests/charakterisierung.php
+    cat > tests/golden.php <<'EOF'
+    <?php
+    $urls = array(
+        '/index.php',
+        '/index.php?seite=bestellungen',
+        '/index.php?seite=bestellungen&kunde=Ada',
+        '/index.php?seite=preis&kiste=klein&menge=1',
+        '/index.php?seite=preis&kiste=mittel&menge=6&typ=stamm',
+        '/index.php?seite=preis&kiste=gross&menge=12',
+        '/index.php?seite=gibtsnicht',
+    );
+    foreach ($urls as $url) {
+        echo "### " . $url . "\n";
+        echo shell_exec('php ' . escapeshellarg(__DIR__ . '/../tools/anfrage.php') . ' ' . escapeshellarg($url));
+    }
+    EOF
+    php tests/golden.php > tests/golden-master.txt
+    cat > tests/BEFUNDE.md <<'EOF'
+    # Befunde (nicht repariert)
+
+    - berechne_preis() hängt über date('N') vom Wochentag ab (Samstag +1,50 EUR).
+    - lade_bestellungen() baut SQL per String-Verkettung – SQL-Injection möglich.
+    - Eine unbekannte Kiste ergibt eine Warnung und den Preis 0,00 EUR.
+    EOF
+    ```

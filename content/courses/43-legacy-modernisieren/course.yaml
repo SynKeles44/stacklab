@@ -1,0 +1,36 @@
+title: Legacy-Code modernisieren
+subtitle: Strangler-Pattern, Golden Master, Rector und Illuminate standalone – alten PHP-Code sicher in die Gegenwart holen
+description: >
+  Irgendwann landest du in einem Projekt, das älter ist als deine Karriere: globale Variablen, `require_once`
+  in jeder Datei, SQL aus zusammengeklebten Strings und kein einziger Test. Neu schreiben klingt verlockend –
+  und scheitert fast immer. In diesem Kurs lernst du den Weg, den erfahrene Teams gehen: **erst verstehen,
+  dann absichern, dann in kleinen Schritten umbauen**.
+
+
+  Du arbeitest die ganze Zeit an derselben, absichtlich altmodischen PHP-App: dem Bestellsystem der
+  „Gemüsekiste Grünfeld“. Du sicherst sie mit **Charakterisierungstests** und einem **Golden Master** ab,
+  schneidest **Nahtstellen** in verklebten Code, schließt eine SQL-Injection, führst **Composer und
+  Autoloading** ein, hebst den Code mit **Rector** auf modernes PHP und ersetzt die App Stück für Stück nach
+  dem **Strangler-Fig-Pattern** – unter anderem mit **Illuminate-Komponenten ohne Laravel**. Zum Schluss
+  rollst du Neues mit **Feature-Flags und Parallelbetrieb** aus, migrierst Daten ohne Ausfall und lernst,
+  eine Modernisierung zu planen und zu verkaufen.
+category: backend
+level: fortgeschritten
+icon: refresh-cw
+color: "#b45309"
+estimated_hours: 5
+workspace_dir: legacy
+prerequisites: [php, fremden-code-lesen, testing]
+learning_goals:
+  - Du erkennst, was Code zu Legacy-Code macht, und begründest, warum ein Big-Bang-Rewrite meist die schlechtere Wahl ist.
+  - Du erkundest eine unbekannte Codebasis systematisch, bevor du etwas änderst.
+  - Du sicherst ungetesteten Code mit Charakterisierungstests und einem Golden Master ab.
+  - Du schneidest Nahtstellen in verklebten Code und refaktorierst in kleinen, überprüfbaren Schritten.
+  - Du führst Composer und Autoloading in ein altes Projekt ein und hebst es mit Rector auf eine neue PHP-Version.
+  - Du ersetzt Teile einer Anwendung nach dem Strangler-Fig-Pattern und nutzt dafür Illuminate-Komponenten ohne Laravel.
+  - Du rollst neuen Code mit Feature-Flags und Parallelbetrieb aus und migrierst Daten nach Expand-and-Contract.
+  - Du planst eine Modernisierung in Etappen und kommunizierst Nutzen und Risiken verständlich.
+references:
+  - Schrittweise Ablösung gewachsener PHP-Monolithen durch Laravel-Komponenten, Route für Route
+  - Rector und PHPStan als Werkzeuge für PHP-Versionssprünge in großen Codebasen
+  - Feature-Flags und Schattenbetrieb beim Austausch von Preis- und Abrechnungslogik

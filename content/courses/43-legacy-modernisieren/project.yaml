@@ -1,0 +1,965 @@
+title: Die Gemüsekiste modernisieren
+description: |
+  In diesem Projekt holst du die komplette Gemüsekiste Grünfeld Schritt für Schritt in die Gegenwart – genau so, wie
+  ein Team es mit einer echten Altanwendung tun würde. Du beginnst mit einer App ohne Tests, ohne Composer und mit
+  einer SQL-Injection und endest mit Composer-Autoloading, modernem PHP, einer Preisseite im neuen Code, dem
+  Query Builder aus `illuminate/database` und einem dokumentierten Modernisierungsplan.
+
+  Alles passiert im Ordner `projekt` in deinem Legacy-Workspace. Klicke zuerst auf **Projekt vorbereiten**: Dabei
+  entsteht die Gemüsekiste im Originalzustand. Öffne dann das Übungs-Terminal und wechsle mit `cd projekt` hinein.
+
+  Die eiserne Regel für alle Schritte: **Der Golden Master aus Schritt 1 bleibt bis zum Ende grün.** Jeder Schritt baut
+  auf dem vorigen auf – lösche nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Die Gemüsekiste mit Golden Master, Charakterisierungstest, Parameter-Naht für den Wochentag, Prepared Statements,
+  Composer-Autoloading, Rector-Konfiguration, einer Preisseite unter `src/` mit `Gruenfeld\Preisrechner`,
+  Datenzugriff über den Query Builder von `illuminate/database` und einer Datei `MODERNISIERUNG.md` mit Plan und
+  Routenliste – bei unverändertem Verhalten.
+workdir: projekt
+setup: |
+  mkdir -p inc classes seiten tools data
+  cat > config.php <<'EOF'
+  <?php
+  $DB_PFAD = dirname(__FILE__) . '/data/app.db';
+  $SHOP_NAME = 'Gemüsekiste Grünfeld';
+  $PREISE = array('klein' => 14.9, 'mittel' => 21.5, 'gross' => 29.9);
+  EOF
+  cat > inc/db.php <<'EOF'
+  <?php
+  function db() {
+      global $DB_PFAD, $DB;
+      if (!$DB) {
+          $DB = new PDO('sqlite:' . $DB_PFAD);
+      }
+      return $DB;
+  }
+
+  function lade_bestellungen($kunde) {
+      $sql = "SELECT * FROM bestellungen";
+      if ($kunde != '') {
+          $sql .= " WHERE kunde = '" . $kunde . "'";
+      }
+      $sql .= " ORDER BY id";
+      $liste = array();
+      foreach (db()->query($sql) as $row) {
+          $liste[] = new Bestellung($row);
+      }
+      return $liste;
+  }
+  EOF
+  cat > inc/functions.php <<'EOF'
+  <?php
+  function berechne_preis($kiste, $menge, $typ) {
+      global $PREISE;
+      $preis = $PREISE[$kiste] * $menge;
+      if ($typ == 'stamm') {
+          $preis = $preis * 0.9;
+      }
+      if ($menge > 5) {
+          $preis = $preis - 2;
+      }
+      if (date('N') == 6) {
+          $preis = $preis + 1.5;
+      }
+      return round($preis, 2);
+  }
+
+  function formatiere_preis($preis) {
+      return number_format($preis, 2, ',', '.') . ' EUR';
+  }
+  EOF
+  cat > classes/Bestellung.php <<'EOF'
+  <?php
+  class Bestellung {
+      var $id;
+      var $kunde;
+      var $kiste;
+      var $menge;
+      var $typ;
+
+      function __construct($row) {
+          $this->id = $row['id'];
+          $this->kunde = $row['kunde'];
+          $this->kiste = $row['kiste'];
+          $this->menge = $row['menge'];
+          $this->typ = $row['typ'];
+      }
+
+      function preis() {
+          return berechne_preis($this->kiste, $this->menge, $this->typ);
+      }
+  }
+  EOF
+  cat > index.php <<'EOF'
+  <?php
+  require_once 'config.php';
+  require_once 'inc/db.php';
+  require_once 'inc/functions.php';
+  require_once 'classes/Bestellung.php';
+
+  $seite = isset($_GET['seite']) ? $_GET['seite'] : 'start';
+
+  if ($seite == 'start') {
+      include 'seiten/start.php';
+  } elseif ($seite == 'bestellungen') {
+      include 'seiten/bestellungen.php';
+  } elseif ($seite == 'preis') {
+      include 'seiten/preis.php';
+  } else {
+      echo "<h1>Seite nicht gefunden</h1>\n";
+  }
+  EOF
+  cat > seiten/start.php <<'EOF'
+  <h1><?php echo $SHOP_NAME; ?></h1>
+  <p>Willkommen! Frisches Gemüse jede Woche.</p>
+  EOF
+  cat > seiten/bestellungen.php <<'EOF'
+  <?php
+  $kunde = isset($_GET['kunde']) ? $_GET['kunde'] : '';
+  echo "<h1>Bestellungen</h1>\n<ul>\n";
+  foreach (lade_bestellungen($kunde) as $b) {
+      echo "<li>" . $b->kunde . ": " . $b->menge . "x " . $b->kiste . " = " . formatiere_preis($b->preis()) . "</li>\n";
+  }
+  echo "</ul>\n";
+  EOF
+  cat > seiten/preis.php <<'EOF'
+  <?php
+  $typ = isset($_GET['typ']) ? $_GET['typ'] : 'neu';
+  echo formatiere_preis(berechne_preis($_GET['kiste'], $_GET['menge'], $typ)) . "\n";
+  EOF
+  cat > tools/anfrage.php <<'EOF'
+  <?php
+  $url = $argv[1] ?? '/index.php';
+  parse_str((string) parse_url($url, PHP_URL_QUERY), $_GET);
+  $_SERVER['REQUEST_URI'] = $url;
+  $_SERVER['REQUEST_METHOD'] = 'GET';
+  chdir(dirname(__DIR__));
+  require dirname(__DIR__) . '/index.php';
+  EOF
+  sqlite3 data/app.db "CREATE TABLE bestellungen (id INTEGER PRIMARY KEY, kunde TEXT, kiste TEXT, menge INTEGER, typ TEXT);
+  INSERT INTO bestellungen (kunde, kiste, menge, typ) VALUES ('Ada', 'klein', 2, 'stamm'), ('Linus', 'gross', 1, 'neu'), ('Grace', 'mittel', 7, 'stamm'), ('Ada', 'mittel', 1, 'stamm'), ('Margaret', 'gross', 12, 'neu'), ('Alan', 'klein', 3, 'neu');"
+steps:
+  - id: golden-master
+    title: Das Sicherheitsnetz spannen
+    description: |
+      Bevor du irgendetwas änderst, hältst du das Verhalten der App fest.
+
+      1. Lege `tests/golden.php` an, das für mindestens sieben URLs `php tools/anfrage.php <url>` aufruft und vor jeder
+         Antwort `### <url>` ausgibt: Startseite, Bestellliste, Bestellliste mit `kunde=Ada`, drei Preisanfragen (eine
+         mit `typ=stamm` und mehr als fünf Kisten) und eine unbekannte Seite.
+      2. Speichere die Ausgabe in `tests/golden-master.txt`.
+      3. Lass das Skript ein zweites Mal laufen und vergleiche mit `diff` – zwei Läufe müssen identisch sein.
+    checklist:
+      - "`tests/golden.php` mit mindestens sieben URLs"
+      - "`tests/golden-master.txt` gespeichert"
+      - Zweiter Lauf ist identisch
+    hints:
+      - "Die Vorlage steht in der Lektion „Charakterisierungstests und Golden Master“."
+      - "`php tests/golden.php > tests/golden-master.txt`, danach `php tests/golden.php | diff - tests/golden-master.txt`."
+    checks:
+      - type: command
+        run: grep -c '^### ' tests/golden-master.txt
+        stdout_matches: "^([7-9]|[1-9][0-9]+)$"
+        message: tests/golden-master.txt fehlt oder enthält weniger als sieben URLs.
+      - type: file_contains
+        path: tests/golden-master.txt
+        pattern: "Seite nicht gefunden"
+        message: Nimm auch eine unbekannte Seite in den Golden Master auf.
+      - type: command
+        run: php tests/golden.php | diff -q - tests/golden-master.txt
+        message: Die aktuelle Ausgabe weicht vom Golden Master ab.
+    solution: |
+      ```bash
+      mkdir -p tests
+      cat > tests/golden.php <<'EOF'
+      <?php
+      $urls = array(
+          '/index.php',
+          '/index.php?seite=bestellungen',
+          '/index.php?seite=bestellungen&kunde=Ada',
+          '/index.php?seite=preis&kiste=klein&menge=1',
+          '/index.php?seite=preis&kiste=mittel&menge=6&typ=stamm',
+          '/index.php?seite=preis&kiste=gross&menge=12',
+          '/index.php?seite=gibtsnicht',
+      );
+      foreach ($urls as $url) {
+          echo "### " . $url . "\n";
+          echo shell_exec('php ' . escapeshellarg(__DIR__ . '/../tools/anfrage.php') . ' ' . escapeshellarg($url));
+      }
+      EOF
+      php tests/golden.php > tests/golden-master.txt
+      php tests/golden.php | diff - tests/golden-master.txt && echo "stabil"
+      ```
+    solve: |
+      mkdir -p tests
+      cat > tests/golden.php <<'EOF'
+      <?php
+      $urls = array(
+          '/index.php',
+          '/index.php?seite=bestellungen',
+          '/index.php?seite=bestellungen&kunde=Ada',
+          '/index.php?seite=preis&kiste=klein&menge=1',
+          '/index.php?seite=preis&kiste=mittel&menge=6&typ=stamm',
+          '/index.php?seite=preis&kiste=gross&menge=12',
+          '/index.php?seite=gibtsnicht',
+      );
+      foreach ($urls as $url) {
+          echo "### " . $url . "\n";
+          echo shell_exec('php ' . escapeshellarg(__DIR__ . '/../tools/anfrage.php') . ' ' . escapeshellarg($url));
+      }
+      EOF
+      php tests/golden.php > tests/golden-master.txt
+  - id: wochentag-naht
+    title: Eine Naht für den Wochentag
+    description: |
+      `berechne_preis()` fragt `date('N')` direkt ab – den Samstagszuschlag kann kein Test gezielt prüfen.
+
+      1. Gib `berechne_preis()` einen vierten Parameter `$wochentag = null`. Ist er `null`, wird wie bisher
+         `(int) date('N')` verwendet. Der Samstagsvergleich nutzt danach `$wochentag`.
+      2. Schreib `tests/charakterisierung.php`: Es bindet `config.php` und `inc/functions.php` ein und prüft mit festem
+         Wochentag mindestens: `klein`, 1, `neu` am Montag (14.9) und am Samstag (16.4) sowie `mittel`, 6, `stamm` an
+         einem Dienstag (114.1). Bei Erfolg `OK`, bei Abweichung `exit(1)`.
+      3. Golden Master grün?
+    checklist:
+      - "Parameter `$wochentag = null` mit Rückfall auf `date('N')`"
+      - Charakterisierungstest mit festem Wochentag
+      - Golden Master grün
+    hints:
+      - "`if ($wochentag === null) { $wochentag = (int) date('N'); }` an den Anfang der Funktion."
+      - "Prüffunktion: `function pruefe($erwartet, $ist) { if ($erwartet !== $ist) { echo \"FEHLER\\n\"; exit(1); } }`"
+    checks:
+      - type: file_contains
+        path: inc/functions.php
+        pattern: "function berechne_preis\\(\\$kiste, \\$menge, \\$typ, \\$wochentag = null\\)"
+        message: "berechne_preis() braucht den vierten Parameter $wochentag = null."
+      - type: command
+        run: grep -c "date('N') == 6" inc/functions.php || true
+        stdout_equals: "0"
+        message: Der Samstagsvergleich fragt noch direkt date('N') ab. Vergleiche $wochentag.
+      - type: command
+        run: php tests/charakterisierung.php
+        stdout_matches: "OK"
+        message: tests/charakterisierung.php soll mit Exit-Code 0 durchlaufen und OK ausgeben.
+      - type: file_contains
+        path: tests/charakterisierung.php
+        pattern: "16\\.4"
+        message: Prüfe im Charakterisierungstest auch den Samstag (16.4 für eine kleine Kiste).
+      - type: command
+        run: php tests/golden.php | diff -q - tests/golden-master.txt
+        message: Der Golden Master ist rot. Die Naht darf das normale Verhalten nicht ändern.
+    solution: |
+      ```bash
+      cat > inc/functions.php <<'EOF'
+      <?php
+      function berechne_preis($kiste, $menge, $typ, $wochentag = null) {
+          global $PREISE;
+          if ($wochentag === null) {
+              $wochentag = (int) date('N');
+          }
+          $preis = $PREISE[$kiste] * $menge;
+          if ($typ == 'stamm') {
+              $preis = $preis * 0.9;
+          }
+          if ($menge > 5) {
+              $preis = $preis - 2;
+          }
+          if ($wochentag == 6) {
+              $preis = $preis + 1.5;
+          }
+          return round($preis, 2);
+      }
+
+      function formatiere_preis($preis) {
+          return number_format($preis, 2, ',', '.') . ' EUR';
+      }
+      EOF
+      cat > tests/charakterisierung.php <<'EOF'
+      <?php
+      require __DIR__ . '/../config.php';
+      require __DIR__ . '/../inc/functions.php';
+
+      function pruefe($erwartet, $ist) {
+          if ($erwartet !== $ist) {
+              echo "FEHLER: erwartet " . var_export($erwartet, true) . ", ist " . var_export($ist, true) . "\n";
+              exit(1);
+          }
+      }
+
+      pruefe(14.9, berechne_preis('klein', 1, 'neu', 1));
+      pruefe(16.4, berechne_preis('klein', 1, 'neu', 6));
+      pruefe(114.1, berechne_preis('mittel', 6, 'stamm', 2));
+      pruefe('1.234,50 EUR', formatiere_preis(1234.5));
+      echo "OK\n";
+      EOF
+      php tests/charakterisierung.php
+      php tests/golden.php | diff - tests/golden-master.txt && echo "Golden Master grün"
+      ```
+    solve: |
+      cat > inc/functions.php <<'EOF'
+      <?php
+      function berechne_preis($kiste, $menge, $typ, $wochentag = null) {
+          global $PREISE;
+          if ($wochentag === null) {
+              $wochentag = (int) date('N');
+          }
+          $preis = $PREISE[$kiste] * $menge;
+          if ($typ == 'stamm') {
+              $preis = $preis * 0.9;
+          }
+          if ($menge > 5) {
+              $preis = $preis - 2;
+          }
+          if ($wochentag == 6) {
+              $preis = $preis + 1.5;
+          }
+          return round($preis, 2);
+      }
+
+      function formatiere_preis($preis) {
+          return number_format($preis, 2, ',', '.') . ' EUR';
+      }
+      EOF
+      cat > tests/charakterisierung.php <<'EOF'
+      <?php
+      require __DIR__ . '/../config.php';
+      require __DIR__ . '/../inc/functions.php';
+
+      function pruefe($erwartet, $ist) {
+          if ($erwartet !== $ist) {
+              echo "FEHLER: erwartet " . var_export($erwartet, true) . ", ist " . var_export($ist, true) . "\n";
+              exit(1);
+          }
+      }
+
+      pruefe(14.9, berechne_preis('klein', 1, 'neu', 1));
+      pruefe(16.4, berechne_preis('klein', 1, 'neu', 6));
+      pruefe(114.1, berechne_preis('mittel', 6, 'stamm', 2));
+      pruefe('1.234,50 EUR', formatiere_preis(1234.5));
+      echo "OK\n";
+      EOF
+  - id: sql-injection
+    title: Die SQL-Injection schließen
+    description: |
+      `lade_bestellungen()` klebt den Kundennamen in das SQL. Baue die Funktion auf ein Prepared Statement um
+      (`prepare()` mit `?`, `execute()` mit den Werten). Der Golden Master bleibt grün, der Angriff
+      `kunde=x' OR '1'='1` liefert keine Bestellung mehr.
+    checklist:
+      - Prepared Statement mit Platzhalter
+      - Angriff liefert keine Bestellungen
+      - Golden Master grün
+    hints:
+      - "Sammle die Werte in `$werte = array();` und hänge `\" WHERE kunde = ?\"` an das SQL."
+      - "`$stmt = db()->prepare($sql); $stmt->execute($werte); foreach ($stmt as $row) { … }`"
+    checks:
+      - type: command
+        run: grep -F '. $kunde .' inc/db.php
+        expect_exit: 1
+        message: $kunde wird noch per Verkettung in das SQL geklebt.
+      - type: command
+        run: php tools/anfrage.php "/index.php?seite=bestellungen&kunde=x' OR '1'='1" | grep -c '<li>' || true
+        stdout_equals: "0"
+        message: Der Angriff liefert noch Bestellungen.
+      - type: command
+        run: php tests/golden.php | diff -q - tests/golden-master.txt
+        message: Der Golden Master ist rot – auch die Sortierung nach id muss bleiben.
+    solution: |
+      ```bash
+      cat > inc/db.php <<'EOF'
+      <?php
+      function db() {
+          global $DB_PFAD, $DB;
+          if (!$DB) {
+              $DB = new PDO('sqlite:' . $DB_PFAD);
+          }
+          return $DB;
+      }
+
+      function lade_bestellungen($kunde) {
+          $sql = "SELECT * FROM bestellungen";
+          $werte = array();
+          if ($kunde != '') {
+              $sql .= " WHERE kunde = ?";
+              $werte[] = $kunde;
+          }
+          $sql .= " ORDER BY id";
+          $stmt = db()->prepare($sql);
+          $stmt->execute($werte);
+          $liste = array();
+          foreach ($stmt as $row) {
+              $liste[] = new Bestellung($row);
+          }
+          return $liste;
+      }
+      EOF
+      php tests/golden.php | diff - tests/golden-master.txt && echo "Golden Master grün"
+      ```
+    solve: |
+      cat > inc/db.php <<'EOF'
+      <?php
+      function db() {
+          global $DB_PFAD, $DB;
+          if (!$DB) {
+              $DB = new PDO('sqlite:' . $DB_PFAD);
+          }
+          return $DB;
+      }
+
+      function lade_bestellungen($kunde) {
+          $sql = "SELECT * FROM bestellungen";
+          $werte = array();
+          if ($kunde != '') {
+              $sql .= " WHERE kunde = ?";
+              $werte[] = $kunde;
+          }
+          $sql .= " ORDER BY id";
+          $stmt = db()->prepare($sql);
+          $stmt->execute($werte);
+          $liste = array();
+          foreach ($stmt as $row) {
+              $liste[] = new Bestellung($row);
+          }
+          return $liste;
+      }
+      EOF
+  - id: composer
+    title: Composer und Autoloading einführen
+    description: |
+      1. Lege `composer.json` (Name `gruenfeld/gemuesekiste`) mit `psr-4` (`Gruenfeld\` → `src/`), `classmap`
+         (`classes/`) und `files` (`inc/db.php`, `inc/functions.php`) an und erzeuge den Autoloader.
+      2. `index.php` bindet nur noch `config.php` und `vendor/autoload.php` ein.
+      3. `/vendor/` steht in `.gitignore`. Der Golden Master bleibt grün.
+    checklist:
+      - composer.json mit drei Autoload-Arten
+      - "`vendor/autoload.php` erzeugt und in index.php eingebunden"
+      - "`/vendor/` in .gitignore"
+    hints:
+      - "Nach dem Anlegen der composer.json: `mkdir -p src && composer dump-autoload`."
+      - "config.php bleibt beim `require_once` – globale Variablen dürfen nicht über `files` geladen werden."
+    checks:
+      - type: command
+        run: jq -r '.autoload["psr-4"]["Gruenfeld\\"] // empty' composer.json
+        stdout_matches: "^src/?$"
+        message: composer.json braucht autoload.psr-4 mit Gruenfeld\ → src/.
+      - type: command
+        run: jq -r '(.autoload.classmap // []) + (.autoload.files // []) | join(" ")' composer.json
+        stdout_matches: "(?=.*classes)(?=.*inc/db\\.php)(?=.*inc/functions\\.php)"
+        message: composer.json braucht classmap für classes/ und files für inc/db.php und inc/functions.php.
+      - type: file_exists
+        path: vendor/autoload.php
+        message: vendor/autoload.php fehlt – führe composer dump-autoload aus.
+      - type: command
+        run: grep -E "require(_once)?[ (]*'(inc|classes)/" index.php
+        expect_exit: 1
+        message: index.php bindet inc/ oder classes/ noch per require ein.
+      - type: file_contains
+        path: .gitignore
+        pattern: "^/?vendor/?\\s*$"
+        message: Trag /vendor/ in .gitignore ein.
+      - type: command
+        run: php tests/golden.php | diff -q - tests/golden-master.txt
+        message: Der Golden Master ist rot.
+    solution: |
+      ```bash
+      cat > composer.json <<'EOF'
+      {
+          "name": "gruenfeld/gemuesekiste",
+          "type": "project",
+          "require": {
+              "php": "^8.4"
+          },
+          "autoload": {
+              "psr-4": { "Gruenfeld\\": "src/" },
+              "classmap": ["classes/"],
+              "files": ["inc/db.php", "inc/functions.php"]
+          }
+      }
+      EOF
+      mkdir -p src
+      composer dump-autoload
+      sed -i "/require_once 'inc\//d; s#require_once 'classes/Bestellung.php';#require __DIR__ . '/vendor/autoload.php';#" index.php
+      echo "/vendor/" >> .gitignore
+      php tests/golden.php | diff - tests/golden-master.txt && echo "Golden Master grün"
+      ```
+    solve: |
+      cat > composer.json <<'EOF'
+      {
+          "name": "gruenfeld/gemuesekiste",
+          "description": "Bestellsystem der Gemüsekiste Grünfeld",
+          "type": "project",
+          "require": {
+              "php": "^8.4"
+          },
+          "autoload": {
+              "psr-4": {
+                  "Gruenfeld\\": "src/"
+              },
+              "classmap": ["classes/"],
+              "files": ["inc/db.php", "inc/functions.php"]
+          }
+      }
+      EOF
+      mkdir -p src
+      composer dump-autoload -q
+      sed -i "/require_once 'inc\/db.php';/d; /require_once 'inc\/functions.php';/d; s#require_once 'classes/Bestellung.php';#require __DIR__ . '/vendor/autoload.php';#" index.php
+      echo "/vendor/" >> .gitignore
+  - id: rector
+    title: Mit Rector auf modernes PHP
+    description: |
+      1. Installiere Rector: `timeout 170 composer require --dev rector/rector`.
+      2. Lege `rector.php` für `classes`, `inc`, `seiten`, `src`, `config.php` und `index.php` mit
+         `withPhpSets(php74: true)` an.
+      3. Erst `--dry-run`, dann anwenden. Danach `php -l` und Golden Master.
+    checklist:
+      - Rector als Dev-Abhängigkeit
+      - "`rector.php` mit `withPhpSets(php74: true)`"
+      - "`rector process --dry-run` meldet nichts mehr"
+      - Golden Master grün
+    hints:
+      - "Die Konfiguration steht in der Lektion „PHP Schritt für Schritt upgraden mit Rector“."
+      - "Hat Rector nichts mehr zu tun, endet `vendor/bin/rector process --dry-run` mit Exit-Code 0."
+    checks:
+      - type: command
+        run: jq -r '."require-dev"["rector/rector"] // empty' composer.json
+        stdout_matches: "\\S"
+        message: rector/rector steht noch nicht in require-dev.
+      - type: file_contains
+        path: rector.php
+        pattern: "withPhpSets\\(\\s*php74:\\s*true"
+        message: "rector.php soll ->withPhpSets(php74: true) verwenden."
+      - type: command
+        run: timeout 150 vendor/bin/rector process --dry-run --no-progress-bar
+        message: Rector würde noch Dateien ändern. Wende die Änderungen an.
+      - type: command
+        run: grep -rnE '^\s*var \$|array\(' classes inc seiten index.php || true
+        stdout_equals: ""
+        message: Es gibt noch var oder array() in classes, inc, seiten oder index.php.
+      - type: command
+        run: php tests/golden.php | diff -q - tests/golden-master.txt
+        message: Der Golden Master ist rot.
+    solution: |
+      ```bash
+      timeout 170 composer require --dev rector/rector
+      cat > rector.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      use Rector\Config\RectorConfig;
+
+      return RectorConfig::configure()
+          ->withPaths([
+              __DIR__ . '/classes',
+              __DIR__ . '/inc',
+              __DIR__ . '/seiten',
+              __DIR__ . '/src',
+              __DIR__ . '/config.php',
+              __DIR__ . '/index.php',
+          ])
+          ->withPhpSets(php74: true);
+      EOF
+      vendor/bin/rector process --dry-run || true
+      vendor/bin/rector process
+      php tests/golden.php | diff - tests/golden-master.txt && echo "Golden Master grün"
+      ```
+    solve: |
+      timeout 170 composer require --dev -n -q rector/rector </dev/null
+      cat > rector.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      use Rector\Config\RectorConfig;
+
+      return RectorConfig::configure()
+          ->withPaths([
+              __DIR__ . '/classes',
+              __DIR__ . '/inc',
+              __DIR__ . '/seiten',
+              __DIR__ . '/src',
+              __DIR__ . '/config.php',
+              __DIR__ . '/index.php',
+          ])
+          ->withPhpSets(php74: true);
+      EOF
+      timeout 150 vendor/bin/rector process --no-progress-bar
+  - id: strangler-preise
+    title: Die Preisseite zieht in den neuen Code
+    description: |
+      Jetzt wird die erste Route nach dem Strangler-Fig-Pattern abgelöst – diesmal samt neuer Innereien.
+
+      1. Lege `src/Preisrechner.php` an (`Gruenfeld\Preisrechner`, Konstruktor `(array $preise, Closure $wochentag)`,
+         Methode `preis(string $kiste, int $menge, string $typ): float`, gleiche Regeln wie `berechne_preis()`).
+      2. Lege `src/Seiten/PreisSeite.php` an: `Gruenfeld\Seiten\PreisSeite` bekommt einen `Preisrechner` im Konstruktor;
+         `antwort(array $query): string` liefert den formatierten Preis plus Zeilenumbruch – **ohne** `berechne_preis()`.
+      3. `index.php` baut für `seite=preis` die Seite mit
+         `new \Gruenfeld\Preisrechner($PREISE, fn () => (int) date('N'))` und gibt die Antwort aus.
+      4. Golden Master grün? Dann `seiten/preis.php` löschen.
+    checklist:
+      - "`Gruenfeld\\Preisrechner` mit Objekt-Naht"
+      - "`Gruenfeld\\Seiten\\PreisSeite` nutzt den Preisrechner"
+      - Route umgestellt, alte Datei gelöscht
+      - Golden Master grün
+    hints:
+      - "Den Preisrechner kennst du aus der Code-Aufgabe „Baue einen Preisrechner mit Nahtstellen“ – er braucht nur `namespace Gruenfeld;` und `use Closure;`."
+      - "In PreisSeite: `(string) ($query['kiste'] ?? '')`, `(int) ($query['menge'] ?? 0)`, `(string) ($query['typ'] ?? 'neu')`."
+    checks:
+      - type: command
+        run: php -r 'require "vendor/autoload.php"; $s = new Gruenfeld\Seiten\PreisSeite(new Gruenfeld\Preisrechner(["klein" => 10.0], fn () => 6)); echo $s->antwort(["kiste" => "klein", "menge" => "2"]);'
+        stdout_equals: "21,50 EUR"
+        message: PreisSeite mit einem Preisrechner (klein = 10.0, Samstag) soll für zwei kleine Kisten "21,50 EUR" liefern.
+      - type: command
+        run: grep -c "berechne_preis" src/Seiten/PreisSeite.php || true
+        stdout_equals: "0"
+        message: PreisSeite soll den Preisrechner benutzen, nicht mehr berechne_preis().
+      - type: file_absent
+        path: seiten/preis.php
+        message: seiten/preis.php existiert noch.
+      - type: file_contains
+        path: index.php
+        pattern: "PreisSeite"
+        message: index.php soll seite=preis an die PreisSeite geben.
+      - type: command
+        run: php tests/golden.php | diff -q - tests/golden-master.txt
+        message: Der Golden Master ist rot – stimmt der Zeilenumbruch am Ende der Preisausgabe?
+    solution: |
+      ```bash
+      mkdir -p src/Seiten
+      cat > src/Preisrechner.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Gruenfeld;
+
+      use Closure;
+
+      final class Preisrechner
+      {
+          public function __construct(
+              private array $preise,
+              private Closure $wochentag,
+          ) {
+          }
+
+          public function preis(string $kiste, int $menge, string $typ): float
+          {
+              $preis = ($this->preise[$kiste] ?? 0.0) * $menge;
+              if ($typ === 'stamm') {
+                  $preis = $preis * 0.9;
+              }
+              if ($menge > 5) {
+                  $preis = $preis - 2;
+              }
+              if (($this->wochentag)() === 6) {
+                  $preis = $preis + 1.5;
+              }
+
+              return round($preis, 2);
+          }
+      }
+      EOF
+      cat > src/Seiten/PreisSeite.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Gruenfeld\Seiten;
+
+      use Gruenfeld\Preisrechner;
+
+      final class PreisSeite
+      {
+          public function __construct(private Preisrechner $rechner)
+          {
+          }
+
+          public function antwort(array $query): string
+          {
+              $preis = $this->rechner->preis(
+                  (string) ($query['kiste'] ?? ''),
+                  (int) ($query['menge'] ?? 0),
+                  (string) ($query['typ'] ?? 'neu'),
+              );
+
+              return formatiere_preis($preis) . "\n";
+          }
+      }
+      EOF
+      sed -i "s#include 'seiten/preis.php';#echo (new \\\\Gruenfeld\\\\Seiten\\\\PreisSeite(new \\\\Gruenfeld\\\\Preisrechner(\$PREISE, fn () => (int) date('N'))))->antwort(\$_GET);#" index.php
+      php tests/golden.php | diff - tests/golden-master.txt && rm seiten/preis.php
+      ```
+    solve: |
+      mkdir -p src/Seiten
+      cat > src/Preisrechner.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Gruenfeld;
+
+      use Closure;
+
+      final class Preisrechner
+      {
+          public function __construct(
+              private array $preise,
+              private Closure $wochentag,
+          ) {
+          }
+
+          public function preis(string $kiste, int $menge, string $typ): float
+          {
+              $preis = ($this->preise[$kiste] ?? 0.0) * $menge;
+              if ($typ === 'stamm') {
+                  $preis = $preis * 0.9;
+              }
+              if ($menge > 5) {
+                  $preis = $preis - 2;
+              }
+              if (($this->wochentag)() === 6) {
+                  $preis = $preis + 1.5;
+              }
+
+              return round($preis, 2);
+          }
+      }
+      EOF
+      cat > src/Seiten/PreisSeite.php <<'EOF'
+      <?php
+      declare(strict_types=1);
+
+      namespace Gruenfeld\Seiten;
+
+      use Gruenfeld\Preisrechner;
+
+      final class PreisSeite
+      {
+          public function __construct(private Preisrechner $rechner)
+          {
+          }
+
+          public function antwort(array $query): string
+          {
+              $preis = $this->rechner->preis(
+                  (string) ($query['kiste'] ?? ''),
+                  (int) ($query['menge'] ?? 0),
+                  (string) ($query['typ'] ?? 'neu'),
+              );
+
+              return formatiere_preis($preis) . "\n";
+          }
+      }
+      EOF
+      sed -i "s#include 'seiten/preis.php';#echo (new \\\\Gruenfeld\\\\Seiten\\\\PreisSeite(new \\\\Gruenfeld\\\\Preisrechner(\$PREISE, fn () => (int) date('N'))))->antwort(\$_GET);#" index.php
+      rm seiten/preis.php
+  - id: query-builder
+    title: Datenzugriff über illuminate/database
+    description: |
+      1. Installiere `illuminate/database` mit `timeout 170 composer require illuminate/database`.
+      2. Lege `bootstrap/datenbank.php` mit einem Capsule Manager (SQLite, `data/app.db`, `setAsGlobal()`) an und binde
+         ihn in `index.php` direkt nach `vendor/autoload.php` ein.
+      3. Schreib `lade_bestellungen()` auf `Capsule::table('bestellungen')` um – ohne eigenes SQL.
+      4. Golden Master grün, Angriff weiterhin wirkungslos.
+    checklist:
+      - illuminate/database installiert
+      - Capsule eingerichtet und eingebunden
+      - "`lade_bestellungen()` nutzt den Query Builder"
+      - Golden Master grün
+    hints:
+      - "Die Vorlagen stehen in der Lektion „Illuminate-Komponenten ohne Laravel“."
+      - "Die Zeilen des Query Builders sind Objekte: `new Bestellung((array) $row)`."
+    checks:
+      - type: command
+        run: jq -r '.packages[].name' composer.lock
+        stdout_matches: "^illuminate/database$"
+        message: illuminate/database ist noch nicht installiert.
+      - type: file_contains
+        path: index.php
+        pattern: "bootstrap/datenbank\\.php"
+        message: index.php soll bootstrap/datenbank.php einbinden.
+      - type: file_contains
+        path: inc/db.php
+        pattern: "::table\\(\\s*'bestellungen'\\s*\\)"
+        message: lade_bestellungen() soll Capsule::table('bestellungen') verwenden.
+      - type: command
+        run: grep -ci "select" inc/db.php || true
+        stdout_equals: "0"
+        message: In inc/db.php steht noch SQL.
+      - type: command
+        run: php tools/anfrage.php "/index.php?seite=bestellungen&kunde=x' OR '1'='1" | grep -c '<li>' || true
+        stdout_equals: "0"
+        message: Der Angriff liefert wieder Bestellungen – nutze where('kunde', $kunde).
+      - type: command
+        run: php tests/golden.php | diff -q - tests/golden-master.txt
+        message: Der Golden Master ist rot.
+    solution: |
+      ```bash
+      timeout 170 composer require illuminate/database
+      mkdir -p bootstrap
+      cat > bootstrap/datenbank.php <<'EOF'
+      <?php
+      use Illuminate\Database\Capsule\Manager as Capsule;
+
+      $capsule = new Capsule();
+      $capsule->addConnection([
+          'driver' => 'sqlite',
+          'database' => __DIR__ . '/../data/app.db',
+      ]);
+      $capsule->setAsGlobal();
+      EOF
+      sed -i "s#require __DIR__ . '/vendor/autoload.php';#&\nrequire __DIR__ . '/bootstrap/datenbank.php';#" index.php
+      cat > inc/db.php <<'EOF'
+      <?php
+      use Illuminate\Database\Capsule\Manager as Capsule;
+
+      function lade_bestellungen($kunde) {
+          $abfrage = Capsule::table('bestellungen')->orderBy('id');
+          if ($kunde != '') {
+              $abfrage->where('kunde', $kunde);
+          }
+          $liste = [];
+          foreach ($abfrage->get() as $row) {
+              $liste[] = new Bestellung((array) $row);
+          }
+          return $liste;
+      }
+      EOF
+      php tests/golden.php | diff - tests/golden-master.txt && echo "Golden Master grün"
+      ```
+    solve: |
+      timeout 170 composer require -n -q illuminate/database </dev/null
+      mkdir -p bootstrap
+      cat > bootstrap/datenbank.php <<'EOF'
+      <?php
+      use Illuminate\Database\Capsule\Manager as Capsule;
+
+      $capsule = new Capsule();
+      $capsule->addConnection([
+          'driver' => 'sqlite',
+          'database' => __DIR__ . '/../data/app.db',
+      ]);
+      $capsule->setAsGlobal();
+      EOF
+      sed -i "s#require __DIR__ . '/vendor/autoload.php';#&\nrequire __DIR__ . '/bootstrap/datenbank.php';#" index.php
+      cat > inc/db.php <<'EOF'
+      <?php
+      use Illuminate\Database\Capsule\Manager as Capsule;
+
+      function lade_bestellungen($kunde) {
+          $abfrage = Capsule::table('bestellungen')->orderBy('id');
+          if ($kunde != '') {
+              $abfrage->where('kunde', $kunde);
+          }
+          $liste = [];
+          foreach ($abfrage->get() as $row) {
+              $liste[] = new Bestellung((array) $row);
+          }
+          return $liste;
+      }
+      EOF
+  - id: plan
+    title: Den Plan festhalten
+    description: |
+      Zum Schluss dokumentierst du, wo die Modernisierung steht und wie es weitergeht. Lege `MODERNISIERUNG.md` an mit:
+
+      1. `## Erledigt` – mindestens fünf Punkte (Zeilen mit `- `) aus diesem Projekt.
+      2. `## Routen` – eine Tabelle mit den Routen `start`, `bestellungen` und `preis` und ihrem Status
+         (`alt`, `in Arbeit`, `neu`). `preis` ist `neu`.
+      3. `## Nächste Etappen` – mindestens drei Etappen mit prüfbarem Ergebnis.
+      4. `## Risiken` – mindestens zwei Risiken, zum Beispiel die Datenmigration der Kisten.
+    checklist:
+      - Erledigt, Routen, Nächste Etappen, Risiken
+      - Preisroute als neu markiert
+    hints:
+      - "Schreib die Datei mit `cat > MODERNISIERUNG.md <<'EOF' … EOF`."
+      - "Gute Etappen enden mit einem prüfbaren Ergebnis, etwa „Bestellliste über BestellungenSeite, alte Datei gelöscht“."
+    checks:
+      - type: file_exists
+        path: MODERNISIERUNG.md
+        message: Lege MODERNISIERUNG.md an.
+      - type: command
+        run: awk '/^## Erledigt/{f=1;next} /^## /{f=0} f && /^- /' MODERNISIERUNG.md | wc -l
+        stdout_matches: "^\\s*([5-9]|[1-9][0-9]+)\\s*$"
+        message: Unter "## Erledigt" stehen weniger als fünf Punkte.
+      - type: file_contains
+        path: MODERNISIERUNG.md
+        pattern: "^\\|\\s*`?preis`?\\s*\\|\\s*neu\\s*\\|"
+        message: In der Routentabelle fehlt die Zeile für preis mit dem Status neu (z. B. "| preis | neu |").
+      - type: command
+        run: awk '/^## Nächste Etappen/{f=1;next} /^## /{f=0} f && /^([0-9]+\.|-) /' MODERNISIERUNG.md | wc -l
+        stdout_matches: "^\\s*([3-9]|[1-9][0-9]+)\\s*$"
+        message: Unter "## Nächste Etappen" stehen weniger als drei Etappen.
+      - type: command
+        run: awk '/^## Risiken/{f=1;next} /^## /{f=0} f && /^- /' MODERNISIERUNG.md | wc -l
+        stdout_matches: "^\\s*([2-9]|[1-9][0-9]+)\\s*$"
+        message: Unter "## Risiken" stehen weniger als zwei Punkte.
+      - type: command
+        run: php tests/golden.php | diff -q - tests/golden-master.txt
+        message: Der Golden Master ist rot.
+    solution: |
+      ```bash
+      cat > MODERNISIERUNG.md <<'EOF'
+      # Modernisierung der Gemüsekiste
+
+      ## Erledigt
+
+      - Golden Master für sieben URLs, Charakterisierungstest mit festem Wochentag
+      - Parameter-Naht für den Wochentag in berechne_preis()
+      - SQL-Injection in lade_bestellungen() geschlossen
+      - Composer mit psr-4, classmap und files eingeführt
+      - Rector-Stufe bis PHP 7.4 angewendet
+      - Preisseite über Gruenfeld\Seiten\PreisSeite, alte Datei gelöscht
+      - Datenzugriff über illuminate/database
+
+      ## Routen
+
+      | Route | Status |
+      |---|---|
+      | start | alt |
+      | bestellungen | in Arbeit |
+      | preis | neu |
+
+      ## Nächste Etappen
+
+      1. Rector-Stufen php80 bis php84, jeweils mit Golden Master ausgerollt
+      2. Bestellliste über BestellungenSeite, seiten/bestellungen.php gelöscht
+      3. Kisten-Tabelle per Expand and Contract, Preise aus der Datenbank
+      4. Golden Master in der CI-Pipeline
+
+      ## Risiken
+
+      - Datenmigration der Kisten: uneinheitliche Schreibweisen in Altdaten
+      - Samstagszuschlag macht den Golden Master zeitabhängig
+      EOF
+      ```
+    solve: |
+      cat > MODERNISIERUNG.md <<'EOF'
+      # Modernisierung der Gemüsekiste
+
+      ## Erledigt
+
+      - Golden Master für sieben URLs, Charakterisierungstest mit festem Wochentag
+      - Parameter-Naht für den Wochentag in berechne_preis()
+      - SQL-Injection in lade_bestellungen() geschlossen
+      - Composer mit psr-4, classmap und files eingeführt
+      - Rector-Stufe bis PHP 7.4 angewendet
+      - Preisseite über Gruenfeld\Seiten\PreisSeite, alte Datei gelöscht
+      - Datenzugriff über illuminate/database
+
+      ## Routen
+
+      | Route | Status |
+      |---|---|
+      | start | alt |
+      | bestellungen | in Arbeit |
+      | preis | neu |
+
+      ## Nächste Etappen
+
+      1. Rector-Stufen php80 bis php84, jeweils mit Golden Master ausgerollt
+      2. Bestellliste über BestellungenSeite, seiten/bestellungen.php gelöscht
+      3. Kisten-Tabelle per Expand and Contract, Preise aus der Datenbank
+      4. Golden Master in der CI-Pipeline
+
+      ## Risiken
+
+      - Datenmigration der Kisten: uneinheitliche Schreibweisen in Altdaten
+      - Samstagszuschlag macht den Golden Master zeitabhängig
+      EOF
