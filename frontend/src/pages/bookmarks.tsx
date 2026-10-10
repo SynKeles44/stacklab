@@ -1,6 +1,7 @@
 import { BookA, BookMarked, BookOpen, FolderGit2, GraduationCap, Layers, ListChecks, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLoaderData } from 'react-router'
+import { PageHeader } from '@/components/common/page-header'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Api, type Bookmark } from '@/lib/api'
@@ -38,10 +39,10 @@ export function BookmarksPage() {
       {apple ? (
         <h1 className="large-title">Lesezeichen</h1>
       ) : (
-        <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight"><BookMarked className="size-7 text-brand" /> Lesezeichen</h1>
+        <PageHeader eyebrow={bookmarks.length === 0 ? 'Gemerkt' : `${bookmarks.length} gemerkt`} title="Lesezeichen" description="Kurse, Lektionen, Aufgaben und Begriffe, zu denen du zurückkehren willst." />
       )}
       {bookmarks.length === 0 ? (
-        <Empty className={cn('border', apple ? 'mt-6' : 'mt-10')}>
+        <Empty className={cn(apple ? 'mt-6 border' : 'mt-10 border bg-card/50')}>
           <EmptyHeader>
             <EmptyMedia variant="icon"><BookMarked /></EmptyMedia>
             <EmptyTitle>Noch keine Lesezeichen</EmptyTitle>
@@ -57,11 +58,11 @@ export function BookmarksPage() {
               {apple ? (
                 <h2 className="section-header">{meta.label}</h2>
               ) : (
-                <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-muted-foreground"><meta.icon className="size-4" /> {meta.label}</h2>
+                <h2 className="eyebrow mb-3 flex items-center gap-2"><meta.icon className="size-3.5" /> {meta.label}</h2>
               )}
               <ul className={cn(apple ? 'grouped [--grouped-inset:3.625rem]' : 'space-y-2')}>
                 {items.map((bookmark) => (
-                  <li key={bookmark.id} className={cn('flex items-center gap-2 pr-2', !apple && 'rounded-xl border bg-card')}>
+                  <li key={bookmark.id} className={cn('flex items-center gap-2 pr-2', !apple && 'rounded-xl bg-card shadow-card')}>
                     <Link to={bookmark.url} className={cn('min-w-0 flex-1', apple ? 'cell pr-1' : 'p-3')}>
                       {apple && <span className="icon-tile" style={{ backgroundColor: meta.tint }}><meta.icon /></span>}
                       <div className="min-w-0 flex-1">

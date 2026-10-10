@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { toggleBookmark, useIsBookmarked } from '@/lib/bookmarks'
 import { cn } from '@/lib/utils'
 
-type Props = { type: 'course' | 'module' | 'lesson' | 'term' | 'task' | 'project'; refKey: string; label: string; url: string; className?: string; size?: 'icon' | 'icon-sm' }
+type Props = { type: 'course' | 'module' | 'lesson' | 'term' | 'task' | 'project'; refKey: string; label: string; url: string; className?: string; size?: 'icon' | 'icon-sm' | 'icon-lg' }
 
 export function BookmarkButton({ type, refKey, label, url, className, size = 'icon' }: Props) {
   const active = useIsBookmarked(type, refKey)

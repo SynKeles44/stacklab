@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import type { TermPreview } from '@/lib/api'
-import { requestUnlock } from '@/lib/unlocks'
+import { requestUnlock, unlockEvents } from '@/lib/unlocks'
 
 let observer: IntersectionObserver | null = null
 const callbacks = new WeakMap<Element, () => void>()
@@ -31,6 +31,7 @@ const canHover = () => typeof window !== 'undefined' && window.matchMedia('(hove
 export function TermLink({ slug, term, children }: { slug: string; term: TermPreview | undefined; children: ReactNode }) {
   const ref = useRef<HTMLAnchorElement>(null)
   const [hover] = useState(canHover)
+  const fresh = unlockEvents.use().some((event) => event.terms.some((item) => item.slug === slug))
 
   useEffect(() => {
     if (!ref.current || !term) return
@@ -41,6 +42,7 @@ export function TermLink({ slug, term, children }: { slug: string; term: TermPre
     <Link
       ref={ref}
       to={`/lexikon/${slug}`}
+      data-unlocked={fresh ? 'fresh' : undefined}
       className="term-link cursor-help rounded-sm font-medium text-foreground underline decoration-brand/60 decoration-dotted decoration-2 underline-offset-4 transition-colors hover:bg-brand/10 hover:decoration-brand"
       onClick={(event) => {
         if (!hover) event.preventDefault()

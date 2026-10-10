@@ -1,6 +1,6 @@
-import { ArrowLeft, ArrowRight, BookA, CheckCircle2, Clock, ExternalLink, ListTree, NotebookPen } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookA, Check, CheckCircle2, Clock, ExternalLink, ListTree, Lock, NotebookPen, Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLoaderData, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { BookmarkButton } from '@/components/common/bookmark-button'
@@ -23,7 +23,7 @@ import { useSession } from '@/lib/auth'
 import { celebrateBig } from '@/lib/celebrate'
 import { buildPages, type LessonPage as Page } from '@/lib/lesson-pages'
 import { useUiVariant } from '@/lib/ui-variant'
-import { markKnown } from '@/lib/unlocks'
+import { isKnownTerm, markKnown } from '@/lib/unlocks'
 import { cn } from '@/lib/utils'
 
 type LessonData = LessonResponse & { outline: CourseDetail }
@@ -114,7 +114,7 @@ function LessonView({ data }: { data: LessonData }) {
       <header className="flex items-start gap-3">
         <CourseIcon icon={lesson.course.icon} color={lesson.course.color} size="sm" className="mt-1" />
         <div className="min-w-0 flex-1">
-          <h1 className={cn('font-bold tracking-tight text-balance', index === 0 ? 'text-2xl sm:text-3xl' : 'text-lg sm:text-xl')}>{lesson.title}</h1>
+          <h1 className={cn('text-balance', apple ? 'font-bold tracking-tight' : 'font-semibold tracking-[-0.025em]', index === 0 ? (apple ? 'text-2xl sm:text-3xl' : 'text-[1.75rem] leading-tight sm:text-[2.125rem]') : 'text-lg sm:text-xl')}>{lesson.title}</h1>
           {index === 0 && (
             <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span>Lektion {lesson.position} von {lesson.total}</span>
@@ -251,32 +251,44 @@ function FinishPage({ data, completed, completedTasks, onCompleted }: { data: Le
 
   return (
     <div className="space-y-6">
-      <Card className={cn(completed && 'border-success/40 bg-success/5')}>
-        <CardContent className="flex flex-col items-center gap-3 py-6 text-center sm:flex-row sm:text-left">
-          <div className="flex-1">
-            <p className="font-semibold">{completed ? 'Diese Lektion hast du abgeschlossen.' : 'Alles verstanden?'}</p>
-            <p className="text-sm text-muted-foreground">
-              {completed
-                ? 'Du kannst sie jederzeit wieder als Nachschlagewerk nutzen.'
-                : completedTasks < lesson.tasks.length
-                  ? `Du hast ${completedTasks} von ${lesson.tasks.length} Aufgaben gelöst. Erst durch Tun bleibt Wissen hängen.`
-                  : 'Super, alle Aufgaben gelöst. Schließe die Lektion ab.'}
-            </p>
-          </div>
-          {!completed && (
-            <Button ref={buttonRef} size="lg" onClick={complete} disabled={busy}>
-              {busy ? <Spinner /> : <CheckCircle2 />} Lektion abschließen
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      {apple ? (
+        <Card className={cn(completed && 'border-success/40 bg-success/5')}>
+          <CardContent className="flex flex-col items-center gap-3 py-6 text-center sm:flex-row sm:text-left">
+            <div className="flex-1">
+              <p className="font-semibold">{completed ? 'Diese Lektion hast du abgeschlossen.' : 'Alles verstanden?'}</p>
+              <p className="text-sm text-muted-foreground">
+                {completed
+                  ? 'Du kannst sie jederzeit wieder als Nachschlagewerk nutzen.'
+                  : completedTasks < lesson.tasks.length
+                    ? `Du hast ${completedTasks} von ${lesson.tasks.length} Aufgaben gelöst. Erst durch Tun bleibt Wissen hängen.`
+                    : 'Super, alle Aufgaben gelöst. Schließe die Lektion ab.'}
+              </p>
+            </div>
+            {!completed && (
+              <Button ref={buttonRef} size="lg" onClick={complete} disabled={busy}>
+                {busy ? <Spinner /> : <CheckCircle2 />} Lektion abschließen
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <FinishSummary data={data} completed={completed} completedTasks={completedTasks} busy={busy} onComplete={complete} />
+      )}
 
       {lesson.terms.length > 0 && (
         <section>
           <h2 className="mb-2 flex items-center gap-2 font-semibold"><BookA className="size-4 text-brand" /> Begriffe aus dieser Lektion</h2>
           <div className="flex flex-wrap gap-2">
             {lesson.terms.map((term) => (
-              <Link key={term.slug} to={`/lexikon/${term.slug}`} className={cn('rounded-full px-3 py-1 text-sm transition-colors', apple ? 'bg-[var(--fill)] text-primary hover:bg-[var(--fill-strong)]' : 'border bg-background hover:border-brand hover:text-brand')}>
+              <Link
+                key={term.slug}
+                to={`/lexikon/${term.slug}`}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors',
+                  apple ? 'bg-[var(--fill)] text-primary hover:bg-[var(--fill-strong)]' : 'bg-card shadow-card hover:bg-accent hover:text-accent-foreground',
+                )}
+              >
+                {!apple && user && (isKnownTerm(term.slug) ? <Sparkles className="size-3 text-spark" /> : <Lock className="size-3 text-muted-foreground" />)}
                 {term.term}
               </Link>
             ))}
@@ -336,5 +348,65 @@ function NoteEditor({ lessonId, initial }: { lessonId: number; initial: string }
       </div>
       <Textarea value={value} onChange={(event) => setValue(event.target.value)} placeholder="Was willst du dir merken? Eigene Beispiele, offene Fragen …" className="min-h-28" />
     </section>
+  )
+}
+
+function FinishSummary({
+  data,
+  completed,
+  completedTasks,
+  busy,
+  onComplete,
+}: {
+  data: LessonData
+  completed: boolean
+  completedTasks: number
+  busy: boolean
+  onComplete: () => void
+}) {
+  const { lesson, state } = data
+  const user = useSession()
+  const known = user ? lesson.terms.filter((term) => isKnownTerm(term.slug)).length : 0
+  const tasksDone = lesson.tasks.length > 0 && completedTasks >= lesson.tasks.length
+  const rows: { label: string; value: string; done: boolean }[] = [
+    { label: 'Gelesen', value: `${lesson.duration_minutes} Min. Lesestoff`, done: true },
+    ...(lesson.tasks.length > 0 ? [{ label: 'Aufgaben', value: `${completedTasks} von ${lesson.tasks.length} gelöst`, done: tasksDone }] : []),
+    ...(lesson.quiz.length > 0
+      ? [{ label: 'Quiz', value: state?.best_quiz ? `Bestwert ${state.best_quiz.score} von ${state.best_quiz.max_score}` : 'noch offen', done: Boolean(state?.best_quiz) }]
+      : []),
+    ...(lesson.terms.length > 0 && user ? [{ label: 'Begriffe', value: `${known} von ${lesson.terms.length} in deinem Lexikon`, done: known === lesson.terms.length }] : []),
+  ]
+
+  return (
+    <div
+      style={{ '--course': completed ? 'var(--success)' : (lesson.course.color ?? 'var(--brand)') } as CSSProperties}
+      className="course-wash rounded-2xl bg-card p-5 shadow-card sm:p-7"
+    >
+      <p className="eyebrow">{completed ? 'Geschafft' : 'Abschluss'}</p>
+      <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em]">{completed ? 'Diese Lektion hast du abgeschlossen.' : 'Alles verstanden?'}</h2>
+      <p className="mt-1.5 text-sm text-muted-foreground">
+        {completed
+          ? 'Du kannst sie jederzeit wieder als Nachschlagewerk nutzen.'
+          : lesson.tasks.length > completedTasks
+            ? 'Erst durch Tun bleibt Wissen hängen – offene Aufgaben erreichst du über die Seitenübersicht oben.'
+            : 'Stark. Schließe die Lektion ab, dann zählt sie zu deinem Fortschritt.'}
+      </p>
+      <ul className="mt-6 divide-y rounded-xl bg-background/60 shadow-[inset_0_0_0_1px_var(--border)]">
+        {rows.map((row) => (
+          <li key={row.label} className="flex items-center gap-3 px-4 py-3 text-sm">
+            <span className={cn('flex size-5 shrink-0 items-center justify-center rounded-full', row.done ? 'bg-success text-white' : 'shadow-[inset_0_0_0_1.5px_var(--border)]')}>
+              {row.done && <Check className="size-3" strokeWidth={3} />}
+            </span>
+            <span className="w-20 shrink-0 font-medium">{row.label}</span>
+            <span className="numeric min-w-0 truncate text-muted-foreground">{row.value}</span>
+          </li>
+        ))}
+      </ul>
+      {!completed && (
+        <Button size="lg" onClick={onComplete} disabled={busy} className="mt-6 h-11 w-full px-5 sm:w-auto">
+          {busy ? <Spinner /> : <CheckCircle2 />} Lektion abschließen
+        </Button>
+      )}
+    </div>
   )
 }

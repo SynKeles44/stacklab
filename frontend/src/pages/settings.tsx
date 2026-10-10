@@ -4,6 +4,7 @@ import { useLoaderData, useRevalidator } from 'react-router'
 import { toast } from 'sonner'
 import { AppearancePicker } from '@/components/common/appearance-picker'
 import { FolderPicker } from '@/components/common/folder-picker'
+import { PageHeader } from '@/components/common/page-header'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -70,7 +71,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-12">
-      <h1 className={useUiVariant() === 'apple' ? 'large-title' : 'text-3xl font-semibold tracking-tight'}>Einstellungen</h1>
+      {useUiVariant() === 'apple' ? <h1 className="large-title">Einstellungen</h1> : <PageHeader eyebrow="Konto" title="Einstellungen" className="pb-2" />}
 
       <Card>
         <CardHeader>

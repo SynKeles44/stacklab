@@ -1,4 +1,4 @@
-import { ArrowLeft, BookA, BookOpen, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
+import { ArrowRight, BookA, BookOpen, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, useLoaderData } from 'react-router'
 import { BookmarkButton } from '@/components/common/bookmark-button'
@@ -9,7 +9,6 @@ import type { Term } from '@/lib/api'
 import { formatDate } from '@/lib/format'
 import { useUiVariant } from '@/lib/ui-variant'
 import { requestUnlock } from '@/lib/unlocks'
-import { cn } from '@/lib/utils'
 
 type TermDetail = Term & { related: { slug: string; term: string; short: string }[] }
 
@@ -22,17 +21,80 @@ export function TermPage() {
     requestUnlock(term.slug)
   }, [term.slug, term.term])
 
+  if (apple) return <AppleTerm term={term} />
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-      {apple ? (
-        <Link to="/lexikon" className="-ml-1.5 inline-flex items-center text-[1.0625rem] text-primary hover:opacity-70"><ChevronLeft className="size-6" strokeWidth={2.25} /> Lexikon</Link>
-      ) : (
-        <Link to="/lexikon" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" /> Lexikon</Link>
+      <nav aria-label="Brotkrumen" className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Link to="/lexikon" className="hover:text-foreground">Lexikon</Link>
+        <ChevronRight className="size-3.5" />
+        <span className="font-mono text-xs tracking-[0.04em] uppercase">{term.category}</span>
+      </nav>
+
+      <header className="mt-8 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="page-title break-words">{term.term}</h1>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {term.aliases.map((alias) => <Badge key={alias} variant="secondary" className="font-normal">{alias}</Badge>)}
+            {term.unlocked_at ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Sparkles className="size-3.5 text-spark" /> In deinem Lexikon seit {formatDate(term.unlocked_at)}</span>
+            ) : null}
+          </div>
+        </div>
+        <BookmarkButton type="term" refKey={term.slug} label={term.term} url={`/lexikon/${term.slug}`} />
+      </header>
+
+      <p className="mt-8 text-xl leading-relaxed font-medium tracking-[-0.01em] text-pretty sm:text-[1.375rem]">{term.short}</p>
+      <SmallMarkdown text={term.explanation} className="mt-5 text-[1.0625rem]" />
+
+      {term.example && (
+        <div className="mt-8 overflow-hidden rounded-xl bg-card shadow-card">
+          <p className="eyebrow border-b px-4 py-2.5">Beispiel</p>
+          <div className="px-4 py-4">
+            <SmallMarkdown text={term.example} />
+          </div>
+        </div>
       )}
+
+      {term.lesson?.course_slug && (
+        <Link
+          to={`/kurse/${term.lesson.course_slug}/${term.lesson.slug}`}
+          className="pressable group mt-6 flex items-center gap-4 rounded-xl bg-card p-4 shadow-card transition-shadow hover:shadow-raised"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><BookOpen className="size-5" /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs text-muted-foreground">Ausführlich erklärt in der Lektion</span>
+            <span className="block truncate font-medium">{term.lesson.title}</span>
+          </span>
+          <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
+        </Link>
+      )}
+
+      {term.related.length > 0 && (
+        <section className="mt-12">
+          <h2 className="mb-4 text-base font-semibold">Verwandte Begriffe</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {term.related.map((related) => (
+              <Link key={related.slug} to={`/lexikon/${related.slug}`} className="pressable rounded-xl bg-card p-4 shadow-card transition-shadow hover:shadow-raised">
+                <p className="font-medium">{related.term}</p>
+                <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{related.short}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}
+
+function AppleTerm({ term }: { term: TermDetail }) {
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <Link to="/lexikon" className="-ml-1.5 inline-flex items-center text-[1.0625rem] text-primary hover:opacity-70"><ChevronLeft className="size-6" strokeWidth={2.25} /> Lexikon</Link>
       <header className="mt-4 flex items-start gap-3">
-        <span className={cn('flex size-12 shrink-0 items-center justify-center', apple ? 'rounded-[0.75rem] bg-primary text-white' : 'rounded-2xl bg-brand/12 text-brand')}><BookA className="size-6" /></span>
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-[0.75rem] bg-primary text-white"><BookA className="size-6" /></span>
         <div className="flex-1">
-          <h1 className={cn(apple ? 'large-title' : 'text-3xl font-bold tracking-tight sm:text-4xl')}>{term.term}</h1>
+          <h1 className="large-title">{term.term}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{term.category}</Badge>
             {term.aliases.map((alias) => <Badge key={alias} variant="outline">{alias}</Badge>)}
@@ -55,39 +117,29 @@ export function TermPage() {
       )}
 
       {term.lesson?.course_slug && (
-        apple ? (
-          <div className="grouped mt-6">
-            <Link to={`/kurse/${term.lesson.course_slug}/${term.lesson.slug}`} className="cell">
-              <span className="icon-tile bg-[#ff9500]"><BookOpen /></span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[0.8125rem] text-muted-foreground">Ausführlich erklärt in der Lektion</p>
-                <p className="truncate text-[1.0625rem]">{term.lesson.title}</p>
-              </div>
-              <ChevronRight className="size-4 shrink-0 text-muted-foreground/45" strokeWidth={2.5} />
-            </Link>
-          </div>
-        ) : (
-          <Link to={`/kurse/${term.lesson.course_slug}/${term.lesson.slug}`} className="mt-6 flex items-center gap-3 rounded-xl border p-4 transition-colors hover:border-brand/50">
-            <BookOpen className="size-5 text-brand" />
-            <div>
-              <p className="text-xs text-muted-foreground">Ausführlich erklärt in der Lektion</p>
-              <p className="font-medium">{term.lesson.title}</p>
+        <div className="grouped mt-6">
+          <Link to={`/kurse/${term.lesson.course_slug}/${term.lesson.slug}`} className="cell">
+            <span className="icon-tile bg-[#ff9500]"><BookOpen /></span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.8125rem] text-muted-foreground">Ausführlich erklärt in der Lektion</p>
+              <p className="truncate text-[1.0625rem]">{term.lesson.title}</p>
             </div>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground/45" strokeWidth={2.5} />
           </Link>
-        )
+        </div>
       )}
 
       {term.related.length > 0 && (
         <section className="mt-10">
-          <h2 className={cn(apple ? 'section-header' : 'mb-3 font-semibold')}>Verwandte Begriffe</h2>
-          <div className={cn(apple ? 'grouped' : 'grid gap-2 sm:grid-cols-2')}>
+          <h2 className="section-header">Verwandte Begriffe</h2>
+          <div className="grouped">
             {term.related.map((related) => (
-              <Link key={related.slug} to={`/lexikon/${related.slug}`} className={cn(apple ? 'cell' : 'rounded-xl border p-3 transition-colors hover:border-brand/50')}>
+              <Link key={related.slug} to={`/lexikon/${related.slug}`} className="cell">
                 <div className="min-w-0 flex-1">
-                  <p className={cn(apple ? 'text-[1.0625rem]' : 'font-medium')}>{related.term}</p>
+                  <p className="text-[1.0625rem]">{related.term}</p>
                   <p className="line-clamp-1 text-sm text-muted-foreground">{related.short}</p>
                 </div>
-                {apple && <ChevronRight className="size-4 shrink-0 text-muted-foreground/45" strokeWidth={2.5} />}
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground/45" strokeWidth={2.5} />
               </Link>
             ))}
           </div>

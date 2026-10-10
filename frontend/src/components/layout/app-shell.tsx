@@ -69,7 +69,7 @@ export function AppShell() {
         )}
       />
 
-      <header className={cn('sticky top-0 z-40', apple ? 'material' : 'border-b bg-[var(--app-header)]')}>
+      <header className={cn('sticky top-0 z-40', apple ? 'material' : 'border-b bg-[var(--app-header)] backdrop-blur-md backdrop-saturate-150')}>
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:px-6">
           {!apple && (
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
@@ -110,7 +110,7 @@ export function AppShell() {
                 className={({ isActive }) =>
                   cn(
                     'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
-                    isActive && (apple ? 'text-primary' : 'text-foreground'),
+                    isActive && (apple ? 'text-primary' : 'bg-muted text-foreground'),
                   )
                 }
               >
@@ -174,17 +174,41 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <footer className={cn('py-8 text-sm text-muted-foreground', !apple && 'border-t')}>
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6">
-          <span>Stacklab · Open Source (MIT)</span>
-          <p className="text-center">
-            von{' '}
-            <a className="text-foreground hover:underline" href="https://github.com/SynKeles44" target="_blank" rel="noreferrer">SynKeles44</a>
-            {' · '}
-            <a className="hover:underline" href="https://github.com/SynKeles44/stacklab" target="_blank" rel="noreferrer">Quellcode auf GitHub</a>
-          </p>
-        </div>
-      </footer>
+      {apple ? (
+        <footer className={cn('py-8 text-sm text-muted-foreground', !apple && 'border-t')}>
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6">
+            <span>Stacklab · Open Source (MIT)</span>
+            <p className="text-center">
+              von{' '}
+              <a className="text-foreground hover:underline" href="https://github.com/SynKeles44" target="_blank" rel="noreferrer">SynKeles44</a>
+              {' · '}
+              <a className="hover:underline" href="https://github.com/SynKeles44/stacklab" target="_blank" rel="noreferrer">Quellcode auf GitHub</a>
+            </p>
+          </div>
+        </footer>
+      ) : (
+        <footer className="border-t text-sm text-muted-foreground">
+          <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+            <div className="max-w-xs">
+              <Logo className="text-foreground" />
+              <p className="mt-3 leading-relaxed">IT lernen, indem du es tust. Open Source unter MIT-Lizenz, läuft komplett auf deinem Rechner.</p>
+            </div>
+            <nav aria-label="Fußzeile" className="flex gap-16">
+              <div className="flex flex-col gap-2">
+                <p className="eyebrow mb-1">Lernen</p>
+                <Link to="/kurse" className="hover:text-foreground">Kurse</Link>
+                <Link to="/lexikon" className="hover:text-foreground">Lexikon</Link>
+                <Link to="/suche" className="hover:text-foreground">Suche</Link>
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="eyebrow mb-1">Projekt</p>
+                <a className="hover:text-foreground" href="https://github.com/SynKeles44/stacklab" target="_blank" rel="noreferrer">Quellcode</a>
+                <a className="hover:text-foreground" href="https://github.com/SynKeles44" target="_blank" rel="noreferrer">SynKeles44</a>
+              </div>
+            </nav>
+          </div>
+        </footer>
+      )}
 
       {apple && <TabBar loggedIn={Boolean(user)} onSearch={() => setSearchOpen(true)} />}
       <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} />

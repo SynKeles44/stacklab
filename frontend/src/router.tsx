@@ -2,7 +2,7 @@ import { createBrowserRouter, redirect } from 'react-router'
 import { AppShell } from '@/components/layout/app-shell'
 import { RouteError } from '@/components/common/page-states'
 import { getToken } from '@/lib/auth'
-import { Api } from '@/lib/api'
+import { Api, ApiError } from '@/lib/api'
 import { HomePage } from '@/pages/home'
 import { CoursesPage } from '@/pages/courses'
 import { CoursePage } from '@/pages/course'
@@ -27,6 +27,11 @@ function requireAuth({ request }: { request: Request }) {
   return null
 }
 
+function signedOut(error: unknown): null {
+  if (error instanceof ApiError && error.status === 401) return null
+  throw error
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -41,7 +46,7 @@ export const router = createBrowserRouter([
             element: <HomePage />,
             loader: async ({ request }) => ({
               courses: (await Api.courses(request.signal)).courses,
-              dashboard: getToken() ? await Api.dashboard(request.signal) : null,
+              dashboard: getToken() ? await Api.dashboard(request.signal).catch(signedOut) : null,
             }),
           },
           { path: 'kurse', element: <CoursesPage />, loader: async ({ request }) => (await Api.courses(request.signal)).courses },

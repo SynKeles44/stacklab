@@ -26,9 +26,9 @@ export function CodeBlock({ language, title, raw, children }: { language: string
   const label = title ?? (language ? (LANGUAGE_LABELS[language] ?? language) : null)
 
   return (
-    <div className="group not-prose relative overflow-hidden rounded-xl border border-white/10 bg-[oklch(0.19_0.03_285)] text-[0.875rem] shadow-sm">
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-1.5">
-        <span className="text-xs font-medium text-white/60">{label}</span>
+    <div className="group not-prose relative overflow-hidden rounded-xl bg-[var(--code)] text-[0.84rem] ring-1 ring-black/5 dark:ring-white/10">
+      <div className="flex items-center justify-between border-b border-white/[0.07] py-1 pr-1.5 pl-4">
+        <span className="font-mono text-[0.6875rem] font-medium tracking-[0.04em] text-white/50 uppercase">{label}</span>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -39,7 +39,7 @@ export function CodeBlock({ language, title, raw, children }: { language: string
           {copied ? <Check /> : <Copy />}
         </Button>
       </div>
-      <pre className="overflow-x-auto p-4 leading-relaxed [-webkit-overflow-scrolling:touch]">
+      <pre className="overflow-x-auto px-4 py-3.5 leading-[1.7] [-webkit-overflow-scrolling:touch]">
         <code className="hljs font-mono">{children}</code>
       </pre>
     </div>

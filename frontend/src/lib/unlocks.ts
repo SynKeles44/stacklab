@@ -12,6 +12,10 @@ const pending = new Set<string>()
 let timer: number | undefined
 let counter = 0
 
+export function isKnownTerm(slug: string): boolean {
+  return known.has(slug)
+}
+
 export function markKnown(slugs: string[]): void {
   slugs.forEach((slug) => known.add(slug))
 }
