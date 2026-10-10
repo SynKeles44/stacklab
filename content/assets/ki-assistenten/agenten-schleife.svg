@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="450" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Die Schleife eines Coding-Agenten</text>
+  <rect x="30" y="190" width="150" height="70" rx="10" fill="#e8fbf3" stroke="#34d399" stroke-width="2"/>
+  <text x="105" y="220" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Aufgabe</text>
+  <text x="105" y="242" text-anchor="middle" font-size="13" fill="#1e1b3a">von dir</text>
+  <path d="M180 225 L250 225" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <rect x="255" y="80" width="200" height="70" rx="10" fill="#f3efff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="355" y="110" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Planen</text>
+  <text x="355" y="132" text-anchor="middle" font-size="13" fill="#1e1b3a">Modell wählt den nächsten Schritt</text>
+  <rect x="560" y="80" width="230" height="70" rx="10" fill="#e0f7fb" stroke="#22d3ee" stroke-width="2"/>
+  <text x="675" y="110" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Werkzeug aufrufen</text>
+  <text x="675" y="132" text-anchor="middle" font-size="13" fill="#1e1b3a">Datei lesen, ändern, Befehl ausführen</text>
+  <rect x="560" y="300" width="230" height="70" rx="10" fill="#e0f7fb" stroke="#22d3ee" stroke-width="2"/>
+  <text x="675" y="330" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Ergebnis beobachten</text>
+  <text x="675" y="352" text-anchor="middle" font-size="13" fill="#1e1b3a">Ausgabe landet im Kontext</text>
+  <rect x="255" y="300" width="200" height="70" rx="10" fill="#fff6e6" stroke="#f59e0b" stroke-width="2"/>
+  <text x="355" y="330" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Ziel erreicht?</text>
+  <text x="355" y="352" text-anchor="middle" font-size="13" fill="#1e1b3a">sonst nächste Runde</text>
+  <path d="M455 115 L555 115" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M675 150 L675 295" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M560 335 L460 335" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M355 300 L355 155" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="365" y="232" font-size="13" fill="#1e1b3a">nein</text>
+  <rect x="610" y="185" width="240" height="66" rx="10" fill="#fdecec" stroke="#f87171" stroke-width="2"/>
+  <text x="730" y="212" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Berechtigung</text>
+  <text x="730" y="234" text-anchor="middle" font-size="13" fill="#1e1b3a">erlaubt / nachfragen / verboten</text>
+  <path d="M355 370 L355 420 L560 420" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="365" y="400" font-size="13" fill="#1e1b3a">ja</text>
+  <rect x="565" y="400" width="300" height="50" rx="10" fill="#e8fbf3" stroke="#34d399" stroke-width="2"/>
+  <text x="715" y="430" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Diff + Bericht → du prüfst</text>
+</svg>

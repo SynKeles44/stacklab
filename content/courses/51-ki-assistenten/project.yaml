@@ -1,0 +1,544 @@
+title: Review eines KI-Branches
+description: |
+  Ein Coding-Agent hat für einen kleinen Onlineshop Rabattcodes gebaut. Sein Bericht: „Feature fertig, alle
+  Tests grün.“ Der Branch `ki/rabattcodes` soll heute gemergt werden – nach deinem Review. In diesem Projekt
+  gehst du genau so vor, wie es ein sorgfältiges Team tun würde: Du sichtest die Änderungen, lässt die Tests
+  wirklich laufen, findest eine erfundene API, ergänzt fehlende Tests für Randfälle, entfernst eine erfundene
+  Abhängigkeit und schreibst eine Projekt-Anweisungsdatei, damit der nächste Agent es besser macht.
+
+  Alles passiert im Ordner `projekt` in deinem Workspace für diesen Kurs. Klicke zuerst auf
+  **Projekt vorbereiten**: Dabei entstehen das Repository, der Branch `main` mit dem bestehenden Warenkorb
+  und der Agenten-Branch `ki/rabattcodes`. Öffne dann das Übungs-Terminal und wechsle mit `cd projekt`
+  hinein.
+
+  Die Schritte bauen aufeinander auf. Halte deine Befunde laufend in `REVIEW.md` fest – so entsteht nebenbei
+  die Grundlage für deinen Review-Kommentar.
+goal: >
+  Der Branch `ki/rabattcodes` enthält eine funktionierende `applyDiscount()` ohne erfundene API, Tests ohne
+  `skip` für Normal- und Randfälle, keine erfundene Abhängigkeit, eine `AGENTS.md` mit Befehlen und Regeln
+  und eine `REVIEW.md` mit deinen Befunden – alles in sauberen Commits, `npm test` ist grün.
+workdir: projekt
+setup: |
+  git init -q -b main
+  git config user.name "Stacklab"
+  git config user.email "stacklab@example.com"
+  mkdir -p src test
+  cat > package.json <<'JSON'
+  {
+    "name": "shop-warenkorb",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+      "test": "node --test"
+    }
+  }
+  JSON
+  cat > README.md <<'MD'
+  # Shop-Warenkorb
+
+  Berechnet Warenkorbsummen in Cent. Tests: `npm test`.
+  MD
+  cat > src/cart.js <<'JS'
+  export function subtotal(items) {
+    return items.reduce((sum, item) => sum + item.priceCents * item.qty, 0);
+  }
+
+  export function formatEuro(cents) {
+    return (cents / 100).toFixed(2).replace('.', ',') + ' €';
+  }
+  JS
+  cat > test/cart.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { subtotal, formatEuro } from '../src/cart.js';
+
+  test('sums price times quantity', () => {
+    assert.equal(subtotal([{ priceCents: 250, qty: 2 }, { priceCents: 100, qty: 1 }]), 600);
+  });
+
+  test('formats cents as euro', () => {
+    assert.equal(formatEuro(1999), '19,99 €');
+  });
+  JS
+  git add -A
+  git commit -q -m "feat: add cart subtotal and euro formatting"
+  git switch -q -c ki/rabattcodes
+  git config user.name "Coding Agent"
+  cat > src/discount.js <<'JS'
+  import { subtotal } from './cart.js';
+
+  const CODES = { SPAR10: 10, SPAR20: 20 };
+
+  export function applyDiscount(items, code) {
+    const percent = CODES[code.toUpperCase()] ?? 0;
+    const total = items.sumBy((item) => item.priceCents * item.qty);
+    return Math.round(total - (total * percent) / 100);
+  }
+  JS
+  cat > test/discount.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { applyDiscount } from '../src/discount.js';
+
+  const items = [{ priceCents: 1000, qty: 2 }];
+
+  test.skip('applies SPAR10', () => {
+    assert.equal(applyDiscount(items, 'SPAR10'), 1800);
+  });
+
+  test.skip('ignores unknown codes', () => {
+    assert.equal(applyDiscount(items, 'GRATIS'), 2000);
+  });
+  JS
+  git add -A
+  git commit -q -m "feat: add discount codes"
+  cat > package.json <<'JSON'
+  {
+    "name": "shop-warenkorb",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+      "test": "node --test"
+    },
+    "dependencies": {
+      "cart-total-helper-pro": "^3.2.0"
+    }
+  }
+  JSON
+  git commit -q -am "chore: add cart helper dependency"
+  git config user.name "Stacklab"
+  git switch -q main
+steps:
+  - id: branch-sichten
+    title: Den Agenten-Branch sichten
+    description: |
+      Bevor du eine Zeile änderst, verschaffst du dir einen Überblick: Was hat der Agent eigentlich getan?
+
+      1. Wechsle auf den Branch `ki/rabattcodes`.
+      2. Sieh dir die Commits an, die nicht auf `main` sind: `git log --oneline main..ki/rabattcodes`.
+      3. Lass dir alle geänderten Dateien anzeigen: `git diff --stat main...ki/rabattcodes`.
+      4. Lege `REVIEW.md` an mit der Überschrift `# Review ki/rabattcodes`, einem Abschnitt
+         `## Geänderte Dateien` und darunter einer Zeile pro geänderter Datei.
+    checklist:
+      - Auf Branch `ki/rabattcodes` gewechselt
+      - Commits und geänderte Dateien gesichtet
+      - "`REVIEW.md` mit allen geänderten Dateien angelegt"
+    hints:
+      - "`git switch ki/rabattcodes` wechselt den Branch."
+      - "Drei Dateien wurden geändert: der Rabatt-Code, seine Tests und die `package.json`."
+      - "`git diff --name-only main...ki/rabattcodes` liefert genau die Liste für REVIEW.md."
+    checks:
+      - type: command
+        run: git branch --show-current
+        stdout_equals: ki/rabattcodes
+        message: Wechsle mit `git switch ki/rabattcodes` auf den Agenten-Branch.
+      - type: file_contains
+        path: REVIEW.md
+        pattern: "^## Geänderte Dateien"
+        message: REVIEW.md braucht einen Abschnitt `## Geänderte Dateien`.
+      - type: file_contains
+        path: REVIEW.md
+        pattern: "src/discount\\.js"
+        message: In REVIEW.md fehlt src/discount.js in der Liste der geänderten Dateien.
+      - type: file_contains
+        path: REVIEW.md
+        pattern: "test/discount\\.test\\.js"
+        message: In REVIEW.md fehlt test/discount.test.js in der Liste der geänderten Dateien.
+      - type: file_contains
+        path: REVIEW.md
+        pattern: "package\\.json"
+        message: In REVIEW.md fehlt package.json in der Liste der geänderten Dateien.
+    solution: |
+      ```bash
+      cd projekt
+      git switch ki/rabattcodes
+      git log --oneline main..ki/rabattcodes
+      git diff --stat main...ki/rabattcodes
+      cat > REVIEW.md <<'EOF'
+      # Review ki/rabattcodes
+
+      ## Geänderte Dateien
+      - src/discount.js
+      - test/discount.test.js
+      - package.json
+
+      ## Befunde
+      EOF
+      ```
+    solve: |
+      git switch -q ki/rabattcodes
+      cat > REVIEW.md <<'EOF'
+      # Review ki/rabattcodes
+
+      ## Geänderte Dateien
+      - src/discount.js
+      - test/discount.test.js
+      - package.json
+
+      ## Befunde
+      EOF
+  - id: tests-wirklich-ausfuehren
+    title: Die übersprungenen Tests aktivieren
+    description: |
+      „Alle Tests grün“ – stimmt sogar. Aber nur, weil die Tests für das neue Feature gar nicht laufen.
+
+      1. Führe `npm test` aus und lies die Zusammenfassung genau: Wie viele Tests wurden übersprungen?
+      2. Öffne `test/discount.test.js` und entferne bei beiden Tests das `.skip`.
+      3. Führe `npm test` erneut aus. Jetzt wird es rot – das ist der erste echte Befund.
+      4. Notiere in `REVIEW.md` unter `## Befunde`, dass der Agent die Tests übersprungen hat (das Wort
+         `skip` oder `übersprungen` soll vorkommen).
+
+      In diesem Schritt reparierst du noch nichts. Rote Tests sind hier das gewünschte Ergebnis.
+    checklist:
+      - Übersprungene Tests in der Testausgabe entdeckt
+      - "`.skip` aus `test/discount.test.js` entfernt"
+      - Befund in REVIEW.md notiert
+    hints:
+      - "In der Ausgabe von `npm test` steht eine Zeile mit `skipped`."
+      - "`sed -i 's/test.skip(/test(/' test/discount.test.js` entfernt beide `.skip` auf einmal."
+    checks:
+      - type: command
+        run: "! grep -rEq '\\.(skip|todo)\\(' test"
+        message: In den Tests steht noch `.skip` oder `.todo`. Entferne es, damit die Tests wirklich laufen.
+      - type: command
+        run: "grep -c \"applyDiscount(items, 'SPAR10')\" test/discount.test.js"
+        stdout_matches: "^[1-9][0-9]*$"
+        message: Der Test für SPAR10 fehlt. Entferne nur das `.skip` – lösche keine Tests.
+      - type: file_contains
+        path: REVIEW.md
+        pattern: "([Ss]kip|[Üü]bersprungen)"
+        message: Notiere in REVIEW.md, dass die Rabatt-Tests übersprungen wurden (skip).
+    solution: |
+      ```bash
+      npm test                       # "skipped 2"
+      sed -i 's/test.skip(/test(/' test/discount.test.js
+      npm test                       # rot: items.sumBy is not a function
+      echo '- Die Rabatt-Tests waren mit test.skip übersprungen – "alle Tests grün" stimmte nur deshalb.' >> REVIEW.md
+      ```
+    solve: |
+      sed -i 's/test.skip(/test(/' test/discount.test.js
+      echo '- Die Rabatt-Tests waren mit test.skip übersprungen.' >> REVIEW.md
+  - id: erfundene-api
+    title: Die erfundene API ersetzen
+    description: |
+      Die Tests scheitern mit `TypeError: items.sumBy is not a function`. Eine Methode `sumBy` gibt es für
+      Arrays in JavaScript nicht – der Agent hat sie erfunden, vermutlich weil viele Hilfsbibliotheken sie
+      anbieten.
+
+      1. Prüfe die Behauptung selbst: `node -e "console.log(typeof [].sumBy)"`.
+      2. Sieh dir `src/discount.js` genau an: Der Agent importiert `subtotal` aus `cart.js` – und benutzt es
+         nicht. Nutze genau diese vorhandene Funktion statt `sumBy`.
+      3. `npm test` muss jetzt grün sein.
+      4. Notiere den Befund in `REVIEW.md` (das Wort `sumBy` soll vorkommen).
+    checklist:
+      - Erfundene Methode mit einem Node-Einzeiler bestätigt
+      - "`sumBy` durch die vorhandene Funktion `subtotal()` ersetzt"
+      - "`npm test` ist grün"
+      - Befund in REVIEW.md notiert
+    hints:
+      - Vorhandenen Projektcode wiederzuverwenden ist besser als eine neue Hilfsfunktion.
+      - "Die Zeile wird zu `const total = subtotal(items);`."
+    checks:
+      - type: command
+        run: "! grep -rq 'sumBy' src"
+        message: src/discount.js ruft noch die erfundene Methode sumBy auf.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cat > "$d/check.mjs" <<'JS'
+          import { applyDiscount } from '../src/discount.js';
+          const items = [{ priceCents: 1000, qty: 2 }, { priceCents: 250, qty: 1 }];
+          process.exit(applyDiscount(items, 'SPAR10') === 2025 && applyDiscount(items, 'SPAR20') === 1800 ? 0 : 1);
+          JS
+          node "$d/check.mjs"; rc=$?; rm -rf "$d"; exit $rc
+        message: applyDiscount() rechnet noch nicht richtig. Nutze subtotal(items) für die Summe.
+      - type: command
+        run: node --test
+        message: "`npm test` ist noch nicht grün."
+      - type: file_contains
+        path: REVIEW.md
+        pattern: "sumBy"
+        message: Notiere in REVIEW.md, dass sumBy eine erfundene API war.
+    solution: |
+      ```bash
+      node -e "console.log(typeof [].sumBy)"     # undefined
+      sed -i 's/const total = items.sumBy((item) => item.priceCents \* item.qty);/const total = subtotal(items);/' src/discount.js
+      npm test
+      echo '- items.sumBy() gibt es nicht (erfundene API); ersetzt durch subtotal() aus cart.js.' >> REVIEW.md
+      ```
+    solve: |
+      sed -i 's/const total = items.sumBy((item) => item.priceCents \* item.qty);/const total = subtotal(items);/' src/discount.js
+      echo '- items.sumBy() gibt es nicht (erfundene API); ersetzt durch subtotal().' >> REVIEW.md
+  - id: randfaelle-testen
+    title: Randfälle testen und absichern
+    description: |
+      Der Agent hat nur den Normalfall bedacht. Im Shop kommen aber auch diese Fälle vor:
+
+      - Es wurde **gar kein** Code eingegeben (`applyDiscount(items)`) → voller Preis, kein Absturz.
+      - Der Code ist kleingeschrieben (`'spar20'`) → wird trotzdem erkannt.
+      - Der Code ist unbekannt (`'GRATIS'`) → voller Preis (diesen Test gibt es schon).
+
+      1. Schreibe in `test/discount.test.js` Tests für **fehlenden Code** und **Kleinschreibung**.
+      2. Führe `npm test` aus – mindestens einer wird rot.
+      3. Behebe den Fehler in `src/discount.js`, ohne die Tests aufzuweichen.
+      4. Notiere den Befund in `REVIEW.md` (das Wort `Randfall` oder `Randfälle` soll vorkommen).
+
+      Stacklab prüft zusätzlich, ob deine Tests den ursprünglichen Fehler wirklich erkennen würden.
+    checklist:
+      - Test für fehlenden Rabattcode ergänzt
+      - Test für kleingeschriebenen Code ergänzt
+      - "`applyDiscount()` stürzt ohne Code nicht mehr ab"
+      - Befund in REVIEW.md notiert
+    hints:
+      - "Ohne zweites Argument ist `code` gleich `undefined` – und `undefined.toUpperCase()` wirft einen TypeError."
+      - "Optional Chaining hilft: `CODES[code?.toUpperCase()] ?? 0`."
+      - "Ein Test: `assert.equal(applyDiscount(items), 2000);`"
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cat > "$d/check.mjs" <<'JS'
+          import { applyDiscount } from '../src/discount.js';
+          const items = [{ priceCents: 1000, qty: 2 }];
+          const ok = applyDiscount(items) === 2000 && applyDiscount(items, 'spar20') === 1600
+            && applyDiscount(items, 'GRATIS') === 2000 && applyDiscount([], 'SPAR10') === 0;
+          process.exit(ok ? 0 : 1);
+          JS
+          node "$d/check.mjs"; rc=$?; rm -rf "$d"; exit $rc
+        message: applyDiscount() behandelt noch nicht alle Fälle richtig – ohne Code soll der volle Preis herauskommen, kleingeschriebene Codes sollen funktionieren.
+      - type: command
+        run: node --test
+        message: "`npm test` ist nicht grün."
+      - type: command
+        run: "grep -Ec '^\\s*test\\(' test/discount.test.js"
+        stdout_matches: "^([4-9]|[1-9][0-9]+)$"
+        message: In test/discount.test.js sollen mindestens vier Tests stehen – ergänze die Tests für fehlenden Code und Kleinschreibung.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          survivors=0
+          for mutant in "s/CODES\\[code?\\.toUpperCase()\\]/CODES[code.toUpperCase()]/" "s/CODES\\[code?\\.toUpperCase()\\]/CODES[code]/"; do
+            rm -rf "$d/m" && mkdir -p "$d/m/src" "$d/m/test"
+            cp package.json "$d/m/" && cp src/*.js "$d/m/src/" && cp test/*.js "$d/m/test/"
+            cat > "$d/m/src/discount.js" <<'JS'
+          import { subtotal } from './cart.js';
+          const CODES = { SPAR10: 10, SPAR20: 20 };
+          export function applyDiscount(items, code) {
+            const percent = CODES[code?.toUpperCase()] ?? 0;
+            const total = subtotal(items);
+            return Math.round(total - (total * percent) / 100);
+          }
+          JS
+            sed -i "$mutant" "$d/m/src/discount.js"
+            if (cd "$d/m" && node --test >/dev/null 2>&1); then survivors=$((survivors + 1)); fi
+          done
+          rm -rf "$d"
+          echo "$survivors"
+        stdout_equals: "0"
+        message: "Deine Tests würden nicht bemerken, wenn der Code ohne Rabattcode abstürzt oder kleingeschriebene Codes ignoriert. Teste `applyDiscount(items)` und `applyDiscount(items, 'spar20')`."
+      - type: file_contains
+        path: REVIEW.md
+        pattern: "Randf[aä]ll"
+        message: Notiere in REVIEW.md die fehlenden Randfälle als Befund.
+    solution: |
+      ```bash
+      cat >> test/discount.test.js <<'EOF'
+
+      test('works without a code', () => {
+        assert.equal(applyDiscount(items), 2000);
+      });
+
+      test('accepts lowercase codes', () => {
+        assert.equal(applyDiscount(items, 'spar20'), 1600);
+      });
+      EOF
+      npm test                                         # rot: Cannot read properties of undefined
+      sed -i 's/CODES\[code.toUpperCase()\]/CODES[code?.toUpperCase()]/' src/discount.js
+      npm test
+      echo '- Randfälle fehlten: ohne Code stürzte applyDiscount ab; Tests ergänzt und mit ?. behoben.' >> REVIEW.md
+      ```
+    solve: |
+      cat >> test/discount.test.js <<'EOF'
+
+      test('works without a code', () => {
+        assert.equal(applyDiscount(items), 2000);
+      });
+
+      test('accepts lowercase codes', () => {
+        assert.equal(applyDiscount(items, 'spar20'), 1600);
+      });
+      EOF
+      sed -i 's/CODES\[code.toUpperCase()\]/CODES[code?.toUpperCase()]/' src/discount.js
+      echo '- Randfälle fehlten: ohne Code stürzte applyDiscount ab.' >> REVIEW.md
+  - id: abhaengigkeit-pruefen
+    title: Die erfundene Abhängigkeit entfernen
+    description: |
+      Im zweiten Commit hat der Agent eine Abhängigkeit `cart-total-helper-pro` hinzugefügt. Niemand hat sie
+      installiert, und der Code benutzt sie nicht.
+
+      1. Prüfe mit `npm view cart-total-helper-pro name`, ob es das Paket überhaupt gibt.
+      2. Prüfe mit `grep -rn "cart-total-helper-pro" src test`, ob es irgendwo verwendet wird.
+      3. Entferne die Abhängigkeit aus `package.json`. **Installiere nichts.**
+      4. Notiere den Befund in `REVIEW.md` (der Paketname soll vorkommen).
+
+      Selbst wenn das Paket inzwischen existieren sollte: Eine ungenutzte Abhängigkeit mit einem Namen, den
+      ein Agent vorgeschlagen hat, ist ein Slopsquatting-Risiko und fliegt raus.
+    checklist:
+      - Paket in der Registry geprüft
+      - Keine Verwendung im Code gefunden
+      - Abhängigkeit aus package.json entfernt
+      - Befund in REVIEW.md notiert
+    hints:
+      - "`npm view` meldet `E404`, wenn es ein Paket nicht gibt."
+      - "`jq 'del(.dependencies)' package.json > p.json && mv p.json package.json` entfernt den ganzen Block – er enthält ja nur dieses Paket."
+    checks:
+      - type: command
+        run: "jq -r '.dependencies // {} | has(\"cart-total-helper-pro\")' package.json"
+        stdout_equals: "false"
+        message: cart-total-helper-pro steht noch in package.json.
+      - type: command
+        run: "jq -r '.scripts.test' package.json"
+        stdout_equals: "node --test"
+        message: Der Testbefehl in package.json soll erhalten bleiben – entferne nur die Abhängigkeit.
+      - type: file_absent
+        path: node_modules
+        message: Es wurde npm install ausgeführt. Lösche node_modules wieder – hier wird nichts installiert.
+      - type: file_contains
+        path: REVIEW.md
+        pattern: "cart-total-helper-pro"
+        message: Notiere in REVIEW.md, dass cart-total-helper-pro entfernt wurde.
+    solution: |
+      ```bash
+      npm view cart-total-helper-pro name     # E404
+      grep -rn "cart-total-helper-pro" src test
+      jq 'del(.dependencies)' package.json > p.json && mv p.json package.json
+      echo '- cart-total-helper-pro existiert nicht in der Registry und wird nicht benutzt – entfernt.' >> REVIEW.md
+      ```
+    solve: |
+      jq 'del(.dependencies)' package.json > p.json && mv p.json package.json
+      echo '- cart-total-helper-pro existiert nicht und wird nicht benutzt – entfernt.' >> REVIEW.md
+  - id: agents-md-schreiben
+    title: Eine Projekt-Anweisungsdatei schreiben
+    description: |
+      Alle drei Probleme hätte ein Agent vermeiden können, wenn er die Regeln des Projekts gekannt hätte. Lege
+      deshalb eine `AGENTS.md` an – kurz, konkret, höchstens 40 Zeilen.
+
+      Sie soll enthalten:
+
+      1. den Testbefehl `npm test`,
+      2. eine Regel zu **Abhängigkeiten** (keine neuen ohne Rückfrage),
+      3. eine Regel, dass Tests nie übersprungen (`skip`) oder gelöscht werden, um sie grün zu bekommen,
+      4. den Hinweis, vorhandene Funktionen wie `subtotal()` aus `src/cart.js` wiederzuverwenden, statt neue
+         Hilfen zu erfinden.
+    checklist:
+      - "`AGENTS.md` mit Testbefehl"
+      - Regel zu Abhängigkeiten
+      - Regel gegen übersprungene oder gelöschte Tests
+      - Hinweis auf vorhandene Funktionen
+    hints:
+      - Schau dir zur Inspiration die Beispiel-AGENTS.md aus der Lektion „Den richtigen Kontext geben“ an.
+      - Jede Regel ist eine kurze Zeile in einer Liste – keine langen Erklärungen.
+    checks:
+      - type: file_contains
+        path: AGENTS.md
+        pattern: "npm test"
+        message: Nenne in AGENTS.md den Testbefehl npm test.
+      - type: file_contains
+        path: AGENTS.md
+        pattern: "[Aa]bhängigkeit|[Dd]ependenc|[Pp]aket"
+        message: Ergänze eine Regel zu neuen Abhängigkeiten (Pakete).
+      - type: file_contains
+        path: AGENTS.md
+        pattern: "[Ss]kip|[Üü]berspring"
+        message: Ergänze eine Regel, dass Tests nicht übersprungen (skip) oder gelöscht werden.
+      - type: file_contains
+        path: AGENTS.md
+        pattern: "subtotal|src/cart\\.js"
+        message: Weise darauf hin, vorhandene Funktionen wie subtotal() aus src/cart.js wiederzuverwenden.
+      - type: command
+        run: "test $(wc -l < AGENTS.md) -le 40"
+        message: AGENTS.md ist zu lang – höchstens 40 Zeilen.
+    solution: |
+      ```bash
+      cat > AGENTS.md <<'EOF'
+      # AGENTS.md
+
+      ## Befehle
+      - Tests: `npm test` (Node-Testrunner, Tests in `test/`)
+
+      ## Regeln
+      - Keine neuen Abhängigkeiten (Pakete) ohne Rückfrage.
+      - Tests nie überspringen (`skip`), löschen oder ihre Erwartungen anpassen, um sie grün zu bekommen.
+      - Vorhandene Funktionen wiederverwenden, z. B. `subtotal()` aus `src/cart.js`, statt Hilfen zu erfinden.
+      - Beträge immer in Cent als ganze Zahlen.
+      EOF
+      ```
+    solve: |
+      cat > AGENTS.md <<'EOF'
+      # AGENTS.md
+
+      ## Befehle
+      - Tests: `npm test`
+
+      ## Regeln
+      - Keine neuen Abhängigkeiten (Pakete) ohne Rückfrage.
+      - Tests nie überspringen (`skip`) oder löschen, um sie grün zu bekommen.
+      - Vorhandene Funktionen wiederverwenden, z. B. `subtotal()` aus `src/cart.js`.
+      EOF
+  - id: sauber-committen
+    title: Sauber committen
+    description: |
+      Zum Schluss landen deine Korrekturen in nachvollziehbaren Commits auf dem Branch `ki/rabattcodes`.
+
+      1. Committe die Korrekturen an Code, Tests und `package.json` mit mindestens einer Message vom Typ
+         `fix` (gern auch mehrere Commits, z. B. `test:` für die neuen Tests).
+      2. Committe `AGENTS.md` und `REVIEW.md` mit einer Message vom Typ `docs`.
+      3. Am Ende ist das Arbeitsverzeichnis sauber und `npm test` grün.
+
+      Den Merge nach `main` machst du in einem echten Team erst nach dem Review einer zweiten Person – hier
+      bleibt der Branch, wie er ist.
+    checklist:
+      - Korrekturen als fix-Commit(s) auf ki/rabattcodes
+      - AGENTS.md und REVIEW.md als docs-Commit
+      - Arbeitsverzeichnis sauber, Tests grün
+    hints:
+      - "`git add src test package.json && git commit -m \"fix: repair discount codes and edge cases\"`"
+      - "`git add AGENTS.md REVIEW.md && git commit -m \"docs: add agent rules and review notes\"`"
+    checks:
+      - type: command
+        run: git branch --show-current
+        stdout_equals: ki/rabattcodes
+        message: Committe auf dem Branch ki/rabattcodes.
+      - type: command
+        run: "git log --format=%s main..HEAD | grep -Ec '^fix(\\([^()]+\\))?!?: '"
+        stdout_matches: "^[1-9][0-9]*$"
+        message: "Es fehlt ein Commit vom Typ fix für deine Korrekturen, z. B. `fix: repair discount codes and edge cases`."
+      - type: command
+        run: "git log --format=%s main..HEAD | grep -Ec '^docs(\\([^()]+\\))?!?: '"
+        stdout_matches: "^[1-9][0-9]*$"
+        message: "Es fehlt ein Commit vom Typ docs für AGENTS.md und REVIEW.md."
+      - type: command
+        run: git ls-files AGENTS.md REVIEW.md | wc -l
+        stdout_matches: "^\\s*2\\s*$"
+        message: AGENTS.md und REVIEW.md sind noch nicht beide committet.
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen.
+      - type: command
+        run: node --test
+        message: "`npm test` ist nicht grün."
+    solution: |
+      ```bash
+      git add src test package.json
+      git commit -m "fix: repair discount codes and edge cases"
+      git add AGENTS.md REVIEW.md
+      git commit -m "docs: add agent rules and review notes"
+      git status
+      git log --oneline main..HEAD
+      ```
+    solve: |
+      git add src test package.json
+      git commit -q -m "fix: repair discount codes and edge cases"
+      git add AGENTS.md REVIEW.md
+      git commit -q -m "docs: add agent rules and review notes"

@@ -1,0 +1,114 @@
+title: Assistenten gut beauftragen
+description: Aufgaben mit Ziel, Kontext, Einschränkungen und Akzeptanzkriterien beschreiben, den richtigen Kontext geben und in kleinen, geprüften Schritten arbeiten.
+exercise:
+  id: modul-uebung-auftrag
+  type: terminal
+  title: Einen Auftrag für einen Agenten vorbereiten
+  description: |
+    Im Ordner `newsletter` liegt ein kleines Node-Projekt. Ein Fehlerbericht sagt: „Bei der
+    Newsletter-Anmeldung wird `max+news@example.com` als ungültig abgelehnt.“ Bevor ein Agent den Fehler
+    beheben darf, bereitest du den Auftrag so vor, dass er kaum missverstanden werden kann.
+
+    1. Finde die zuständige Funktion (`grep -rn "isValidEmail" src`) und den Testbefehl (`cat package.json`).
+    2. Lege `AUFGABE.md` mit genau diesen vier Überschriften an: `## Ziel`, `## Kontext`,
+       `## Einschränkungen` und `## Akzeptanzkriterien`. Nenne darin die Datei `src/email.js`, den
+       Testbefehl `npm test` und die Beispieladresse `max+news@example.com`.
+    3. Schreibe den Auftrag **ausführbar**: Ergänze in `test/email.test.js` einen Test, der prüft, dass
+       `isValidEmail('max+news@example.com')` `true` liefert. Dieser Test **muss jetzt fehlschlagen** – er
+       beschreibt das gewünschte Verhalten.
+    4. Ändere `src/email.js` **nicht** – das ist später die Aufgabe des Agenten.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit das Projekt angelegt wird.
+  workdir: newsletter
+  setup: |
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    mkdir -p src test
+    printf '{\n  "name": "newsletter",\n  "type": "module",\n  "scripts": { "test": "node --test" }\n}\n' > package.json
+    cat > src/email.js <<'JS'
+    export function isValidEmail(value) {
+      return /^[a-z0-9._-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(value);
+    }
+    JS
+    cat > test/email.test.js <<'JS'
+    import { test } from 'node:test';
+    import assert from 'node:assert/strict';
+    import { isValidEmail } from '../src/email.js';
+
+    test('accepts a normal address', () => {
+      assert.equal(isValidEmail('user@example.com'), true);
+    });
+
+    test('rejects an address without domain', () => {
+      assert.equal(isValidEmail('user@'), false);
+    });
+    JS
+    git add -A
+    git commit -q -m "chore: initial commit"
+  checks:
+    - type: file_exists
+      path: AUFGABE.md
+      message: Lege die Datei AUFGABE.md an.
+    - type: command
+      run: "grep -Ec '^## (Ziel|Kontext|Einschränkungen|Akzeptanzkriterien)\\s*$' AUFGABE.md"
+      stdout_matches: "^4$"
+      message: "AUFGABE.md braucht genau die vier Überschriften `## Ziel`, `## Kontext`, `## Einschränkungen` und `## Akzeptanzkriterien`."
+    - type: file_contains
+      path: AUFGABE.md
+      pattern: "src/email\\.js"
+      message: Nenne im Kontext die zuständige Datei src/email.js.
+    - type: file_contains
+      path: AUFGABE.md
+      pattern: "npm test"
+      message: Nenne in den Akzeptanzkriterien den Testbefehl npm test.
+    - type: file_contains
+      path: AUFGABE.md
+      pattern: "max\\+news@example\\.com"
+      message: Nimm die Beispieladresse max+news@example.com in den Auftrag auf.
+    - type: file_contains
+      path: test/email.test.js
+      pattern: "isValidEmail\\(\\s*['\"]max\\+news@example\\.com['\"]\\s*\\)"
+      message: "Ergänze in test/email.test.js einen Test, der `isValidEmail('max+news@example.com')` aufruft."
+    - type: command
+      run: node --test --test-reporter=tap 2>&1 | grep -Ec '^# fail [1-9]'
+      stdout_matches: "^1$"
+      message: Dein neuer Test soll im Moment fehlschlagen – er beschreibt das gewünschte Verhalten, das es noch nicht gibt. Prüfe, ob du `true` erwartest.
+    - type: command
+      run: node --test --test-reporter=tap 2>&1 | grep -Ec '^# pass [2-9]'
+      stdout_matches: "^1$"
+      message: Die beiden vorhandenen Tests sollen weiterhin grün sein. Lösche oder ändere sie nicht.
+    - type: command
+      run: git diff --quiet HEAD -- src/email.js
+      message: src/email.js wurde verändert. Setze sie mit `git restore src/email.js` zurück – den Fix übernimmt später der Agent.
+  hints:
+    - "Der Testbefehl steht in package.json unter `scripts.test`."
+    - "Kopiere einen vorhandenen Test und ändere Namen und Erwartung: `assert.equal(isValidEmail('max+news@example.com'), true);`"
+    - "Mit `npm test` siehst du am Ende `# fail 1` – genau so soll es sein."
+  solution: |
+    ```bash
+    cd newsletter
+    cat > AUFGABE.md <<'EOF'
+    ## Ziel
+    Adressen mit Plus-Zeichen wie max+news@example.com sollen als gültig erkannt werden.
+
+    ## Kontext
+    Die Prüfung steckt in `isValidEmail()` in src/email.js, die Tests in test/email.test.js.
+
+    ## Einschränkungen
+    - Signatur von isValidEmail bleibt gleich.
+    - Keine neuen Abhängigkeiten.
+    - Vorhandene Tests nicht ändern.
+
+    ## Akzeptanzkriterien
+    - Der Test "accepts plus addressing" ist grün.
+    - `npm test` ist komplett grün.
+    EOF
+    cat >> test/email.test.js <<'EOF'
+
+    test('accepts plus addressing', () => {
+      assert.equal(isValidEmail('max+news@example.com'), true);
+    });
+    EOF
+    npm test   # 1 Test schlägt fehl – so soll es sein
+    ```

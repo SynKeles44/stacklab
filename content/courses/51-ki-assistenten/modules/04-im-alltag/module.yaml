@@ -1,0 +1,166 @@
+title: KI im Entwickleralltag
+description: Tests und Refactorings mit KI, Code erklären, Doku und Commit-Messages entwerfen – und die Grenzen und Teamregeln, die das sicher machen.
+exercise:
+  id: modul-uebung-refactoring
+  type: terminal
+  title: Ein KI-Refactoring absichern
+  description: |
+    Im Ordner `versand` liegt `src/shipping.js` mit einer verschachtelten Legacy-Funktion
+    `shippingCost(weightKg, express)`. Ein Agent hat sie auf dem Branch `ki/refactor-shipping` „aufgeräumt“.
+    Bevor der Umbau bleibt, beweist du, dass sich das Verhalten nicht geändert hat.
+
+    1. Bleib zunächst auf `main` und lies die alte Funktion: bis einschließlich 5 kg 490 Cent, bis
+       einschließlich 20 kg 990 Cent, darüber 1990 Cent, Express verdoppelt den Preis, Gewichte ≤ 0 werfen
+       einen Fehler.
+    2. Schreibe auf `main` Charakterisierungstests in `test/shipping.test.js` – mindestens für **genau 5 kg**,
+       **genau 20 kg**, ein Gewicht darüber, Express und den Fehlerfall. Committe sie auf `main` (Typ `test`).
+    3. Wechsle auf `ki/refactor-shipping` und hole die Tests dorthin, z. B. mit `git merge main`.
+    4. Führe die Tests aus. Behebe den Fehler im **refaktorierten** Code, ohne die Tests zu ändern, und
+       committe die Korrektur auf dem Branch (Typ `fix`).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: versand
+  setup: |
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    mkdir -p src test
+    printf '{\n  "name": "versand",\n  "type": "module",\n  "scripts": { "test": "node --test" }\n}\n' > package.json
+    cat > src/shipping.js <<'JS'
+    export function shippingCost(weightKg, express) {
+      let cost;
+      if (weightKg <= 0) {
+        throw new Error('invalid weight');
+      } else {
+        if (weightKg <= 5) {
+          cost = 490;
+        } else {
+          if (weightKg <= 20) {
+            cost = 990;
+          } else {
+            cost = 1990;
+          }
+        }
+      }
+      if (express) {
+        cost = cost * 2;
+      }
+      return cost;
+    }
+    JS
+    git add -A
+    git commit -q -m "feat: add shipping cost calculation"
+    git switch -q -c ki/refactor-shipping
+    cat > src/shipping.js <<'JS'
+    const TIERS = [
+      { maxKg: 5, cents: 490 },
+      { maxKg: 20, cents: 990 },
+    ];
+
+    export function shippingCost(weightKg, express = false) {
+      if (weightKg <= 0) throw new Error('invalid weight');
+      const tier = TIERS.find((t) => weightKg < t.maxKg);
+      const cost = tier ? tier.cents : 1990;
+      return express ? cost * 2 : cost;
+    }
+    JS
+    git commit -q -am "refactor: replace nested ifs with tier table"
+    git switch -q main
+  checks:
+    - type: command
+      run: "git log --format=%s main | grep -Ec '^test(\\([^()]+\\))?!?: '"
+      stdout_matches: "^[1-9][0-9]*$"
+      message: "Committe deine Charakterisierungstests zuerst auf main, mit einer Message vom Typ test."
+    - type: command
+      run: "git show main:test/shipping.test.js | grep -Ec 'shippingCost\\(\\s*(5|20)\\s*[,)]'"
+      stdout_matches: "^([2-9]|[1-9][0-9]+)$"
+      message: Die Tests auf main müssen die Grenzen genau 5 kg und genau 20 kg prüfen.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        git worktree add -q --detach "$d/w" main >/dev/null 2>&1
+        (cd "$d/w" && node --test >/dev/null 2>&1); rc=$?
+        git worktree remove --force "$d/w" >/dev/null 2>&1; rm -rf "$d"; git worktree prune
+        exit $rc
+      message: Deine Tests müssen auf main – mit dem alten Code – grün sein. Sie halten das heutige Verhalten fest.
+    - type: command
+      run: git branch --show-current
+      stdout_equals: ki/refactor-shipping
+      message: Wechsle für die Korrektur auf den Branch ki/refactor-shipping.
+    - type: command
+      run: "git merge-base --is-ancestor main HEAD"
+      message: Die Tests von main fehlen auf dem Branch. Hole sie mit `git merge main`.
+    - type: command
+      run: "git diff --quiet main HEAD -- test"
+      message: Die Tests auf dem Branch unterscheiden sich von main. Ändere die Tests nicht – korrigiere den Code.
+    - type: command
+      run: "grep -q 'TIERS' src/shipping.js"
+      message: Der Umbau mit der TIERS-Tabelle soll erhalten bleiben – korrigiere ihn, statt die alte Funktion zurückzuholen.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        cat > "$d/check.mjs" <<'JS'
+        import { shippingCost } from '../src/shipping.js';
+        const expected = (w, e) => { const c = w <= 5 ? 490 : w <= 20 ? 990 : 1990; return e ? c * 2 : c; };
+        let ok = true;
+        for (const w of [0.1, 1, 4.99, 5, 5.01, 19.99, 20, 20.01, 50]) {
+          for (const e of [false, true]) { if (shippingCost(w, e) !== expected(w, e)) ok = false; }
+        }
+        try { shippingCost(0, false); ok = false; } catch { }
+        process.exit(ok ? 0 : 1);
+        JS
+        node "$d/check.mjs"; rc=$?; rm -rf "$d"; exit $rc
+      message: Der refaktorierte Code verhält sich an den Grenzen noch anders als der alte. Schau dir den Vergleich in `TIERS.find(...)` an.
+    - type: command
+      run: node --test
+      message: "`npm test` ist auf dem Branch nicht grün."
+    - type: command
+      run: "git log -1 --format=%s | grep -Ec '^fix(\\([^()]+\\))?!?: '"
+      stdout_equals: "1"
+      message: "Committe die Korrektur auf dem Branch mit einer Message vom Typ fix, z. B. `fix: keep inclusive weight limits`."
+    - type: command
+      run: git status --porcelain
+      stdout_equals: ""
+      message: Es gibt noch nicht committete Änderungen.
+  hints:
+    - "Teste die Grenzen ausdrücklich: `assert.equal(shippingCost(5, false), 490)` und `assert.equal(shippingCost(20, false), 990)`."
+    - "Auf dem Branch: `git merge main`, dann `npm test` – der Test für 5 kg wird rot."
+    - "Die Ursache: `weightKg < t.maxKg` müsste `weightKg <= t.maxKg` heißen."
+  solution: |
+    ```bash
+    cd versand
+    cat > test/shipping.test.js <<'EOF'
+    import { test } from 'node:test';
+    import assert from 'node:assert/strict';
+    import { shippingCost } from '../src/shipping.js';
+
+    test('up to 5 kg inclusive', () => {
+      assert.equal(shippingCost(5, false), 490);
+    });
+
+    test('up to 20 kg inclusive', () => {
+      assert.equal(shippingCost(20, false), 990);
+    });
+
+    test('above 20 kg', () => {
+      assert.equal(shippingCost(20.5, false), 1990);
+    });
+
+    test('express doubles the price', () => {
+      assert.equal(shippingCost(5, true), 980);
+    });
+
+    test('rejects zero weight', () => {
+      assert.throws(() => shippingCost(0, false));
+    });
+    EOF
+    npm test
+    git add test/shipping.test.js
+    git commit -m "test: characterize shipping cost limits"
+    git switch ki/refactor-shipping
+    git merge main -m "Merge branch 'main' into ki/refactor-shipping"
+    npm test                     # 5 kg und 20 kg schlagen fehl
+    sed -i 's/weightKg < t.maxKg/weightKg <= t.maxKg/' src/shipping.js
+    npm test
+    git commit -am "fix: keep inclusive weight limits in shipping tiers"
+    ```

@@ -1,0 +1,82 @@
+title: Wie KI-Assistenten funktionieren
+description: Tokens, Wahrscheinlichkeiten, Kontextfenster und Halluzinationen – und die drei Arten von Assistenten, die du im Alltag triffst.
+exercise:
+  id: modul-uebung-faktencheck
+  type: terminal
+  title: Faktencheck einer KI-Antwort
+  description: |
+    Ein Chat-Assistent hat dir auf die Frage „Zeig mir nützliche Git- und JavaScript-Kniffe“ sechs
+    Behauptungen geliefert. Sie stehen in `ki-antwort.md`. Einige davon sind erfunden – plausibel
+    klingend, aber falsch.
+
+    1. Lies `ki-antwort.md` mit `cat ki-antwort.md`.
+    2. Prüfe **jede** Behauptung im Terminal, statt zu raten. Nützlich sind z. B. `git push -h`,
+       `git log -h`, `git switch -h` und kurze Node-Einzeiler wie
+       `node -e "console.log(typeof Object.deepMerge)"`.
+    3. Schreibe dein Ergebnis in die Datei `ergebnis.txt` – eine Zeile pro Behauptung im Format
+       `Nummer: stimmt` oder `Nummer: erfunden`, also z. B. `1: stimmt`.
+    4. Ergänze für jede erfundene Behauptung eine Zeile, die mit `Korrektur:` beginnt und die echte
+       Alternative nennt (z. B. die echte Git-Option oder Funktion).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit `ki-antwort.md` angelegt wird.
+  workdir: faktencheck
+  setup: |
+    cat > ki-antwort.md <<'MD'
+    # Nützliche Kniffe (KI-Antwort)
+
+    1. `git switch -c feature/login` legt den Branch `feature/login` an und wechselt hinein.
+    2. `git push --force-safe` überschreibt den Remote-Branch nur, wenn seit deinem letzten Fetch niemand anderes gepusht hat.
+    3. `[10, 20, 30].at(-1)` liefert in JavaScript das letzte Element, also `30`.
+    4. `Object.deepMerge(a, b)` verbindet zwei Objekte in JavaScript rekursiv, ohne Bibliothek.
+    5. `structuredClone(obj)` erstellt in Node.js eine tiefe Kopie eines Objekts.
+    6. `git log --last=3` zeigt nur die letzten drei Commits.
+    MD
+  checks:
+    - type: file_exists
+      path: ergebnis.txt
+      message: Lege die Datei ergebnis.txt mit deinen Ergebnissen an.
+    - type: command
+      run: "grep -Eic '^\\s*(1|3|5)\\s*:\\s*stimmt\\s*$' ergebnis.txt"
+      stdout_matches: "^3$"
+      message: Die Behauptungen 1, 3 und 5 stimmen – prüfe sie mit `git switch -h` und Node-Einzeilern und trage sie als `stimmt` ein.
+    - type: command
+      run: "grep -Eic '^\\s*(2|4|6)\\s*:\\s*erfunden\\s*$' ergebnis.txt"
+      stdout_matches: "^3$"
+      message: "Drei Behauptungen sind erfunden. Prüfe die Optionen mit `git push -h` und `git log -h` und Objekt-Funktionen mit `node -e \"console.log(typeof Object.deepMerge)\"`."
+    - type: command
+      run: "grep -Eic '^\\s*[0-9]\\s*:\\s*(stimmt|erfunden)\\s*$' ergebnis.txt"
+      stdout_matches: "^6$"
+      message: "Jede der sechs Behauptungen braucht genau eine Zeile im Format `Nummer: stimmt` oder `Nummer: erfunden`."
+    - type: file_contains
+      path: ergebnis.txt
+      pattern: "[Kk]orrektur:.*force-with-lease"
+      message: "Nenne in einer Korrektur-Zeile die echte Git-Option für sicheres Überschreiben (sie steht in `git push -h`)."
+    - type: file_contains
+      path: ergebnis.txt
+      pattern: "[Kk]orrektur:.*git log.*(-n ?[0-9]|--max-count|-[0-9])"
+      message: "Nenne in einer Korrektur-Zeile, wie du die Anzahl der Commits in `git log` wirklich begrenzt (siehe `git log -h` oder die Doku: `-n 3`, `-3` oder `--max-count=3`)."
+  hints:
+    - Rate nicht – jede Behauptung lässt sich mit einem kurzen Befehl prüfen. Existiert eine Option nicht, meldet Git `unknown option`.
+    - "`node -e \"console.log([10,20,30].at(-1))\"` und `node -e \"console.log(typeof structuredClone, typeof Object.deepMerge)\"` beantworten die JavaScript-Fragen."
+    - "Richtig sind 1, 3 und 5. Die echten Alternativen: `git push --force-with-lease`, eine eigene Merge-Funktion oder eine Bibliothek statt `Object.deepMerge`, und `git log -n 3`."
+  solution: |
+    ```bash
+    cd faktencheck
+    git switch -h | head -n 5          # -c gibt es
+    git push -h | grep force           # --force-with-lease, kein --force-safe
+    node -e "console.log([10,20,30].at(-1))"            # 30
+    node -e "console.log(typeof Object.deepMerge)"       # undefined
+    node -e "console.log(typeof structuredClone)"        # function
+    git log --last=3                   # Fehler: unbekannte Option
+    cat > ergebnis.txt <<'TXT'
+    1: stimmt
+    2: erfunden
+    3: stimmt
+    4: erfunden
+    5: stimmt
+    6: erfunden
+    Korrektur: git push --force-with-lease statt --force-safe
+    Korrektur: Object.deepMerge gibt es nicht – eigene rekursive Funktion oder Bibliothek nutzen
+    Korrektur: git log -n 3 (oder -3, --max-count=3) statt --last=3
+    TXT
+    ```

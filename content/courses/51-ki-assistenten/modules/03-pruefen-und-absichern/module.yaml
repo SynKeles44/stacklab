@@ -1,0 +1,130 @@
+title: KI-Ausgaben prüfen und absichern
+description: KI-Code kritisch reviewen, erfundene Pakete und Lizenzfragen erkennen, Geheimnisse und Kundendaten schützen und Agenten sicher einschränken.
+exercise:
+  id: modul-uebung-review
+  type: terminal
+  title: Review eines Agenten-Branches
+  description: |
+    Im Ordner `csv-export` hat ein Coding-Agent auf dem Branch `ki/csv-export` einen CSV-Export gebaut. Er
+    meldet „fertig, alles funktioniert“. Dein Review findet drei Probleme – finde und behebe sie auf dem
+    Branch:
+
+    1. Wechsle auf den Branch und sieh dir an, was der Agent geändert hat (`git log main..ki/csv-export`,
+       `git diff main...ki/csv-export`).
+    2. `src/export.js` nutzt eine Methode, die es in JavaScript nicht gibt. Ersetze sie durch eigene Logik:
+       Ein Wert, der Komma, Anführungszeichen oder Zeilenumbruch enthält, wird in `"` eingeschlossen, und
+       enthaltene `"` werden verdoppelt. `toCsv([['a', 'b,c', 'say "hi"']])` ergibt `a,"b,c","say ""hi"""`.
+    3. `src/notify.js` enthält ein festes Token. Lies es stattdessen aus der Umgebungsvariable
+       `NOTIFY_TOKEN`.
+    4. In `package.json` steht eine Abhängigkeit, die es nicht gibt und die nirgends benutzt wird. Entferne sie.
+    5. `npm test` muss grün sein. Committe deine Korrekturen auf `ki/csv-export` (Typ `fix`), sodass das
+       Arbeitsverzeichnis am Ende sauber ist.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: csv-export
+  setup: |
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    mkdir -p src test
+    printf '{\n  "name": "csv-export",\n  "type": "module",\n  "scripts": { "test": "node --test" }\n}\n' > package.json
+    printf '# CSV-Export\n' > README.md
+    git add -A
+    git commit -q -m "chore: initial commit"
+    git switch -q -c ki/csv-export
+    git config user.name "Coding Agent"
+    cat > src/export.js <<'JS'
+    export function toCsv(rows) {
+      return rows
+        .map((row) => row.map((value) => String(value).escapeCsv()).join(','))
+        .join('\n');
+    }
+    JS
+    cat > src/notify.js <<'JS'
+    const NOTIFY_TOKEN = 'demo-a91f3c77e2b04d18';
+
+    export function notifyHeaders() {
+      return { Authorization: `Bearer ${NOTIFY_TOKEN}` };
+    }
+    JS
+    cat > test/export.test.js <<'JS'
+    import { test } from 'node:test';
+    import assert from 'node:assert/strict';
+    import { notifyHeaders } from '../src/notify.js';
+
+    test('builds bearer header', () => {
+      assert.match(notifyHeaders().Authorization, /^Bearer /);
+    });
+    JS
+    printf '{\n  "name": "csv-export",\n  "type": "module",\n  "scripts": { "test": "node --test" },\n  "dependencies": { "csv-escape-utils-pro": "^1.4.0" }\n}\n' > package.json
+    git add -A
+    git commit -q -m "feat: add csv export and notifications"
+    git config user.name "Stacklab"
+    git switch -q main
+  checks:
+    - type: command
+      run: git branch --show-current
+      stdout_equals: ki/csv-export
+      message: Arbeite auf dem Branch ki/csv-export (`git switch ki/csv-export`).
+    - type: command
+      run: "! grep -rq 'escapeCsv' src"
+      message: src/export.js ruft noch die erfundene Methode escapeCsv() auf. Schreibe die Maskierung selbst.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        cat > "$d/check.mjs" <<'JS'
+        import { toCsv } from '../src/export.js';
+        const out = toCsv([['a', 'b,c', 'say "hi"'], [1, 'x\ny', '']]);
+        process.exit(out === 'a,"b,c","say ""hi"""\n1,"x\ny",' ? 0 : 1);
+        JS
+        node "$d/check.mjs"; rc=$?; rm -rf "$d"; exit $rc
+      message: toCsv() maskiert noch nicht richtig. Werte mit Komma, Anführungszeichen oder Zeilenumbruch kommen in "…", enthaltene " werden verdoppelt.
+    - type: command
+      run: "! git grep -q 'demo-a91f3c77e2b04d18' HEAD -- src"
+      message: Das Token steht im letzten Commit noch in src/notify.js. Lies es aus process.env.NOTIFY_TOKEN.
+    - type: command
+      run: "NOTIFY_TOKEN=pruef-42 node --input-type=module -e \"const m = await import('./src/notify.js'); process.exit(m.notifyHeaders().Authorization === 'Bearer pruef-42' ? 0 : 1)\""
+      message: notifyHeaders() soll das Token aus der Umgebungsvariable NOTIFY_TOKEN verwenden.
+    - type: command
+      run: "jq -r '.dependencies // {} | has(\"csv-escape-utils-pro\")' package.json"
+      stdout_equals: "false"
+      message: Entferne die erfundene Abhängigkeit csv-escape-utils-pro aus package.json.
+    - type: command
+      run: node --test
+      message: "`npm test` ist nicht grün."
+    - type: command
+      run: "git log --format=%s main..HEAD | grep -Ec '^fix(\\([^()]+\\))?!?: '"
+      stdout_matches: "^[1-9][0-9]*$"
+      message: "Committe deine Korrekturen auf dem Branch mit einer Message vom Typ fix, z. B. `fix: escape csv values without invented api`."
+    - type: command
+      run: git status --porcelain
+      stdout_equals: ""
+      message: Es gibt noch nicht committete Änderungen.
+  hints:
+    - "`node -e \"console.log(typeof ''.escapeCsv)\"` zeigt dir, dass es die Methode nicht gibt."
+    - "Eine Hilfsfunktion: `const escape = (v) => /[\",\\n]/.test(v) ? '\"' + v.replaceAll('\"', '\"\"') + '\"' : v;`"
+    - "Für das Token: `const NOTIFY_TOKEN = process.env.NOTIFY_TOKEN;` – und `jq 'del(.dependencies)' package.json > p.json && mv p.json package.json`."
+  solution: |
+    ```bash
+    cd csv-export
+    git switch ki/csv-export
+    git diff main...ki/csv-export
+    cat > src/export.js <<'EOF'
+    function escapeValue(value) {
+      const text = String(value);
+      return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    }
+
+    export function toCsv(rows) {
+      return rows.map((row) => row.map(escapeValue).join(',')).join('\n');
+    }
+    EOF
+    sed -i "s/const NOTIFY_TOKEN = 'demo-a91f3c77e2b04d18';/const NOTIFY_TOKEN = process.env.NOTIFY_TOKEN;/" src/notify.js
+    jq 'del(.dependencies)' package.json > p.json && mv p.json package.json
+    npm test
+    git add -A
+    git commit -m "fix: escape csv values and read notify token from environment"
+    ```
+
+    Hinweis: Das Token steht weiterhin im älteren Agenten-Commit. Wäre es echt, müsstest du es beim Anbieter
+    sperren und erneuern – oder den Branch vor dem Push neu aufbauen.

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="450" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Fünf Filter für jeden KI-Vorschlag</text>
+  <g font-size="14" fill="#1e1b3a">
+    <rect x="20" y="80" width="160" height="150" rx="10" fill="#e0f7fb" stroke="#22d3ee" stroke-width="2"/>
+    <text x="100" y="110" text-anchor="middle" font-weight="700" font-size="16">1. Lesen</text>
+    <text x="100" y="140" text-anchor="middle">jede Zeile</text>
+    <text x="100" y="160" text-anchor="middle">des Diffs</text>
+    <text x="100" y="180" text-anchor="middle">verstehen</text>
+    <rect x="195" y="80" width="160" height="150" rx="10" fill="#e8fbf3" stroke="#34d399" stroke-width="2"/>
+    <text x="275" y="110" text-anchor="middle" font-weight="700" font-size="16">2. Ausführen</text>
+    <text x="275" y="140" text-anchor="middle">Tests, Linter,</text>
+    <text x="275" y="160" text-anchor="middle">Typprüfung</text>
+    <text x="275" y="180" text-anchor="middle">laufen lassen</text>
+    <rect x="370" y="80" width="160" height="150" rx="10" fill="#f3efff" stroke="#a78bfa" stroke-width="2"/>
+    <text x="450" y="110" text-anchor="middle" font-weight="700" font-size="16">3. Nachschlagen</text>
+    <text x="450" y="140" text-anchor="middle">APIs, Optionen</text>
+    <text x="450" y="160" text-anchor="middle">und Pakete in der</text>
+    <text x="450" y="180" text-anchor="middle">offiziellen Doku</text>
+    <rect x="545" y="80" width="160" height="150" rx="10" fill="#fdecec" stroke="#f87171" stroke-width="2"/>
+    <text x="625" y="110" text-anchor="middle" font-weight="700" font-size="16">4. Absichern</text>
+    <text x="625" y="140" text-anchor="middle">Secrets, Eingaben,</text>
+    <text x="625" y="160" text-anchor="middle">Rechte, Lizenzen</text>
+    <text x="625" y="180" text-anchor="middle">prüfen</text>
+    <rect x="720" y="80" width="160" height="150" rx="10" fill="#fff6e6" stroke="#f59e0b" stroke-width="2"/>
+    <text x="800" y="110" text-anchor="middle" font-weight="700" font-size="16">5. Entscheiden</text>
+    <text x="800" y="140" text-anchor="middle">du übernimmst,</text>
+    <text x="800" y="160" text-anchor="middle">änderst oder</text>
+    <text x="800" y="180" text-anchor="middle">verwirfst</text>
+  </g>
+  <path d="M180 155 L192 155" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M355 155 L367 155" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M530 155 L542 155" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M705 155 L717 155" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <rect x="20" y="270" width="860" height="100" rx="12" fill="#ffffff" stroke="#1e1b3a" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="450" y="305" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Der Name im Commit ist deiner – nicht der des Assistenten.</text>
+  <text x="450" y="335" text-anchor="middle" font-size="14" fill="#1e1b3a">Fällt ein Vorschlag durch einen Filter, geht er zurück: neu beauftragen, selbst korrigieren oder verwerfen.</text>
+</svg>

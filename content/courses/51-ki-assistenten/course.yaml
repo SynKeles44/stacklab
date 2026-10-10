@@ -1,0 +1,33 @@
+title: KI-Assistenten im Entwickleralltag
+subtitle: Sprachmodelle verstehen, gut beauftragen, Ergebnisse kritisch prüfen und sicher einsetzen
+description: >
+  KI-Assistenten schreiben Code, erklären fremde Funktionen und arbeiten als Agenten sogar selbstständig
+  im Terminal. Sie sind schnell – und manchmal überzeugend falsch. In diesem Kurs lernst du, wie diese
+  Werkzeuge **wirklich** funktionieren und wie du sie so einsetzt, dass am Ende besserer Code entsteht
+  statt versteckter Fehler.
+
+
+  Du verstehst Tokens, Kontextfenster und Wahrscheinlichkeiten gut genug, um vorherzusagen, wann ein
+  Assistent halluziniert. Du schreibst Aufgabenbeschreibungen, die zum Ziel führen, gibst den richtigen
+  Kontext und arbeitest in kleinen, geprüften Schritten. Vor allem trainierst du das **kritische Prüfen**:
+  Im Übungs-Terminal reviewst du KI-Patches mit Git und Tests, findest erfundene APIs und Pakete, entfernst
+  Geheimnisse aus dem Code und schreibst Tests, die einen falschen Vorschlag wirklich entlarven. Der Kurs
+  ist herstellerneutral – Werkzeuge werden nur als Beispiele genannt.
+category: abschluss
+level: fortgeschritten
+icon: bot
+color: "#a78bfa"
+estimated_hours: 4.5
+workspace_dir: ki-assistenten
+prerequisites: [git, testing, fremden-code-lesen]
+learning_goals:
+  - Du erklärst, wie ein Sprachmodell Text Token für Token erzeugt und warum es dabei halluzinieren kann.
+  - Du unterscheidest Code-Vervollständigung, Chat-Assistenten und Coding-Agenten und wählst passend aus.
+  - Du formulierst Aufgaben mit Ziel, Kontext, Einschränkungen und Akzeptanzkriterien und pflegst eine Projekt-Anweisungsdatei.
+  - Du prüfst KI-Code Zeile für Zeile, mit Tests und gegen die offizielle Dokumentation – inklusive Paketen und Lizenzen.
+  - Du schützt Geheimnisse und Kundendaten, erkennst Prompt Injection und setzt Agenten-Berechtigungen bewusst.
+  - Du nutzt KI für Tests, Refactoring, Code-Erklärungen, Dokumentation und Commit-Messages – und kennst ihre Grenzen.
+references:
+  - Team-Regeln für KI-Assistenten mit versionierter Projekt-Anweisungsdatei und menschlicher Verantwortung für jeden Merge
+  - Code-Reviews, in denen KI-generierte Änderungen genauso streng geprüft werden wie menschliche
+  - Berechtigungs-Allowlists für Coding-Agenten in Entwicklungscontainern
