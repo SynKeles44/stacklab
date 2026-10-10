@@ -43,8 +43,18 @@ final class SolveCheck extends Command
             'setup' => is_string($data['setup'] ?? null) ? $data['setup'] : null,
             'steps' => array_values((array) ($data['steps'] ?? [])),
         ]);
-        $workspace = (string) ($course['workspace_dir'] ?? $course['slug']);
+        $workspace = 'solve-check-'.($course['workspace_dir'] ?? $course['slug']);
 
+        try {
+            return $this->runSteps($sandbox, $course, $project, $workspace);
+        } finally {
+            $sandbox->run($workspace, $project->workdir, 'cd "${PWD%%/'.$workspace.'/*}" && rm -rf -- '.escapeshellarg($workspace));
+        }
+    }
+
+    /** @param  array<string, mixed>  $course */
+    private function runSteps(SandboxClient $sandbox, array $course, Project $project, string $workspace): int
+    {
         $reset = $sandbox->reset($workspace, $project->workdir, $project->setup);
         $this->line("<options=bold>{$course['slug']}</> ({$project->workdir})");
         if (! $reset['ok']) {
