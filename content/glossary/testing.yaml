@@ -1,0 +1,518 @@
+- slug: testfall
+  term: Testfall
+  short: Ein einzelner Test, der ein bestimmtes Verhalten für eine bestimmte Eingabe prüft.
+  explanation: >
+    Ein Testfall legt fest, welche Ausgangslage hergestellt wird, welche Aktion passiert und welches Ergebnis
+    erwartet wird. Mehrere Testfälle zusammen beschreiben das Verhalten einer Funktion vollständig. In Pest und
+    Vitest ist jeder Aufruf von `it()` oder `test()` ein Testfall – bei Datasets ist es jeder einzelne Durchlauf.
+  example: "`it('zieht zehn Prozent ab', fn () => expect(rabatt(1000, 10))->toBe(900));`"
+  category: testing
+  aliases: [Testfälle, Test case, Test-Case]
+  related: [test-suite, assertion, arrange-act-assert]
+  lesson: testing/warum-und-was-testen
+
+- slug: test-suite
+  term: Testsuite
+  short: Die Gesamtheit aller automatisierten Tests eines Projekts, die gemeinsam ausgeführt werden.
+  explanation: >
+    Eine Testsuite fasst alle Testfälle zusammen, damit ein einziger Befehl sie startet, etwa `./vendor/bin/pest`
+    oder `npx vitest run`. Ist die Suite grün, verhält sich der Code wie beschrieben. In der CI-Pipeline läuft sie
+    bei jedem Pull Request.
+  example: "`./vendor/bin/pest` führt die komplette Testsuite unter `tests/` aus."
+  category: testing
+  aliases: [Testsuite, Test-Suite, Testsuiten]
+  related: [testfall, automatisierter-test, ci-pipeline]
+  lesson: testing/warum-und-was-testen
+
+- slug: aequivalenzklasse
+  term: Äquivalenzklasse
+  short: Eine Gruppe von Eingaben, bei denen sich der Code gleich verhalten sollte.
+  explanation: >
+    Statt jede mögliche Eingabe zu testen, teilst du sie in Klassen ein, etwa „Bestellwert unter 50 Euro“ und
+    „ab 50 Euro“. Aus jeder Klasse reicht ein typischer Vertreter. Zusammen mit der Grenzwertanalyse entstehen so
+    wenige, aber aussagekräftige Testfälle.
+  example: "Für Versandkosten bilden 1–4999 Cent eine Klasse (490 Cent Versand) und ab 5000 Cent eine zweite (kostenlos)."
+  category: testing
+  aliases: [Äquivalenzklassen, Aequivalenzklasse]
+  related: [grenzwertanalyse, randfall, testfall]
+  lesson: testing/warum-und-was-testen
+
+- slug: grenzwertanalyse
+  term: Grenzwertanalyse
+  short: Eine Methode, Testfälle direkt an den Grenzen erlaubter Bereiche zu wählen, weil dort Fehler häufig sind.
+  explanation: >
+    Viele Fehler entstehen an Grenzen, etwa durch `>` statt `>=`. Die Grenzwertanalyse testet deshalb Werte
+    direkt unter, genau auf und direkt über einer Schwelle sowie die Ränder des erlaubten Bereichs. Mutation
+    Testing deckt fehlende Grenzwert-Tests zuverlässig auf.
+  example: "Bei kostenlosem Versand ab 5000 Cent testest du 4999, 5000 und eventuell 5001 Cent."
+  category: testing
+  aliases: [Grenzwert, Grenzwerte, Grenzwerttest]
+  related: [aequivalenzklasse, randfall, off-by-one-fehler]
+  lesson: testing/warum-und-was-testen
+
+- slug: deterministisch
+  term: Deterministisch
+  short: Liefert bei gleicher Eingabe immer dasselbe Ergebnis – ohne Einfluss von Zufall, Uhrzeit oder Reihenfolge.
+  explanation: >
+    Ein deterministischer Test ist bei unverändertem Code immer grün oder immer rot. Hängt ein Test von der
+    aktuellen Zeit, Zufallswerten, dem Netzwerk oder anderen Tests ab, wird er unberechenbar. Mit Fake-Timern,
+    festen Seeds und Test-Doubles machst du Tests deterministisch.
+  example: "`vi.setSystemTime(new Date('2026-12-24T10:00:00Z'))` macht einen datumsabhängigen Test deterministisch."
+  category: testing
+  aliases: [Determinismus, nicht deterministisch]
+  related: [flaky-test, fake-timer, test-double]
+  lesson: testing/warum-und-was-testen
+
+- slug: integrationstest
+  term: Integrationstest
+  short: Ein Test, der prüft, ob mehrere Teile einer Anwendung richtig zusammenarbeiten.
+  explanation: >
+    Während ein Unit-Test eine Einheit isoliert prüft, lässt ein Integrationstest echte Teile zusammenspielen,
+    zum Beispiel Controller, Validierung und Datenbank. Er ist langsamer als ein Unit-Test, findet dafür Fehler
+    an den Schnittstellen. In Laravel heißen solche Tests oft Feature-Tests.
+  example: "Ein Test schickt `POST /api/orders` an die App und prüft, ob die Bestellung in der Testdatenbank steht."
+  category: testing
+  aliases: [Integrationstests, Integration Test, Feature-Test]
+  related: [unit-test, end-to-end-test, testpyramide]
+  lesson: testing/testpyramide-und-trophy
+
+- slug: end-to-end-test
+  term: End-to-End-Test
+  short: Ein Test, der die ganze Anwendung wie ein Mensch über die Oberfläche bedient – vom Browser bis zur Datenbank.
+  explanation: >
+    End-to-End-Tests (kurz E2E) starten die echte Anwendung und steuern einen Browser: Seiten öffnen, Formulare
+    ausfüllen, klicken, Ergebnisse prüfen. Sie geben viel Vertrauen, sind aber langsam und aufwendig. Deshalb
+    deckt man mit ihnen nur die wichtigsten Nutzerwege ab, etwa Login und Checkout.
+  example: "Ein Playwright-Test meldet sich an, legt ein Produkt in den Warenkorb und prüft die Bestätigungsseite."
+  category: testing
+  aliases: [E2E, E2E-Test, End-to-End-Tests, Ende-zu-Ende-Test]
+  related: [playwright, integrationstest, testpyramide]
+  lesson: testing/testpyramide-und-trophy
+
+- slug: testpyramide
+  term: Testpyramide
+  short: Ein Modell für die Verteilung von Tests – viele Unit-Tests unten, weniger Integrationstests, wenige End-to-End-Tests oben.
+  explanation: >
+    Die Form der Pyramide zeigt, wie viele Tests es auf jeder Ebene geben sollte. Unten liegen schnelle, billige
+    Tests mit präzisen Fehlermeldungen, oben langsame, teure Tests mit viel Vertrauen. Sie warnt vor dem
+    Gegenteil – vielen langsamen UI-Tests und kaum Unit-Tests.
+  example: "Ein Shop hat 800 Unit-Tests, 120 Integrationstests und 10 End-to-End-Tests für die kritischen Wege."
+  category: testing
+  aliases: [Test-Pyramide, Test pyramid]
+  related: [testing-trophy, unit-test, integrationstest, end-to-end-test]
+  lesson: testing/testpyramide-und-trophy
+
+- slug: testing-trophy
+  term: Testing Trophy
+  short: Ein Modell aus dem Frontend, das statische Analyse als Fundament und Integrationstests als Schwerpunkt sieht.
+  explanation: >
+    Die Testing Trophy hat vier Stufen: statische Analyse, Unit-Tests, Integrationstests (der breiteste Teil)
+    und wenige End-to-End-Tests. Die Idee dahinter: Tests, die echter Nutzung ähneln, geben mehr Vertrauen.
+    Sie ergänzt die Testpyramide, statt ihr zu widersprechen.
+  example: "TypeScript und ESLint als Basis, Komponententests für Formulare, Playwright für den Checkout."
+  category: testing
+  aliases: [Test-Trophäe, Trophy]
+  related: [testpyramide, statische-analyse, komponententest]
+  lesson: testing/testpyramide-und-trophy
+
+- slug: composer-plugin
+  term: Composer-Plugin
+  short: Ein Paket, das Composer selbst erweitert und deshalb ausdrücklich erlaubt werden muss.
+  explanation: >
+    Manche Pakete, etwa Pest, bringen Code mit, der während `composer install` ausgeführt wird. Weil das ein
+    Sicherheitsrisiko sein kann, führt Composer Plugins nur aus, wenn sie unter `config.allow-plugins` in der
+    `composer.json` erlaubt sind. Interaktiv fragt Composer nach, in Skripten muss die Erlaubnis vorher gesetzt sein.
+  example: "`composer config allow-plugins.pestphp/pest-plugin true`"
+  category: pakete
+  aliases: [Composer-Plugins, allow-plugins]
+  related: [composer, composer-json, pest]
+  lesson: testing/pest-einrichten
+
+- slug: expectation
+  term: Expectation
+  short: Eine Prüfmethode in Pest, die mit `expect($wert)` beginnt und erwartetes Verhalten beschreibt.
+  explanation: >
+    In Pest schreibst du Assertions als Expectations: `expect($preis)->toBe(900)`. Sie lassen sich verketten,
+    mit `not` umkehren und mit `and()` auf einen neuen Wert anwenden. Schlägt eine Expectation fehl, wird der
+    Test rot und zeigt erwarteten und tatsächlichen Wert.
+  example: "`expect($slug)->toBeString()->not->toContain(' ');`"
+  category: testing
+  aliases: [Expectations, expect]
+  related: [assertion, pest]
+  lesson: testing/pest-einrichten
+
+- slug: pest-dataset
+  term: Dataset (Pest)
+  short: Eine Liste von Eingabewerten, mit der Pest denselben Test mehrfach ausführt – einmal pro Eintrag.
+  explanation: >
+    Mit `->with([...])` hängst du ein Dataset an einen Test. Jeder Eintrag wird als Parameter an die Closure
+    übergeben und als eigener Testlauf angezeigt; String-Schlüssel werden zu Namen. Mit `dataset('name', [...])`
+    legst du wiederverwendbare Datasets an, mehrere `with()` bilden alle Kombinationen.
+  example: "`it('rundet', fn ($n, $e) => expect(round($n))->toBe($e))->with([[1.4, 1.0], [1.5, 2.0]]);`"
+  category: testing
+  aliases: [Datasets, Testdatensatz, with()]
+  related: [pest, testfall, aequivalenzklasse]
+  lesson: testing/datasets-und-hooks
+
+- slug: test-hook
+  term: Test-Hook
+  short: Code, der automatisch vor oder nach Tests läuft, etwa zum Vorbereiten oder Aufräumen.
+  explanation: >
+    Hooks wie `beforeEach`, `afterEach`, `beforeAll` und `afterAll` vermeiden wiederholten Vorbereitungscode.
+    `beforeEach` läuft vor jedem Test neu, damit jeder Test eine frische Ausgangslage hat. Pest, Vitest und
+    Playwright bieten dieselben Hooks.
+  example: "`beforeEach(function () { $this->cart = new Cart(); });`"
+  category: testing
+  aliases: [Hook, Hooks, beforeEach, afterEach]
+  related: [testgruppe, testfall]
+  lesson: testing/datasets-und-hooks
+
+- slug: testgruppe
+  term: Testgruppe (describe)
+  short: Eine benannte Gruppe zusammengehöriger Tests, gebildet mit `describe()`.
+  explanation: >
+    Mit `describe()` fasst du Tests zu einem Thema zusammen, etwa „Warenkorb mit Gutschein“. Hooks innerhalb
+    der Gruppe gelten nur für ihre Tests. In der Ausgabe erscheint der Gruppenname vor dem Testnamen, was rote
+    Tests leichter einordnen lässt.
+  example: "`describe('formatCents', () => { it('füllt mit Nullen auf', () => { … }) })`"
+  category: testing
+  aliases: [describe, describe-Block, Testgruppen]
+  related: [test-hook, testfall]
+  lesson: testing/datasets-und-hooks
+
+- slug: stub
+  term: Stub
+  short: Ein Test-Double, das auf Aufrufe vorbereitete Antworten liefert.
+  explanation: >
+    Ein Stub ersetzt eine Abhängigkeit und gibt feste Werte zurück, damit der getestete Code in einer bekannten
+    Situation läuft. Ob und wie oft er aufgerufen wurde, prüft ein Stub nicht. Typisch sind Stubs für
+    Steuersätze, Wechselkurse oder Konfigurationswerte.
+  example: "`$rates->shouldReceive('rateFor')->andReturn(0.19);`"
+  category: testing
+  aliases: [Stubs]
+  related: [test-double, mock, fake-objekt]
+  lesson: testing/mocking-und-test-doubles
+
+- slug: fake-objekt
+  term: Fake
+  short: Ein Test-Double mit einer einfachen, aber funktionierenden Implementierung – etwa Speicher statt Datenbank.
+  explanation: >
+    Ein Fake verhält sich wie das Original, nur vereinfacht: Ein FakeMailer speichert Mails in einem Array,
+    statt sie zu versenden. Tests prüfen danach das Ergebnis, nicht jeden einzelnen Aufruf. Laravel bringt
+    fertige Fakes wie `Mail::fake()` mit.
+  example: "`final class FakeMailer implements Mailer { public array $sent = []; … }`"
+  category: testing
+  aliases: [Fakes, Fake-Objekt]
+  related: [test-double, stub, mock]
+  lesson: testing/mocking-und-test-doubles
+
+- slug: mock
+  term: Mock
+  short: Ein Test-Double, das vorher festlegt, welche Aufrufe mit welchen Argumenten erwartet werden.
+  explanation: >
+    Ein Mock prüft das Zusammenspiel: Wird `charge(4990)` genau einmal aufgerufen? Bleibt eine Erwartung
+    unerfüllt, schlägt der Test fehl. Mocks sind nützlich an Grenzen nach außen (Zahlung, Mail); zu viele Mocks
+    machen Tests aber brüchig.
+  example: "`$gateway->shouldReceive('charge')->once()->with(4990)->andReturn('tx-42');`"
+  category: testing
+  aliases: [Mocks, Mock-Objekt, mocken, Mocking]
+  related: [test-double, mockery, spy]
+  lesson: testing/mocking-und-test-doubles
+
+- slug: spy
+  term: Spy
+  short: Ein Test-Double, das alle Aufrufe aufzeichnet, damit der Test sie hinterher prüfen kann.
+  explanation: >
+    Im Unterschied zum Mock legt ein Spy keine Erwartungen im Voraus fest. Der Code läuft, und erst danach
+    prüft der Test, ob und womit die Abhängigkeit aufgerufen wurde. `vi.fn()` in Vitest und `Mockery::spy()`
+    in PHP arbeiten so.
+  example: "`$mailer = Mockery::spy(Mailer::class); … $mailer->shouldHaveReceived('send')->once();`"
+  category: testing
+  aliases: [Spies, Spion, Test-Spy]
+  related: [mock, mock-funktion, test-double]
+  lesson: testing/mocking-und-test-doubles
+
+- slug: mockery
+  term: Mockery
+  short: Eine PHP-Bibliothek zum Erzeugen von Mocks, Stubs und Spies, die Pest für Mocking empfiehlt.
+  explanation: >
+    Mit `Mockery::mock(Klasse::class)` entsteht ein Double, dessen Verhalten du mit `shouldReceive()`,
+    `with()`, `once()` und `andReturn()` festlegst. Pest prüft die Erwartungen am Ende jedes Tests automatisch.
+    Mockery installierst du als Dev-Abhängigkeit.
+  example: "`composer require mockery/mockery --dev`"
+  category: testing
+  aliases: [mockery/mockery]
+  related: [mock, pest, test-double]
+  lesson: testing/mocking-und-test-doubles
+
+- slug: watch-modus
+  term: Watch-Modus
+  short: Ein Modus, in dem ein Werkzeug offen bleibt und bei jeder gespeicherten Änderung automatisch neu läuft.
+  explanation: >
+    Im Watch-Modus beobachtet der Test-Runner deine Dateien. Speicherst du eine Änderung, startet er die
+    betroffenen Tests sofort neu. Vitest startet so, wenn du `vitest` in einem interaktiven Terminal aufrufst;
+    in der CI läuft es dagegen nur einmal.
+  example: "`npx vitest` – bleibt offen und testet nach jedem Speichern neu."
+  category: werkzeuge
+  aliases: [Watch Mode, Watch, Beobachtungsmodus]
+  related: [vitest, test-runner]
+  lesson: testing/vitest-grundlagen
+
+- slug: mock-funktion
+  term: Mock-Funktion
+  short: Eine Ersatzfunktion, die jeden Aufruf aufzeichnet und deren Rückgabewert du steuern kannst – in Vitest `vi.fn()`.
+  explanation: >
+    Eine Mock-Funktion tut von sich aus nichts, merkt sich aber Argumente und Anzahl der Aufrufe. Mit
+    `mockReturnValue` oder `mockResolvedValue` legst du fest, was sie liefert. Matcher wie `toHaveBeenCalledWith`
+    prüfen danach, wie dein Code sie benutzt hat.
+  example: "`const send = vi.fn().mockResolvedValue(undefined); … expect(send).toHaveBeenCalledTimes(2)`"
+  category: testing
+  aliases: [vi.fn, Mock-Funktionen, jest.fn]
+  related: [spy, mock, vitest]
+  lesson: testing/mocking-coverage-komponenten
+
+- slug: fake-timer
+  term: Fake-Timer
+  short: Eine künstliche Uhr im Test, mit der du Zeit vorspulst und das Datum festsetzt.
+  explanation: >
+    Fake-Timer ersetzen `setTimeout`, `setInterval` und `Date` durch eine kontrollierbare Uhr. Statt echte
+    Sekunden zu warten, spulst du mit `vi.advanceTimersByTime()` vor. Mit `vi.setSystemTime()` testest du
+    datumsabhängigen Code zuverlässig – auch Mitternacht oder Jahreswechsel.
+  example: "`vi.useFakeTimers(); debounced(); vi.advanceTimersByTime(300);`"
+  category: testing
+  aliases: [Fake Timers, useFakeTimers, Fake-Uhr]
+  related: [deterministisch, flaky-test, mock-funktion]
+  lesson: testing/mocking-coverage-komponenten
+
+- slug: komponententest
+  term: Komponententest
+  short: Ein Test, der eine UI-Komponente rendert und wie ein Mensch bedient, um das sichtbare Ergebnis zu prüfen.
+  explanation: >
+    Komponententests liegen zwischen Unit- und End-to-End-Test: Sie rendern etwa ein React-Formular in einer
+    DOM-Nachbildung (jsdom) oder einem echten Browser, klicken und tippen und prüfen, was erscheint. Testing
+    Library und der Browser Mode von Vitest sind übliche Werkzeuge.
+  example: "Ein Test rendert `<LoginForm />`, tippt ein falsches Passwort und erwartet den Text „Login fehlgeschlagen“."
+  category: testing
+  aliases: [Komponententests, Component Test]
+  related: [interaktionstest, testing-library, jsdom]
+  lesson: testing/mocking-coverage-komponenten
+
+- slug: playwright
+  term: Playwright
+  short: Ein Werkzeug von Microsoft, das Chromium, Firefox und WebKit per Code steuert – vor allem für End-to-End-Tests.
+  explanation: >
+    Playwright öffnet Seiten, füllt Formulare aus, klickt und prüft Ergebnisse in echten Browsern. Es wartet
+    automatisch auf Elemente, bietet Locators wie `getByRole` und zeichnet bei Bedarf Traces auf. Eingerichtet
+    wird es mit `npm init playwright@latest`, Tests laufen mit `npx playwright test`.
+  example: "`await page.getByRole('button', { name: 'Anmelden' }).click()`"
+  category: testing
+  aliases: ["@playwright/test", Playwright Test]
+  related: [end-to-end-test, locator, auto-waiting]
+  lesson: testing/playwright-end-to-end
+
+- slug: locator
+  term: Locator
+  short: Eine Beschreibung in Playwright, wie ein Element auf der Seite gefunden wird – etwa über Rolle und Namen.
+  explanation: >
+    Locators wie `getByRole`, `getByLabel` oder `getByText` suchen Elemente so, wie Nutzer sie wahrnehmen. Sie
+    werden erst bei der Aktion ausgewertet und warten automatisch, bis das Element bereit ist. Gegenüber
+    CSS-Selektoren überstehen sie Layout-Änderungen besser.
+  example: "`page.getByLabel('E-Mail')`"
+  category: testing
+  aliases: [Locators, getByRole]
+  related: [playwright, selektor, barrierefreiheit]
+  lesson: testing/playwright-end-to-end
+
+- slug: auto-waiting
+  term: Auto-Waiting
+  short: Playwrights automatisches Warten, bis ein Element sichtbar, ruhig und bedienbar ist, bevor eine Aktion ausgeführt wird.
+  explanation: >
+    Vor jedem `click()` oder `fill()` prüft Playwright, ob das Element bereit ist – sichtbar, nicht verdeckt,
+    aktiviert und nicht in Bewegung. Feste Wartezeiten werden dadurch überflüssig. Erst wenn das Zeitlimit
+    abläuft, schlägt die Aktion fehl.
+  example: "`await page.getByRole('button', { name: 'Bestellen' }).click()` wartet, bis der Button klickbar ist."
+  category: testing
+  aliases: [Autowaiting, automatisches Warten, Actionability]
+  related: [web-first-assertion, playwright, flaky-test]
+  lesson: testing/playwright-end-to-end
+
+- slug: web-first-assertion
+  term: Web-First-Assertion
+  short: Eine Prüfung in Playwright, die so lange wiederholt wird, bis die Bedingung erfüllt ist oder das Zeitlimit abläuft.
+  explanation: >
+    Web-First-Assertions wie `toHaveText`, `toBeVisible` oder `toHaveURL` werden mit `await expect(locator)`
+    geschrieben. Sie warten auf Seiten, die nachladen oder animieren, und machen Tests dadurch stabil. Wer den
+    Text nur einmal ausliest und vergleicht, verliert diesen Vorteil.
+  example: "`await expect(page.getByRole('alert')).toHaveText('Login fehlgeschlagen')`"
+  category: testing
+  aliases: [Web-First-Assertions, Web First Assertion]
+  related: [auto-waiting, playwright, assertion]
+  lesson: testing/playwright-end-to-end
+
+- slug: headless-browser
+  term: Headless-Browser
+  short: Ein Browser, der ohne sichtbares Fenster läuft – ideal für automatisierte Tests auf Servern.
+  explanation: >
+    Im Headless-Modus rendert der Browser Seiten ganz normal, zeigt aber nichts auf dem Bildschirm an. So laufen
+    End-to-End-Tests schnell und auch in CI-Containern ohne Bildschirm. Zum Debuggen startest du Playwright mit
+    `--headed`, dann siehst du das Fenster.
+  example: "`npx playwright test` läuft headless, `npx playwright test --headed` mit sichtbarem Browser."
+  category: testing
+  aliases: [headless, Headless-Modus]
+  related: [playwright, end-to-end-test, browser]
+  lesson: testing/playwright-end-to-end
+
+- slug: trace-viewer
+  term: Trace Viewer
+  short: Ein Werkzeug von Playwright, das einen aufgezeichneten Testlauf Schritt für Schritt mit Screenshots, DOM, Netzwerk und Konsole zeigt.
+  explanation: >
+    Mit `trace: 'on-first-retry'` zeichnet Playwright beim ersten Wiederholungsversuch eines roten Tests einen
+    Trace auf. Im Trace Viewer springst du zu jedem Schritt und siehst, wie die Seite in diesem Moment aussah.
+    So findest du Fehler aus der CI, ohne sie lokal nachstellen zu müssen.
+  example: "`npx playwright show-trace test-results/…/trace.zip`"
+  category: testing
+  aliases: [Trace, Traces, show-trace]
+  related: [playwright, flaky-test]
+  lesson: testing/playwright-end-to-end
+
+- slug: testabdeckung
+  term: Testabdeckung (Code Coverage)
+  short: Der Anteil des Codes, der beim Testlauf ausgeführt wurde – gemessen in Zeilen, Verzweigungen oder Funktionen.
+  explanation: >
+    Coverage-Werkzeuge markieren, welche Zeilen während der Tests liefen. Rote Zeilen zeigen ungetesteten Code.
+    Hohe Coverage beweist aber nicht, dass die Tests Fehler bemerken – dafür gibt es Mutation Testing. PHP braucht
+    Xdebug oder PCOV, Vitest das Paket `@vitest/coverage-v8`.
+  example: "`XDEBUG_MODE=coverage ./vendor/bin/pest --coverage --min=90`"
+  category: testing
+  aliases: [Code Coverage, Coverage, Abdeckung, Testabdeckungen]
+  related: [mutationstest, xdebug, pcov]
+  lesson: testing/coverage-und-mutation-testing
+
+- slug: pcov
+  term: PCOV
+  short: Eine schlanke PHP-Erweiterung, die nur Code Coverage misst und dabei schneller ist als Xdebug.
+  explanation: >
+    PCOV kann nichts außer Coverage – kein Debugging, kein Profiling. Dafür bremst es Testläufe deutlich weniger
+    als Xdebug. Viele CI-Pipelines nutzen PCOV für Coverage-Berichte und Mutation Testing.
+  example: "Mit installiertem PCOV reicht `./vendor/bin/pest --coverage` ohne `XDEBUG_MODE`."
+  category: werkzeuge
+  aliases: [pcov]
+  related: [xdebug, testabdeckung]
+  lesson: testing/coverage-und-mutation-testing
+
+- slug: mutationstest
+  term: Mutation Testing
+  short: Ein Verfahren, das absichtlich kleine Fehler in den Code einbaut und prüft, ob die Tests sie bemerken.
+  explanation: >
+    Das Werkzeug erzeugt veränderte Varianten des Codes (Mutanten), etwa `>` statt `>=`, und führt für jede die
+    Tests aus. Wird ein Test rot, ist der Mutant „getötet“; bleiben alle grün, zeigt das eine Lücke in den Tests.
+    Pest bringt Mutation Testing mit (`--mutate`), daneben gibt es Infection und Stryker.
+  example: "`XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=80`"
+  category: testing
+  aliases: [Mutationstest, Mutationstests, Mutationstesten]
+  related: [mutant, mutation-score, testabdeckung]
+  lesson: testing/coverage-und-mutation-testing
+
+- slug: mutant
+  term: Mutant
+  short: Eine absichtlich leicht veränderte Version des Codes, die beim Mutation Testing entsteht.
+  explanation: >
+    Jeder Mutant enthält genau eine kleine Änderung, zum Beispiel einen umgedrehten Vergleich oder eine um eins
+    veränderte Zahl. Pest meldet einen Mutanten als „tested“, wenn ein Test ihn bemerkt, und als „untested“,
+    wenn alle Tests trotzdem grün bleiben. Jeder überlebende Mutant ist ein Hinweis auf einen fehlenden Test.
+  example: "Original `$total >= 5000`, Mutant `$total > 5000` – nur ein Test mit genau 5000 bemerkt ihn."
+  category: testing
+  aliases: [Mutanten]
+  related: [mutationstest, mutation-score]
+  lesson: testing/coverage-und-mutation-testing
+
+- slug: mutation-score
+  term: Mutation Score
+  short: Der Anteil der Mutanten, die von den Tests bemerkt wurden – ein Maß für die Qualität der Tests.
+  explanation: >
+    Der Mutation Score ist die Zahl der getöteten Mutanten geteilt durch alle Mutanten. Im Unterschied zur
+    Coverage misst er, ob Tests falsches Verhalten erkennen. Mit `--min` legst du in Pest einen Mindestwert
+    fest, unterhalb dessen der Lauf fehlschlägt.
+  example: "`Mutations: 8 untested, 11 tested` ergibt einen Score von 57,89 Prozent."
+  category: testing
+  aliases: [Mutationsscore, MSI]
+  related: [mutationstest, mutant, testabdeckung]
+  lesson: testing/coverage-und-mutation-testing
+
+- slug: architekturtest
+  term: Architekturtest
+  short: Ein Test, der den Code liest und Strukturregeln prüft – etwa Namenskonventionen, verbotene Funktionen oder Abhängigkeiten zwischen Schichten.
+  explanation: >
+    Architekturtests führen keine Geschäftslogik aus, sondern prüfen Regeln für viele Dateien auf einmal. In
+    Pest schreibst du sie mit `arch()->expect('Namespace')`, gefolgt von Regeln wie `toUseStrictTypes()` oder
+    `not->toUse('App\Http')`. So werden Teamregeln automatisch bei jedem Lauf geprüft.
+  example: "`arch()->expect('App')->toUseStrictTypes();`"
+  category: testing
+  aliases: [Architekturtests, Arch-Test, arch()]
+  related: [pest, schichtenarchitektur, strict-types]
+  lesson: testing/architekturtests
+
+- slug: test-factory
+  term: Test-Factory
+  short: Eine Funktion oder Klasse, die Testdaten mit sinnvollen Standardwerten erzeugt, die du gezielt überschreibst.
+  explanation: >
+    Factories halten Tests kurz: Im Test steht nur, was für den Fall wichtig ist, etwa `blocked: true`. Gute
+    Factories liefern gültige Objekte, eindeutige Werte wie fortlaufende IDs und bei jedem Aufruf ein neues
+    Objekt. In Laravel gibt es dafür Model-Factories.
+  example: "`buildUser({ role: 'admin' })` liefert einen vollständigen User, nur mit anderer Rolle."
+  category: testing
+  aliases: [Testdaten-Factory, Factory-Funktion, Builder]
+  related: [factory, faker, seed-daten]
+  lesson: testing/testdaten-und-flaky-tests
+
+- slug: faker
+  term: Faker
+  short: Eine Bibliothek, die realistische erfundene Daten wie Namen, Adressen oder E-Mails erzeugt.
+  explanation: >
+    In PHP heißt das Paket `fakerphp/faker`, in JavaScript `@faker-js/faker`. Factories nutzen Faker, um
+    abwechslungsreiche Testdaten zu erzeugen. Mit einem festen Seed liefert Faker bei jedem Lauf dieselben Werte,
+    damit Tests reproduzierbar bleiben.
+  example: "`$faker = Faker\\Factory::create('de_DE'); $faker->seed(42); $faker->name();`"
+  category: testing
+  aliases: [FakerPHP, faker-js, Fake-Daten]
+  related: [test-factory, factory, deterministisch]
+  lesson: testing/testdaten-und-flaky-tests
+
+- slug: flaky-test
+  term: Flaky Test
+  short: Ein wackeliger Test, der bei unverändertem Code mal grün und mal rot ist.
+  explanation: >
+    Flaky Tests haben eine versteckte Abhängigkeit, etwa von der Uhrzeit, Zufallswerten, der Reihenfolge der
+    Tests, Timing oder dem Netzwerk. Sie untergraben das Vertrauen in die Testsuite. Man reproduziert sie mit
+    vielen Wiederholungen oder zufälliger Reihenfolge und macht die Abhängigkeit dann kontrollierbar.
+  example: "Ein Test mit `new Date()` ist nur kurz nach Mitternacht rot – ein typischer Flaky Test."
+  category: testing
+  aliases: [wackeliger Test, Flaky Tests, flaky, wackliger Test]
+  related: [deterministisch, fake-timer, auto-waiting, bruechiger-test]
+  lesson: testing/testdaten-und-flaky-tests
+
+- slug: tdd
+  term: Testgetriebene Entwicklung (TDD)
+  short: Eine Arbeitsweise, bei der du zuerst einen fehlschlagenden Test schreibst und erst dann den Code, der ihn erfüllt.
+  explanation: >
+    TDD folgt dem Zyklus Red, Green, Refactor in sehr kleinen Schritten. Die Tests treiben das Design: Du baust
+    nur, was ein Test verlangt, und räumst mit dem Sicherheitsnetz grüner Tests auf. Besonders nützlich ist TDD
+    bei Geschäftsregeln und Bugfixes.
+  example: "Erst `expect(toRoman(4)).toBe('IV')` schreiben und rot sehen, dann die Funktion erweitern."
+  category: testing
+  aliases: [TDD, Test-Driven Development, testgetrieben]
+  related: [red-green-refactor, refactoring, regressionstest]
+  lesson: testing/tdd-in-der-praxis
+
+- slug: red-green-refactor
+  term: Red-Green-Refactor
+  short: Der Dreischritt der testgetriebenen Entwicklung – roter Test, einfachster grüner Code, Aufräumen.
+  explanation: >
+    In Red schreibst du einen Test, der aus dem richtigen Grund fehlschlägt. In Green machst du ihn mit
+    möglichst wenig Code grün. In Refactor verbesserst du die Struktur, während alle Tests grün bleiben. Ein
+    Durchlauf dauert oft nur Sekunden bis Minuten.
+  example: "Red: Test für 9 → IX. Green: Sonderfall einbauen. Refactor: Sonderfälle in eine Tabelle ziehen."
+  category: testing
+  aliases: [Red Green Refactor, TDD-Zyklus]
+  related: [tdd, refactoring]
+  lesson: testing/tdd-in-der-praxis

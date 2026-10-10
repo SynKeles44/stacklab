@@ -1,0 +1,186 @@
+title: Pest für PHP
+description: Pest installieren, Tests mit Expectations schreiben, viele Fälle mit Datasets prüfen, Hooks nutzen und Abhängigkeiten mit Fakes und Mockery ersetzen.
+exercise:
+  id: modul-uebung-warenkorb
+  type: terminal
+  title: Eine Testsuite für den Warenkorb
+  description: |
+    Im Ordner `warenkorb` liegt ein Pest-Projekt mit der Klasse `App\Cart`:
+
+    - `add(string $sku, int $priceCents, int $quantity = 1)` legt eine Position an. Eine Menge unter 1
+      oder ein negativer Preis lösen eine `InvalidArgumentException` aus.
+    - `total()` liefert die Summe in Cent (Preis × Menge).
+    - `grossTotal(TaxRates $rates, string $country)` rechnet die Steuer des Landes auf und rundet auf
+      ganze Cent. `App\TaxRates` ist ein Interface mit `rateFor(string $country): float` – in Produktion
+      fragt es einen externen Dienst.
+
+    Schreibe `tests/Unit/CartTest.php` mit allem, was du in diesem Modul gelernt hast:
+
+    1. Ein `beforeEach`-Hook legt einen leeren Warenkorb in `$this->cart`.
+    2. Ein Test mit Dataset (`->with([...])`, mindestens **drei** benannte Fälle) prüft `total()` –
+       z. B. leerer Warenkorb, eine Position, mehrere Positionen mit Mengen.
+    3. Mindestens ein Test prüft eine `InvalidArgumentException` (Menge 0 oder negativer Preis).
+    4. Ein Test prüft `grossTotal()` mit einem **Test-Double** für `TaxRates` (Mockery-Mock oder
+       anonyme Klasse), das für `DE` den Satz `0.19` liefert. 1000 Cent netto ergeben 1190 Cent brutto.
+    5. Insgesamt mindestens **sechs** Testläufe, alle grün.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** (Composer installiert dabei Pest und Mockery).
+  workdir: warenkorb
+  setup: |
+    cat > composer.json <<'EOF'
+    {
+        "name": "stacklab/warenkorb",
+        "type": "project",
+        "require": {
+            "php": "^8.4"
+        },
+        "require-dev": {
+            "pestphp/pest": "^5.3",
+            "mockery/mockery": "^1.6"
+        },
+        "autoload": {
+            "psr-4": { "App\\": "src/" }
+        },
+        "config": {
+            "allow-plugins": { "pestphp/pest-plugin": true }
+        }
+    }
+    EOF
+    cat > phpunit.xml <<'EOF'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <phpunit bootstrap="vendor/autoload.php" colors="true">
+        <testsuites>
+            <testsuite name="Test Suite">
+                <directory suffix="Test.php">./tests</directory>
+            </testsuite>
+        </testsuites>
+        <source>
+            <include>
+                <directory>src</directory>
+            </include>
+        </source>
+    </phpunit>
+    EOF
+    mkdir -p src tests/Unit
+    printf '<?php\n' > tests/Pest.php
+    cat > src/TaxRates.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App;
+
+    interface TaxRates
+    {
+        public function rateFor(string $country): float;
+    }
+    EOF
+    cat > src/Cart.php <<'EOF'
+    <?php
+
+    declare(strict_types=1);
+
+    namespace App;
+
+    final class Cart
+    {
+        /** @var list<array{sku: string, price: int, quantity: int}> */
+        private array $items = [];
+
+        public function add(string $sku, int $priceCents, int $quantity = 1): void
+        {
+            if ($quantity < 1) {
+                throw new \InvalidArgumentException('Quantity must be at least 1.');
+            }
+            if ($priceCents < 0) {
+                throw new \InvalidArgumentException('Price must not be negative.');
+            }
+            $this->items[] = ['sku' => $sku, 'price' => $priceCents, 'quantity' => $quantity];
+        }
+
+        public function total(): int
+        {
+            return array_sum(array_map(fn (array $item) => $item['price'] * $item['quantity'], $this->items));
+        }
+
+        public function grossTotal(TaxRates $rates, string $country): int
+        {
+            return (int) round($this->total() * (1 + $rates->rateFor($country)));
+        }
+    }
+    EOF
+    timeout 150 composer install -n -q </dev/null
+  checks:
+    - type: file_exists
+      path: tests/Unit/CartTest.php
+      message: Lege tests/Unit/CartTest.php an.
+    - type: file_contains
+      path: tests/Unit/CartTest.php
+      pattern: "beforeEach\\("
+      message: Lege den Warenkorb in einem beforeEach-Hook an.
+    - type: file_contains
+      path: tests/Unit/CartTest.php
+      pattern: "->with\\("
+      message: Prüfe total() mit einem Dataset (->with([...])).
+    - type: file_contains
+      path: tests/Unit/CartTest.php
+      pattern: "(->throws\\(|toThrow\\()"
+      message: Es fehlt ein Test für die InvalidArgumentException.
+    - type: file_contains
+      path: tests/Unit/CartTest.php
+      pattern: "grossTotal\\("
+      message: Es fehlt ein Test für grossTotal() mit einem Double für TaxRates.
+    - type: command
+      run: ./vendor/bin/pest tests/Unit/CartTest.php
+      message: Die Testsuite ist noch nicht grün. Starte ./vendor/bin/pest und lies die Meldungen.
+    - type: command
+      run: ./vendor/bin/pest --list-tests tests/Unit/CartTest.php 2>/dev/null | grep -c '^ - '
+      stdout_matches: "^\\s*([6-9]|[1-9][0-9]+)\\s*$"
+      message: Es sollten mindestens sechs Testläufe sein (jeder Dataset-Fall zählt einzeln).
+  hints:
+    - "Starte mit `beforeEach(function () { $this->cart = new Cart(); });` und einem Test pro Anforderung."
+    - "Im Dataset-Test fügst du die Positionen in der Closure hinzu: `function (array $items, int $expected) { foreach ($items as [$sku, $price, $qty]) { $this->cart->add($sku, $price, $qty); } … }`."
+    - "Double für TaxRates: `$rates = Mockery::mock(TaxRates::class); $rates->shouldReceive('rateFor')->with('DE')->andReturn(0.19);`"
+  solution: |
+    ```bash
+    cd warenkorb
+    cat > tests/Unit/CartTest.php <<'EOF'
+    <?php
+
+    use App\Cart;
+    use App\TaxRates;
+
+    beforeEach(function () {
+        $this->cart = new Cart();
+    });
+
+    it('summiert die Positionen', function (array $items, int $expected) {
+        foreach ($items as [$sku, $price, $quantity]) {
+            $this->cart->add($sku, $price, $quantity);
+        }
+
+        expect($this->cart->total())->toBe($expected);
+    })->with([
+        'leerer Warenkorb' => [[], 0],
+        'eine Position' => [[['A-1', 1000, 1]], 1000],
+        'mehrere Positionen mit Mengen' => [[['A-1', 1000, 2], ['B-2', 250, 4]], 3000],
+    ]);
+
+    it('lehnt die Menge 0 ab', function () {
+        $this->cart->add('A-1', 1000, 0);
+    })->throws(InvalidArgumentException::class);
+
+    it('lehnt negative Preise ab', function () {
+        $this->cart->add('A-1', -1);
+    })->throws(InvalidArgumentException::class);
+
+    it('rechnet die Steuer des Landes auf', function () {
+        $rates = Mockery::mock(TaxRates::class);
+        $rates->shouldReceive('rateFor')->once()->with('DE')->andReturn(0.19);
+        $this->cart->add('A-1', 1000);
+
+        expect($this->cart->grossTotal($rates, 'DE'))->toBe(1190);
+    });
+    EOF
+    ./vendor/bin/pest
+    ```

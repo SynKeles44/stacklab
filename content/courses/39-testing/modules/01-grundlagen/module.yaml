@@ -1,0 +1,47 @@
+title: Grundlagen des Testens
+description: Warum automatisierte Tests sich lohnen, wie ein guter Test aufgebaut ist und wie du Unit-, Integrations- und End-to-End-Tests verteilst.
+exercise:
+  id: modul-uebung-teststrategie
+  type: steps
+  title: Eine Teststrategie für den Gutschein-Service
+  description: |
+    Dein Team baut einen Gutschein-Service für einen Onlineshop: Kund:innen geben im Checkout einen Code
+    ein, der Service prüft ihn und zieht den Rabatt ab. Du sollst die Tests planen. Entscheide in jeder
+    Situation, was ein erfahrenes Team tun würde.
+  steps:
+    - situation: "Die Klasse `GutscheinRechner` berechnet aus Warenkorbsumme und Prozentsatz den neuen Preis. Sie braucht weder Datenbank noch HTTP."
+      question: Auf welcher Ebene testest du die Berechnung?
+      options: [Unit-Tests, End-to-End-Tests im Browser, Gar nicht – das sieht man ja]
+      answer: 0
+      explanation: Reine Logik ohne Abhängigkeiten ist der ideale Kandidat für schnelle Unit-Tests. Hier lohnen sich viele Fälle.
+    - situation: Ein Gutschein gilt nur für Warenkörbe ab 20 Euro (2000 Cent).
+      question: Welche Warenkorbsummen nimmst du für die Tests dieser Regel?
+      options: ["1000 und 3000", "1999, 2000 und 2001", "Nur 2000"]
+      answer: 1
+      explanation: Grenzwertanalyse – direkt unter, genau auf und über der Schwelle. So fällt ein `>` statt `>=` sofort auf.
+    - situation: "Die Gutscheine liegen in einer Datenbanktabelle. Das `GutscheinRepository` sucht einen Code und markiert ihn als eingelöst."
+      question: Wie prüfst du das Repository am sinnvollsten?
+      options:
+        - Mit einem Integrationstest gegen eine Testdatenbank
+        - Mit einem Unit-Test, der die Datenbank komplett wegmockt
+        - Gar nicht, die Datenbank funktioniert ja
+      answer: 0
+      explanation: Beim Repository geht es gerade um das Zusammenspiel mit der Datenbank. Ein Mock würde genau das verstecken, was du prüfen willst.
+    - situation: Das Marketing will sicher sein, dass ein Gutschein im echten Checkout im Browser funktioniert – vom Eingabefeld bis zur Bestätigung.
+      question: Wie viele End-to-End-Tests schreibst du dafür?
+      options:
+        - Einen für jeden Prozentsatz von 1 bis 100
+        - Wenige – den Erfolgsweg und vielleicht einen abgelehnten Code
+        - Keinen, Unit-Tests reichen immer
+      answer: 1
+      explanation: End-to-End-Tests sind teuer. Sie decken den kritischen Weg ab; die vielen Rechenfälle prüfen die Unit-Tests darunter.
+    - situation: Ein Test prüft, dass `GutscheinRechner` intern die private Methode `rundeAb()` genau einmal aufruft. Beim Umbau auf eine andere Rundung wird er rot, obwohl alle Preise stimmen.
+      question: Was ist das Problem?
+      options:
+        - Der Test prüft Implementierung statt Verhalten
+        - Der Test ist zu schnell
+        - Der Umbau war falsch
+      answer: 0
+      explanation: Gute Tests prüfen Ergebnisse (Ein- und Ausgaben). Dann kannst du intern umbauen, und die Tests bleiben grün, solange das Verhalten stimmt.
+  hints:
+    - Denk an die Testpyramide – viele billige Tests unten, wenige teure oben.

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="800" height="420" fill="#ffffff"/>
+<text x="400" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Die Testpyramide</text>
+<path d="M300 50 L380 160 L220 160 Z" fill="#f87171" fill-opacity=".18" stroke="#f87171" stroke-width="3" stroke-linejoin="round"/>
+<path d="M220 164 L380 164 L460 270 L140 270 Z" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="3" stroke-linejoin="round"/>
+<path d="M140 274 L460 274 L540 380 L60 380 Z" fill="#34d399" fill-opacity=".18" stroke="#34d399" stroke-width="3" stroke-linejoin="round"/>
+<path d="M600 370 V 70" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="620" y="80" font-size="14" font-weight="600" fill="#1e1b3a">langsamer, teurer</text>
+<text x="620" y="100" font-size="14" fill="#475569">mehr Vertrauen pro Test</text>
+<text x="620" y="120" font-size="14" fill="#475569">wenige Tests</text>
+<text x="620" y="320" font-size="14" font-weight="600" fill="#1e1b3a">schnell, billig</text>
+<text x="620" y="340" font-size="14" fill="#475569">präzise Fehlermeldung</text>
+<text x="620" y="360" font-size="14" fill="#475569">viele Tests</text>
+<text x="300" y="408" text-anchor="middle" font-size="13" fill="#475569">Breite = ungefähre Anzahl der Tests</text>
+</svg>

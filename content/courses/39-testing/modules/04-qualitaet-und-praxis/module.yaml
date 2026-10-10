@@ -1,0 +1,240 @@
+title: Testqualität und Praxis
+description: Coverage und Mutation Testing, Architekturtests, saubere Testdaten, wackelige Tests und testgetriebene Entwicklung im Alltag.
+exercise:
+  id: modul-uebung-gutschein-pruefung
+  type: terminal
+  title: Ein zeitabhängiger Gutschein-Validator – zuverlässig getestet
+  description: |
+    Im Ordner `gutschein-pruefung` liegt ein Pest-Projekt. `App\VoucherValidator::isValid($code, $cartCents, $validUntil)`
+    akzeptiert einen Gutschein, wenn
+
+    - der Code aus 6 bis 12 Großbuchstaben oder Ziffern besteht,
+    - der Warenkorb mindestens 2000 Cent wert ist und
+    - die aktuelle Zeit (`Clock::now()`) nicht nach `$validUntil` liegt.
+
+    Der vorhandene Test nutzt die echte `SystemClock` – er wird an einem bestimmten Tag ganz von allein rot.
+    Bring die Testsuite auf ein professionelles Niveau:
+
+    1. Ersetze in `tests/Unit/VoucherValidatorTest.php` die echte Uhr durch eine feste Test-Uhr
+       (eigene Klasse oder anonyme Klasse, die `App\Clock` implementiert). `SystemClock` kommt im Test
+       nicht mehr vor.
+    2. Ergänze `mutates(VoucherValidator::class);` und Tests (gern mit Dataset), bis
+       `XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=100` grün ist. Denk an die Grenzen:
+       1999/2000 Cent, genau der Ablaufzeitpunkt und eine Sekunde danach, 5 und 13 Zeichen.
+    3. Lege `tests/ArchTest.php` an: `App` nutzt `strict_types`, keine Debug-Funktionen, und alle Klassen
+       in `App` sind `final` (`->classes()->toBeFinal()`).
+    4. Ändere `src/` nicht.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** (Composer installiert dabei Pest).
+  workdir: gutschein-pruefung
+  setup: |
+    cat > composer.json <<'EOF'
+    {
+        "name": "stacklab/gutschein-pruefung",
+        "type": "project",
+        "require": {
+            "php": "^8.4"
+        },
+        "require-dev": {
+            "pestphp/pest": "^5.3"
+        },
+        "autoload": {
+            "psr-4": { "App\\": "src/" }
+        },
+        "config": {
+            "allow-plugins": { "pestphp/pest-plugin": true }
+        }
+    }
+    EOF
+    cat > phpunit.xml <<'EOF'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <phpunit bootstrap="vendor/autoload.php" colors="true">
+        <testsuites>
+            <testsuite name="Test Suite">
+                <directory suffix="Test.php">./tests</directory>
+            </testsuite>
+        </testsuites>
+        <source>
+            <include>
+                <directory>src</directory>
+            </include>
+        </source>
+    </phpunit>
+    EOF
+    mkdir -p src tests/Unit
+    printf '<?php\n' > tests/Pest.php
+    cat > src/Clock.php <<'EOF'
+    <?php
+    
+    declare(strict_types=1);
+    
+    namespace App;
+    
+    interface Clock
+    {
+        public function now(): \DateTimeImmutable;
+    }
+    EOF
+    cat > src/SystemClock.php <<'EOF'
+    <?php
+    
+    declare(strict_types=1);
+    
+    namespace App;
+    
+    final class SystemClock implements Clock
+    {
+        public function now(): \DateTimeImmutable
+        {
+            return new \DateTimeImmutable();
+        }
+    }
+    EOF
+    cat > src/VoucherValidator.php <<'EOF'
+    <?php
+    
+    declare(strict_types=1);
+    
+    namespace App;
+    
+    final class VoucherValidator
+    {
+        public function __construct(private Clock $clock)
+        {
+        }
+    
+        public function isValid(string $code, int $cartCents, \DateTimeImmutable $validUntil): bool
+        {
+            if (preg_match('/^[A-Z0-9]{6,12}$/', $code) !== 1) {
+                return false;
+            }
+    
+            if ($cartCents < 2000) {
+                return false;
+            }
+    
+            return $this->clock->now() <= $validUntil;
+        }
+    }
+    EOF
+    cat > tests/Unit/VoucherValidatorTest.php <<'EOF'
+    <?php
+    
+    use App\SystemClock;
+    use App\VoucherValidator;
+    
+    it('akzeptiert einen gültigen Gutschein', function () {
+        $validator = new VoucherValidator(new SystemClock());
+    
+        expect($validator->isValid('SOMMER26', 5000, new DateTimeImmutable('2026-12-31 23:59:59')))->toBeTrue();
+    });
+    EOF
+    timeout 150 composer install -n -q </dev/null
+
+  checks:
+    - type: file_contains
+      path: src/VoucherValidator.php
+      pattern: "\\$cartCents < 2000"
+      message: src/VoucherValidator.php wurde verändert. Setze die Aufgabe zurück – du sollst nur Tests schreiben.
+    - type: command
+      run: grep -c 'SystemClock' tests/Unit/VoucherValidatorTest.php
+      expect_exit: 1
+      message: Der Test nutzt noch die echte SystemClock. Ersetze sie durch eine feste Test-Uhr.
+    - type: file_contains
+      path: tests/Unit/VoucherValidatorTest.php
+      pattern: "mutates\\(\\s*VoucherValidator::class\\s*\\)"
+      message: Ergänze mutates(VoucherValidator::class); am Anfang der Testdatei.
+    - type: file_contains
+      path: tests/ArchTest.php
+      pattern: "toUseStrictTypes\\("
+      message: Lege tests/ArchTest.php mit einer Regel für strict_types an.
+    - type: file_contains
+      path: tests/ArchTest.php
+      pattern: "toBeFinal\\("
+      message: In tests/ArchTest.php fehlt die Regel, dass alle Klassen final sind.
+    - type: file_contains
+      path: tests/ArchTest.php
+      pattern: "var_dump"
+      message: In tests/ArchTest.php fehlt die Regel gegen Debug-Funktionen.
+    - type: command
+      run: ./vendor/bin/pest
+      message: Nicht alle Tests sind grün. Starte ./vendor/bin/pest.
+    - type: command
+      run: XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=100
+      message: Es überleben noch Mutanten. Starte XDEBUG_MODE=coverage ./vendor/bin/pest --mutate und teste die gemeldeten Grenzen.
+  hints:
+    - "Eine Test-Uhr: `final class FixedClock implements Clock { public function __construct(private DateTimeImmutable $now) {} public function now(): DateTimeImmutable { return $this->now; } }` – direkt in der Testdatei."
+    - "Für die Zeitgrenze brauchst du zwei Tests: Uhr genau auf `$validUntil` (gültig) und eine Sekunde später (ungültig)."
+    - "Arch-Regel für final: `arch()->expect('App')->classes()->toBeFinal();` – das Interface Clock zählt dabei nicht mit."
+  solution: |
+    ```bash
+    cd gutschein-pruefung
+    cat > tests/Unit/VoucherValidatorTest.php <<'EOF'
+    <?php
+    
+    use App\Clock;
+    use App\VoucherValidator;
+    
+    mutates(VoucherValidator::class);
+    
+    final class FixedClock implements Clock
+    {
+        public function __construct(private DateTimeImmutable $now)
+        {
+        }
+    
+        public function now(): DateTimeImmutable
+        {
+            return $this->now;
+        }
+    }
+    
+    beforeEach(function () {
+        $this->validUntil = new DateTimeImmutable('2026-06-30 23:59:59');
+        $this->validator = new VoucherValidator(new FixedClock(new DateTimeImmutable('2026-06-01 12:00:00')));
+    });
+    
+    it('prüft Code und Warenkorbwert', function (string $code, int $cart, bool $expected) {
+        expect($this->validator->isValid($code, $cart, $this->validUntil))->toBe($expected);
+    })->with([
+        'gültig' => ['SOMMER26', 5000, true],
+        'genau 20 Euro' => ['SOMMER26', 2000, true],
+        '19,99 Euro' => ['SOMMER26', 1999, false],
+        'Kleinbuchstaben' => ['sommer26', 5000, false],
+        'zu kurz' => ['ABC12', 5000, false],
+        'zu lang' => ['ABCDEFGHIJKLM', 5000, false],
+        'Sonderzeichen' => ['SOMMER-26', 5000, false],
+    ]);
+    
+    it('gilt bis einschließlich zum Ablaufzeitpunkt', function () {
+        $validator = new VoucherValidator(new FixedClock(new DateTimeImmutable('2026-06-30 23:59:59')));
+    
+        expect($validator->isValid('SOMMER26', 5000, $this->validUntil))->toBeTrue();
+    });
+    
+    it('gilt eine Sekunde danach nicht mehr', function () {
+        $validator = new VoucherValidator(new FixedClock(new DateTimeImmutable('2026-07-01 00:00:00')));
+    
+        expect($validator->isValid('SOMMER26', 5000, $this->validUntil))->toBeFalse();
+    });
+    EOF
+    cat > tests/ArchTest.php <<'EOF'
+    <?php
+    
+    arch('strict_types überall')
+        ->expect('App')
+        ->toUseStrictTypes();
+    
+    arch('keine Debug-Ausgaben')
+        ->expect(['dd', 'dump', 'var_dump'])
+        ->not->toBeUsed();
+    
+    arch('Klassen sind final')
+        ->expect('App')
+        ->classes()
+        ->toBeFinal();
+    EOF
+    ./vendor/bin/pest
+    XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=100
+
+    ```

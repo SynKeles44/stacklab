@@ -1,0 +1,148 @@
+title: JavaScript und TypeScript testen
+description: Unit-Tests mit Vitest, Mocks und Fake-Timer, Coverage, ein Blick auf Komponententests und End-to-End-Tests mit Playwright.
+exercise:
+  id: modul-uebung-cart-service
+  type: terminal
+  title: Den Cart-Service vollständig testen
+  description: |
+    Im Ordner `cart-service` liegt ein TypeScript-Projekt mit Vitest und Coverage. `src/cart-service.ts`
+    enthält:
+
+    - `shippingCost(totalCents)` – 0 ab 5000 Cent, sonst 490; ein negativer Betrag wirft `Error('Negative total')`.
+    - `cartTotal(api, items)` – fragt für jede Position `await api.getPrice(sku)` ab und summiert
+      Preis × Menge. Hat eine Position eine Menge unter 1, wirft die Funktion `Error('Invalid quantity')` –
+      **bevor** sie die API fragt.
+
+    Schreibe `src/cart-service.test.ts`:
+
+    1. `shippingCost` mit `it.each` und mindestens drei Fällen – inklusive der Grenze 4999/5000 – plus ein
+       Test für den negativen Betrag.
+    2. `cartTotal` mit einer Preis-API aus `vi.fn()` (z. B. `mockImplementation` mit festen Preisen je SKU).
+       Prüfe die Summe und dass `getPrice` für jede Position einmal aufgerufen wurde.
+    3. Ein Test, dass `cartTotal` bei Menge 0 mit `rejects.toThrow('Invalid quantity')` abbricht und die
+       API **nie** aufruft (`not.toHaveBeenCalled()`).
+    4. Am Ende muss `npx vitest run --coverage` für `cart-service.ts` 100 Prozent Zeilen und Verzweigungen zeigen.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – npm installiert dabei Vitest.
+  workdir: cart-service
+  setup: |
+    cat > package.json <<'EOF'
+    {
+      "name": "cart-service",
+      "private": true,
+      "type": "module",
+      "scripts": {
+        "test": "vitest run",
+        "coverage": "vitest run --coverage"
+      }
+    }
+    EOF
+    mkdir -p src
+    cat > src/cart-service.ts <<'EOF'
+    export interface PriceApi {
+      getPrice(sku: string): Promise<number>
+    }
+
+    export interface CartItem {
+      sku: string
+      qty: number
+    }
+
+    export function shippingCost(totalCents: number): number {
+      if (totalCents < 0) {
+        throw new Error('Negative total')
+      }
+      return totalCents >= 5000 ? 0 : 490
+    }
+
+    export async function cartTotal(api: PriceApi, items: CartItem[]): Promise<number> {
+      if (items.some((item) => item.qty < 1)) {
+        throw new Error('Invalid quantity')
+      }
+      let total = 0
+      for (const item of items) {
+        total += (await api.getPrice(item.sku)) * item.qty
+      }
+      return total
+    }
+    EOF
+    timeout 170 npm install -D vitest @vitest/coverage-v8 --no-audit --no-fund --loglevel=error </dev/null
+  checks:
+    - type: file_exists
+      path: src/cart-service.test.ts
+      message: Lege src/cart-service.test.ts an.
+    - type: file_contains
+      path: src/cart-service.test.ts
+      pattern: "\\.each\\("
+      message: Teste shippingCost mit it.each.
+    - type: file_contains
+      path: src/cart-service.test.ts
+      pattern: "vi\\.fn\\("
+      message: Ersetze die Preis-API durch eine Mock-Funktion mit vi.fn().
+    - type: file_contains
+      path: src/cart-service.test.ts
+      pattern: "rejects"
+      message: Prüfe den Fehler von cartTotal mit await expect(...).rejects.toThrow(...).
+    - type: file_contains
+      path: src/cart-service.test.ts
+      pattern: "not\\.toHaveBeenCalled\\("
+      message: Prüfe, dass die API bei ungültiger Menge nie aufgerufen wird (not.toHaveBeenCalled()).
+    - type: command
+      run: npx vitest run src/cart-service.test.ts
+      message: Die Tests sind noch nicht grün. Starte npm test und lies die Meldung.
+    - type: command
+      run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); npx vitest run src/cart-service.test.ts --reporter=json --outputFile=\"$d/r.json\" >/dev/null 2>&1; jq -r '.numPassedTests' \"$d/r.json\"; rm -rf \"$d\""
+      stdout_matches: "^\\s*([6-9]|[1-9][0-9]+)\\s*$"
+      message: Es sollten mindestens sechs grüne Tests sein (jeder it.each-Fall zählt einzeln).
+    - type: command
+      run: npx vitest run --coverage --coverage.include=src/cart-service.ts --coverage.thresholds.lines=100 --coverage.thresholds.branches=100
+      message: cart-service.ts ist noch nicht zu 100 Prozent abgedeckt. Schau mit npx vitest run --coverage nach, welche Zeilen fehlen.
+  hints:
+    - "Preis-API: `const api = { getPrice: vi.fn(async (sku: string) => (sku === 'A' ? 1000 : 250)) }`."
+    - "Summe prüfen: `await expect(cartTotal(api, [{ sku: 'A', qty: 2 }, { sku: 'B', qty: 4 }])).resolves.toBe(3000)`."
+    - "Fehlerfall: `await expect(cartTotal(api, [{ sku: 'A', qty: 0 }])).rejects.toThrow('Invalid quantity')` und danach `expect(api.getPrice).not.toHaveBeenCalled()`."
+  solution: |
+    ```bash
+    cd cart-service
+    cat > src/cart-service.test.ts <<'EOF'
+    import { describe, it, expect, vi } from 'vitest'
+    import { cartTotal, shippingCost } from './cart-service'
+
+    describe('shippingCost', () => {
+      it.each([
+        [0, 490],
+        [4999, 490],
+        [5000, 0],
+        [12000, 0],
+      ])('shippingCost(%i) = %i', (total, expected) => {
+        expect(shippingCost(total)).toBe(expected)
+      })
+
+      it('lehnt negative Beträge ab', () => {
+        expect(() => shippingCost(-1)).toThrow('Negative total')
+      })
+    })
+
+    describe('cartTotal', () => {
+      const createApi = () => ({
+        getPrice: vi.fn(async (sku: string) => (sku === 'A' ? 1000 : 250)),
+      })
+
+      it('summiert Preis mal Menge', async () => {
+        const api = createApi()
+
+        await expect(cartTotal(api, [{ sku: 'A', qty: 2 }, { sku: 'B', qty: 4 }])).resolves.toBe(3000)
+        expect(api.getPrice).toHaveBeenCalledTimes(2)
+        expect(api.getPrice).toHaveBeenCalledWith('A')
+      })
+
+      it('bricht bei Menge 0 ab, ohne die API zu fragen', async () => {
+        const api = createApi()
+
+        await expect(cartTotal(api, [{ sku: 'A', qty: 0 }])).rejects.toThrow('Invalid quantity')
+        expect(api.getPrice).not.toHaveBeenCalled()
+      })
+    })
+    EOF
+    npx vitest run --coverage
+    ```

@@ -1,0 +1,820 @@
+title: Gutschein-Modul mit vollständiger Testsuite
+description: |
+  In diesem Projekt baust du ein kleines, aber echtes Gutschein-Modul für einen Onlineshop – und zwar so,
+  wie es ein professionelles Team tun würde: testgetrieben, mit Datasets, sauberen Testdaten, einem Mock
+  für die Datenbank, Architekturregeln und am Ende mit 100 Prozent Coverage **und** 100 Prozent
+  Mutation Score.
+
+  Alles passiert im Ordner `projekt` in deinem Testing-Workspace. Klicke zuerst auf **Projekt vorbereiten**:
+  Dabei entstehen `composer.json`, `phpunit.xml` und `tests/Pest.php`, und Composer installiert Pest und
+  Mockery. Öffne dann das Übungs-Terminal und wechsle mit `cd projekt` hinein.
+
+  Die Schritte bauen aufeinander auf. Nach jedem Schritt prüft Stacklab den echten Zustand deines Projekts –
+  und ob alle Tests grün sind. Lösche nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Ein Composer-Projekt mit den Klassen `App\Voucher`, `App\RedeemVoucher`, `App\VoucherRepository` und
+  `App\VoucherNotFound`, getestet mit Pest: Datasets, Exceptions, einer Test-Factory, einem Mockery-Mock,
+  Architekturtests, 100 Prozent Code Coverage und 100 Prozent Mutation Score.
+workdir: projekt
+setup: |
+  cat > composer.json <<'EOF'
+  {
+      "name": "stacklab/gutschein-modul",
+      "type": "project",
+      "require": {
+          "php": "^8.4"
+      },
+      "require-dev": {
+          "pestphp/pest": "^5.3",
+          "mockery/mockery": "^1.6"
+      },
+      "autoload": {
+          "psr-4": { "App\\": "src/" }
+      },
+      "config": {
+          "allow-plugins": { "pestphp/pest-plugin": true }
+      }
+  }
+  EOF
+  cat > phpunit.xml <<'EOF'
+  <?xml version="1.0" encoding="UTF-8"?>
+  <phpunit bootstrap="vendor/autoload.php" colors="true">
+      <testsuites>
+          <testsuite name="Test Suite">
+              <directory suffix="Test.php">./tests</directory>
+          </testsuite>
+      </testsuites>
+      <source>
+          <include>
+              <directory>src</directory>
+          </include>
+      </source>
+  </phpunit>
+  EOF
+  mkdir -p src tests/Unit
+  printf '<?php\n' > tests/Pest.php
+  timeout 170 composer install -n -q </dev/null
+steps:
+  - id: erster-test
+    title: Der erste Test – testgetrieben
+    description: |
+      Ein Gutschein hat einen Code und einen Prozentsatz. `apply(int $cartCents)` gibt den Warenkorbwert
+      nach Abzug des Rabatts zurück. Arbeite testgetrieben:
+
+      1. Lege `tests/Unit/VoucherTest.php` an mit dem Test „zieht den Prozentsatz ab“:
+         `new Voucher('SOMMER26', 10)` macht aus 1000 Cent 900 Cent.
+      2. Starte `./vendor/bin/pest` und sieh den Test **rot** werden (die Klasse fehlt).
+      3. Lege `src/Voucher.php` an: `final readonly class Voucher` im Namespace `App` mit
+         `declare(strict_types=1);`, den öffentlichen Eigenschaften `string $code` und `int $percent` und der
+         Methode `apply()`. Rechne in ganzen Cent: Der Rabatt ist `intdiv($cartCents * $percent, 100)`.
+      4. Starte die Tests erneut – jetzt grün.
+    checklist:
+      - Test zuerst geschrieben und rot gesehen
+      - "`src/Voucher.php` mit `apply()` angelegt"
+      - Test ist grün
+    hints:
+      - "Der Test: `it('zieht den Prozentsatz ab', function () { expect((new Voucher('SOMMER26', 10))->apply(1000))->toBe(900); });` – oben `use App\\Voucher;`."
+      - "Konstruktor mit Property Promotion: `public function __construct(public string $code, public int $percent) {}`"
+    checks:
+      - type: file_exists
+        path: tests/Unit/VoucherTest.php
+        message: Lege tests/Unit/VoucherTest.php an.
+      - type: file_contains
+        path: src/Voucher.php
+        pattern: "function apply\\("
+        message: In src/Voucher.php fehlt die Methode apply().
+      - type: command
+        run: ./vendor/bin/pest
+        message: Noch sind nicht alle Tests grün. Starte ./vendor/bin/pest und lies die Meldung.
+      - type: command
+        run: ./vendor/bin/pest --list-tests tests/Unit/VoucherTest.php 2>/dev/null | grep -c '^ - '
+        stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+        message: In tests/Unit/VoucherTest.php steht noch kein Test.
+    solution: |
+      ```bash
+      cat > tests/Unit/VoucherTest.php <<'EOF'
+      <?php
+
+      use App\Voucher;
+
+      it('zieht den Prozentsatz ab', function () {
+          expect((new Voucher('SOMMER26', 10))->apply(1000))->toBe(900);
+      });
+      EOF
+      ./vendor/bin/pest   # rot: Klasse fehlt
+
+      cat > src/Voucher.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final readonly class Voucher
+      {
+          public function __construct(
+              public string $code,
+              public int $percent,
+          ) {
+          }
+
+          public function apply(int $cartCents): int
+          {
+              return $cartCents - intdiv($cartCents * $this->percent, 100);
+          }
+      }
+      EOF
+      ./vendor/bin/pest   # grün
+      ```
+    solve: |
+      cat > tests/Unit/VoucherTest.php <<'EOF'
+      <?php
+
+      use App\Voucher;
+
+      it('zieht den Prozentsatz ab', function () {
+          expect((new Voucher('SOMMER26', 10))->apply(1000))->toBe(900);
+      });
+      EOF
+      cat > src/Voucher.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final readonly class Voucher
+      {
+          public function __construct(
+              public string $code,
+              public int $percent,
+          ) {
+          }
+
+          public function apply(int $cartCents): int
+          {
+              return $cartCents - intdiv($cartCents * $this->percent, 100);
+          }
+      }
+      EOF
+
+  - id: mindestwert-dataset
+    title: Mindestbestellwert und ein Dataset
+    description: |
+      Gutscheine bekommen einen Mindestbestellwert: Liegt der Warenkorb darunter, bleibt der Betrag unverändert.
+
+      1. Ergänze in `Voucher` einen dritten Konstruktor-Parameter `int $minimumCents` (ohne Standardwert) und
+         passe `apply()` an. Passe auch deinen ersten Test an (`new Voucher('SOMMER26', 10, 0)`).
+      2. Schreibe einen Test „berechnet Rabatte“ mit einem **Dataset** aus mindestens fünf benannten Fällen.
+         Denk an die Grenzen: genau am Mindestwert und einen Cent darunter, 1 und 100 Prozent, und einen Fall,
+         in dem der Rabatt abgerundet wird (z. B. 10 Prozent von 999 Cent).
+    checklist:
+      - "`minimumCents` im Konstruktor und in `apply()` berücksichtigt"
+      - Dataset mit mindestens fünf benannten Fällen
+      - Grenzfälle am Mindestwert getestet
+    hints:
+      - "`if ($cartCents < $this->minimumCents) { return $cartCents; }` vor der Berechnung."
+      - "Ein Fall im Dataset: `'genau Mindestwert' => [10, 2000, 2000, 1800]` mit den Parametern Prozent, Mindestwert, Warenkorb, Erwartung."
+    checks:
+      - type: file_contains
+        path: src/Voucher.php
+        pattern: "minimumCents"
+        message: Voucher braucht den Parameter minimumCents.
+      - type: file_contains
+        path: tests/Unit/VoucherTest.php
+        pattern: "->with\\("
+        message: Teste die Rabatte mit einem Dataset (->with([...])).
+      - type: command
+        run: ./vendor/bin/pest
+        message: Noch sind nicht alle Tests grün. Starte ./vendor/bin/pest.
+      - type: command
+        run: ./vendor/bin/pest --list-tests tests/Unit/VoucherTest.php 2>/dev/null | grep -c '^ - '
+        stdout_matches: "^\\s*([6-9]|[1-9][0-9]+)\\s*$"
+        message: In VoucherTest.php sollten mindestens sechs Testläufe stehen (der erste Test plus fünf Dataset-Fälle).
+      - type: command
+        run: |
+          php -r 'require "vendor/autoload.php"; $v = new App\Voucher("X", 10, 2000); echo $v->apply(1999), " ", $v->apply(2000), "\n";'
+        stdout_matches: "^1999 1800\\s*$"
+        message: "apply() behandelt den Mindestwert noch nicht richtig: Unter dem Mindestwert bleibt der Betrag gleich, ab genau dem Mindestwert gibt es Rabatt."
+    solution: |
+      ```bash
+      cat > src/Voucher.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final readonly class Voucher
+      {
+          public function __construct(
+              public string $code,
+              public int $percent,
+              public int $minimumCents,
+          ) {
+          }
+
+          public function apply(int $cartCents): int
+          {
+              if ($cartCents < $this->minimumCents) {
+                  return $cartCents;
+              }
+
+              return $cartCents - intdiv($cartCents * $this->percent, 100);
+          }
+      }
+      EOF
+      cat > tests/Unit/VoucherTest.php <<'EOF'
+      <?php
+
+      use App\Voucher;
+
+      it('zieht den Prozentsatz ab', function () {
+          expect((new Voucher('SOMMER26', 10, 0))->apply(1000))->toBe(900);
+      });
+
+      it('berechnet Rabatte', function (int $percent, int $minimum, int $cart, int $expected) {
+          expect((new Voucher('SOMMER26', $percent, $minimum))->apply($cart))->toBe($expected);
+      })->with([
+          'zehn Prozent' => [10, 0, 1000, 900],
+          'abgerundeter Rabatt' => [10, 0, 999, 900],
+          'hundert Prozent' => [100, 0, 1000, 0],
+          'ein Prozent' => [1, 0, 1000, 990],
+          'unter Mindestwert' => [10, 2000, 1999, 1999],
+          'genau Mindestwert' => [10, 2000, 2000, 1800],
+      ]);
+      EOF
+      ./vendor/bin/pest
+      ```
+    solve: |
+      cat > src/Voucher.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final readonly class Voucher
+      {
+          public function __construct(
+              public string $code,
+              public int $percent,
+              public int $minimumCents,
+          ) {
+          }
+
+          public function apply(int $cartCents): int
+          {
+              if ($cartCents < $this->minimumCents) {
+                  return $cartCents;
+              }
+
+              return $cartCents - intdiv($cartCents * $this->percent, 100);
+          }
+      }
+      EOF
+      cat > tests/Unit/VoucherTest.php <<'EOF'
+      <?php
+
+      use App\Voucher;
+
+      it('zieht den Prozentsatz ab', function () {
+          expect((new Voucher('SOMMER26', 10, 0))->apply(1000))->toBe(900);
+      });
+
+      it('berechnet Rabatte', function (int $percent, int $minimum, int $cart, int $expected) {
+          expect((new Voucher('SOMMER26', $percent, $minimum))->apply($cart))->toBe($expected);
+      })->with([
+          'zehn Prozent' => [10, 0, 1000, 900],
+          'abgerundeter Rabatt' => [10, 0, 999, 900],
+          'hundert Prozent' => [100, 0, 1000, 0],
+          'ein Prozent' => [1, 0, 1000, 990],
+          'unter Mindestwert' => [10, 2000, 1999, 1999],
+          'genau Mindestwert' => [10, 2000, 2000, 1800],
+      ]);
+      EOF
+
+  - id: ungueltige-gutscheine
+    title: Ungültige Gutscheine ablehnen
+    description: |
+      Ein Gutschein mit 0 oder 150 Prozent ist ein Fehler, der früh auffallen soll.
+
+      1. Schreibe zuerst einen Test „lehnt ungültige Prozentsätze ab“, der für die Werte 0, 101 und -5 (als
+         Dataset) eine `InvalidArgumentException` erwartet. Sieh ihn rot werden.
+      2. Lass den Konstruktor von `Voucher` eine `\InvalidArgumentException` werfen, wenn der Prozentsatz
+         kleiner als 1 oder größer als 100 ist.
+    checklist:
+      - Test mit `->throws(InvalidArgumentException::class)` und Dataset
+      - Konstruktor prüft den Prozentsatz
+      - 1 und 100 Prozent bleiben erlaubt
+    hints:
+      - "`it('lehnt ungültige Prozentsätze ab', function (int $percent) { new Voucher('X', $percent, 0); })->throws(InvalidArgumentException::class)->with([0, 101, -5]);`"
+      - "Im Konstruktor-Rumpf: `if ($percent < 1 || $percent > 100) { throw new \\InvalidArgumentException('Percent must be between 1 and 100.'); }`"
+    checks:
+      - type: file_contains
+        path: tests/Unit/VoucherTest.php
+        pattern: "(->throws\\(|toThrow\\()"
+        message: Es fehlt ein Test, der die InvalidArgumentException erwartet.
+      - type: file_contains
+        path: src/Voucher.php
+        pattern: "InvalidArgumentException"
+        message: Der Konstruktor von Voucher wirft noch keine InvalidArgumentException.
+      - type: command
+        run: ./vendor/bin/pest
+        message: Noch sind nicht alle Tests grün. Starte ./vendor/bin/pest.
+      - type: command
+        run: |
+          php -r 'require "vendor/autoload.php"; foreach ([0, 101] as $p) { try { new App\Voucher("X", $p, 0); echo "kein Fehler bei $p\n"; exit(1); } catch (InvalidArgumentException) {} } new App\Voucher("X", 1, 0); new App\Voucher("X", 100, 0); echo "ok\n";'
+        stdout_matches: "^ok\\s*$"
+        message: "Der Konstruktor muss 0 und 101 Prozent ablehnen, 1 und 100 Prozent aber erlauben."
+    solution: |
+      ```bash
+      cat >> tests/Unit/VoucherTest.php <<'EOF'
+
+      it('lehnt ungültige Prozentsätze ab', function (int $percent) {
+          new Voucher('SOMMER26', $percent, 0);
+      })->throws(InvalidArgumentException::class)->with([0, 101, -5]);
+      EOF
+      ./vendor/bin/pest   # rot
+
+      # im Konstruktor von src/Voucher.php ergänzen:
+      #     if ($percent < 1 || $percent > 100) {
+      #         throw new \InvalidArgumentException('Percent must be between 1 and 100.');
+      #     }
+      ./vendor/bin/pest   # grün
+      ```
+    solve: |
+      cat > src/Voucher.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final readonly class Voucher
+      {
+          public function __construct(
+              public string $code,
+              public int $percent,
+              public int $minimumCents,
+          ) {
+              if ($percent < 1 || $percent > 100) {
+                  throw new \InvalidArgumentException('Percent must be between 1 and 100.');
+              }
+          }
+
+          public function apply(int $cartCents): int
+          {
+              if ($cartCents < $this->minimumCents) {
+                  return $cartCents;
+              }
+
+              return $cartCents - intdiv($cartCents * $this->percent, 100);
+          }
+      }
+      EOF
+      cat >> tests/Unit/VoucherTest.php <<'EOF'
+
+      it('lehnt ungültige Prozentsätze ab', function (int $percent) {
+          new Voucher('SOMMER26', $percent, 0);
+      })->throws(InvalidArgumentException::class)->with([0, 101, -5]);
+      EOF
+
+  - id: test-factory
+    title: Eine Test-Factory für Gutscheine
+    description: |
+      In jedem Test steht jetzt `new Voucher('SOMMER26', …, …)` – auch wo Code oder Mindestwert gar keine
+      Rolle spielen. Räume auf:
+
+      1. Lege in `tests/Pest.php` eine Funktion `voucher(array $overrides = []): Voucher` an. Sie nutzt die
+         Standardwerte Code `SOMMER26`, 10 Prozent und Mindestwert 0, die `$overrides` überschreiben dürfen.
+      2. Nutze `voucher(...)` in `tests/Unit/VoucherTest.php` überall dort, wo du bisher `new Voucher` geschrieben
+         hast, z. B. `voucher(['percent' => $percent, 'minimumCents' => $minimum])`.
+      3. Alle Tests bleiben grün – ein reines Refactoring.
+    checklist:
+      - Funktion `voucher()` in `tests/Pest.php`
+      - Tests nutzen die Factory statt `new Voucher`
+      - Alle Tests grün
+    hints:
+      - "`$data = array_merge(['code' => 'SOMMER26', 'percent' => 10, 'minimumCents' => 0], $overrides);` und dann `return new Voucher($data['code'], $data['percent'], $data['minimumCents']);`"
+      - "Funktionen aus `tests/Pest.php` stehen in allen Testdateien zur Verfügung."
+    checks:
+      - type: file_contains
+        path: tests/Pest.php
+        pattern: "function voucher\\("
+        message: Lege in tests/Pest.php die Funktion voucher() an.
+      - type: command
+        run: grep -c 'new Voucher' tests/Unit/VoucherTest.php
+        expect_exit: 1
+        message: In VoucherTest.php steht noch new Voucher – nutze überall die Factory voucher().
+      - type: command
+        run: ./vendor/bin/pest
+        message: Nach dem Umbau sind nicht mehr alle Tests grün. Starte ./vendor/bin/pest.
+    solution: |
+      ```bash
+      cat > tests/Pest.php <<'EOF'
+      <?php
+
+      use App\Voucher;
+
+      function voucher(array $overrides = []): Voucher
+      {
+          $data = array_merge(['code' => 'SOMMER26', 'percent' => 10, 'minimumCents' => 0], $overrides);
+
+          return new Voucher($data['code'], $data['percent'], $data['minimumCents']);
+      }
+      EOF
+      # in tests/Unit/VoucherTest.php jedes new Voucher(...) durch voucher([...]) ersetzen
+      ./vendor/bin/pest
+      ```
+    solve: |
+      cat > tests/Pest.php <<'EOF'
+      <?php
+
+      use App\Voucher;
+
+      function voucher(array $overrides = []): Voucher
+      {
+          $data = array_merge(['code' => 'SOMMER26', 'percent' => 10, 'minimumCents' => 0], $overrides);
+
+          return new Voucher($data['code'], $data['percent'], $data['minimumCents']);
+      }
+      EOF
+      cat > tests/Unit/VoucherTest.php <<'EOF'
+      <?php
+
+      it('zieht den Prozentsatz ab', function () {
+          expect(voucher()->apply(1000))->toBe(900);
+      });
+
+      it('berechnet Rabatte', function (int $percent, int $minimum, int $cart, int $expected) {
+          expect(voucher(['percent' => $percent, 'minimumCents' => $minimum])->apply($cart))->toBe($expected);
+      })->with([
+          'zehn Prozent' => [10, 0, 1000, 900],
+          'abgerundeter Rabatt' => [10, 0, 999, 900],
+          'hundert Prozent' => [100, 0, 1000, 0],
+          'ein Prozent' => [1, 0, 1000, 990],
+          'unter Mindestwert' => [10, 2000, 1999, 1999],
+          'genau Mindestwert' => [10, 2000, 2000, 1800],
+      ]);
+
+      it('lehnt ungültige Prozentsätze ab', function (int $percent) {
+          voucher(['percent' => $percent]);
+      })->throws(InvalidArgumentException::class)->with([0, 101, -5]);
+      EOF
+
+  - id: einloesen-mit-mock
+    title: Einlösen mit einem Mock für die Datenbank
+    description: |
+      Gutscheine liegen in Produktion in einer Datenbank. Der Service `RedeemVoucher` soll sie einlösen,
+      ohne dass du im Unit-Test eine Datenbank brauchst.
+
+      1. Lege das Interface `App\VoucherRepository` an mit `findByCode(string $code): ?Voucher` und
+         `markRedeemed(string $code): void`.
+      2. Lege `final class VoucherNotFound extends \RuntimeException` im Namespace `App` an.
+      3. Lege `App\RedeemVoucher` an: Der Konstruktor bekommt ein `VoucherRepository`. Die Methode
+         `redeem(string $code, int $cartCents): int` sucht den Code **in Großbuchstaben und ohne Leerzeichen am
+         Rand**, wirft `VoucherNotFound`, wenn es ihn nicht gibt, markiert ihn sonst als eingelöst und gibt den
+         neuen Warenkorbwert zurück.
+      4. Teste in `tests/Unit/RedeemVoucherTest.php` mit `Mockery::mock(VoucherRepository::class)`:
+         - `redeem(' sommer26 ', 1000)` sucht `SOMMER26`, ruft `markRedeemed('SOMMER26')` **genau einmal** auf
+           und liefert 900,
+         - ein unbekannter Code wirft `VoucherNotFound` und ruft `markRedeemed` nie auf (`shouldNotReceive`).
+    checklist:
+      - Interface `VoucherRepository` und Exception `VoucherNotFound` angelegt
+      - "`RedeemVoucher` normalisiert den Code und markiert ihn als eingelöst"
+      - Zwei Tests mit Mockery-Mock, beide grün
+    hints:
+      - "Normalisieren: `$voucher = $this->vouchers->findByCode(strtoupper(trim($code)));`"
+      - "Mock vorbereiten: `$repo->shouldReceive('findByCode')->with('SOMMER26')->andReturn(voucher());` und `$repo->shouldReceive('markRedeemed')->once()->with('SOMMER26');`"
+      - "Für den Fehlerfall: `->andReturn(null)`, `$repo->shouldNotReceive('markRedeemed');` und `->throws(VoucherNotFound::class)` am Test."
+    checks:
+      - type: file_contains
+        path: src/VoucherRepository.php
+        pattern: "interface VoucherRepository"
+        message: Lege das Interface App\VoucherRepository in src/VoucherRepository.php an.
+      - type: file_contains
+        path: src/VoucherNotFound.php
+        pattern: "class VoucherNotFound"
+        message: Lege die Exception App\VoucherNotFound in src/VoucherNotFound.php an.
+      - type: file_contains
+        path: src/RedeemVoucher.php
+        pattern: "function redeem\\("
+        message: Lege src/RedeemVoucher.php mit der Methode redeem() an.
+      - type: file_contains
+        path: tests/Unit/RedeemVoucherTest.php
+        pattern: "Mockery::mock\\("
+        message: Teste RedeemVoucher mit Mockery::mock(VoucherRepository::class).
+      - type: file_contains
+        path: tests/Unit/RedeemVoucherTest.php
+        pattern: "->once\\(\\)"
+        message: Prüfe mit ->once(), dass markRedeemed genau einmal aufgerufen wird.
+      - type: command
+        run: ./vendor/bin/pest
+        message: Noch sind nicht alle Tests grün. Starte ./vendor/bin/pest.
+      - type: command
+        run: ./vendor/bin/pest --list-tests tests/Unit/RedeemVoucherTest.php 2>/dev/null | grep -c '^ - '
+        stdout_matches: "^\\s*([2-9]|[1-9][0-9]+)\\s*$"
+        message: In RedeemVoucherTest.php sollten mindestens zwei Tests stehen – Erfolg und unbekannter Code.
+    solution: |
+      ```bash
+      cat > src/VoucherRepository.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      interface VoucherRepository
+      {
+          public function findByCode(string $code): ?Voucher;
+
+          public function markRedeemed(string $code): void;
+      }
+      EOF
+      cat > src/VoucherNotFound.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final class VoucherNotFound extends \RuntimeException
+      {
+      }
+      EOF
+      cat > src/RedeemVoucher.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final class RedeemVoucher
+      {
+          public function __construct(private VoucherRepository $vouchers)
+          {
+          }
+
+          public function redeem(string $code, int $cartCents): int
+          {
+              $voucher = $this->vouchers->findByCode(strtoupper(trim($code)));
+
+              if ($voucher === null) {
+                  throw new VoucherNotFound($code);
+              }
+
+              $this->vouchers->markRedeemed($voucher->code);
+
+              return $voucher->apply($cartCents);
+          }
+      }
+      EOF
+      cat > tests/Unit/RedeemVoucherTest.php <<'EOF'
+      <?php
+
+      use App\RedeemVoucher;
+      use App\VoucherNotFound;
+      use App\VoucherRepository;
+
+      beforeEach(function () {
+          $this->vouchers = Mockery::mock(VoucherRepository::class);
+          $this->redeem = new RedeemVoucher($this->vouchers);
+      });
+
+      it('löst einen Gutschein ein und markiert ihn', function () {
+          $this->vouchers->shouldReceive('findByCode')->with('SOMMER26')->andReturn(voucher());
+          $this->vouchers->shouldReceive('markRedeemed')->once()->with('SOMMER26');
+
+          expect($this->redeem->redeem(' sommer26 ', 1000))->toBe(900);
+      });
+
+      it('meldet unbekannte Codes', function () {
+          $this->vouchers->shouldReceive('findByCode')->andReturn(null);
+          $this->vouchers->shouldNotReceive('markRedeemed');
+
+          $this->redeem->redeem('GIBTESNICHT', 1000);
+      })->throws(VoucherNotFound::class);
+      EOF
+      ./vendor/bin/pest
+      ```
+    solve: |
+      cat > src/VoucherRepository.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      interface VoucherRepository
+      {
+          public function findByCode(string $code): ?Voucher;
+
+          public function markRedeemed(string $code): void;
+      }
+      EOF
+      cat > src/VoucherNotFound.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final class VoucherNotFound extends \RuntimeException
+      {
+      }
+      EOF
+      cat > src/RedeemVoucher.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App;
+
+      final class RedeemVoucher
+      {
+          public function __construct(private VoucherRepository $vouchers)
+          {
+          }
+
+          public function redeem(string $code, int $cartCents): int
+          {
+              $voucher = $this->vouchers->findByCode(strtoupper(trim($code)));
+
+              if ($voucher === null) {
+                  throw new VoucherNotFound($code);
+              }
+
+              $this->vouchers->markRedeemed($voucher->code);
+
+              return $voucher->apply($cartCents);
+          }
+      }
+      EOF
+      cat > tests/Unit/RedeemVoucherTest.php <<'EOF'
+      <?php
+
+      use App\RedeemVoucher;
+      use App\VoucherNotFound;
+      use App\VoucherRepository;
+
+      beforeEach(function () {
+          $this->vouchers = Mockery::mock(VoucherRepository::class);
+          $this->redeem = new RedeemVoucher($this->vouchers);
+      });
+
+      it('löst einen Gutschein ein und markiert ihn', function () {
+          $this->vouchers->shouldReceive('findByCode')->with('SOMMER26')->andReturn(voucher());
+          $this->vouchers->shouldReceive('markRedeemed')->once()->with('SOMMER26');
+
+          expect($this->redeem->redeem(' sommer26 ', 1000))->toBe(900);
+      });
+
+      it('meldet unbekannte Codes', function () {
+          $this->vouchers->shouldReceive('findByCode')->andReturn(null);
+          $this->vouchers->shouldNotReceive('markRedeemed');
+
+          $this->redeem->redeem('GIBTESNICHT', 1000);
+      })->throws(VoucherNotFound::class);
+      EOF
+
+  - id: architekturregeln
+    title: Architekturregeln festschreiben
+    description: |
+      Damit das Modul auch nach vielen Änderungen sauber bleibt, schreibst du die Teamregeln als Tests fest.
+
+      Lege `tests/ArchTest.php` an mit drei Regeln:
+
+      1. Alles unter `App` nutzt `declare(strict_types=1)`.
+      2. `dd`, `dump` und `var_dump` werden nirgends benutzt.
+      3. Alle Klassen unter `App` sind `final` (`->classes()->toBeFinal()` – das Interface zählt nicht mit).
+
+      Verletze zur Probe eine Regel (z. B. `final` bei `RedeemVoucher` entfernen), sieh den Test rot werden
+      und mach die Änderung wieder rückgängig.
+    checklist:
+      - "`tests/ArchTest.php` mit drei Regeln"
+      - Eine Regel einmal absichtlich verletzt und rot gesehen
+      - Alle Tests grün
+    hints:
+      - "`arch('strict')->expect('App')->toUseStrictTypes();`"
+      - "`arch('final')->expect('App')->classes()->toBeFinal();`"
+    checks:
+      - type: file_contains
+        path: tests/ArchTest.php
+        pattern: "toUseStrictTypes\\("
+        message: In tests/ArchTest.php fehlt die Regel für strict_types.
+      - type: file_contains
+        path: tests/ArchTest.php
+        pattern: "var_dump"
+        message: In tests/ArchTest.php fehlt die Regel gegen dd, dump und var_dump.
+      - type: file_contains
+        path: tests/ArchTest.php
+        pattern: "toBeFinal\\("
+        message: In tests/ArchTest.php fehlt die Regel, dass alle Klassen final sind.
+      - type: command
+        run: ./vendor/bin/pest tests/ArchTest.php
+        message: Die Architekturtests sind noch nicht grün. Lies, welche Datei gegen welche Regel verstößt.
+    solution: |
+      ```bash
+      cat > tests/ArchTest.php <<'EOF'
+      <?php
+
+      arch('alle Dateien nutzen strict_types')
+          ->expect('App')
+          ->toUseStrictTypes();
+
+      arch('keine Debug-Ausgaben')
+          ->expect(['dd', 'dump', 'var_dump'])
+          ->not->toBeUsed();
+
+      arch('alle Klassen sind final')
+          ->expect('App')
+          ->classes()
+          ->toBeFinal();
+      EOF
+      ./vendor/bin/pest
+      ```
+    solve: |
+      cat > tests/ArchTest.php <<'EOF'
+      <?php
+
+      arch('alle Dateien nutzen strict_types')
+          ->expect('App')
+          ->toUseStrictTypes();
+
+      arch('keine Debug-Ausgaben')
+          ->expect(['dd', 'dump', 'var_dump'])
+          ->not->toBeUsed();
+
+      arch('alle Klassen sind final')
+          ->expect('App')
+          ->classes()
+          ->toBeFinal();
+      EOF
+
+  - id: coverage
+    title: Code Coverage messen
+    description: |
+      Wie viel deines Codes führen die Tests überhaupt aus?
+
+      1. Starte `XDEBUG_MODE=coverage ./vendor/bin/pest --coverage` und lies den Bericht.
+      2. Fehlen Zeilen, ergänze Tests, bis `XDEBUG_MODE=coverage ./vendor/bin/pest --coverage --min=100`
+         grün ist.
+      3. Optional: Erzeuge mit `--coverage-html=coverage-report` einen HTML-Bericht und schau ihn dir an.
+    checklist:
+      - Coverage-Bericht gelesen
+      - 100 Prozent Coverage erreicht
+    hints:
+      - Ohne `XDEBUG_MODE=coverage` meldet Pest, dass Xdebug nicht im Coverage-Modus ist.
+      - Hast du die bisherigen Schritte vollständig erledigt, bist du vermutlich schon bei 100 Prozent.
+    checks:
+      - type: command
+        run: XDEBUG_MODE=coverage ./vendor/bin/pest --coverage --min=100
+        message: Die Coverage liegt unter 100 Prozent. Starte XDEBUG_MODE=coverage ./vendor/bin/pest --coverage und schau, welche Datei fehlt.
+    solution: |
+      ```bash
+      XDEBUG_MODE=coverage ./vendor/bin/pest --coverage
+      XDEBUG_MODE=coverage ./vendor/bin/pest --coverage --min=100
+      ```
+    solve: |
+      XDEBUG_MODE=coverage ./vendor/bin/pest --coverage --min=100 >/dev/null
+
+  - id: mutation-score
+    title: 100 Prozent Mutation Score
+    description: |
+      100 Prozent Coverage heißt noch nicht, dass deine Tests jeden Fehler bemerken. Prüfe es mit Mutation
+      Testing:
+
+      1. Ergänze am Anfang von `tests/Unit/VoucherTest.php` die Zeile `mutates(Voucher::class);` (mit
+         `use App\Voucher;`) und in `tests/Unit/RedeemVoucherTest.php` `mutates(RedeemVoucher::class);`.
+      2. Starte `XDEBUG_MODE=coverage ./vendor/bin/pest --mutate`.
+      3. Ergänze für jede `UNTESTED`-Meldung einen Test – typischerweise fehlen Grenzwerte wie 1 und 100
+         Prozent im Konstruktor –, bis `XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=100` grün ist.
+    checklist:
+      - "`mutates()` in beiden Testdateien"
+      - Alle überlebenden Mutanten durch neue Tests getötet
+      - Mutation Score 100 Prozent
+    hints:
+      - "Ein Mutant macht aus `$percent < 1` den Ausdruck `$percent <= 1`. Ein Test mit genau 1 Prozent, der keinen Fehler erwartet, tötet ihn – das Dataset hat ihn schon."
+      - "Fehlt ein Test für genau 100 Prozent, überlebt `$percent >= 100`. Die Dataset-Fälle „ein Prozent“ und „hundert Prozent“ decken beides ab."
+    checks:
+      - type: file_contains
+        path: tests/Unit/VoucherTest.php
+        pattern: "mutates\\(\\s*Voucher::class\\s*\\)"
+        message: Ergänze mutates(Voucher::class); in tests/Unit/VoucherTest.php.
+      - type: file_contains
+        path: tests/Unit/RedeemVoucherTest.php
+        pattern: "mutates\\(\\s*RedeemVoucher::class\\s*\\)"
+        message: Ergänze mutates(RedeemVoucher::class); in tests/Unit/RedeemVoucherTest.php.
+      - type: command
+        run: XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=100
+        message: Es überleben noch Mutanten. Starte XDEBUG_MODE=coverage ./vendor/bin/pest --mutate und ergänze Tests für jede UNTESTED-Meldung.
+    solution: |
+      ```bash
+      sed -i 's/^<?php$/<?php\n\nuse App\\Voucher;\n\nmutates(Voucher::class);/' tests/Unit/VoucherTest.php
+      sed -i 's/^use App\\VoucherRepository;$/use App\\VoucherRepository;\n\nmutates(RedeemVoucher::class);/' tests/Unit/RedeemVoucherTest.php
+      XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=100
+      ```
+    solve: |
+      sed -i 's/^<?php$/<?php\n\nuse App\\Voucher;\n\nmutates(Voucher::class);/' tests/Unit/VoucherTest.php
+      sed -i 's/^use App\\VoucherRepository;$/use App\\VoucherRepository;\n\nmutates(RedeemVoucher::class);/' tests/Unit/RedeemVoucherTest.php

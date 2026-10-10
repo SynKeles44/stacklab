@@ -1,0 +1,600 @@
+title: Abschlussprüfung Testing
+description: |
+  Diese Prüfung deckt alle vier Module ab: Grundlagen des Testens, Pest für PHP, JavaScript und TypeScript
+  testen sowie Testqualität und Praxis. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben –
+  zwei im echten Übungs-Terminal (Pest mit Mutation Testing und Vitest mit Fake-Timern) und eine
+  Programmieraufgabe in PHP.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast, und
+  kannst gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Grundlagen ---
+  - module: grundlagen
+    type: single
+    question: Was ist die wichtigste Aufgabe einer automatisierten Testsuite?
+    options:
+      - Sie beweist, dass der Code keine Fehler enthält.
+      - Sie meldet schnell, wenn eine Änderung bestehendes Verhalten kaputt macht.
+      - Sie ersetzt die Dokumentation vollständig.
+      - Sie beschleunigt die Anwendung.
+    answer: 1
+    explanation: >
+      Tests sind ein Sicherheitsnetz gegen Regressionen. Die Abwesenheit von Fehlern können sie nicht beweisen.
+  - module: grundlagen
+    type: multiple
+    question: "Eine Funktion akzeptiert Mengen von 1 bis 99. Welche Testwerte folgen der Grenzwertanalyse?"
+    options: ["0", "1", "50", "99", "100"]
+    answers: [0, 1, 3, 4]
+    explanation: >
+      Grenzwerte liegen direkt an den Rändern: 0 und 1 an der unteren, 99 und 100 an der oberen Grenze. 50 ist
+      ein normaler Vertreter der gültigen Äquivalenzklasse.
+  - module: grundlagen
+    type: match
+    question: Ordne jedem Test die passende Ebene zu.
+    pairs:
+      - { left: "formatCents(5) ergibt '0,05 EUR'", right: "Unit-Test" }
+      - { left: "POST /api/orders speichert eine Bestellung in der Testdatenbank", right: "Integrationstest" }
+      - { left: "Browser: anmelden, bestellen, Bestätigung sehen", right: "End-to-End-Test" }
+    explanation: >
+      Je mehr echte Teile zusammenspielen, desto höher die Ebene – und desto langsamer und teurer der Test.
+  - module: grundlagen
+    type: single
+    question: Was empfiehlt die Testpyramide?
+    options:
+      - Gleich viele Tests auf allen Ebenen.
+      - Viele schnelle Unit-Tests, weniger Integrationstests und nur wenige End-to-End-Tests.
+      - Vor allem End-to-End-Tests, weil sie am realistischsten sind.
+      - Nur Unit-Tests.
+    answer: 1
+    explanation: >
+      Billige, schnelle Tests bilden das breite Fundament. Teure End-to-End-Tests decken nur die wichtigsten Wege ab.
+
+  # --- Pest ---
+  - module: pest
+    type: cloze
+    text: "Pest installierst du mit `composer require pestphp/pest ___`. Testdateien liegen unter `tests/` und enden auf `___`."
+    blanks:
+      - ["--dev"]
+      - [Test.php]
+    explanation: >
+      Pest ist ein Entwicklungswerkzeug und gehört in require-dev. Die phpunit.xml sucht nach Dateien mit dem
+      Suffix Test.php.
+  - module: pest
+    type: single
+    question: "Was ist der Unterschied zwischen `toBe` und `toEqual` in Pest?"
+    options:
+      - "`toBe` vergleicht strikt (===), `toEqual` vergleicht den Inhalt."
+      - "`toEqual` ist nur für Zahlen."
+      - "Es gibt keinen Unterschied."
+    answer: 0
+    explanation: >
+      `expect('5')->toBe(5)` ist rot, weil der Typ abweicht. Zwei verschiedene Objekte mit gleichen Werten sind mit
+      toEqual gleich, mit toBe nicht.
+  - module: pest
+    type: find-bug
+    question: Der Test soll prüfen, dass bei negativer Menge eine Exception fliegt, ist aber immer rot. In welcher Zeile liegt der Fehler?
+    language: php
+    code: |
+      <?php
+
+      it('lehnt negative Mengen ab', function () {
+          $cart = new Cart();
+          expect($cart->add('A-1', 1000, -1))->toThrow(InvalidArgumentException::class);
+      });
+    bug_line: 5
+    explanation: >
+      Der Aufruf läuft sofort, die Exception fliegt vor expect(). Richtig: `expect(fn () => $cart->add('A-1', 1000, -1))->toThrow(...)`
+      oder `->throws(...)` am Test.
+  - module: pest
+    type: single
+    question: "Ein Test hat `->with(['DE', 'AT', 'CH'])->with([100, 5000])`. Wie viele Testläufe entstehen?"
+    options: ["2", "3", "5", "6"]
+    answer: 3
+    explanation: >
+      Mehrere with() bilden alle Kombinationen: 3 × 2 = 6.
+  - module: pest
+    type: match
+    question: Ordne jedem Test-Double seine Eigenschaft zu.
+    pairs:
+      - { left: Stub, right: "liefert vorbereitete Antworten" }
+      - { left: Fake, right: "einfache, funktionierende Implementierung" }
+      - { left: Mock, right: "erwartet vorab festgelegte Aufrufe" }
+      - { left: Spy, right: "zeichnet Aufrufe auf, geprüft wird danach" }
+    explanation: >
+      Stubs und Fakes liefern Daten, Mocks und Spies prüfen das Zusammenspiel mit der Abhängigkeit.
+
+  # --- JavaScript testen ---
+  - module: javascript-testen
+    type: single
+    question: "Welcher Befehl führt die Vitest-Tests genau einmal aus, etwa in einem CI-Skript?"
+    options: ["npx vitest watch", "npx vitest run", "npx vitest --ui", "npm install vitest"]
+    answer: 1
+    explanation: >
+      `vitest run` läuft einmal. `vitest` ohne Argument startet in einem interaktiven Terminal den Watch-Modus.
+  - module: javascript-testen
+    type: find-bug
+    question: Der Test ist immer grün – selbst wenn `fetchPrice` einen Fehler liefert. In welcher Zeile liegt das Problem?
+    language: ts
+    code: |
+      import { it, expect } from 'vitest'
+      import { fetchPrice } from './api'
+
+      it('lädt den Preis', () => {
+        expect(fetchPrice('A-1')).resolves.toBe(1000)
+      })
+    bug_line: 5
+    explanation: >
+      Ohne await (oder return) wartet Vitest nicht auf das Promise. Richtig: ein async-Test mit
+      `await expect(fetchPrice('A-1')).resolves.toBe(1000)`.
+  - module: javascript-testen
+    type: multiple
+    question: Welche Aussagen zu Vitest-Mocks stimmen?
+    options:
+      - "`vi.fn().mockResolvedValue(x)` liefert bei jedem Aufruf ein Promise, das zu x aufgelöst wird."
+      - "`vi.mock('./api', …)` muss in Vitest 5 auf oberster Ebene der Datei stehen."
+      - "`vi.useFakeTimers()` lässt die Zeit automatisch schneller laufen."
+      - "`toHaveBeenCalledWith('a', 1)` prüft die Argumente eines Aufrufs."
+    answers: [0, 1, 3]
+    explanation: >
+      Mit Fake-Timern steht die Zeit still, bis du sie mit `vi.advanceTimersByTime()` oder ähnlichen Funktionen vorspulst.
+  - module: javascript-testen
+    type: single
+    question: Welcher Playwright-Locator ist am robustesten gegen Layout-Änderungen?
+    options:
+      - "page.locator('div.form > button:nth-child(2)')"
+      - "page.getByRole('button', { name: 'Speichern' })"
+      - "page.locator('//div[3]/button')"
+    answer: 1
+    explanation: >
+      getByRole sucht nach Rolle und zugänglichem Namen – so, wie Nutzer die Seite wahrnehmen. CSS-Pfade und XPath
+      brechen beim nächsten Redesign.
+  - module: javascript-testen
+    type: single
+    question: "Warum ist `await page.waitForTimeout(2000)` in einem Playwright-Test eine schlechte Idee?"
+    options:
+      - Die feste Wartezeit ist mal zu lang und mal zu kurz – der Test wird langsam und wackelig.
+      - Die Funktion gibt es nicht.
+      - Playwright erlaubt keine Wartezeiten über einer Sekunde.
+    answer: 0
+    explanation: >
+      Auto-Waiting und Web-First-Assertions wie `await expect(locator).toHaveText(…)` warten genau so lange wie nötig.
+
+  # --- Qualität und Praxis ---
+  - module: qualitaet-und-praxis
+    type: single
+    question: Ein Modul hat 100 Prozent Coverage, aber nur 60 Prozent Mutation Score. Was folgt daraus?
+    options:
+      - Die Tests führen allen Code aus, bemerken aber viele eingebaute Fehler nicht.
+      - 40 Prozent der Tests sind rot.
+      - Der Code ist fehlerfrei.
+      - Die Coverage-Messung ist falsch.
+    answer: 0
+    explanation: >
+      Coverage misst Ausführung, Mutation Testing misst, ob Tests falsches Verhalten erkennen. Typische Lücken
+      sind fehlende Grenzwerte und unscharfe Assertions.
+  - module: qualitaet-und-praxis
+    type: cloze
+    text: "Mutation Testing startest du in Pest mit `XDEBUG_MODE=coverage ./vendor/bin/pest --___`. Einen Mindest-Score legst du mit `--___=80` fest."
+    blanks:
+      - [mutate]
+      - [min]
+    explanation: >
+      Mutation Testing braucht einen Coverage-Treiber. Mit --min wird der Lauf rot, wenn der Score darunter liegt.
+  - module: qualitaet-und-praxis
+    type: match
+    question: Ordne jeder Teamregel die passende Pest-Architekturregel zu.
+    pairs:
+      - { left: "Jede Datei hat declare(strict_types=1)", right: "toUseStrictTypes()" }
+      - { left: "Kein var_dump im Code", right: "not->toBeUsed()" }
+      - { left: "Services benutzen nichts aus App\\Http", right: "not->toUse('App\\Http')" }
+      - { left: "Alle Klassen sind final", right: "classes()->toBeFinal()" }
+    explanation: >
+      Architekturtests prüfen Strukturregeln für viele Dateien auf einmal und laufen mit der normalen Testsuite.
+  - module: qualitaet-und-praxis
+    type: multiple
+    question: Welche Ursachen machen Tests typischerweise wackelig (flaky)?
+    options:
+      - Abhängigkeit von der aktuellen Uhrzeit
+      - Zufallswerte ohne Seed
+      - Ein Test braucht Daten, die ein anderer Test anlegt
+      - Eindeutige Testdaten aus einer Factory
+    answers: [0, 1, 2]
+    explanation: >
+      Zeit, Zufall und Reihenfolge sind versteckte Abhängigkeiten. Eindeutige Factory-Daten verhindern dagegen
+      Kollisionen zwischen Tests.
+  - module: qualitaet-und-praxis
+    type: single
+    question: Was ist im TDD-Zyklus die Aufgabe der Green-Phase?
+    options:
+      - Den Code aufräumen.
+      - Den einfachsten Code schreiben, der den roten Test grün macht.
+      - Möglichst viele zusätzliche Features einbauen.
+      - Einen neuen fehlschlagenden Test schreiben.
+    answer: 1
+    explanation: >
+      Red: Test schreiben, der fehlschlägt. Green: minimaler Code. Refactor: aufräumen, während alle Tests grün bleiben.
+
+tasks:
+  - module: qualitaet-und-praxis
+    id: pruefung-noten-mutation
+    type: terminal
+    title: Notenberechnung lückenlos testen
+    description: |
+      Im Ordner `pruefung-noten` liegt ein Pest-Projekt mit `App\Grade::fromPoints(int $points): string`:
+      ab 90 Punkten `A`, ab 75 `B`, ab 50 `C`, darunter `F`. Punkte unter 0 oder über 100 lösen eine
+      `InvalidArgumentException` aus.
+
+      1. Lege `tests/Unit/GradeTest.php` an und ergänze `mutates(Grade::class);`.
+      2. Teste die Noten mit einem Dataset und die ungültigen Punkte mit `->throws(...)`.
+      3. Am Ende muss `XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=100` grün sein – teste also
+         alle Grenzen.
+      4. Ändere `src/Grade.php` nicht.
+
+      Klicke zuerst auf **Aufgabe vorbereiten** (Composer installiert dabei Pest).
+    workdir: pruefung-noten
+    setup: |
+      cat > composer.json <<'EOF'
+      {
+          "name": "stacklab/noten",
+          "type": "project",
+          "require": {
+              "php": "^8.4"
+          },
+          "require-dev": {
+              "pestphp/pest": "^5.3"
+          },
+          "autoload": {
+              "psr-4": { "App\\": "src/" }
+          },
+          "config": {
+              "allow-plugins": { "pestphp/pest-plugin": true }
+          }
+      }
+      EOF
+      cat > phpunit.xml <<'EOF'
+      <?xml version="1.0" encoding="UTF-8"?>
+      <phpunit bootstrap="vendor/autoload.php" colors="true">
+          <testsuites>
+              <testsuite name="Test Suite">
+                  <directory suffix="Test.php">./tests</directory>
+              </testsuite>
+          </testsuites>
+          <source>
+              <include>
+                  <directory>src</directory>
+              </include>
+          </source>
+      </phpunit>
+      EOF
+      mkdir -p src tests/Unit
+      printf '<?php\n' > tests/Pest.php
+      cat > src/Grade.php <<'EOF'
+      <?php
+      
+      declare(strict_types=1);
+      
+      namespace App;
+      
+      final class Grade
+      {
+          public static function fromPoints(int $points): string
+          {
+              if ($points < 0 || $points > 100) {
+                  throw new \InvalidArgumentException('Points must be between 0 and 100.');
+              }
+      
+              if ($points >= 90) {
+                  return 'A';
+              }
+      
+              if ($points >= 75) {
+                  return 'B';
+              }
+      
+              if ($points >= 50) {
+                  return 'C';
+              }
+      
+              return 'F';
+          }
+      }
+      EOF
+      timeout 150 composer install -n -q </dev/null
+
+    checks:
+      - type: file_contains
+        path: src/Grade.php
+        pattern: "\\$points >= 75"
+        message: src/Grade.php wurde verändert. Setze die Aufgabe zurück – du sollst nur Tests schreiben.
+      - type: file_contains
+        path: tests/Unit/GradeTest.php
+        pattern: "mutates\\(\\s*Grade::class\\s*\\)"
+        message: Ergänze mutates(Grade::class); in tests/Unit/GradeTest.php.
+      - type: file_contains
+        path: tests/Unit/GradeTest.php
+        pattern: "->with\\("
+        message: Teste die Noten mit einem Dataset (->with([...])).
+      - type: command
+        run: ./vendor/bin/pest
+        message: Nicht alle Tests sind grün. Starte ./vendor/bin/pest.
+      - type: command
+        run: XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=100
+        message: Es überleben noch Mutanten. Teste jede Grenze (49/50, 74/75, 89/90, 0/100 sowie -1/101).
+    hints:
+      - "Ein Dataset-Eintrag: `'50 Punkte' => [50, 'C']` mit den Parametern `int $points, string $expected`."
+      - Für jede Grenze brauchst du zwei Fälle – direkt darunter und genau darauf.
+    solution: |
+      ```bash
+      cd pruefung-noten
+      cat > tests/Unit/GradeTest.php <<'EOF'
+      <?php
+      
+      use App\Grade;
+      
+      mutates(Grade::class);
+      
+      it('vergibt Noten nach Punkten', function (int $points, string $expected) {
+          expect(Grade::fromPoints($points))->toBe($expected);
+      })->with([
+          '0 Punkte' => [0, 'F'],
+          '49 Punkte' => [49, 'F'],
+          '50 Punkte' => [50, 'C'],
+          '74 Punkte' => [74, 'C'],
+          '75 Punkte' => [75, 'B'],
+          '89 Punkte' => [89, 'B'],
+          '90 Punkte' => [90, 'A'],
+          '100 Punkte' => [100, 'A'],
+      ]);
+      
+      it('lehnt Punkte außerhalb von 0 bis 100 ab', function (int $points) {
+          Grade::fromPoints($points);
+      })->throws(InvalidArgumentException::class)->with([-1, 101]);
+      EOF
+      XDEBUG_MODE=coverage ./vendor/bin/pest --mutate --min=100
+
+      ```
+  - module: javascript-testen
+    id: pruefung-session-timeout
+    type: terminal
+    title: Einen Sitzungs-Timeout mit Fake-Timern testen
+    description: |
+      Im Ordner `pruefung-session` liegt ein TypeScript-Projekt mit Vitest und Coverage.
+      `createSession(onExpire, timeoutMs)` in `src/session.ts` ruft `onExpire` auf, wenn `timeoutMs`
+      Millisekunden lang kein `touch()` kam. `touch()` startet die Wartezeit neu. Eine Wartezeit von 0 oder
+      weniger wirft `Error('Timeout must be positive')`.
+
+      1. Lege `src/session.test.ts` an und nutze `vi.useFakeTimers()` und eine Mock-Funktion für `onExpire`.
+      2. Teste: Nach 999 ms ist `onExpire` noch nicht aufgerufen, nach 1000 ms genau einmal.
+      3. Teste, dass `touch()` die Sitzung verlängert.
+      4. Teste den Fehler bei einer Wartezeit von 0.
+      5. `npx vitest run --coverage` soll für `session.ts` 100 Prozent zeigen.
+
+      Klicke zuerst auf **Aufgabe vorbereiten** – npm installiert dabei Vitest.
+    workdir: pruefung-session
+    setup: |
+      cat > package.json <<'EOF'
+      {
+        "name": "session-timeout",
+        "private": true,
+        "type": "module",
+        "scripts": {
+          "test": "vitest run",
+          "coverage": "vitest run --coverage"
+        }
+      }
+      EOF
+      mkdir -p src
+      cat > src/session.ts <<'EOF'
+      export interface Session {
+        touch(): void
+      }
+      
+      export function createSession(onExpire: () => void, timeoutMs: number): Session {
+        if (timeoutMs <= 0) {
+          throw new Error('Timeout must be positive')
+        }
+        let timer = setTimeout(onExpire, timeoutMs)
+        return {
+          touch() {
+            clearTimeout(timer)
+            timer = setTimeout(onExpire, timeoutMs)
+          },
+        }
+      }
+      EOF
+      timeout 170 npm install -D vitest @vitest/coverage-v8 --no-audit --no-fund --loglevel=error </dev/null
+
+    checks:
+      - type: file_contains
+        path: src/session.test.ts
+        pattern: "useFakeTimers\\("
+        message: Nutze vi.useFakeTimers(), um die Zeit zu kontrollieren.
+      - type: file_contains
+        path: src/session.test.ts
+        pattern: "vi\\.fn\\("
+        message: Nutze für onExpire eine Mock-Funktion (vi.fn()).
+      - type: command
+        run: npx vitest run src/session.test.ts
+        message: Die Tests sind noch nicht grün. Starte npm test.
+      - type: command
+        run: "d=$(mktemp -d \"$PWD/.pruefung-XXXXXX\"); npx vitest run src/session.test.ts --reporter=json --outputFile=\"$d/r.json\" >/dev/null 2>&1; jq -r '.numPassedTests' \"$d/r.json\"; rm -rf \"$d\""
+        stdout_matches: "^\\s*([3-9]|[1-9][0-9]+)\\s*$"
+        message: Es sollten mindestens drei grüne Tests sein – Ablauf, touch() und Fehlerfall.
+      - type: command
+        run: npx vitest run --coverage --coverage.include=src/session.ts --coverage.thresholds.lines=100 --coverage.thresholds.branches=100
+        message: session.ts ist noch nicht vollständig abgedeckt. Prüfe mit npx vitest run --coverage, welcher Fall fehlt.
+    hints:
+      - "`vi.advanceTimersByTime(999)` spult die Zeit vor; danach `expect(onExpire).not.toHaveBeenCalled()`."
+      - "Für touch(): 800 ms vorspulen, `session.touch()`, wieder 800 ms – noch nicht abgelaufen; weitere 200 ms – jetzt einmal."
+    solution: |
+      ```bash
+      cd pruefung-session
+      cat > src/session.test.ts <<'EOF'
+      import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
+      import { createSession } from './session'
+      
+      describe('createSession', () => {
+        beforeEach(() => {
+          vi.useFakeTimers()
+        })
+      
+        afterEach(() => {
+          vi.useRealTimers()
+        })
+      
+        it('läuft nach der Wartezeit genau einmal ab', () => {
+          const onExpire = vi.fn()
+          createSession(onExpire, 1000)
+      
+          vi.advanceTimersByTime(999)
+          expect(onExpire).not.toHaveBeenCalled()
+      
+          vi.advanceTimersByTime(1)
+          expect(onExpire).toHaveBeenCalledTimes(1)
+        })
+      
+        it('verlängert die Sitzung bei touch()', () => {
+          const onExpire = vi.fn()
+          const session = createSession(onExpire, 1000)
+      
+          vi.advanceTimersByTime(800)
+          session.touch()
+          vi.advanceTimersByTime(800)
+          expect(onExpire).not.toHaveBeenCalled()
+      
+          vi.advanceTimersByTime(200)
+          expect(onExpire).toHaveBeenCalledTimes(1)
+        })
+      
+        it('lehnt eine Wartezeit von 0 ab', () => {
+          expect(() => createSession(vi.fn(), 0)).toThrow('Timeout must be positive')
+        })
+      })
+      EOF
+      npx vitest run --coverage
+
+      ```
+  - module: pest
+    id: pruefung-fake-repository
+    type: code
+    language: php
+    title: Ein Fake-Repository für Gutscheine
+    description: |
+      Für Tests ohne Datenbank brauchst du einen Fake für das Interface `VoucherRepository`.
+
+      1. `InMemoryVoucherRepository` implementiert `VoucherRepository`.
+      2. Der Konstruktor bekommt eine Liste von Codes (Strings) – das sind die vorhandenen Gutscheine.
+      3. `exists(string $code): bool` sagt, ob es den Code gibt.
+      4. `markRedeemed(string $code): void` merkt sich den Code als eingelöst. Für einen unbekannten Code wirft
+         sie eine `InvalidArgumentException`.
+      5. `isRedeemed(string $code): bool` sagt, ob der Code schon eingelöst wurde.
+    starter: |
+      <?php
+
+      declare(strict_types=1);
+
+      interface VoucherRepository
+      {
+          public function exists(string $code): bool;
+
+          public function markRedeemed(string $code): void;
+
+          public function isRedeemed(string $code): bool;
+      }
+
+      final class InMemoryVoucherRepository implements VoucherRepository
+      {
+          /** @param list<string> $codes */
+          public function __construct(private array $codes)
+          {
+          }
+
+          public function exists(string $code): bool
+          {
+              return false;
+          }
+
+          public function markRedeemed(string $code): void
+          {
+          }
+
+          public function isRedeemed(string $code): bool
+          {
+              return false;
+          }
+      }
+    tests:
+      - name: kennt vorhandene Codes
+        code: |
+          $repo = new InMemoryVoucherRepository(['SOMMER26', 'WINTER26']);
+          assert_true($repo->exists('SOMMER26'));
+          assert_same(false, $repo->exists('HERBST26'));
+      - name: merkt sich eingelöste Codes
+        code: |
+          $repo = new InMemoryVoucherRepository(['SOMMER26', 'WINTER26']);
+          assert_same(false, $repo->isRedeemed('SOMMER26'));
+          $repo->markRedeemed('SOMMER26');
+          assert_true($repo->isRedeemed('SOMMER26'));
+          assert_same(false, $repo->isRedeemed('WINTER26'));
+      - name: unbekannter Code wirft eine Exception
+        code: |
+          $repo = new InMemoryVoucherRepository(['SOMMER26']);
+          $thrown = false;
+          try {
+              $repo->markRedeemed('GIBTESNICHT');
+          } catch (InvalidArgumentException) {
+              $thrown = true;
+          }
+          assert_true($thrown);
+          assert_same(false, $repo->isRedeemed('GIBTESNICHT'));
+      - name: leeres Repository kennt nichts
+        code: |
+          $repo = new InMemoryVoucherRepository([]);
+          assert_same(false, $repo->exists(''));
+    hints:
+      - "Speichere die eingelösten Codes in einer zusätzlichen Eigenschaft: `private array $redeemed = [];`"
+      - "`exists()` kann `in_array($code, $this->codes, true)` nutzen."
+    solution: |
+      <?php
+
+      declare(strict_types=1);
+
+      interface VoucherRepository
+      {
+          public function exists(string $code): bool;
+
+          public function markRedeemed(string $code): void;
+
+          public function isRedeemed(string $code): bool;
+      }
+
+      final class InMemoryVoucherRepository implements VoucherRepository
+      {
+          /** @var array<string, true> */
+          private array $redeemed = [];
+
+          /** @param list<string> $codes */
+          public function __construct(private array $codes)
+          {
+          }
+
+          public function exists(string $code): bool
+          {
+              return in_array($code, $this->codes, true);
+          }
+
+          public function markRedeemed(string $code): void
+          {
+              if (! $this->exists($code)) {
+                  throw new InvalidArgumentException("Unknown voucher: {$code}");
+              }
+              $this->redeemed[$code] = true;
+          }
+
+          public function isRedeemed(string $code): bool
+          {
+              return isset($this->redeemed[$code]);
+          }
+      }

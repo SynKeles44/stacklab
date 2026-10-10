@@ -1,0 +1,32 @@
+title: Testing
+subtitle: Pest, Architekturtests, Mutation Testing, Vitest und Playwright – Tests, auf die du dich verlassen kannst
+description: >
+  Ohne Tests ist jede Änderung ein kleines Glücksspiel: Funktioniert danach noch alles? In diesem Kurs
+  lernst du, **automatisierte Tests** zu schreiben, die dir diese Frage in Sekunden beantworten – für
+  PHP mit **Pest** und für JavaScript/TypeScript mit **Vitest** und **Playwright**.
+
+
+  Du beginnst mit dem Warum: Was ist ein guter Test, was testest du überhaupt, und wie verteilst du
+  Unit-, Integrations- und End-to-End-Tests sinnvoll? Danach schreibst du echte Tests im Übungs-Terminal:
+  Expectations, Datasets, Hooks und Mocks in Pest, Unit-Tests und Mocks in Vitest und End-to-End-Tests
+  mit Playwright. Zum Schluss misst du die **Qualität** deiner Tests mit Code Coverage, Mutation Testing
+  und Architekturtests, baust saubere Testdaten, zähmst wackelige Tests und arbeitest testgetrieben (TDD).
+category: backend
+level: fortgeschritten
+icon: test-tube
+color: "#34d399"
+estimated_hours: 5
+workspace_dir: testing
+prerequisites: [php, javascript, typescript]
+learning_goals:
+  - Du erklärst, warum automatisierte Tests sich lohnen und was einen guten Test ausmacht.
+  - Du unterscheidest Unit-, Integrations- und End-to-End-Tests und planst sie mit Testpyramide und Testing Trophy.
+  - Du schreibst Pest-Tests mit Expectations, Datasets, Hooks und Mocks.
+  - Du sicherst Regeln deiner Codebasis mit Architekturtests ab.
+  - Du misst die Qualität deiner Tests mit Code Coverage und Mutation Testing.
+  - Du testest JavaScript/TypeScript mit Vitest und schreibst End-to-End-Tests mit Playwright.
+  - Du baust Testdaten mit Factories, findest die Ursache wackeliger Tests und arbeitest im TDD-Zyklus.
+references:
+  - Pest als Standard-Testframework in modernen Laravel-Projekten, inklusive Architekturtests in der CI-Pipeline
+  - Mutationstests mit Mindest-Score als Qualitätsschranke vor dem Merge
+  - Playwright-End-to-End-Tests für die wichtigsten Nutzerwege, Unit-Tests für die Logik dahinter

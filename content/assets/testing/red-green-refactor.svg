@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="800" height="400" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Der TDD-Zyklus: Red – Green – Refactor</text>
+<circle cx="400" cy="120" r="62" fill="#f87171" fill-opacity=".18" stroke="#f87171" stroke-width="3"/>
+<text x="400" y="114" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Red</text>
+<text x="400" y="138" text-anchor="middle" font-size="13" fill="#475569">Test schreiben,</text>
+<text x="400" y="154" text-anchor="middle" font-size="13" fill="#475569">der fehlschlägt</text>
+<circle cx="580" cy="290" r="62" fill="#34d399" fill-opacity=".18" stroke="#34d399" stroke-width="3"/>
+<text x="580" y="284" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Green</text>
+<text x="580" y="308" text-anchor="middle" font-size="13" fill="#475569">einfachster Code,</text>
+<text x="580" y="324" text-anchor="middle" font-size="13" fill="#475569">der ihn erfüllt</text>
+<circle cx="220" cy="290" r="62" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="3"/>
+<text x="220" y="284" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Refactor</text>
+<text x="220" y="308" text-anchor="middle" font-size="13" fill="#475569">aufräumen –</text>
+<text x="220" y="324" text-anchor="middle" font-size="13" fill="#475569">Tests bleiben grün</text>
+<path d="M455 150 Q 540 170 560 226" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M516 300 Q 400 340 284 300" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<path d="M240 228 Q 260 170 345 150" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#a)"/>
+<text x="560" y="168" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">Test läuft rot ✗</text>
+<text x="400" y="360" text-anchor="middle" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">alle Tests grün ✓</text>
+<text x="96" y="170" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">nächster kleiner Schritt</text>
+</svg>
