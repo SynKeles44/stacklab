@@ -1,0 +1,513 @@
+title: Abschlussprüfung React-Komponenten-Architektur
+description: |
+  Diese Prüfung deckt alle vier Module ab: Struktur und Props-API, Komposition und Compound Components,
+  Zustand, Verhalten und Varianten sowie Storybook und Tests. Zuerst beantwortest du Fragen, danach löst du
+  drei Praxis-Aufgaben – zwei Programmieraufgaben und eine im echten Übungs-Terminal.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Struktur ---
+  - module: struktur
+    type: match
+    question: Ordne jede Komponente ihrer Ebene im Atomic Design zu.
+    pairs:
+      - { left: "Badge", right: "Atom" }
+      - { left: "Formularfeld aus Label, Input und Fehlertext", right: "Molekül" }
+      - { left: "Warenkorb-Seitenleiste mit Liste und Summe", right: "Organismus" }
+    explanation: Atome enthalten keine eigenen Komponenten, Moleküle lösen eine kleine Aufgabe, Organismen sind eigenständige Seitenabschnitte.
+  - module: struktur
+    type: single
+    question: "Ein Import lautet `import { Button } from '../components'`. Was ist daran aus Architektursicht problematisch?"
+    options:
+      - Nichts, das ist die empfohlene Schreibweise.
+      - Er geht über eine Barrel-Datei – das lädt unnötig viele Module, begünstigt Kreis-Importe und verschleiert den Speicherort.
+      - Komponenten dürfen nur mit `require` importiert werden.
+    answer: 1
+    explanation: Importiere direkt aus der Datei der Komponente, z. B. `from '../components/atoms/button'`.
+  - module: struktur
+    type: single
+    question: Ein `InvoiceTable` zeigt Rechnungen mit Status-Logik und wird nur im Admin-Portal gebraucht. Wohin gehört er?
+    options:
+      - In die gemeinsame Komponentenbibliothek
+      - In das Admin-Portal, nah am Feature
+      - In eine eigene npm-Registry
+    answer: 1
+    explanation: Fachlich und nur ein Nutzer – die Komponente bleibt in der App. Allgemeine Teile wie eine Tabelle darf sie aus der Bibliothek benutzen.
+  - module: struktur
+    type: find-bug
+    question: Der Aufruf `<Input className="w-64" disabled />` verliert die Basisklassen. Welche Zeile ist schuld?
+    language: tsx
+    code: |
+      function Input({ ...props }: React.ComponentProps<'input'>) {
+        return (
+          <input
+            data-slot="input"
+            className="rounded-md border px-3"
+            {...props}
+          />
+        )
+      }
+    bug_line: 6
+    explanation: Der Spread überschreibt `className` komplett. `className` muss herausgeholt und mit `cn('rounded-md border px-3', className)` zusammengeführt werden.
+  # --- Komposition ---
+  - module: komposition
+    type: multiple
+    question: Welche Aussagen über Compound Components stimmen?
+    options:
+      - Die Teile teilen sich ihren Zustand über einen Context.
+      - Der Aufrufer muss den aktiven Wert an jeden Teil als Prop übergeben.
+      - Ein eigener Hook wie `useTabs()` sollte einen Fehler werfen, wenn der Context fehlt.
+      - Alle Teile werden aus derselben Datei exportiert.
+    answers: [0, 2, 3]
+    explanation: Gerade dass der Aufrufer nichts durchreichen muss, ist der Vorteil. Die Wurzel hält den Zustand, der private Context verteilt ihn.
+  - module: komposition
+    type: single
+    question: "Was rendert `<Button asChild><a href=\"/hilfe\">Hilfe</a></Button>` im DOM?"
+    options:
+      - "Ein `<button>` mit einem `<a>` darin"
+      - "Ein einziges `<a>` mit den Klassen und dem `data-slot` des Buttons"
+      - Nichts, asChild ist nur für Tests
+    answer: 1
+    explanation: Der Slot überträgt die Props des Buttons auf das einzige Kind-Element. Es entsteht kein verschachteltes interaktives Element.
+  - module: komposition
+    type: cloze
+    text: "Statt jedem Sonderfall eine neue Prop zu geben (Prop-___), übergibst du frei wählbaren Inhalt über die Prop `___`."
+    blanks:
+      - [Explosion, explosion]
+      - [children]
+    explanation: Werte aus einer festen Menge gehören in Props, freie Inhalte werden komponiert.
+  - module: komposition
+    type: single
+    question: Warum sollte ein Context für eine Compound Component mit `null` statt mit einem Ersatzobjekt angelegt werden?
+    options:
+      - Weil `createContext` keine Objekte akzeptiert.
+      - Damit ein falsch platzierter Teil sofort einen klaren Fehler wirft, statt still nichts zu tun.
+      - Weil `null` schneller ist.
+    answer: 1
+    explanation: Ein Ersatzobjekt lässt Fehler unbemerkt durchrutschen. Mit `null` und einer Prüfung im Hook wird die Fehlbenutzung sofort sichtbar.
+  # --- Zustand und Varianten ---
+  - module: zustand-und-varianten
+    type: match
+    question: Ordne jeder Prop eines Dialogs ihre Rolle zu.
+    pairs:
+      - { left: "open", right: "Kontrollierter Wert" }
+      - { left: "defaultOpen", right: "Startwert im unkontrollierten Modus" }
+      - { left: "onOpenChange", right: "Meldet gewünschte Änderungen" }
+    explanation: Das Schema `x`, `defaultX`, `onXChange` gilt für alle Komponenten mit Zustand.
+  - module: zustand-und-varianten
+    type: single
+    question: "`<Switch checked={true} />` lässt sich nicht ausschalten. Warum?"
+    options:
+      - Der Switch ist kaputt.
+      - Er ist kontrolliert, aber es gibt kein `onCheckedChange`, das den Wert außen ändert.
+      - "`checked` ist nur ein Startwert."
+    answer: 1
+    explanation: Wer den Wert kontrolliert, muss ihn auch ändern. Für einen Startwert gibt es `defaultChecked`.
+  - module: zustand-und-varianten
+    type: multiple
+    question: Was gehört in einen **headless** Hook?
+    options:
+      - Ob ein Menü offen ist
+      - "`aria-expanded` und `aria-controls`"
+      - Die Farbe und der Schatten des Menüs
+      - Schließen mit Escape
+    answers: [0, 1, 3]
+    explanation: Headless heißt Verhalten ohne Aussehen. Farben und Schatten gehören in die gestaltete Komponente.
+  - module: zustand-und-varianten
+    type: single
+    question: "Was liefert `cn('px-4 py-2', isActive && 'bg-blue-600', 'px-2')`, wenn `isActive` false ist?"
+    options:
+      - "px-4 py-2 px-2"
+      - "py-2 px-2"
+      - "px-4 py-2 false px-2"
+    answer: 1
+    explanation: clsx entfernt `false`, tailwind-merge entfernt das überholte `px-4`.
+  - module: zustand-und-varianten
+    type: cloze
+    text: "In `cva` stehen die Optionen unter `___`, die Standardwerte unter `___`."
+    blanks:
+      - [variants]
+      - [defaultVariants]
+    explanation: Mit `compoundVariants` kommen Klassen für bestimmte Kombinationen dazu.
+  # --- Storybook und Tests ---
+  - module: storybook-und-tests
+    type: single
+    question: Was ist in einer CSF-Story-Datei der Default-Export?
+    options:
+      - Die erste Story
+      - Die Meta mit Komponente, Titel und gemeinsamen Einstellungen
+      - Die Testdatei
+    answer: 1
+    explanation: Der Default-Export beschreibt die Komponente, jeder benannte Export ist eine Story.
+  - module: storybook-und-tests
+    type: multiple
+    question: Welche Prüfungen machen einen Komponententest robust gegenüber Umbauten?
+    options:
+      - "`getByRole('button', { name: 'Speichern' })`"
+      - "`container.querySelector('.btn-primary')`"
+      - Prüfen, dass nach dem Klick der neue Text sichtbar ist
+      - Prüfen, wie der interne State heißt
+    answers: [0, 2]
+    explanation: Robuste Tests prüfen, was Nutzer sehen und tun. Klassen und State-Namen sind Umsetzungsdetails.
+  - module: storybook-und-tests
+    type: find-bug
+    question: Welche Zeile macht diesen Test unzuverlässig?
+    language: jsx
+    code: |
+      test('schließt den Alert', async () => {
+        const onDismiss = vi.fn()
+        render(<Alert onDismiss={onDismiss}>Text</Alert>)
+        userEvent.click(screen.getByRole('button', { name: 'Schließen' }))
+        expect(onDismiss).toHaveBeenCalledTimes(1)
+      })
+    bug_line: 4
+    explanation: user-event arbeitet asynchron. Ohne `await` wird geprüft, bevor der Klick verarbeitet ist.
+  - module: storybook-und-tests
+    type: cloze
+    text: "Eine Story wird zum Interaktionstest, wenn sie eine ___-Funktion bekommt. Handler-Spione für Stories importierst du als `fn` aus `storybook/___`."
+    blanks:
+      - [play]
+      - [test]
+    explanation: Die play-Funktion läuft nach dem Rendern und nutzt dieselben Abfragen wie Testing Library.
+tasks:
+  - module: komposition
+    id: pruefung-radiogroup
+    type: code
+    language: tsx
+    title: RadioGroup als Compound Component
+    description: |
+      Baue eine `RadioGroup` mit `RadioGroupItem` als Compound Component.
+
+      1. `RadioGroup` nimmt `value`, `defaultValue`, `onValueChange` und `children` und funktioniert kontrolliert und
+         unkontrolliert. Sie rendert `<div role="radiogroup">` und stellt den Zustand über einen Context bereit.
+      2. `RadioGroupItem` nimmt `value` und `children` und rendert `<button role="radio">` mit `aria-checked`
+         (`true`/`false`). Ein Klick wählt den Eintrag aus.
+      3. Steht ein `RadioGroupItem` außerhalb einer `RadioGroup`, wirft er einen Fehler.
+
+      `App` ist fertig.
+    starter: |
+      const RadioContext = React.createContext<{ value: string | undefined; setValue: (v: string) => void } | null>(null)
+
+      function RadioGroup({ value, defaultValue, onValueChange, children }: {
+        value?: string
+        defaultValue?: string
+        onValueChange?: (value: string) => void
+        children: React.ReactNode
+      }) {
+        return <div>{children}</div>
+      }
+
+      function RadioGroupItem({ value, children }: { value: string; children: React.ReactNode }) {
+        return <button>{children}</button>
+      }
+
+      function App() {
+        const [plan, setPlan] = React.useState('basis')
+        return (
+          <div>
+            <div id="frei">
+              <RadioGroup defaultValue="hell">
+                <RadioGroupItem value="hell">Hell</RadioGroupItem>
+                <RadioGroupItem value="dunkel">Dunkel</RadioGroupItem>
+              </RadioGroup>
+            </div>
+            <div id="gesteuert">
+              <RadioGroup value={plan} onValueChange={setPlan}>
+                <RadioGroupItem value="basis">Basis</RadioGroupItem>
+                <RadioGroupItem value="pro">Pro</RadioGroupItem>
+              </RadioGroup>
+            </div>
+            <output>{plan}</output>
+          </div>
+        )
+      }
+    tests:
+      - name: Rollen und Startwert
+        code: |
+          assertEqual(queryAll('[role="radiogroup"]').length, 2)
+          const items = queryAll('#frei [role="radio"]')
+          assertEqual(items[0].getAttribute('aria-checked'), 'true')
+          assertEqual(items[1].getAttribute('aria-checked'), 'false')
+      - name: unkontrolliert per Klick
+        code: |
+          await click('#frei [role="radio"]:nth-child(2)')
+          assertEqual(queryAll('#frei [role="radio"]')[1].getAttribute('aria-checked'), 'true')
+          assertEqual(queryAll('#frei [role="radio"]')[0].getAttribute('aria-checked'), 'false')
+      - name: kontrolliert meldet an App
+        code: |
+          await click('#gesteuert [role="radio"]:nth-child(2)')
+          assertEqual(query('output').textContent, 'pro')
+          assertEqual(queryAll('#gesteuert [role="radio"]')[1].getAttribute('aria-checked'), 'true')
+    hints:
+      - "`const kontrolliert = value !== undefined` und ein interner `useState(defaultValue)` für den anderen Fall."
+      - "Im Item: `const ctx = React.useContext(RadioContext); if (!ctx) throw new Error('…')`."
+    solution: |
+      const RadioContext = React.createContext<{ value: string | undefined; setValue: (v: string) => void } | null>(null)
+
+      function RadioGroup({ value, defaultValue, onValueChange, children }: {
+        value?: string
+        defaultValue?: string
+        onValueChange?: (value: string) => void
+        children: React.ReactNode
+      }) {
+        const [intern, setIntern] = React.useState(defaultValue)
+        const kontrolliert = value !== undefined
+        const aktuell = kontrolliert ? value : intern
+        const setValue = (neu: string) => {
+          if (!kontrolliert) setIntern(neu)
+          onValueChange?.(neu)
+        }
+        return (
+          <RadioContext.Provider value={{ value: aktuell, setValue }}>
+            <div role="radiogroup">{children}</div>
+          </RadioContext.Provider>
+        )
+      }
+
+      function RadioGroupItem({ value, children }: { value: string; children: React.ReactNode }) {
+        const ctx = React.useContext(RadioContext)
+        if (!ctx) throw new Error('RadioGroupItem muss innerhalb von <RadioGroup> stehen.')
+        return (
+          <button role="radio" aria-checked={ctx.value === value} onClick={() => ctx.setValue(value)}>
+            {children}
+          </button>
+        )
+      }
+
+      function App() {
+        const [plan, setPlan] = React.useState('basis')
+        return (
+          <div>
+            <div id="frei">
+              <RadioGroup defaultValue="hell">
+                <RadioGroupItem value="hell">Hell</RadioGroupItem>
+                <RadioGroupItem value="dunkel">Dunkel</RadioGroupItem>
+              </RadioGroup>
+            </div>
+            <div id="gesteuert">
+              <RadioGroup value={plan} onValueChange={setPlan}>
+                <RadioGroupItem value="basis">Basis</RadioGroupItem>
+                <RadioGroupItem value="pro">Pro</RadioGroupItem>
+              </RadioGroup>
+            </div>
+            <output>{plan}</output>
+          </div>
+        )
+      }
+  - module: zustand-und-varianten
+    id: pruefung-handler-verketten
+    type: code
+    language: ts
+    title: Props zusammenführen wie ein Slot
+    description: |
+      Schreibe `mergeProps(eigene, fremde)`, wie sie ein Slot oder ein Prop-Getter intern braucht. Ergebnis ist ein
+      neues Objekt:
+
+      1. Alle Schlüssel aus beiden Objekten; bei gleichen Schlüsseln gewinnt `fremde`.
+      2. **Ausnahme `className`:** beide Werte werden mit einem Leerzeichen verbunden (`eigene` zuerst). Fehlt einer,
+         bleibt nur der andere – ohne überflüssiges Leerzeichen.
+      3. **Ausnahme Handler** (Schlüssel, die mit `on` beginnen und in beiden Objekten Funktionen sind): Das Ergebnis
+         ist eine neue Funktion, die **zuerst** `fremde` und **dann** `eigene` mit denselben Argumenten aufruft.
+    starter: |
+      type Props = Record<string, any>
+
+      function mergeProps(eigene: Props, fremde: Props): Props {
+        return { ...eigene, ...fremde }
+      }
+    tests:
+      - name: fremde Props gewinnen
+        code: |
+          assertDeepEqual(mergeProps({ type: 'button', id: 'a' }, { type: 'submit' }), { type: 'submit', id: 'a' })
+      - name: className wird verbunden
+        code: |
+          assertEqual(mergeProps({ className: 'btn' }, { className: 'w-full' }).className, 'btn w-full')
+          assertEqual(mergeProps({ className: 'btn' }, {}).className, 'btn')
+          assertEqual(mergeProps({}, { className: 'w-full' }).className, 'w-full')
+      - name: Handler werden verkettet
+        code: |
+          const log: string[] = []
+          const p = mergeProps({ onClick: (x: string) => log.push('eigene ' + x) }, { onClick: (x: string) => log.push('fremde ' + x) })
+          p.onClick('klick')
+          assertDeepEqual(log, ['fremde klick', 'eigene klick'])
+      - name: ein einzelner Handler bleibt erhalten
+        code: |
+          let n = 0
+          const p = mergeProps({ onClick: () => n++ }, { id: 'x' })
+          p.onClick()
+          assertEqual(n, 1)
+    hints:
+      - "Starte mit `const ergebnis: Props = { ...eigene, ...fremde }` und korrigiere danach die Sonderfälle."
+      - "Handler erkennen: `key.startsWith('on') && typeof eigene[key] === 'function' && typeof fremde[key] === 'function'`."
+    solution: |
+      type Props = Record<string, any>
+
+      function mergeProps(eigene: Props, fremde: Props): Props {
+        const ergebnis: Props = { ...eigene, ...fremde }
+        const klassen = [eigene.className, fremde.className].filter(Boolean).join(' ')
+        if (klassen) ergebnis.className = klassen
+        for (const key of Object.keys(fremde)) {
+          if (key.startsWith('on') && typeof eigene[key] === 'function' && typeof fremde[key] === 'function') {
+            ergebnis[key] = (...args: unknown[]) => {
+              fremde[key](...args)
+              eigene[key](...args)
+            }
+          }
+        }
+        return ergebnis
+      }
+  - module: storybook-und-tests
+    id: pruefung-badge
+    type: terminal
+    title: Ein Badge mit Varianten, Story und Test
+    description: |
+      Im Ordner `pruefung-badge` liegt ein Projekt mit installierten Paketen (Vitest, Testing Library, clsx,
+      tailwind-merge, class-variance-authority) und der Hilfsfunktion `src/lib/cn.js`.
+
+      1. Schreibe `src/components/atoms/badge.jsx` und exportiere `badgeVariants` (mit `cva`) und `Badge`:
+         - Basis `inline-flex rounded-full px-2 text-xs`, `tone`: `neutral` → `bg-gray-100`, `erfolg` →
+           `bg-green-100`, `fehler` → `bg-red-100`; Standard `neutral`.
+         - `Badge` rendert `<span data-slot="badge">` mit `cn(badgeVariants({ tone }), className)` und reicht alle
+           übrigen Props durch.
+      2. Schreibe `src/components/atoms/badge.stories.jsx` mit `component: Badge`, `tags: ['autodocs']` und den
+         Stories `Neutral`, `Erfolg` und `Fehler`.
+      3. Schreibe `src/components/atoms/badge.test.jsx` mit mindestens zwei grünen Tests.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-badge
+    setup: |
+      cat > package.json <<'EOF'
+      {
+        "name": "pruefung-badge",
+        "private": true,
+        "type": "module",
+        "scripts": { "test": "vitest run" },
+        "dependencies": {
+          "class-variance-authority": "^0.7.1",
+          "clsx": "^2.1.1",
+          "tailwind-merge": "^3.7.0"
+        },
+        "devDependencies": {
+          "@testing-library/dom": "^10.4.2",
+          "@testing-library/react": "^16.3.3",
+          "happy-dom": "^20.14.6",
+          "react": "^19.3.0",
+          "react-dom": "^19.3.0",
+          "vitest": "^5.0.3"
+        }
+      }
+      EOF
+      cat > vitest.config.js <<'EOF'
+      import { defineConfig } from 'vitest/config'
+
+      export default defineConfig({
+        test: { environment: 'happy-dom', globals: true },
+      })
+      EOF
+      mkdir -p src/lib src/components/atoms
+      cat > src/lib/cn.js <<'EOF'
+      import { clsx } from 'clsx'
+      import { twMerge } from 'tailwind-merge'
+
+      export function cn(...inputs) {
+        return twMerge(clsx(inputs))
+      }
+      EOF
+      npm install --no-audit --no-fund --silent
+    checks:
+      - type: file_exists
+        path: src/components/atoms/badge.jsx
+        message: Die Datei src/components/atoms/badge.jsx fehlt noch.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/pruefung-XXXXXX")
+          cat > "$d/badge.test.jsx" <<'EOF'
+          import { render } from '@testing-library/react'
+          import { Badge, badgeVariants } from '../src/components/atoms/badge.jsx'
+
+          test('Varianten', () => {
+            expect(badgeVariants()).toContain('bg-gray-100')
+            expect(badgeVariants({ tone: 'fehler' })).toContain('bg-red-100')
+          })
+
+          test('Badge', () => {
+            const { container } = render(<Badge tone="erfolg" className="px-3" title="Status">Bezahlt</Badge>)
+            const el = container.querySelector('[data-slot="badge"]')
+            expect(el.tagName).toBe('SPAN')
+            expect(el.textContent).toBe('Bezahlt')
+            expect(el.getAttribute('title')).toBe('Status')
+            expect(el.className).toContain('bg-green-100')
+            expect(el.className).toContain('px-3')
+            expect(el.className).not.toContain('px-2')
+          })
+          EOF
+          npx vitest run "$d" --reporter=json --outputFile="$d/ergebnis.json" >/dev/null 2>&1 || true
+          jq -r '"\(.numPassedTests) \(.numFailedTests + .numFailedTestSuites)"' "$d/ergebnis.json" 2>/dev/null || echo "kein Ergebnis"
+          rm -rf "$d"
+        stdout_matches: "^2 0\\s*$"
+        message: Badge oder badgeVariants bestehen die Prüftests noch nicht. Prüfe die Klassen, data-slot, cn() mit className und das Durchreichen der Props.
+      - type: file_contains
+        path: src/components/atoms/badge.stories.jsx
+        pattern: "component:\\s*Badge"
+        message: In badge.stories.jsx fehlt die Meta mit component Badge.
+      - type: command
+        run: grep -cE "^export const (Neutral|Erfolg|Fehler)\b" src/components/atoms/badge.stories.jsx
+        stdout_matches: "^\\s*3\\s*$"
+        message: Exportiere die Stories Neutral, Erfolg und Fehler.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          npx vitest run src --reporter=json --outputFile="$d/ergebnis.json" >/dev/null 2>&1 || true
+          jq -r '"\(.numPassedTests) \(.numFailedTests + .numFailedTestSuites)"' "$d/ergebnis.json" 2>/dev/null || echo "kein Ergebnis"
+          rm -rf "$d"
+        stdout_matches: "^([2-9]|[1-9][0-9]+) 0\\s*$"
+        message: In badge.test.jsx sollen mindestens zwei Tests stehen, und alle müssen grün sein.
+    hints:
+      - "`export const badgeVariants = cva('inline-flex rounded-full px-2 text-xs', { variants: { tone: { … } }, defaultVariants: { tone: 'neutral' } })`."
+      - "`export function Badge({ tone, className, ...props }) { return <span data-slot=\"badge\" className={cn(badgeVariants({ tone }), className)} {...props} /> }`."
+    solution: |
+      ```jsx
+      // src/components/atoms/badge.jsx
+      import { cva } from 'class-variance-authority'
+      import { cn } from '../../lib/cn'
+
+      export const badgeVariants = cva('inline-flex rounded-full px-2 text-xs', {
+        variants: {
+          tone: { neutral: 'bg-gray-100', erfolg: 'bg-green-100', fehler: 'bg-red-100' },
+        },
+        defaultVariants: { tone: 'neutral' },
+      })
+
+      export function Badge({ tone, className, ...props }) {
+        return <span data-slot="badge" className={cn(badgeVariants({ tone }), className)} {...props} />
+      }
+      ```
+
+      ```jsx
+      // src/components/atoms/badge.stories.jsx
+      import { Badge } from './badge'
+
+      const meta = { component: Badge, tags: ['autodocs'], args: { children: 'Status' } }
+      export default meta
+
+      export const Neutral = {}
+      export const Erfolg = { args: { tone: 'erfolg' } }
+      export const Fehler = { args: { tone: 'fehler' } }
+      ```
+
+      ```jsx
+      // src/components/atoms/badge.test.jsx
+      import { render, screen } from '@testing-library/react'
+      import { Badge } from './badge'
+
+      test('zeigt den Text', () => {
+        render(<Badge>Bezahlt</Badge>)
+        expect(screen.getByText('Bezahlt')).toBeTruthy()
+      })
+
+      test('übergebene Klasse gewinnt', () => {
+        render(<Badge className="px-4">Offen</Badge>)
+        expect(screen.getByText('Offen').className).not.toContain('px-2')
+      })
+      ```

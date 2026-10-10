@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs><marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/></marker></defs>
+  <text x="225" y="34" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Unkontrolliert</text>
+  <text x="675" y="34" text-anchor="middle" font-size="19" font-weight="700" fill="#1e1b3a">Kontrolliert</text>
+  <line x1="450" y1="20" x2="450" y2="320" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect x="75" y="60" width="300" height="70" rx="12" fill="#ffffff" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="225" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Eltern-Komponente</text>
+  <text x="225" y="112" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">&lt;Tabs defaultValue="a"&gt;</text>
+  <rect x="75" y="190" width="300" height="90" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="225" y="220" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Tabs</text>
+  <text x="225" y="244" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">useState(defaultValue)</text>
+  <text x="225" y="266" text-anchor="middle" font-size="12" fill="#1e1b3a">Zustand lebt innen</text>
+  <line x1="225" y1="130" x2="225" y2="186" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <text x="235" y="164" font-size="12" fill="#1e1b3a">nur Startwert</text>
+  <rect x="525" y="60" width="300" height="70" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="675" y="86" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Eltern-Komponente</text>
+  <text x="675" y="108" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">const [tab, setTab] = useState("a")</text>
+  <text x="675" y="124" text-anchor="middle" font-size="12" fill="#1e1b3a">Zustand lebt außen</text>
+  <rect x="525" y="190" width="300" height="90" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="675" y="220" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Tabs</text>
+  <text x="675" y="244" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">value={tab}</text>
+  <text x="675" y="266" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1e1b3a">onValueChange={setTab}</text>
+  <line x1="635" y1="130" x2="635" y2="186" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/>
+  <text x="560" y="164" font-size="12" fill="#1e1b3a">value</text>
+  <line x1="715" y1="186" x2="715" y2="134" stroke="#f87171" stroke-width="2" marker-end="url(#pf)"/>
+  <text x="725" y="164" font-size="12" fill="#1e1b3a">onValueChange</text>
+  <text x="450" y="322" text-anchor="middle" font-size="13" fill="#1e1b3a">Eine gute Bibliothekskomponente unterstützt beide Varianten.</text>
+</svg>

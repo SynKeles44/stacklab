@@ -1,0 +1,422 @@
+- slug: atomic-design
+  term: Atomic Design
+  short: Eine Methode, Oberflächen aus Atomen, Molekülen, Organismen und Seiten aufzubauen.
+  explanation: >
+    Atomic Design stammt von Brad Frost und vergleicht eine Oberfläche mit der Chemie: Kleine Bausteine
+    verbinden sich zu immer größeren. In React-Projekten dienen die Ebenen oft als Ordnerstruktur für
+    Komponenten. Abhängigkeiten zeigen dabei immer nur nach unten.
+  example: "`atoms/button.tsx` wird von `molecules/search-field.tsx` benutzt, das wiederum in `organisms/site-header.tsx` steckt."
+  category: react
+  aliases: [Atomic-Design]
+  related: [atom-komponente, molekuel-komponente, organismus-komponente, komponente]
+  lesson: react-komponenten-architektur/atomic-design
+
+- slug: atom-komponente
+  term: Atom (Komponente)
+  short: Die kleinste Komponente im Atomic Design, die keine eigenen Komponenten enthält.
+  explanation: >
+    Atome sind allgemeine Grundbausteine wie Button, Input, Badge oder Icon. Sie kennen keine fachlichen Begriffe
+    und werden von vielen anderen Komponenten benutzt. Deshalb müssen ihre Props besonders stabil sein.
+  example: "`Button` mit den Varianten `primary` und `ghost` ist ein Atom."
+  category: react
+  aliases: [Atom, Atome]
+  related: [atomic-design, molekuel-komponente]
+  lesson: react-komponenten-architektur/atomic-design
+
+- slug: molekuel-komponente
+  term: Molekül (Komponente)
+  short: Eine Komponente aus einigen Atomen, die zusammen genau eine kleine Aufgabe lösen.
+  explanation: >
+    Moleküle kombinieren Atome zu einer Einheit mit klarer Aufgabe, etwa einem Suchfeld aus Input und Button.
+    Sie sind noch allgemein genug, um an mehreren Stellen eingesetzt zu werden.
+  example: "Ein Formularfeld aus Label, Input und Fehlertext ist ein Molekül."
+  category: react
+  aliases: [Molekül, Moleküle]
+  related: [atomic-design, atom-komponente, organismus-komponente]
+  lesson: react-komponenten-architektur/atomic-design
+
+- slug: organismus-komponente
+  term: Organismus (Komponente)
+  short: Ein eigenständiger Abschnitt einer Seite, zusammengesetzt aus Molekülen und Atomen.
+  explanation: >
+    Organismen sind größere Bausteine wie ein Kopfbereich oder eine Produktliste mit Filtern. Sie dürfen
+    fachliches Wissen haben und werden oft nur in einer App verwendet.
+  example: "`SiteHeader` mit Logo, Navigation und Suchfeld ist ein Organismus."
+  category: react
+  aliases: [Organismus, Organismen]
+  related: [atomic-design, molekuel-komponente]
+  lesson: react-komponenten-architektur/atomic-design
+
+- slug: kebab-case
+  term: kebab-case
+  short: Eine Schreibweise, bei der Wörter klein geschrieben und durch Bindestriche getrennt werden.
+  explanation: >
+    kebab-case wird häufig für Dateinamen, URLs und CSS-Klassen genutzt. Weil es nur Kleinbuchstaben enthält,
+    gibt es keine Probleme mit Dateisystemen, die Groß- und Kleinschreibung unterschiedlich behandeln.
+  example: "Die Komponente `SearchField` liegt in der Datei `search-field.tsx`."
+  category: programmierung
+  aliases: [Kebab-Case, Kebab Case]
+  related: [camelcase, snake-case, namenskonvention]
+  lesson: react-komponenten-architektur/atomic-design
+
+- slug: barrel-datei
+  term: Barrel-Datei
+  short: Eine Datei, meist `index.ts`, die nur andere Module gesammelt wieder exportiert.
+  explanation: >
+    Barrel-Dateien sollen Importe verkürzen, laden aber oft viel mehr Module als nötig, begünstigen
+    Kreis-Importe und verschleiern, wo eine Komponente wirklich liegt. Viele Teams verzichten deshalb darauf und
+    importieren direkt aus der Datei der Komponente.
+  example: "`export * from './atoms/button'` in `components/index.ts` ist eine typische Barrel-Datei."
+  category: react
+  aliases: [Barrel-Dateien, Barrel File, Barrel]
+  related: [es-module, modul, dev-server]
+  lesson: react-komponenten-architektur/atomic-design
+
+- slug: komponentenbibliothek
+  term: Komponentenbibliothek
+  short: Eine Sammlung allgemeiner, dokumentierter UI-Komponenten, die mehrere Apps und Teams gemeinsam nutzen.
+  explanation: >
+    Eine Komponentenbibliothek enthält Bausteine wie Button, Tabs oder Dialog, die keine fachlichen Begriffe
+    kennen. Sie liegt oft als eigenes Paket in einem Monorepo, hat Stories und Tests und verspricht stabile Props.
+  example: "Das Paket `packages/ui` stellt `Button` und `Tabs` für den Shop und das Admin-Portal bereit."
+  category: react
+  aliases: [UI-Bibliothek, Design-System-Bibliothek, Komponentenbibliotheken]
+  related: [komponente, monorepo, storybook, domaenen-komponente]
+  lesson: react-komponenten-architektur/bibliothek-oder-app
+
+- slug: domaenen-komponente
+  term: Fachliche Komponente
+  short: Eine Komponente, die Begriffe und Regeln eines bestimmten Fachgebiets kennt, etwa Bestellungen oder Kunden.
+  explanation: >
+    Fachliche Komponenten wie ein Warenkorb oder ein Bestellstatus-Badge gehören in die App, nicht in die
+    allgemeine Komponentenbibliothek. Sie dürfen aber allgemeine Bausteine aus der Bibliothek benutzen.
+  example: "`OrderStatusBadge` übersetzt `shipped` in „Versandt“ und nutzt dafür das allgemeine `Badge`."
+  category: react
+  aliases: [Domänen-Komponente, Fachliche Komponenten, Feature-Komponente]
+  related: [komponentenbibliothek, komponente]
+  lesson: react-komponenten-architektur/bibliothek-oder-app
+
+- slug: entscheidungsbaum
+  term: Entscheidungsbaum
+  short: Eine Folge von Ja/Nein-Fragen, bei der jede Antwort zur nächsten Frage oder zu einem Ergebnis führt.
+  explanation: >
+    Entscheidungsbäume machen wiederkehrende Entscheidungen nachvollziehbar und für alle im Team gleich. Bei
+    Komponenten lauten die Fragen etwa: Ist sie fachlich? Gibt es einen zweiten Nutzer? Lässt sie sich
+    allgemein formulieren?
+  example: "„Fachlich? → ja → bleibt in der App“ ist ein Ast eines Entscheidungsbaums."
+  category: grundlagen
+  aliases: [Entscheidungsbäume]
+  related: [komponentenbibliothek]
+  lesson: react-komponenten-architektur/bibliothek-oder-app
+
+- slug: prop-spreading
+  term: Prop-Spreading
+  short: Das Weiterreichen aller Props an ein Element mit dem Spread-Operator `{...props}`.
+  explanation: >
+    Mit Prop-Spreading nimmt eine Komponente alle Attribute ihres HTML-Elements an und gibt sie unverändert
+    weiter. Was in JSX später steht, gewinnt – deshalb steht `{...props}` meist am Ende und `className` wird
+    vorher herausgeholt und zusammengeführt.
+  example: "`function Input(props) { return <input data-slot=\"input\" {...props} /> }`"
+  category: react
+  aliases: [Props spreaden, Spread-Props]
+  related: [spread-operator, props, destrukturierung]
+  lesson: react-komponenten-architektur/props-api
+
+- slug: data-attribut
+  term: Data-Attribut
+  short: Ein eigenes HTML-Attribut mit dem Präfix `data-`, das zusätzliche Informationen an einem Element speichert.
+  explanation: >
+    Data-Attribute sind gültiges HTML und beeinflussen weder Aussehen noch Barrierefreiheit. CSS kann sie mit
+    Attribut-Selektoren ansprechen, JavaScript liest sie über `dataset`.
+  example: "`<button data-slot=\"button\">` kennzeichnet ein Element als Button-Baustein."
+  category: web
+  aliases: [Data-Attribute, data-*]
+  related: [dataset, attribut, data-slot]
+  lesson: react-komponenten-architektur/props-api
+
+- slug: data-slot
+  term: data-slot
+  short: Ein Data-Attribut, mit dem shadcn/ui-Komponenten markieren, welcher Baustein ein Element ist.
+  explanation: >
+    `data-slot` macht im DOM sichtbar, welche Komponente ein Element gerendert hat. Eltern-Komponenten, CSS und
+    Tests können Bausteine darüber gezielt ansprechen, unabhängig von Klassen.
+  example: "`[data-slot=card-title]` findet in einem Test den Titel einer Card."
+  category: react
+  aliases: [data slot]
+  related: [data-attribut, komponentenbibliothek]
+  lesson: react-komponenten-architektur/props-api
+
+- slug: ref-weiterleitung
+  term: Ref-Weiterleitung
+  short: Das Durchreichen eines Refs von einer eigenen Komponente an das echte DOM-Element darin.
+  explanation: >
+    Aufrufer brauchen manchmal das DOM-Element, etwa um ein Feld zu fokussieren. Früher war dafür `forwardRef`
+    nötig. Seit React 19 ist `ref` eine normale Prop und wird mit `{...props}` automatisch weitergegeben.
+  example: "`<Input ref={feld} />` – mit `{...props}` landet `feld.current` beim inneren `<input>`."
+  category: react
+  aliases: [forwardRef, Ref weiterleiten, Ref-Forwarding]
+  related: [react-ref, prop-spreading]
+  lesson: react-komponenten-architektur/props-api
+
+- slug: prop-explosion
+  term: Prop-Explosion
+  short: Der Zustand, in dem eine Komponente für jeden Sonderfall eine weitere Prop bekommen hat und unwartbar wird.
+  explanation: >
+    Prop-Explosion entsteht, wenn Inhalte konfiguriert statt komponiert werden. Props hängen voneinander ab,
+    die Komponente muss alle Kombinationen kennen. Die Lösung ist meist Komposition mit `children` oder
+    Teil-Komponenten.
+  example: "Eine Card mit `title`, `icon`, `footerText`, `showFooter` und `footerAlign` leidet unter Prop-Explosion."
+  category: react
+  aliases: [Prop Explosion, Props-Explosion]
+  related: [komposition, props, children-prop]
+  lesson: react-komponenten-architektur/komposition-mit-children
+
+- slug: komposition
+  term: Komposition
+  short: Das Zusammensetzen von Komponenten aus kleineren Teilen, statt sie über viele Props zu konfigurieren.
+  explanation: >
+    Bei der Komposition übergibt der Aufrufer fertige Teile, etwa als `children` oder als Teil-Komponenten. Die
+    Komponente bleibt ein Rahmen und muss Sonderfälle nicht kennen. React empfiehlt Komposition als Standardweg,
+    um Code wiederzuverwenden.
+  example: "`<Card><CardHeader><CardTitle>Bestellung</CardTitle></CardHeader></Card>`"
+  category: react
+  aliases: [Composition, komponieren]
+  related: [children-prop, prop-explosion, slot-muster, compound-component]
+  lesson: react-komponenten-architektur/komposition-mit-children
+
+- slug: slot-muster
+  term: Slot (Komponenten)
+  short: Ein benannter Bereich einer Komponente, in den der Aufrufer eigenen Inhalt setzt.
+  explanation: >
+    Slots legen fest, wo etwas erscheint (Kopf, Inhalt, Fußzeile), aber nicht, was. In React entstehen Slots
+    durch Teil-Komponenten wie `CardHeader` oder durch Props, die JSX annehmen.
+  example: "`CardFooter` ist der Slot für die Fußzeile einer Card."
+  category: react
+  aliases: [Slot, Slots]
+  related: [komposition, data-slot]
+  lesson: react-komponenten-architektur/komposition-mit-children
+
+- slug: compound-component
+  term: Compound Component
+  short: Mehrere Komponenten, die gemeinsam ein Bauteil bilden und sich still einen Zustand über Context teilen.
+  explanation: >
+    Bei einer Compound Component hält die Wurzel den Zustand und stellt ihn über einen privaten Context bereit.
+    Die Teile lesen ihn mit `useContext`. Der Aufrufer setzt die Teile wie HTML-Elemente frei zusammen.
+  example: "`<Tabs>`, `<TabsList>`, `<TabsTrigger>` und `<TabsContent>` bilden zusammen die Tabs."
+  category: react
+  aliases: [Compound Components, zusammengesetzte Komponente]
+  related: [react-context, komposition, usecontext]
+  lesson: react-komponenten-architektur/compound-components
+
+- slug: interaktives-element
+  term: Interaktives Element
+  short: Ein HTML-Element, das Nutzer bedienen können, etwa ein Button, ein Link oder ein Eingabefeld.
+  explanation: >
+    Interaktive Elemente sind mit Tastatur erreichbar und reagieren auf Klicks. Sie dürfen nicht ineinander
+    verschachtelt werden, weil sonst unklar ist, welches Element eine Eingabe bekommt.
+  example: "`<a>` in `<button>` ist ungültig – zwei interaktive Elemente stecken ineinander."
+  category: web
+  aliases: [interaktive Elemente]
+  related: [barrierefreiheit, fokus]
+  lesson: react-komponenten-architektur/aschild-und-polymorphie
+
+- slug: polymorphe-komponente
+  term: Polymorphe Komponente
+  short: Eine Komponente, der man sagen kann, welches HTML-Element sie rendern soll.
+  explanation: >
+    Polymorphe Komponenten haben meist eine `as`-Prop. So kann ein Button auch als Link gerendert werden. Die
+    Typisierung mit TypeScript ist aufwendig, weil sich die erlaubten Props mit dem Element ändern.
+  example: "`<Button as=\"a\" href=\"/kasse\">Zur Kasse</Button>`"
+  category: react
+  aliases: [as-Prop, polymorphe Komponenten]
+  related: [as-child, generics]
+  lesson: react-komponenten-architektur/aschild-und-polymorphie
+
+- slug: as-child
+  term: asChild
+  short: Eine Prop, mit der eine Komponente ihre Props auf ihr einziges Kind-Element überträgt, statt ein eigenes Element zu rendern.
+  explanation: >
+    asChild stammt aus Radix UI und wird auch in shadcn/ui genutzt. Intern übernimmt eine Slot-Komponente die
+    Arbeit: Sie kopiert das Kind mit `cloneElement` und mischt Klassen, Attribute und Handler hinein. Im DOM
+    bleibt genau ein Element.
+  example: "`<Button asChild><a href=\"/kasse\">Zur Kasse</a></Button>` rendert ein `<a>` im Button-Design."
+  category: react
+  aliases: [as-child, Slot-Komponente]
+  related: [polymorphe-komponente, komposition]
+  lesson: react-komponenten-architektur/aschild-und-polymorphie
+
+- slug: unkontrollierte-komponente
+  term: Unkontrollierte Komponente
+  short: Eine Komponente, die ihren Zustand selbst verwaltet; der Aufrufer gibt höchstens einen Startwert vor.
+  explanation: >
+    Unkontrollierte Komponenten sind bequem, weil der Aufrufer keinen eigenen State braucht. Den Startwert
+    übergibt man mit Props wie `defaultValue` oder `defaultOpen`. Von außen ändern lässt sich der Wert danach nicht.
+  example: "`<Tabs defaultValue=\"konto\">` wechselt seine Tabs selbst."
+  category: react
+  aliases: [unkontrolliert, uncontrolled component]
+  related: [kontrollierte-komponente, react-state]
+  lesson: react-komponenten-architektur/kontrolliert-und-unkontrolliert
+
+- slug: headless-komponente
+  term: Headless-Komponente
+  short: Eine Komponente oder ein Hook, der nur Verhalten liefert – Zustand, Tastatur, ARIA – aber kein Aussehen.
+  explanation: >
+    Headless heißt „ohne Kopf“, also ohne sichtbare Oberfläche. Bibliotheken wie Radix Primitives, Base UI oder
+    React Aria liefern die schwierige Logik, das Design gestaltet man selbst. So teilen sich unterschiedlich
+    aussehende Komponenten dasselbe Verhalten.
+  example: "`useDisclosure()` liefert `getTriggerProps()` und `getContentProps()`, aber kein Markup."
+  category: react
+  aliases: [headless, Headless Hook, Headless UI]
+  related: [eigener-hook, prop-getter, barrierefreiheit]
+  lesson: react-komponenten-architektur/headless-hooks
+
+- slug: prop-getter
+  term: Prop-Getter
+  short: Eine Funktion, die alle Props liefert, die ein Element für ein bestimmtes Verhalten braucht.
+  explanation: >
+    Headless Hooks geben oft Prop-Getter wie `getTriggerProps()` zurück. Das Ergebnis wird per Spread an ein
+    Element gehängt. Eigene Props des Aufrufers werden übergeben und zusammengeführt, Handler werden verkettet.
+  example: "`<button {...getTriggerProps({ onClick: logge })}>Menü</button>`"
+  category: react
+  aliases: [Prop-Getter-Funktion, prop getter]
+  related: [headless-komponente, eigener-hook, prop-spreading]
+  lesson: react-komponenten-architektur/headless-hooks
+
+- slug: roving-tabindex
+  term: Roving tabindex
+  short: Eine Technik, bei der in einer Gruppe nur ein Element per Tab-Taste erreichbar ist und Pfeiltasten innerhalb der Gruppe wandern.
+  explanation: >
+    Das aktive Element hat `tabIndex={0}`, alle anderen `tabIndex={-1}`. So springt die Tab-Taste über die
+    ganze Gruppe hinweg, und die Pfeiltasten wählen das nächste Element. Tabs, Menüs und Radio-Gruppen nutzen
+    dieses Muster.
+  example: "In einer Tab-Liste wechselt `ArrowRight` zum nächsten Tab."
+  category: web
+  aliases: [Roving Tabindex, wandernder tabindex]
+  related: [fokus, barrierefreiheit, headless-komponente]
+  lesson: react-komponenten-architektur/headless-hooks
+
+- slug: clsx
+  term: clsx
+  short: Ein kleines npm-Paket, das aus Strings, Bedingungen und Objekten einen Klassen-String baut.
+  explanation: >
+    clsx ignoriert falsche Werte wie `false` oder `undefined` und übernimmt Objekt-Schlüssel nur, wenn ihr Wert
+    wahr ist. Damit lassen sich Klassen bedingt zusammensetzen, ohne lange Ternär-Ketten.
+  example: "`clsx('btn', disabled && 'opacity-50', { 'w-full': breit })`"
+  category: react
+  aliases: [classnames]
+  related: [tailwind-merge, cn-funktion]
+  lesson: react-komponenten-architektur/varianten-mit-cva-und-cn
+
+- slug: tailwind-merge
+  term: tailwind-merge
+  short: Ein npm-Paket, das widersprüchliche Tailwind-Klassen erkennt und nur die zuletzt genannte behält.
+  explanation: >
+    Im HTML-Attribut `class` entscheidet nicht die Reihenfolge, welche Klasse gewinnt, sondern die Reihenfolge im
+    Stylesheet. tailwind-merge kennt alle Tailwind-Klassen und entfernt überholte, damit das Ergebnis
+    vorhersehbar ist.
+  example: "`twMerge('px-4 py-2', 'px-2')` ergibt `\"py-2 px-2\"`."
+  category: react
+  aliases: [twMerge]
+  related: [clsx, cn-funktion, tailwind-css]
+  lesson: react-komponenten-architektur/varianten-mit-cva-und-cn
+
+- slug: cn-funktion
+  term: cn()
+  short: Eine Hilfsfunktion, die clsx und tailwind-merge kombiniert, um Klassen sicher zusammenzuführen.
+  explanation: >
+    shadcn/ui legt `cn()` in jedem Projekt an. Sie setzt Klassen mit clsx bedingt zusammen und löst Tailwind-
+    Konflikte mit tailwind-merge auf. Die übergebene `className` des Aufrufers steht immer zuletzt, damit sie gewinnt.
+  example: "`className={cn(buttonVariants({ variant }), className)}`"
+  category: react
+  aliases: [cn, cn-Funktion]
+  related: [clsx, tailwind-merge, cva]
+  lesson: react-komponenten-architektur/varianten-mit-cva-und-cn
+
+- slug: cva
+  term: cva (class-variance-authority)
+  short: Ein npm-Paket, mit dem du die Varianten einer Komponente als Tabelle aus Optionen und Klassen beschreibst.
+  explanation: >
+    `cva` bekommt Basisklassen und ein Objekt mit `variants`, `defaultVariants` und `compoundVariants`. Es
+    liefert eine Funktion, die zu den gewählten Optionen den passenden Klassen-String baut. Mit `VariantProps`
+    leitet TypeScript daraus die Prop-Typen ab.
+  example: "`buttonVariants({ variant: 'ghost', size: 'sm' })` liefert alle Klassen für einen kleinen Ghost-Button."
+  category: react
+  aliases: [class-variance-authority, buttonVariants, Varianten-Funktion]
+  related: [cn-funktion, tailwind-css]
+  lesson: react-komponenten-architektur/varianten-mit-cva-und-cn
+
+- slug: storybook
+  term: Storybook
+  short: Ein Werkzeug, das UI-Komponenten isoliert anzeigt – zum Entwickeln, als Katalog, als Dokumentation und für Tests.
+  explanation: >
+    Storybook läuft als eigene kleine Web-App neben dem Projekt. Jede Komponente wird mit ihren Stories in
+    verschiedenen Zuständen gezeigt, Props lassen sich live über Controls ändern. Eingerichtet wird es mit
+    `npm create storybook@latest`.
+  example: "`npm run storybook` startet Storybook, meist unter `http://localhost:6006`."
+  category: react
+  aliases: [Storybook.js]
+  related: [story, csf, komponentenbibliothek, interaktionstest]
+  lesson: react-komponenten-architektur/stories-schreiben
+
+- slug: story
+  term: Story
+  short: Ein benannter Zustand einer Komponente in Storybook, etwa „Button, Variante ghost“.
+  explanation: >
+    Stories stehen in Dateien wie `button.stories.tsx` direkt neben der Komponente. Jede Story legt über ihre
+    args fest, mit welchen Props die Komponente gezeigt wird. Zusammen bilden sie einen Katalog aller
+    wichtigen Zustände.
+  example: "`export const Disabled = { args: { disabled: true } }`"
+  category: react
+  aliases: [Stories]
+  related: [storybook, csf, story-args]
+  lesson: react-komponenten-architektur/stories-schreiben
+
+- slug: csf
+  term: Component Story Format (CSF)
+  short: Das Dateiformat für Stories – ein Default-Export als Meta und je ein benannter Export pro Story.
+  explanation: >
+    CSF besteht aus normalen ES-Modulen. Die Meta beschreibt die Komponente, Titel und gemeinsame Einstellungen,
+    jeder benannte Export ist eine Story-Beschreibung als Objekt. Mit TypeScript prüft `satisfies Meta<typeof
+    Button>` die Angaben.
+  example: "`export default meta` und darunter `export const Primary: Story = {}`."
+  category: react
+  aliases: [CSF, CSF3]
+  related: [storybook, story, es-module]
+  lesson: react-komponenten-architektur/stories-schreiben
+
+- slug: story-args
+  term: args (Storybook)
+  short: Die Props, die Storybook einer Komponente in einer Story übergibt.
+  explanation: >
+    args aus der Meta gelten für alle Stories einer Datei, die einzelne Story ergänzt oder überschreibt sie.
+    Aus den args erzeugt Storybook Controls, mit denen man Props live ändern kann.
+  example: "`args: { children: 'Speichern', onClick: fn() }`"
+  category: react
+  aliases: [args, argTypes, Controls]
+  related: [story, storybook, props]
+  lesson: react-komponenten-architektur/stories-schreiben
+
+- slug: interaktionstest
+  term: Interaktionstest
+  short: Ein Test, der eine Komponente rendert, wie ein Mensch bedient und das sichtbare Ergebnis prüft.
+  explanation: >
+    In Storybook wird eine Story mit einer `play`-Funktion zum Interaktionstest: Nach dem Rendern klickt und
+    tippt sie und prüft mit `expect`. Mit dem Vitest-Addon laufen solche Stories auch automatisch in der CI.
+  example: "`play: async ({ canvas, userEvent }) => { await userEvent.click(canvas.getByRole('tab', { name: 'Passwort' })) }`"
+  category: react
+  aliases: [Interaktionstests, play-Funktion, Interaction Test]
+  related: [story, testing-library, vitest]
+  lesson: react-komponenten-architektur/komponenten-testen
+
+- slug: bruechiger-test
+  term: Brüchiger Test
+  short: Ein Test, der fehlschlägt, obwohl sich für Nutzer nichts geändert hat.
+  explanation: >
+    Brüchige Tests prüfen Umsetzungsdetails wie Klassennamen, interne State-Namen oder ganze HTML-Snapshots.
+    Bei jedem Umbau müssen sie angepasst werden und verlieren so ihren Wert. Robuste Tests prüfen sichtbares
+    Verhalten über Rollen und Texte.
+  example: "`querySelector('.tabs__trigger--active')` bricht, sobald jemand die Klasse umbenennt."
+  category: react
+  aliases: [fragiler Test, brittle test, brüchige Tests]
+  related: [testing-library, automatisierter-test]
+  lesson: react-komponenten-architektur/komponenten-testen

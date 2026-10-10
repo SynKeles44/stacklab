@@ -1,0 +1,32 @@
+title: React-Komponenten-Architektur
+subtitle: Atomic Design, Compound Components, Varianten und Storybook – Komponenten, die ein Team jahrelang trägt
+description: >
+  Nach dem React-Grundkurs kannst du Komponenten schreiben. In diesem Kurs lernst du, sie so zu
+  **bauen und zu ordnen**, dass ein ganzes Team sie über Jahre nutzen kann: Wo liegt welche Datei? Welche
+  Props bekommt ein Button? Wie baust du Tabs, die sich wie ein einziges Bauteil anfühlen? Und wie
+  dokumentierst und testest du das alles?
+
+
+  Du arbeitest mit den Mustern, die moderne Komponentenbibliotheken wie shadcn/ui prägen: Atomic Design,
+  Komposition mit `children`, Compound Components über Context, kontrollierte und unkontrollierte
+  Komponenten, Headless Hooks, Varianten mit `cva` und `cn()`, Stories in Storybook und Tests mit Vitest
+  und Testing Library. Im begleitenden Projekt entsteht ein kleines, getestetes UI-Kit.
+category: frontend
+level: fortgeschritten
+icon: component
+color: "#61dafb"
+estimated_hours: 5
+workspace_dir: react-architektur
+prerequisites: [react, typescript, html-css-tailwind]
+learning_goals:
+  - Du ordnest Komponenten nach Atomic Design und entscheidest begründet, ob sie in die Bibliothek oder in die App gehören.
+  - Du entwirfst eine Props-API, die HTML-Attribute, Klassen und Refs sauber durchreicht.
+  - Du setzt Komposition mit children, Slots und asChild ein, statt Komponenten mit Props zu überladen.
+  - Du baust Compound Components mit Context, die kontrolliert und unkontrolliert funktionieren.
+  - Du trennst Verhalten von Aussehen mit Headless Hooks und definierst Varianten mit cva und cn().
+  - Du schreibst Stories in Storybook und testest Komponenten aus Sicht der Nutzer mit Vitest und Testing Library.
+references:
+  - Komponentenbibliotheken in React-Monorepos mit Atomic-Design-Ordnern und kebab-case-Dateinamen
+  - Teamregel „keine Barrel-Dateien, eine Komponente pro Datei“
+  - shadcn/ui-Muster mit data-slot, cn() und cva-Varianten
+  - Storybook als lebende Dokumentation mit Interaktionstests

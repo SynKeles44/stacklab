@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs><marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/></marker></defs>
+  <text x="430" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Wohin gehört die neue Komponente?</text>
+  <rect x="300" y="56" width="260" height="56" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="430" y="80" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">1. Ist sie fachlich?</text>
+  <text x="430" y="100" text-anchor="middle" font-size="12" fill="#1e1b3a">kennt Bestellung, Kunde, ruft API auf</text>
+  <rect x="300" y="166" width="260" height="56" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="430" y="190" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">2. Gibt es einen zweiten Nutzer?</text>
+  <text x="430" y="210" text-anchor="middle" font-size="12" fill="#1e1b3a">eine weitere App oder ein Team</text>
+  <rect x="300" y="276" width="260" height="56" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="430" y="300" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">3. Allgemein formulierbar?</text>
+  <text x="430" y="320" text-anchor="middle" font-size="12" fill="#1e1b3a">ohne Props wie orderStatus</text>
+  <line x1="430" y1="112" x2="430" y2="162" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/><text x="442" y="142" font-size="13" fill="#1e1b3a">nein</text>
+  <line x1="430" y1="222" x2="430" y2="272" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/><text x="442" y="252" font-size="13" fill="#1e1b3a">ja</text>
+  <rect x="20" y="150" width="210" height="88" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="125" y="186" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Bleibt in der App</text>
+  <text x="125" y="208" text-anchor="middle" font-size="12" fill="#1e1b3a">apps/shop/src/features/…</text>
+  <line x1="300" y1="84" x2="160" y2="84" stroke="#1e1b3a" stroke-width="2"/><line x1="160" y1="84" x2="160" y2="146" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/><text x="230" y="76" font-size="13" fill="#1e1b3a">ja</text>
+  <line x1="300" y1="194" x2="234" y2="194" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/><text x="248" y="186" font-size="13" fill="#1e1b3a">nein</text>
+  <rect x="630" y="260" width="210" height="88" rx="12" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="735" y="294" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">In die Bibliothek</text>
+  <text x="735" y="316" text-anchor="middle" font-size="12" fill="#1e1b3a">packages/ui + Story + Tests</text>
+  <line x1="560" y1="304" x2="626" y2="304" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/><text x="582" y="296" font-size="13" fill="#1e1b3a">ja</text>
+  <rect x="300" y="360" width="260" height="48" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="430" y="382" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Teilen</text>
+  <text x="430" y="400" text-anchor="middle" font-size="12" fill="#1e1b3a">allgemeiner Teil → Bibliothek, Rest → App</text>
+  <line x1="430" y1="332" x2="430" y2="356" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pf)"/><text x="442" y="350" font-size="13" fill="#1e1b3a">nein</text>
+</svg>

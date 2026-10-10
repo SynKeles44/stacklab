@@ -1,0 +1,185 @@
+title: Zustand, Verhalten und Varianten
+description: Wie Bibliothekskomponenten kontrolliert und unkontrolliert funktionieren, Verhalten in Headless Hooks auslagern und Varianten mit cva und cn() sauber definieren.
+exercise:
+  id: modul-uebung-segmented
+  type: code
+  language: tsx
+  title: Ein Segmented Control mit allem Drum und Dran
+  description: |
+    Baue ein `SegmentedControl` – eine Reihe von Knöpfen, von denen genau einer ausgewählt ist (etwa
+    „Tag / Woche / Monat“). Es vereint alles aus diesem Modul.
+
+    1. **Zustand:** Props `value`, `defaultValue` und `onValueChange`. Nutze `useControllableState` (schon
+       vorhanden), damit es kontrolliert und unkontrolliert funktioniert.
+    2. **Rendern:** ein `<div role="radiogroup">` mit einem `<button role="radio">` pro Eintrag aus `options`
+       (`{ value, label }`). Der ausgewählte hat `aria-checked="true"`, alle anderen `"false"`.
+    3. **Roving tabindex:** Der ausgewählte Knopf hat `tabIndex={0}`, alle anderen `tabIndex={-1}`.
+    4. **Tastatur:** `ArrowRight` auf der Gruppe wählt den nächsten Eintrag, `ArrowLeft` den vorherigen – jeweils
+       mit Umlauf (nach dem letzten kommt der erste).
+    5. **Varianten:** Jeder Knopf bekommt die Klassen aus `segmentVariants({ selected })` (schon vorhanden).
+    6. **Klick** auf einen Knopf wählt ihn aus.
+
+    In `App` gibt es ein unkontrolliertes und ein kontrolliertes Control sowie einen Knopf, der das
+    kontrollierte von außen auf „Monat“ setzt.
+  starter: |
+    function useControllableState<T>(value: T | undefined, defaultValue: T, onChange?: (wert: T) => void) {
+      const [intern, setIntern] = React.useState(defaultValue)
+      const kontrolliert = value !== undefined
+      const aktuell = kontrolliert ? (value as T) : intern
+      const setze = (neu: T) => {
+        if (!kontrolliert) setIntern(neu)
+        onChange?.(neu)
+      }
+      return [aktuell, setze] as const
+    }
+
+    function segmentVariants({ selected }: { selected: boolean }) {
+      return selected ? 'segment segment-aktiv' : 'segment'
+    }
+
+    type Option = { value: string; label: string }
+    type SegmentedControlProps = {
+      options: Option[]
+      value?: string
+      defaultValue?: string
+      onValueChange?: (value: string) => void
+      id?: string
+    }
+
+    function SegmentedControl({ options, value, defaultValue, onValueChange, id }: SegmentedControlProps) {
+      return (
+        <div id={id}>
+          {options.map((o) => (
+            <button key={o.value}>{o.label}</button>
+          ))}
+        </div>
+      )
+    }
+
+    const zeitraeume = [
+      { value: 'tag', label: 'Tag' },
+      { value: 'woche', label: 'Woche' },
+      { value: 'monat', label: 'Monat' },
+    ]
+
+    function App() {
+      const [zeitraum, setZeitraum] = React.useState('tag')
+      return (
+        <div>
+          <SegmentedControl id="frei" options={zeitraeume} defaultValue="woche" />
+          <SegmentedControl id="gesteuert" options={zeitraeume} value={zeitraum} onValueChange={setZeitraum} />
+          <button className="monat" onClick={() => setZeitraum('monat')}>Monat zeigen</button>
+          <output>{zeitraum}</output>
+        </div>
+      )
+    }
+  tests:
+    - name: Rollen, Startwert und Klassen
+      code: |
+        const radios = queryAll('#frei [role="radio"]')
+        assertTrue(query('#frei').getAttribute('role') === 'radiogroup', 'Die Gruppe braucht role="radiogroup".')
+        assertEqual(radios.length, 3)
+        assertEqual(radios[1].getAttribute('aria-checked'), 'true')
+        assertEqual(radios[0].getAttribute('aria-checked'), 'false')
+        assertEqual(radios[1].className, 'segment segment-aktiv')
+        assertEqual(radios[0].className, 'segment')
+    - name: Roving tabindex
+      code: |
+        const radios = queryAll('#frei [role="radio"]')
+        assertEqual(radios[1].tabIndex, 0)
+        assertEqual(radios[0].tabIndex, -1)
+        assertEqual(radios[2].tabIndex, -1)
+    - name: Klick wählt aus (unkontrolliert)
+      code: |
+        await click('#frei [role="radio"]:nth-child(3)')
+        assertEqual(queryAll('#frei [role="radio"]')[2].getAttribute('aria-checked'), 'true')
+    - name: Pfeiltasten mit Umlauf
+      code: |
+        const taste = async (key) => {
+          query('#frei').dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+          await new Promise((fertig) => setTimeout(fertig, 0))
+        }
+        await taste('ArrowRight')
+        assertEqual(queryAll('#frei [role="radio"]')[0].getAttribute('aria-checked'), 'true', 'Nach dem letzten Eintrag soll ArrowRight wieder den ersten wählen.')
+        await taste('ArrowLeft')
+        assertEqual(queryAll('#frei [role="radio"]')[2].getAttribute('aria-checked'), 'true', 'ArrowLeft auf dem ersten Eintrag soll den letzten wählen.')
+    - name: kontrolliert – von außen und per Klick
+      code: |
+        await click('.monat')
+        assertEqual(queryAll('#gesteuert [role="radio"]')[2].getAttribute('aria-checked'), 'true')
+        await click('#gesteuert [role="radio"]:nth-child(2)')
+        assertEqual(query('output').textContent, 'woche')
+        assertEqual(queryAll('#gesteuert [role="radio"]')[1].getAttribute('aria-checked'), 'true')
+  hints:
+    - "`const [aktiv, setAktiv] = useControllableState(value, defaultValue ?? options[0].value, onValueChange)`."
+    - "Pro Knopf: `aria-checked={o.value === aktiv}`, `tabIndex={o.value === aktiv ? 0 : -1}`, `className={segmentVariants({ selected: o.value === aktiv })}`."
+    - "Tastatur am `div`: `const i = options.findIndex((o) => o.value === aktiv)` und dann `options[(i + 1) % options.length]` bzw. `options[(i - 1 + options.length) % options.length]`."
+  solution: |
+    function useControllableState<T>(value: T | undefined, defaultValue: T, onChange?: (wert: T) => void) {
+      const [intern, setIntern] = React.useState(defaultValue)
+      const kontrolliert = value !== undefined
+      const aktuell = kontrolliert ? (value as T) : intern
+      const setze = (neu: T) => {
+        if (!kontrolliert) setIntern(neu)
+        onChange?.(neu)
+      }
+      return [aktuell, setze] as const
+    }
+
+    function segmentVariants({ selected }: { selected: boolean }) {
+      return selected ? 'segment segment-aktiv' : 'segment'
+    }
+
+    type Option = { value: string; label: string }
+    type SegmentedControlProps = {
+      options: Option[]
+      value?: string
+      defaultValue?: string
+      onValueChange?: (value: string) => void
+      id?: string
+    }
+
+    function SegmentedControl({ options, value, defaultValue, onValueChange, id }: SegmentedControlProps) {
+      const [aktiv, setAktiv] = useControllableState(value, defaultValue ?? options[0].value, onValueChange)
+
+      function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+        const i = options.findIndex((o) => o.value === aktiv)
+        if (e.key === 'ArrowRight') setAktiv(options[(i + 1) % options.length].value)
+        if (e.key === 'ArrowLeft') setAktiv(options[(i - 1 + options.length) % options.length].value)
+      }
+
+      return (
+        <div id={id} role="radiogroup" onKeyDown={onKeyDown}>
+          {options.map((o) => (
+            <button
+              key={o.value}
+              role="radio"
+              aria-checked={o.value === aktiv}
+              tabIndex={o.value === aktiv ? 0 : -1}
+              className={segmentVariants({ selected: o.value === aktiv })}
+              onClick={() => setAktiv(o.value)}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )
+    }
+
+    const zeitraeume = [
+      { value: 'tag', label: 'Tag' },
+      { value: 'woche', label: 'Woche' },
+      { value: 'monat', label: 'Monat' },
+    ]
+
+    function App() {
+      const [zeitraum, setZeitraum] = React.useState('tag')
+      return (
+        <div>
+          <SegmentedControl id="frei" options={zeitraeume} defaultValue="woche" />
+          <SegmentedControl id="gesteuert" options={zeitraeume} value={zeitraum} onValueChange={setZeitraum} />
+          <button className="monat" onClick={() => setZeitraum('monat')}>Monat zeigen</button>
+          <output>{zeitraum}</output>
+        </div>
+      )
+    }

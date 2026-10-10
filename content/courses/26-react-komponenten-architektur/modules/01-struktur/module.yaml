@@ -1,0 +1,112 @@
+title: Struktur und Props-API
+description: Wie du Komponenten nach Atomic Design ordnest, entscheidest, ob sie in die Bibliothek oder in die App gehören, und ihnen eine saubere Props-API gibst.
+exercise:
+  id: modul-uebung-struktur
+  type: code
+  language: tsx
+  title: Avatar-Atom und Benutzer-Chip-Molekül
+  description: |
+    Baue zwei Bibliotheksbausteine nach den Regeln dieses Moduls.
+
+    1. **`Avatar`** (Atom): nimmt alle Props eines `<img>` an (`React.ComponentProps<'img'>`), rendert ein
+       `<img>` mit `data-slot="avatar"` und der Basisklasse `avatar`. Eine übergebene `className` wird
+       dahinter angehängt. Fehlt `alt`, setzt der Avatar `alt=""` (rein dekoratives Bild).
+    2. **`UserChip`** (Molekül): nimmt `name`, `src` und alle Props eines `<span>` an. Er rendert ein
+       `<span data-slot="user-chip" class="user-chip …">` mit einem `Avatar` (Bild-`src`, `alt` leer) und dem
+       Namen in einem `<span data-slot="user-chip-name">`. Auch hier wird `className` angehängt.
+    3. Beide reichen alle übrigen Props weiter – beim `Avatar` auch einen `ref`.
+
+    `App` ist fertig und verwendet beide Bausteine.
+  starter: |
+    function Avatar(props: React.ComponentProps<'img'>) {
+      return <img />
+    }
+
+    type UserChipProps = React.ComponentProps<'span'> & { name: string; src: string }
+
+    function UserChip(props: UserChipProps) {
+      return <span />
+    }
+
+    function App() {
+      const ref = React.useRef<HTMLImageElement>(null)
+      const [breite, setBreite] = React.useState('')
+      return (
+        <div>
+          <Avatar src="/ada.png" alt="Ada" className="gross" ref={ref} title="Profilbild" />
+          <UserChip name="Grace" src="/grace.png" className="aktiv" id="chip" />
+          <button className="messen" onClick={() => setBreite(ref.current?.tagName ?? 'kein Ref')}>Messen</button>
+          <output>{breite}</output>
+        </div>
+      )
+    }
+  tests:
+    - name: Avatar setzt data-slot, Klassen und reicht Attribute durch
+      code: |
+        const img = queryAll('img')[0]
+        assertEqual(img.getAttribute('data-slot'), 'avatar')
+        assertEqual(img.className, 'avatar gross')
+        assertEqual(img.getAttribute('alt'), 'Ada')
+        assertEqual(img.getAttribute('title'), 'Profilbild')
+    - name: Avatar reicht den Ref durch
+      code: |
+        await click('.messen')
+        assertEqual(query('output').textContent, 'IMG')
+    - name: UserChip baut sich aus Avatar und Name zusammen
+      code: |
+        const chip = query('[data-slot="user-chip"]')
+        assertTrue(chip !== null, 'Es gibt kein Element mit data-slot="user-chip".')
+        assertEqual(chip.className, 'user-chip aktiv')
+        assertEqual(chip.getAttribute('id'), 'chip')
+        const img = chip.querySelector('[data-slot="avatar"]')
+        assertTrue(img !== null, 'Im UserChip fehlt der Avatar.')
+        assertEqual(img.getAttribute('src'), '/grace.png')
+        assertEqual(img.getAttribute('alt'), '')
+        assertEqual(chip.querySelector('[data-slot="user-chip-name"]').textContent, 'Grace')
+    - name: ohne className bleibt nur die Basisklasse
+      code: |
+        const img = query('[data-slot="user-chip"] img')
+        assertEqual(img.className, 'avatar')
+  hints:
+    - "Hol `className` und `alt` aus den Props: `function Avatar({ className, alt = '', ...props }: React.ComponentProps<'img'>)`."
+    - "Klassen zusammenführen: `['avatar', className].filter(Boolean).join(' ')`."
+    - Der UserChip benutzt den Avatar – ein Molekül baut sich aus Atomen zusammen.
+  solution: |
+    function Avatar({ className, alt = '', ...props }: React.ComponentProps<'img'>) {
+      return (
+        <img
+          data-slot="avatar"
+          alt={alt}
+          className={['avatar', className].filter(Boolean).join(' ')}
+          {...props}
+        />
+      )
+    }
+
+    type UserChipProps = React.ComponentProps<'span'> & { name: string; src: string }
+
+    function UserChip({ name, src, className, ...props }: UserChipProps) {
+      return (
+        <span
+          data-slot="user-chip"
+          className={['user-chip', className].filter(Boolean).join(' ')}
+          {...props}
+        >
+          <Avatar src={src} />
+          <span data-slot="user-chip-name">{name}</span>
+        </span>
+      )
+    }
+
+    function App() {
+      const ref = React.useRef<HTMLImageElement>(null)
+      const [breite, setBreite] = React.useState('')
+      return (
+        <div>
+          <Avatar src="/ada.png" alt="Ada" className="gross" ref={ref} title="Profilbild" />
+          <UserChip name="Grace" src="/grace.png" className="aktiv" id="chip" />
+          <button className="messen" onClick={() => setBreite(ref.current?.tagName ?? 'kein Ref')}>Messen</button>
+          <output>{breite}</output>
+        </div>
+      )
+    }

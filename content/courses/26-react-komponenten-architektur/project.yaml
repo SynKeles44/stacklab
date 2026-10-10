@@ -1,0 +1,939 @@
+title: Dein eigenes UI-Kit
+description: |
+  In diesem Projekt baust du eine kleine, aber echte Komponentenbibliothek – so, wie sie in einem Team
+  entsteht. Du legst eine Atomic-Design-Struktur an, schreibst die Hilfsfunktion `cn()`, definierst
+  Button-Varianten mit `cva`, baust eine Card aus Teil-Komponenten und Tabs als Compound Component, die
+  kontrolliert und unkontrolliert funktionieren. Zum Schluss schreibst du Tests und Stories und räumst auf.
+
+  Alles passiert im Ordner `ui-kit` in deinem Workspace. Klicke zuerst auf **Projekt vorbereiten**: Dann
+  werden `package.json`, `vitest.config.js` und alle Pakete (React, Vitest, Testing Library, clsx,
+  tailwind-merge, class-variance-authority) angelegt und installiert. Öffne danach das Übungs-Terminal und
+  wechsle mit `cd ui-kit` hinein.
+
+  Stacklab prüft deine Komponenten nach jedem Schritt mit eigenen, versteckten Tests. Halte dich deshalb
+  genau an die Dateinamen, Exporte und `data-slot`-Werte aus der Beschreibung. Die Schritte bauen
+  aufeinander auf – lösche nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Ein Projekt `ui-kit` mit Atomic-Design-Ordnern, `cn()`, einem Button mit cva-Varianten, einer Card aus
+  Teil-Komponenten, Tabs als Compound Component mit kontrolliertem und unkontrolliertem Modus, eigenen
+  Tests, Stories im CSF-Format und ohne Barrel-Dateien.
+workdir: ui-kit
+setup: |
+  cat > package.json <<'EOF'
+  {
+    "name": "ui-kit",
+    "private": true,
+    "type": "module",
+    "scripts": { "test": "vitest run" },
+    "dependencies": {
+      "class-variance-authority": "^0.7.1",
+      "clsx": "^2.1.1",
+      "tailwind-merge": "^3.7.0"
+    },
+    "devDependencies": {
+      "@testing-library/dom": "^10.4.2",
+      "@testing-library/react": "^16.3.3",
+      "@testing-library/user-event": "^14.6.7",
+      "happy-dom": "^20.14.6",
+      "react": "^19.3.0",
+      "react-dom": "^19.3.0",
+      "vitest": "^5.0.3"
+    }
+  }
+  EOF
+  cat > vitest.config.js <<'EOF'
+  import { defineConfig } from 'vitest/config'
+
+  export default defineConfig({
+    test: { environment: 'happy-dom', globals: true },
+  })
+  EOF
+  npm install --no-audit --no-fund --silent
+steps:
+  - id: struktur-und-cn
+    title: Ordnerstruktur und cn()
+    description: |
+      Jede Bibliothek beginnt mit einer klaren Struktur und der Hilfsfunktion für Klassen.
+
+      1. Lege die Ordner `src/lib`, `src/components/atoms`, `src/components/molecules` und
+         `src/components/organisms` an.
+      2. Schreibe `src/lib/cn.js`. Sie exportiert `cn(...inputs)` und gibt `twMerge(clsx(inputs))` zurück.
+      3. Probiere sie aus:
+         `node --input-type=module -e 'import { cn } from "./src/lib/cn.js"; console.log(cn("px-4", "px-2"))'`
+         muss `px-2` ausgeben.
+    checklist:
+      - Ordner für Atome, Moleküle und Organismen angelegt
+      - "`src/lib/cn.js` exportiert `cn`"
+      - "`cn` kombiniert clsx und tailwind-merge"
+    hints:
+      - "`mkdir -p src/lib src/components/atoms src/components/molecules src/components/organisms`"
+      - "Importe: `import { clsx } from 'clsx'` und `import { twMerge } from 'tailwind-merge'`."
+    checks:
+      - type: dir_exists
+        path: src/components/atoms
+        message: Der Ordner src/components/atoms fehlt noch.
+      - type: dir_exists
+        path: src/components/molecules
+        message: Der Ordner src/components/molecules fehlt noch.
+      - type: dir_exists
+        path: src/components/organisms
+        message: Der Ordner src/components/organisms fehlt noch.
+      - type: file_exists
+        path: src/lib/cn.js
+        message: Die Datei src/lib/cn.js fehlt noch.
+      - type: command
+        run: |
+          node --input-type=module -e 'import { cn } from "./src/lib/cn.js"; console.log(cn("px-4 py-2", false, { "font-bold": true }, "px-2"))'
+        stdout_matches: "^py-2 font-bold px-2\\s*$"
+        message: "cn() liefert noch nicht das erwartete Ergebnis – sie soll twMerge(clsx(inputs)) zurückgeben."
+    solution: |
+      ```bash
+      mkdir -p src/lib src/components/atoms src/components/molecules src/components/organisms
+      cat > src/lib/cn.js <<'EOF'
+      import { clsx } from 'clsx'
+      import { twMerge } from 'tailwind-merge'
+
+      export function cn(...inputs) {
+        return twMerge(clsx(inputs))
+      }
+      EOF
+      ```
+    solve: |
+      mkdir -p src/lib src/components/atoms src/components/molecules src/components/organisms
+      cat > src/lib/cn.js <<'EOF'
+      import { clsx } from 'clsx'
+      import { twMerge } from 'tailwind-merge'
+
+      export function cn(...inputs) {
+        return twMerge(clsx(inputs))
+      }
+      EOF
+  - id: button-varianten
+    title: Button-Varianten mit cva
+    description: |
+      Lege die Varianten des Buttons als Tabelle an – in einer eigenen Datei, damit später auch Links sie
+      nutzen können.
+
+      Schreibe `src/components/atoms/button-variants.js` und exportiere `buttonVariants`, erstellt mit `cva`:
+
+      | Teil | Klassen |
+      |---|---|
+      | Basis | `inline-flex items-center justify-center rounded-md text-sm font-medium` |
+      | `variant: default` | `bg-blue-600 text-white hover:bg-blue-700` |
+      | `variant: outline` | `border border-gray-300 bg-white` |
+      | `variant: ghost` | `hover:bg-gray-100` |
+      | `size: sm` | `h-8 px-3` |
+      | `size: md` | `h-10 px-4` |
+      | `size: lg` | `h-12 px-6` |
+
+      Standard ist `default` und `md`.
+    checklist:
+      - "`buttonVariants` mit drei Varianten und drei Größen"
+      - "`defaultVariants` gesetzt"
+    hints:
+      - "`import { cva } from 'class-variance-authority'`"
+      - "Aufbau: `cva('basis', { variants: { variant: { … }, size: { … } }, defaultVariants: { variant: 'default', size: 'md' } })`."
+    checks:
+      - type: file_exists
+        path: src/components/atoms/button-variants.js
+        message: Die Datei src/components/atoms/button-variants.js fehlt noch.
+      - type: command
+        run: |
+          node --input-type=module -e 'import { buttonVariants } from "./src/components/atoms/button-variants.js"; console.log(buttonVariants())'
+        stdout_matches: "^inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 h-10 px-4\\s*$"
+        message: buttonVariants() ohne Angaben liefert noch nicht Basis + default + md.
+      - type: command
+        run: |
+          node --input-type=module -e 'import { buttonVariants } from "./src/components/atoms/button-variants.js"; console.log(buttonVariants({ variant: "outline", size: "lg" }))'
+        stdout_matches: "border border-gray-300 bg-white h-12 px-6\\s*$"
+        message: Die Variante outline oder die Größe lg stimmt noch nicht.
+      - type: command
+        run: |
+          node --input-type=module -e 'import { buttonVariants } from "./src/components/atoms/button-variants.js"; console.log(buttonVariants({ variant: "ghost", size: "sm" }))'
+        stdout_matches: "hover:bg-gray-100 h-8 px-3\\s*$"
+        message: Die Variante ghost oder die Größe sm stimmt noch nicht.
+    solution: |
+      ```js
+      // src/components/atoms/button-variants.js
+      import { cva } from 'class-variance-authority'
+
+      export const buttonVariants = cva('inline-flex items-center justify-center rounded-md text-sm font-medium', {
+        variants: {
+          variant: {
+            default: 'bg-blue-600 text-white hover:bg-blue-700',
+            outline: 'border border-gray-300 bg-white',
+            ghost: 'hover:bg-gray-100',
+          },
+          size: {
+            sm: 'h-8 px-3',
+            md: 'h-10 px-4',
+            lg: 'h-12 px-6',
+          },
+        },
+        defaultVariants: { variant: 'default', size: 'md' },
+      })
+      ```
+    solve: |
+      cat > src/components/atoms/button-variants.js <<'EOF'
+      import { cva } from 'class-variance-authority'
+
+      export const buttonVariants = cva('inline-flex items-center justify-center rounded-md text-sm font-medium', {
+        variants: {
+          variant: {
+            default: 'bg-blue-600 text-white hover:bg-blue-700',
+            outline: 'border border-gray-300 bg-white',
+            ghost: 'hover:bg-gray-100',
+          },
+          size: {
+            sm: 'h-8 px-3',
+            md: 'h-10 px-4',
+            lg: 'h-12 px-6',
+          },
+        },
+        defaultVariants: { variant: 'default', size: 'md' },
+      })
+      EOF
+  - id: button-komponente
+    title: Das Button-Atom
+    description: |
+      Jetzt bekommt der Button seine Props-API.
+
+      Schreibe `src/components/atoms/button.jsx` und exportiere `Button`:
+
+      1. Props: `variant`, `size`, `className` und alle übrigen Button-Attribute.
+      2. Gerendert wird ein `<button data-slot="button">`.
+      3. Die Klasse ist `cn(buttonVariants({ variant, size }), className)` – so gewinnt eine übergebene Klasse
+         wie `px-2` gegen `px-4`.
+      4. Alle übrigen Props (auch `onClick`, `type`, `disabled` und `ref`) werden durchgereicht.
+
+      Importiere direkt aus den Dateien (`../../lib/cn`, `./button-variants`) – keine Barrel-Datei.
+    checklist:
+      - "`data-slot=\"button\"` gesetzt"
+      - Varianten und übergebene Klasse mit `cn()` zusammengeführt
+      - Alle übrigen Props durchgereicht
+    hints:
+      - "`export function Button({ variant, size, className, ...props }) { … }`"
+      - "`className={cn(buttonVariants({ variant, size }), className)}` und danach `{...props}`."
+    checks:
+      - type: file_exists
+        path: src/components/atoms/button.jsx
+        message: Die Datei src/components/atoms/button.jsx fehlt noch.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/pruefung-XXXXXX")
+          cat > "$d/button.test.jsx" <<'EOF'
+          import { render, screen } from '@testing-library/react'
+          import userEvent from '@testing-library/user-event'
+          import { Button } from '../src/components/atoms/button.jsx'
+
+          test('data-slot und Standardvariante', () => {
+            render(<Button>Speichern</Button>)
+            const b = screen.getByRole('button', { name: 'Speichern' })
+            expect(b.getAttribute('data-slot')).toBe('button')
+            expect(b.className).toContain('bg-blue-600')
+            expect(b.className).toContain('px-4')
+          })
+
+          test('Variante und className werden zusammengeführt', () => {
+            render(<Button variant="outline" className="w-full px-2">X</Button>)
+            const b = screen.getByRole('button', { name: 'X' })
+            expect(b.className).toContain('border-gray-300')
+            expect(b.className).toContain('w-full')
+            expect(b.className).toContain('px-2')
+            expect(b.className).not.toContain('px-4')
+          })
+
+          test('Props werden durchgereicht', async () => {
+            const onClick = vi.fn()
+            render(<Button type="submit" aria-label="Senden" onClick={onClick}>Los</Button>)
+            const b = screen.getByRole('button', { name: 'Senden' })
+            expect(b.getAttribute('type')).toBe('submit')
+            await userEvent.click(b)
+            expect(onClick).toHaveBeenCalledTimes(1)
+          })
+          EOF
+          npx vitest run "$d" --reporter=json --outputFile="$d/ergebnis.json" >/dev/null 2>&1 || true
+          jq -r '"\(.numPassedTests) \(.numFailedTests + .numFailedTestSuites)"' "$d/ergebnis.json" 2>/dev/null || echo "kein Ergebnis"
+          rm -rf "$d"
+        stdout_matches: "^3 0\\s*$"
+        message: Der Button besteht die Prüftests noch nicht. Prüfe data-slot, cn(buttonVariants({ variant, size }), className) und das Durchreichen aller Props.
+    solution: |
+      ```jsx
+      // src/components/atoms/button.jsx
+      import { cn } from '../../lib/cn'
+      import { buttonVariants } from './button-variants'
+
+      export function Button({ variant, size, className, ...props }) {
+        return (
+          <button
+            data-slot="button"
+            className={cn(buttonVariants({ variant, size }), className)}
+            {...props}
+          />
+        )
+      }
+      ```
+    solve: |
+      cat > src/components/atoms/button.jsx <<'EOF'
+      import { cn } from '../../lib/cn'
+      import { buttonVariants } from './button-variants'
+
+      export function Button({ variant, size, className, ...props }) {
+        return (
+          <button
+            data-slot="button"
+            className={cn(buttonVariants({ variant, size }), className)}
+            {...props}
+          />
+        )
+      }
+      EOF
+  - id: card-teile
+    title: Die Card aus Teil-Komponenten
+    description: |
+      Statt einer Card mit vielen Props baust du Teil-Komponenten, die sich frei kombinieren lassen.
+
+      Schreibe `src/components/molecules/card.jsx` und exportiere aus **dieser einen Datei** `Card`,
+      `CardHeader`, `CardTitle` und `CardContent`:
+
+      | Komponente | Element | data-slot | Basisklassen |
+      |---|---|---|---|
+      | `Card` | `div` | `card` | `rounded-xl border bg-white` |
+      | `CardHeader` | `div` | `card-header` | `grid gap-1 p-6` |
+      | `CardTitle` | `h3` | `card-title` | `font-semibold` |
+      | `CardContent` | `div` | `card-content` | `px-6 pb-6` |
+
+      Jede Komponente führt ihre Basisklassen mit `cn()` und einer übergebenen `className` zusammen und reicht
+      alle übrigen Props samt `children` durch.
+    checklist:
+      - Vier Teil-Komponenten in einer Datei
+      - Jede mit eigenem data-slot und Basisklassen
+      - "`className` mit `cn()` zusammengeführt"
+    hints:
+      - "Jede Komponente hat dieselbe Form: `export function Card({ className, ...props }) { return <div data-slot=\"card\" className={cn('…', className)} {...props} /> }`."
+      - "Der Import lautet `import { cn } from '../../lib/cn'`."
+    checks:
+      - type: file_exists
+        path: src/components/molecules/card.jsx
+        message: Die Datei src/components/molecules/card.jsx fehlt noch.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/pruefung-XXXXXX")
+          cat > "$d/card.test.jsx" <<'EOF'
+          import { render, screen } from '@testing-library/react'
+          import { Card, CardHeader, CardTitle, CardContent } from '../src/components/molecules/card.jsx'
+
+          test('Teile setzen data-slot und Inhalt', () => {
+            const { container } = render(
+              <Card className="shadow-sm" id="karte">
+                <CardHeader>
+                  <CardTitle>Bestellung</CardTitle>
+                  <button>Menü</button>
+                </CardHeader>
+                <CardContent>3 Artikel</CardContent>
+              </Card>,
+            )
+            const card = container.querySelector('[data-slot="card"]')
+            expect(card.getAttribute('id')).toBe('karte')
+            expect(card.className).toContain('rounded-xl')
+            expect(card.className).toContain('shadow-sm')
+            expect(container.querySelector('[data-slot="card-header"] button').textContent).toBe('Menü')
+            expect(screen.getByRole('heading', { name: 'Bestellung' }).getAttribute('data-slot')).toBe('card-title')
+            expect(container.querySelector('[data-slot="card-content"]').textContent).toBe('3 Artikel')
+          })
+
+          test('cn löst Konflikte zugunsten des Aufrufers', () => {
+            const { container } = render(<CardContent className="px-2">X</CardContent>)
+            const el = container.querySelector('[data-slot="card-content"]')
+            expect(el.className).toContain('px-2')
+            expect(el.className).not.toContain('px-6')
+          })
+          EOF
+          npx vitest run "$d" --reporter=json --outputFile="$d/ergebnis.json" >/dev/null 2>&1 || true
+          jq -r '"\(.numPassedTests) \(.numFailedTests + .numFailedTestSuites)"' "$d/ergebnis.json" 2>/dev/null || echo "kein Ergebnis"
+          rm -rf "$d"
+        stdout_matches: "^2 0\\s*$"
+        message: Die Card besteht die Prüftests noch nicht. Prüfe die vier Exporte, die data-slot-Werte, CardTitle als h3 und cn() mit className.
+    solution: |
+      ```jsx
+      // src/components/molecules/card.jsx
+      import { cn } from '../../lib/cn'
+
+      export function Card({ className, ...props }) {
+        return <div data-slot="card" className={cn('rounded-xl border bg-white', className)} {...props} />
+      }
+
+      export function CardHeader({ className, ...props }) {
+        return <div data-slot="card-header" className={cn('grid gap-1 p-6', className)} {...props} />
+      }
+
+      export function CardTitle({ className, ...props }) {
+        return <h3 data-slot="card-title" className={cn('font-semibold', className)} {...props} />
+      }
+
+      export function CardContent({ className, ...props }) {
+        return <div data-slot="card-content" className={cn('px-6 pb-6', className)} {...props} />
+      }
+      ```
+    solve: |
+      cat > src/components/molecules/card.jsx <<'EOF'
+      import { cn } from '../../lib/cn'
+
+      export function Card({ className, ...props }) {
+        return <div data-slot="card" className={cn('rounded-xl border bg-white', className)} {...props} />
+      }
+
+      export function CardHeader({ className, ...props }) {
+        return <div data-slot="card-header" className={cn('grid gap-1 p-6', className)} {...props} />
+      }
+
+      export function CardTitle({ className, ...props }) {
+        return <h3 data-slot="card-title" className={cn('font-semibold', className)} {...props} />
+      }
+
+      export function CardContent({ className, ...props }) {
+        return <div data-slot="card-content" className={cn('px-6 pb-6', className)} {...props} />
+      }
+      EOF
+  - id: tabs-compound
+    title: Tabs als Compound Component
+    description: |
+      Das Herzstück: Tabs, deren Teile sich über Context verständigen und die kontrolliert **und**
+      unkontrolliert funktionieren.
+
+      1. Schreibe `src/lib/use-controllable-state.js` und exportiere
+         `useControllableState(value, defaultValue, onChange)` wie in Modul 3.
+      2. Schreibe `src/components/molecules/tabs.jsx` und exportiere `Tabs`, `TabsList`, `TabsTrigger` und
+         `TabsContent`:
+         - `Tabs` nimmt `value`, `defaultValue`, `onValueChange` und `children`, nutzt `useControllableState`
+           und stellt `{ value, setValue }` über einen privaten Context bereit. Element: `<div data-slot="tabs">`.
+         - `TabsList`: `<div role="tablist" data-slot="tabs-list">`.
+         - `TabsTrigger` (`value`): `<button role="tab" data-slot="tabs-trigger">` mit `aria-selected`, Klick
+           setzt den Wert.
+         - `TabsContent` (`value`): `<div role="tabpanel" data-slot="tabs-content">`, nur wenn aktiv.
+         - Ein Hook `useTabs()` wirft einen Fehler, wenn ein Teil außerhalb von `Tabs` steht.
+    checklist:
+      - "`useControllableState` in eigener Datei"
+      - Vier Teile in einer Datei, Context nicht exportiert
+      - Kontrollierter und unkontrollierter Modus funktionieren
+    hints:
+      - "Context anlegen: `const TabsContext = createContext(null)` mit `import { createContext, useContext, useState } from 'react'`."
+      - "In `Tabs`: `const [aktiv, setAktiv] = useControllableState(value, defaultValue, onValueChange)` und `<TabsContext value={{ value: aktiv, setValue: setAktiv }}>`."
+      - "Im unkontrollierten Modus speichert `setze` den Wert selbst, im kontrollierten ruft es nur `onChange` auf."
+    checks:
+      - type: file_exists
+        path: src/lib/use-controllable-state.js
+        message: Die Datei src/lib/use-controllable-state.js fehlt noch.
+      - type: file_exists
+        path: src/components/molecules/tabs.jsx
+        message: Die Datei src/components/molecules/tabs.jsx fehlt noch.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/pruefung-XXXXXX")
+          cat > "$d/tabs.test.jsx" <<'EOF'
+          import { useState } from 'react'
+          import { render, screen } from '@testing-library/react'
+          import userEvent from '@testing-library/user-event'
+          import { Tabs, TabsList, TabsTrigger, TabsContent } from '../src/components/molecules/tabs.jsx'
+
+          function Teile() {
+            return (
+              <>
+                <TabsList>
+                  <TabsTrigger value="a">Alpha</TabsTrigger>
+                  <TabsTrigger value="b">Beta</TabsTrigger>
+                </TabsList>
+                <TabsContent value="a">Inhalt A</TabsContent>
+                <TabsContent value="b">Inhalt B</TabsContent>
+              </>
+            )
+          }
+
+          test('unkontrolliert', async () => {
+            const meldung = vi.fn()
+            const { container } = render(<Tabs defaultValue="a" onValueChange={meldung}><Teile /></Tabs>)
+            expect(container.querySelector('[data-slot="tabs"]')).not.toBeNull()
+            expect(screen.getByRole('tablist').getAttribute('data-slot')).toBe('tabs-list')
+            expect(screen.getByRole('tabpanel').textContent).toBe('Inhalt A')
+            await userEvent.click(screen.getByRole('tab', { name: 'Beta' }))
+            expect(screen.getByRole('tabpanel').textContent).toBe('Inhalt B')
+            expect(screen.getByRole('tab', { name: 'Beta' }).getAttribute('aria-selected')).toBe('true')
+            expect(meldung).toHaveBeenCalledWith('b')
+          })
+
+          test('kontrolliert ohne Handler bleibt stehen', async () => {
+            render(<Tabs value="a"><Teile /></Tabs>)
+            await userEvent.click(screen.getByRole('tab', { name: 'Beta' }))
+            expect(screen.getByRole('tabpanel').textContent).toBe('Inhalt A')
+          })
+
+          test('kontrolliert mit State der Eltern', async () => {
+            function Eltern() {
+              const [tab, setTab] = useState('b')
+              return (
+                <>
+                  <button onClick={() => setTab('a')}>Zurück</button>
+                  <Tabs value={tab} onValueChange={setTab}><Teile /></Tabs>
+                </>
+              )
+            }
+            render(<Eltern />)
+            expect(screen.getByRole('tabpanel').textContent).toBe('Inhalt B')
+            await userEvent.click(screen.getByRole('button', { name: 'Zurück' }))
+            expect(screen.getByRole('tabpanel').textContent).toBe('Inhalt A')
+            await userEvent.click(screen.getByRole('tab', { name: 'Beta' }))
+            expect(screen.getByRole('tabpanel').getAttribute('data-slot')).toBe('tabs-content')
+            expect(screen.getByRole('tabpanel').textContent).toBe('Inhalt B')
+          })
+
+          test('Teile außerhalb von Tabs werfen einen Fehler', () => {
+            const stumm = vi.spyOn(console, 'error').mockImplementation(() => {})
+            expect(() => render(<TabsTrigger value="x">X</TabsTrigger>)).toThrow()
+            stumm.mockRestore()
+          })
+          EOF
+          npx vitest run "$d" --reporter=json --outputFile="$d/ergebnis.json" >/dev/null 2>&1 || true
+          jq -r '"\(.numPassedTests) \(.numFailedTests + .numFailedTestSuites)"' "$d/ergebnis.json" 2>/dev/null || echo "kein Ergebnis"
+          rm -rf "$d"
+        stdout_matches: "^4 0\\s*$"
+        message: Die Tabs bestehen die Prüftests noch nicht. Prüfe Rollen, data-slot-Werte, aria-selected, beide Modi (value/defaultValue/onValueChange) und den Fehler in useTabs().
+    solution: |
+      ```js
+      // src/lib/use-controllable-state.js
+      import { useState } from 'react'
+
+      export function useControllableState(value, defaultValue, onChange) {
+        const [intern, setIntern] = useState(defaultValue)
+        const kontrolliert = value !== undefined
+        const aktuell = kontrolliert ? value : intern
+        const setze = (neu) => {
+          if (!kontrolliert) setIntern(neu)
+          onChange?.(neu)
+        }
+        return [aktuell, setze]
+      }
+      ```
+
+      ```jsx
+      // src/components/molecules/tabs.jsx
+      import { createContext, useContext } from 'react'
+      import { useControllableState } from '../../lib/use-controllable-state'
+
+      const TabsContext = createContext(null)
+
+      function useTabs() {
+        const ctx = useContext(TabsContext)
+        if (!ctx) throw new Error('Tabs-Teile müssen innerhalb von <Tabs> stehen.')
+        return ctx
+      }
+
+      export function Tabs({ value, defaultValue, onValueChange, children }) {
+        const [aktiv, setAktiv] = useControllableState(value, defaultValue, onValueChange)
+        return (
+          <TabsContext value={{ value: aktiv, setValue: setAktiv }}>
+            <div data-slot="tabs">{children}</div>
+          </TabsContext>
+        )
+      }
+
+      export function TabsList({ children }) {
+        return <div role="tablist" data-slot="tabs-list">{children}</div>
+      }
+
+      export function TabsTrigger({ value, children }) {
+        const { value: aktiv, setValue } = useTabs()
+        return (
+          <button role="tab" data-slot="tabs-trigger" aria-selected={aktiv === value} onClick={() => setValue(value)}>
+            {children}
+          </button>
+        )
+      }
+
+      export function TabsContent({ value, children }) {
+        const { value: aktiv } = useTabs()
+        if (aktiv !== value) return null
+        return <div role="tabpanel" data-slot="tabs-content">{children}</div>
+      }
+      ```
+    solve: |
+      cat > src/lib/use-controllable-state.js <<'EOF'
+      import { useState } from 'react'
+
+      export function useControllableState(value, defaultValue, onChange) {
+        const [intern, setIntern] = useState(defaultValue)
+        const kontrolliert = value !== undefined
+        const aktuell = kontrolliert ? value : intern
+        const setze = (neu) => {
+          if (!kontrolliert) setIntern(neu)
+          onChange?.(neu)
+        }
+        return [aktuell, setze]
+      }
+      EOF
+      cat > src/components/molecules/tabs.jsx <<'EOF'
+      import { createContext, useContext } from 'react'
+      import { useControllableState } from '../../lib/use-controllable-state'
+
+      const TabsContext = createContext(null)
+
+      function useTabs() {
+        const ctx = useContext(TabsContext)
+        if (!ctx) throw new Error('Tabs-Teile müssen innerhalb von <Tabs> stehen.')
+        return ctx
+      }
+
+      export function Tabs({ value, defaultValue, onValueChange, children }) {
+        const [aktiv, setAktiv] = useControllableState(value, defaultValue, onValueChange)
+        return (
+          <TabsContext value={{ value: aktiv, setValue: setAktiv }}>
+            <div data-slot="tabs">{children}</div>
+          </TabsContext>
+        )
+      }
+
+      export function TabsList({ children }) {
+        return <div role="tablist" data-slot="tabs-list">{children}</div>
+      }
+
+      export function TabsTrigger({ value, children }) {
+        const { value: aktiv, setValue } = useTabs()
+        return (
+          <button role="tab" data-slot="tabs-trigger" aria-selected={aktiv === value} onClick={() => setValue(value)}>
+            {children}
+          </button>
+        )
+      }
+
+      export function TabsContent({ value, children }) {
+        const { value: aktiv } = useTabs()
+        if (aktiv !== value) return null
+        return <div role="tabpanel" data-slot="tabs-content">{children}</div>
+      }
+      EOF
+  - id: eigene-tests
+    title: Eigene Tests schreiben
+    description: |
+      Bisher haben Stacklabs versteckte Tests geprüft. Eine echte Bibliothek bringt ihre Tests selbst mit.
+
+      1. Schreibe `src/components/atoms/button.test.jsx` mit mindestens **zwei** Tests (z. B. `onClick` wird
+         aufgerufen, eine übergebene Klasse gewinnt).
+      2. Schreibe `src/components/molecules/tabs.test.jsx` mit mindestens **zwei** Tests (z. B. Standard-Panel,
+         Wechsel per Klick, kontrollierter Modus).
+      3. Nutze `getByRole` und `userEvent`. Starte alles mit `npm test` – alle Tests müssen grün sein.
+    checklist:
+      - Mindestens vier eigene Tests
+      - Elemente über ihre Rolle gefunden
+      - "`npm test` ist grün"
+    hints:
+      - "`render` und `screen` aus '@testing-library/react', `userEvent` aus '@testing-library/user-event'. `test`, `expect` und `vi` sind global."
+      - "Klicks immer mit `await userEvent.click(…)`."
+    checks:
+      - type: file_exists
+        path: src/components/atoms/button.test.jsx
+        message: Die Datei src/components/atoms/button.test.jsx fehlt noch.
+      - type: file_exists
+        path: src/components/molecules/tabs.test.jsx
+        message: Die Datei src/components/molecules/tabs.test.jsx fehlt noch.
+      - type: file_contains
+        path: src/components/molecules/tabs.test.jsx
+        pattern: "getByRole"
+        message: Finde die Tabs in deinen Tests über ihre Rolle (getByRole).
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          npx vitest run src --reporter=json --outputFile="$d/ergebnis.json" >/dev/null 2>&1 || true
+          jq -r '"\(.numPassedTests) \(.numFailedTests + .numFailedTestSuites)"' "$d/ergebnis.json" 2>/dev/null || echo "kein Ergebnis"
+          rm -rf "$d"
+        stdout_matches: "^([4-9]|[1-9][0-9]+) 0\\s*$"
+        message: Es sollen mindestens vier eigene Tests existieren und alle grün sein. Starte npm test und lies die Fehlermeldungen.
+    solution: |
+      ```jsx
+      // src/components/atoms/button.test.jsx
+      import { render, screen } from '@testing-library/react'
+      import userEvent from '@testing-library/user-event'
+      import { Button } from './button'
+
+      test('ruft onClick auf', async () => {
+        const onClick = vi.fn()
+        render(<Button onClick={onClick}>Speichern</Button>)
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+        expect(onClick).toHaveBeenCalledTimes(1)
+      })
+
+      test('übergebene Klasse gewinnt', () => {
+        render(<Button className="px-2">X</Button>)
+        expect(screen.getByRole('button', { name: 'X' }).className).not.toContain('px-4')
+      })
+      ```
+
+      ```jsx
+      // src/components/molecules/tabs.test.jsx
+      import { render, screen } from '@testing-library/react'
+      import userEvent from '@testing-library/user-event'
+      import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
+
+      function Beispiel(props) {
+        return (
+          <Tabs {...props}>
+            <TabsList>
+              <TabsTrigger value="konto">Konto</TabsTrigger>
+              <TabsTrigger value="passwort">Passwort</TabsTrigger>
+            </TabsList>
+            <TabsContent value="konto">Kontodaten</TabsContent>
+            <TabsContent value="passwort">Passwort ändern</TabsContent>
+          </Tabs>
+        )
+      }
+
+      test('zeigt das Standard-Panel', () => {
+        render(<Beispiel defaultValue="konto" />)
+        expect(screen.getByRole('tabpanel').textContent).toBe('Kontodaten')
+      })
+
+      test('wechselt per Klick', async () => {
+        render(<Beispiel defaultValue="konto" />)
+        await userEvent.click(screen.getByRole('tab', { name: 'Passwort' }))
+        expect(screen.getByRole('tabpanel').textContent).toBe('Passwort ändern')
+      })
+      ```
+    solve: |
+      cat > src/components/atoms/button.test.jsx <<'EOF'
+      import { render, screen } from '@testing-library/react'
+      import userEvent from '@testing-library/user-event'
+      import { Button } from './button'
+
+      test('ruft onClick auf', async () => {
+        const onClick = vi.fn()
+        render(<Button onClick={onClick}>Speichern</Button>)
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+        expect(onClick).toHaveBeenCalledTimes(1)
+      })
+
+      test('übergebene Klasse gewinnt', () => {
+        render(<Button className="px-2">X</Button>)
+        expect(screen.getByRole('button', { name: 'X' }).className).not.toContain('px-4')
+      })
+      EOF
+      cat > src/components/molecules/tabs.test.jsx <<'EOF'
+      import { render, screen } from '@testing-library/react'
+      import userEvent from '@testing-library/user-event'
+      import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
+
+      function Beispiel(props) {
+        return (
+          <Tabs {...props}>
+            <TabsList>
+              <TabsTrigger value="konto">Konto</TabsTrigger>
+              <TabsTrigger value="passwort">Passwort</TabsTrigger>
+            </TabsList>
+            <TabsContent value="konto">Kontodaten</TabsContent>
+            <TabsContent value="passwort">Passwort ändern</TabsContent>
+          </Tabs>
+        )
+      }
+
+      test('zeigt das Standard-Panel', () => {
+        render(<Beispiel defaultValue="konto" />)
+        expect(screen.getByRole('tabpanel').textContent).toBe('Kontodaten')
+      })
+
+      test('wechselt per Klick', async () => {
+        render(<Beispiel defaultValue="konto" />)
+        await userEvent.click(screen.getByRole('tab', { name: 'Passwort' }))
+        expect(screen.getByRole('tabpanel').textContent).toBe('Passwort ändern')
+      })
+      EOF
+  - id: stories
+    title: Stories für Button und Tabs
+    description: |
+      Damit das Team die Bausteine findet, bekommen beide eine Story-Datei im CSF-Format direkt neben der
+      Komponente. Storybook selbst musst du dafür nicht installieren.
+
+      1. `src/components/atoms/button.stories.jsx`: Meta mit `title: 'Atoms/Button'`, `component: Button`,
+         `tags: ['autodocs']`, gemeinsamen args `children` und `onClick: fn()` (aus `'storybook/test'`).
+         Stories: `Default`, `Outline`, `Ghost`, `Large` und `Disabled`.
+      2. `src/components/molecules/tabs.stories.jsx`: Meta mit `title: 'Molecules/Tabs'`, `component: Tabs`,
+         `tags: ['autodocs']`. Mindestens eine Story `Standard`, die über eine `render`-Funktion Liste, Trigger
+         und Panels zeigt.
+    checklist:
+      - Fünf Button-Stories mit autodocs
+      - Eine Tabs-Story mit render-Funktion
+    hints:
+      - "Eine Story mit eigenen args: `export const Outline = { args: { variant: 'outline' } }`."
+      - "Für Compound Components übergibst du das JSX per `render: (args) => <Tabs {...args}>…</Tabs>` und setzt `args: { defaultValue: 'a' }`."
+    checks:
+      - type: file_contains
+        path: src/components/atoms/button.stories.jsx
+        pattern: "component:\\s*Button"
+        message: In src/components/atoms/button.stories.jsx fehlt die Meta mit component Button.
+      - type: file_contains
+        path: src/components/atoms/button.stories.jsx
+        pattern: "tags:\\s*\\[\\s*['\"]autodocs['\"]\\s*\\]"
+        message: Die Button-Stories brauchen tags mit 'autodocs'.
+      - type: file_contains
+        path: src/components/atoms/button.stories.jsx
+        pattern: "onClick:\\s*fn\\(\\)"
+        message: In den gemeinsamen args der Button-Stories fehlt onClick mit fn().
+      - type: command
+        run: grep -cE "^export const (Default|Outline|Ghost|Large|Disabled)\b" src/components/atoms/button.stories.jsx
+        stdout_matches: "^\\s*5\\s*$"
+        message: Exportiere die Button-Stories Default, Outline, Ghost, Large und Disabled.
+      - type: file_contains
+        path: src/components/molecules/tabs.stories.jsx
+        pattern: "component:\\s*Tabs"
+        message: In src/components/molecules/tabs.stories.jsx fehlt die Meta mit component Tabs.
+      - type: file_contains
+        path: src/components/molecules/tabs.stories.jsx
+        pattern: "render:"
+        message: Die Tabs-Story braucht eine render-Funktion, die Liste, Trigger und Panels zusammensetzt.
+      - type: file_contains
+        path: src/components/molecules/tabs.stories.jsx
+        pattern: "export default meta"
+        message: Exportiere die Meta der Tabs-Stories mit export default meta.
+    solution: |
+      ```jsx
+      // src/components/atoms/button.stories.jsx
+      import { fn } from 'storybook/test'
+      import { Button } from './button'
+
+      const meta = {
+        title: 'Atoms/Button',
+        component: Button,
+        tags: ['autodocs'],
+        args: { children: 'Speichern', onClick: fn() },
+      }
+      export default meta
+
+      export const Default = {}
+      export const Outline = { args: { variant: 'outline' } }
+      export const Ghost = { args: { variant: 'ghost' } }
+      export const Large = { args: { size: 'lg' } }
+      export const Disabled = { args: { disabled: true } }
+      ```
+
+      ```jsx
+      // src/components/molecules/tabs.stories.jsx
+      import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
+
+      const meta = {
+        title: 'Molecules/Tabs',
+        component: Tabs,
+        tags: ['autodocs'],
+      }
+      export default meta
+
+      export const Standard = {
+        args: { defaultValue: 'konto' },
+        render: (args) => (
+          <Tabs {...args}>
+            <TabsList>
+              <TabsTrigger value="konto">Konto</TabsTrigger>
+              <TabsTrigger value="passwort">Passwort</TabsTrigger>
+            </TabsList>
+            <TabsContent value="konto">Deine Kontodaten</TabsContent>
+            <TabsContent value="passwort">Passwort ändern</TabsContent>
+          </Tabs>
+        ),
+      }
+      ```
+    solve: |
+      cat > src/components/atoms/button.stories.jsx <<'EOF'
+      import { fn } from 'storybook/test'
+      import { Button } from './button'
+
+      const meta = {
+        title: 'Atoms/Button',
+        component: Button,
+        tags: ['autodocs'],
+        args: { children: 'Speichern', onClick: fn() },
+      }
+      export default meta
+
+      export const Default = {}
+      export const Outline = { args: { variant: 'outline' } }
+      export const Ghost = { args: { variant: 'ghost' } }
+      export const Large = { args: { size: 'lg' } }
+      export const Disabled = { args: { disabled: true } }
+      EOF
+      cat > src/components/molecules/tabs.stories.jsx <<'EOF'
+      import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
+
+      const meta = {
+        title: 'Molecules/Tabs',
+        component: Tabs,
+        tags: ['autodocs'],
+      }
+      export default meta
+
+      export const Standard = {
+        args: { defaultValue: 'konto' },
+        render: (args) => (
+          <Tabs {...args}>
+            <TabsList>
+              <TabsTrigger value="konto">Konto</TabsTrigger>
+              <TabsTrigger value="passwort">Passwort</TabsTrigger>
+            </TabsList>
+            <TabsContent value="konto">Deine Kontodaten</TabsContent>
+            <TabsContent value="passwort">Passwort ändern</TabsContent>
+          </Tabs>
+        ),
+      }
+      EOF
+  - id: aufraeumen
+    title: Review vor dem Release
+    description: |
+      Bevor das UI-Kit von anderen Teams genutzt wird, gehst du die Teamregeln wie in einem Code-Review durch.
+      Das Projekt-Setup hat dir dabei absichtlich zwei Fallen gestellt, die du jetzt beseitigst – lege sie
+      zuerst mit dem folgenden Befehl an (so sieht es in vielen gewachsenen Projekten aus):
+
+      ```bash
+      printf "export * from './atoms/button'\nexport * from './molecules/card'\n" > src/components/index.js
+      cp src/components/molecules/card.jsx src/components/molecules/InfoCard.jsx
+      ```
+
+      1. Lösche die Barrel-Datei `src/components/index.js`.
+      2. Die Kopie `InfoCard.jsx` ist doppelt **und** nicht in kebab-case – lösche sie.
+      3. Prüfe, dass alle Dateinamen unter `src/` nur aus Kleinbuchstaben, Ziffern, Punkten und Bindestrichen
+         bestehen: `find src -type f | grep -vE '^[a-z0-9/._-]+$'` darf nichts ausgeben.
+      4. Lass zum Schluss `npm test` laufen – alles grün.
+    checklist:
+      - Keine Barrel-Datei
+      - Alle Dateinamen in kebab-case
+      - Keine doppelte Komponente
+      - "`npm test` grün"
+    hints:
+      - "`rm src/components/index.js src/components/molecules/InfoCard.jsx`"
+      - Eine Barrel-Datei erkennst du an Zeilen wie `export * from …` in einer `index.js`.
+    checks:
+      - type: file_absent
+        path: src/components/index.js
+        message: Die Barrel-Datei src/components/index.js existiert noch – lösche sie.
+      - type: command
+        run: find src -name 'index.*' | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: Unter src liegt noch eine index-Datei. Importiere direkt aus den Komponentendateien.
+      - type: command
+        run: find src -type f | grep -vE '^[a-z0-9/._-]+$' | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: Mindestens ein Dateiname unter src ist nicht in kebab-case (z. B. InfoCard.jsx). Benenne ihn um oder lösche die Kopie.
+      - type: file_exists
+        path: src/components/molecules/card.jsx
+        message: Die echte Card src/components/molecules/card.jsx fehlt – lösche nur die Kopie.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          npx vitest run src --reporter=json --outputFile="$d/ergebnis.json" >/dev/null 2>&1 || true
+          jq -r '"\(.numPassedTests) \(.numFailedTests + .numFailedTestSuites)"' "$d/ergebnis.json" 2>/dev/null || echo "kein Ergebnis"
+          rm -rf "$d"
+        stdout_matches: "^([4-9]|[1-9][0-9]+) 0\\s*$"
+        message: Die Tests sind nicht mehr alle grün. Starte npm test und lies die Fehlermeldungen.
+    solution: |
+      ```bash
+      rm -f src/components/index.js src/components/molecules/InfoCard.jsx
+      find src -type f | grep -vE '^[a-z0-9/._-]+$'
+      npm test
+      ```
+    solve: |
+      printf "export * from './atoms/button'\nexport * from './molecules/card'\n" > src/components/index.js
+      cp src/components/molecules/card.jsx src/components/molecules/InfoCard.jsx
+      rm -f src/components/index.js src/components/molecules/InfoCard.jsx

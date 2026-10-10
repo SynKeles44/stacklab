@@ -1,0 +1,146 @@
+title: Komposition und Compound Components
+description: Wie du Komponenten aus Teilen zusammensetzt statt sie mit Props zu überladen – mit children, Slots, Compound Components über Context und dem asChild-Muster.
+exercise:
+  id: modul-uebung-accordion
+  type: code
+  language: tsx
+  title: Ein Accordion als Compound Component
+  description: |
+    Baue ein Accordion aus vier zusammengehörigen Teilen. Es teilt seinen Zustand über Context.
+
+    1. **`Accordion`** hält in `useState` den Wert des offenen Eintrags (`string | null`, Start: `null`)
+       und stellt `{ open, toggle }` über `AccordionContext` bereit. `toggle(value)` öffnet einen Eintrag
+       oder schließt ihn, wenn er schon offen ist. Gerendert wird ein `<div data-slot="accordion">`.
+    2. **`AccordionItem`** bekommt `value` und gibt ihn über einen zweiten Context (`ItemContext`) an
+       seine Kinder weiter. Er rendert `<div data-slot="accordion-item">`.
+    3. **`AccordionTrigger`** rendert einen `<button data-slot="accordion-trigger">` mit
+       `aria-expanded` (`true`/`false`) und ruft beim Klick `toggle` mit dem Wert seines Items auf.
+    4. **`AccordionContent`** rendert `<div data-slot="accordion-content">` mit seinen `children` – aber nur,
+       wenn sein Item offen ist. Sonst rendert er `null`.
+    5. Bonus (nicht automatisch geprüft): Benutzt jemand einen Teil außerhalb von `Accordion`, wirft
+       `useAccordion()` einen Fehler mit einer verständlichen Meldung.
+
+    `App` ist fertig.
+  starter: |
+    const AccordionContext = React.createContext(null)
+    const ItemContext = React.createContext(null)
+
+    function useAccordion() {
+      // TODO: Context lesen und prüfen
+    }
+
+    function Accordion({ children }) {
+      return <div data-slot="accordion">{children}</div>
+    }
+
+    function AccordionItem({ value, children }) {
+      return <div data-slot="accordion-item">{children}</div>
+    }
+
+    function AccordionTrigger({ children }) {
+      return <button data-slot="accordion-trigger">{children}</button>
+    }
+
+    function AccordionContent({ children }) {
+      return <div data-slot="accordion-content">{children}</div>
+    }
+
+    function App() {
+      return (
+        <Accordion>
+          <AccordionItem value="versand">
+            <AccordionTrigger>Versand</AccordionTrigger>
+            <AccordionContent>Wir liefern in 2 Tagen.</AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="rueckgabe">
+            <AccordionTrigger>Rückgabe</AccordionTrigger>
+            <AccordionContent>30 Tage Rückgaberecht.</AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )
+    }
+  tests:
+    - name: am Anfang ist alles zu
+      code: |
+        assertEqual(queryAll('[data-slot="accordion-content"]').length, 0)
+        assertEqual(queryAll('[data-slot="accordion-trigger"]')[0].getAttribute('aria-expanded'), 'false')
+    - name: Klick öffnet genau den passenden Eintrag
+      code: |
+        await click('[data-slot="accordion-item"]:nth-child(2) [data-slot="accordion-trigger"]')
+        const inhalte = queryAll('[data-slot="accordion-content"]')
+        assertEqual(inhalte.length, 1)
+        assertEqual(inhalte[0].textContent, '30 Tage Rückgaberecht.')
+        assertEqual(queryAll('[data-slot="accordion-trigger"]')[1].getAttribute('aria-expanded'), 'true')
+    - name: ein zweiter Klick schließt den Eintrag wieder
+      code: |
+        await click('[data-slot="accordion-item"]:nth-child(2) [data-slot="accordion-trigger"]')
+        assertEqual(queryAll('[data-slot="accordion-content"]').length, 0)
+    - name: ein anderer Eintrag ersetzt den offenen
+      code: |
+        await click('[data-slot="accordion-item"]:nth-child(1) [data-slot="accordion-trigger"]')
+        await click('[data-slot="accordion-item"]:nth-child(2) [data-slot="accordion-trigger"]')
+        assertEqual(queryAll('[data-slot="accordion-content"]').length, 1)
+        assertEqual(query('[data-slot="accordion-content"]').textContent, '30 Tage Rückgaberecht.')
+  hints:
+    - "In `useAccordion`: `const ctx = React.useContext(AccordionContext)` und `if (!ctx) throw new Error('…')`."
+    - "Der Trigger braucht zwei Contexts: `useAccordion()` für `open`/`toggle` und `React.useContext(ItemContext)` für seinen Wert."
+    - "`toggle` geht so: `setOpen((alt) => (alt === value ? null : value))`."
+  solution: |
+    const AccordionContext = React.createContext(null)
+    const ItemContext = React.createContext(null)
+
+    function useAccordion() {
+      const ctx = React.useContext(AccordionContext)
+      if (!ctx) throw new Error('Accordion-Teile müssen innerhalb von <Accordion> stehen.')
+      return ctx
+    }
+
+    function Accordion({ children }) {
+      const [open, setOpen] = React.useState(null)
+      const toggle = (value) => setOpen((alt) => (alt === value ? null : value))
+      return (
+        <AccordionContext.Provider value={{ open, toggle }}>
+          <div data-slot="accordion">{children}</div>
+        </AccordionContext.Provider>
+      )
+    }
+
+    function AccordionItem({ value, children }) {
+      return (
+        <ItemContext.Provider value={value}>
+          <div data-slot="accordion-item">{children}</div>
+        </ItemContext.Provider>
+      )
+    }
+
+    function AccordionTrigger({ children }) {
+      const { open, toggle } = useAccordion()
+      const value = React.useContext(ItemContext)
+      return (
+        <button data-slot="accordion-trigger" aria-expanded={open === value} onClick={() => toggle(value)}>
+          {children}
+        </button>
+      )
+    }
+
+    function AccordionContent({ children }) {
+      const { open } = useAccordion()
+      const value = React.useContext(ItemContext)
+      if (open !== value) return null
+      return <div data-slot="accordion-content">{children}</div>
+    }
+
+    function App() {
+      return (
+        <Accordion>
+          <AccordionItem value="versand">
+            <AccordionTrigger>Versand</AccordionTrigger>
+            <AccordionContent>Wir liefern in 2 Tagen.</AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="rueckgabe">
+            <AccordionTrigger>Rückgabe</AccordionTrigger>
+            <AccordionContent>30 Tage Rückgaberecht.</AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )
+    }

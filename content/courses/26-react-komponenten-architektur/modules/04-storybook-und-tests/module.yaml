@@ -1,0 +1,164 @@
+title: Storybook und Tests
+description: Wie du Komponenten mit Stories dokumentierst und mit Vitest und Testing Library aus Sicht der Nutzer testest.
+exercise:
+  id: modul-uebung-alert
+  type: terminal
+  title: Ein Alert mit Stories und Tests
+  description: |
+    Im Ordner `alert` liegt ein Projekt mit der fertigen Komponente `src/components/molecules/alert.jsx`. Sie hat
+    die Props `tone` (`info`, `warnung`, `fehler`), `title`, `children` und `onDismiss`. Ist `onDismiss`
+    gesetzt, zeigt sie einen Button „Schließen“. Der Alert hat `role="alert"` bei `fehler`, sonst `role="status"`.
+    Die Pakete werden beim Vorbereiten installiert.
+
+    Liefere die Komponente so ab, wie es eine Bibliothek verlangt:
+
+    1. **Stories** in `src/components/molecules/alert.stories.jsx`: Meta mit `component: Alert`,
+       `tags: ['autodocs']` und gemeinsamen args (`title`, `children`). Mindestens die Stories `Info`,
+       `Warnung`, `Fehler` und `Schliessbar` (mit `onDismiss: fn()` aus `storybook/test`).
+    2. **Tests** in `src/components/molecules/alert.test.jsx`, mindestens drei:
+       - Bei `tone="fehler"` gibt es ein Element mit der Rolle `alert`.
+       - Ohne `onDismiss` gibt es keinen Button „Schließen“ (`queryByRole`).
+       - Ein Klick auf „Schließen“ ruft `onDismiss` genau einmal auf (`vi.fn()`).
+    3. Alle Tests sind grün (`npm test`).
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: alert
+  setup: |
+    cat > package.json <<'EOF'
+    {
+      "name": "alert",
+      "private": true,
+      "type": "module",
+      "scripts": { "test": "vitest run" },
+      "devDependencies": {
+        "@testing-library/dom": "^10.4.2",
+        "@testing-library/react": "^16.3.3",
+        "@testing-library/user-event": "^14.6.7",
+        "happy-dom": "^20.14.6",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0",
+        "vitest": "^5.0.3"
+      }
+    }
+    EOF
+    cat > vitest.config.js <<'EOF'
+    import { defineConfig } from 'vitest/config'
+
+    export default defineConfig({
+      test: { environment: 'happy-dom', globals: true },
+    })
+    EOF
+    mkdir -p src/components/molecules
+    cat > src/components/molecules/alert.jsx <<'EOF'
+    const tones = {
+      info: 'border-blue-300 bg-blue-50',
+      warnung: 'border-amber-300 bg-amber-50',
+      fehler: 'border-red-300 bg-red-50',
+    }
+
+    export function Alert({ tone = 'info', title, children, onDismiss, className = '', ...props }) {
+      return (
+        <div
+          data-slot="alert"
+          role={tone === 'fehler' ? 'alert' : 'status'}
+          className={`rounded-md border p-4 ${tones[tone]} ${className}`.trim()}
+          {...props}
+        >
+          <strong data-slot="alert-title">{title}</strong>
+          <div data-slot="alert-description">{children}</div>
+          {onDismiss && (
+            <button type="button" onClick={onDismiss}>
+              Schließen
+            </button>
+          )}
+        </div>
+      )
+    }
+    EOF
+    npm install --no-audit --no-fund --silent
+  checks:
+    - type: file_exists
+      path: src/components/molecules/alert.stories.jsx
+      message: Die Datei src/components/molecules/alert.stories.jsx fehlt noch.
+    - type: file_contains
+      path: src/components/molecules/alert.stories.jsx
+      pattern: "component:\\s*Alert"
+      message: In der Meta der Stories fehlt component Alert.
+    - type: file_contains
+      path: src/components/molecules/alert.stories.jsx
+      pattern: "tags:\\s*\\[\\s*['\"]autodocs['\"]\\s*\\]"
+      message: Ergänze tags mit 'autodocs' in der Meta.
+    - type: command
+      run: grep -cE "^export const (Info|Warnung|Fehler|Schliessbar)\b" src/components/molecules/alert.stories.jsx
+      stdout_matches: "^\\s*4\\s*$"
+      message: Es fehlen Stories – exportiere Info, Warnung, Fehler und Schliessbar.
+    - type: file_contains
+      path: src/components/molecules/alert.stories.jsx
+      pattern: "onDismiss:\\s*fn\\(\\)"
+      message: Die Story Schliessbar braucht onDismiss mit fn() aus 'storybook/test'.
+    - type: file_exists
+      path: src/components/molecules/alert.test.jsx
+      message: Die Datei src/components/molecules/alert.test.jsx fehlt noch.
+    - type: file_contains
+      path: src/components/molecules/alert.test.jsx
+      pattern: "queryByRole"
+      message: Prüfe mit queryByRole, dass ohne onDismiss kein Schließen-Button existiert.
+    - type: file_contains
+      path: src/components/molecules/alert.test.jsx
+      pattern: "vi\\.fn\\(\\)"
+      message: Lege für onDismiss eine Spion-Funktion mit vi.fn() an.
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        npx vitest run --reporter=json --outputFile="$d/ergebnis.json" >/dev/null 2>&1 || true
+        jq -r '"\(.numPassedTests) \(.numFailedTests + .numFailedTestSuites)"' "$d/ergebnis.json"
+        rm -rf "$d"
+      stdout_matches: "^([3-9]|[1-9][0-9]+) 0\\s*$"
+      message: Es sollen mindestens drei Tests existieren und alle grün sein. Starte npm test und lies die Fehlermeldung.
+  hints:
+    - "Stories-Gerüst: `const meta = { component: Alert, tags: ['autodocs'], args: { title: 'Hinweis', children: 'Text' } }`, `export default meta`, dann `export const Info = { args: { tone: 'info' } }` usw."
+    - "Rolle prüfen: `render(<Alert tone=\"fehler\" title=\"Fehler\">Text</Alert>)` und `expect(screen.getByRole('alert')).toBeTruthy()`."
+    - "Klick prüfen: `const onDismiss = vi.fn()`, rendern, `await userEvent.click(screen.getByRole('button', { name: 'Schließen' }))`, dann `expect(onDismiss).toHaveBeenCalledTimes(1)`."
+  solution: |
+    ```jsx
+    // src/components/molecules/alert.stories.jsx
+    import { fn } from 'storybook/test'
+    import { Alert } from './alert'
+
+    const meta = {
+      title: 'Molecules/Alert',
+      component: Alert,
+      tags: ['autodocs'],
+      args: { title: 'Hinweis', children: 'Deine Änderungen wurden gespeichert.' },
+    }
+    export default meta
+
+    export const Info = { args: { tone: 'info' } }
+    export const Warnung = { args: { tone: 'warnung' } }
+    export const Fehler = { args: { tone: 'fehler', title: 'Fehler' } }
+    export const Schliessbar = { args: { onDismiss: fn() } }
+    ```
+
+    ```jsx
+    // src/components/molecules/alert.test.jsx
+    import { render, screen } from '@testing-library/react'
+    import userEvent from '@testing-library/user-event'
+    import { Alert } from './alert'
+
+    test('Fehler haben die Rolle alert', () => {
+      render(<Alert tone="fehler" title="Fehler">Speichern fehlgeschlagen</Alert>)
+      expect(screen.getByRole('alert')).toBeTruthy()
+    })
+
+    test('ohne onDismiss gibt es keinen Schließen-Button', () => {
+      render(<Alert title="Hinweis">Text</Alert>)
+      expect(screen.queryByRole('button', { name: 'Schließen' })).toBeNull()
+    })
+
+    test('Schließen ruft onDismiss auf', async () => {
+      const onDismiss = vi.fn()
+      render(<Alert title="Hinweis" onDismiss={onDismiss}>Text</Alert>)
+      await userEvent.click(screen.getByRole('button', { name: 'Schließen' }))
+      expect(onDismiss).toHaveBeenCalledTimes(1)
+    })
+    ```
