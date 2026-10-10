@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#a78bfa"/></marker>
+<marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#f59e0b"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Ein Klick wandert durch den DOM-Baum</text>
+<rect x="40" y="50" width="480" height="350" rx="14" fill="#64748b" fill-opacity=".06" stroke="#64748b" stroke-width="2"/>
+<text x="60" y="76" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">document</text>
+<rect x="70" y="90" width="420" height="295" rx="12" fill="#a78bfa" fill-opacity=".08" stroke="#a78bfa" stroke-width="2"/>
+<text x="90" y="116" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">body</text>
+<rect x="100" y="130" width="360" height="240" rx="12" fill="#22d3ee" fill-opacity=".10" stroke="#22d3ee" stroke-width="2"/>
+<text x="120" y="156" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">ul#liste  ← Listener hier</text>
+<rect x="130" y="172" width="300" height="180" rx="10" fill="#34d399" fill-opacity=".12" stroke="#34d399" stroke-width="2"/>
+<text x="150" y="198" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">li data-id="7"</text>
+<rect x="170" y="250" width="220" height="56" rx="10" fill="#f87171" fill-opacity=".16" stroke="#f87171" stroke-width="2.5"/>
+<text x="280" y="284" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">button (target)</text>
+<line x1="570" y1="70" x2="570" y2="330" stroke="#a78bfa" stroke-width="3" marker-end="url(#a)"/>
+<text x="585" y="120" font-size="13" font-weight="700" fill="#1e1b3a">1. Capture-Phase</text>
+<text x="585" y="140" font-size="12" fill="#475569">von document nach unten</text>
+<text x="585" y="160" font-size="12" fill="#475569">(nur mit capture: true)</text>
+<text x="585" y="230" font-size="13" font-weight="700" fill="#1e1b3a">2. Ziel erreicht</text>
+<text x="585" y="250" font-size="12" fill="#475569">event.target = button</text>
+<line x1="740" y1="330" x2="740" y2="70" stroke="#f59e0b" stroke-width="3" marker-end="url(#b)"/>
+<text x="585" y="310" font-size="13" font-weight="700" fill="#1e1b3a">3. Bubbling-Phase</text>
+<text x="585" y="330" font-size="12" fill="#475569">vom Ziel nach oben:</text>
+<text x="585" y="350" font-size="12" fill="#475569">button → li → ul → body</text>
+<text x="585" y="370" font-size="12" fill="#475569">→ document</text>
+<text x="40" y="414" font-size="12" fill="#475569">Der Listener am ul hört Klicks auf jedem button darin – das ist Event-Delegation.</text>
+</svg>

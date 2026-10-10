@@ -1,0 +1,350 @@
+title: Abschlussprüfung JavaScript
+description: |
+  Die Prüfung deckt alle vier Module ab: moderne Syntax, Scope und Closures, Klassen, Module und Datenverarbeitung,
+  den DOM sowie asynchrones JavaScript. Du beantwortest 20 Fragen und löst drei praktische Aufgaben – zwei im
+  Code-Editor, eine im Übungs-Terminal. Zum Bestehen brauchst du 70 Prozent.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  - module: modernes-javascript
+    type: single
+    question: "Was gibt `const { a = 1, b = 2 } = { a: null, b: undefined }; console.log(a, b);` aus?"
+    options: ["1 2", "null 2", "null undefined", "1 undefined"]
+    answer: 1
+    explanation: Standardwerte greifen nur bei undefined. null ist ein gesetzter Wert.
+  - module: modernes-javascript
+    type: match
+    question: 'Ordne jedem Ausdruck sein Ergebnis zu (`const o = { n: 0, s: "", x: null };`).'
+    pairs:
+      - { left: "o.n || 5", right: "5" }
+      - { left: "o.n ?? 5", right: "0" }
+      - { left: "o.x?.laenge", right: "undefined" }
+      - { left: "o.s ?? \"leer\"", right: "\"\"" }
+    explanation: "`||` ersetzt alle falsy-Werte, `??` nur null und undefined. `?.` bricht bei null ab."
+  - module: modernes-javascript
+    type: single
+    question: "Was passiert bei `{ console.log(wert); let wert = 3; }`?"
+    options: ["Ausgabe 3", "Ausgabe undefined", "ReferenceError wegen der Temporal Dead Zone", "SyntaxError"]
+    answer: 2
+    explanation: let ist gehoben, aber nicht initialisiert. Vor der Deklarationszeile liegt die Variable in der TDZ.
+  - module: modernes-javascript
+    type: single
+    question: "Welche Ausgabe erzeugt `const fns = []; for (var i = 0; i < 3; i++) fns.push(() => i); console.log(fns.map((f) => f()));`?"
+    options: ["[0, 1, 2]", "[3, 3, 3]", "[2, 2, 2]", "[undefined, undefined, undefined]"]
+    answer: 1
+    explanation: Mit var teilen sich alle Closures dieselbe Variable i, die nach der Schleife 3 ist. Mit let bekäme jede Runde ihre eigene Variable.
+  - module: modernes-javascript
+    type: find-bug
+    question: Nach dem Klick soll die Konsole „Ada“ zeigen. Welche Zeile sorgt dafür, dass stattdessen undefined erscheint?
+    language: js
+    code: |
+      const nutzer = {
+        name: "Ada",
+        zeige() { console.log(this.name); },
+      };
+      const knopf = document.querySelector("#zeigen");
+      knopf.addEventListener("click", nutzer.zeige);
+    bug_line: 6
+    explanation: "Die Methode wird vom Objekt gelöst und vom Browser mit dem Knopf als this aufgerufen. Richtig: `() => nutzer.zeige()` oder `nutzer.zeige.bind(nutzer)`."
+  - module: objekte-und-module
+    type: multiple
+    question: Welche Aussagen über Klassen stimmen?
+    options:
+      - Methoden liegen auf dem Prototyp und werden von allen Instanzen geteilt.
+      - Ein Feld `#geheim` ist außerhalb der Klasse nicht erreichbar.
+      - Statische Methoden ruft man an einer Instanz auf.
+      - In einer abgeleiteten Klasse muss super() vor dem ersten this stehen.
+    answers: [0, 1, 3]
+    explanation: Statische Mitglieder gehören zur Klasse selbst, z. B. `Konto.vonStartbetrag()`.
+  - module: objekte-und-module
+    type: single
+    question: "`const basis = { gruss: \"Hi\" }; const o = Object.create(basis); o.gruss = \"Moin\";` – was ergibt danach `basis.gruss`?"
+    options: ["\"Moin\"", "\"Hi\"", "undefined"]
+    answer: 1
+    explanation: Schreiben legt die Eigenschaft direkt an o an. Der Prototyp basis bleibt unverändert.
+  - module: objekte-und-module
+    type: cloze
+    text: "Den einen Standard-Export importierst du ___ geschweifte Klammern. Relative Importe brauchen im Browser und in Node.js die vollständige ___."
+    blanks:
+      - [ohne]
+      - [Dateiendung, Endung]
+    explanation: "`import formatiere from \"./format.js\";` – ohne Klammern, mit .js."
+  - module: objekte-und-module
+    type: single
+    question: "Was ergibt `[5, 25, 100].toSorted()`?"
+    options: ["[5, 25, 100]", "[100, 25, 5]", "[5, 100, 25]"]
+    answer: 1
+    explanation: Ohne Vergleichsfunktion wird als Text verglichen – "100" < "25" < "5". Das Original bleibt bei toSorted unverändert.
+  - module: objekte-und-module
+    type: multiple
+    question: Welche Aufrufe verändern das Array `liste`?
+    options: ["liste.sort()", "liste.toReversed()", "liste.splice(0, 1)", "liste.with(0, 9)", "liste.push(1)"]
+    answers: [0, 2, 4]
+    explanation: sort, splice und push mutieren. toReversed und with liefern neue Arrays.
+  - module: objekte-und-module
+    type: single
+    question: "Was ergibt `JSON.stringify({ id: 1, tags: [undefined], erstellt: undefined })`?"
+    options: ["'{\"id\":1,\"tags\":[null]}'", "'{\"id\":1,\"tags\":[]}'", "'{\"id\":1,\"tags\":[null],\"erstellt\":null}'"]
+    answer: 0
+    explanation: In Objekten fällt eine Eigenschaft mit undefined weg, in Arrays wird undefined zu null.
+  - module: dom
+    type: multiple
+    question: Welche Zeilen zeigen einen Nutzernamen sicher an?
+    options:
+      - "el.textContent = name;"
+      - "el.innerHTML = name;"
+      - "el.append(name);"
+      - "el.innerHTML = `<b>${name}</b>`;"
+    answers: [0, 2]
+    explanation: append mit einem String erzeugt einen Textknoten und ist ebenso sicher wie textContent. innerHTML wertet den Namen als HTML aus (XSS).
+  - module: dom
+    type: single
+    question: "Ein Listener am `<ul>` reagiert auf einen Klick auf ein `<span>` in einem `<button>`. Wie findest du den Knopf sicher?"
+    options:
+      - "event.target"
+      - "event.currentTarget"
+      - "event.target.closest(\"button\")"
+      - "document.querySelector(\"button\")"
+    answer: 2
+    explanation: target ist das span. closest sucht ab dem Element nach oben den nächsten passenden Vorfahren – inklusive des Elements selbst.
+  - module: dom
+    type: match
+    question: Was gehört zusammen?
+    pairs:
+      - { left: "event.preventDefault()", right: "Standardaktion wie Neuladen verhindern" }
+      - { left: "event.stopPropagation()", right: "Bubbling stoppen" }
+      - { left: "new FormData(form)", right: "Felder anhand des name-Attributs lesen" }
+      - { left: "element.dataset.id", right: "Wert von data-id lesen" }
+    explanation: Das sind die Werkzeuge für Formulare und Delegation.
+  - module: dom
+    type: single
+    question: "Ein klassisches `<script src=\"app.js\">` im `<head>` ruft `document.querySelector(\"#liste\")` auf. Was ist das Ergebnis?"
+    options: ["Das ul-Element", "null, weil das HTML noch nicht gelesen wurde", "Ein Fehler beim Laden der Seite"]
+    answer: 1
+    explanation: Klassische Skripte laufen sofort. Mit type="module" oder defer laufen sie erst nach dem Parsen.
+  - module: asynchron
+    type: single
+    question: "Welche Ausgabe erzeugt der Code? `setTimeout(() => console.log(\"T\")); Promise.resolve().then(() => console.log(\"P\")); console.log(\"S\");`"
+    options: ["T P S", "S T P", "S P T", "P S T"]
+    answer: 2
+    explanation: Erst synchron (S), dann Microtasks (P), dann Tasks (T).
+  - module: asynchron
+    type: single
+    question: Welcher Kombinator eignet sich, wenn zehn Uploads laufen und du danach melden willst, welche geklappt haben?
+    options: ["Promise.all", "Promise.allSettled", "Promise.race", "Promise.any"]
+    answer: 1
+    explanation: allSettled wartet auf alle und liefert für jedes Promise status und value bzw. reason.
+  - module: asynchron
+    type: find-bug
+    question: Die Funktion soll bei Status 500 einen Fehler werfen. Welche Zeile ist das Problem?
+    language: js
+    code: |
+      async function lade(url) {
+        try {
+          const response = await fetch(url);
+          return await response.json();
+        } catch (fehler) {
+          throw new Error(`Laden fehlgeschlagen: ${fehler.message}`);
+        }
+      }
+    bug_line: 4
+    explanation: "fetch lehnt bei 500 nicht ab. Vor dem Lesen muss `if (!response.ok) throw new Error(…)` stehen – sonst wird die Fehlerseite als JSON geparst."
+  - module: asynchron
+    type: multiple
+    question: Welche Aussagen über async/await stimmen?
+    options:
+      - Eine async-Funktion liefert immer ein Promise.
+      - await blockiert den kompletten Browser, bis das Promise erfüllt ist.
+      - Ohne await landet ein abgelehntes Promise nicht im umgebenden catch.
+      - "`array.forEach(async (x) => await f(x))` wartet, bis alle f-Aufrufe fertig sind."
+    answers: [0, 2]
+    explanation: await pausiert nur die eigene Funktion. forEach ignoriert die zurückgegebenen Promises – nutze for…of oder Promise.all.
+  - module: asynchron
+    type: cloze
+    text: "Mit `AbortSignal.___(5000)` brichst du eine fetch-Anfrage nach fünf Sekunden ab. Ein manueller Abbruch über `controller.abort()` führt zu einem Fehler namens ___."
+    blanks:
+      - [timeout]
+      - [AbortError]
+    explanation: Das Zeitlimit-Signal führt zu einem TimeoutError, der manuelle Abbruch zu einem AbortError.
+tasks:
+  - module: modernes-javascript
+    id: pruefung-memo
+    type: code
+    language: js
+    title: Ergebnisse zwischenspeichern
+    description: |
+      Schreibe `merke(fn)`. Die Funktion liefert eine neue Funktion, die sich Ergebnisse von `fn` merkt
+      (*Memoisierung*):
+
+      1. Wird sie mit einem Argument aufgerufen, das schon einmal vorkam, liefert sie das gespeicherte Ergebnis,
+         **ohne** `fn` erneut aufzurufen.
+      2. Für neue Argumente ruft sie `fn` auf und speichert das Ergebnis.
+      3. Die gelieferte Funktion hat die Methode `leeren()`, die den Speicher löscht.
+      4. Zwei mit `merke` erzeugte Funktionen haben **getrennte** Speicher.
+
+      Es gibt immer genau ein Argument (Zahl oder String).
+    starter: |
+      function merke(fn) {
+        return fn;
+      }
+    tests:
+      - name: Ergebnisse werden wiederverwendet
+        code: 'let n = 0; const quadrat = merke((x) => { n++; return x * x; }); quadrat(4); assertEqual(quadrat(4), 16); assertEqual(n, 1)'
+      - name: neue Argumente werden berechnet
+        code: 'let n = 0; const laenge = merke((s) => { n++; return s.length; }); assertEqual(laenge("ab"), 2); assertEqual(laenge("abc"), 3); assertEqual(n, 2)'
+      - name: leeren löscht den Speicher
+        code: 'let n = 0; const f = merke((x) => { n++; return x; }); f(1); f.leeren(); f(1); assertEqual(n, 2)'
+      - name: getrennte Speicher und Randfall 0
+        code: 'let n = 0; const a = merke((x) => { n++; return x + 1; }); const b = merke((x) => { n++; return x + 2; }); assertEqual(a(0), 1); assertEqual(b(0), 2); assertEqual(a(0), 1); assertEqual(n, 2)'
+    hints:
+      - "Lege in `merke` eine `const speicher = new Map();` an – die Closure hält sie am Leben."
+      - "`if (speicher.has(arg)) return speicher.get(arg);` – nicht `if (speicher.get(arg))`, sonst scheitert das bei Ergebnis 0."
+      - "Funktionen sind Objekte: `gemerkt.leeren = () => speicher.clear();`"
+    solution: |
+      function merke(fn) {
+        const speicher = new Map();
+        const gemerkt = (arg) => {
+          if (speicher.has(arg)) {
+            return speicher.get(arg);
+          }
+          const ergebnis = fn(arg);
+          speicher.set(arg, ergebnis);
+          return ergebnis;
+        };
+        gemerkt.leeren = () => speicher.clear();
+        return gemerkt;
+      }
+  - module: asynchron
+    id: pruefung-stapel
+    type: code
+    language: js
+    title: Anfragen in Stapeln
+    description: |
+      Schreibe `inStapeln(aufgaben, groesse)`. `aufgaben` ist ein Array von Funktionen, die je ein Promise liefern.
+      Es sollen immer höchstens `groesse` Aufgaben gleichzeitig laufen:
+
+      1. Starte die ersten `groesse` Aufgaben gleichzeitig und warte, bis **alle** dieses Stapels fertig sind.
+      2. Starte dann den nächsten Stapel – und so weiter.
+      3. Liefere ein Array mit allen Ergebnissen in der ursprünglichen Reihenfolge.
+      4. Scheitert eine Aufgabe, wird das Promise von `inStapeln` mit diesem Fehler abgelehnt.
+    starter: |
+      async function inStapeln(aufgaben, groesse) {
+        const ergebnisse = [];
+        for (const aufgabe of aufgaben) {
+          ergebnisse.push(aufgabe());
+        }
+        return ergebnisse;
+      }
+    tests:
+      - name: Ergebnisse in Reihenfolge
+        code: 'const warte = (ms, w) => new Promise((r) => setTimeout(() => r(w), ms)); assertDeepEqual(await inStapeln([() => warte(30, "a"), () => warte(5, "b"), () => warte(10, "c")], 2), ["a", "b", "c"])'
+      - name: nie mehr als groesse gleichzeitig
+        code: |
+          let laufend = 0;
+          let maximum = 0;
+          const aufgabe = () => new Promise((r) => { laufend++; maximum = Math.max(maximum, laufend); setTimeout(() => { laufend--; r(1); }, 10); });
+          await inStapeln(Array.from({ length: 7 }, () => aufgabe), 3);
+          assertEqual(maximum, 3)
+      - name: Stapel laufen parallel
+        code: 'const warte = (ms) => new Promise((r) => setTimeout(r, ms)); const start = Date.now(); await inStapeln(Array.from({ length: 4 }, () => () => warte(60)), 2); const dauer = Date.now() - start; assertTrue(dauer >= 100 && dauer < 220, "Dauer: " + dauer)'
+      - name: Fehler werden weitergereicht, leeres Array geht
+        code: 'let fehler; try { await inStapeln([() => Promise.reject(new Error("kaputt"))], 2); } catch (e) { fehler = e; } assertEqual(fehler?.message, "kaputt"); assertDeepEqual(await inStapeln([], 3), [])'
+    hints:
+      - "Eine Schleife in Schritten von `groesse`: `for (let i = 0; i < aufgaben.length; i += groesse)`."
+      - "`const stapel = aufgaben.slice(i, i + groesse); const teil = await Promise.all(stapel.map((a) => a()));`"
+      - "Hänge `teil` mit `ergebnisse.push(...teil)` an."
+    solution: |
+      async function inStapeln(aufgaben, groesse) {
+        const ergebnisse = [];
+        for (let i = 0; i < aufgaben.length; i += groesse) {
+          const stapel = aufgaben.slice(i, i + groesse);
+          const teil = await Promise.all(stapel.map((aufgabe) => aufgabe()));
+          ergebnisse.push(...teil);
+        }
+        return ergebnisse;
+      }
+  - module: objekte-und-module
+    id: pruefung-warenkorb
+    type: terminal
+    title: Ein Warenkorb als Klasse und Modul
+    description: |
+      Lege im Ordner `pruefung-warenkorb` ein kleines Node-Projekt an. Der Ordner ist leer.
+
+      1. `package.json` mit `"type": "module"` und dem Skript `test` = `node --test`.
+      2. `src/warenkorb.js` exportiert die Klasse `Warenkorb` als **Standard-Export**:
+         - privates Feld `#positionen` (Start: leeres Array),
+         - `hinzufuegen(name, preis, menge = 1)` – wirft einen `RangeError`, wenn `preis < 0` oder `menge < 1`,
+         - Getter `summe` – Summe aus `preis * menge`, auf zwei Nachkommastellen gerundet,
+         - `positionen()` – liefert eine **Kopie** der Positionen als Array von `{ name, preis, menge }`.
+      3. `test/warenkorb.test.js` mit mindestens **drei** grünen Tests.
+    workdir: pruefung-warenkorb
+    checks:
+      - type: command
+        run: jq -r '"\(.type) \(.scripts.test)"' package.json
+        stdout_equals: module node --test
+        message: 'In der package.json sollen "type": "module" und das Skript test "node --test" stehen.'
+      - type: command
+        run: |-
+          node --input-type=module -e 'import Warenkorb from "./src/warenkorb.js"; const w = new Warenkorb(); w.hinzufuegen("Tee", 3.99, 2); w.hinzufuegen("Kanne", 24.5); const p = w.positionen(); p.push({ name: "X", preis: 1, menge: 1 }); console.log(w.summe, w.positionen().length, Object.keys(w).length, JSON.stringify(w.positionen()[1]));'
+        stdout_equals: '32.48 2 0 {"name":"Kanne","preis":24.5,"menge":1}'
+        message: Warenkorb soll Positionen privat speichern, die Summe 32.48 liefern und positionen() als Kopie zurückgeben.
+      - type: command
+        run: |-
+          node --input-type=module -e 'import Warenkorb from "./src/warenkorb.js"; const w = new Warenkorb(); const fehler = []; for (const args of [["A", -1, 1], ["B", 2, 0]]) { try { w.hinzufuegen(...args); fehler.push("kein Fehler"); } catch (e) { fehler.push(e.constructor.name); } } console.log(fehler.join(","), w.summe);'
+        stdout_equals: "RangeError,RangeError 0"
+        message: Negative Preise und Mengen unter 1 sollen einen RangeError werfen und nichts hinzufügen.
+      - type: command
+        run: node --test --test-reporter=tap 2>&1 | grep -E '^# (pass|fail)' | tr '\n' ' '
+        stdout_matches: "^# pass ([3-9]|[1-9][0-9]+) # fail 0\\s*$"
+        message: In test/ sollen mindestens drei Tests grün und keiner rot sein.
+    hints:
+      - "`export default class Warenkorb { #positionen = []; … }`"
+      - "Summe: `Math.round(this.#positionen.reduce((s, p) => s + p.preis * p.menge, 0) * 100) / 100`"
+      - "Kopie: `return this.#positionen.map((p) => ({ ...p }));`"
+    solution: |
+      ```bash
+      npm init -y >/dev/null
+      npm pkg set type=module scripts.test="node --test"
+      mkdir -p src test
+      cat > src/warenkorb.js <<'EOF'
+      export default class Warenkorb {
+        #positionen = [];
+
+        hinzufuegen(name, preis, menge = 1) {
+          if (preis < 0 || menge < 1) {
+            throw new RangeError("Preis oder Menge ungültig.");
+          }
+          this.#positionen.push({ name, preis, menge });
+        }
+
+        get summe() {
+          const roh = this.#positionen.reduce((s, p) => s + p.preis * p.menge, 0);
+          return Math.round(roh * 100) / 100;
+        }
+
+        positionen() {
+          return this.#positionen.map((p) => ({ ...p }));
+        }
+      }
+      EOF
+      cat > test/warenkorb.test.js <<'EOF'
+      import { test } from "node:test";
+      import assert from "node:assert/strict";
+      import Warenkorb from "../src/warenkorb.js";
+
+      test("ein leerer Warenkorb kostet 0", () => {
+        assert.equal(new Warenkorb().summe, 0);
+      });
+
+      test("die Summe berücksichtigt die Menge", () => {
+        const w = new Warenkorb();
+        w.hinzufuegen("Tee", 2.5, 4);
+        assert.equal(w.summe, 10);
+      });
+
+      test("ungültige Mengen werfen einen RangeError", () => {
+        assert.throws(() => new Warenkorb().hinzufuegen("Tee", 2, 0), RangeError);
+      });
+      EOF
+      npm test
+      ```

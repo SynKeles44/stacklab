@@ -1,0 +1,519 @@
+- slug: ecmascript
+  term: ECMAScript
+  short: Der offizielle Sprachstandard, auf dem JavaScript beruht.
+  explanation: >
+    ECMAScript wird vom Gremium TC39 bei Ecma International gepflegt und erscheint jedes Jahr in einer neuen
+    Ausgabe (ES2015, ES2016 …). Browser und Node.js setzen diesen Standard um. Wenn jemand „ES6“ oder „ES2015“
+    sagt, meint er die große Ausgabe mit let, const, Klassen und Modulen.
+  example: "Optional Chaining (`a?.b`) kam mit ES2020 in die Sprache."
+  category: javascript
+  aliases: [ES, ES6, ES2015, ECMA-262]
+  related: [javascript]
+  lesson: javascript/moderne-syntax
+- slug: standardparameter
+  term: Standardparameter
+  short: Ein Wert, den ein Funktionsparameter bekommt, wenn beim Aufruf nichts (undefined) übergeben wird.
+  explanation: >
+    Mit `=` hinter dem Parameternamen legst du einen Ersatzwert fest. Er greift nur bei `undefined`, nicht bei
+    `null`, `0` oder einem leeren String. Der Ausdruck wird bei jedem Aufruf neu ausgewertet.
+  example: "`function gruesse(name = \"Gast\") { return \"Hallo \" + name; }` – `gruesse()` liefert „Hallo Gast“."
+  category: javascript
+  aliases: [Default-Parameter, Default Parameter]
+  related: [funktion, destrukturierung]
+  lesson: javascript/moderne-syntax
+- slug: optional-chaining
+  term: Optional Chaining
+  short: "Der Operator `?.`, der bei `null` oder `undefined` abbricht und `undefined` liefert, statt einen Fehler zu werfen."
+  explanation: >
+    Mit `?.` greifst du sicher auf verschachtelte Eigenschaften zu, deren Zwischenstufen fehlen könnten. Ist der
+    Teil links davon `null` oder `undefined`, endet der ganze Ausdruck sofort mit `undefined`. Es gibt auch
+    `obj?.[key]` und `fn?.()`.
+  example: "`nutzer?.adresse?.ort` liefert `undefined`, wenn `adresse` fehlt – statt eines TypeError."
+  category: javascript
+  aliases: ["?.", Optionale Verkettung]
+  related: [nullish-coalescing, objekt]
+  lesson: javascript/moderne-syntax
+- slug: logische-zuweisung
+  term: Logische Zuweisung
+  short: "Die Kurzformen `||=`, `&&=` und `??=`, die nur unter einer Bedingung zuweisen."
+  explanation: >
+    `a ??= b` weist `b` nur zu, wenn `a` `null` oder `undefined` ist. `a ||= b` weist zu, wenn `a` falsy ist,
+    und `a &&= b`, wenn `a` truthy ist. So setzt du Standardwerte kurz und lesbar.
+  example: "`optionen.sprache ??= \"de-DE\";` setzt die Sprache nur, wenn noch keine gesetzt ist."
+  category: javascript
+  aliases: ["??=", "||=", "&&=", Logical Assignment]
+  related: [nullish-coalescing, variable]
+  lesson: javascript/moderne-syntax
+- slug: lexikalischer-scope
+  term: Lexikalischer Scope
+  short: Die Regel, dass der Gültigkeitsbereich einer Variablen davon abhängt, wo sie im Quelltext steht.
+  explanation: >
+    JavaScript entscheidet schon beim Lesen des Codes, welche Variablen eine Funktion sieht – nämlich die aus
+    den Blöcken und Funktionen, in die sie geschrieben wurde. Wo die Funktion später aufgerufen wird, spielt
+    keine Rolle. Darauf beruhen Closures.
+  example: "Eine innere Funktion sieht die Variablen der äußeren Funktion, in der sie definiert ist."
+  category: javascript
+  aliases: [Lexical Scope, Lexikalischer Gültigkeitsbereich]
+  related: [gueltigkeitsbereich, closure, scope-kette]
+  lesson: javascript/scope-hoisting-tdz
+- slug: scope-kette
+  term: Scope-Kette
+  short: Die Reihenfolge, in der JavaScript eine Variable von innen nach außen in den Gültigkeitsbereichen sucht.
+  explanation: >
+    Findet die Engine einen Namen nicht im aktuellen Block, sucht sie im umgebenden Block, dann in der
+    umgebenden Funktion, im Modul und zuletzt global. Wird sie nirgends fündig, gibt es einen ReferenceError.
+  example: "In einer verschachtelten Funktion wird `zaehler` erst lokal, dann außen gesucht."
+  category: javascript
+  aliases: [Scope Chain, Gültigkeitsbereichskette]
+  related: [lexikalischer-scope, gueltigkeitsbereich, referenceerror]
+  lesson: javascript/scope-hoisting-tdz
+- slug: referenceerror
+  term: ReferenceError
+  short: Der Fehler, den JavaScript wirft, wenn du eine Variable benutzt, die es nicht gibt oder noch nicht nutzen darfst.
+  explanation: >
+    Ein ReferenceError entsteht bei Tippfehlern im Namen, bei Variablen außerhalb ihres Gültigkeitsbereichs und
+    beim Zugriff auf `let`/`const` vor ihrer Deklaration (Temporal Dead Zone). Er unterscheidet sich vom
+    TypeError, der eine falsche Verwendung eines existierenden Werts meldet.
+  example: "`console.log(nme)` mit Tippfehler wirft `ReferenceError: nme is not defined`."
+  category: javascript
+  aliases: [Referenzfehler]
+  related: [exception, temporal-dead-zone, scope-kette]
+  lesson: javascript/scope-hoisting-tdz
+- slug: var-schluesselwort
+  term: var
+  short: Das alte Schlüsselwort für Variablen, die funktionsweit gelten und beim Hoisting mit undefined starten.
+  explanation: >
+    `var` kennt keinen Block-Scope: Eine in einer Schleife deklarierte Variable ist in der ganzen Funktion
+    sichtbar. Sie wird gehoistet und ist vor der Zuweisung `undefined`. Im modernen Code nutzt du stattdessen
+    `const` und `let`.
+  example: "`for (var i = 0; i < 3; i++) {}` – danach ist `i` immer noch 3 und sichtbar."
+  category: javascript
+  aliases: ["var"]
+  related: [variable, hoisting, gueltigkeitsbereich]
+  lesson: javascript/scope-hoisting-tdz
+- slug: hoisting
+  term: Hoisting
+  short: Das Verhalten, dass Deklarationen schon vor der Ausführung ihres Blocks bekannt sind, als wären sie nach oben gezogen.
+  explanation: >
+    Bevor ein Gültigkeitsbereich läuft, registriert die Engine alle Deklarationen darin. Funktionsdeklarationen
+    sind dadurch sofort aufrufbar, `var`-Variablen existieren mit dem Wert `undefined`, und `let`/`const`/`class`
+    existieren zwar, dürfen aber bis zu ihrer Zeile nicht benutzt werden.
+  example: "`hallo(); function hallo() {}` funktioniert, obwohl der Aufruf vor der Funktion steht."
+  category: javascript
+  aliases: [Hochziehen]
+  related: [var-schluesselwort, temporal-dead-zone, funktion]
+  lesson: javascript/scope-hoisting-tdz
+- slug: temporal-dead-zone
+  term: Temporal Dead Zone
+  short: Der Zeitraum, in dem eine let-, const- oder class-Variable zwar existiert, aber noch nicht benutzt werden darf.
+  explanation: >
+    Die TDZ reicht vom Beginn des Blocks bis zur Zeile der Deklaration. Jeder Zugriff in dieser Zone wirft einen
+    ReferenceError. Das schützt dich davor, versehentlich mit einem noch nicht initialisierten Wert zu arbeiten.
+  example: "`console.log(x); let x = 1;` wirft „Cannot access 'x' before initialization“."
+  category: javascript
+  aliases: [TDZ]
+  related: [hoisting, referenceerror]
+  lesson: javascript/scope-hoisting-tdz
+- slug: shadowing
+  term: Shadowing
+  short: Eine innere Variable mit demselben Namen verdeckt eine äußere.
+  explanation: >
+    Deklarierst du in einem inneren Block eine Variable mit einem Namen, den es außen schon gibt, sieht der
+    innere Code nur noch die innere Variable. Die äußere bleibt unverändert. Das ist erlaubt, macht Code aber
+    schnell schwer lesbar.
+  example: "`const name = \"A\"; { const name = \"B\"; console.log(name); }` gibt „B“ aus."
+  category: javascript
+  aliases: [Verschattung, Überschatten]
+  related: [gueltigkeitsbereich, scope-kette]
+  lesson: javascript/scope-hoisting-tdz
+- slug: js-strict-mode
+  term: Strict Mode
+  short: Ein strengerer Ausführungsmodus von JavaScript, der stille Fehler zu echten Fehlern macht.
+  explanation: >
+    Im Strict Mode wirft zum Beispiel eine Zuweisung an eine nicht deklarierte Variable einen Fehler, statt
+    still eine globale Variable anzulegen, und `this` ist in normalen Funktionsaufrufen `undefined`. ES-Module
+    und Klassen laufen automatisch im Strict Mode; sonst schaltest du ihn mit `"use strict";` ein.
+  example: "In einem ES-Modul wirft `zaehler = 1;` ohne Deklaration einen ReferenceError."
+  category: javascript
+  aliases: ["use strict", Strikter Modus]
+  related: [es-module, this]
+  lesson: javascript/scope-hoisting-tdz
+- slug: bind-call-apply
+  term: bind, call und apply
+  short: Drei Funktionsmethoden, mit denen du festlegst, welchen Wert this beim Aufruf hat.
+  explanation: >
+    `fn.call(obj, a, b)` ruft `fn` sofort mit `this = obj` auf, `fn.apply(obj, [a, b])` ebenso, nur mit den
+    Argumenten als Array. `fn.bind(obj)` ruft nicht auf, sondern liefert eine neue Funktion, bei der `this`
+    dauerhaft an `obj` gebunden ist.
+  example: "`const zeige = konto.zeige.bind(konto); setTimeout(zeige, 100);` behält das richtige this."
+  category: javascript
+  aliases: [bind, call, apply, Function.prototype.bind]
+  related: [this, funktion]
+  lesson: javascript/closures-und-this
+- slug: prototyp
+  term: Prototyp
+  short: Das Objekt, von dem ein anderes Objekt Eigenschaften und Methoden erbt.
+  explanation: >
+    Jedes Objekt in JavaScript hat eine interne Verbindung zu einem Prototyp. Fehlt eine Eigenschaft im Objekt
+    selbst, schaut JavaScript im Prototyp nach. Methoden einer Klasse liegen zum Beispiel einmal auf
+    `Klasse.prototype` und werden von allen Instanzen geteilt.
+  example: "`Object.getPrototypeOf([]) === Array.prototype` ist `true`."
+  category: javascript
+  aliases: [Prototype, prototype]
+  related: [prototypenkette, klasse, vererbung]
+  lesson: javascript/prototypen-und-klassen
+- slug: prototypenkette
+  term: Prototypenkette
+  short: Die Kette von Prototypen, die JavaScript beim Suchen einer Eigenschaft nacheinander durchläuft.
+  explanation: >
+    Findet JavaScript eine Eigenschaft nicht im Objekt, sucht es im Prototyp, dann in dessen Prototyp und so
+    weiter bis zu `Object.prototype`. Dahinter kommt `null` – dann ist das Ergebnis `undefined`. Vererbung mit
+    `extends` verlängert diese Kette.
+  example: "`sparkonto → Sparkonto.prototype → Konto.prototype → Object.prototype → null`"
+  category: javascript
+  aliases: [Prototype Chain, Prototyp-Kette]
+  related: [prototyp, vererbung, instanceof]
+  lesson: javascript/prototypen-und-klassen
+- slug: instanceof
+  term: instanceof
+  short: Ein Operator, der prüft, ob ein Objekt eine Instanz einer bestimmten Klasse ist.
+  explanation: >
+    `wert instanceof Klasse` liefert `true`, wenn `Klasse.prototype` irgendwo in der Prototypenkette von `wert`
+    vorkommt. Damit erkennst du zum Beispiel, welche Fehlerklasse ein `catch` gefangen hat.
+  example: "`if (fehler instanceof HttpError) { … }` behandelt nur HTTP-Fehler."
+  category: javascript
+  aliases: []
+  related: [prototypenkette, klasse, eigene-fehlerklasse]
+  lesson: javascript/prototypen-und-klassen
+- slug: private-feld
+  term: Privates Feld
+  short: "Ein Klassenfeld mit `#` vor dem Namen, auf das nur Code innerhalb der Klasse zugreifen kann."
+  explanation: >
+    Private Felder wie `#stand` sind von außen weder les- noch schreibbar – ein Zugriff außerhalb der Klasse ist
+    schon ein Syntaxfehler. So schützt du den inneren Zustand eines Objekts echt, statt nur per Konvention mit
+    einem Unterstrich.
+  example: "`class Konto { #stand = 0; get stand() { return this.#stand; } }`"
+  category: javascript
+  aliases: ["#feld", Private Field, Privates Klassenfeld]
+  related: [klasse, kapselung, statisches-mitglied]
+  lesson: javascript/prototypen-und-klassen
+- slug: statisches-mitglied
+  term: Statisches Mitglied
+  short: "Eine Eigenschaft oder Methode mit `static`, die zur Klasse selbst gehört, nicht zu ihren Instanzen."
+  explanation: >
+    Statische Mitglieder rufst du über den Klassennamen auf, etwa `Konto.ausJson(daten)`. Sie eignen sich für
+    Fabrikmethoden, Konstanten oder Zähler, die für alle Instanzen gleich sind. Über eine Instanz sind sie
+    nicht erreichbar.
+  example: "`class Zahl { static MAX = 10; static istGueltig(n) { return n <= Zahl.MAX; } }`"
+  category: javascript
+  aliases: [static, Statische Methode, Statisches Feld]
+  related: [klasse, private-feld]
+  lesson: javascript/prototypen-und-klassen
+- slug: super
+  term: super
+  short: Das Schlüsselwort, mit dem eine Unterklasse den Konstruktor oder Methoden ihrer Oberklasse aufruft.
+  explanation: >
+    Im Konstruktor einer Unterklasse musst du `super(...)` aufrufen, bevor du `this` benutzt. In Methoden
+    erreichst du mit `super.methode()` die Version der Oberklasse, zum Beispiel um sie zu erweitern statt
+    komplett zu ersetzen.
+  example: "`class Sparkonto extends Konto { constructor(n) { super(n); this.zins = 0.02; } }`"
+  category: javascript
+  aliases: ["super()"]
+  related: [vererbung, klasse, konstruktor]
+  lesson: javascript/prototypen-und-klassen
+- slug: dynamischer-import
+  term: Dynamischer Import
+  short: "Der Ausdruck `import(\"./modul.js\")`, der ein Modul erst zur Laufzeit lädt und ein Promise liefert."
+  explanation: >
+    Anders als die statische `import`-Anweisung oben in der Datei kann `import()` überall stehen, auch in
+    Bedingungen. Das Promise erfüllt sich mit dem Modulobjekt. So lädst du selten gebrauchten Code erst, wenn er
+    wirklich gebraucht wird.
+  example: "`const { zeichneDiagramm } = await import(\"./diagramm.js\");`"
+  category: javascript
+  aliases: ["import()", Dynamic Import]
+  related: [es-module, promise]
+  lesson: javascript/es-module
+- slug: live-binding
+  term: Live-Binding
+  short: Die Eigenschaft von ES-Modulen, dass ein Import immer den aktuellen Wert der exportierten Variable zeigt.
+  explanation: >
+    Ein Import ist keine Kopie, sondern eine schreibgeschützte Verbindung zur Variable im exportierenden Modul.
+    Ändert das Modul die Variable, sieht der Importeur den neuen Wert. Selbst zuweisen darf der Importeur ihr
+    aber nichts.
+  example: "Exportiert `zaehler.js` `let stand` und erhöht ihn, zeigt `import { stand }` danach den neuen Wert."
+  category: javascript
+  aliases: [Live Binding, Live-Bindung]
+  related: [es-module, benannter-export]
+  lesson: javascript/es-module
+- slug: mutation
+  term: Mutation
+  short: Das direkte Verändern eines bestehenden Objekts oder Arrays an Ort und Stelle.
+  explanation: >
+    `push`, `sort`, `splice` oder eine Zuweisung wie `obj.name = "x"` verändern das Original. Weil Objekte als
+    Referenz weitergegeben werden, sehen alle Stellen mit derselben Referenz die Änderung – eine häufige Quelle
+    überraschender Fehler.
+  example: "`liste.sort()` sortiert das Array selbst; `liste.toSorted()` liefert eine sortierte Kopie."
+  category: javascript
+  aliases: [mutieren, In-place-Änderung]
+  related: [immutabilitaet, referenz, array]
+  lesson: javascript/array-methoden-und-unveraenderlichkeit
+- slug: immutabilitaet
+  term: Immutabilität
+  short: Der Programmierstil, bestehende Daten nicht zu verändern, sondern bei jeder Änderung eine neue Kopie zu erzeugen.
+  explanation: >
+    Statt ein Objekt zu mutieren, baust du mit Spread-Syntax oder Methoden wie `map`, `filter` und `toSorted`
+    neue Werte. Alte Stände bleiben dadurch gültig und vergleichbar. React und viele Zustandsbibliotheken setzen
+    darauf.
+  example: "`const neu = { ...nutzer, name: \"Ada\" };` ändert `nutzer` nicht."
+  category: javascript
+  aliases: [Unveränderlichkeit, Immutability, unveränderlich]
+  related: [mutation, flache-kopie, spread-operator]
+  lesson: javascript/array-methoden-und-unveraenderlichkeit
+- slug: flache-kopie
+  term: Flache Kopie
+  short: Eine Kopie, die nur die oberste Ebene dupliziert und verschachtelte Objekte weiter teilt.
+  explanation: >
+    `{ ...obj }`, `[...arr]` und `Object.assign` erzeugen flache Kopien. Ändert sich ein verschachteltes Objekt,
+    ist die Änderung in Original und Kopie sichtbar, weil beide auf dasselbe innere Objekt zeigen.
+  example: "`const b = { ...a }; b.adresse.ort = \"Berlin\";` ändert auch `a.adresse.ort`."
+  category: javascript
+  aliases: [Shallow Copy]
+  related: [tiefe-kopie, spread-operator, referenz]
+  lesson: javascript/array-methoden-und-unveraenderlichkeit
+- slug: tiefe-kopie
+  term: Tiefe Kopie
+  short: Eine Kopie, die auch alle verschachtelten Objekte und Arrays dupliziert.
+  explanation: >
+    Nach einer tiefen Kopie teilen Original und Kopie keine inneren Objekte mehr. In JavaScript erzeugst du sie
+    mit `structuredClone(wert)`. Der alte Trick über `JSON.parse(JSON.stringify(...))` verliert Datumswerte,
+    `undefined` und Funktionen.
+  example: "`const kopie = structuredClone(einstellungen);`"
+  category: javascript
+  aliases: [Deep Copy, structuredClone]
+  related: [flache-kopie, json]
+  lesson: javascript/array-methoden-und-unveraenderlichkeit
+- slug: utc
+  term: UTC
+  short: Die weltweite Bezugszeit ohne Zeitzonen-Verschiebung und ohne Sommerzeit.
+  explanation: >
+    UTC (Coordinated Universal Time) ist die Referenz, von der alle Zeitzonen abweichen, etwa Mitteleuropa mit
+    +1 bzw. +2 Stunden. Server und Datenbanken speichern Zeitpunkte meist in UTC; angezeigt wird erst im
+    Browser in der Zeitzone der Nutzer:innen.
+  example: "`new Date().toISOString()` liefert z. B. `2026-10-10T08:30:00.000Z` – das `Z` steht für UTC."
+  category: javascript
+  aliases: [Coordinated Universal Time, Weltzeit]
+  related: [zeitzone, json]
+  lesson: javascript/json-datum-intl
+- slug: zeitzone
+  term: Zeitzone
+  short: Ein Gebiet mit gemeinsamer Uhrzeit, angegeben als Abweichung von UTC.
+  explanation: >
+    Derselbe Zeitpunkt hat in Berlin und New York verschiedene Uhrzeiten. Zeitzonen haben Namen wie
+    `Europe/Berlin` und berücksichtigen Sommerzeit. Ein `Date`-Objekt speichert einen Zeitpunkt; erst bei der
+    Anzeige wird eine Zeitzone angewendet.
+  example: "`new Intl.DateTimeFormat(\"de-DE\", { timeZone: \"Europe/Berlin\" }).format(datum)`"
+  category: javascript
+  aliases: [Time Zone, Zeitzonen]
+  related: [utc, intl]
+  lesson: javascript/json-datum-intl
+- slug: intl
+  term: Intl
+  short: Die eingebaute JavaScript-API zum sprach- und landesgerechten Formatieren von Zahlen, Datum und Text.
+  explanation: >
+    `Intl` enthält Klassen wie `Intl.NumberFormat`, `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat` und
+    `Intl.Collator`. Du übergibst eine Locale und Optionen und bekommst korrekt formatierte Ausgaben –
+    Tausendertrennzeichen, Währungen und Datumsformate inklusive.
+  example: "`new Intl.NumberFormat(\"de-DE\", { style: \"currency\", currency: \"EUR\" }).format(1234.5)` liefert „1.234,50 €“."
+  category: javascript
+  aliases: [Intl-API, ECMAScript Internationalization API]
+  related: [locale, internationalisierung, zeitzone]
+  lesson: javascript/json-datum-intl
+- slug: locale
+  term: Locale
+  short: Ein Kürzel für Sprache und Region, das bestimmt, wie Zahlen, Datum und Text formatiert werden.
+  explanation: >
+    Locales folgen dem Format BCP 47, etwa `de-DE` (Deutsch in Deutschland) oder `en-US`. Dieselbe Zahl sieht
+    je nach Locale anders aus: `1.234,5` in `de-DE`, `1,234.5` in `en-US`.
+  example: "`(1234.5).toLocaleString(\"de-DE\")` ergibt „1.234,5“."
+  category: javascript
+  aliases: [Gebietsschema, Sprachkennung]
+  related: [intl, internationalisierung]
+  lesson: javascript/json-datum-intl
+- slug: internationalisierung
+  term: Internationalisierung
+  short: Software so bauen, dass sie ohne Codeänderung in verschiedenen Sprachen und Regionen funktioniert.
+  explanation: >
+    Internationalisierung (kurz i18n) bedeutet: Texte auslagern, Zahlen und Datum über Locales formatieren und
+    keine Annahmen über Sprache oder Zeitzone fest einbauen. Die eigentliche Übersetzung in eine Sprache heißt
+    Lokalisierung (l10n).
+  example: "Statt `\"Preis: \" + preis + \" €\"` nutzt du `Intl.NumberFormat` mit der Locale der Nutzer:innen."
+  category: javascript
+  aliases: [i18n]
+  related: [intl, locale]
+  lesson: javascript/json-datum-intl
+- slug: dom-knoten
+  term: DOM-Knoten
+  short: Ein einzelnes Element im DOM-Baum – zum Beispiel ein HTML-Element, ein Textstück oder ein Kommentar.
+  explanation: >
+    Der DOM besteht aus Knoten (Nodes), die wie ein Stammbaum verbunden sind: Jeder Knoten hat einen
+    Elternknoten und kann Kindknoten haben. Elementknoten entsprechen HTML-Tags, Textknoten enthalten den Text
+    dazwischen.
+  example: "`document.querySelector(\"h1\").firstChild` ist der Textknoten mit der Überschrift."
+  category: javascript
+  aliases: [Knoten, Node, Elementknoten, Textknoten]
+  related: [dom, queryselector]
+  lesson: javascript/den-dom-veraendern
+- slug: queryselector
+  term: querySelector
+  short: Eine DOM-Methode, die das erste Element zu einem CSS-Selektor findet.
+  explanation: >
+    `querySelector` nimmt jeden CSS-Selektor entgegen und liefert das erste passende Element oder `null`.
+    `querySelectorAll` liefert alle Treffer als NodeList. Beide gibt es auf `document` und auf jedem Element,
+    um nur darin zu suchen.
+  example: "`document.querySelector(\"#liste li.aktiv\")`"
+  category: javascript
+  aliases: [querySelectorAll]
+  related: [dom, dom-knoten]
+  lesson: javascript/den-dom-veraendern
+- slug: dataset
+  term: dataset
+  short: "Die Eigenschaft eines Elements, über die du seine `data-*`-Attribute als Strings liest und setzt."
+  explanation: >
+    Aus `data-artikel-id="42"` im HTML wird in JavaScript `element.dataset.artikelId` (Bindestriche werden zu
+    camelCase). Die Werte sind immer Strings – Zahlen musst du mit `Number()` umwandeln.
+  example: "`knopf.dataset.index = 3;` erzeugt `data-index=\"3\"` am Element."
+  category: javascript
+  aliases: ["data-*", Data-Attribut, data-Attribute]
+  related: [dom, dom-knoten]
+  lesson: javascript/den-dom-veraendern
+- slug: event-bubbling
+  term: Event Bubbling
+  short: Das Aufsteigen eines Events vom Zielelement über alle Elternelemente bis zum Dokument.
+  explanation: >
+    Klickst du auf einen Button in einer Liste, löst das Event zuerst am Button aus und wandert dann über `li`,
+    `ul`, `body` bis `document` nach oben. Jeder Listener auf diesem Weg bekommt es mit. Davor läuft die
+    Capture-Phase von oben nach unten.
+  example: "Ein Listener auf `ul` reagiert auch auf Klicks in jedem `li` darin."
+  category: javascript
+  aliases: [Bubbling, Bubbling-Phase]
+  related: [event, event-delegation, event-listener]
+  lesson: javascript/events-und-formulare
+- slug: event-delegation
+  term: Event-Delegation
+  short: Ein einziger Listener auf einem Elternelement behandelt die Events vieler Kindelemente.
+  explanation: >
+    Dank Event Bubbling reicht ein Listener am gemeinsamen Elternelement. Mit `event.target.closest(...)`
+    findest du heraus, welches Kind gemeint war. Das spart Listener und funktioniert auch für Elemente, die erst
+    später hinzukommen.
+  example: "`liste.addEventListener(\"click\", (e) => { const li = e.target.closest(\"li\"); … });`"
+  category: javascript
+  aliases: [Event Delegation, Delegation]
+  related: [event-bubbling, event-listener]
+  lesson: javascript/events-und-formulare
+- slug: preventdefault
+  term: preventDefault
+  short: Eine Event-Methode, die die Standardaktion des Browsers für dieses Event verhindert.
+  explanation: >
+    Ohne `event.preventDefault()` lädt ein abgeschicktes Formular die Seite neu und ein Link navigiert weg. Rufst
+    du die Methode im Listener auf, bleibt die Seite stehen und du verarbeitest die Daten selbst mit JavaScript.
+  example: "`formular.addEventListener(\"submit\", (e) => { e.preventDefault(); … });`"
+  category: javascript
+  aliases: ["event.preventDefault()"]
+  related: [event, formular, formdata]
+  lesson: javascript/events-und-formulare
+- slug: formdata
+  term: FormData
+  short: Ein eingebautes Objekt, das alle Felder eines Formulars als Name-Wert-Paare einsammelt.
+  explanation: >
+    `new FormData(formular)` liest alle Eingabefelder mit `name`-Attribut aus. Mit `daten.get("email")` holst du
+    einen Wert, mit `Object.fromEntries(daten)` machst du daraus ein normales Objekt. Du kannst FormData auch
+    direkt als Body an `fetch` übergeben.
+  example: "`const daten = Object.fromEntries(new FormData(event.target));`"
+  category: javascript
+  aliases: [Form Data]
+  related: [formular, preventdefault, fetch-api]
+  lesson: javascript/events-und-formulare
+- slug: single-thread
+  term: Single-Thread
+  short: JavaScript führt deinen Code in nur einem Ausführungsstrang aus – immer eine Sache nach der anderen.
+  explanation: >
+    Es gibt nur einen Call Stack. Solange eine Funktion rechnet, kann nichts anderes laufen: keine Klicks,
+    kein Neuzeichnen der Seite. Warten auf Netzwerk oder Timer erledigt der Browser im Hintergrund, und die Event
+    Loop reicht die Ergebnisse später als Callbacks herein.
+  example: "Eine Endlosschleife friert den ganzen Tab ein, weil der einzige Thread blockiert ist."
+  category: javascript
+  aliases: [Single-threaded, Einzelthread]
+  related: [thread, event-loop, call-stack]
+  lesson: javascript/promises-und-event-loop
+- slug: settimeout
+  term: setTimeout
+  short: Eine Funktion, die einen Callback frühestens nach einer bestimmten Anzahl Millisekunden ausführt.
+  explanation: >
+    `setTimeout(fn, ms)` legt `fn` nach Ablauf der Zeit in die Task-Queue. Laufen darf es erst, wenn der Call
+    Stack leer ist – daher „frühestens“. Selbst `setTimeout(fn, 0)` läuft erst nach dem aktuellen Code und nach
+    allen Microtasks. `clearTimeout(id)` bricht den Timer ab.
+  example: "`setTimeout(() => console.log(\"später\"), 1000);`"
+  category: javascript
+  aliases: [clearTimeout, setInterval]
+  related: [event-loop, callback]
+  lesson: javascript/promises-und-event-loop
+- slug: callback-hoelle
+  term: Callback-Hölle
+  short: Tief verschachtelte Callbacks, die asynchronen Code schwer lesbar und fehleranfällig machen.
+  explanation: >
+    Hängt jeder asynchrone Schritt vom vorigen ab und bekommt einen eigenen Callback, wandert der Code immer
+    weiter nach rechts. Fehlerbehandlung muss auf jeder Ebene wiederholt werden. Promises und async/await
+    lösen genau dieses Problem.
+  example: "`lade(a, (x) => { lade(x, (y) => { lade(y, (z) => { … }); }); });`"
+  category: javascript
+  aliases: [Callback Hell, Pyramid of Doom]
+  related: [callback, promise, async-await]
+  lesson: javascript/promises-und-event-loop
+- slug: web-worker
+  term: Web Worker
+  short: Ein Skript, das im Browser in einem eigenen Hintergrund-Thread läuft.
+  explanation: >
+    Rechenintensive Aufgaben kannst du in einen Web Worker auslagern, damit die Oberfläche flüssig bleibt. Der
+    Worker hat keinen Zugriff auf den DOM und tauscht Daten nur über Nachrichten (`postMessage`) mit der Seite
+    aus.
+  example: "`const worker = new Worker(\"rechne.js\", { type: \"module\" }); worker.postMessage(daten);`"
+  category: javascript
+  aliases: [Worker, Web Workers]
+  related: [single-thread, thread]
+  lesson: javascript/promises-und-event-loop
+- slug: promise-kombinator
+  term: Promise-Kombinator
+  short: "Eine Methode wie `Promise.all`, die mehrere Promises zu einem einzigen zusammenfasst."
+  explanation: >
+    `Promise.all` wartet auf alle und scheitert beim ersten Fehler, `Promise.allSettled` wartet auf alle und
+    meldet jedes Ergebnis, `Promise.race` nimmt das erste fertige und `Promise.any` das erste erfolgreiche.
+    So startest du unabhängige Aufgaben parallel statt nacheinander.
+  example: "`const [nutzer, posts] = await Promise.all([ladeNutzer(), ladePosts()]);`"
+  category: javascript
+  aliases: [Promise.all, Promise.allSettled, Promise.race, Promise.any]
+  related: [promise, async-await]
+  lesson: javascript/async-await-und-fehler
+- slug: unhandled-rejection
+  term: Unhandled Rejection
+  short: Ein abgelehntes Promise, dessen Fehler niemand mit catch oder try/catch behandelt.
+  explanation: >
+    Der Fehler geht dann nicht einfach verloren: Der Browser meldet ihn in der Konsole, und Node.js beendet den
+    Prozess standardmäßig mit einem Fehler. Deshalb braucht jedes Promise, das scheitern kann, eine
+    Fehlerbehandlung – auch bei „Fire and forget“.
+  example: "`fetch(url);` ohne `await` und ohne `.catch()` erzeugt bei einem Netzwerkfehler eine Unhandled Rejection."
+  category: javascript
+  aliases: [Unhandled Promise Rejection, Unbehandelte Ablehnung]
+  related: [promise, try-catch]
+  lesson: javascript/async-await-und-fehler
+- slug: eigene-fehlerklasse
+  term: Eigene Fehlerklasse
+  short: "Eine Klasse, die von `Error` erbt und einen bestimmten Fehlerfall mit eigenen Daten beschreibt."
+  explanation: >
+    Mit `class HttpError extends Error` gibst du einem Fehler einen eigenen Namen und Zusatzinformationen wie
+    den Statuscode. Im `catch` unterscheidest du die Fälle dann mit `instanceof`, statt Fehlermeldungen als
+    Text zu vergleichen.
+  example: "`class HttpError extends Error { constructor(status) { super(\"HTTP \" + status); this.name = \"HttpError\"; this.status = status; } }`"
+  category: javascript
+  aliases: [Custom Error, Fehlerklasse]
+  related: [exception, instanceof, vererbung]
+  lesson: javascript/async-await-und-fehler

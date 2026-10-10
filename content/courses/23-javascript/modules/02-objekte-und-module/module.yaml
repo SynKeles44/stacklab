@@ -1,0 +1,105 @@
+title: Objekte, Module und Daten
+description: Prototypen und Klassen mit privaten Feldern, ES-Module im Browser und in Node.js, Array-Methoden mit unveränderlichen Updates sowie JSON, Datum und Intl.
+exercise:
+  id: modul-uebung-bericht
+  type: terminal
+  title: Ein Umsatzbericht aus Modulen
+  description: |
+    Im Ordner `umsatz-bericht` liegt die Datei `daten/bestellungen.json` mit fünf Bestellungen. Baue daraus ein
+    kleines Node-Projekt aus zwei ES-Modulen. Klicke zuerst auf **Aufgabe vorbereiten**, damit die Daten angelegt werden.
+
+    1. Lege eine `package.json` mit `"type": "module"` an.
+    2. Lege `lib/auswertung.js` mit drei **benannten** Exporten an:
+       - `umsatzProKunde(bestellungen)` liefert ein Objekt wie `{ Ada: 1234.5, Linus: 100 }` – die Summe
+         **aller** Bestellungen je Kunde, egal welcher Status.
+       - `rangliste(bestellungen)` liefert ein Array wie `[{ kunde: "Ada", umsatz: 1234.5 }, …]`, absteigend
+         nach Umsatz sortiert. Das übergebene Array darf dabei **nicht** verändert werden.
+       - `formatiereEuro(betrag)` liefert den Betrag deutsch formatiert, z. B. `1.234,50 €` (mit `Intl.NumberFormat`).
+    3. Lege `bericht.js` an. Es liest `daten/bestellungen.json` mit `readFile` aus `node:fs/promises` und
+       Top-Level-`await`, wandelt den Text mit `JSON.parse` um und gibt für jeden Kunden eine Zeile aus:
+
+       ```text
+       1. Ada: 1.234,50 €
+       2. Grace: 410,00 €
+       3. Linus: 100,00 €
+       ```
+    4. Prüfe mit `node bericht.js`.
+  workdir: umsatz-bericht
+  setup: |
+    mkdir -p daten
+    cat > daten/bestellungen.json <<'EOF'
+    [
+      { "id": 1, "kunde": "Ada", "summe": 1200, "status": "bezahlt" },
+      { "id": 2, "kunde": "Linus", "summe": 80.5, "status": "offen" },
+      { "id": 3, "kunde": "Ada", "summe": 34.5, "status": "bezahlt" },
+      { "id": 4, "kunde": "Grace", "summe": 410, "status": "bezahlt" },
+      { "id": 5, "kunde": "Linus", "summe": 19.5, "status": "bezahlt" }
+    ]
+    EOF
+  checks:
+    - type: command
+      run: jq -r '.type' package.json
+      stdout_equals: module
+      message: 'In der package.json fehlt "type": "module".'
+    - type: command
+      run: node -e 'import("./lib/auswertung.js").then((m) => { const d = JSON.parse(require("fs").readFileSync("daten/bestellungen.json", "utf8")); console.log(JSON.stringify(m.umsatzProKunde(d)), JSON.stringify(m.umsatzProKunde([]))); })'
+      stdout_equals: '{"Ada":1234.5,"Linus":100,"Grace":410} {}'
+      message: umsatzProKunde soll die Summen aller Bestellungen je Kunde liefern, z. B. Ada 1234.5 – und für ein leeres Array {}.
+    - type: command
+      run: node -e 'import("./lib/auswertung.js").then((m) => { const d = JSON.parse(require("fs").readFileSync("daten/bestellungen.json", "utf8")); const r = m.rangliste(d); console.log(r.map((x) => x.kunde + "=" + x.umsatz).join(","), d.map((b) => b.id).join("")); })'
+      stdout_equals: "Ada=1234.5,Grace=410,Linus=100 12345"
+      message: rangliste soll Objekte mit kunde und umsatz absteigend sortiert liefern und das übergebene Array unverändert lassen.
+    - type: command
+      run: node -e 'import("./lib/auswertung.js").then((m) => console.log(m.formatiereEuro(1234.5) + "|" + m.formatiereEuro(0)))'
+      stdout_matches: "^1\\.234,50\\s€\\|0,00\\s€$"
+      message: formatiereEuro(1234.5) soll "1.234,50 €" liefern. Nutze Intl.NumberFormat mit de-DE und EUR.
+    - type: file_contains
+      path: bericht.js
+      pattern: "node:fs/promises"
+      message: bericht.js soll readFile aus "node:fs/promises" importieren.
+    - type: command
+      run: node bericht.js | tr '\n' '|'
+      stdout_matches: "^1\\. Ada: 1\\.234,50\\s€\\|2\\. Grace: 410,00\\s€\\|3\\. Linus: 100,00\\s€\\|?$"
+      message: "node bericht.js soll drei nummerierte Zeilen ausgeben, beginnend mit \"1. Ada: 1.234,50 €\"."
+  hints:
+    - "`umsatzProKunde`: `reduce` mit Startwert `{}` und `(acc[b.kunde] ?? 0) + b.summe`. Für die Rangliste: `Object.entries(umsatzProKunde(d))` liefert Paare `[kunde, umsatz]`."
+    - "`.map(([kunde, umsatz]) => ({ kunde, umsatz })).toSorted((a, b) => b.umsatz - a.umsatz)`"
+    - "In bericht.js: `const text = await readFile(\"daten/bestellungen.json\", \"utf8\");` und dann `rangliste(JSON.parse(text)).forEach((e, i) => console.log(`${i + 1}. ${e.kunde}: ${formatiereEuro(e.umsatz)}`));`"
+  solution: |
+    ```bash
+    npm init -y >/dev/null
+    npm pkg set type=module
+    mkdir -p lib
+    cat > lib/auswertung.js <<'EOF'
+    const euro = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+
+    export function umsatzProKunde(bestellungen) {
+      return bestellungen.reduce(
+        (umsatz, b) => ({ ...umsatz, [b.kunde]: (umsatz[b.kunde] ?? 0) + b.summe }),
+        {},
+      );
+    }
+
+    export function rangliste(bestellungen) {
+      return Object.entries(umsatzProKunde(bestellungen))
+        .map(([kunde, umsatz]) => ({ kunde, umsatz }))
+        .toSorted((a, b) => b.umsatz - a.umsatz);
+    }
+
+    export function formatiereEuro(betrag) {
+      return euro.format(betrag);
+    }
+    EOF
+    cat > bericht.js <<'EOF'
+    import { readFile } from "node:fs/promises";
+    import { rangliste, formatiereEuro } from "./lib/auswertung.js";
+
+    const text = await readFile("daten/bestellungen.json", "utf8");
+    const bestellungen = JSON.parse(text);
+
+    rangliste(bestellungen).forEach((eintrag, i) => {
+      console.log(`${i + 1}. ${eintrag.kunde}: ${formatiereEuro(eintrag.umsatz)}`);
+    });
+    EOF
+    node bericht.js
+    ```

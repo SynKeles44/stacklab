@@ -1,0 +1,96 @@
+title: Modernes JavaScript
+description: Moderne Syntax, Gültigkeitsbereiche, Hoisting und die Temporal Dead Zone, Closures und die Regeln für this.
+exercise:
+  id: modul-uebung-store
+  type: code
+  language: js
+  title: Ein kleiner Zustandsspeicher
+  description: |
+    Viele Frontend-Anwendungen verwalten ihren Zustand in einem „Store“. Baue mit einer Closure eine Mini-Version.
+    `erstelleStore(startZustand = {})` liefert ein Objekt mit drei Methoden:
+
+    1. `lese()` gibt eine **Kopie** des aktuellen Zustands zurück. Wer die Kopie verändert, verändert den Store nicht.
+    2. `setze(aenderung)` mischt die Eigenschaften von `aenderung` in den Zustand (spätere Werte gewinnen) und
+       benachrichtigt danach alle Abonnenten mit dem neuen Zustand als Argument.
+    3. `abonniere(fn)` registriert eine Funktion und gibt eine Funktion zum **Abbestellen** zurück.
+
+    Zusatzregeln:
+
+    - Der Zustand selbst ist von außen nicht erreichbar – das Store-Objekt hat nur die drei Methoden.
+    - `setze` ohne Argument (oder mit `null`) ändert nichts, benachrichtigt aber trotzdem.
+    - Ein Abonnent, der kein Funktionswert ist, wird ignoriert.
+  starter: |
+    function erstelleStore(startZustand = {}) {
+      const store = {
+        zustand: startZustand,
+        lese() {
+          return this.zustand;
+        },
+        setze(aenderung) {
+          this.zustand = aenderung;
+        },
+        abonniere(fn) {},
+      };
+      return store;
+    }
+  tests:
+    - name: lese liefert den Startzustand
+      code: 'assertDeepEqual(erstelleStore({ thema: "hell" }).lese(), { thema: "hell" })'
+    - name: setze mischt Änderungen ein
+      code: 'const s = erstelleStore({ thema: "hell", sprache: "de" }); s.setze({ thema: "dunkel" }); assertDeepEqual(s.lese(), { thema: "dunkel", sprache: "de" })'
+    - name: lese liefert eine Kopie
+      code: 'const s = erstelleStore({ n: 1 }); const kopie = s.lese(); kopie.n = 99; assertEqual(s.lese().n, 1)'
+    - name: Zustand ist privat
+      code: 'assertDeepEqual(Object.keys(erstelleStore()).sort(), ["abonniere", "lese", "setze"])'
+    - name: Abonnenten werden benachrichtigt und können abbestellen
+      code: |
+        const s = erstelleStore({ n: 0 });
+        const empfangen = [];
+        const ab = s.abonniere((z) => empfangen.push(z.n));
+        s.setze({ n: 1 });
+        ab();
+        s.setze({ n: 2 });
+        assertDeepEqual(empfangen, [1])
+    - name: setze ohne Argument und ungültige Abonnenten
+      code: |
+        const s = erstelleStore({ n: 5 });
+        let aufrufe = 0;
+        s.abonniere("keine Funktion");
+        s.abonniere(() => aufrufe++);
+        s.setze();
+        s.setze(null);
+        assertEqual(aufrufe, 2);
+        assertDeepEqual(s.lese(), { n: 5 })
+  hints:
+    - "Lege `let zustand = { ...startZustand };` und `const abonnenten = [];` innerhalb der Funktion an – die Methoden sehen sie über die Closure."
+    - "`setze`: `zustand = { ...zustand, ...aenderung };` – Spread von `null` oder `undefined` ist erlaubt und ergibt nichts."
+    - "Abbestellen: `return () => { const i = abonnenten.indexOf(fn); if (i !== -1) abonnenten.splice(i, 1); };`"
+  solution: |
+    function erstelleStore(startZustand = {}) {
+      let zustand = { ...startZustand };
+      const abonnenten = [];
+
+      return {
+        lese() {
+          return { ...zustand };
+        },
+        setze(aenderung) {
+          zustand = { ...zustand, ...aenderung };
+          for (const fn of abonnenten) {
+            fn({ ...zustand });
+          }
+        },
+        abonniere(fn) {
+          if (typeof fn !== "function") {
+            return () => {};
+          }
+          abonnenten.push(fn);
+          return () => {
+            const index = abonnenten.indexOf(fn);
+            if (index !== -1) {
+              abonnenten.splice(index, 1);
+            }
+          };
+        },
+      };
+    }

@@ -1,0 +1,33 @@
+title: JavaScript
+subtitle: Die Sprache des Webs in der Tiefe – von Closures über den DOM bis zu async/await und fetch
+description: >
+  Du kennst Variablen, Schleifen, Funktionen und Klassen schon aus den Programmier-Grundlagen. Jetzt
+  lernst du JavaScript so, wie es im Berufsalltag geschrieben wird: mit moderner Syntax, sauberen
+  Modulen, unveränderlichen Daten und asynchronem Code, der nicht hängen bleibt.
+
+
+  Du verstehst, **warum** sich JavaScript manchmal überraschend verhält – Hoisting, die Temporal Dead
+  Zone, `this`, Prototypen und die Event Loop sind danach keine Rätsel mehr. Du baust Oberflächen mit
+  dem DOM, reagierst auf Events, holst Daten mit `fetch` und brichst Anfragen mit `AbortController` ab.
+  Fast jede Lektion hat Programmieraufgaben, die direkt im Browser geprüft werden, und Vorhersage-Aufgaben,
+  bei denen du die Ausgabe von kniffligem Code errätst. Im Abschlussprojekt baust du eine kleine Quiz-App
+  aus `index.html`, ES-Modulen und Tests mit `node:test`.
+category: frontend
+level: einsteiger
+icon: braces
+color: "#facc15"
+estimated_hours: 5
+workspace_dir: javascript
+prerequisites: [programmieren-grundlagen, html-css-tailwind]
+learning_goals:
+  - Du schreibst modernes JavaScript mit Destrukturierung, Spread/Rest, Optional Chaining und Nullish Coalescing.
+  - Du erklärst Gültigkeitsbereiche, Hoisting, die Temporal Dead Zone, Closures und die Regeln für this.
+  - Du verstehst Prototypen und schreibst Klassen mit privaten Feldern und statischen Mitgliedern.
+  - Du teilst Code mit ES-Modulen (import/export) sauber auf – im Browser und in Node.js.
+  - Du formst Daten mit Array-Methoden unveränderlich um und arbeitest sicher mit JSON, Datum und Intl.
+  - Du liest und veränderst den DOM, reagierst mit Event-Delegation auf Klicks und wertest Formulare aus.
+  - Du beherrschst Promises, async/await, Promise.all/allSettled/race, die Event Loop und fetch mit AbortController.
+references:
+  - Trennung von DOM-Code und testbarer Logik in eigenen ES-Modulen, wie sie in Frontend-Teams üblich ist
+  - Eigene Fehlerklassen für HTTP-Fehler in API-Clients
+  - Unveränderliche Zustandsupdates als Vorbereitung auf React

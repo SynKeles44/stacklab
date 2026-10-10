@@ -1,0 +1,704 @@
+title: Deine eigene Quiz-App
+description: |
+  In diesem Projekt baust du eine kleine Quiz-App mit reinem JavaScript – ohne Framework. Du gehst dabei so
+  vor, wie es Frontend-Teams tun: Die **Logik** steckt in einem eigenen ES-Modul aus reinen, unveränderlichen
+  Funktionen und wird mit `node:test` getestet. Die **Oberfläche** ist ein dünnes Modul, das den DOM
+  zeichnet und per Event-Delegation auf Klicks reagiert. Zum Schluss lädst du die Fragen per `fetch` – mit
+  Zeitlimit und Ersatzfragen, falls der Server nicht antwortet.
+
+  Alles passiert im Ordner `quiz-app` in deinem JavaScript-Workspace. Öffne das Übungs-Terminal und lege den
+  Ordner mit `mkdir -p quiz-app && cd quiz-app` an. Nach jedem Schritt prüft Stacklab den echten Zustand
+  deines Projekts. Die Schritte bauen aufeinander auf – lösche nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Ein Projekt `quiz-app` mit package.json (ES-Module, Testskript), Fragen in `src/fragen.js`, der getesteten
+  Logik in `src/quiz.js`, einem Lademodul `src/lade-fragen.js` mit fetch und Zeitlimit, der Oberfläche aus
+  `index.html` und `src/app.js` sowie mindestens sechs grünen Tests in `test/`.
+workdir: quiz-app
+steps:
+  - id: projekt-anlegen
+    title: Projekt anlegen
+    description: |
+      Ein Node-Projekt beginnt mit einer package.json. Weil du ES-Module schreibst, braucht sie `"type": "module"`.
+
+      1. Lege mit `npm init -y` eine package.json an.
+      2. Setze `name` auf `quiz-app`, `type` auf `module` und das Skript `test` auf `node --test`.
+      3. Lege die Ordner `src` und `test` an.
+    checklist:
+      - package.json mit name, type und Testskript
+      - Ordner src und test existieren
+    hints:
+      - "`npm pkg set name=quiz-app type=module scripts.test=\"node --test\"` setzt alles auf einmal."
+      - "`mkdir -p src test`"
+    checks:
+      - type: command
+        run: jq -r '"\(.name) \(.type) \(.scripts.test)"' package.json
+        stdout_equals: quiz-app module node --test
+        message: In der package.json sollen name "quiz-app", type "module" und das Skript test "node --test" stehen.
+      - type: dir_exists
+        path: src
+        message: Lege den Ordner src an.
+      - type: dir_exists
+        path: test
+        message: Lege den Ordner test an.
+    solution: |
+      ```bash
+      mkdir -p quiz-app && cd quiz-app
+      npm init -y
+      npm pkg set name=quiz-app type=module scripts.test="node --test"
+      mkdir -p src test
+      ```
+    solve: |
+      npm init -y
+      npm pkg set name=quiz-app type=module scripts.test="node --test"
+      mkdir -p src test
+  - id: fragen
+    title: Die Fragen als Modul
+    description: |
+      Lege `src/fragen.js` an. Es hat einen **Standard-Export**: ein Array mit mindestens drei Fragen. Jede Frage
+      ist ein Objekt mit
+
+      - `frage`: der Fragetext,
+      - `antworten`: ein Array mit mindestens zwei Antworttexten,
+      - `richtig`: dem Index der richtigen Antwort.
+
+      Das Thema ist dir überlassen – zum Beispiel JavaScript.
+    checklist:
+      - src/fragen.js mit Standard-Export
+      - Mindestens drei vollständige Fragen
+    hints:
+      - "`export default [ { frage: \"…\", antworten: [\"…\", \"…\"], richtig: 0 }, … ];`"
+      - Prüfe mit `node -e 'import("./src/fragen.js").then((m) => console.log(m.default.length))'`.
+    checks:
+      - type: file_exists
+        path: src/fragen.js
+        message: Lege die Datei src/fragen.js an.
+      - type: command
+        run: |-
+          node --input-type=module -e 'import fragen from "./src/fragen.js"; const ok = Array.isArray(fragen) && fragen.length >= 3 && fragen.every((f) => typeof f.frage === "string" && f.frage.trim() !== "" && Array.isArray(f.antworten) && f.antworten.length >= 2 && Number.isInteger(f.richtig) && f.richtig >= 0 && f.richtig < f.antworten.length); console.log(ok ? "gueltig" : "ungueltig");'
+        stdout_equals: gueltig
+        message: Der Standard-Export von src/fragen.js soll ein Array mit mindestens drei Fragen sein – jede mit frage, mindestens zwei antworten und einem gültigen Index richtig.
+    solution: |
+      ```js
+      // src/fragen.js
+      export default [
+        {
+          frage: "Welches Schlüsselwort deklariert eine Variable, die nicht neu zugewiesen werden kann?",
+          antworten: ["var", "let", "const"],
+          richtig: 2,
+        },
+        {
+          frage: "Was liefert `typeof null`?",
+          antworten: ['"null"', '"object"', '"undefined"'],
+          richtig: 1,
+        },
+        {
+          frage: "Welche Methode verändert das Array NICHT?",
+          antworten: ["sort()", "toSorted()", "reverse()"],
+          richtig: 1,
+        },
+      ];
+      ```
+    solve: |
+      mkdir -p src
+      cat > src/fragen.js <<'EOF'
+      // src/fragen.js
+      export default [
+        {
+          frage: "Welches Schlüsselwort deklariert eine Variable, die nicht neu zugewiesen werden kann?",
+          antworten: ["var", "let", "const"],
+          richtig: 2,
+        },
+        {
+          frage: "Was liefert `typeof null`?",
+          antworten: ['"null"', '"object"', '"undefined"'],
+          richtig: 1,
+        },
+        {
+          frage: "Welche Methode verändert das Array NICHT?",
+          antworten: ["sort()", "toSorted()", "reverse()"],
+          richtig: 1,
+        },
+      ];
+      EOF
+  - id: quiz-logik
+    title: Die Quiz-Logik – rein und unveränderlich
+    description: |
+      Lege `src/quiz.js` mit diesen **benannten** Exporten an. Keine Funktion verändert ihre Argumente – jede
+      Änderung erzeugt einen neuen Zustand.
+
+      1. `starteQuiz(fragen)` liefert `{ fragen, index: 0, punkte: 0, antworten: [] }`.
+      2. `aktuelleFrage(zustand)` liefert die Frage an Position `index` – oder `null`, wenn das Quiz fertig ist.
+      3. `istFertig(zustand)` liefert `true`, wenn alle Fragen beantwortet sind.
+      4. `beantworte(zustand, antwortIndex)` liefert einen **neuen** Zustand: `antwortIndex` wird an `antworten`
+         angehängt, `punkte` steigt bei der richtigen Antwort um 1, `index` um 1. Ist das Quiz schon fertig,
+         kommt der Zustand unverändert zurück.
+    checklist:
+      - Vier benannte Exporte in src/quiz.js
+      - Kein Argument wird verändert
+      - beantworte nach dem Ende ändert nichts
+    hints:
+      - "`aktuelleFrage`: `return istFertig(zustand) ? null : zustand.fragen[zustand.index];`"
+      - "`beantworte`: `const richtig = aktuelleFrage(zustand).richtig === antwortIndex; return { ...zustand, index: zustand.index + 1, punkte: zustand.punkte + (richtig ? 1 : 0), antworten: [...zustand.antworten, antwortIndex] };`"
+    checks:
+      - type: command
+        run: |-
+          node --input-type=module -e 'import { starteQuiz, aktuelleFrage, istFertig, beantworte } from "./src/quiz.js"; const f = Object.freeze([Object.freeze({ frage: "A", antworten: ["x", "y"], richtig: 1 }), Object.freeze({ frage: "B", antworten: ["x", "y"], richtig: 0 })]); const s0 = Object.freeze(starteQuiz(f)); const s1 = Object.freeze(beantworte(s0, 1)); const s2 = beantworte(s1, 1); console.log(JSON.stringify([s0.index, s0.punkte, s1.index, s1.punkte, s2.index, s2.punkte, s2.antworten, aktuelleFrage(s1).frage, aktuelleFrage(s2), istFertig(s1), istFertig(s2), s0.antworten.length]));'
+        stdout_equals: '[0,0,1,1,2,1,[1,1],"B",null,false,true,0]'
+        message: starteQuiz, beantworte, aktuelleFrage und istFertig verhalten sich noch nicht wie beschrieben – oder verändern einen eingefrorenen Zustand (z. B. mit push oder index++).
+      - type: command
+        run: |-
+          node --input-type=module -e 'import { starteQuiz, beantworte } from "./src/quiz.js"; const s = beantworte(starteQuiz([{ frage: "A", antworten: ["x", "y"], richtig: 0 }]), 0); const t = beantworte(s, 1); console.log(t.punkte, t.index, t.antworten.length);'
+        stdout_equals: "1 1 1"
+        message: Nach der letzten Frage soll beantworte den Zustand unverändert lassen.
+    solution: |
+      ```js
+      // src/quiz.js
+      export function starteQuiz(fragen) {
+        return { fragen, index: 0, punkte: 0, antworten: [] };
+      }
+
+      export function istFertig(zustand) {
+        return zustand.index >= zustand.fragen.length;
+      }
+
+      export function aktuelleFrage(zustand) {
+        return istFertig(zustand) ? null : zustand.fragen[zustand.index];
+      }
+
+      export function beantworte(zustand, antwortIndex) {
+        if (istFertig(zustand)) {
+          return zustand;
+        }
+        const richtig = aktuelleFrage(zustand).richtig === antwortIndex;
+        return {
+          ...zustand,
+          index: zustand.index + 1,
+          punkte: zustand.punkte + (richtig ? 1 : 0),
+          antworten: [...zustand.antworten, antwortIndex],
+        };
+      }
+      ```
+    solve: |
+      mkdir -p src
+      cat > src/quiz.js <<'EOF'
+      // src/quiz.js
+      export function starteQuiz(fragen) {
+        return { fragen, index: 0, punkte: 0, antworten: [] };
+      }
+
+      export function istFertig(zustand) {
+        return zustand.index >= zustand.fragen.length;
+      }
+
+      export function aktuelleFrage(zustand) {
+        return istFertig(zustand) ? null : zustand.fragen[zustand.index];
+      }
+
+      export function beantworte(zustand, antwortIndex) {
+        if (istFertig(zustand)) {
+          return zustand;
+        }
+        const richtig = aktuelleFrage(zustand).richtig === antwortIndex;
+        return {
+          ...zustand,
+          index: zustand.index + 1,
+          punkte: zustand.punkte + (richtig ? 1 : 0),
+          antworten: [...zustand.antworten, antwortIndex],
+        };
+      }
+      EOF
+  - id: ergebnis
+    title: Das Ergebnis mit Intl formatieren
+    description: |
+      Ergänze `src/quiz.js` um zwei weitere benannte Exporte:
+
+      1. `ergebnis(zustand)` liefert `{ punkte, gesamt, quote }` – `gesamt` ist die Anzahl der Fragen, `quote`
+         der Anteil richtiger Antworten als Zahl zwischen 0 und 1 (bei 0 Fragen ist die Quote 0).
+      2. `formatiereErgebnis(erg, sprache = "de-DE")` liefert einen Text wie `2 von 3 richtig (67 %)`. Die
+         Prozentzahl formatierst du mit `Intl.NumberFormat` und `style: "percent"` ohne Nachkommastellen.
+    checklist:
+      - ergebnis liefert punkte, gesamt und quote
+      - formatiereErgebnis nutzt Intl.NumberFormat
+    hints:
+      - "`quote: gesamt === 0 ? 0 : punkte / gesamt`"
+      - "`new Intl.NumberFormat(sprache, { style: \"percent\", maximumFractionDigits: 0 }).format(erg.quote)` – im Deutschen steht ein geschütztes Leerzeichen vor dem %."
+    checks:
+      - type: command
+        run: |-
+          node --input-type=module -e 'import { starteQuiz, beantworte, ergebnis } from "./src/quiz.js"; const f = [0, 1, 2].map((i) => ({ frage: "F" + i, antworten: ["a", "b"], richtig: 0 })); let s = starteQuiz(f); s = beantworte(s, 0); s = beantworte(s, 0); s = beantworte(s, 1); console.log(JSON.stringify(ergebnis(s)), JSON.stringify(ergebnis(starteQuiz([]))));'
+        stdout_equals: '{"punkte":2,"gesamt":3,"quote":0.6666666666666666} {"punkte":0,"gesamt":0,"quote":0}'
+        message: ergebnis soll { punkte, gesamt, quote } liefern – bei 2 von 3 ist die quote 2/3, bei 0 Fragen 0.
+      - type: command
+        run: |-
+          node --input-type=module -e 'import { formatiereErgebnis } from "./src/quiz.js"; console.log(formatiereErgebnis({ punkte: 2, gesamt: 3, quote: 2 / 3 }) + "|" + formatiereErgebnis({ punkte: 1, gesamt: 2, quote: 0.5 }, "en-US"));'
+        stdout_matches: "^2 von 3 richtig \\(67\\s%\\)\\|1 von 2 richtig \\(50%\\)$"
+        message: formatiereErgebnis soll z. B. "2 von 3 richtig (67 %)" liefern und die Sprache an Intl.NumberFormat weitergeben (en-US ergibt "50%").
+      - type: file_contains
+        path: src/quiz.js
+        pattern: "Intl\\.NumberFormat"
+        message: Nutze Intl.NumberFormat für die Prozentangabe.
+    solution: |
+      ```js
+      // in src/quiz.js ergänzen
+      export function ergebnis(zustand) {
+        const gesamt = zustand.fragen.length;
+        return { punkte: zustand.punkte, gesamt, quote: gesamt === 0 ? 0 : zustand.punkte / gesamt };
+      }
+
+      export function formatiereErgebnis(erg, sprache = "de-DE") {
+        const prozent = new Intl.NumberFormat(sprache, { style: "percent", maximumFractionDigits: 0 });
+        return `${erg.punkte} von ${erg.gesamt} richtig (${prozent.format(erg.quote)})`;
+      }
+      ```
+    solve: |
+      mkdir -p src
+      cat >> src/quiz.js <<'EOF'
+
+      export function ergebnis(zustand) {
+        const gesamt = zustand.fragen.length;
+        return { punkte: zustand.punkte, gesamt, quote: gesamt === 0 ? 0 : zustand.punkte / gesamt };
+      }
+
+      export function formatiereErgebnis(erg, sprache = "de-DE") {
+        const prozent = new Intl.NumberFormat(sprache, { style: "percent", maximumFractionDigits: 0 });
+        return `${erg.punkte} von ${erg.gesamt} richtig (${prozent.format(erg.quote)})`;
+      }
+      EOF
+  - id: tests
+    title: Die Logik mit node:test absichern
+    description: |
+      Weil die Logik keinen DOM braucht, kannst du sie direkt in Node.js testen. Node bringt dafür den
+      Test-Runner `node:test` und das Modul `node:assert` mit.
+
+      1. Lege `test/quiz.test.js` mit **mindestens fünf** Tests an. Decke ab: Start eines Quiz, richtige Antwort,
+         falsche Antwort, Verhalten nach der letzten Frage und dass `beantworte` den alten Zustand nicht verändert.
+      2. Starte `npm test` – alle Tests müssen grün sein.
+    checklist:
+      - Mindestens fünf Tests in test/quiz.test.js
+      - Ein Test prüft die Unveränderlichkeit
+      - "`npm test` ist grün"
+    hints:
+      - "`import { test } from \"node:test\"; import assert from \"node:assert/strict\";` – dann `test(\"Name\", () => { assert.equal(…); });`"
+      - "Unveränderlichkeit prüfst du mit `Object.freeze` oder indem du den alten Zustand nach `beantworte` mit `assert.deepEqual` vergleichst."
+    checks:
+      - type: file_exists
+        path: test/quiz.test.js
+        message: Lege die Datei test/quiz.test.js an.
+      - type: command
+        run: node --test --test-reporter=tap 2>&1 | grep -E '^# pass' | grep -oE '[0-9]+'
+        stdout_matches: "^([5-9]|[1-9][0-9]+)$"
+        message: Es sollen mindestens fünf Tests grün sein.
+      - type: command
+        run: npm test --silent >/dev/null 2>&1; echo $?
+        stdout_equals: "0"
+        message: npm test schlägt noch fehl – lies die Ausgabe von npm test.
+    solution: |
+      ```js
+      // test/quiz.test.js
+      import { test } from "node:test";
+      import assert from "node:assert/strict";
+      import { starteQuiz, beantworte, aktuelleFrage, istFertig, ergebnis } from "../src/quiz.js";
+
+      const fragen = [
+        { frage: "A", antworten: ["x", "y"], richtig: 0 },
+        { frage: "B", antworten: ["x", "y"], richtig: 1 },
+      ];
+
+      test("ein neues Quiz startet bei Frage 0 ohne Punkte", () => {
+        const s = starteQuiz(fragen);
+        assert.equal(s.index, 0);
+        assert.equal(s.punkte, 0);
+        assert.equal(aktuelleFrage(s).frage, "A");
+      });
+
+      test("eine richtige Antwort gibt einen Punkt", () => {
+        assert.equal(beantworte(starteQuiz(fragen), 0).punkte, 1);
+      });
+
+      test("eine falsche Antwort gibt keinen Punkt, geht aber weiter", () => {
+        const s = beantworte(starteQuiz(fragen), 1);
+        assert.equal(s.punkte, 0);
+        assert.equal(s.index, 1);
+      });
+
+      test("nach der letzten Frage ändert sich nichts mehr", () => {
+        const fertig = beantworte(beantworte(starteQuiz(fragen), 0), 1);
+        assert.equal(istFertig(fertig), true);
+        assert.equal(aktuelleFrage(fertig), null);
+        assert.deepEqual(beantworte(fertig, 0), fertig);
+      });
+
+      test("beantworte verändert den alten Zustand nicht", () => {
+        const alt = Object.freeze(starteQuiz(fragen));
+        beantworte(alt, 0);
+        assert.equal(alt.index, 0);
+        assert.deepEqual(alt.antworten, []);
+      });
+
+      test("ergebnis berechnet die Quote", () => {
+        const fertig = beantworte(beantworte(starteQuiz(fragen), 0), 0);
+        assert.deepEqual(ergebnis(fertig), { punkte: 1, gesamt: 2, quote: 0.5 });
+      });
+      ```
+
+      ```bash
+      npm test
+      ```
+    solve: |
+      mkdir -p test
+      cat > test/quiz.test.js <<'EOF'
+      // test/quiz.test.js
+      import { test } from "node:test";
+      import assert from "node:assert/strict";
+      import { starteQuiz, beantworte, aktuelleFrage, istFertig, ergebnis } from "../src/quiz.js";
+
+      const fragen = [
+        { frage: "A", antworten: ["x", "y"], richtig: 0 },
+        { frage: "B", antworten: ["x", "y"], richtig: 1 },
+      ];
+
+      test("ein neues Quiz startet bei Frage 0 ohne Punkte", () => {
+        const s = starteQuiz(fragen);
+        assert.equal(s.index, 0);
+        assert.equal(s.punkte, 0);
+        assert.equal(aktuelleFrage(s).frage, "A");
+      });
+
+      test("eine richtige Antwort gibt einen Punkt", () => {
+        assert.equal(beantworte(starteQuiz(fragen), 0).punkte, 1);
+      });
+
+      test("eine falsche Antwort gibt keinen Punkt, geht aber weiter", () => {
+        const s = beantworte(starteQuiz(fragen), 1);
+        assert.equal(s.punkte, 0);
+        assert.equal(s.index, 1);
+      });
+
+      test("nach der letzten Frage ändert sich nichts mehr", () => {
+        const fertig = beantworte(beantworte(starteQuiz(fragen), 0), 1);
+        assert.equal(istFertig(fertig), true);
+        assert.equal(aktuelleFrage(fertig), null);
+        assert.deepEqual(beantworte(fertig, 0), fertig);
+      });
+
+      test("beantworte verändert den alten Zustand nicht", () => {
+        const alt = Object.freeze(starteQuiz(fragen));
+        beantworte(alt, 0);
+        assert.equal(alt.index, 0);
+        assert.deepEqual(alt.antworten, []);
+      });
+
+      test("ergebnis berechnet die Quote", () => {
+        const fertig = beantworte(beantworte(starteQuiz(fragen), 0), 0);
+        assert.deepEqual(ergebnis(fertig), { punkte: 1, gesamt: 2, quote: 0.5 });
+      });
+      EOF
+      npm test
+  - id: fragen-laden
+    title: Fragen per fetch laden – mit Zeitlimit
+    description: |
+      Später sollen die Fragen von einem Server kommen. Lege `src/lade-fragen.js` mit dem benannten Export
+      `ladeFragen(url, { fetchFn = fetch, timeoutMs = 3000, ersatz = [] } = {})` an:
+
+      1. Rufe `fetchFn(url, { signal: AbortSignal.timeout(timeoutMs) })` auf.
+      2. Ist die Antwort nicht `ok`, die Anfrage gescheitert (auch durch das Zeitlimit) oder sind die Daten
+         **kein Array**, liefert die Funktion die `ersatz`-Fragen.
+      3. Sonst liefert sie die geladenen Fragen.
+
+      Durch den Parameter `fetchFn` kannst du die Funktion ohne Server testen.
+    checklist:
+      - ladeFragen nutzt AbortSignal.timeout
+      - HTTP-Fehler, Netzwerkfehler und falsche Daten führen zu den Ersatzfragen
+    hints:
+      - "Packe alles in `try { … } catch { return ersatz; }`."
+      - "`const response = await fetchFn(url, { signal: AbortSignal.timeout(timeoutMs) }); if (!response.ok) return ersatz; const daten = await response.json(); return Array.isArray(daten) ? daten : ersatz;`"
+    checks:
+      - type: command
+        run: |-
+          node --input-type=module -e 'import { ladeFragen } from "./src/lade-fragen.js"; const ersatz = ["E"]; const ok = async (u, o) => new Response(JSON.stringify([u, o.signal instanceof AbortSignal])); const f404 = async () => new Response("", { status: 404 }); const kaputt = async () => { throw new TypeError("offline"); }; const keinArray = async () => new Response("{}"); const r = [await ladeFragen("/fragen.json", { fetchFn: ok, ersatz }), await ladeFragen("/x", { fetchFn: f404, ersatz }), await ladeFragen("/x", { fetchFn: kaputt, ersatz }), await ladeFragen("/x", { fetchFn: keinArray, ersatz })]; console.log(JSON.stringify(r));'
+        stdout_equals: '[["/fragen.json",true],["E"],["E"],["E"]]'
+        message: ladeFragen soll die Daten liefern (und ein AbortSignal übergeben) – bei HTTP-Fehler, Netzwerkfehler oder Daten, die kein Array sind, aber die Ersatzfragen.
+      - type: command
+        run: |-
+          node --input-type=module -e 'import { ladeFragen } from "./src/lade-fragen.js"; const langsam = (u, { signal }) => new Promise((resolve, reject) => { const t = setTimeout(() => resolve(new Response("[1]")), 2000); signal.addEventListener("abort", () => { clearTimeout(t); reject(signal.reason); }); }); const start = Date.now(); const r = await ladeFragen("/x", { fetchFn: langsam, timeoutMs: 50, ersatz: ["E"] }); console.log(JSON.stringify(r), Date.now() - start < 1000);'
+        stdout_equals: '["E"] true'
+        message: Bei Überschreitung von timeoutMs soll die Anfrage abgebrochen werden und ladeFragen die Ersatzfragen liefern. Nutze AbortSignal.timeout(timeoutMs).
+    solution: |
+      ```js
+      // src/lade-fragen.js
+      export async function ladeFragen(url, { fetchFn = fetch, timeoutMs = 3000, ersatz = [] } = {}) {
+        try {
+          const response = await fetchFn(url, { signal: AbortSignal.timeout(timeoutMs) });
+          if (!response.ok) {
+            return ersatz;
+          }
+          const daten = await response.json();
+          return Array.isArray(daten) ? daten : ersatz;
+        } catch {
+          return ersatz;
+        }
+      }
+      ```
+    solve: |
+      mkdir -p src
+      cat > src/lade-fragen.js <<'EOF'
+      // src/lade-fragen.js
+      export async function ladeFragen(url, { fetchFn = fetch, timeoutMs = 3000, ersatz = [] } = {}) {
+        try {
+          const response = await fetchFn(url, { signal: AbortSignal.timeout(timeoutMs) });
+          if (!response.ok) {
+            return ersatz;
+          }
+          const daten = await response.json();
+          return Array.isArray(daten) ? daten : ersatz;
+        } catch {
+          return ersatz;
+        }
+      }
+      EOF
+  - id: oberflaeche
+    title: Die Oberfläche mit DOM und Event-Delegation
+    description: |
+      Jetzt bekommt das Quiz ein Gesicht. Das DOM-Modul ist dünn: Es hält den Zustand, ruft die Logik auf und
+      zeichnet neu.
+
+      1. Lege `index.html` an mit `<h1>`, einem Element `id="frage"`, einem Element `id="antworten"`, einem
+         Element `id="ergebnis"` und `<script type="module" src="./src/app.js"></script>`.
+      2. Lege `src/app.js` an. Es
+         - importiert die Logik aus `./quiz.js`, die Ersatzfragen aus `./fragen.js` und `ladeFragen` aus `./lade-fragen.js`,
+         - lädt die Fragen mit `await ladeFragen("./fragen.json", { ersatz: fragen })` (Top-Level-await),
+         - zeichnet die aktuelle Frage mit `createElement` und `textContent` – jede Antwort ist ein `<button>` mit
+           `data-index`,
+         - reagiert mit **einem** Click-Listener an `#antworten` (Delegation mit `closest` und `dataset`),
+         - zeigt am Ende `formatiereErgebnis(ergebnis(zustand))` in `#ergebnis` an.
+      3. Starte die Seite mit `npx serve` und spiel eine Runde im Browser.
+    checklist:
+      - index.html bindet src/app.js als Modul ein
+      - app.js nutzt createElement, textContent und Event-Delegation
+      - kein innerHTML
+    hints:
+      - "Ein Muster für das Zeichnen: `function zeichne() { … antworten.replaceChildren(...frage.antworten.map((text, i) => { const b = document.createElement(\"button\"); b.textContent = text; b.dataset.index = i; return b; })); }`"
+      - "Im Listener: `const knopf = event.target.closest(\"button[data-index]\"); if (!knopf) return; zustand = beantworte(zustand, Number(knopf.dataset.index)); zeichne();`"
+    checks:
+      - type: file_contains
+        path: index.html
+        pattern: "<script(?=[^>]*type=[\"']module[\"'])(?=[^>]*src=[\"'](\\./)?src/app\\.js[\"'])"
+        message: index.html soll src/app.js als Modul einbinden.
+      - type: command
+        run: for id in frage antworten ergebnis; do grep -qE "id=[\"']$id[\"']" index.html || echo "fehlt $id"; done; echo fertig
+        stdout_equals: fertig
+        message: In index.html fehlen Elemente mit den ids frage, antworten oder ergebnis.
+      - type: command
+        run: node --check src/app.js && grep -cE "from\s+[\"']\./(quiz|fragen|lade-fragen)\.js[\"']" src/app.js
+        stdout_matches: "^[3-9]$"
+        message: src/app.js soll aus ./quiz.js, ./fragen.js und ./lade-fragen.js importieren (und keinen Syntaxfehler haben).
+      - type: command
+        run: grep -q "createElement" src/app.js && grep -q "textContent" src/app.js && grep -q "closest(" src/app.js && grep -q "dataset" src/app.js && grep -q "ladeFragen(" src/app.js && grep -q "formatiereErgebnis(" src/app.js && echo ok
+        stdout_equals: ok
+        message: src/app.js soll createElement, textContent, closest, dataset, ladeFragen und formatiereErgebnis benutzen.
+      - type: command
+        run: grep -c "innerHTML" src/app.js
+        expect_exit: 1
+        message: Verzichte auf innerHTML – setze Texte mit textContent.
+    solution: |
+      ```html
+      <!-- index.html -->
+      <!doctype html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <title>Quiz</title>
+          <script type="module" src="./src/app.js"></script>
+        </head>
+        <body>
+          <main>
+            <h1>JavaScript-Quiz</h1>
+            <p id="frage"></p>
+            <div id="antworten"></div>
+            <p id="ergebnis"></p>
+          </main>
+        </body>
+      </html>
+      ```
+
+      ```js
+      // src/app.js
+      import { starteQuiz, aktuelleFrage, beantworte, istFertig, ergebnis, formatiereErgebnis } from "./quiz.js";
+      import fragen from "./fragen.js";
+      import { ladeFragen } from "./lade-fragen.js";
+
+      const frageElement = document.querySelector("#frage");
+      const antwortenElement = document.querySelector("#antworten");
+      const ergebnisElement = document.querySelector("#ergebnis");
+
+      let zustand = starteQuiz(await ladeFragen("./fragen.json", { ersatz: fragen }));
+
+      function zeichne() {
+        if (istFertig(zustand)) {
+          frageElement.textContent = "Geschafft!";
+          antwortenElement.replaceChildren();
+          ergebnisElement.textContent = formatiereErgebnis(ergebnis(zustand));
+          return;
+        }
+        const frage = aktuelleFrage(zustand);
+        frageElement.textContent = frage.frage;
+        antwortenElement.replaceChildren(
+          ...frage.antworten.map((text, index) => {
+            const knopf = document.createElement("button");
+            knopf.type = "button";
+            knopf.textContent = text;
+            knopf.dataset.index = index;
+            return knopf;
+          }),
+        );
+      }
+
+      antwortenElement.addEventListener("click", (event) => {
+        const knopf = event.target.closest("button[data-index]");
+        if (!knopf) {
+          return;
+        }
+        zustand = beantworte(zustand, Number(knopf.dataset.index));
+        zeichne();
+      });
+
+      zeichne();
+      ```
+    solve: |
+      cat > index.html <<'EOF'
+      <!-- index.html -->
+      <!doctype html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8">
+          <title>Quiz</title>
+          <script type="module" src="./src/app.js"></script>
+        </head>
+        <body>
+          <main>
+            <h1>JavaScript-Quiz</h1>
+            <p id="frage"></p>
+            <div id="antworten"></div>
+            <p id="ergebnis"></p>
+          </main>
+        </body>
+      </html>
+      EOF
+      mkdir -p src
+      cat > src/app.js <<'EOF'
+      // src/app.js
+      import { starteQuiz, aktuelleFrage, beantworte, istFertig, ergebnis, formatiereErgebnis } from "./quiz.js";
+      import fragen from "./fragen.js";
+      import { ladeFragen } from "./lade-fragen.js";
+
+      const frageElement = document.querySelector("#frage");
+      const antwortenElement = document.querySelector("#antworten");
+      const ergebnisElement = document.querySelector("#ergebnis");
+
+      let zustand = starteQuiz(await ladeFragen("./fragen.json", { ersatz: fragen }));
+
+      function zeichne() {
+        if (istFertig(zustand)) {
+          frageElement.textContent = "Geschafft!";
+          antwortenElement.replaceChildren();
+          ergebnisElement.textContent = formatiereErgebnis(ergebnis(zustand));
+          return;
+        }
+        const frage = aktuelleFrage(zustand);
+        frageElement.textContent = frage.frage;
+        antwortenElement.replaceChildren(
+          ...frage.antworten.map((text, index) => {
+            const knopf = document.createElement("button");
+            knopf.type = "button";
+            knopf.textContent = text;
+            knopf.dataset.index = index;
+            return knopf;
+          }),
+        );
+      }
+
+      antwortenElement.addEventListener("click", (event) => {
+        const knopf = event.target.closest("button[data-index]");
+        if (!knopf) {
+          return;
+        }
+        zustand = beantworte(zustand, Number(knopf.dataset.index));
+        zeichne();
+      });
+
+      zeichne();
+      EOF
+  - id: abschluss
+    title: Abschluss – alles grün
+    description: |
+      Zum Schluss sicherst du auch das Laden mit Tests ab und prüfst das ganze Projekt.
+
+      1. Lege `test/lade-fragen.test.js` mit mindestens **einem** Test an, der `ladeFragen` mit einer
+         nachgebauten `fetchFn` prüft (z. B. dass bei Status 500 die Ersatzfragen zurückkommen).
+      2. Starte `npm test` – insgesamt müssen mindestens **sechs** Tests grün sein.
+      3. Prüfe alle Dateien mit `node --check`.
+    checklist:
+      - Test für ladeFragen mit nachgebauter fetchFn
+      - Mindestens sechs grüne Tests
+      - Alle Module ohne Syntaxfehler
+    hints:
+      - "`const fetchFn = async () => new Response(\"\", { status: 500 });` – Response gibt es in Node.js global."
+      - "`for f in src/*.js; do node --check \"$f\"; done`"
+    checks:
+      - type: file_exists
+        path: test/lade-fragen.test.js
+        message: Lege die Datei test/lade-fragen.test.js an.
+      - type: command
+        run: grep -c "ladeFragen" test/lade-fragen.test.js
+        stdout_matches: "^[1-9]"
+        message: test/lade-fragen.test.js soll ladeFragen testen.
+      - type: command
+        run: node --test --test-reporter=tap 2>&1 | grep -E '^# (pass|fail)' | tr '\n' ' '
+        stdout_matches: "^# pass ([6-9]|[1-9][0-9]+) # fail 0\\s*$"
+        message: Es sollen mindestens sechs Tests grün und keiner rot sein.
+      - type: command
+        run: for f in src/*.js; do node --check "$f" || exit 1; done; echo alles-ok
+        stdout_equals: alles-ok
+        message: Eine Datei in src/ hat einen Syntaxfehler.
+    solution: |
+      ```js
+      // test/lade-fragen.test.js
+      import { test } from "node:test";
+      import assert from "node:assert/strict";
+      import { ladeFragen } from "../src/lade-fragen.js";
+
+      test("bei HTTP 500 kommen die Ersatzfragen", async () => {
+        const fetchFn = async () => new Response("", { status: 500 });
+        assert.deepEqual(await ladeFragen("/fragen.json", { fetchFn, ersatz: ["E"] }), ["E"]);
+      });
+
+      test("geladene Fragen werden zurückgegeben", async () => {
+        const fetchFn = async () => new Response(JSON.stringify([{ frage: "A" }]));
+        assert.deepEqual(await ladeFragen("/fragen.json", { fetchFn }), [{ frage: "A" }]);
+      });
+      ```
+
+      ```bash
+      npm test
+      for f in src/*.js; do node --check "$f"; done
+      ```
+    solve: |
+      mkdir -p test
+      cat > test/lade-fragen.test.js <<'EOF'
+      // test/lade-fragen.test.js
+      import { test } from "node:test";
+      import assert from "node:assert/strict";
+      import { ladeFragen } from "../src/lade-fragen.js";
+
+      test("bei HTTP 500 kommen die Ersatzfragen", async () => {
+        const fetchFn = async () => new Response("", { status: 500 });
+        assert.deepEqual(await ladeFragen("/fragen.json", { fetchFn, ersatz: ["E"] }), ["E"]);
+      });
+
+      test("geladene Fragen werden zurückgegeben", async () => {
+        const fetchFn = async () => new Response(JSON.stringify([{ frage: "A" }]));
+        assert.deepEqual(await ladeFragen("/fragen.json", { fetchFn }), [{ frage: "A" }]);
+      });
+      EOF
+      npm test
+      for f in src/*.js; do node --check "$f"; done

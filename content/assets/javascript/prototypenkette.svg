@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Die Prototypenkette von sparkonto</text>
+<rect x="30" y="70" width="170" height="130" rx="12" fill="#22d3ee" fill-opacity=".14" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="115" y="96" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">sparkonto</text>
+<text x="115" y="116" text-anchor="middle" font-size="11" fill="#475569">die Instanz</text>
+<text x="45" y="146" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">inhaber: "Ada"</text>
+<text x="45" y="166" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">zinssatz: 0.02</text>
+<text x="45" y="186" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">#saldo (privat)</text>
+<rect x="225" y="70" width="170" height="130" rx="12" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="310" y="96" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Sparkonto.prototype</text>
+<text x="240" y="146" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">verzinse()</text>
+<text x="240" y="166" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">constructor</text>
+<rect x="420" y="70" width="170" height="130" rx="12" fill="#a78bfa" fill-opacity=".14" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="505" y="96" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Konto.prototype</text>
+<text x="435" y="146" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">einzahlen()</text>
+<text x="435" y="166" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">abheben()</text>
+<text x="435" y="186" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">get saldo</text>
+<rect x="615" y="70" width="160" height="130" rx="12" fill="#34d399" fill-opacity=".14" stroke="#34d399" stroke-width="2.5"/>
+<text x="695" y="96" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Object.prototype</text>
+<text x="630" y="146" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">toString()</text>
+<text x="630" y="166" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">hasOwnProperty()</text>
+<line x1="200" y1="135" x2="222" y2="135" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<line x1="395" y1="135" x2="417" y2="135" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<line x1="590" y1="135" x2="612" y2="135" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<line x1="695" y1="200" x2="695" y2="246" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="655" y="250" width="80" height="36" rx="8" fill="#f87171" fill-opacity=".16" stroke="#f87171" stroke-width="2"/>
+<text x="695" y="273" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">null</text>
+<text x="40" y="250" font-size="13" font-weight="700" fill="#1e1b3a">Suche nach sparkonto.toString():</text>
+<text x="40" y="274" font-size="13" fill="#1e1b3a">1. eigene Eigenschaften – nicht da</text>
+<text x="40" y="296" font-size="13" fill="#1e1b3a">2. Sparkonto.prototype – nicht da</text>
+<text x="40" y="318" font-size="13" fill="#1e1b3a">3. Konto.prototype – nicht da</text>
+<text x="40" y="340" font-size="13" fill="#1e1b3a">4. Object.prototype – gefunden!</text>
+<text x="40" y="374" font-size="12" fill="#475569">Pfeil = „hat als Prototyp“. Methoden liegen einmal auf dem Prototyp und werden von allen Instanzen geteilt.</text>
+</svg>

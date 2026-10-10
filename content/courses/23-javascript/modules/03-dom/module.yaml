@@ -1,0 +1,161 @@
+title: Der DOM
+description: Den DOM-Baum lesen und verändern, Elemente sicher erzeugen, mit Event-Delegation auf Klicks reagieren und Formulare auswerten.
+exercise:
+  id: modul-uebung-todo
+  type: terminal
+  title: Eine Aufgabenliste mit Delegation
+  description: |
+    Im Ordner `aufgaben-seite` baust du eine kleine Aufgabenliste. Die Logik kommt in ein eigenes, testbares
+    Modul; der DOM-Code nutzt sie nur. Der Ordner ist leer.
+
+    1. **`aufgaben.js`** – reine Funktionen ohne DOM, alle **benannt exportiert** und alle ohne das übergebene
+       Array zu verändern:
+       - `hinzufuegen(liste, titel)` liefert eine neue Liste mit einem zusätzlichen Eintrag
+         `{ id, titel, erledigt: false }`. Die `id` ist die größte vorhandene id + 1 (bei leerer Liste `1`).
+         Der Titel wird getrimmt; ist er danach leer, kommt die Liste unverändert zurück.
+       - `umschalten(liste, id)` liefert eine neue Liste, in der `erledigt` beim passenden Eintrag umgedreht ist.
+       - `entfernen(liste, id)` liefert eine neue Liste ohne den Eintrag.
+    2. **`index.html`** mit einem Formular `<form id="neue-aufgabe">` (darin ein Textfeld mit `name="titel"`
+       und ein Absenden-Knopf), einer Liste `<ul id="aufgaben">` und `<script type="module" src="./app.js">`.
+    3. **`app.js`** importiert die Funktionen aus `./aufgaben.js` und
+       - wertet das Formular im `submit`-Event mit `preventDefault()` und `FormData` aus,
+       - zeichnet die Liste mit `createElement` und `textContent` (kein `innerHTML`); jedes `li` bekommt ein
+         `data-id`-Attribut und zwei Knöpfe mit `data-aktion="umschalten"` bzw. `data-aktion="entfernen"`,
+       - reagiert mit **einem** Click-Listener an `#aufgaben` (Event-Delegation mit `closest` und `dataset`).
+
+    Teste die Seite gern mit `npx serve` im Browser.
+  workdir: aufgaben-seite
+  checks:
+    - type: command
+      run: node --input-type=module -e 'import { hinzufuegen } from "./aufgaben.js"; const a = hinzufuegen([], "  Einkaufen "); const b = hinzufuegen(a, "Lernen"); const c = hinzufuegen(b, "   "); console.log(JSON.stringify(b), a.length, c === b || JSON.stringify(c) === JSON.stringify(b));'
+      stdout_equals: '[{"id":1,"titel":"Einkaufen","erledigt":false},{"id":2,"titel":"Lernen","erledigt":false}] 1 true'
+      message: hinzufuegen soll einen getrimmten Eintrag mit fortlaufender id und erledigt false anhängen, ohne die alte Liste zu verändern. Leere Titel werden ignoriert.
+    - type: command
+      run: |-
+        node --input-type=module -e 'import { hinzufuegen } from "./aufgaben.js"; const l = [{ id: 7, titel: "A", erledigt: true }, { id: 3, titel: "B", erledigt: false }]; console.log(hinzufuegen(l, "C").at(-1).id);'
+      stdout_equals: "8"
+      message: Die neue id soll die größte vorhandene id plus 1 sein.
+    - type: command
+      run: |-
+        node --input-type=module -e 'import { umschalten, entfernen } from "./aufgaben.js"; const l = Object.freeze([Object.freeze({ id: 1, titel: "A", erledigt: false }), Object.freeze({ id: 2, titel: "B", erledigt: false })]); const u = umschalten(l, 2); const e = entfernen(l, 1); console.log(u[1].erledigt, u[0] === l[0], e.map((x) => x.id).join(","), l.length);'
+      stdout_equals: "true true 2 2"
+      message: umschalten und entfernen sollen neue Listen liefern, nicht passende Einträge unverändert übernehmen und das Original nicht anfassen.
+    - type: file_contains
+      path: index.html
+      pattern: "<script(?=[^>]*type=[\"']module[\"'])(?=[^>]*src=[\"'](\\./)?app\\.js[\"'])"
+      message: index.html soll app.js als Modul einbinden.
+    - type: file_contains
+      path: index.html
+      pattern: "<form[^>]*id=[\"']neue-aufgabe[\"']"
+      message: In index.html fehlt <form id="neue-aufgabe">.
+    - type: file_contains
+      path: index.html
+      pattern: "<ul[^>]*id=[\"']aufgaben[\"']"
+      message: In index.html fehlt <ul id="aufgaben">.
+    - type: command
+      run: node --check app.js && grep -cE "from\s+[\"']\./aufgaben\.js[\"']" app.js
+      stdout_matches: "^[1-9]"
+      message: app.js muss syntaktisch korrekt sein und aus "./aufgaben.js" importieren.
+    - type: command
+      run: grep -E "addEventListener\(\s*[\"']submit[\"']" app.js && grep -q "preventDefault()" app.js && grep -q "FormData" app.js && echo ok
+      stdout_matches: "ok$"
+      message: app.js soll das Formular im submit-Event mit preventDefault() und FormData auswerten.
+    - type: command
+      run: grep -q "closest(" app.js && grep -q "dataset" app.js && test "$(grep -c "addEventListener(\s*[\"']click" app.js)" -eq 1 && echo ok
+      stdout_equals: ok
+      message: app.js soll genau einen click-Listener haben (Delegation) und darin closest und dataset benutzen.
+    - type: command
+      run: grep -c "innerHTML" app.js
+      expect_exit: 1
+      message: Verzichte in app.js auf innerHTML – setze Texte mit textContent.
+  hints:
+    - "Größte id: `Math.max(0, ...liste.map((a) => a.id)) + 1`. Neue Liste: `[...liste, { id, titel: titel.trim(), erledigt: false }]`."
+    - "umschalten: `liste.map((a) => (a.id === id ? { ...a, erledigt: !a.erledigt } : a))`, entfernen: `liste.filter((a) => a.id !== id)`."
+    - "In app.js hältst du den Zustand in `let aufgaben = [];` und rufst nach jeder Änderung eine Funktion `zeichne()` auf, die die Liste mit `replaceChildren` neu befüllt."
+  solution: |
+    ```bash
+    cat > aufgaben.js <<'EOF'
+    export function hinzufuegen(liste, titel) {
+      const sauber = titel.trim();
+      if (sauber === "") {
+        return liste;
+      }
+      const id = Math.max(0, ...liste.map((a) => a.id)) + 1;
+      return [...liste, { id, titel: sauber, erledigt: false }];
+    }
+
+    export function umschalten(liste, id) {
+      return liste.map((a) => (a.id === id ? { ...a, erledigt: !a.erledigt } : a));
+    }
+
+    export function entfernen(liste, id) {
+      return liste.filter((a) => a.id !== id);
+    }
+    EOF
+    cat > index.html <<'EOF'
+    <!doctype html>
+    <html lang="de">
+      <head>
+        <meta charset="utf-8">
+        <title>Aufgaben</title>
+        <script type="module" src="./app.js"></script>
+      </head>
+      <body>
+        <h1>Aufgaben</h1>
+        <form id="neue-aufgabe">
+          <input name="titel" placeholder="Neue Aufgabe" required>
+          <button type="submit">Hinzufügen</button>
+        </form>
+        <ul id="aufgaben"></ul>
+      </body>
+    </html>
+    EOF
+    cat > app.js <<'EOF'
+    import { hinzufuegen, umschalten, entfernen } from "./aufgaben.js";
+
+    const formular = document.querySelector("#neue-aufgabe");
+    const liste = document.querySelector("#aufgaben");
+    let aufgaben = [];
+
+    function knopf(text, aktion) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = text;
+      button.dataset.aktion = aktion;
+      return button;
+    }
+
+    function zeichne() {
+      liste.replaceChildren(
+        ...aufgaben.map((aufgabe) => {
+          const li = document.createElement("li");
+          li.dataset.id = aufgabe.id;
+          li.classList.toggle("erledigt", aufgabe.erledigt);
+          const titel = document.createElement("span");
+          titel.textContent = aufgabe.titel;
+          li.append(titel, knopf("✓", "umschalten"), knopf("✕", "entfernen"));
+          return li;
+        }),
+      );
+    }
+
+    formular.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const daten = Object.fromEntries(new FormData(formular));
+      aufgaben = hinzufuegen(aufgaben, daten.titel ?? "");
+      formular.reset();
+      zeichne();
+    });
+
+    liste.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-aktion]");
+      if (!button) {
+        return;
+      }
+      const id = Number(button.closest("li").dataset.id);
+      aufgaben = button.dataset.aktion === "umschalten" ? umschalten(aufgaben, id) : entfernen(aufgaben, id);
+      zeichne();
+    });
+    EOF
+    node --check app.js
+    ```

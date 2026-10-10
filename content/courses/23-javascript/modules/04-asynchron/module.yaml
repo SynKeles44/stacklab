@@ -1,0 +1,150 @@
+title: Asynchrones JavaScript
+description: Callbacks, Promises und die Event Loop, async/await mit Promise-Kombinatoren und eigenen Fehlerklassen sowie fetch mit AbortController.
+exercise:
+  id: modul-uebung-dashboard
+  type: code
+  language: js
+  title: Ein Dashboard robust laden
+  description: |
+    Ein Dashboard zeigt den angemeldeten Nutzer, seine Aufgaben und seine Termine. Die Klasse `HttpFehler` und
+    der Helfer `holeJson(url, fetchFn)` sind vorgegeben. Die Tests übergeben eine nachgebaute `fetchFn`.
+
+    1. `ladeDashboard(fetchFn)`:
+       - lädt zuerst `/api/ich` (liefert z. B. `{ id: 7, name: "Ada" }`). Scheitert das, wird der Fehler
+         **weitergeworfen** – ohne Nutzer gibt es kein Dashboard.
+       - lädt danach **gleichzeitig** `/api/aufgaben?nutzer=7` und `/api/termine?nutzer=7` (mit der echten id).
+       - liefert `{ name, offen, termine, warnungen }`: `offen` ist die Anzahl der Aufgaben mit `erledigt: false`,
+         `termine` das Array der Termine. Scheitert eine der beiden Anfragen, ist ihr Wert `0` bzw. `[]`, und in
+         `warnungen` steht ein Eintrag wie `"aufgaben: HTTP 500"` bzw. `"termine: HTTP 503"`.
+    2. `mitWiederholung(fn, versuche)` ruft die async-Funktion `fn` auf und versucht es bei einem Fehler erneut –
+       insgesamt höchstens `versuche`-mal. Ist der Fehler ein `HttpFehler` mit Status 400–499, wird **nicht**
+       wiederholt (der Fehler liegt dann bei der Anfrage, nicht beim Server). Nach dem letzten Fehlversuch wird
+       der letzte Fehler geworfen.
+  starter: |
+    class HttpFehler extends Error {
+      constructor(status) {
+        super(`HTTP ${status}`);
+        this.name = "HttpFehler";
+        this.status = status;
+      }
+    }
+
+    async function holeJson(url, fetchFn) {
+      const response = await fetchFn(url);
+      if (!response.ok) {
+        throw new HttpFehler(response.status);
+      }
+      return response.json();
+    }
+
+    async function ladeDashboard(fetchFn) {
+      const ich = await holeJson("/api/ich", fetchFn);
+      const aufgaben = await holeJson("/api/aufgaben?nutzer=" + ich.id, fetchFn);
+      const termine = await holeJson("/api/termine?nutzer=" + ich.id, fetchFn);
+      return { name: ich.name, offen: aufgaben.length, termine, warnungen: [] };
+    }
+
+    async function mitWiederholung(fn, versuche) {
+      return fn();
+    }
+  tests:
+    - name: alles klappt
+      code: |
+        const daten = { "/api/ich": { id: 7, name: "Ada" }, "/api/aufgaben?nutzer=7": [{ erledigt: false }, { erledigt: true }, { erledigt: false }], "/api/termine?nutzer=7": [{ titel: "Daily" }] };
+        const fetchFn = async (url) => (url in daten ? new Response(JSON.stringify(daten[url])) : new Response("", { status: 404 }));
+        assertDeepEqual(await ladeDashboard(fetchFn), { name: "Ada", offen: 2, termine: [{ titel: "Daily" }], warnungen: [] })
+    - name: Teilfehler werden zu Warnungen
+      code: |
+        const fetchFn = async (url) => {
+          if (url === "/api/ich") return new Response(JSON.stringify({ id: 3, name: "Linus" }));
+          if (url.startsWith("/api/aufgaben")) return new Response("", { status: 500 });
+          return new Response("", { status: 503 });
+        };
+        assertDeepEqual(await ladeDashboard(fetchFn), { name: "Linus", offen: 0, termine: [], warnungen: ["aufgaben: HTTP 500", "termine: HTTP 503"] })
+    - name: ohne Nutzer wird der Fehler weitergeworfen
+      code: |
+        const fetchFn = async () => new Response("", { status: 401 });
+        let fehler;
+        try { await ladeDashboard(fetchFn); } catch (e) { fehler = e; }
+        assertTrue(fehler instanceof HttpFehler); assertEqual(fehler.status, 401)
+    - name: Aufgaben und Termine laden gleichzeitig
+      code: |
+        const fetchFn = (url) => new Promise((r) => setTimeout(() => r(new Response(url === "/api/ich" ? '{"id":1,"name":"A"}' : "[]")), 80));
+        const start = Date.now();
+        await ladeDashboard(fetchFn);
+        assertTrue(Date.now() - start < 230, "Aufgaben und Termine wurden nacheinander geladen.")
+    - name: mitWiederholung versucht es erneut
+      code: |
+        let aufrufe = 0;
+        const fn = async () => { aufrufe++; if (aufrufe < 3) throw new HttpFehler(503); return "geklappt"; };
+        assertEqual(await mitWiederholung(fn, 3), "geklappt"); assertEqual(aufrufe, 3)
+    - name: mitWiederholung gibt nach den Versuchen auf und wiederholt 4xx nicht
+      code: |
+        let a = 0;
+        let fehler;
+        try { await mitWiederholung(async () => { a++; throw new Error("kaputt " + a); }, 2); } catch (e) { fehler = e; }
+        assertEqual(a, 2); assertEqual(fehler.message, "kaputt 2");
+        let b = 0;
+        try { await mitWiederholung(async () => { b++; throw new HttpFehler(404); }, 5); } catch (e) { fehler = e; }
+        assertEqual(b, 1); assertEqual(fehler.status, 404)
+  hints:
+    - "Gleichzeitig laden: `const [aufgaben, termine] = await Promise.allSettled([holeJson(…), holeJson(…)]);`"
+    - "Für jedes Ergebnis: `status === \"fulfilled\"` → `value` benutzen, sonst `` warnungen.push(`aufgaben: ${ergebnis.reason.message}`) ``."
+    - "mitWiederholung: eine `for`-Schleife von 1 bis `versuche` mit `try { return await fn(); } catch (fehler) { … }` – bei 4xx sofort `throw fehler`."
+  solution: |
+    class HttpFehler extends Error {
+      constructor(status) {
+        super(`HTTP ${status}`);
+        this.name = "HttpFehler";
+        this.status = status;
+      }
+    }
+
+    async function holeJson(url, fetchFn) {
+      const response = await fetchFn(url);
+      if (!response.ok) {
+        throw new HttpFehler(response.status);
+      }
+      return response.json();
+    }
+
+    async function ladeDashboard(fetchFn) {
+      const ich = await holeJson("/api/ich", fetchFn);
+      const [aufgaben, termine] = await Promise.allSettled([
+        holeJson(`/api/aufgaben?nutzer=${ich.id}`, fetchFn),
+        holeJson(`/api/termine?nutzer=${ich.id}`, fetchFn),
+      ]);
+
+      const warnungen = [];
+      let offen = 0;
+      let terminListe = [];
+
+      if (aufgaben.status === "fulfilled") {
+        offen = aufgaben.value.filter((a) => !a.erledigt).length;
+      } else {
+        warnungen.push(`aufgaben: ${aufgaben.reason.message}`);
+      }
+
+      if (termine.status === "fulfilled") {
+        terminListe = termine.value;
+      } else {
+        warnungen.push(`termine: ${termine.reason.message}`);
+      }
+
+      return { name: ich.name, offen, termine: terminListe, warnungen };
+    }
+
+    async function mitWiederholung(fn, versuche) {
+      let letzterFehler;
+      for (let versuch = 1; versuch <= versuche; versuch++) {
+        try {
+          return await fn();
+        } catch (fehler) {
+          if (fehler instanceof HttpFehler && fehler.status >= 400 && fehler.status < 500) {
+            throw fehler;
+          }
+          letzterFehler = fehler;
+        }
+      }
+      throw letzterFehler;
+    }
