@@ -1,0 +1,721 @@
+title: Eine Laravel-App containerisieren
+description: |
+  In diesem Projekt verpackst du eine (stark verkleinerte) Laravel-Anwendung so, wie es Teams im Berufsalltag tun:
+  ein schlankes Multi-Stage-Image ohne root-Rechte, Nginx als Webserver davor, PostgreSQL mit Healthcheck und
+  dauerhaftem Volume, Mailpit als optionales Werkzeug und ein `Makefile` mit den wichtigsten Befehlen.
+
+  Alles passiert im Ordner `projekt` in deinem Docker-Workspace. Klicke zuerst auf **Projekt vorbereiten** – dann
+  liegen dort die Dateien der App. Öffne das Übungs-Terminal und wechsle mit `cd projekt` hinein.
+
+  Das Übungs-Terminal hat keinen Docker-Daemon. Stacklab prüft deshalb, ob deine Dateien vollständig und korrekt
+  sind. Wenn du Docker auf deinem eigenen Rechner hast, kannst du den Ordner dorthin kopieren und den Stack am Ende
+  mit `make up` wirklich starten. Die Schritte bauen aufeinander auf – lösche nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Ein Ordner `projekt` mit `.dockerignore`, einem Multi-Stage-`Dockerfile` (base, vendor, assets, final als
+  `www-data`), einer Nginx-Konfiguration, einer `compose.yaml` mit php, web, db und mailpit (Healthcheck, Volume,
+  Profil, env-Datei), einer `.env` und einem `Makefile` für den Alltag.
+workdir: projekt
+setup: |
+  mkdir -p app public resources/js resources/css storage/logs bootstrap/cache database
+  cat > composer.json <<'EOF'
+  {
+      "name": "example/shop",
+      "type": "project",
+      "require": { "php": "^8.5", "laravel/framework": "^13.0" },
+      "autoload": { "psr-4": { "App\\": "app/" } }
+  }
+  EOF
+  echo '{ "_readme": ["Platzhalter für das Projekt"], "packages": [], "packages-dev": [] }' > composer.lock
+  cat > package.json <<'EOF'
+  {
+      "private": true,
+      "type": "module",
+      "scripts": { "build": "vite build", "dev": "vite" },
+      "devDependencies": { "vite": "^8.0.0", "laravel-vite-plugin": "^2.0.0" }
+  }
+  EOF
+  echo '{ "name": "shop", "lockfileVersion": 3, "requires": true, "packages": {} }' > package-lock.json
+  printf '#!/usr/bin/env php\n<?php\n// Platzhalter für php artisan\n' > artisan
+  echo '<?php echo "Hallo aus dem Shop";' > public/index.php
+  echo 'console.log("app");' > resources/js/app.js
+  echo 'body { font-family: sans-serif; }' > resources/css/app.css
+  touch storage/logs/.gitkeep bootstrap/cache/.gitkeep
+  cat > .env.example <<'EOF'
+  APP_NAME=Shop
+  APP_ENV=local
+  APP_KEY=
+  APP_DEBUG=true
+  DB_CONNECTION=pgsql
+  DB_HOST=127.0.0.1
+  DB_PORT=5432
+  DB_DATABASE=shop
+  DB_USERNAME=shop
+  DB_PASSWORD=geheim
+  MAIL_HOST=127.0.0.1
+  MAIL_PORT=1025
+  EOF
+  printf '/vendor\n/node_modules\n/public/build\n.env\n' > .gitignore
+  mkdir -p vendor/laravel node_modules/vite .git
+steps:
+  - id: dockerignore
+    title: Den Build-Kontext aufräumen
+    description: |
+      Im Projekt liegen `vendor/`, `node_modules/` und `.git/` – und bald eine `.env` mit Passwörtern. Nichts davon
+      gehört in den Build-Kontext.
+
+      Lege eine `.dockerignore` an, die mindestens diese Einträge enthält (je eine Zeile):
+      `vendor`, `node_modules`, `.git`, `.env`, `public/build` und `storage/logs`.
+    checklist:
+      - ".dockerignore im Projektordner angelegt"
+      - "vendor, node_modules und .git ausgeschlossen"
+      - ".env, public/build und storage/logs ausgeschlossen"
+    hints:
+      - Die Datei beginnt mit einem Punkt und hat keine Endung.
+      - "printf 'vendor\\nnode_modules\\n.git\\n.env\\npublic/build\\nstorage/logs\\n' > .dockerignore"
+    checks:
+      - type: file_exists
+        path: .dockerignore
+        message: Es gibt noch keine .dockerignore im Ordner projekt.
+      - type: command
+        run: for e in vendor node_modules .git .env public/build storage/logs; do grep -qxE "/?${e//./\\.}/?" .dockerignore || echo "$e"; done | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: "In .dockerignore fehlen noch Einträge. Nötig sind: vendor, node_modules, .git, .env, public/build und storage/logs."
+    solution: |
+      ```bash
+      printf 'vendor\nnode_modules\n.git\n.env\npublic/build\nstorage/logs\n' > .dockerignore
+      ```
+    solve: |
+      printf 'vendor\nnode_modules\n.git\n.env\npublic/build\nstorage/logs\n' > .dockerignore
+
+  - id: dockerfile-base-vendor
+    title: "Dockerfile, Teil 1: base und vendor"
+    description: |
+      Beginne das `Dockerfile` mit zwei Stages:
+
+      1. **base:** `FROM php:8.5-fpm-alpine AS base`, installiere `libpq-dev` per `apk add --no-cache` und danach die
+         Erweiterung `pdo_pgsql` mit `docker-php-ext-install` (gern in **einem** `RUN` mit `&&`). Setze
+         `WORKDIR /var/www/html`.
+      2. **vendor:** `FROM base AS vendor`. Installiere `unzip`, kopiere Composer aus dem Image `composer:2`
+         (`/usr/bin/composer`), kopiere `composer.json` und `composer.lock`, führe
+         `composer install --no-dev --no-scripts --no-autoloader --prefer-dist` aus, kopiere danach den Code
+         (`COPY . .`) und optimiere den Autoloader mit `composer dump-autoload --optimize --no-dev`.
+    checklist:
+      - "Stage base mit pdo_pgsql und WORKDIR /var/www/html"
+      - "Stage vendor holt Composer per COPY --from=composer:2"
+      - "Erst composer.json und composer.lock, dann install, dann der Code"
+    hints:
+      - Das Muster kennst du aus der Lektion „Images für Laravel und Node bauen“.
+      - "Composer-Binary: COPY --from=composer:2 /usr/bin/composer /usr/bin/composer"
+      - "Die Reihenfolge in vendor ist wegen des Caches wichtig: COPY composer.json composer.lock ./ → RUN composer install … → COPY . . → RUN composer dump-autoload …"
+    checks:
+      - type: file_exists
+        path: Dockerfile
+        message: Es gibt noch kein Dockerfile.
+      - type: command
+        run: grep -E '^FROM\s' Dockerfile | head -n 2 | tr -s ' ' | paste -sd '|' -
+        stdout_equals: "FROM php:8.5-fpm-alpine AS base|FROM base AS vendor"
+        message: "Die ersten beiden Stages lauten FROM php:8.5-fpm-alpine AS base und FROM base AS vendor."
+      - type: command
+        run: awk '/^FROM/{s++} s==1' Dockerfile | tr '\n' ' ' | grep -cE 'apk add --no-cache[^&]*libpq-dev.*docker-php-ext-install[^&]*pdo_pgsql'
+        stdout_equals: "1"
+        message: In der Stage base fehlen apk add --no-cache libpq-dev und danach docker-php-ext-install pdo_pgsql.
+      - type: command
+        run: awk '/^FROM/{s++} s==1 && /^WORKDIR +\/var\/www\/html\/? *$/{print "ok"}' Dockerfile
+        stdout_equals: ok
+        message: In der Stage base fehlt WORKDIR /var/www/html.
+      - type: command
+        run: awk '/^FROM/{s++} s==2 && /^COPY +--from=composer:2 +\/usr\/bin\/composer +\/usr\/bin\/composer *$/{print "ok"}' Dockerfile
+        stdout_equals: ok
+        message: "In der Stage vendor fehlt COPY --from=composer:2 /usr/bin/composer /usr/bin/composer"
+      - type: command
+        run: >-
+          awk '/^FROM/{s++} s==2 && /^COPY +composer\.(json +composer\.lock|lock +composer\.json) +\.\/ *$/{a=NR} s==2 && /^RUN +composer +install/ && /--no-dev/ && /--no-scripts/ && /--no-autoloader/ {b=NR} s==2 && /^COPY +\. +\.\/? *$/{c=NR} s==2 && /^RUN +composer +dump-autoload/ && /--optimize/ {d=NR} END{print (a && b && c && d && a<b && b<c && c<d) ? "ok" : "falsch"}' Dockerfile
+        stdout_equals: ok
+        message: "Reihenfolge in vendor: COPY composer.json composer.lock ./, RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist, COPY . ., RUN composer dump-autoload --optimize --no-dev."
+    solution: |
+      ```bash
+      cat > Dockerfile <<'EOF'
+      FROM php:8.5-fpm-alpine AS base
+      RUN apk add --no-cache libpq-dev \
+       && docker-php-ext-install pdo_pgsql
+      WORKDIR /var/www/html
+
+      FROM base AS vendor
+      RUN apk add --no-cache unzip
+      COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+      COPY composer.json composer.lock ./
+      RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+      COPY . .
+      RUN composer dump-autoload --optimize --no-dev
+      EOF
+      ```
+    solve: |
+      cat > Dockerfile <<'EOF'
+      FROM php:8.5-fpm-alpine AS base
+      RUN apk add --no-cache libpq-dev \
+       && docker-php-ext-install pdo_pgsql
+      WORKDIR /var/www/html
+
+      FROM base AS vendor
+      RUN apk add --no-cache unzip
+      COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+      COPY composer.json composer.lock ./
+      RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+      COPY . .
+      RUN composer dump-autoload --optimize --no-dev
+      EOF
+
+  - id: dockerfile-assets-final
+    title: "Dockerfile, Teil 2: Assets und finale Stage"
+    description: |
+      Hänge zwei weitere Stages an das `Dockerfile` an:
+
+      1. **assets:** `FROM node:24-alpine AS assets`, Arbeitsverzeichnis `/app`, Paketdateien kopieren, `RUN npm ci`,
+         Code kopieren, `RUN npm run build`.
+      2. **final:** `FROM base AS final`. Kopiere `/var/www/html` aus `vendor` nach `./` und `/app/public/build` aus
+         `assets` nach `./public/build` – beide mit `--chown=www-data:www-data`. Wechsle auf `USER www-data`,
+         dokumentiere `EXPOSE 9000` und starte mit `CMD ["php-fpm"]`.
+
+      Die Stage heißt diesmal ausdrücklich `final`, damit Compose sie gleich gezielt per `target` bauen kann.
+    checklist:
+      - "Stage assets baut die Vite-Assets"
+      - "Stage final kopiert vendor und public/build mit --chown=www-data:www-data"
+      - "USER www-data vor CMD [\"php-fpm\"]"
+    hints:
+      - "Mit cat >> Dockerfile <<'EOF' hängst du an, statt zu überschreiben."
+      - "COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build"
+    checks:
+      - type: command
+        run: grep -E '^FROM\s' Dockerfile | tr -s ' ' | paste -sd '|' -
+        stdout_equals: "FROM php:8.5-fpm-alpine AS base|FROM base AS vendor|FROM node:24-alpine AS assets|FROM base AS final"
+        message: "Das Dockerfile braucht genau vier Stages in dieser Reihenfolge: base, vendor, assets (node:24-alpine), final (FROM base AS final)."
+      - type: command
+        run: >-
+          awk '/^FROM/{s++} s==3 && /^COPY +package/{a=NR} s==3 && /^RUN +npm +ci *$/{b=NR} s==3 && /^COPY +\. +\.\/? *$/{c=NR} s==3 && /^RUN +npm +run +build *$/{d=NR} s==3 && /^WORKDIR +\/app\/? *$/{w=NR} END{print (w && a && b && c && d && w<a && a<b && b<c && c<d) ? "ok" : "falsch"}' Dockerfile
+        stdout_equals: ok
+        message: "Stage assets: WORKDIR /app, COPY package.json package-lock.json ./, RUN npm ci, COPY . ., RUN npm run build."
+      - type: command
+        run: awk '/^FROM/{s++} s==4 && /^COPY +--from=vendor +--chown=www-data:www-data +\/var\/www\/html\/? +\.\/? *$/{print "ok"}' Dockerfile
+        stdout_equals: ok
+        message: "In final fehlt: COPY --from=vendor --chown=www-data:www-data /var/www/html ./"
+      - type: command
+        run: awk '/^FROM/{s++} s==4 && /^COPY +--from=assets +--chown=www-data:www-data +\/app\/public\/build\/? +\.\/public\/build\/? *$/{print "ok"}' Dockerfile
+        stdout_equals: ok
+        message: "In final fehlt: COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build"
+      - type: command
+        run: >-
+          awk '/^FROM/{s++} s==4 && /^USER +www-data *$/{u=NR} s==4 && /^EXPOSE +9000 *$/{e=NR} s==4 && /^CMD +\[ *"php-fpm" *\] *$/{c=NR} END{print (u && e && c && u<c) ? "ok" : "falsch"}' Dockerfile
+        stdout_equals: ok
+        message: In final fehlen USER www-data, EXPOSE 9000 oder CMD ["php-fpm"] – und USER muss vor CMD stehen.
+    solution: |
+      ```bash
+      cat >> Dockerfile <<'EOF'
+
+      FROM node:24-alpine AS assets
+      WORKDIR /app
+      COPY package.json package-lock.json ./
+      RUN npm ci
+      COPY . .
+      RUN npm run build
+
+      FROM base AS final
+      COPY --from=vendor --chown=www-data:www-data /var/www/html ./
+      COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
+      USER www-data
+      EXPOSE 9000
+      CMD ["php-fpm"]
+      EOF
+      ```
+    solve: |
+      cat >> Dockerfile <<'EOF'
+
+      FROM node:24-alpine AS assets
+      WORKDIR /app
+      COPY package.json package-lock.json ./
+      RUN npm ci
+      COPY . .
+      RUN npm run build
+
+      FROM base AS final
+      COPY --from=vendor --chown=www-data:www-data /var/www/html ./
+      COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
+      USER www-data
+      EXPOSE 9000
+      CMD ["php-fpm"]
+      EOF
+
+  - id: nginx-konfiguration
+    title: Nginx vor PHP-FPM schalten
+    description: |
+      PHP-FPM spricht kein HTTP. Ein Nginx-Container nimmt die Anfragen an und reicht PHP per FastCGI an den Service
+      `php` weiter. Lege `docker/nginx/default.conf` an mit einem `server`-Block, der:
+
+      1. auf Port `80` lauscht (`listen 80;`),
+      2. `/var/www/html/public` als `root` nutzt und `index.php` als `index`,
+      3. in `location /` mit `try_files $uri $uri/ /index.php?$query_string;` alles an Laravel weiterleitet,
+      4. in `location ~ \.php$` per `fastcgi_pass php:9000;` an PHP-FPM übergibt, `include fastcgi_params;` lädt und
+         `fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;` setzt.
+    checklist:
+      - "docker/nginx/default.conf angelegt"
+      - "root zeigt auf /var/www/html/public"
+      - "fastcgi_pass php:9000 – der Service-Name ist der Hostname"
+    hints:
+      - "Ordner anlegen: mkdir -p docker/nginx"
+      - Im Compose-Netzwerk heißt der PHP-Container einfach `php` – genau so wie der Service.
+      - "Achte darauf, dass jede Anweisung mit einem Semikolon endet und die geschweiften Klammern paarig sind."
+    checks:
+      - type: file_exists
+        path: docker/nginx/default.conf
+        message: Es gibt noch keine Datei docker/nginx/default.conf.
+      - type: file_contains
+        path: docker/nginx/default.conf
+        pattern: "listen\\s+80\\s*;"
+        message: "Nginx soll auf Port 80 lauschen: listen 80;"
+      - type: file_contains
+        path: docker/nginx/default.conf
+        pattern: "root\\s+/var/www/html/public/?\\s*;"
+        message: "Setze root /var/www/html/public;"
+      - type: file_contains
+        path: docker/nginx/default.conf
+        pattern: "try_files\\s+\\$uri\\s+\\$uri/\\s+/index\\.php\\?\\$query_string\\s*;"
+        message: "In location / fehlt try_files $uri $uri/ /index.php?$query_string;"
+      - type: file_contains
+        path: docker/nginx/default.conf
+        pattern: "fastcgi_pass\\s+php:9000\\s*;"
+        message: "PHP-Anfragen gehen an den Service php: fastcgi_pass php:9000;"
+      - type: file_contains
+        path: docker/nginx/default.conf
+        pattern: "fastcgi_param\\s+SCRIPT_FILENAME\\s+\\$document_root\\$fastcgi_script_name\\s*;"
+        message: "Es fehlt fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;"
+      - type: file_contains
+        path: docker/nginx/default.conf
+        pattern: "include\\s+fastcgi_params\\s*;"
+        message: "Es fehlt include fastcgi_params;"
+      - type: command
+        run: o=$(tr -cd '{' < docker/nginx/default.conf | wc -c); c=$(tr -cd '}' < docker/nginx/default.conf | wc -c); [ "$o" -eq "$c" ] && [ "$o" -ge 3 ] && echo ok
+        stdout_equals: ok
+        message: Die geschweiften Klammern sind nicht paarig – server, location / und location ~ \.php$ brauchen je ein { und ein }.
+    solution: |
+      ```bash
+      mkdir -p docker/nginx
+      cat > docker/nginx/default.conf <<'EOF'
+      server {
+          listen 80;
+          root /var/www/html/public;
+          index index.php;
+
+          location / {
+              try_files $uri $uri/ /index.php?$query_string;
+          }
+
+          location ~ \.php$ {
+              fastcgi_pass php:9000;
+              include fastcgi_params;
+              fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+          }
+      }
+      EOF
+      ```
+    solve: |
+      mkdir -p docker/nginx
+      cat > docker/nginx/default.conf <<'EOF'
+      server {
+          listen 80;
+          root /var/www/html/public;
+          index index.php;
+
+          location / {
+              try_files $uri $uri/ /index.php?$query_string;
+          }
+
+          location ~ \.php$ {
+              fastcgi_pass php:9000;
+              include fastcgi_params;
+              fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+          }
+      }
+      EOF
+
+  - id: compose-services
+    title: Die compose.yaml mit php, web und db
+    description: |
+      Jetzt beschreibst du den Stack. Lege `compose.yaml` mit drei Services und einem Volume an:
+
+      1. **php:** wird aus dem aktuellen Ordner gebaut, und zwar die Stage `final`
+         (`build:` mit `context: .` und `target: final`).
+      2. **web:** Image `nginx:1.30-alpine`, Port `"127.0.0.1:8080:80"`, zwei schreibgeschützte Bind Mounts:
+         `./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro` und `./public:/var/www/html/public:ro`.
+         `web` hängt (kurze Form reicht hier) von `php` ab.
+      3. **db:** Image `postgres:18-alpine` mit `POSTGRES_DB: shop`, `POSTGRES_USER: shop`,
+         `POSTGRES_PASSWORD: geheim` und dem Volume `pgdata` unter `/var/lib/postgresql`. Kein Port nach außen.
+      4. Das Volume `pgdata` auf oberster Ebene deklarieren.
+    checklist:
+      - "php baut die Stage final"
+      - "web mit Port 127.0.0.1:8080:80 und zwei :ro-Mounts"
+      - "db mit drei Umgebungsvariablen, Volume pgdata und ohne veröffentlichten Port"
+    hints:
+      - "build kann ein Block sein: build: → context: . → target: final"
+      - "Prüfe die Syntax mit bun -e 'console.log(Bun.YAML.parse(await Bun.file(\"compose.yaml\").text()))'"
+      - Die Datenbank braucht keinen `ports`-Eintrag – php erreicht sie im Projekt-Netzwerk unter `db:5432`.
+    checks:
+      - type: file_exists
+        path: compose.yaml
+        message: Es gibt noch keine compose.yaml.
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services | keys | map(select(. == "php" or . == "web" or . == "db")) | sort | join(",")'
+        stdout_equals: "db,php,web"
+        message: compose.yaml ist kein gültiges YAML oder die Services php, web und db fehlen.
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.php.build | "\(.context)|\(.target)"'
+        stdout_matches: "^\\./?\\|final$"
+        message: "php soll mit build: → context: . → target: final gebaut werden."
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.web.image + "|" + (.services.web.ports // [] | map(tostring) | join(","))'
+        stdout_equals: "nginx:1.30-alpine|127.0.0.1:8080:80"
+        message: 'web nutzt nginx:1.30-alpine und veröffentlicht genau "127.0.0.1:8080:80".'
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.web.volumes // [] | map(tostring) | (index("./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro") != null) and (index("./public:/var/www/html/public:ro") != null)'
+        stdout_equals: "true"
+        message: web braucht beide Bind Mounts mit :ro – die Nginx-Konfiguration und ./public.
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.web.depends_on | if type=="array" then index("php") != null else has("php") end'
+        stdout_equals: "true"
+        message: web soll per depends_on von php abhängen.
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.db | (.image == "postgres:18-alpine") and (.ports == null) and ((.volumes // []) | map(tostring) | map(select(test("^pgdata:/var/lib/postgresql/?$"))) | length == 1)'
+        stdout_equals: "true"
+        message: db nutzt postgres:18-alpine, hängt pgdata unter /var/lib/postgresql ein und hat keinen ports-Eintrag.
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.db.environment | if type=="array" then (map(split("=") | {(.[0]): (.[1:] | join("="))}) | add) else . end | "\(.POSTGRES_DB)|\(.POSTGRES_USER)|\(.POSTGRES_PASSWORD)"'
+        stdout_equals: "shop|shop|geheim"
+        message: "db braucht POSTGRES_DB: shop, POSTGRES_USER: shop und POSTGRES_PASSWORD: geheim."
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.volumes | has("pgdata")'
+        stdout_equals: "true"
+        message: Deklariere das Volume pgdata auf oberster Ebene.
+    solution: |
+      ```bash
+      cat > compose.yaml <<'EOF'
+      services:
+        php:
+          build:
+            context: .
+            target: final
+
+        web:
+          image: nginx:1.30-alpine
+          ports:
+            - "127.0.0.1:8080:80"
+          volumes:
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./public:/var/www/html/public:ro
+          depends_on:
+            - php
+
+        db:
+          image: postgres:18-alpine
+          environment:
+            POSTGRES_DB: shop
+            POSTGRES_USER: shop
+            POSTGRES_PASSWORD: geheim
+          volumes:
+            - pgdata:/var/lib/postgresql
+
+      volumes:
+        pgdata:
+      EOF
+      ```
+    solve: |
+      cat > compose.yaml <<'EOF'
+      services:
+        php:
+          build:
+            context: .
+            target: final
+
+        web:
+          image: nginx:1.30-alpine
+          ports:
+            - "127.0.0.1:8080:80"
+          volumes:
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./public:/var/www/html/public:ro
+          depends_on:
+            - php
+
+        db:
+          image: postgres:18-alpine
+          environment:
+            POSTGRES_DB: shop
+            POSTGRES_USER: shop
+            POSTGRES_PASSWORD: geheim
+          volumes:
+            - pgdata:/var/lib/postgresql
+
+      volumes:
+        pgdata:
+      EOF
+
+  - id: healthcheck-env
+    title: Healthcheck und Umgebung
+    description: |
+      Laravel soll erst starten, wenn PostgreSQL bereit ist, und seine Konfiguration aus einer `.env` lesen.
+
+      1. Ergänze bei `db` einen `healthcheck` mit `test: ["CMD-SHELL", "pg_isready -U shop -d shop"]`,
+         `interval: 5s`, `timeout: 3s`, `retries: 10`.
+      2. `php` bekommt `env_file: .env` und wartet per `depends_on` mit `condition: service_healthy` auf `db`.
+      3. Lege `.env` als Kopie von `.env.example` an und ändere darin `DB_HOST` auf `db` und `MAIL_HOST` auf `mailpit`
+         (im Container ist `127.0.0.1` der Container selbst).
+    checklist:
+      - "db hat einen pg_isready-Healthcheck"
+      - "php wartet auf service_healthy und liest .env"
+      - ".env mit DB_HOST=db und MAIL_HOST=mailpit"
+    hints:
+      - Du kannst die ganze compose.yaml neu schreiben – Hauptsache, alles aus dem letzten Schritt bleibt drin.
+      - "cp .env.example .env und danach sed -i 's/^DB_HOST=.*/DB_HOST=db/' .env"
+      - "Die .env steht schon in der .gitignore und in der .dockerignore – sie landet weder im Repository noch im Image."
+    checks:
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.db.healthcheck | "\(.test | tostring | test("pg_isready"))|\(.interval)|\(.timeout)|\(.retries)"'
+        stdout_equals: "true|5s|3s|10"
+        message: 'db braucht healthcheck mit test: ["CMD-SHELL", "pg_isready -U shop -d shop"], interval: 5s, timeout: 3s, retries: 10.'
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.php.depends_on.db.condition // "fehlt"'
+        stdout_equals: service_healthy
+        message: "php soll per depends_on → db → condition: service_healthy warten."
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '[.services.php.env_file] | flatten | map(if type=="object" then .path else . end) | map(select(. != null) | sub("^\\./";"")) | index(".env") != null'
+        stdout_equals: "true"
+        message: "php braucht env_file: .env"
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.web.image + "|" + (.services.db.volumes | map(tostring) | join(","))'
+        stdout_matches: "^nginx:1\\.30-alpine\\|pgdata:/var/lib/postgresql/?$"
+        message: Beim Umbau sind Teile aus dem letzten Schritt verloren gegangen (web oder das Volume von db).
+      - type: file_exists
+        path: .env
+        message: Lege .env als Kopie von .env.example an.
+      - type: file_contains
+        path: .env
+        pattern: "^DB_HOST=db\\s*$"
+        message: In .env muss DB_HOST=db stehen.
+      - type: file_contains
+        path: .env
+        pattern: "^MAIL_HOST=mailpit\\s*$"
+        message: In .env muss MAIL_HOST=mailpit stehen.
+      - type: file_contains
+        path: .env
+        pattern: "^DB_DATABASE=shop\\s*$"
+        message: Die übrigen Zeilen aus .env.example sollen erhalten bleiben (z. B. DB_DATABASE=shop).
+    solution: |
+      ```bash
+      cat > compose.yaml <<'EOF'
+      services:
+        php:
+          build:
+            context: .
+            target: final
+          env_file: .env
+          depends_on:
+            db:
+              condition: service_healthy
+
+        web:
+          image: nginx:1.30-alpine
+          ports:
+            - "127.0.0.1:8080:80"
+          volumes:
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./public:/var/www/html/public:ro
+          depends_on:
+            - php
+
+        db:
+          image: postgres:18-alpine
+          environment:
+            POSTGRES_DB: shop
+            POSTGRES_USER: shop
+            POSTGRES_PASSWORD: geheim
+          volumes:
+            - pgdata:/var/lib/postgresql
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+      volumes:
+        pgdata:
+      EOF
+      cp .env.example .env
+      sed -i 's/^DB_HOST=.*/DB_HOST=db/; s/^MAIL_HOST=.*/MAIL_HOST=mailpit/' .env
+      ```
+    solve: |
+      cat > compose.yaml <<'EOF'
+      services:
+        php:
+          build:
+            context: .
+            target: final
+          env_file: .env
+          depends_on:
+            db:
+              condition: service_healthy
+
+        web:
+          image: nginx:1.30-alpine
+          ports:
+            - "127.0.0.1:8080:80"
+          volumes:
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./public:/var/www/html/public:ro
+          depends_on:
+            - php
+
+        db:
+          image: postgres:18-alpine
+          environment:
+            POSTGRES_DB: shop
+            POSTGRES_USER: shop
+            POSTGRES_PASSWORD: geheim
+          volumes:
+            - pgdata:/var/lib/postgresql
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+      volumes:
+        pgdata:
+      EOF
+      cp .env.example .env
+      sed -i 's/^DB_HOST=.*/DB_HOST=db/; s/^MAIL_HOST=.*/MAIL_HOST=mailpit/' .env
+
+  - id: mailpit-profil
+    title: Mailpit als optionales Werkzeug
+    description: |
+      Laravel verschickt in der Entwicklung Mails an Mailpit. Der Dienst soll aber nur laufen, wenn du ihn brauchst.
+
+      Ergänze in der `compose.yaml` einen Service **mailpit**:
+
+      1. Image `axllent/mailpit:v1.31`,
+      2. Profil `tools`,
+      3. Port `"127.0.0.1:${MAILPIT_PORT:-8025}:8025"` für die Weboberfläche.
+
+      Der SMTP-Port 1025 muss nicht veröffentlicht werden – `php` erreicht ihn im Projekt-Netzwerk als `mailpit:1025`.
+    checklist:
+      - "Service mailpit mit festem Versions-Tag"
+      - "Profil tools – startet nur mit --profile tools"
+      - "Weboberfläche mit Standardport 8025 per Interpolation"
+    hints:
+      - "Einen Service anhängen geht nicht mit cat >>, weil volumes: am Ende steht – schreibe die Datei neu oder füge den Block mit einem Editor vor volumes: ein."
+      - "profiles: [tools]"
+    checks:
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.mailpit | "\(.image)|\((.profiles // []) | join(","))|\((.ports // []) | map(tostring) | join(","))"'
+        stdout_equals: "axllent/mailpit:v1.31|tools|127.0.0.1:${MAILPIT_PORT:-8025}:8025"
+        message: 'mailpit braucht image: axllent/mailpit:v1.31, profiles: [tools] und ports: ["127.0.0.1:${MAILPIT_PORT:-8025}:8025"].'
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '[.services.php, .services.web, .services.db] | map(.profiles == null) | all'
+        stdout_equals: "true"
+        message: php, web und db sollen kein Profil haben – sie laufen immer.
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '(.services.php.depends_on.db.condition) + "|" + (.services.db.healthcheck.interval)'
+        stdout_equals: "service_healthy|5s"
+        message: Beim Umbau sind Healthcheck oder depends_on aus dem letzten Schritt verloren gegangen.
+    solution: |
+      Füge diesen Block unter `services:` ein (z. B. nach `db`):
+
+      ```yaml
+        mailpit:
+          image: axllent/mailpit:v1.31
+          profiles: [tools]
+          ports:
+            - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
+      ```
+
+      Gestartet wird er auf deinem Rechner mit `docker compose --profile tools up -d`.
+    solve: |
+      awk '/^volumes:/ && !done { print "  mailpit:"; print "    image: axllent/mailpit:v1.31"; print "    profiles: [tools]"; print "    ports:"; print "      - \"127.0.0.1:${MAILPIT_PORT:-8025}:8025\""; print ""; done=1 } { print }' compose.yaml > compose.yaml.neu
+      mv compose.yaml.neu compose.yaml
+
+  - id: makefile
+    title: Ein Makefile für den Alltag
+    description: |
+      Niemand will sich lange Compose-Befehle merken. Lege ein `Makefile` mit diesen Zielen an (Rezeptzeilen beginnen
+      mit einem **Tabulator**):
+
+      | Ziel | Befehl |
+      |---|---|
+      | `up` | `docker compose up -d --build` |
+      | `down` | `docker compose down` |
+      | `logs` | `docker compose logs -f` |
+      | `shell` | `docker compose exec php sh` |
+      | `migrate` | `docker compose exec php php artisan migrate` |
+      | `tools` | `docker compose --profile tools up -d` |
+
+      Ergänze `.PHONY` mit allen sechs Zielen. Ohne Docker prüfst du das Makefile mit `make -n up` – `-n` zeigt den
+      Befehl nur an, statt ihn auszuführen.
+    checklist:
+      - "Sechs Ziele: up, down, logs, shell, migrate, tools"
+      - "Rezeptzeilen mit Tabulator eingerückt"
+      - ".PHONY gesetzt"
+    hints:
+      - "Mit printf und \\t erzeugst du echte Tabulatoren: printf 'up:\\n\\tdocker compose up -d --build\\n' > Makefile"
+      - "make: *** missing separator heißt fast immer: Leerzeichen statt Tabulator."
+    checks:
+      - type: file_exists
+        path: Makefile
+        message: Es gibt noch kein Makefile.
+      - type: command
+        run: make -n up 2>&1
+        stdout_equals: "docker compose up -d --build"
+        message: "make -n up soll genau docker compose up -d --build ausgeben (Tabulator vor dem Befehl?)."
+      - type: command
+        run: make -n down 2>&1
+        stdout_equals: "docker compose down"
+        message: "make -n down soll docker compose down ausgeben."
+      - type: command
+        run: make -n logs 2>&1
+        stdout_equals: "docker compose logs -f"
+        message: "make -n logs soll docker compose logs -f ausgeben."
+      - type: command
+        run: make -n shell 2>&1
+        stdout_equals: "docker compose exec php sh"
+        message: "make -n shell soll docker compose exec php sh ausgeben."
+      - type: command
+        run: make -n migrate 2>&1
+        stdout_equals: "docker compose exec php php artisan migrate"
+        message: "make -n migrate soll docker compose exec php php artisan migrate ausgeben."
+      - type: command
+        run: make -n tools 2>&1
+        stdout_equals: "docker compose --profile tools up -d"
+        message: "make -n tools soll docker compose --profile tools up -d ausgeben."
+      - type: command
+        run: grep -E '^\.PHONY\s*:' Makefile | tr ' ' '\n' | grep -cxE 'up|down|logs|shell|migrate|tools'
+        stdout_equals: "6"
+        message: "Ergänze .PHONY: up down logs shell migrate tools"
+    solution: |
+      ```bash
+      printf '.PHONY: up down logs shell migrate tools\n\nup:\n\tdocker compose up -d --build\n\ndown:\n\tdocker compose down\n\nlogs:\n\tdocker compose logs -f\n\nshell:\n\tdocker compose exec php sh\n\nmigrate:\n\tdocker compose exec php php artisan migrate\n\ntools:\n\tdocker compose --profile tools up -d\n' > Makefile
+      make -n up
+      ```
+
+      Auf deinem Rechner mit Docker startest du den Stack jetzt mit `make up` und öffnest http://localhost:8080.
+    solve: |
+      printf '.PHONY: up down logs shell migrate tools\n\nup:\n\tdocker compose up -d --build\n\ndown:\n\tdocker compose down\n\nlogs:\n\tdocker compose logs -f\n\nshell:\n\tdocker compose exec php sh\n\nmigrate:\n\tdocker compose exec php php artisan migrate\n\ntools:\n\tdocker compose --profile tools up -d\n' > Makefile

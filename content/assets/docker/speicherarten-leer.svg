@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs><marker id="s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1e1b3a"/></marker></defs>
+  <text x="400" y="30" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Wo landen die Daten eines Containers?</text>
+  <rect x="40" y="50" width="720" height="150" rx="12" fill="#ecfeff" stroke="#22d3ee"/>
+  <text x="60" y="76" font-size="15" font-weight="700" fill="#1e1b3a">Container</text>
+  <g font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">
+    <rect x="70" y="100" width="180" height="40" rx="6" fill="#ffffff" stroke="#64748b"/><text x="160" y="125" text-anchor="middle">/var/lib/postgresql</text>
+    <rect x="310" y="100" width="180" height="40" rx="6" fill="#ffffff" stroke="#64748b"/><text x="400" y="125" text-anchor="middle">/app</text>
+    <rect x="550" y="100" width="180" height="40" rx="6" fill="#ffffff" stroke="#64748b"/><text x="640" y="125" text-anchor="middle">/tmp/cache</text>
+  </g>
+  <rect x="40" y="250" width="480" height="150" rx="12" fill="#f1f5f9" stroke="#64748b"/>
+  <text x="60" y="276" font-size="15" font-weight="700" fill="#1e1b3a">Festplatte des Hosts</text>
+  <rect x="560" y="250" width="200" height="150" rx="12" fill="#fff7ed" stroke="#f59e0b"/>
+  <text x="580" y="276" font-size="15" font-weight="700" fill="#1e1b3a">Arbeitsspeicher</text>
+  <g font-size="13" fill="#1e1b3a">
+    <rect x="70" y="300" width="180" height="70" rx="6" fill="#f5f3ff" stroke="#a78bfa"/>
+    <text x="160" y="325" text-anchor="middle">von Docker verwaltet</text>
+    <text x="160" y="345" text-anchor="middle" font-family="ui-monospace, Menlo, monospace">pgdata</text>
+    <rect x="310" y="300" width="180" height="70" rx="6" fill="#ecfdf5" stroke="#34d399"/>
+    <text x="400" y="325" text-anchor="middle">dein Projektordner</text>
+    <text x="400" y="345" text-anchor="middle" font-family="ui-monospace, Menlo, monospace">./src</text>
+    <rect x="580" y="300" width="160" height="70" rx="6" fill="#fef2f2" stroke="#f87171"/>
+    <text x="660" y="325" text-anchor="middle">flüchtig, weg</text>
+    <text x="660" y="345" text-anchor="middle">nach dem Stopp</text>
+  </g>
+  <path d="M160 142 L160 296" stroke="#1e1b3a" stroke-width="2" marker-end="url(#s)"/>
+  <path d="M400 142 L400 296" stroke="#1e1b3a" stroke-width="2" marker-end="url(#s)"/>
+  <path d="M660 142 L660 296" stroke="#1e1b3a" stroke-width="2" marker-end="url(#s)"/>
+</svg>

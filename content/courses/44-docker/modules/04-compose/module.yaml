@@ -1,0 +1,143 @@
+title: Docker Compose und Betrieb
+description: Wie du ganze Anwendungen mit Docker Compose beschreibst, verlässlich startest, Images veröffentlichst und Container sicher betreibst.
+exercise:
+  id: modul-uebung-api-stack
+  type: terminal
+  title: Ein Compose-Stack für API, Cache und Worker
+  description: |
+    Klicke zuerst auf **Aufgabe vorbereiten**. Im Ordner `api-stack` liegt eine Node-API mit `Dockerfile`,
+    `server.js` und `worker.js`. Die API und ein Hintergrund-Worker nutzen Valkey als Cache und Warteschlange.
+
+    Schreibe eine `compose.yaml` mit drei Services und einem Volume:
+
+    1. `valkey` aus `valkey/valkey:9-alpine` mit dem Volume `valkeydata` unter `/data` und einem Healthcheck
+       `test: ["CMD", "valkey-cli", "ping"]` (Intervall frei wählbar).
+    2. `api` wird aus dem aktuellen Ordner gebaut (`build: .`), veröffentlicht `"127.0.0.1:3000:3000"`, bekommt
+       die Umgebungsvariable `REDIS_URL` mit dem Wert `redis://valkey:6379` und startet erst, wenn `valkey`
+       **healthy** ist.
+    3. `worker` wird ebenfalls mit `build: .` gebaut, startet mit `command: ["node", "worker.js"]`, gehört zum
+       Profil `worker`, bekommt dieselbe `REDIS_URL` und wartet ebenfalls auf ein gesundes `valkey`.
+    4. Deklariere das Volume `valkeydata` auf oberster Ebene.
+
+    Prüfe die Syntax zwischendurch mit
+    `bun -e 'console.log(Bun.YAML.parse(await Bun.file("compose.yaml").text()))'`.
+  workdir: api-stack
+  setup: |
+    echo '{ "name": "api-stack", "private": true }' > package.json
+    echo '{ "name": "api-stack", "lockfileVersion": 3, "requires": true, "packages": {} }' > package-lock.json
+    echo 'console.log("api auf Port 3000, Cache:", process.env.REDIS_URL);' > server.js
+    echo 'console.log("worker wartet auf Jobs in", process.env.REDIS_URL);' > worker.js
+    printf 'node_modules\n.git\n.env\n' > .dockerignore
+    cat > Dockerfile <<'EOF'
+    FROM node:24-alpine
+    ENV NODE_ENV=production
+    WORKDIR /app
+    COPY package.json package-lock.json ./
+    RUN npm ci --omit=dev
+    COPY --chown=node:node . .
+    USER node
+    EXPOSE 3000
+    CMD ["node", "server.js"]
+    EOF
+  checks:
+    - type: file_exists
+      path: compose.yaml
+      message: Es gibt noch keine compose.yaml.
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services | keys | sort | join(",")'
+      stdout_equals: "api,valkey,worker"
+      message: compose.yaml ist kein gültiges YAML oder hat nicht genau die Services api, valkey und worker.
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.valkey.image'
+      stdout_equals: "valkey/valkey:9-alpine"
+      message: valkey soll das Image valkey/valkey:9-alpine nutzen.
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.valkey.volumes // [] | map(tostring) | map(select(test("^valkeydata:/data/?$"))) | length'
+      stdout_equals: "1"
+      message: "Hänge bei valkey das Volume mit valkeydata:/data ein."
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.valkey.healthcheck.test | tostring | test("valkey-cli.*ping")'
+      stdout_equals: "true"
+      message: 'valkey braucht einen healthcheck mit test: ["CMD", "valkey-cli", "ping"].'
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '[.services.api.build, .services.worker.build] | map(if type=="object" then .context else . end) | map(. == "." or . == "./") | all'
+      stdout_equals: "true"
+      message: "api und worker sollen beide mit build: . aus dem aktuellen Ordner gebaut werden."
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.api.ports // [] | map(tostring) | index("127.0.0.1:3000:3000") != null'
+      stdout_equals: "true"
+      message: 'api soll den Port "127.0.0.1:3000:3000" veröffentlichen.'
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '[.services.api, .services.worker] | map(.environment | if type=="array" then (map(select(startswith("REDIS_URL="))) | .[0] // "" | sub("^REDIS_URL=";"")) else (.REDIS_URL // "") end) | map(. == "redis://valkey:6379") | all'
+      stdout_equals: "true"
+      message: "api und worker brauchen beide die Umgebungsvariable REDIS_URL mit dem Wert redis://valkey:6379."
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '[.services.api, .services.worker] | map(.depends_on.valkey.condition // "") | map(. == "service_healthy") | all'
+      stdout_equals: "true"
+      message: "api und worker sollen per depends_on → valkey → condition: service_healthy warten."
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.worker.command | if type=="array" then join(" ") else . end'
+      stdout_equals: "node worker.js"
+      message: 'worker startet mit command: ["node", "worker.js"].'
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '(.services.worker.profiles // [] | index("worker") != null) and (.services.api.profiles == null) and (.services.valkey.profiles == null)'
+      stdout_equals: "true"
+      message: Nur worker gehört zum Profil worker – api und valkey bekommen kein Profil.
+    - type: command
+      run: >-
+        bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.volumes | has("valkeydata")'
+      stdout_equals: "true"
+      message: Deklariere das Volume valkeydata auf oberster Ebene unter volumes:.
+  hints:
+    - Nimm die Beispiele aus den beiden Compose-Lektionen als Vorlage – Struktur und Einrückung sind dieselben.
+    - Ein Healthcheck gehört zu valkey, die Bedingung service_healthy steht bei den Services, die warten.
+    - "worker überschreibt nur das CMD aus dem Dockerfile: command: [\"node\", \"worker.js\"]."
+  solution: |
+    ```bash
+    cd api-stack
+    cat > compose.yaml <<'EOF'
+    services:
+      api:
+        build: .
+        ports:
+          - "127.0.0.1:3000:3000"
+        environment:
+          REDIS_URL: redis://valkey:6379
+        depends_on:
+          valkey:
+            condition: service_healthy
+
+      worker:
+        build: .
+        command: ["node", "worker.js"]
+        profiles: [worker]
+        environment:
+          REDIS_URL: redis://valkey:6379
+        depends_on:
+          valkey:
+            condition: service_healthy
+
+      valkey:
+        image: valkey/valkey:9-alpine
+        volumes:
+          - valkeydata:/data
+        healthcheck:
+          test: ["CMD", "valkey-cli", "ping"]
+          interval: 5s
+          timeout: 3s
+          retries: 5
+
+    volumes:
+      valkeydata:
+    EOF
+    ```

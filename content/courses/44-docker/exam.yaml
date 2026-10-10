@@ -1,0 +1,413 @@
+title: Abschlussprüfung Docker & Container
+description: |
+  Diese Prüfung deckt alle vier Module ab: Container verstehen, Images bauen, Daten und Netzwerke sowie Docker Compose
+  und Betrieb. Zu den Fragen kommen drei Praxisaufgaben – ein kleines Programm, ein Dockerfile und eine Compose-Datei.
+  Du bestehst mit 70 Prozent.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  - module: grundlagen
+    type: single
+    question: Warum startet ein Container meist in unter einer Sekunde, eine virtuelle Maschine aber nicht?
+    options:
+      - Container nutzen schnellere Festplatten.
+      - Ein Container ist ein isolierter Prozess auf dem Kernel des Hosts – es bootet kein Betriebssystem.
+      - Container laufen immer im Arbeitsspeicher.
+      - Docker startet Container im Voraus.
+    answer: 1
+    explanation: Eine VM bootet ein komplettes Betriebssystem mit eigenem Kernel. Ein Container startet nur einen abgeschotteten Prozess.
+  - module: grundlagen
+    type: cloze
+    text: Ein Image ist eine unveränderliche ___, ein Container eine laufende Instanz mit eigener beschreibbarer ___.
+    blanks:
+      - [Vorlage, Schablone, Vorlage (Template)]
+      - [Schicht, Ebene, Layer]
+    explanation: Aus einem Image entstehen beliebig viele Container. Jeder bekommt eine eigene beschreibbare Schicht.
+  - module: grundlagen
+    type: single
+    question: "Was ist an `docker run -d -p 3000:8080 api:1.0` richtig, wenn die App im Container auf Port 8080 lauscht?"
+    options:
+      - Nichts – richtig wäre -p 8080:3000.
+      - Port 3000 deines Rechners wird an Port 8080 im Container weitergeleitet.
+      - Der Container lauscht danach auf beiden Ports.
+      - -d veröffentlicht den Port zusätzlich auf allen Netzwerkschnittstellen.
+    answer: 1
+    explanation: Die Reihenfolge ist Host:Container. Links steht dein Rechner, rechts der Container.
+  - module: grundlagen
+    type: match
+    question: Ordne jeder Option von `docker run` ihre Wirkung zu.
+    pairs:
+      - { left: "-d", right: "Im Hintergrund starten" }
+      - { left: "--rm", right: "Nach dem Beenden automatisch löschen" }
+      - { left: "-e KEY=wert", right: "Umgebungsvariable setzen" }
+      - { left: "--name web", right: "Festen Container-Namen vergeben" }
+    explanation: Diese vier Optionen brauchst du bei fast jedem docker run.
+  - module: images-bauen
+    type: single
+    question: Welche Reihenfolge nutzt den Build-Cache einer Node-App am besten?
+    options:
+      - "COPY . . → RUN npm ci → CMD"
+      - "COPY package.json package-lock.json ./ → RUN npm ci → COPY . . → CMD"
+      - "RUN npm ci → COPY . . → CMD"
+      - "COPY . . → COPY package.json ./ → RUN npm ci → CMD"
+    answer: 1
+    explanation: Erst die selten geänderten Paketdateien, dann installieren, dann den oft geänderten Code. So bleibt npm ci im Cache.
+  - module: images-bauen
+    type: multiple
+    question: Welche Maßnahmen machen ein Image kleiner oder sicherer?
+    options:
+      - Multi-Stage-Build mit einer schlanken finalen Stage.
+      - Eine .dockerignore mit node_modules, .git und .env.
+      - "`USER node` bzw. `USER www-data` vor dem CMD."
+      - "`FROM node:latest`, damit immer die neueste Version läuft."
+    answers: [0, 1, 2]
+    explanation: "`latest` ist kein Sicherheitsgewinn, sondern macht Builds unvorhersehbar. Pinne Versionen."
+  - module: images-bauen
+    type: find-bug
+    question: Der Container lässt sich mit `docker stop` nur nach 10 Sekunden Wartezeit beenden. Welche Zeile ist schuld?
+    language: dockerfile
+    code: |
+      FROM node:24-alpine
+      WORKDIR /app
+      COPY package.json package-lock.json ./
+      RUN npm ci --omit=dev
+      COPY . .
+      USER node
+      CMD node server.js
+    bug_line: 7
+    explanation: In der Shell-Form ist /bin/sh Prozess 1 und reicht SIGTERM nicht weiter. Richtig ist CMD ["node", "server.js"].
+  - module: images-bauen
+    type: cloze
+    text: "Im finalen Stage holst du das Build-Ergebnis mit `COPY ___=build /app/dist ./dist`. Den Besitzer der Dateien setzt du dabei mit `___=node:node`."
+    blanks:
+      - [--from]
+      - [--chown]
+    explanation: "`--from` wählt die Quell-Stage, `--chown` setzt Besitzer und Gruppe."
+  - module: images-bauen
+    type: single
+    question: Wozu dient die Stage `vendor` im Laravel-Dockerfile?
+    options:
+      - Sie installiert mit Composer die PHP-Abhängigkeiten, ohne dass Composer im finalen Image landet.
+      - Sie startet PHP-FPM.
+      - Sie baut die Vite-Assets.
+      - Sie lädt die Datenbank.
+    answer: 0
+    explanation: Die finale Stage kopiert nur das Ergebnis (Code samt vendor/) – Composer selbst bleibt draußen.
+  - module: daten-und-netzwerke
+    type: single
+    question: Du willst, dass deine PostgreSQL-Daten ein Image-Update überleben. Was nutzt du?
+    options:
+      - Die beschreibbare Schicht des Containers.
+      - Ein Volume, z. B. -v pgdata:/var/lib/postgresql.
+      - tmpfs.
+      - Ein ENV im Dockerfile.
+    answer: 1
+    explanation: Volumes leben unabhängig vom Container. Beim neuen Container hängst du einfach dasselbe Volume ein.
+  - module: daten-und-netzwerke
+    type: match
+    question: Ordne jede Schreibweise der Speicherart zu.
+    pairs:
+      - { left: "-v pgdata:/var/lib/postgresql", right: "Volume" }
+      - { left: "-v ./src:/app/src", right: "Bind Mount" }
+      - { left: "--tmpfs /tmp/cache", right: "tmpfs" }
+    explanation: Ein Name links bedeutet Volume, ein Pfad links Bind Mount, --tmpfs legt den Ordner in den Arbeitsspeicher.
+  - module: daten-und-netzwerke
+    type: multiple
+    question: Die Container `php` und `db` hängen im selben selbst angelegten Netzwerk. Welche Aussagen stimmen?
+    options:
+      - php erreicht die Datenbank unter db:5432.
+      - php erreicht die Datenbank unter localhost:5432.
+      - Für die Verbindung zwischen php und db ist kein -p nötig.
+      - Dein Laptop erreicht db nur, wenn ein Port veröffentlicht ist.
+    answers: [0, 2, 3]
+    explanation: Container finden sich über ihren Namen. localhost ist im Container immer der Container selbst.
+  - module: daten-und-netzwerke
+    type: single
+    question: Warum funktioniert die Namensauflösung im Standard-Netzwerk `bridge` nicht, in einem eigenen Netzwerk aber schon?
+    options:
+      - Weil das Standard-Netzwerk kein IPv4 unterstützt.
+      - Nur selbst angelegte Bridge-Netzwerke bringen Dockers eingebauten DNS-Dienst mit.
+      - Weil im Standard-Netzwerk alle Container denselben Namen haben.
+      - Sie funktioniert in beiden gleich.
+    answer: 1
+    explanation: Deshalb legt man immer ein eigenes Netzwerk an – oder lässt es Compose automatisch anlegen.
+  - module: compose
+    type: single
+    question: "`php` hat `depends_on: { db: { condition: service_healthy } }`, aber `db` keinen Healthcheck. Was passiert?"
+    options:
+      - Compose wartet ewig.
+      - Compose kann die Bedingung nicht erfüllen und meldet einen Fehler – ohne Healthcheck wird db nie healthy.
+      - Compose ignoriert die Bedingung.
+      - php startet vor db.
+    answer: 1
+    explanation: service_healthy setzt einen Healthcheck voraus. Ohne ihn bricht Compose den Start mit einer Fehlermeldung ab.
+  - module: compose
+    type: multiple
+    question: Welche Aussagen über env-Dateien in Compose stimmen?
+    options:
+      - Die .env im Projektordner füllt ${VAR}-Platzhalter in der compose.yaml.
+      - "`env_file: .env` reicht die Variablen in den Container."
+      - "`${PORT:-8080}` nutzt 8080, wenn PORT fehlt oder leer ist."
+      - Die .env gehört ins Repository, damit alle dieselben Passwörter haben.
+    answers: [0, 1, 2]
+    explanation: Ins Repository kommt nur die .env.example mit Platzhaltern.
+  - module: compose
+    type: match
+    question: Ordne jedem Befehl seine Wirkung zu.
+    pairs:
+      - { left: "docker compose up -d", right: "Projekt im Hintergrund starten" }
+      - { left: "docker compose down -v", right: "Container, Netzwerk und Volumes löschen" }
+      - { left: "docker compose --profile tools up -d", right: "Zusätzlich Services aus dem Profil tools starten" }
+      - { left: "docker compose config", right: "Datei prüfen und aufgelöst anzeigen" }
+    explanation: Vorsicht mit -v – damit sind auch die Datenbankdaten weg.
+  - module: compose
+    type: single
+    question: Welches Tag sollte in Produktion deployt werden?
+    options:
+      - latest
+      - Ein unveränderliches Tag wie 1.4.2 oder der Commit-Hash.
+      - stable
+      - Das Tag, das zuletzt gepusht wurde – egal welches.
+    answer: 1
+    explanation: Nur feste Tags (oder der Digest) sagen dir zuverlässig, welcher Code läuft, und ermöglichen Rollbacks.
+  - module: compose
+    type: find-bug
+    question: Mit diesem Dockerfile landet ein Token lesbar im Image. In welcher Zeile?
+    language: dockerfile
+    code: |
+      FROM node:24-alpine
+      WORKDIR /app
+      ARG NPM_TOKEN
+      COPY package.json package-lock.json .npmrc ./
+      RUN NPM_TOKEN=$NPM_TOKEN npm ci
+      COPY . .
+      CMD ["node", "server.js"]
+    bug_line: 5
+    explanation: Der Wert des Build-Arguments steht in der Image-Historie. Besser ist RUN --mount=type=secret,id=npm_token,env=NPM_TOKEN npm ci.
+tasks:
+  - module: grundlagen
+    id: pruefung-image-name
+    type: code
+    language: js
+    title: Image-Namen zerlegen
+    description: |
+      Schreibe eine Funktion `parseImage(name)`, die einen Image-Namen in seine Teile zerlegt und ein Objekt
+      `{ registry, repository, tag }` zurückgibt. Es gelten die Docker-Standardwerte:
+
+      - Fehlt die Registry, ist sie `docker.io`. Eine Registry erkennst du daran, dass der erste Teil vor dem ersten
+        `/` einen Punkt oder Doppelpunkt enthält oder `localhost` ist.
+      - Offizielle Images ohne `/` (z. B. `nginx`) liegen auf Docker Hub im Bereich `library/`.
+      - Fehlt das Tag, ist es `latest`. Das Tag steht nach dem **letzten** Doppelpunkt – aber nur, wenn danach kein `/`
+        mehr folgt (sonst ist es ein Port wie in `localhost:5000/app`).
+
+      Digests (`@sha256:…`) musst du nicht behandeln.
+    starter: |
+      function parseImage(name) {
+        // registry, repository, tag bestimmen
+        return { registry: '', repository: '', tag: '' };
+      }
+    tests:
+      - name: Offizielles Image ohne Tag
+        code: 'assertDeepEqual(parseImage("nginx"), { registry: "docker.io", repository: "library/nginx", tag: "latest" })'
+      - name: Offizielles Image mit Tag
+        code: 'assertDeepEqual(parseImage("node:24-alpine"), { registry: "docker.io", repository: "library/node", tag: "24-alpine" })'
+      - name: Docker-Hub-Image eines Nutzers
+        code: 'assertDeepEqual(parseImage("valkey/valkey:9-alpine"), { registry: "docker.io", repository: "valkey/valkey", tag: "9-alpine" })'
+      - name: Private Registry mit Tag
+        code: 'assertDeepEqual(parseImage("registry.example.com/team/shop:1.4.2"), { registry: "registry.example.com", repository: "team/shop", tag: "1.4.2" })'
+      - name: Registry mit Port, ohne Tag
+        code: 'assertDeepEqual(parseImage("localhost:5000/app"), { registry: "localhost:5000", repository: "app", tag: "latest" })'
+    solution: |
+      function parseImage(name) {
+        let rest = name;
+        let tag = 'latest';
+        const colon = rest.lastIndexOf(':');
+        if (colon !== -1 && !rest.slice(colon + 1).includes('/')) {
+          tag = rest.slice(colon + 1);
+          rest = rest.slice(0, colon);
+        }
+        let registry = 'docker.io';
+        const slash = rest.indexOf('/');
+        if (slash !== -1) {
+          const first = rest.slice(0, slash);
+          if (first.includes('.') || first.includes(':') || first === 'localhost') {
+            registry = first;
+            rest = rest.slice(slash + 1);
+          }
+        }
+        const repository = registry === 'docker.io' && !rest.includes('/') ? `library/${rest}` : rest;
+        return { registry, repository, tag };
+      }
+  - module: images-bauen
+    id: pruefung-dockerfile
+    type: terminal
+    title: Ein sicheres Multi-Stage-Dockerfile
+    description: |
+      Klicke zuerst auf **Aufgabe vorbereiten**. Im Ordner `pruefung-dockerfile` liegt eine Node-API, die mit
+      `npm run build` von `src/` nach `dist/` übersetzt wird, und ein unsicheres `Dockerfile`.
+
+      Schreibe das `Dockerfile` neu:
+
+      1. Stage `build` auf `node:24-alpine` (`AS build`): `WORKDIR /app`, Paketdateien kopieren, `RUN npm ci`, Code
+         kopieren, `RUN npm run build`.
+      2. Finale Stage auf `node:24-alpine`: `WORKDIR /app`, Paketdateien kopieren, `RUN npm ci --omit=dev`, dann
+         `COPY --from=build --chown=node:node /app/dist ./dist`, `USER node` und `CMD ["node", "dist/server.js"]`.
+      3. Kein `ENV` mit Passwort oder Token, kein `latest`.
+
+      Lege außerdem eine `.dockerignore` mit `node_modules`, `.git` und `.env` an.
+    workdir: pruefung-dockerfile
+    setup: |
+      mkdir -p src
+      echo '{ "name": "api", "private": true, "scripts": { "build": "tsc" } }' > package.json
+      echo '{ "name": "api", "lockfileVersion": 3, "requires": true, "packages": {} }' > package-lock.json
+      echo 'console.log("api");' > src/server.ts
+      echo 'DB_PASSWORD=geheim' > .env
+      cat > Dockerfile <<'EOF'
+      FROM node:latest
+      COPY . .
+      RUN npm install && npm run build
+      ENV DB_PASSWORD=geheim
+      CMD npm start
+      EOF
+    checks:
+      - type: command
+        run: grep -ciE 'latest|PASSWORD|TOKEN' Dockerfile || true
+        stdout_equals: "0"
+        message: Im Dockerfile stehen noch latest oder ein Passwort/Token.
+      - type: command
+        run: grep -E '^FROM\s' Dockerfile | tr -s ' ' | paste -sd '|' -
+        stdout_matches: "^FROM node:24-alpine (AS|as) build\\|FROM node:24-alpine$"
+        message: "Zwei Stages: FROM node:24-alpine AS build und danach FROM node:24-alpine."
+      - type: command
+        run: >-
+          awk '/^FROM/{s++} s==1 && /^WORKDIR +\/app/{w=NR} s==1 && /^COPY +package/{a=NR} s==1 && /^RUN +npm +ci *$/{b=NR} s==1 && /^COPY +\. +\.\/? *$/{c=NR} s==1 && /^RUN +npm +run +build *$/{d=NR} END{print (w && a && b && c && d && w<a && a<b && b<c && c<d) ? "ok" : "falsch"}' Dockerfile
+        stdout_equals: ok
+        message: "Stage build: WORKDIR /app, COPY package.json package-lock.json ./, RUN npm ci, COPY . ., RUN npm run build."
+      - type: command
+        run: >-
+          awk '/^FROM/{s++} s==2 && /^RUN +npm +ci +--omit=dev *$/{r=NR} s==2 && /^COPY +--from=build +--chown=node:node +\/app\/dist\/? +\.\/dist\/? *$/{c=NR} s==2 && /^USER +node *$/{u=NR} s==2 && /^CMD +\[ *"node" *, *"dist\/server\.js" *\] *$/{m=NR} END{print (r && c && u && m && r<c && c<u && u<m) ? "ok" : "falsch"}' Dockerfile
+        stdout_equals: ok
+        message: "Finale Stage: RUN npm ci --omit=dev, COPY --from=build --chown=node:node /app/dist ./dist, USER node, CMD [\"node\", \"dist/server.js\"] – in dieser Reihenfolge."
+      - type: command
+        run: for e in node_modules .git .env; do grep -qxE "/?${e//./\\.}/?" .dockerignore 2>/dev/null || echo "$e"; done | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: In .dockerignore fehlen node_modules, .git oder .env.
+    hints:
+      - Orientiere dich an der Lektion zu Multi-Stage-Builds.
+      - "Das Passwort gehört nicht ins Dockerfile – es kommt beim Start per -e oder env_file."
+    solution: |
+      ```bash
+      cd pruefung-dockerfile
+      cat > Dockerfile <<'EOF'
+      FROM node:24-alpine AS build
+      WORKDIR /app
+      COPY package.json package-lock.json ./
+      RUN npm ci
+      COPY . .
+      RUN npm run build
+
+      FROM node:24-alpine
+      WORKDIR /app
+      COPY package.json package-lock.json ./
+      RUN npm ci --omit=dev
+      COPY --from=build --chown=node:node /app/dist ./dist
+      USER node
+      CMD ["node", "dist/server.js"]
+      EOF
+      printf 'node_modules\n.git\n.env\n' > .dockerignore
+      ```
+  - module: compose
+    id: pruefung-compose
+    type: terminal
+    title: Eine Compose-Datei mit Healthcheck und Profil
+    description: |
+      Klicke zuerst auf **Aufgabe vorbereiten**. Im Ordner `pruefung-compose` liegt eine Laravel-ähnliche App mit
+      `Dockerfile`. Schreibe eine `compose.yaml` mit:
+
+      1. **app:** `build: .`, `env_file: .env`, Port `"127.0.0.1:8000:8000"`, wartet auf ein gesundes `db`.
+      2. **db:** `postgres:18-alpine`, `POSTGRES_PASSWORD: geheim`, Volume `dbdata` unter `/var/lib/postgresql`,
+         Healthcheck mit `pg_isready -U postgres` (Werte für Intervall usw. frei wählbar). Kein veröffentlichter Port.
+      3. **adminer:** `adminer:5`, Port `"127.0.0.1:8081:8080"`, nur im Profil `tools`.
+      4. Volume `dbdata` auf oberster Ebene.
+
+      Lege außerdem `.env` als Kopie von `.env.example` an.
+    workdir: pruefung-compose
+    setup: |
+      printf 'APP_ENV=local\nDB_HOST=db\nDB_PASSWORD=geheim\n' > .env.example
+      printf 'FROM php:8.5-cli-alpine\nWORKDIR /app\nCOPY . .\nUSER www-data\nCMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]\n' > Dockerfile
+      mkdir -p public && echo '<?php echo "ok";' > public/index.php
+    checks:
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services | keys | sort | join(",")'
+        stdout_equals: "adminer,app,db"
+        message: compose.yaml fehlt, ist kein gültiges YAML oder hat nicht genau die Services app, db und adminer.
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.app | ((.build | if type=="object" then .context else . end) | test("^\\./?$")) and ((.ports // []) | map(tostring) | index("127.0.0.1:8000:8000") != null) and (.depends_on.db.condition == "service_healthy") and (([.env_file] | flatten | map(if type=="object" then .path else . end) | map(select(. != null) | sub("^\\./";"")) | index(".env")) != null)'
+        stdout_equals: "true"
+        message: "app braucht build: ., env_file: .env, ports: [\"127.0.0.1:8000:8000\"] und depends_on → db → condition: service_healthy."
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.db | (.image == "postgres:18-alpine") and (.ports == null) and ((.healthcheck.test | tostring) | test("pg_isready")) and ((.volumes // []) | map(tostring) | map(select(test("^dbdata:/var/lib/postgresql/?$"))) | length == 1)'
+        stdout_equals: "true"
+        message: db braucht postgres:18-alpine, einen pg_isready-Healthcheck, das Volume dbdata unter /var/lib/postgresql und keinen ports-Eintrag.
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.db.environment | if type=="array" then (map(select(startswith("POSTGRES_PASSWORD="))) | .[0] // "" | sub("^POSTGRES_PASSWORD=";"")) else (.POSTGRES_PASSWORD // "") end'
+        stdout_equals: geheim
+        message: db braucht POSTGRES_PASSWORD mit dem Wert geheim.
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '.services.adminer | "\(.image)|\((.profiles // []) | join(","))|\((.ports // []) | map(tostring) | join(","))"'
+        stdout_equals: "adminer:5|tools|127.0.0.1:8081:8080"
+        message: 'adminer braucht image: adminer:5, profiles: [tools] und ports: ["127.0.0.1:8081:8080"].'
+      - type: command
+        run: >-
+          bun -e 'console.log(JSON.stringify(Bun.YAML.parse(await Bun.file("compose.yaml").text())))' | jq -r '(.volumes | has("dbdata")) and (.services.app.profiles == null) and (.services.db.profiles == null)'
+        stdout_equals: "true"
+        message: Deklariere dbdata unter volumes – und nur adminer bekommt ein Profil.
+      - type: command
+        run: cmp -s .env .env.example && echo ok
+        stdout_equals: ok
+        message: Lege .env als Kopie von .env.example an.
+    hints:
+      - Die Struktur kennst du aus dem Modul Docker Compose und dem Projekt.
+      - "Prüfe die Syntax mit bun -e 'console.log(Bun.YAML.parse(await Bun.file(\"compose.yaml\").text()))'"
+    solution: |
+      ```bash
+      cd pruefung-compose
+      cat > compose.yaml <<'EOF'
+      services:
+        app:
+          build: .
+          env_file: .env
+          ports:
+            - "127.0.0.1:8000:8000"
+          depends_on:
+            db:
+              condition: service_healthy
+
+        db:
+          image: postgres:18-alpine
+          environment:
+            POSTGRES_PASSWORD: geheim
+          volumes:
+            - dbdata:/var/lib/postgresql
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+        adminer:
+          image: adminer:5
+          profiles: [tools]
+          ports:
+            - "127.0.0.1:8081:8080"
+
+      volumes:
+        dbdata:
+      EOF
+      cp .env.example .env
+      ```

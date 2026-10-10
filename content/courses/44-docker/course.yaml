@@ -1,0 +1,30 @@
+title: Docker & Container
+subtitle: Anwendungen verpacken, starten und verbinden – vom ersten Container bis zum Compose-Stack
+description: >
+  „Bei mir läuft es aber!“ – dieser Satz verschwindet, sobald deine Anwendung in einem Container steckt.
+  In diesem Kurs lernst du, was Container wirklich sind, wie Images aus Layern entstehen und wie du
+  schlanke, sichere Images für PHP/Laravel- und Node-Anwendungen baust.
+
+
+  Danach verbindest du Container über Netzwerke, speicherst Daten in Volumes und beschreibst ganze
+  Anwendungen mit **Docker Compose** – inklusive Healthchecks, Profilen und Umgebungsdateien. Das
+  Übungs-Terminal hat bewusst **keinen** Docker-Daemon: Dockerfiles und Compose-Dateien schreibst und
+  prüfst du dort echt, das Starten von Containern übst du im simulierten Terminal und auf deinem eigenen Rechner.
+category: infrastruktur
+level: fortgeschritten
+icon: container
+color: "#2496ed"
+estimated_hours: 5
+workspace_dir: docker
+prerequisites: [terminal-shell, netzwerk-grundlagen]
+learning_goals:
+  - Du erklärst den Unterschied zwischen Container, virtueller Maschine, Image und Layer.
+  - Du startest, beobachtest und betrittst Container mit Ports, Umgebungsvariablen und Logs.
+  - Du schreibst Dockerfiles, die den Build-Cache nutzen, mit Multi-Stage-Builds klein bleiben und nicht als root laufen.
+  - Du wählst zwischen Volume, Bind Mount und tmpfs und verbindest Container über eigene Netzwerke.
+  - Du beschreibst eine komplette Anwendung mit Docker Compose – mit Healthchecks, depends_on, Profilen und env-Dateien.
+  - Du veröffentlichst Images mit sinnvollen Tags und hältst Secrets aus deinen Images heraus.
+references:
+  - Lokale Entwicklungsumgebungen, in denen PHP-FPM, Nginx, PostgreSQL und Valkey per Docker Compose laufen
+  - Multi-Stage-Builds für Frontend-Anwendungen, deren Build-Ergebnis von einem schlanken Webserver ausgeliefert wird
+  - Container-Images, die in der CI gebaut, mit Git-Commit-Hash getaggt und in eine private Registry gepusht werden

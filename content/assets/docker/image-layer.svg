@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="400" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Ein Image ist ein Stapel aus Layern</text>
+  <g font-size="13" fill="#1e1b3a">
+    <rect x="60" y="60" width="420" height="44" rx="6" fill="#ecfdf5" stroke="#34d399" stroke-dasharray="6 4"/>
+    <text x="80" y="87">Container-Schicht (beschreibbar, nur dieser Container)</text>
+    <rect x="60" y="120" width="420" height="40" rx="6" fill="#ecfeff" stroke="#22d3ee"/>
+    <text x="80" y="145" font-family="ui-monospace, Menlo, monospace">COPY . .</text>
+    <rect x="60" y="166" width="420" height="40" rx="6" fill="#ecfeff" stroke="#22d3ee"/>
+    <text x="80" y="191" font-family="ui-monospace, Menlo, monospace">RUN npm ci --omit=dev</text>
+    <rect x="60" y="212" width="420" height="40" rx="6" fill="#ecfeff" stroke="#22d3ee"/>
+    <text x="80" y="237" font-family="ui-monospace, Menlo, monospace">COPY package*.json ./</text>
+    <rect x="60" y="258" width="420" height="40" rx="6" fill="#f5f3ff" stroke="#a78bfa"/>
+    <text x="80" y="283" font-family="ui-monospace, Menlo, monospace">FROM node:24-alpine</text>
+    <text x="300" y="283">(mehrere Layer)</text>
+  </g>
+  <path d="M500 140 v150" stroke="#f59e0b" stroke-width="3" marker-end="url(#a)"/>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#f59e0b"/></marker></defs>
+  <g font-size="13" fill="#1e1b3a">
+    <text x="520" y="150" font-weight="700">ändert sich oft</text>
+    <text x="520" y="170">→ oben platzieren</text>
+    <text x="520" y="270" font-weight="700">ändert sich selten</text>
+    <text x="520" y="290">→ unten platzieren</text>
+    <text x="520" y="215" fill="#f87171">Ändert sich ein Layer,</text>
+    <text x="520" y="233" fill="#f87171">werden alle darüber neu gebaut.</text>
+  </g>
+  <text x="60" y="340" font-size="13" fill="#1e1b3a">Schreibgeschützte Layer werden zwischen Images und Containern geteilt.</text>
+  <text x="60" y="362" font-size="13" fill="#1e1b3a">Nur die oberste Container-Schicht gehört einem einzelnen Container.</text>
+</svg>

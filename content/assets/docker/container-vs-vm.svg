@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="200" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Virtuelle Maschinen</text>
+  <text x="600" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Container</text>
+  <line x1="400" y1="20" x2="400" y2="400" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6 6"/>
+  <!-- VM side -->
+  <g font-size="13" fill="#1e1b3a" text-anchor="middle">
+    <rect x="30" y="60" width="160" height="40" rx="6" fill="#ecfeff" stroke="#22d3ee"/><text x="110" y="85">App A</text>
+    <rect x="210" y="60" width="160" height="40" rx="6" fill="#ecfeff" stroke="#22d3ee"/><text x="290" y="85">App B</text>
+    <rect x="30" y="106" width="160" height="40" rx="6" fill="#f5f3ff" stroke="#a78bfa"/><text x="110" y="131">Bibliotheken</text>
+    <rect x="210" y="106" width="160" height="40" rx="6" fill="#f5f3ff" stroke="#a78bfa"/><text x="290" y="131">Bibliotheken</text>
+    <rect x="30" y="152" width="160" height="56" rx="6" fill="#fff7ed" stroke="#f59e0b"/><text x="110" y="176">Gast-Betriebssystem</text><text x="110" y="196">mit eigenem Kernel</text>
+    <rect x="210" y="152" width="160" height="56" rx="6" fill="#fff7ed" stroke="#f59e0b"/><text x="290" y="176">Gast-Betriebssystem</text><text x="290" y="196">mit eigenem Kernel</text>
+    <rect x="30" y="230" width="340" height="44" rx="6" fill="#fef2f2" stroke="#f87171"/><text x="200" y="257">Hypervisor</text>
+    <rect x="30" y="280" width="340" height="44" rx="6" fill="#f1f5f9" stroke="#64748b"/><text x="200" y="307">Host-Betriebssystem</text>
+    <rect x="30" y="330" width="340" height="44" rx="6" fill="#e2e8f0" stroke="#64748b"/><text x="200" y="357">Hardware</text>
+  </g>
+  <!-- Container side -->
+  <g font-size="13" fill="#1e1b3a" text-anchor="middle">
+    <rect x="430" y="152" width="105" height="40" rx="6" fill="#ecfeff" stroke="#22d3ee"/><text x="482" y="177">App A</text>
+    <rect x="547" y="152" width="105" height="40" rx="6" fill="#ecfeff" stroke="#22d3ee"/><text x="599" y="177">App B</text>
+    <rect x="664" y="152" width="106" height="40" rx="6" fill="#ecfeff" stroke="#22d3ee"/><text x="717" y="177">App C</text>
+    <rect x="430" y="196" width="105" height="30" rx="6" fill="#f5f3ff" stroke="#a78bfa"/><text x="482" y="216" font-size="12">Bibliotheken</text>
+    <rect x="547" y="196" width="105" height="30" rx="6" fill="#f5f3ff" stroke="#a78bfa"/><text x="599" y="216" font-size="12">Bibliotheken</text>
+    <rect x="664" y="196" width="106" height="30" rx="6" fill="#f5f3ff" stroke="#a78bfa"/><text x="717" y="216" font-size="12">Bibliotheken</text>
+    <rect x="430" y="230" width="340" height="44" rx="6" fill="#ecfdf5" stroke="#34d399"/><text x="600" y="257">Container-Laufzeit (Docker Engine)</text>
+    <rect x="430" y="280" width="340" height="44" rx="6" fill="#f1f5f9" stroke="#64748b"/><text x="600" y="300">Host-Betriebssystem</text><text x="600" y="316" font-size="12">ein gemeinsamer Kernel</text>
+    <rect x="430" y="330" width="340" height="44" rx="6" fill="#e2e8f0" stroke="#64748b"/><text x="600" y="357">Hardware</text>
+  </g>
+  <text x="200" y="400" text-anchor="middle" font-size="13" fill="#1e1b3a">schwer: jede VM bootet ein ganzes System</text>
+  <text x="600" y="400" text-anchor="middle" font-size="13" fill="#1e1b3a">leicht: Container sind isolierte Prozesse</text>
+</svg>

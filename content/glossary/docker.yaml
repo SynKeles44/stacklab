@@ -1,0 +1,434 @@
+- slug: virtuelle-maschine
+  term: Virtuelle Maschine
+  short: Ein vollständig simulierter Rechner mit eigenem Betriebssystem, der auf echter Hardware läuft.
+  explanation: >
+    Eine virtuelle Maschine (VM) bekommt von einem Hypervisor einen Anteil an CPU, Arbeitsspeicher und Festplatte
+    und bootet darauf ein komplettes Betriebssystem mit eigenem Kernel. Dadurch ist sie stark isoliert, aber auch
+    groß und langsam im Start. Cloud-Server sind fast immer virtuelle Maschinen.
+  example: "Auf einem Linux-Server laufen drei VMs – eine davon mit Windows."
+  category: docker
+  aliases: [VM, VMs, virtuelle Maschinen]
+  related: [hypervisor, container, kernel]
+  lesson: docker/was-sind-container
+
+- slug: hypervisor
+  term: Hypervisor
+  short: Software, die die Hardware eines Rechners auf mehrere virtuelle Maschinen verteilt.
+  explanation: >
+    Der Hypervisor sitzt zwischen Hardware und virtuellen Maschinen. Er teilt jeder VM Rechenzeit und Speicher zu und
+    sorgt dafür, dass sich die VMs nicht gegenseitig sehen. Bekannte Beispiele sind KVM, Hyper-V und VMware ESXi.
+  example: "Docker Desktop nutzt auf dem Mac den Hypervisor von macOS, um eine kleine Linux-VM zu starten."
+  category: docker
+  aliases: [Hypervisoren]
+  related: [virtuelle-maschine, kernel]
+  lesson: docker/was-sind-container
+
+- slug: kernel
+  term: Kernel
+  short: Der Kern des Betriebssystems, der Hardware, Prozesse und Speicher verwaltet.
+  explanation: >
+    Der Kernel entscheidet, welcher Prozess wann rechnen darf, verwaltet den Arbeitsspeicher und spricht mit der
+    Hardware. Programme fragen ihn über Systemaufrufe nach Dateien oder Netzwerkverbindungen. Container teilen sich
+    den Kernel des Hosts, virtuelle Maschinen bringen ihren eigenen mit.
+  example: "`uname -r` zeigt die Version des laufenden Linux-Kernels, z. B. `6.12.0`."
+  category: docker
+  aliases: [Betriebssystemkern, Linux-Kernel]
+  related: [linux, linux-namespaces, cgroups]
+  lesson: docker/was-sind-container
+
+- slug: linux-namespaces
+  term: Linux-Namespaces
+  short: Eine Kernel-Funktion, die einem Prozess eine eigene, abgeschottete Sicht auf das System gibt.
+  explanation: >
+    Namespaces trennen, was ein Prozess sehen kann: eigene Prozessliste, eigenes Netzwerk, eigenes Dateisystem,
+    eigenen Hostnamen. Ein Prozess in einem Container sieht deshalb nur sich selbst und seine Kinder. Zusammen mit
+    cgroups bilden Namespaces die technische Grundlage von Containern.
+  example: "Im Container zeigt `ps` deinen Server als Prozess 1, obwohl er auf dem Host eine ganz andere PID hat."
+  category: docker
+  aliases: [Namespaces, Namespace (Linux)]
+  related: [cgroups, kernel, container]
+  lesson: docker/was-sind-container
+
+- slug: cgroups
+  term: cgroups
+  short: Eine Kernel-Funktion, die begrenzt, wie viel CPU, Arbeitsspeicher und andere Ressourcen ein Prozess nutzen darf.
+  explanation: >
+    Control Groups (cgroups) fassen Prozesse zu Gruppen zusammen und setzen ihnen Grenzen. Überschreitet ein Container
+    sein Speicherlimit, beendet der Kernel ihn, statt den ganzen Rechner lahmzulegen. Docker setzt die Grenzen über
+    Optionen wie `--memory` und `--cpus`.
+  example: "`docker run --memory 512m --cpus 1 shop:1.0` begrenzt den Container auf 512 MB und eine CPU."
+  category: docker
+  aliases: [Control Groups, cgroup]
+  related: [linux-namespaces, kernel]
+  lesson: docker/was-sind-container
+
+- slug: docker-engine
+  term: Docker Engine
+  short: Der Hintergrunddienst von Docker, der Images baut und Container startet und verwaltet.
+  explanation: >
+    Die Docker Engine besteht vor allem aus dem Daemon `dockerd` und einer API. Die Docker-CLI schickt deine Befehle
+    an diese API, die Engine erledigt die eigentliche Arbeit. Auf Linux-Servern installierst du die Engine direkt,
+    auf Mac und Windows steckt sie in Docker Desktop.
+  example: "`docker version` zeigt getrennt die Version des Clients (CLI) und des Servers (Engine)."
+  category: docker
+  aliases: [dockerd, Docker-Daemon]
+  related: [docker, daemon, docker-desktop]
+  lesson: docker/was-sind-container
+
+- slug: docker-desktop
+  term: Docker Desktop
+  short: Eine Anwendung für macOS, Windows und Linux, die Docker samt grafischer Oberfläche installiert.
+  explanation: >
+    Docker Desktop bringt Docker Engine, CLI, Compose und BuildKit mit. Auf macOS und Windows startet es im
+    Hintergrund eine kleine Linux-VM, weil Container einen Linux-Kernel brauchen. Für größere Firmen ist es
+    kostenpflichtig; Alternativen sind z. B. die Docker Engine direkt unter Linux.
+  example: "Nach der Installation von Docker Desktop funktioniert `docker run hello-world` im Terminal."
+  category: docker
+  aliases: []
+  related: [docker-engine, docker, virtuelle-maschine]
+  lesson: docker/was-sind-container
+
+- slug: oci
+  term: OCI
+  short: Die Open Container Initiative, die offene Standards für Container-Images und -Laufzeiten festlegt.
+  explanation: >
+    Dank der OCI-Standards ist ein Image nicht an Docker gebunden. Ein mit Docker gebautes Image läuft auch mit
+    Podman, containerd oder in Kubernetes, und jede OCI-kompatible Registry kann es speichern.
+  example: "Ein Image aus `docker build` startet unverändert in einem Kubernetes-Cluster."
+  category: docker
+  aliases: [Open Container Initiative, OCI-Image]
+  related: [docker-image, registry, kubernetes]
+  lesson: docker/was-sind-container
+
+- slug: image-tag
+  term: Image-Tag
+  short: Der Teil eines Image-Namens nach dem Doppelpunkt, der Version oder Variante angibt.
+  explanation: >
+    Tags wie `1.4.2`, `24-alpine` oder `latest` sind veränderliche Etiketten: Der Herausgeber kann ein Tag jederzeit
+    auf ein anderes Image zeigen lassen. Fehlt das Tag, nimmt Docker `latest`. Für reproduzierbare Setups gibst du
+    immer eine konkrete Version an.
+  example: "In `node:24-alpine` ist `24-alpine` das Tag: Node.js 24 auf Alpine Linux."
+  category: docker
+  aliases: [Tag (Docker), Image-Tags]
+  related: [docker-image, image-digest, registry]
+  lesson: docker/images-und-container
+
+- slug: image-digest
+  term: Image-Digest
+  short: Eine unveränderliche Prüfsumme, die ein Image eindeutig über seinen Inhalt identifiziert.
+  explanation: >
+    Der Digest beginnt mit `sha256:` und wird aus dem Inhalt des Images berechnet. Anders als ein Tag kann er nie auf
+    ein anderes Image zeigen. Wer maximal reproduzierbar arbeiten will, pinnt Basis-Images zusätzlich per Digest.
+  example: "`FROM node:24-alpine@sha256:3f1c…` nutzt genau dieses eine Image, auch wenn das Tag später weiterwandert."
+  category: docker
+  aliases: [Digest]
+  related: [image-tag, pruefsumme, docker-image]
+  lesson: docker/images-und-container
+
+- slug: alpine-linux
+  term: Alpine Linux
+  short: Eine sehr kleine Linux-Distribution, die oft als Basis für Container-Images dient.
+  explanation: >
+    Ein Alpine-Basis-Image ist nur wenige Megabyte groß. Pakete installierst du mit `apk add`. Alpine nutzt die
+    C-Bibliothek musl statt glibc – manche vorkompilierten Programme laufen deshalb nicht ohne Weiteres darauf.
+  example: "`FROM node:24-alpine` und `RUN apk add --no-cache git` installieren Git in einem Alpine-Image."
+  category: docker
+  aliases: [Alpine]
+  related: [basis-image, docker-image]
+  lesson: docker/images-und-container
+
+- slug: dockerfile
+  term: Dockerfile
+  short: Eine Textdatei mit der Bauanleitung für ein Docker-Image.
+  explanation: >
+    Ein Dockerfile beginnt mit `FROM` und beschreibt Schritt für Schritt, welche Dateien ins Image kommen, welche
+    Befehle beim Bauen laufen und welches Programm beim Start ausgeführt wird. `docker build` liest es und erzeugt
+    daraus ein Image.
+  example: "`docker build -t shop:1.0 .` baut das Image aus dem Dockerfile im aktuellen Ordner."
+  category: docker
+  aliases: [Dockerfiles]
+  related: [docker-image, basis-image, build-kontext]
+  lesson: docker/dockerfile-grundlagen
+
+- slug: basis-image
+  term: Basis-Image
+  short: Das Image in der FROM-Zeile, auf dem ein eigenes Image aufbaut.
+  explanation: >
+    Das Basis-Image liefert Betriebssystem-Dateien und oft schon eine Laufzeit wie Node.js oder PHP. Deine eigenen
+    Anweisungen legen weitere Layer darüber. Seine Wahl bestimmt maßgeblich Größe und Angriffsfläche deines Images.
+  example: "In `FROM php:8.5-fpm-alpine` ist `php:8.5-fpm-alpine` das Basis-Image."
+  category: docker
+  aliases: [Base Image, Basis-Images]
+  related: [dockerfile, alpine-linux, distroless-image]
+  lesson: docker/dockerfile-grundlagen
+
+- slug: build-kontext
+  term: Build-Kontext
+  short: Der Ordner, den Docker beim Bauen an den Builder schickt und aus dem COPY Dateien holen kann.
+  explanation: >
+    Bei `docker build .` ist der Punkt der Build-Kontext. Nur Dateien darin können per `COPY` ins Image. Eine
+    `.dockerignore` schließt Dateien aus dem Kontext aus – das macht Builds schneller und hält Geheimnisse fern.
+  example: "`COPY ../geheim.txt .` scheitert, weil die Datei außerhalb des Build-Kontexts liegt."
+  category: docker
+  aliases: [Build Context, Kontext]
+  related: [dockerfile, dockerignore]
+  lesson: docker/dockerfile-grundlagen
+
+- slug: entrypoint
+  term: ENTRYPOINT
+  short: Die Dockerfile-Anweisung, die das feste Startprogramm eines Containers festlegt.
+  explanation: >
+    `ENTRYPOINT` bestimmt, welches Programm beim Start immer läuft. `CMD` liefert dann nur noch die
+    Standard-Argumente, die du beim `docker run` überschreiben kannst. Viele offizielle Images nutzen ein
+    Entrypoint-Skript, das vor dem Start z. B. eine Datenbank initialisiert.
+  example: "Mit `ENTRYPOINT [\"php\", \"artisan\"]` und `CMD [\"list\"]` führt `docker run app migrate` den Befehl `php artisan migrate` aus."
+  category: docker
+  aliases: [Entrypoint, Entrypoint-Skript]
+  related: [dockerfile, exec-form]
+  lesson: docker/dockerfile-grundlagen
+
+- slug: exec-form
+  term: Exec-Form
+  short: Die Schreibweise von CMD und ENTRYPOINT als JSON-Array, bei der das Programm ohne Shell startet.
+  explanation: >
+    In der Exec-Form `CMD ["node", "server.js"]` läuft dein Programm direkt als Prozess 1 und empfängt Signale wie
+    SIGTERM. In der Shell-Form `CMD node server.js` steckt eine Shell davor, die Signale oft nicht weiterreicht – der
+    Container wird dann nach einer Wartezeit hart beendet.
+  example: "`CMD [\"php-fpm\"]` ist die Exec-Form, `CMD php-fpm` die Shell-Form."
+  category: docker
+  aliases: [Exec-Schreibweise, exec form]
+  related: [entrypoint, signal, dockerfile]
+  lesson: docker/dockerfile-grundlagen
+
+- slug: buildkit
+  term: BuildKit
+  short: Der moderne Builder von Docker, der Images parallel, mit klugem Cache und sicheren Secrets baut.
+  explanation: >
+    Seit Docker Engine 23 ist BuildKit der Standard-Builder. Er erkennt unabhängige Stages und baut sie parallel,
+    überspringt Stages, die das Ziel nicht braucht, und unterstützt Funktionen wie Secret- und Cache-Mounts.
+    `docker buildx` ist die Kommandozeile für seine erweiterten Funktionen.
+  example: "`RUN --mount=type=secret,id=npm_token …` funktioniert nur mit BuildKit."
+  category: docker
+  aliases: [Buildx]
+  related: [dockerfile, build-secret, multi-stage-build]
+  lesson: docker/dockerfile-grundlagen
+
+- slug: image-layer
+  term: Image-Layer
+  short: Eine schreibgeschützte Schicht eines Images, die die Dateiänderungen einer Dockerfile-Anweisung enthält.
+  explanation: >
+    Jede Anweisung wie `RUN` oder `COPY` erzeugt einen Layer mit den Änderungen gegenüber dem Layer darunter. Images
+    teilen sich gleiche Layer auf der Festplatte und beim Download. Ändert sich ein Layer, müssen alle Layer darüber
+    neu gebaut werden.
+  example: "`docker image history shop:1.0` listet alle Layer eines Images samt Größe."
+  category: docker
+  aliases: [Layer, Schicht, Image-Layern]
+  related: [docker-image, build-cache, copy-on-write]
+  lesson: docker/layer-und-build-cache
+
+- slug: copy-on-write
+  term: Copy-on-Write
+  short: Ein Verfahren, bei dem Daten erst kopiert werden, wenn jemand sie verändert.
+  explanation: >
+    Container teilen sich die schreibgeschützten Layer ihres Images. Ändert ein Container eine Datei, kopiert Docker
+    sie zuerst in die beschreibbare Schicht dieses einen Containers und ändert dort die Kopie. So starten Container
+    schnell und belegen kaum zusätzlichen Platz.
+  example: "Zehn Container aus demselben 200-MB-Image belegen zusammen nicht 2 GB, sondern kaum mehr als 200 MB."
+  category: docker
+  aliases: [CoW]
+  related: [image-layer, container]
+  lesson: docker/layer-und-build-cache
+
+- slug: dockerignore
+  term: .dockerignore
+  short: Eine Datei, die festlegt, welche Dateien nicht in den Build-Kontext gelangen.
+  explanation: >
+    Die `.dockerignore` liegt im Kontext-Ordner und nutzt eine ähnliche Syntax wie die `.gitignore`. Typische
+    Einträge sind `node_modules`, `vendor`, `.git` und `.env`. Das beschleunigt Builds, verkleinert Images und
+    verhindert, dass Geheimnisse ins Image kopiert werden.
+  example: "Eine Zeile `.env` in der `.dockerignore` hält deine Passwörter aus `COPY . .` heraus."
+  category: docker
+  aliases: [dockerignore]
+  related: [build-kontext, gitignore, secret]
+  lesson: docker/layer-und-build-cache
+
+- slug: multi-stage-build
+  term: Multi-Stage-Build
+  short: Ein Dockerfile mit mehreren FROM-Zeilen, bei dem nur die letzte Stage zum fertigen Image wird.
+  explanation: >
+    Frühere Stages dienen als Werkbank, etwa zum Kompilieren oder Bündeln. Mit `COPY --from=<stage>` holt die finale
+    Stage nur das Ergebnis heraus. Compiler, Dev-Abhängigkeiten und Quellcode bleiben so draußen, und das Image wird
+    deutlich kleiner und sicherer.
+  example: "`FROM node:24-alpine AS build` baut das Frontend, `FROM nginx:1.30-alpine` liefert nur `dist/` aus."
+  category: docker
+  aliases: [Multi-Stage, Stage, Stages]
+  related: [dockerfile, basis-image, buildkit]
+  lesson: docker/multi-stage-und-sicherheit
+
+- slug: distroless-image
+  term: Distroless-Image
+  short: Ein Basis-Image, das nur die Laufzeit einer Anwendung enthält – ohne Paketmanager und ohne Shell.
+  explanation: >
+    Distroless-Images verzichten auf alles, was eine Linux-Distribution sonst mitbringt. Weniger Programme bedeuten
+    weniger mögliche Sicherheitslücken. Dafür kannst du dich nicht mit `docker exec … sh` hineinbegeben, was das
+    Debuggen erschwert.
+  example: "Eine Go- oder Node-App läuft im Distroless-Image, aber `docker exec -it app sh` schlägt fehl."
+  category: docker
+  aliases: [Distroless]
+  related: [basis-image, alpine-linux, cve]
+  lesson: docker/multi-stage-und-sicherheit
+
+- slug: fastcgi
+  term: FastCGI
+  short: Ein Protokoll, über das ein Webserver Anfragen an ein Programm wie PHP-FPM weiterreicht.
+  explanation: >
+    Der Webserver nimmt die HTTP-Anfrage des Browsers an und schickt die nötigen Angaben per FastCGI an einen
+    dauerhaft laufenden Anwendungsprozess. Dieser antwortet mit der fertigen Seite, die der Webserver zurückgibt.
+    PHP-FPM lauscht dafür standardmäßig auf Port 9000.
+  example: "In Nginx leitet `fastcgi_pass php:9000;` PHP-Anfragen an den Container `php` weiter."
+  category: docker
+  aliases: [FastCGI-Protokoll]
+  related: [php-fpm, nginx, webserver]
+  lesson: docker/images-fuer-php-und-node
+
+- slug: docker-volume
+  term: Volume
+  short: Ein von Docker verwalteter Speicherbereich, dessen Daten das Löschen von Containern überleben.
+  explanation: >
+    Volumes werden über ihren Namen angesprochen und mit `-v name:/pfad` in Container eingehängt. Docker legt sie
+    selbst auf der Festplatte des Hosts an. Sie bleiben bestehen, bis du sie ausdrücklich mit `docker volume rm`
+    löschst – ideal für Datenbankdateien.
+  example: "`docker run -v pgdata:/var/lib/postgresql postgres:18-alpine` speichert die Datenbank im Volume `pgdata`."
+  category: docker
+  aliases: [Docker-Volume, Volumes, Named Volume]
+  related: [bind-mount, tmpfs, container]
+  lesson: docker/volumes-und-bind-mounts
+
+- slug: bind-mount
+  term: Bind Mount
+  short: Ein Ordner oder eine Datei des Host-Rechners, die direkt in einen Container eingehängt wird.
+  explanation: >
+    Host und Container sehen bei einem Bind Mount dieselben Dateien. Änderungen auf einer Seite sind sofort auf der
+    anderen sichtbar. Das ist praktisch für Quellcode in der Entwicklung, kann aber Probleme mit Dateirechten
+    verursachen, wenn Benutzer-IDs von Host und Container nicht passen.
+  example: "`-v ./src:/app/src` zeigt deine lokalen Änderungen sofort im Container."
+  category: docker
+  aliases: [Bind-Mount, Bind Mounts]
+  related: [docker-volume, tmpfs]
+  lesson: docker/volumes-und-bind-mounts
+
+- slug: tmpfs
+  term: tmpfs
+  short: Ein Dateisystem, das nur im Arbeitsspeicher liegt und beim Stoppen verschwindet.
+  explanation: >
+    Ein tmpfs-Mount ist sehr schnell und hinterlässt keine Spuren auf der Festplatte. Er eignet sich für temporäre
+    Dateien oder Zwischenergebnisse, die nicht dauerhaft gespeichert werden sollen. Nach dem Stopp des Containers
+    sind die Daten weg.
+  example: "`docker run --tmpfs /tmp/cache shop:1.0` legt `/tmp/cache` in den Arbeitsspeicher."
+  category: docker
+  aliases: [tmpfs-Mount]
+  related: [docker-volume, bind-mount, arbeitsspeicher]
+  lesson: docker/volumes-und-bind-mounts
+
+- slug: bridge-netzwerk
+  term: Bridge-Netzwerk
+  short: Ein virtuelles Netzwerk auf einem Docker-Host, über das Container miteinander sprechen.
+  explanation: >
+    Docker legt standardmäßig das Netzwerk `bridge` an. Selbst angelegte Bridge-Netzwerke (`docker network create`)
+    bringen zusätzlich einen eingebauten DNS-Dienst mit: Container finden sich dort über ihren Namen. Docker Compose
+    legt für jedes Projekt automatisch ein solches Netzwerk an.
+  example: "Im Netzwerk `shop` erreicht der Container `api` die Datenbank unter `db:5432`."
+  category: docker
+  aliases: [Docker-Netzwerk, Bridge, Container-Netzwerk]
+  related: [netzwerk, dns, container]
+  lesson: docker/container-netzwerke
+
+- slug: compose-service
+  term: Service (Compose)
+  short: Ein Eintrag in der compose.yaml, der beschreibt, wie Container einer bestimmten Rolle gestartet werden.
+  explanation: >
+    Ein Service legt Image oder Build, Ports, Volumes, Umgebungsvariablen und Abhängigkeiten fest. Der Service-Name
+    dient im Projekt-Netzwerk zugleich als Hostname. Befehle wie `docker compose logs php` sprechen Services über
+    diesen Namen an.
+  example: "Der Service `db` in der `compose.yaml` wird zum Container `shop-db-1`."
+  category: docker
+  aliases: [Service, Services, Compose-Service]
+  related: [docker-compose, compose-profil, healthcheck]
+  lesson: docker/compose-grundlagen
+
+- slug: healthcheck
+  term: Healthcheck
+  short: Ein Befehl, den Docker regelmäßig im Container ausführt, um zu prüfen, ob der Dienst wirklich bereit ist.
+  explanation: >
+    Endet der Befehl mit Exit-Code 0, gilt der Container als `healthy`, sonst nach mehreren Fehlschlägen als
+    `unhealthy`. Compose kann mit `depends_on` und `condition: service_healthy` warten, bis ein Dienst gesund ist.
+    So startet eine App erst, wenn ihre Datenbank Verbindungen annimmt.
+  example: "`test: [\"CMD-SHELL\", \"pg_isready -U postgres\"]` prüft, ob PostgreSQL bereit ist."
+  category: docker
+  aliases: [Health Check, Healthchecks, Gesundheitsprüfung]
+  related: [compose-service, exit-code, docker-compose]
+  lesson: docker/healthchecks-profile-env
+
+- slug: compose-profil
+  term: Profil (Compose)
+  short: Eine Markierung in der compose.yaml, mit der optionale Services nur bei Bedarf gestartet werden.
+  explanation: >
+    Services mit `profiles: [tools]` starten nur, wenn das Profil aktiv ist – per `--profile tools` oder über die
+    Variable `COMPOSE_PROFILES`. Services ohne Profil laufen immer. So bleiben Hilfsdienste wie Mail-Catcher oder
+    Datenbank-Tools standardmäßig aus.
+  example: "`docker compose --profile tools up -d` startet zusätzlich Mailpit."
+  category: docker
+  aliases: [Profile, Compose-Profil, profiles]
+  related: [compose-service, docker-compose]
+  lesson: docker/healthchecks-profile-env
+
+- slug: valkey
+  term: Valkey
+  short: Ein quelloffener, Redis-kompatibler Schlüssel-Wert-Speicher im Arbeitsspeicher.
+  explanation: >
+    Valkey ist eine von der Linux Foundation betreute Abspaltung von Redis und versteht dieselben Befehle und
+    Protokolle. Anwendungen nutzen es als Cache, für Sessions oder als Warteschlange. Laravel spricht Valkey über den
+    normalen Redis-Treiber an.
+  example: "`docker exec cache valkey-cli ping` antwortet mit `PONG`, wenn Valkey läuft."
+  category: docker
+  aliases: []
+  related: [redis, cache]
+  lesson: docker/healthchecks-profile-env
+
+- slug: mailpit
+  term: Mailpit
+  short: Ein Werkzeug für die Entwicklung, das ausgehende E-Mails abfängt und in einer Weboberfläche anzeigt.
+  explanation: >
+    Statt echte E-Mails zu verschicken, schickt die Anwendung sie per SMTP an Mailpit. Dort kannst du sie im Browser
+    ansehen, ohne dass jemand eine Testmail bekommt. In Compose-Setups läuft Mailpit oft in einem eigenen Profil.
+  example: "Mit `MAIL_HOST=mailpit` und `MAIL_PORT=1025` landen Laravel-Mails in Mailpit unter `localhost:8025`."
+  category: docker
+  aliases: [Mail-Catcher]
+  related: [compose-profil]
+  lesson: docker/healthchecks-profile-env
+
+- slug: build-secret
+  term: Build-Secret
+  short: Ein Geheimnis, das nur während eines einzelnen Build-Schritts verfügbar ist und in keinem Image-Layer landet.
+  explanation: >
+    Mit `RUN --mount=type=secret,id=…` stellt BuildKit ein Geheimnis wie ein Paket-Token nur für diesen einen Befehl
+    bereit. Anders als `ENV`, `ARG` oder kopierte Dateien bleibt es weder im Image noch in seiner Historie. Übergeben
+    wird es mit `docker build --secret`.
+  example: "`docker build --secret id=npm_token,env=NPM_TOKEN .` reicht das Token sicher an `npm ci` weiter."
+  category: docker
+  aliases: [Build-Secrets, Secret-Mount]
+  related: [secret, buildkit, dockerfile]
+  lesson: docker/registries-und-sicherheit
+
+- slug: docker-scout
+  term: Docker Scout
+  short: Ein Werkzeug von Docker, das Images auf bekannte Sicherheitslücken in ihren Paketen untersucht.
+  explanation: >
+    Docker Scout liest aus, welche Pakete in einem Image stecken, und vergleicht sie mit Datenbanken bekannter
+    Schwachstellen (CVEs). Es schlägt außerdem neuere Basis-Images vor, die weniger Lücken haben. In der CI kann ein
+    solcher Scan den Build bei kritischen Funden stoppen.
+  example: "`docker scout cves shop:1.4.2` listet alle bekannten CVEs im Image."
+  category: docker
+  aliases: [Scout]
+  related: [cve, docker-image, basis-image]
+  lesson: docker/registries-und-sicherheit

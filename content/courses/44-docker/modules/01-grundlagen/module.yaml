@@ -1,0 +1,105 @@
+title: Container verstehen
+description: Was Container sind, wie Images und Container zusammenhängen und wie du Container startest, erreichst und untersuchst.
+exercise:
+  id: modul-uebung-cache
+  type: terminal
+  title: Ein Betriebsskript für einen Cache-Container
+  description: |
+    Dein Team braucht lokal einen Valkey-Cache (ein Redis-kompatibler Schlüssel-Wert-Speicher). Du schreibst
+    ein kleines Skript `cache.sh`, das alle wichtigen Handgriffe enthält – zum späteren Ausführen auf einem
+    Rechner mit Docker. Stacklab prüft den Inhalt.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Im Ordner `cache-skript` liegt dann `cache.sh` mit einer
+    `case`-Verzweigung und vier leeren Zweigen. Ersetze in jedem Zweig den Platzhalter `: # TODO` durch genau
+    einen Befehl:
+
+    1. `start`: Startet im Hintergrund einen Container namens `cache` aus `valkey/valkey:9-alpine`.
+       Port 6379 wird nur auf `127.0.0.1` veröffentlicht (gleicher Port auf Host und im Container).
+    2. `logs`: Zeigt die letzten 20 Log-Zeilen von `cache`.
+    3. `ping`: Führt im laufenden Container `valkey-cli ping` aus.
+    4. `stop`: Stoppt **und** löscht den Container in einem Befehl (`docker rm` mit der Option `-f`).
+
+    Am Ende darf kein `TODO` mehr in der Datei stehen, und `bash -n cache.sh` muss fehlerfrei durchlaufen.
+  workdir: cache-skript
+  setup: |
+    cat > cache.sh <<'EOF'
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    case "${1:-}" in
+      start)
+        : # TODO
+        ;;
+      logs)
+        : # TODO
+        ;;
+      ping)
+        : # TODO
+        ;;
+      stop)
+        : # TODO
+        ;;
+      *)
+        echo "Usage: $0 {start|logs|ping|stop}" >&2
+        exit 1
+        ;;
+    esac
+    EOF
+    chmod +x cache.sh
+  checks:
+    - type: command
+      run: grep -c 'TODO' cache.sh || true
+      stdout_equals: "0"
+      message: In cache.sh steht noch mindestens ein TODO. Ersetze jeden Platzhalter durch einen Befehl.
+    - type: command
+      run: bash -n cache.sh && echo ok
+      stdout_equals: ok
+      message: cache.sh hat einen Syntaxfehler. Achte darauf, dass jeder Zweig mit ;; endet.
+    - type: command
+      run: awk '/^ *start\)/,/;;/' cache.sh | grep -E 'docker +(container +)?run' | grep -E ' (-d|--detach)( |$)' | grep -E -- '--name[ =]cache( |$)' | grep -E -- '(-p|--publish)[ =]127\.0\.0\.1:6379:6379( |$)' | grep -cE 'valkey/valkey:9-alpine *$'
+      stdout_equals: "1"
+      message: "Der start-Zweig braucht: docker run -d --name cache -p 127.0.0.1:6379:6379 valkey/valkey:9-alpine (Image am Ende)."
+    - type: command
+      run: awk '/^ *logs\)/,/;;/' cache.sh | grep -cE 'docker +(container +)?logs +((--tail[ =]20|-n +20) +cache|cache +(--tail[ =]20|-n +20)) *$'
+      stdout_equals: "1"
+      message: "Der logs-Zweig soll die letzten 20 Zeilen zeigen: docker logs --tail 20 cache."
+    - type: command
+      run: awk '/^ *ping\)/,/;;/' cache.sh | grep -cE 'docker +(container +)?exec +(-it +|-i +)?cache +valkey-cli +ping *$'
+      stdout_equals: "1"
+      message: "Der ping-Zweig führt im Container valkey-cli ping aus: docker exec cache valkey-cli ping."
+    - type: command
+      run: awk '/^ *stop\)/,/;;/' cache.sh | grep -cE 'docker +(container +)?rm +(-f|--force) +cache *$'
+      stdout_equals: "1"
+      message: "Der stop-Zweig stoppt und löscht in einem Befehl: docker rm -f cache."
+  hints:
+    - Jeder Zweig bekommt genau eine Zeile. Lösche dabei die Zeile mit `: # TODO`.
+    - "Die Port-Angabe mit IP lautet 127.0.0.1:6379:6379 – Host-IP, Host-Port, Container-Port."
+    - "start: docker run -d --name cache -p 127.0.0.1:6379:6379 valkey/valkey:9-alpine – logs: docker logs --tail 20 cache – ping: docker exec cache valkey-cli ping – stop: docker rm -f cache"
+  solution: |
+    ```bash
+    cd cache-skript
+    cat > cache.sh <<'EOF'
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    case "${1:-}" in
+      start)
+        docker run -d --name cache -p 127.0.0.1:6379:6379 valkey/valkey:9-alpine
+        ;;
+      logs)
+        docker logs --tail 20 cache
+        ;;
+      ping)
+        docker exec cache valkey-cli ping
+        ;;
+      stop)
+        docker rm -f cache
+        ;;
+      *)
+        echo "Usage: $0 {start|logs|ping|stop}" >&2
+        exit 1
+        ;;
+    esac
+    EOF
+    bash -n cache.sh && echo "Syntax ok"
+    ```

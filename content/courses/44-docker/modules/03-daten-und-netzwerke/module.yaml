@@ -1,0 +1,74 @@
+title: Daten und Netzwerke
+description: Wie Daten Container-Neustarts überleben und wie Container über eigene Netzwerke miteinander sprechen.
+exercise:
+  id: modul-uebung-stack-skript
+  type: terminal
+  title: Ein Mini-Stack ohne Compose
+  description: |
+    Bevor du Docker Compose kennenlernst, baust du einen kleinen Stack aus zwei Containern einmal von Hand – als
+    Skript für einen Rechner mit Docker. Stacklab prüft den Inhalt.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Im Ordner `mini-stack` liegen dann ein Ordner `public/` mit einer
+    `index.html` und ein fast leeres Skript `stack.sh`. Ergänze darin vier Befehle – jeden auf **einer** Zeile:
+
+    1. Lege das Netzwerk `shop` an.
+    2. Lege das Volume `pgdata` an.
+    3. Starte im Hintergrund den Container `db` aus `postgres:18-alpine` im Netzwerk `shop`, mit
+       `-e POSTGRES_PASSWORD=geheim` und dem Volume `pgdata` unter `/var/lib/postgresql`. Die Datenbank bekommt
+       **keinen** veröffentlichten Port.
+    4. Starte im Hintergrund den Container `web` aus `nginx:1.30-alpine` im Netzwerk `shop`, veröffentliche Port
+       8080 nur auf `127.0.0.1` (Container-Port 80) und hänge `./public` schreibgeschützt nach
+       `/usr/share/nginx/html` ein (`-v ./public:/usr/share/nginx/html:ro`).
+
+    `bash -n stack.sh` muss fehlerfrei durchlaufen.
+  workdir: mini-stack
+  setup: |
+    mkdir -p public
+    echo '<h1>Hallo aus dem Mini-Stack</h1>' > public/index.html
+    printf '#!/usr/bin/env bash\nset -euo pipefail\n\n' > stack.sh
+    chmod +x stack.sh
+  checks:
+    - type: file_contains
+      path: stack.sh
+      pattern: "^docker\\s+network\\s+create\\s+shop\\s*$"
+      message: Es fehlt die Zeile docker network create shop.
+    - type: file_contains
+      path: stack.sh
+      pattern: "^docker\\s+volume\\s+create\\s+pgdata\\s*$"
+      message: Es fehlt die Zeile docker volume create pgdata.
+    - type: command
+      run: grep -E '^docker\s+run\s.*postgres:18-alpine\s*$' stack.sh | grep -E '\s(-d|--detach)\s' | grep -E -- '--name[ =]db\s' | grep -E -- '--network[ =]shop\s' | grep -E -- '(-e|--env)[ =]POSTGRES_PASSWORD=geheim\s' | grep -cE -- '(-v|--volume)[ =]pgdata:/var/lib/postgresql/?\s'
+      stdout_equals: "1"
+      message: "Die db-Zeile ist unvollständig. Gesucht: docker run -d --name db --network shop -e POSTGRES_PASSWORD=geheim -v pgdata:/var/lib/postgresql postgres:18-alpine"
+    - type: command
+      run: grep -E '^docker\s+run\s.*postgres:18-alpine' stack.sh | grep -cE -- '\s(-p|--publish)[ =]' || true
+      stdout_equals: "0"
+      message: Die Datenbank soll keinen veröffentlichten Port haben – entferne -p aus der db-Zeile.
+    - type: command
+      run: grep -E '^docker\s+run\s.*nginx:1\.30-alpine\s*$' stack.sh | grep -E '\s(-d|--detach)\s' | grep -E -- '--name[ =]web\s' | grep -E -- '--network[ =]shop\s' | grep -E -- '(-p|--publish)[ =]127\.0\.0\.1:8080:80\s' | grep -cE -- '(-v|--volume)[ =]\./public:/usr/share/nginx/html:ro\s'
+      stdout_equals: "1"
+      message: "Die web-Zeile ist unvollständig. Gesucht: docker run -d --name web --network shop -p 127.0.0.1:8080:80 -v ./public:/usr/share/nginx/html:ro nginx:1.30-alpine"
+    - type: command
+      run: >-
+        awk '/^docker +network +create/{n=NR} /^docker +volume +create/{v=NR} /^docker +run/{if(!r) r=NR} END{print (n && v && r && n<r && v<r) ? "ok" : "falsch"}' stack.sh
+      stdout_equals: ok
+      message: Netzwerk und Volume müssen angelegt werden, bevor der erste Container startet.
+    - type: command
+      run: bash -n stack.sh && echo ok
+      stdout_equals: ok
+      message: stack.sh hat einen Syntaxfehler.
+  hints:
+    - Schreibe jeden Befehl in eine eigene Zeile – ohne Backslash-Umbrüche, damit die Prüfung ihn findet.
+    - "Optionen stehen immer vor dem Image-Namen, das Image steht am Zeilenende."
+    - "Die Zeile für web: docker run -d --name web --network shop -p 127.0.0.1:8080:80 -v ./public:/usr/share/nginx/html:ro nginx:1.30-alpine"
+  solution: |
+    ```bash
+    cd mini-stack
+    cat >> stack.sh <<'EOF'
+    docker network create shop
+    docker volume create pgdata
+    docker run -d --name db --network shop -e POSTGRES_PASSWORD=geheim -v pgdata:/var/lib/postgresql postgres:18-alpine
+    docker run -d --name web --network shop -p 127.0.0.1:8080:80 -v ./public:/usr/share/nginx/html:ro nginx:1.30-alpine
+    EOF
+    bash -n stack.sh && echo "Syntax ok"
+    ```

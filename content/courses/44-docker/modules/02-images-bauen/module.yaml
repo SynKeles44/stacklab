@@ -1,0 +1,97 @@
+title: Images bauen
+description: Wie du mit Dockerfiles eigene Images baust, den Build-Cache nutzt und schlanke, sichere Images für Laravel- und Node-Anwendungen erzeugst.
+exercise:
+  id: modul-uebung-frontend-image
+  type: terminal
+  title: Ein Frontend-Image aufräumen
+  description: |
+    Ein Kollege hat für ein Vite-Frontend ein Dockerfile geschrieben. Es funktioniert – ist aber riesig, langsam
+    zu bauen und enthält sogar ein Token. Du räumst es mit allem auf, was du in diesem Modul gelernt hast.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**. Im Ordner `frontend-image` liegen `package.json`,
+    `package-lock.json`, `index.html`, `src/`, eine `.env`, `node_modules` und das alte `Dockerfile`.
+    `npm run build` schreibt das fertige Frontend nach `dist/`.
+
+    Schreibe das `Dockerfile` neu – als Multi-Stage-Build:
+
+    1. Stage `build` auf `node:24-alpine` (also `FROM node:24-alpine AS build`) mit Arbeitsverzeichnis `/app`.
+    2. Zuerst nur `package.json` und `package-lock.json` kopieren, dann `RUN npm ci`, dann den restlichen Code
+       kopieren, dann `RUN npm run build`.
+    3. Finale Stage auf `nginx:1.30-alpine`, die nur `/app/dist` aus der Stage `build` nach
+       `/usr/share/nginx/html` kopiert.
+    4. Kein `latest`, kein `npm install` und kein `API_TOKEN` mehr im Dockerfile.
+
+    Lege außerdem eine `.dockerignore` an, die `node_modules`, `dist`, `.git` und `.env` ausschließt.
+  workdir: frontend-image
+  setup: |
+    mkdir -p src node_modules/vite .git
+    echo '{ "name": "frontend", "private": true, "scripts": { "build": "vite build" } }' > package.json
+    echo '{ "name": "frontend", "lockfileVersion": 3, "requires": true, "packages": {} }' > package-lock.json
+    echo '<!doctype html><div id="app"></div><script type="module" src="/src/main.js"></script>' > index.html
+    echo 'document.querySelector("#app").textContent = "Hallo";' > src/main.js
+    echo 'API_TOKEN=<dein-token>' > .env
+    cat > Dockerfile <<'EOF'
+    FROM node:latest
+    COPY . .
+    RUN npm install
+    RUN npm run build
+    ENV API_TOKEN=abc123
+    CMD npm run preview
+    EOF
+  checks:
+    - type: command
+      run: grep -ciE 'latest|API_TOKEN|npm +install' Dockerfile || true
+      stdout_equals: "0"
+      message: Im Dockerfile steht noch latest, npm install oder API_TOKEN. Entferne alle drei.
+    - type: command
+      run: grep -cE '^FROM\s' Dockerfile
+      stdout_equals: "2"
+      message: Das Dockerfile soll genau zwei Stages (zwei FROM-Zeilen) haben.
+    - type: command
+      run: grep -E '^FROM\s' Dockerfile | head -n 1
+      stdout_matches: "^FROM\\s+node:24-alpine\\s+(AS|as)\\s+build\\s*$"
+      message: "Die erste Zeile mit FROM lautet: FROM node:24-alpine AS build"
+    - type: command
+      run: grep -E '^FROM\s' Dockerfile | tail -n 1
+      stdout_matches: "^FROM\\s+nginx:1\\.30-alpine\\s*$"
+      message: "Die finale Stage beginnt mit FROM nginx:1.30-alpine."
+    - type: command
+      run: awk '/^FROM/{s++} s==1 && /^WORKDIR +\/app\/? *$/{print "ok"}' Dockerfile
+      stdout_equals: ok
+      message: In der build-Stage fehlt WORKDIR /app.
+    - type: command
+      run: >-
+        awk '/^FROM/{s++} s==1 && /^COPY +package/{p=NR} s==1 && /^RUN +npm +ci *$/{r=NR} s==1 && /^COPY +\. +\.\/? *$/{c=NR} s==1 && /^RUN +npm +run +build *$/{b=NR} END{print (p && r && c && b && p<r && r<c && c<b) ? "ok" : "falsch"}' Dockerfile
+      stdout_equals: ok
+      message: "Reihenfolge in der build-Stage: COPY package.json package-lock.json ./, RUN npm ci, COPY . ., RUN npm run build."
+    - type: command
+      run: awk '/^FROM/{s++} s==2 && /^COPY +--from=build +\/app\/dist\/? +\/usr\/share\/nginx\/html\/? *$/{print "ok"}' Dockerfile
+      stdout_equals: ok
+      message: "Die finale Stage braucht: COPY --from=build /app/dist /usr/share/nginx/html"
+    - type: file_exists
+      path: .dockerignore
+      message: Es fehlt noch die Datei .dockerignore.
+    - type: command
+      run: for e in node_modules dist .git .env; do grep -qxE "/?${e//./\\.}/?" .dockerignore || echo "$e"; done | wc -l
+      stdout_matches: "^\\s*0\\s*$"
+      message: In .dockerignore fehlt mindestens einer der Einträge node_modules, dist, .git oder .env.
+  hints:
+    - Nimm das Frontend-Beispiel aus der Lektion zu Multi-Stage-Builds als Vorlage.
+    - "Die nginx-Stage braucht kein CMD – das offizielle Image startet Nginx von selbst."
+    - "printf 'node_modules\\ndist\\n.git\\n.env\\n' > .dockerignore"
+  solution: |
+    ```bash
+    cd frontend-image
+    cat > Dockerfile <<'EOF'
+    FROM node:24-alpine AS build
+    WORKDIR /app
+    COPY package.json package-lock.json ./
+    RUN npm ci
+    COPY . .
+    RUN npm run build
+
+    FROM nginx:1.30-alpine
+    COPY --from=build /app/dist /usr/share/nginx/html
+    EOF
+    printf 'node_modules\ndist\n.git\n.env\n' > .dockerignore
+    ```
