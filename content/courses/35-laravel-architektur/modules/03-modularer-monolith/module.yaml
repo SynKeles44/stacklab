@@ -1,0 +1,237 @@
+title: Der modulare Monolith
+description: Eine Laravel-App nach fachlichen Modulen schneiden, Module nur über Schnittstellen und Events verbinden und die Grenzen mit Pest-Architekturtests erzwingen.
+exercise:
+  id: modul-uebung-billing
+  type: terminal
+  title: Das Modul Billing herauslösen
+  description: |
+    Im Ordner `billing-modul` liegt eine App, die noch nach Technik sortiert ist: `app/Models/Invoice.php`,
+    `app/Services/InvoiceTotals.php` und ein Controller, der den Service nutzt. Ein Feature-Test erwartet
+    schon die neue Struktur und ist deshalb rot.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** und wechsle mit `cd billing-modul` in die App.
+
+    1. Verschiebe das Model nach `app/Modules/Billing/Models/Invoice.php` (Namespace
+       `App\Modules\Billing\Models`).
+    2. Lege das Interface `app/Modules/Billing/Contracts/InvoiceTotals.php` mit
+       `grossFor(int $invoiceId): int` an.
+    3. Verschiebe den Service nach `app/Modules/Billing/Services/EloquentInvoiceTotals.php` als
+       `final class EloquentInvoiceTotals implements InvoiceTotals`.
+    4. Lege `app/Modules/Billing/BillingServiceProvider.php` an, der das Interface an die Implementierung
+       bindet, und trage ihn in `bootstrap/providers.php` ein.
+    5. Lass den Controller nur noch das Interface verlangen. Lösche die alten Dateien.
+    6. Schreibe `tests/Unit/BillingArchTest.php` mit mindestens zwei Regeln: Die Billing-Models werden nur
+       in `App\Modules\Billing` benutzt, und alle Klassen in `App\Modules\Billing\Services` sind final.
+    7. `./vendor/bin/pest` muss grün sein.
+  workdir: billing-modul
+  setup: |
+    B="$HOME/.cache/stacklab/laravel13"
+    if [ ! -f "$B/.fertig" ]; then
+      T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+      timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+      cd "$T"
+      timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+      printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+      printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+      printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+      touch .fertig && cd - >/dev/null
+      rm -rf "$B" && mv "$T" "$B"
+    fi
+    cp -a "$B/." . && rm -f .fertig
+    mkdir -p app/Services
+    cat > database/migrations/2026_01_01_000000_create_invoices_table.php <<'EOF'
+    <?php
+
+    use Illuminate\Database\Migrations\Migration;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\Schema;
+
+    return new class extends Migration
+    {
+        public function up(): void
+        {
+            Schema::create('invoices', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedInteger('net_cents');
+                $table->unsignedTinyInteger('tax_rate');
+                $table->timestamps();
+            });
+        }
+
+        public function down(): void
+        {
+            Schema::dropIfExists('invoices');
+        }
+    };
+    EOF
+    cat > app/Models/Invoice.php <<'EOF'
+    <?php
+
+    namespace App\Models;
+
+    use Illuminate\Database\Eloquent\Model;
+
+    class Invoice extends Model
+    {
+    }
+    EOF
+    cat > app/Services/InvoiceTotals.php <<'EOF'
+    <?php
+
+    namespace App\Services;
+
+    use App\Models\Invoice;
+
+    class InvoiceTotals
+    {
+        public function grossFor(int $invoiceId): int
+        {
+            $invoice = Invoice::findOrFail($invoiceId);
+
+            return $invoice->net_cents + (int) round($invoice->net_cents * $invoice->tax_rate / 100);
+        }
+    }
+    EOF
+    cat > app/Http/Controllers/InvoiceController.php <<'EOF'
+    <?php
+
+    namespace App\Http\Controllers;
+
+    use App\Services\InvoiceTotals;
+    use Illuminate\Http\JsonResponse;
+
+    class InvoiceController extends Controller
+    {
+        public function gross(int $id, InvoiceTotals $totals): JsonResponse
+        {
+            return response()->json(['gross_cents' => $totals->grossFor($id)]);
+        }
+    }
+    EOF
+    cat > routes/web.php <<'EOF'
+    <?php
+
+    use App\Http\Controllers\InvoiceController;
+    use Illuminate\Support\Facades\Route;
+
+    Route::get('/', function () {
+        return view('welcome');
+    });
+
+    Route::get('/invoices/{id}/gross', [InvoiceController::class, 'gross']);
+    EOF
+    cat > tests/Feature/BillingTest.php <<'EOF'
+    <?php
+
+    use App\Modules\Billing\Contracts\InvoiceTotals;
+    use Illuminate\Foundation\Testing\RefreshDatabase;
+    use Illuminate\Support\Facades\DB;
+
+    uses(RefreshDatabase::class);
+
+    test('the billing contract computes the gross amount', function () {
+        $id = DB::table('invoices')->insertGetId(['net_cents' => 1000, 'tax_rate' => 19]);
+
+        expect(app(InvoiceTotals::class)->grossFor($id))->toBe(1190);
+    });
+
+    test('the endpoint returns the gross amount', function () {
+        $id = DB::table('invoices')->insertGetId(['net_cents' => 2000, 'tax_rate' => 7]);
+
+        $this->getJson("/invoices/{$id}/gross")->assertOk()->assertJson(['gross_cents' => 2140]);
+    });
+    EOF
+    php artisan migrate -q --force
+  checks:
+    - type: file_absent
+      path: app/Models/Invoice.php
+      message: app/Models/Invoice.php existiert noch. Verschiebe das Model ins Modul Billing.
+    - type: file_absent
+      path: app/Services/InvoiceTotals.php
+      message: app/Services/InvoiceTotals.php existiert noch. Der Service gehört nach app/Modules/Billing/Services.
+    - type: file_exists
+      path: app/Modules/Billing/Contracts/InvoiceTotals.php
+      message: Das Interface app/Modules/Billing/Contracts/InvoiceTotals.php fehlt noch.
+    - type: file_contains
+      path: bootstrap/providers.php
+      pattern: "BillingServiceProvider"
+      message: Der BillingServiceProvider ist noch nicht in bootstrap/providers.php eingetragen.
+    - type: command
+      run: php artisan tinker --execute='echo get_class(app(App\Modules\Billing\Contracts\InvoiceTotals::class));'
+      stdout_matches: "App\\\\Modules\\\\Billing\\\\Services\\\\EloquentInvoiceTotals"
+      message: Der Container liefert für InvoiceTotals noch nicht EloquentInvoiceTotals. Prüfe die Bindung im BillingServiceProvider.
+    - type: command
+      run: grep -c "arch(" tests/Unit/BillingArchTest.php
+      stdout_matches: "^\\s*([2-9]|[1-9][0-9])\\s*$"
+      message: In tests/Unit/BillingArchTest.php sollen mindestens zwei arch()-Regeln stehen.
+    - type: command
+      run: ./vendor/bin/pest
+      message: Die Tests sind noch rot. Führe ./vendor/bin/pest aus und lies die Meldung.
+  hints:
+    - "Beim Verschieben ändert sich der Namespace in der Datei **und** jedes `use`, das auf die Klasse zeigt. `grep -rn 'App\\\\Services' app routes` findet die Stellen."
+    - "Provider: `final class BillingServiceProvider extends ServiceProvider { public function register(): void { $this->app->bind(InvoiceTotals::class, EloquentInvoiceTotals::class); } }`"
+    - "Arch-Regel: `arch('billing services are final')->expect('App\\Modules\\Billing\\Services')->classes()->toBeFinal();`"
+  solution: |
+    ```php title="app/Modules/Billing/Contracts/InvoiceTotals.php"
+    <?php
+
+    namespace App\Modules\Billing\Contracts;
+
+    interface InvoiceTotals
+    {
+        public function grossFor(int $invoiceId): int;
+    }
+    ```
+
+    ```php title="app/Modules/Billing/Services/EloquentInvoiceTotals.php"
+    <?php
+
+    namespace App\Modules\Billing\Services;
+
+    use App\Modules\Billing\Contracts\InvoiceTotals;
+    use App\Modules\Billing\Models\Invoice;
+
+    final class EloquentInvoiceTotals implements InvoiceTotals
+    {
+        public function grossFor(int $invoiceId): int
+        {
+            $invoice = Invoice::findOrFail($invoiceId);
+
+            return $invoice->net_cents + (int) round($invoice->net_cents * $invoice->tax_rate / 100);
+        }
+    }
+    ```
+
+    ```php title="app/Modules/Billing/BillingServiceProvider.php"
+    <?php
+
+    namespace App\Modules\Billing;
+
+    use App\Modules\Billing\Contracts\InvoiceTotals;
+    use App\Modules\Billing\Services\EloquentInvoiceTotals;
+    use Illuminate\Support\ServiceProvider;
+
+    final class BillingServiceProvider extends ServiceProvider
+    {
+        public function register(): void
+        {
+            $this->app->bind(InvoiceTotals::class, EloquentInvoiceTotals::class);
+        }
+    }
+    ```
+
+    Dazu: Model nach `app/Modules/Billing/Models/Invoice.php` (Namespace anpassen),
+    `App\Modules\Billing\BillingServiceProvider::class` in `bootstrap/providers.php`, im Controller
+    `use App\Modules\Billing\Contracts\InvoiceTotals;`, alte Dateien löschen und:
+
+    ```php title="tests/Unit/BillingArchTest.php"
+    <?php
+
+    arch('billing models stay inside billing')
+        ->expect('App\Modules\Billing\Models')
+        ->toOnlyBeUsedIn('App\Modules\Billing');
+
+    arch('billing services are final')
+        ->expect('App\Modules\Billing\Services')
+        ->classes()->toBeFinal();
+    ```

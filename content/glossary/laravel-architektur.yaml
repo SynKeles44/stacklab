@@ -1,0 +1,337 @@
+- slug: geschaeftslogik
+  term: Geschäftslogik
+  short: Die fachlichen Regeln, die ein Produkt ausmachen – etwa wie ein Preis berechnet wird oder wann eine Rechnung storniert werden darf.
+  explanation: >
+    Geschäftslogik beschreibt, was die Software fachlich tut, unabhängig davon, ob sie über das Web, die
+    Konsole oder eine Queue angestoßen wird. In großen Apps lebt sie in Actions, Services und Value
+    Objects statt in Controllern. So lässt sie sich wiederverwenden und ohne HTTP testen.
+  example: "„Ab 100 € Bestellwert gibt es 5 % Rabatt“ ist Geschäftslogik; `return response()->json(...)` ist es nicht."
+  category: architektur
+  aliases: [Business-Logik, Fachlogik, Domänenlogik]
+  related: [action-klasse, service-klasse, use-case]
+  lesson: laravel-architektur/wann-mvc-nicht-mehr-reicht
+
+- slug: fat-controller
+  term: Fat Controller
+  short: Ein Controller, der Validierung, Berechnung, Datenbankzugriffe und Nebenwirkungen selbst erledigt und dadurch riesig wird.
+  explanation: >
+    Fette Controller entstehen, wenn alle Logik dort landet, wo gerade getippt wird. Sie sind schwer zu
+    lesen und zu testen und erzwingen Kopien, sobald ein Artisan-Befehl oder Job denselben Ablauf braucht.
+    Das Gegenmittel ist ein schlanker Controller, der an eine Action delegiert.
+  example: "Ein `OrderController::store` mit 300 Zeilen, der Rabatte rechnet, Lager bucht und Mails verschickt."
+  category: architektur
+  aliases: [fetter Controller, Fat Controllers, dicker Controller]
+  related: [schlanker-controller, action-klasse, controller]
+  lesson: laravel-architektur/wann-mvc-nicht-mehr-reicht
+
+- slug: schlanker-controller
+  term: Schlanker Controller
+  short: Ein Controller, der nur HTTP übersetzt – Request annehmen, Anwendungsfall aufrufen, Response bauen.
+  explanation: >
+    Ein schlanker Controller enthält keine fachlichen Entscheidungen. Die Validierung erledigt ein Form
+    Request, die Arbeit eine Action oder ein Service. Dadurch bleibt er wenige Zeilen lang, und dieselbe
+    Logik ist auch aus Befehlen und Jobs erreichbar.
+  example: "`$order = $placeOrder->handle($request->validated()); return response()->json(['id' => $order->id], 201);`"
+  category: architektur
+  aliases: [schlanke Controller, Thin Controller, dünner Controller]
+  related: [fat-controller, action-klasse, form-request]
+  lesson: laravel-architektur/schlanke-controller-und-actions
+
+- slug: action-klasse
+  term: Action
+  short: Eine Klasse, die genau einen Anwendungsfall ausführt und dafür eine öffentliche Methode wie `handle()` anbietet.
+  explanation: >
+    Actions heißen wie Verben, etwa `PlaceOrder` oder `CancelSubscription`. Sie bekommen ihre Abhängigkeiten
+    über den Konstruktor und alle Eingaben als Parameter, nie aus dem Request. Deshalb kann jeder Eingang –
+    Controller, Artisan-Befehl oder Job – dieselbe Action aufrufen.
+  example: "`app(CreateInvoice::class)->handle(CreateInvoiceData::fromArray($row));`"
+  category: architektur
+  aliases: [Actions, Action-Klasse, Action-Klassen]
+  related: [use-case, service-klasse, schlanker-controller]
+  lesson: laravel-architektur/schlanke-controller-und-actions
+
+- slug: use-case
+  term: Anwendungsfall
+  short: Ein in sich geschlossener Vorgang, den die Anwendung für jemanden ausführt, etwa „Rechnung anlegen“.
+  explanation: >
+    Ein Anwendungsfall (englisch *Use Case*) beschreibt ein Ziel aus Sicht der Nutzer:innen, nicht die
+    Technik dahinter. In Laravel-Projekten bekommt jeder wichtige Anwendungsfall oft eine eigene
+    Action-Klasse. So zeigt die Ordnerliste, was die Anwendung kann.
+  example: "„Abo kündigen“ ist ein Anwendungsfall; die Klasse dazu heißt `CancelSubscription`."
+  category: architektur
+  aliases: [Anwendungsfälle, Use Case, Use Cases]
+  related: [action-klasse, geschaeftslogik]
+  lesson: laravel-architektur/schlanke-controller-und-actions
+
+- slug: abhaengigkeitsrichtung
+  term: Abhängigkeitsrichtung
+  short: Die Regel, in welche Richtung Schichten oder Module voneinander abhängen dürfen – meist von außen nach innen.
+  explanation: >
+    In einer Schichtenarchitektur kennen äußere Schichten wie Controller die inneren wie Actions, aber nie
+    umgekehrt. Dadurch bleiben die inneren Teile unabhängig von HTTP, Konsole oder Queue. Architekturtests
+    können diese Richtung automatisch prüfen.
+  example: "Der Controller importiert `PlaceOrder`; `PlaceOrder` importiert keinen Controller und kein `Request`."
+  category: architektur
+  aliases: [Abhängigkeitsregel, Dependency Rule]
+  related: [schichtenarchitektur, architekturtest, kopplung]
+  lesson: laravel-architektur/wann-mvc-nicht-mehr-reicht
+
+- slug: invariante
+  term: Invariante
+  short: Eine Regel, die für ein Objekt immer gelten muss, etwa „ein Geldbetrag ist nie negativ“.
+  explanation: >
+    Prüft der Konstruktor eines Value Objects seine Invarianten, kann kein ungültiges Objekt entstehen.
+    Der übrige Code muss die Regel dann nicht mehr prüfen. Weil das Objekt unveränderlich ist, kann die
+    Regel auch später nicht verletzt werden.
+  example: "`if ($cents < 0) { throw new InvalidArgumentException(...); }` im Konstruktor von `Money`."
+  category: architektur
+  aliases: [Invarianten]
+  related: [value-object, unveraenderlichkeit]
+  lesson: laravel-architektur/dtos-und-value-objects
+
+- slug: domain-event
+  term: Domain Event
+  short: Ein Objekt, das meldet, dass fachlich etwas passiert ist – benannt in der Vergangenheit, etwa `OrderPlaced`.
+  explanation: >
+    Domain Events drehen Abhängigkeiten um: Das auslösende Modul kennt seine Zuhörer nicht, andere Module
+    reagieren über Listener. Ein Domain Event trägt schmale, stabile Werte wie IDs und Beträge. Damit es
+    bei einem Rollback nicht ankommt, wird es meist erst nach dem Commit ausgelöst.
+  example: "`OrderPlaced::dispatch($order->id, $order->total_cents);` – Versand und Reporting hören zu."
+  category: architektur
+  aliases: [Domain Events, Domänen-Event, fachliches Ereignis]
+  related: [event, event-listener, kopplung, fachliches-modul]
+  lesson: laravel-architektur/domain-events
+
+- slug: eventuelle-konsistenz
+  term: Eventuelle Konsistenz
+  short: Ein Zustand, in dem zusammengehörige Daten kurz voneinander abweichen und erst nach Sekunden wieder übereinstimmen.
+  explanation: >
+    Laufen Listener in der Queue, gibt es zum Beispiel für einen Moment schon die Bestellung, aber noch
+    keine Sendung. Das ist meist in Ordnung, muss aber bewusst entschieden werden. Der englische Begriff
+    lautet *eventual consistency*.
+  example: "Direkt nach dem Bestellen zeigt die Seite „Sendung wird vorbereitet“, weil der Listener noch nicht gelaufen ist."
+  category: architektur
+  aliases: [Eventual Consistency, eventueller Konsistenz]
+  related: [konsistenz, domain-event, queue-job]
+  lesson: laravel-architektur/domain-events
+
+- slug: konsistenz
+  term: Konsistenz
+  short: Der Zustand, in dem alle Daten die fachlichen Regeln erfüllen, etwa dass die Summe aller Kontostände stimmt.
+  explanation: >
+    Inkonsistente Daten entstehen, wenn ein Vorgang nur halb ausgeführt wird oder zwei Vorgänge sich
+    gegenseitig stören. Transaktionen, Sperren und After-Commit-Regeln halten Daten konsistent. In der
+    Datenbanktheorie steht das C in ACID dafür.
+  example: "Nach einer Überweisung ist das Geld entweder auf beiden Konten verbucht oder auf keinem."
+  category: datenbanken
+  aliases: [konsistent, Datenkonsistenz]
+  related: [transaktion, acid, eventuelle-konsistenz]
+  lesson: laravel-architektur/transaktionen-und-konsistenz
+
+- slug: savepoint
+  term: Savepoint
+  short: Ein Zwischenstand innerhalb einer Transaktion, auf den man zurückrollen kann, ohne die ganze Transaktion abzubrechen.
+  explanation: >
+    Laravel nutzt Savepoints automatisch, wenn `DB::transaction` verschachtelt aufgerufen wird. Die innere
+    Transaktion kann scheitern und zurückrollen, die äußere entscheidet trotzdem allein über den Commit.
+    Es gibt also nur einen echten Commit ganz außen.
+  example: "Eine Action mit `DB::transaction` ruft eine zweite Action mit `DB::transaction` auf – die innere wird zum Savepoint."
+  category: datenbanken
+  aliases: [Savepoints, Sicherungspunkt]
+  related: [transaktion, rollback]
+  lesson: laravel-architektur/transaktionen-und-konsistenz
+
+- slug: monolith
+  term: Monolith
+  short: Eine Anwendung, die als ein Ganzes gebaut und ausgeliefert wird.
+  explanation: >
+    Ein Monolith hat ein Deployment und meist eine Datenbank; seine Teile rufen sich mit normalen
+    Methodenaufrufen auf. Das ist einfach zu betreiben. Problematisch wird er erst, wenn es keine inneren
+    Grenzen gibt und jede Klasse jede andere benutzt.
+  example: "Eine typische Laravel-App mit allen Funktionen in einem Repository und einem Deployment ist ein Monolith."
+  category: architektur
+  aliases: [Monolithen, monolithisch]
+  related: [modularer-monolith, microservices]
+  lesson: laravel-architektur/module-schneiden
+
+- slug: modularer-monolith
+  term: Modularer Monolith
+  short: Eine Anwendung mit einem Deployment, die intern in fachliche Module mit klaren, geprüften Grenzen geteilt ist.
+  explanation: >
+    Jedes Modul besitzt seine Models, Actions und Tabellen und bietet anderen nur eine kleine öffentliche
+    Schnittstelle. Module reden über Interfaces oder Domain Events miteinander. So verbindet der modulare
+    Monolith einfachen Betrieb mit klaren Zuständigkeiten.
+  example: "`app/Modules/Catalog`, `app/Modules/Ordering` und `app/Modules/Billing` in einer Laravel-App, abgesichert durch Arch-Tests."
+  category: architektur
+  aliases: [modularen Monolithen, Modular Monolith, modularer Monolithen]
+  related: [monolith, fachliches-modul, modul-schnittstelle, architekturtest]
+  lesson: laravel-architektur/module-schneiden
+
+- slug: microservices
+  term: Microservices
+  short: Eine Architektur, in der eine Anwendung aus vielen kleinen, getrennt ausgelieferten Diensten besteht, die über das Netzwerk kommunizieren.
+  explanation: >
+    Jeder Dienst hat sein eigenes Deployment und oft seine eigene Datenbank. Das erlaubt unabhängige Teams
+    und Skalierung, kostet aber viel Betriebsaufwand: Netzwerkfehler, verteilte Daten, Monitoring. Für die
+    meisten Laravel-Projekte ist ein modularer Monolith der einfachere Weg.
+  example: "Ein Katalog-Dienst und ein Bestell-Dienst, die sich per HTTP-API aufrufen und getrennt deployt werden."
+  category: architektur
+  aliases: [Microservice, Mikrodienste]
+  related: [monolith, modularer-monolith]
+  lesson: laravel-architektur/module-schneiden
+
+- slug: fachliches-modul
+  term: Fachliches Modul
+  short: Ein Teil einer Anwendung, der eine fachliche Fähigkeit wie Katalog oder Abrechnung samt Code und Tabellen bündelt.
+  explanation: >
+    Ein fachliches Modul enthält alles, was zu seiner Fähigkeit gehört: Controller, Actions, Models,
+    Events und Migrationen. Nach außen zeigt es nur eine kleine Schnittstelle. Gute Modulgrenzen erkennst
+    du daran, dass Änderungen meist innerhalb eines Moduls bleiben.
+  example: "`app/Modules/Billing` enthält Rechnungen, Steuerberechnung und den Rechnungs-Controller."
+  category: architektur
+  aliases: [Fachmodul, fachliche Module, Modul (fachlich)]
+  related: [modularer-monolith, modul-schnittstelle]
+  lesson: laravel-architektur/module-schneiden
+
+- slug: modul-schnittstelle
+  term: Öffentliche Modul-Schnittstelle
+  short: Der kleine, stabile Teil eines Moduls, den andere Module benutzen dürfen – Interfaces, DTOs und Events.
+  explanation: >
+    Alles andere im Modul ist intern und darf sich jederzeit ändern. Die Implementierung eines Interfaces
+    bindet das Modul in seinem eigenen Service Provider. Andere Module bekommen DTOs zurück, nie die
+    internen Eloquent-Models.
+  example: "`CatalogApi::priceOf(int $id): int` ist öffentlich; das Model `Product` bleibt intern."
+  category: architektur
+  aliases: [öffentliche Schnittstelle, Modul-API, Public API]
+  related: [fachliches-modul, interface, dto]
+  lesson: laravel-architektur/module-schneiden
+
+- slug: mandant
+  term: Mandant
+  short: Ein Kunde einer SaaS-Anwendung – meist eine Organisation –, dessen Daten von denen aller anderen Kunden getrennt sein müssen.
+  explanation: >
+    Viele Mandanten teilen sich eine Installation der Software, sehen aber nur ihre eigenen Daten. Ein
+    Mandant hat oft viele eigene Benutzer:innen. Im Englischen heißt er *Tenant*, die Spalte dazu meist
+    `tenant_id`.
+  example: "Firma A und Firma B nutzen dieselbe Projektmanagement-App als zwei Mandanten."
+  category: architektur
+  aliases: [Mandanten, Tenant, Tenants]
+  related: [multi-tenancy, mandanten-kontext, global-scope]
+  lesson: laravel-architektur/multi-tenancy-grundlagen
+
+- slug: multi-tenancy
+  term: Multi-Tenancy
+  short: Die Fähigkeit einer Anwendung, viele Mandanten in einer Installation zu bedienen und ihre Daten sicher zu trennen.
+  explanation: >
+    Die Trennung kann über eine `tenant_id`-Spalte, ein Schema pro Mandant oder eine Datenbank pro Mandant
+    erfolgen. Je stärker die Trennung, desto höher der Betriebsaufwand. Entscheidend ist, dass die Trennung
+    automatisch greift und nicht von jedem einzelnen `where` abhängt.
+  example: "Eine SaaS-Buchhaltung, in der 3000 Firmen dieselben Tabellen nutzen, jede Zeile aber eine `tenant_id` trägt."
+  category: architektur
+  aliases: [Mandantenfähigkeit, mandantenfähig, Multi-Tenant]
+  related: [mandant, global-scope, datenbank-pro-mandant]
+  lesson: laravel-architektur/multi-tenancy-grundlagen
+
+- slug: mandanten-kontext
+  term: Mandanten-Kontext
+  short: Ein Objekt, das festhält, für welchen Mandanten der aktuelle Request oder Job gerade läuft.
+  explanation: >
+    Eine Middleware füllt den Kontext, Global Scopes und andere Klassen lesen ihn. In Laravel registrierst
+    du ihn als `scoped`, damit er nach jedem Request und vor jedem Queue-Job zurückgesetzt wird. Ein
+    Singleton würde den Mandanten in den nächsten Job mitnehmen.
+  example: "`$this->app->scoped(TenantContext::class);` und später `app(TenantContext::class)->id()`."
+  category: laravel
+  aliases: [TenantContext, Tenant-Kontext]
+  related: [mandant, global-scope, singleton]
+  lesson: laravel-architektur/multi-tenancy-grundlagen
+
+- slug: global-scope
+  term: Global Scope
+  short: Eine Bedingung, die Eloquent automatisch an jede Abfrage eines Models hängt.
+  explanation: >
+    Global Scopes implementieren das Interface `Scope` und werden mit `addGlobalScope` registriert. In
+    mandantenfähigen Apps filtern sie jede Abfrage auf den aktuellen Mandanten. Sie wirken nur auf
+    Eloquent – `DB::table()` und rohes SQL umgehen sie.
+  example: "`static::addGlobalScope(new TenantScope);` – danach liefert `Invoice::all()` nur Rechnungen des aktuellen Mandanten."
+  category: laravel
+  aliases: [Global Scopes, globaler Scope, globale Scopes]
+  related: [query-scope, mandanten-kontext, eloquent]
+  lesson: laravel-architektur/multi-tenancy-grundlagen
+
+- slug: fail-closed
+  term: Fail closed
+  short: Das Prinzip, im Zweifel nichts zu erlauben oder zu zeigen, statt im Fehlerfall alles freizugeben.
+  explanation: >
+    Ein fail-closed-Mandanten-Scope liefert ohne gesetzten Mandanten ein leeres Ergebnis statt die Daten
+    aller Mandanten. Fehler fallen so als „nichts da“ auf, nicht als Datenleck. Das Gegenteil heißt
+    *fail open*.
+  example: "`$tenant === null ? $builder->whereRaw('1 = 0') : $builder->where('tenant_id', $tenant);`"
+  category: sicherheit
+  aliases: [fail-closed, Fail-Closed-Prinzip]
+  related: [global-scope, datenleck]
+  lesson: laravel-architektur/multi-tenancy-grundlagen
+
+- slug: datenbank-pro-mandant
+  term: Datenbank pro Mandant
+  short: Eine Multi-Tenancy-Strategie, bei der jeder Mandant eine eigene Datenbank bekommt.
+  explanation: >
+    Diese Variante trennt Daten physisch und erfüllt strenge vertragliche oder regionale Anforderungen.
+    Dafür muss die App pro Request die Verbindung umschalten, und jede Migration läuft für jede Datenbank.
+    Sie passt eher zu wenigen großen als zu vielen kleinen Kunden.
+  example: "Mandant A nutzt `db_a`, Mandant B `db_b`; eine Middleware wählt beim Request die passende Verbindung."
+  category: datenbanken
+  aliases: [Database per Tenant, eigene Datenbank pro Mandant]
+  related: [multi-tenancy, mandant]
+  lesson: laravel-architektur/multi-tenancy-grundlagen
+
+- slug: datenleck
+  term: Datenleck
+  short: Ein Fehler, durch den Daten an jemanden gelangen, der sie nicht sehen darf.
+  explanation: >
+    In mandantenfähigen Apps entstehen Datenlecks oft durch Abfragen am Global Scope vorbei, geteilte
+    Cache-Schlüssel oder Queue-Jobs ohne Mandanten-Kontext. Sie können meldepflichtig sein und das
+    Vertrauen der Kunden kosten. Tests mit zwei Mandanten finden sie früh.
+  example: "Ein Monatsbericht von Firma A enthält Rechnungen von Firma B, weil der Job ohne Mandant lief."
+  category: sicherheit
+  aliases: [Datenlecks, Data Leak]
+  related: [mandant, fail-closed, global-scope]
+  lesson: laravel-architektur/mandanten-lecks
+
+- slug: laravel-context
+  term: Context (Laravel)
+  short: Ein Laravel-Feature, das Daten für einen Request oder Job speichert und automatisch an abgeschickte Queue-Jobs weitergibt.
+  explanation: >
+    Mit `Context::add` oder `Context::addHidden` legst du Werte ab, die Laravel beim Abschicken eines Jobs
+    mitsendet und im Worker wiederherstellt. Mit dem Callback `Context::hydrated(...)` kannst du daraus zum
+    Beispiel den Mandanten-Kontext neu setzen. Sichtbare Werte erscheinen außerdem in Log-Einträgen.
+  example: "`Context::addHidden('tenant_id', 2);` in der Middleware – jeder Job, der danach abgeschickt wird, trägt den Wert mit."
+  category: laravel
+  aliases: [Context, Context-Facade]
+  related: [queue-job, mandanten-kontext]
+  lesson: laravel-architektur/mandanten-lecks
+
+- slug: pennant
+  term: Laravel Pennant
+  short: Das offizielle Laravel-Paket für Feature Flags, das Funktionen pro Scope wie Benutzer oder Mandant ein- und ausschaltet.
+  explanation: >
+    Mit `Feature::define` legst du fest, wie ein Flag für einen Scope entschieden wird, und mit
+    `Feature::for($scope)->active(...)` fragst du es ab. Pennant speichert das Ergebnis, standardmäßig in
+    der Datenbank, damit derselbe Scope immer dieselbe Antwort bekommt.
+  example: "`Feature::for($tenant)->active('new-invoice-pdf')` – nur Pilotkunden sehen das neue PDF."
+  category: laravel
+  aliases: [Pennant]
+  related: [feature-flag, mandant]
+  lesson: laravel-architektur/konfiguration-und-feature-flags
+
+- slug: over-engineering
+  term: Over-Engineering
+  short: Mehr Struktur und Abstraktion, als das tatsächliche Problem verlangt.
+  explanation: >
+    Over-Engineering kostet Dateien, Indirektion und Einarbeitungszeit, ohne einen Nutzen zu bringen.
+    Typische Zeichen sind Schichten, die nur durchreichen, und Interfaces mit genau einer Implementierung.
+    Muster sollten auf einen konkreten Auslöser reagieren.
+  example: "Ein Kontaktformular mit einer Tabelle bekommt Repository, Interface, DTO, Event und eigenes Modul."
+  category: architektur
+  aliases: [Overengineering, überkonstruiert]
+  related: [yagni, refactoring]
+  lesson: laravel-architektur/over-engineering

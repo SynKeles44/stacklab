@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="450" y="36" text-anchor="middle" font-size="21" font-weight="700" fill="#1e1b3a">Nach außen wirkt nur, was committet ist</text>
+
+  <rect x="40" y="70" width="520" height="190" rx="14" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="60" y="98" font-size="16" font-weight="700" fill="#1e1b3a">DB::transaction( … )</text>
+  <g font-size="14" fill="#1e1b3a">
+    <rect x="60" y="114" width="150" height="56" rx="8" fill="#ffffff" stroke="#1e1b3a"/>
+    <text x="135" y="140" text-anchor="middle">Rechnung</text>
+    <text x="135" y="158" text-anchor="middle">anlegen</text>
+    <rect x="230" y="114" width="150" height="56" rx="8" fill="#ffffff" stroke="#1e1b3a"/>
+    <text x="305" y="140" text-anchor="middle">Positionen</text>
+    <text x="305" y="158" text-anchor="middle">anlegen</text>
+    <rect x="400" y="114" width="140" height="56" rx="8" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+    <text x="470" y="140" text-anchor="middle">Event / Job</text>
+    <text x="470" y="158" text-anchor="middle">vormerken</text>
+    <text x="60" y="200" font-size="13">Alles hier gilt gemeinsam – oder gar nicht.</text>
+    <text x="60" y="222" font-size="13">Vorgemerktes wartet auf das Ende der Transaktion.</text>
+  </g>
+  <g stroke="#1e1b3a" stroke-width="2">
+    <line x1="212" y1="142" x2="227" y2="142" marker-end="url(#pfeil)"/>
+    <line x1="382" y1="142" x2="397" y2="142" marker-end="url(#pfeil)"/>
+  </g>
+
+  <rect x="620" y="70" width="240" height="80" rx="12" fill="#ecfdf5" stroke="#34d399" stroke-width="2.5"/>
+  <text x="740" y="102" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Commit</text>
+  <text x="740" y="128" text-anchor="middle" font-size="13" fill="#1e1b3a">Event feuert, Job geht in die Queue,</text>
+  <text x="740" y="144" text-anchor="middle" font-size="13" fill="#1e1b3a">Mail wird verschickt</text>
+
+  <rect x="620" y="180" width="240" height="80" rx="12" fill="#fef2f2" stroke="#f87171" stroke-width="2.5"/>
+  <text x="740" y="212" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Rollback</text>
+  <text x="740" y="238" text-anchor="middle" font-size="13" fill="#1e1b3a">Daten zurück, Vorgemerktes</text>
+  <text x="740" y="254" text-anchor="middle" font-size="13" fill="#1e1b3a">wird verworfen</text>
+
+  <g stroke="#1e1b3a" stroke-width="2" fill="none">
+    <path d="M 562 130 L 617 110" marker-end="url(#pfeil)"/>
+    <path d="M 562 200 L 617 220" marker-end="url(#pfeil)"/>
+  </g>
+
+  <rect x="40" y="300" width="820" height="100" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="60" y="330" font-size="15" font-weight="700" fill="#1e1b3a">So merkst du vor:</text>
+  <g font-size="14" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">
+    <text x="60" y="356">Event implements ShouldDispatchAfterCommit</text>
+    <text x="60" y="380">SendInvoiceMail::dispatch($id)->afterCommit()</text>
+    <text x="520" y="356">'after_commit' => true</text>
+    <text x="520" y="380" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">(in config/queue.php)</text>
+  </g>
+</svg>

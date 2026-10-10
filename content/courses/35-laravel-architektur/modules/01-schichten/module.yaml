@@ -1,0 +1,153 @@
+title: Schichten statt fetter Controller
+description: Woran du erkennst, dass MVC nicht mehr reicht, wie schlanke Controller mit Actions arbeiten und wie DTOs und Value Objects lose Arrays ersetzen.
+exercise:
+  id: modul-uebung-bestellsumme
+  type: code
+  language: php
+  title: DTO, Value Object und Action im Zusammenspiel
+  description: |
+    Baue die Preisberechnung eines Shops aus den drei Bausteinen dieses Moduls. `Money` ist schon
+    vorgegeben.
+
+    1. **DTO** `OrderLineData` (`final readonly class`) mit den Eigenschaften `string $sku`,
+       `Money $price` und `int $quantity`. Die statische Methode `fromArray(array $row): self` liest die
+       Schlüssel `sku`, `price_cents` und `quantity`. Ist `quantity` kleiner als 1, wirft sie eine
+       `InvalidArgumentException`.
+    2. **Action** `CalculateOrderTotal` mit `handle(array $lines): Money`. `$lines` ist eine Liste von
+       `OrderLineData`. Die Action summiert Preis × Menge. Ab einer Summe von 10000 Cent zieht sie 5 %
+       Rabatt ab (kaufmännisch gerundet). Eine leere Liste ergibt `Money(0)`.
+
+    Nutze für die Rechnung die Methoden von `Money` – kein Rechnen mit nackten Integern in der Action.
+  starter: |
+    <?php
+
+    declare(strict_types=1);
+
+    final readonly class Money
+    {
+        public function __construct(public int $cents)
+        {
+            if ($cents < 0) {
+                throw new InvalidArgumentException('Money cannot be negative.');
+            }
+        }
+
+        public function add(Money $other): self
+        {
+            return new self($this->cents + $other->cents);
+        }
+
+        public function times(int $factor): self
+        {
+            return new self($this->cents * $factor);
+        }
+
+        public function minusPercent(int $percent): self
+        {
+            return new self((int) round($this->cents * (100 - $percent) / 100));
+        }
+    }
+
+    final readonly class OrderLineData
+    {
+        // Eigenschaften und fromArray()
+    }
+
+    final class CalculateOrderTotal
+    {
+        public function handle(array $lines): Money
+        {
+            // summieren, ab 10000 Cent 5 % Rabatt
+        }
+    }
+  tests:
+    - name: summiert Preis mal Menge
+      code: |
+        $lines = [OrderLineData::fromArray(['sku' => 'A-1', 'price_cents' => 1500, 'quantity' => 2])];
+        assert_same(3000, (new CalculateOrderTotal())->handle($lines)->cents);
+    - name: gewährt ab 100 Euro 5 Prozent Rabatt
+      code: |
+        $lines = [
+            OrderLineData::fromArray(['sku' => 'A-1', 'price_cents' => 4000, 'quantity' => 2]),
+            OrderLineData::fromArray(['sku' => 'B-2', 'price_cents' => 2000, 'quantity' => 1]),
+        ];
+        assert_same(9500, (new CalculateOrderTotal())->handle($lines)->cents);
+    - name: eine leere Liste ergibt null Cent
+      code: assert_same(0, (new CalculateOrderTotal())->handle([])->cents);
+    - name: das DTO ist typisiert und readonly
+      code: |
+        $line = OrderLineData::fromArray(['sku' => 'C-3', 'price_cents' => '250', 'quantity' => '4']);
+        assert_true($line->price instanceof Money);
+        assert_same(4, $line->quantity);
+        assert_true((new ReflectionClass(OrderLineData::class))->isReadOnly());
+    - name: Menge 0 wird abgelehnt
+      code: |
+        $thrown = false;
+        try { OrderLineData::fromArray(['sku' => 'A-1', 'price_cents' => 100, 'quantity' => 0]); } catch (InvalidArgumentException $e) { $thrown = true; }
+        assert_true($thrown);
+  solution: |
+    <?php
+
+    declare(strict_types=1);
+
+    final readonly class Money
+    {
+        public function __construct(public int $cents)
+        {
+            if ($cents < 0) {
+                throw new InvalidArgumentException('Money cannot be negative.');
+            }
+        }
+
+        public function add(Money $other): self
+        {
+            return new self($this->cents + $other->cents);
+        }
+
+        public function times(int $factor): self
+        {
+            return new self($this->cents * $factor);
+        }
+
+        public function minusPercent(int $percent): self
+        {
+            return new self((int) round($this->cents * (100 - $percent) / 100));
+        }
+    }
+
+    final readonly class OrderLineData
+    {
+        public function __construct(
+            public string $sku,
+            public Money $price,
+            public int $quantity,
+        ) {}
+
+        public static function fromArray(array $row): self
+        {
+            $quantity = (int) $row['quantity'];
+
+            if ($quantity < 1) {
+                throw new InvalidArgumentException('Quantity must be at least 1.');
+            }
+
+            return new self((string) $row['sku'], new Money((int) $row['price_cents']), $quantity);
+        }
+    }
+
+    final class CalculateOrderTotal
+    {
+        public function handle(array $lines): Money
+        {
+            $total = new Money(0);
+
+            foreach ($lines as $line) {
+                $total = $total->add($line->price->times($line->quantity));
+            }
+
+            return $total->cents >= 10000 ? $total->minusPercent(5) : $total;
+        }
+    }
+  hints:
+    - "Starte mit `$total = new Money(0);` und weise in der Schleife `$total = $total->add(...)` zu – `add` verändert nichts, es gibt ein neues Objekt zurück."
+    - "Das DTO kannst du mit Konstruktor-Promotion schreiben und in `fromArray` erst die Menge prüfen, dann `new self(...)` zurückgeben."

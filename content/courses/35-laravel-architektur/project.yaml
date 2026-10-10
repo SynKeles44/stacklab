@@ -1,0 +1,1188 @@
+title: Eine mandantenfähige Rechnungs-App aufräumen
+description: |
+  In diesem Projekt übernimmst du eine kleine Laravel-Anwendung, die Rechnungen für mehrere Kunden
+  (Mandanten) anlegt. Sie funktioniert – aber die ganze Logik steckt in einem dicken Controller, Beträge
+  sind lose Integer, und nichts verhindert, dass ein Mandant die Rechnungen eines anderen sieht.
+
+  Du baust die App Schritt für Schritt so um, wie man es in großen Projekten tut: ein **Value Object**
+  für Geld, ein **DTO** für die Eingabe, ein **Mandanten-Kontext** mit Global Scope, eine **Action** für
+  den Anwendungsfall, ein **schlanker Controller** im Modul, ein **Domain Event**, **Architekturtests**
+  und zum Schluss ein Test, der die Mandanten-Trennung beweist.
+
+  Klicke zuerst auf **Projekt vorbereiten**. Stacklab legt im Ordner `rechnungen` eine Laravel-13-App
+  mit Tabelle `invoices`, Model, dickem Controller und einem Feature-Test an. Beim allerersten Mal lädt
+  Composer Pakete, das kann ein bis zwei Minuten dauern. Danach wechselst du im Übungs-Terminal mit
+  `cd rechnungen` hinein und prüfst mit `./vendor/bin/pest`, dass alles grün ist.
+
+  Der vorhandene Feature-Test `tests/Feature/InvoiceApiTest.php` ist dein Sicherheitsnetz: Er muss nach
+  **jedem** Schritt grün bleiben. Lösche nichts, was ein früherer Schritt angelegt hat. Wenn du
+  festhängst, hilft **Für mich erledigen** – lies danach genau, was geschrieben wurde.
+goal: >
+  Die App `rechnungen` mit dem Modul `app/Modules/Invoicing` (Domain, Data, Actions, Events, Http, Models),
+  einem Mandanten-Kontext mit Global Scope und Middleware, einem schlanken Controller, einem Domain Event mit
+  Listener im Modul Reporting, Pest-Architekturtests und einer grünen Testsuite, die die Mandanten-Trennung beweist.
+workdir: rechnungen
+setup: |
+  # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+  B="$HOME/.cache/stacklab/laravel13"
+  if [ ! -f "$B/.fertig" ]; then
+    T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+    timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+    cd "$T"
+    timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+    printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+    printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+    printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+    touch .fertig && cd - >/dev/null
+    rm -rf "$B" && mv "$T" "$B"
+  fi
+  cp -a "$B/." . && rm -f .fertig
+  mkdir -p app/Modules/Invoicing/Models
+  cat > database/migrations/2026_01_01_000000_create_invoices_table.php <<'EOF'
+  <?php
+
+  use Illuminate\Database\Migrations\Migration;
+  use Illuminate\Database\Schema\Blueprint;
+  use Illuminate\Support\Facades\Schema;
+
+  return new class extends Migration
+  {
+      public function up(): void
+      {
+          Schema::create('invoices', function (Blueprint $table) {
+              $table->id();
+              $table->unsignedBigInteger('tenant_id')->index();
+              $table->string('customer');
+              $table->unsignedInteger('net_cents');
+              $table->unsignedTinyInteger('tax_rate');
+              $table->unsignedInteger('gross_cents');
+              $table->timestamps();
+          });
+      }
+
+      public function down(): void
+      {
+          Schema::dropIfExists('invoices');
+      }
+  };
+  EOF
+  cat > app/Modules/Invoicing/Models/Invoice.php <<'EOF'
+  <?php
+
+  namespace App\Modules\Invoicing\Models;
+
+  use Illuminate\Database\Eloquent\Attributes\Fillable;
+  use Illuminate\Database\Eloquent\Model;
+
+  #[Fillable(['tenant_id', 'customer', 'net_cents', 'tax_rate', 'gross_cents'])]
+  class Invoice extends Model
+  {
+  }
+  EOF
+  cat > app/Http/Controllers/InvoiceController.php <<'EOF'
+  <?php
+
+  namespace App\Http\Controllers;
+
+  use App\Modules\Invoicing\Models\Invoice;
+  use Illuminate\Http\JsonResponse;
+  use Illuminate\Http\Request;
+  use Illuminate\Support\Facades\DB;
+  use Illuminate\Support\Facades\Log;
+
+  class InvoiceController extends Controller
+  {
+      public function store(Request $request): JsonResponse
+      {
+          $data = $request->validate([
+              'customer' => ['required', 'string', 'max:120'],
+              'net_cents' => ['required', 'integer', 'min:0'],
+              'tax_rate' => ['required', 'integer', 'in:0,7,19'],
+          ]);
+
+          $tax = (int) round($data['net_cents'] * $data['tax_rate'] / 100);
+
+          $invoice = DB::transaction(function () use ($data, $tax, $request) {
+              return Invoice::create([
+                  'tenant_id' => (int) $request->header('X-Tenant-Id'),
+                  'customer' => trim($data['customer']),
+                  'net_cents' => $data['net_cents'],
+                  'tax_rate' => $data['tax_rate'],
+                  'gross_cents' => $data['net_cents'] + $tax,
+              ]);
+          });
+
+          Log::info('Invoice created', ['id' => $invoice->id]);
+
+          return response()->json(['id' => $invoice->id, 'gross_cents' => $invoice->gross_cents], 201);
+      }
+  }
+  EOF
+  cat > routes/web.php <<'EOF'
+  <?php
+
+  use App\Http\Controllers\InvoiceController;
+  use Illuminate\Support\Facades\Route;
+
+  Route::get('/', function () {
+      return view('welcome');
+  });
+
+  Route::post('/invoices', [InvoiceController::class, 'store']);
+  EOF
+  cat > tests/Feature/InvoiceApiTest.php <<'EOF'
+  <?php
+
+  use App\Modules\Invoicing\Models\Invoice;
+  use Illuminate\Foundation\Testing\RefreshDatabase;
+
+  uses(RefreshDatabase::class);
+
+  test('an invoice is created with the gross amount', function () {
+      $response = $this->postJson('/invoices', [
+          'customer' => 'Beispiel AG',
+          'net_cents' => 1000,
+          'tax_rate' => 19,
+      ], ['X-Tenant-Id' => '1']);
+
+      $response->assertCreated()->assertJson(['gross_cents' => 1190]);
+      expect(Invoice::withoutGlobalScopes()->where('tenant_id', 1)->count())->toBe(1);
+  });
+
+  test('invalid tax rates are rejected', function () {
+      $this->postJson('/invoices', [
+          'customer' => 'Beispiel AG',
+          'net_cents' => 1000,
+          'tax_rate' => 5,
+      ], ['X-Tenant-Id' => '1'])->assertUnprocessable();
+  });
+  EOF
+  php artisan migrate -q --force
+steps:
+  - id: geld-value-object
+    title: Ein Value Object für Geld
+    description: |
+      Beträge sind in der App lose Integer – nichts verhindert negative Rechnungen oder das Addieren
+      von Euro und Dollar. Baue ein **Value Object** `Money`.
+
+      1. Lege `app/Modules/Invoicing/Domain/Money.php` an, Namespace `App\Modules\Invoicing\Domain`.
+      2. Die Klasse ist `final readonly` und hat die Eigenschaften `int $cents` und `string $currency`
+         (Standard `'EUR'`), beide per Konstruktor-Promotion.
+      3. Der Konstruktor wirft eine `InvalidArgumentException`, wenn `$cents` negativ ist.
+      4. `add(Money $other): Money` liefert ein **neues** Objekt mit der Summe. Bei unterschiedlicher
+         Währung wirft die Methode eine `InvalidArgumentException`.
+      5. `percent(int $rate): Money` liefert ein neues Objekt mit `$rate` Prozent des Betrags
+         (kaufmännisch gerundet mit `round`).
+      6. `equals(Money $other): bool` vergleicht Betrag und Währung.
+
+      Die Klasse benutzt **nichts** aus Laravel – sie ist reines PHP.
+    checklist:
+      - "`Money` ist `final readonly` und liegt in `App\\Modules\\Invoicing\\Domain`"
+      - Negative Beträge werden abgelehnt
+      - "`add`, `percent` und `equals` liefern neue Objekte bzw. vergleichen nach Wert"
+    hints:
+      - "Mit `public function __construct(public int $cents, public string $currency = 'EUR')` sparst du dir Eigenschaften und Zuweisungen."
+      - "In einer `readonly`-Klasse kannst du `$this->cents` nicht ändern – `add` gibt deshalb `new self(...)` zurück."
+      - "`percent`: `new self((int) round($this->cents * $rate / 100), $this->currency)`."
+    checks:
+      - type: file_exists
+        path: app/Modules/Invoicing/Domain/Money.php
+        message: Die Datei app/Modules/Invoicing/Domain/Money.php fehlt noch.
+      - type: command
+        run: php artisan tinker --execute='var_export((new ReflectionClass(App\Modules\Invoicing\Domain\Money::class))->isReadOnly());'
+        stdout_matches: "true"
+        message: Money ist noch keine readonly-Klasse. Schreibe final readonly class Money.
+      - type: command
+        run: php artisan tinker --execute='$m = new App\Modules\Invoicing\Domain\Money(1000); echo $m->add(new App\Modules\Invoicing\Domain\Money(250))->cents, "|", $m->percent(19)->cents, "|", $m->cents;'
+        stdout_matches: "1250\\|190\\|1000"
+        message: add() oder percent() rechnen noch nicht richtig – oder sie verändern das Original. 1000 + 250 soll 1250 ergeben, 19 Prozent von 1000 sind 190, und das Original bleibt 1000.
+      - type: command
+        run: php artisan tinker --execute='try { new App\Modules\Invoicing\Domain\Money(-1); echo "erlaubt"; } catch (InvalidArgumentException $e) { echo "abgelehnt"; }'
+        stdout_matches: "abgelehnt"
+        message: Ein negativer Betrag wird noch nicht abgelehnt. Wirf im Konstruktor eine InvalidArgumentException.
+      - type: command
+        run: php artisan tinker --execute='try { (new App\Modules\Invoicing\Domain\Money(1))->add(new App\Modules\Invoicing\Domain\Money(1, "USD")); echo "erlaubt"; } catch (InvalidArgumentException $e) { echo "abgelehnt"; }'
+        stdout_matches: "abgelehnt"
+        message: Euro und Dollar lassen sich noch addieren. add() soll bei unterschiedlicher Währung eine InvalidArgumentException werfen.
+      - type: command
+        run: php artisan tinker --execute='var_export((new App\Modules\Invoicing\Domain\Money(5))->equals(new App\Modules\Invoicing\Domain\Money(5)));'
+        stdout_matches: "true"
+        message: equals() erkennt zwei gleiche Beträge noch nicht als gleich.
+    solution: |
+      ```php title="app/Modules/Invoicing/Domain/Money.php"
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Invoicing\Domain;
+
+      use InvalidArgumentException;
+
+      final readonly class Money
+      {
+          public function __construct(public int $cents, public string $currency = 'EUR')
+          {
+              if ($cents < 0) {
+                  throw new InvalidArgumentException('Money cannot be negative.');
+              }
+          }
+
+          public function add(Money $other): self
+          {
+              if ($other->currency !== $this->currency) {
+                  throw new InvalidArgumentException('Currencies do not match.');
+              }
+
+              return new self($this->cents + $other->cents, $this->currency);
+          }
+
+          public function percent(int $rate): self
+          {
+              return new self((int) round($this->cents * $rate / 100), $this->currency);
+          }
+
+          public function equals(Money $other): bool
+          {
+              return $this->cents === $other->cents && $this->currency === $other->currency;
+          }
+      }
+      ```
+    solve: |
+      mkdir -p app/Modules/Invoicing/Domain
+      cat > app/Modules/Invoicing/Domain/Money.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Invoicing\Domain;
+
+      use InvalidArgumentException;
+
+      final readonly class Money
+      {
+          public function __construct(public int $cents, public string $currency = 'EUR')
+          {
+              if ($cents < 0) {
+                  throw new InvalidArgumentException('Money cannot be negative.');
+              }
+          }
+
+          public function add(Money $other): self
+          {
+              if ($other->currency !== $this->currency) {
+                  throw new InvalidArgumentException('Currencies do not match.');
+              }
+
+              return new self($this->cents + $other->cents, $this->currency);
+          }
+
+          public function percent(int $rate): self
+          {
+              return new self((int) round($this->cents * $rate / 100), $this->currency);
+          }
+
+          public function equals(Money $other): bool
+          {
+              return $this->cents === $other->cents && $this->currency === $other->currency;
+          }
+      }
+      EOF
+
+  - id: eingabe-dto
+    title: Ein DTO für die Eingabe
+    description: |
+      Der Controller reicht ein loses Array weiter. Ersetze es durch ein typisiertes **DTO**.
+
+      1. Lege `app/Modules/Invoicing/Data/CreateInvoiceData.php` an, Namespace
+         `App\Modules\Invoicing\Data`.
+      2. Die Klasse ist `final readonly` mit den Eigenschaften `string $customer`, `Money $net` und
+         `int $taxRate` (Konstruktor-Promotion).
+      3. Eine statische Methode `fromArray(array $data): self` baut das DTO aus einem Array mit den
+         Schlüsseln `customer`, `net_cents` und `tax_rate`. Sie entfernt Leerzeichen am Rand des
+         Kundennamens (`trim`) und wandelt die Zahlen mit `(int)` um.
+    checklist:
+      - "`CreateInvoiceData` ist `final readonly`"
+      - Der Nettobetrag ist ein `Money`-Objekt, kein Integer
+      - "`fromArray` säubert und typisiert die Eingabe"
+    hints:
+      - Ein DTO enthält keine Logik außer dem Zusammenbauen – keine Datenbank, keine Berechnung.
+      - "`net: new Money((int) $data['net_cents'])` – benannte Argumente machen `new self(...)` gut lesbar."
+    checks:
+      - type: file_exists
+        path: app/Modules/Invoicing/Data/CreateInvoiceData.php
+        message: Die Datei app/Modules/Invoicing/Data/CreateInvoiceData.php fehlt noch.
+      - type: command
+        run: php artisan tinker --execute='var_export((new ReflectionClass(App\Modules\Invoicing\Data\CreateInvoiceData::class))->isReadOnly());'
+        stdout_matches: "true"
+        message: CreateInvoiceData ist noch keine readonly-Klasse.
+      - type: command
+        run: php artisan tinker --execute='$d = App\Modules\Invoicing\Data\CreateInvoiceData::fromArray(["customer" => "  Beispiel AG ", "net_cents" => "1000", "tax_rate" => "19"]); echo $d->customer, "|", $d->net->cents, "|", $d->taxRate, "|", get_class($d->net);'
+        stdout_matches: "Beispiel AG\\|1000\\|19\\|App\\\\Modules\\\\Invoicing\\\\Domain\\\\Money"
+        message: fromArray() liefert noch nicht das erwartete DTO. Der Name soll getrimmt sein, net ein Money-Objekt mit 1000 Cent und taxRate die Zahl 19.
+    solution: |
+      ```php title="app/Modules/Invoicing/Data/CreateInvoiceData.php"
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Invoicing\Data;
+
+      use App\Modules\Invoicing\Domain\Money;
+
+      final readonly class CreateInvoiceData
+      {
+          public function __construct(
+              public string $customer,
+              public Money $net,
+              public int $taxRate,
+          ) {}
+
+          public static function fromArray(array $data): self
+          {
+              return new self(
+                  customer: trim((string) $data['customer']),
+                  net: new Money((int) $data['net_cents']),
+                  taxRate: (int) $data['tax_rate'],
+              );
+          }
+      }
+      ```
+    solve: |
+      mkdir -p app/Modules/Invoicing/Data
+      cat > app/Modules/Invoicing/Data/CreateInvoiceData.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Invoicing\Data;
+
+      use App\Modules\Invoicing\Domain\Money;
+
+      final readonly class CreateInvoiceData
+      {
+          public function __construct(
+              public string $customer,
+              public Money $net,
+              public int $taxRate,
+          ) {}
+
+          public static function fromArray(array $data): self
+          {
+              return new self(
+                  customer: trim((string) $data['customer']),
+                  net: new Money((int) $data['net_cents']),
+                  taxRate: (int) $data['tax_rate'],
+              );
+          }
+      }
+      EOF
+
+  - id: mandanten-kontext
+    title: Mandanten-Kontext und Global Scope
+    description: |
+      Noch sieht jede Abfrage alle Rechnungen aller Mandanten. Baue die Mandanten-Trennung ein.
+
+      1. `app/Support/Tenancy/TenantContext.php` (Namespace `App\Support\Tenancy`): eine Klasse mit
+         `set(int $tenantId): void` und `id(): ?int`. Registriere sie in `AppServiceProvider::register()`
+         mit `$this->app->scoped(TenantContext::class);`.
+      2. `app/Support/Tenancy/TenantScope.php`: implementiert `Illuminate\Database\Eloquent\Scope`. Ist ein
+         Mandant gesetzt, filtert `apply` auf `tenant_id`. Ist **keiner** gesetzt, liefert die Abfrage
+         **nichts** (`whereRaw('1 = 0')`) – lieber leer als fremde Daten.
+      3. `app/Support/Tenancy/BelongsToTenant.php`: ein Trait mit `bootBelongsToTenant()`, das den Scope
+         registriert und beim Event `creating` die `tenant_id` aus dem Kontext setzt, falls sie fehlt.
+      4. `app/Support/Tenancy/IdentifyTenant.php`: eine Middleware, die den Header `X-Tenant-Id` liest
+         und in den Kontext schreibt. Fehlt der Header, antwortet sie mit `abort(400)`.
+      5. Das Model `Invoice` benutzt den Trait, die Route `POST /invoices` die Middleware.
+    checklist:
+      - TenantContext ist als `scoped` registriert
+      - TenantScope filtert nach Mandant und ist ohne Mandant leer
+      - Invoice nutzt `BelongsToTenant`, die Route nutzt `IdentifyTenant`
+      - "`./vendor/bin/pest` ist weiter grün"
+    hints:
+      - "`scoped` statt `singleton`: Der Kontext lebt genau eine Anfrage bzw. einen Job lang und wird danach zurückgesetzt."
+      - "Ein Trait-Hook heißt immer `boot` + Trait-Name, hier `bootBelongsToTenant`. Laravel ruft ihn automatisch beim Booten des Models auf."
+      - "Im Scope: `$tenant = app(TenantContext::class)->id(); $tenant === null ? $builder->whereRaw('1 = 0') : $builder->where($model->qualifyColumn('tenant_id'), $tenant);`"
+    checks:
+      - type: file_exists
+        path: app/Support/Tenancy/TenantScope.php
+        message: app/Support/Tenancy/TenantScope.php fehlt noch.
+      - type: file_contains
+        path: app/Modules/Invoicing/Models/Invoice.php
+        pattern: "use BelongsToTenant;"
+        message: Das Model Invoice benutzt den Trait BelongsToTenant noch nicht.
+      - type: command
+        run: php artisan tinker --execute='DB::beginTransaction(); $c = app(App\Support\Tenancy\TenantContext::class); $c->set(1); App\Modules\Invoicing\Models\Invoice::create(["customer" => "A", "net_cents" => 100, "tax_rate" => 0, "gross_cents" => 100]); $c->set(2); App\Modules\Invoicing\Models\Invoice::create(["customer" => "B", "net_cents" => 100, "tax_rate" => 0, "gross_cents" => 100]); App\Modules\Invoicing\Models\Invoice::create(["customer" => "C", "net_cents" => 100, "tax_rate" => 0, "gross_cents" => 100]); echo App\Modules\Invoicing\Models\Invoice::count(), "|"; $c->set(1); echo App\Modules\Invoicing\Models\Invoice::count(); DB::rollBack();'
+        stdout_matches: "2\\|1"
+        message: Die Mandanten sind noch nicht getrennt. Mandant 2 soll genau seine 2 Rechnungen sehen, Mandant 1 genau eine – und tenant_id soll beim Anlegen automatisch aus dem Kontext kommen.
+      - type: command
+        run: php artisan tinker --execute='echo App\Modules\Invoicing\Models\Invoice::toBase()->toSql();'
+        stdout_matches: "1 = 0"
+        message: Ohne gesetzten Mandanten soll die Abfrage leer bleiben. Liefere im Scope dann whereRaw('1 = 0').
+      - type: file_contains
+        path: routes/web.php
+        pattern: "IdentifyTenant"
+        message: Die Route POST /invoices nutzt die Middleware IdentifyTenant noch nicht.
+      - type: command
+        run: ./vendor/bin/pest
+        message: Die Testsuite ist rot. Führe ./vendor/bin/pest aus und lies die Fehlermeldung.
+    solution: |
+      ```php title="app/Support/Tenancy/TenantScope.php"
+      <?php
+
+      namespace App\Support\Tenancy;
+
+      use Illuminate\Database\Eloquent\Builder;
+      use Illuminate\Database\Eloquent\Model;
+      use Illuminate\Database\Eloquent\Scope;
+
+      final class TenantScope implements Scope
+      {
+          public function apply(Builder $builder, Model $model): void
+          {
+              $tenant = app(TenantContext::class)->id();
+
+              if ($tenant === null) {
+                  $builder->whereRaw('1 = 0');
+
+                  return;
+              }
+
+              $builder->where($model->qualifyColumn('tenant_id'), $tenant);
+          }
+      }
+      ```
+
+      ```php title="app/Support/Tenancy/BelongsToTenant.php"
+      <?php
+
+      namespace App\Support\Tenancy;
+
+      use Illuminate\Database\Eloquent\Model;
+
+      trait BelongsToTenant
+      {
+          public static function bootBelongsToTenant(): void
+          {
+              static::addGlobalScope(new TenantScope);
+
+              static::creating(function (Model $model): void {
+                  $model->tenant_id ??= app(TenantContext::class)->id();
+              });
+          }
+      }
+      ```
+
+      Dazu `TenantContext` (eine Klasse mit `private ?int $tenantId = null`), die Middleware
+      `IdentifyTenant`, `$this->app->scoped(TenantContext::class);` im `AppServiceProvider`,
+      `use BelongsToTenant;` im Model und `->middleware(IdentifyTenant::class)` an der Route.
+    solve: |
+      mkdir -p app/Support/Tenancy
+      cat > app/Support/Tenancy/TenantContext.php <<'EOF'
+      <?php
+
+      namespace App\Support\Tenancy;
+
+      final class TenantContext
+      {
+          private ?int $tenantId = null;
+
+          public function set(int $tenantId): void
+          {
+              $this->tenantId = $tenantId;
+          }
+
+          public function id(): ?int
+          {
+              return $this->tenantId;
+          }
+      }
+      EOF
+      cat > app/Support/Tenancy/TenantScope.php <<'EOF'
+      <?php
+
+      namespace App\Support\Tenancy;
+
+      use Illuminate\Database\Eloquent\Builder;
+      use Illuminate\Database\Eloquent\Model;
+      use Illuminate\Database\Eloquent\Scope;
+
+      final class TenantScope implements Scope
+      {
+          public function apply(Builder $builder, Model $model): void
+          {
+              $tenant = app(TenantContext::class)->id();
+
+              if ($tenant === null) {
+                  $builder->whereRaw('1 = 0');
+
+                  return;
+              }
+
+              $builder->where($model->qualifyColumn('tenant_id'), $tenant);
+          }
+      }
+      EOF
+      cat > app/Support/Tenancy/BelongsToTenant.php <<'EOF'
+      <?php
+
+      namespace App\Support\Tenancy;
+
+      use Illuminate\Database\Eloquent\Model;
+
+      trait BelongsToTenant
+      {
+          public static function bootBelongsToTenant(): void
+          {
+              static::addGlobalScope(new TenantScope);
+
+              static::creating(function (Model $model): void {
+                  $model->tenant_id ??= app(TenantContext::class)->id();
+              });
+          }
+      }
+      EOF
+      cat > app/Support/Tenancy/IdentifyTenant.php <<'EOF'
+      <?php
+
+      namespace App\Support\Tenancy;
+
+      use Closure;
+      use Illuminate\Http\Request;
+      use Symfony\Component\HttpFoundation\Response;
+
+      final class IdentifyTenant
+      {
+          public function __construct(private TenantContext $context) {}
+
+          public function handle(Request $request, Closure $next): Response
+          {
+              $tenant = $request->header('X-Tenant-Id');
+
+              if ($tenant === null || ! ctype_digit($tenant)) {
+                  abort(400, 'Missing tenant.');
+              }
+
+              $this->context->set((int) $tenant);
+
+              return $next($request);
+          }
+      }
+      EOF
+      cat > app/Providers/AppServiceProvider.php <<'EOF'
+      <?php
+
+      namespace App\Providers;
+
+      use App\Support\Tenancy\TenantContext;
+      use Illuminate\Support\ServiceProvider;
+
+      class AppServiceProvider extends ServiceProvider
+      {
+          public function register(): void
+          {
+              $this->app->scoped(TenantContext::class);
+          }
+
+          public function boot(): void
+          {
+              //
+          }
+      }
+      EOF
+      cat > app/Modules/Invoicing/Models/Invoice.php <<'EOF'
+      <?php
+
+      namespace App\Modules\Invoicing\Models;
+
+      use App\Support\Tenancy\BelongsToTenant;
+      use Illuminate\Database\Eloquent\Attributes\Fillable;
+      use Illuminate\Database\Eloquent\Model;
+
+      #[Fillable(['tenant_id', 'customer', 'net_cents', 'tax_rate', 'gross_cents'])]
+      class Invoice extends Model
+      {
+          use BelongsToTenant;
+      }
+      EOF
+      sed -i "s#^Route::post('/invoices', \[InvoiceController::class, 'store'\]);#Route::post('/invoices', [InvoiceController::class, 'store'])->middleware(App\\\\Support\\\\Tenancy\\\\IdentifyTenant::class);#" routes/web.php
+      grep -q IdentifyTenant routes/web.php
+
+  - id: action-anlegen
+    title: Eine Action für den Anwendungsfall
+    description: |
+      Jetzt bekommt der Anwendungsfall „Rechnung anlegen“ eine eigene Klasse, die von überall nutzbar ist –
+      aus dem Controller, einem Artisan-Befehl oder einem Job.
+
+      1. Lege `app/Modules/Invoicing/Actions/CreateInvoice.php` an (Namespace
+         `App\Modules\Invoicing\Actions`), eine `final class` mit genau einer öffentlichen Methode
+         `handle(CreateInvoiceData $data): Invoice`.
+      2. Berechne den Bruttobetrag **mit `Money`**: Netto plus `percent($data->taxRate)`.
+      3. Lege die Rechnung innerhalb von `DB::transaction(...)` an. Die `tenant_id` setzt der Trait aus
+         dem vorigen Schritt automatisch.
+    checklist:
+      - "`CreateInvoice::handle` nimmt das DTO und gibt ein `Invoice` zurück"
+      - Der Bruttobetrag wird mit `Money` berechnet
+      - Das Anlegen läuft in einer Transaktion
+    hints:
+      - "`$gross = $data->net->add($data->net->percent($data->taxRate));`"
+      - "`return DB::transaction(fn () => Invoice::create([...]));` – `DB::transaction` gibt den Rückgabewert der Closure zurück."
+    checks:
+      - type: file_exists
+        path: app/Modules/Invoicing/Actions/CreateInvoice.php
+        message: Die Datei app/Modules/Invoicing/Actions/CreateInvoice.php fehlt noch.
+      - type: file_contains
+        path: app/Modules/Invoicing/Actions/CreateInvoice.php
+        pattern: "DB::transaction"
+        message: Die Action legt die Rechnung noch nicht in DB::transaction(...) an.
+      - type: command
+        run: php artisan tinker --execute='DB::beginTransaction(); app(App\Support\Tenancy\TenantContext::class)->set(7); $i = app(App\Modules\Invoicing\Actions\CreateInvoice::class)->handle(App\Modules\Invoicing\Data\CreateInvoiceData::fromArray(["customer" => "Beispiel AG", "net_cents" => 1000, "tax_rate" => 19])); echo $i->gross_cents, "|", $i->tenant_id, "|", $i->customer; DB::rollBack();'
+        stdout_matches: "1190\\|7\\|Beispiel AG"
+        message: Die Action liefert noch nicht die erwartete Rechnung. Für 1000 Cent netto und 19 Prozent sollen 1190 Cent brutto herauskommen, tenant_id kommt aus dem Kontext.
+    solution: |
+      ```php title="app/Modules/Invoicing/Actions/CreateInvoice.php"
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Invoicing\Actions;
+
+      use App\Modules\Invoicing\Data\CreateInvoiceData;
+      use App\Modules\Invoicing\Models\Invoice;
+      use Illuminate\Support\Facades\DB;
+
+      final class CreateInvoice
+      {
+          public function handle(CreateInvoiceData $data): Invoice
+          {
+              $gross = $data->net->add($data->net->percent($data->taxRate));
+
+              return DB::transaction(fn () => Invoice::create([
+                  'customer' => $data->customer,
+                  'net_cents' => $data->net->cents,
+                  'tax_rate' => $data->taxRate,
+                  'gross_cents' => $gross->cents,
+              ]));
+          }
+      }
+      ```
+    solve: |
+      mkdir -p app/Modules/Invoicing/Actions
+      cat > app/Modules/Invoicing/Actions/CreateInvoice.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Invoicing\Actions;
+
+      use App\Modules\Invoicing\Data\CreateInvoiceData;
+      use App\Modules\Invoicing\Models\Invoice;
+      use Illuminate\Support\Facades\DB;
+
+      final class CreateInvoice
+      {
+          public function handle(CreateInvoiceData $data): Invoice
+          {
+              $gross = $data->net->add($data->net->percent($data->taxRate));
+
+              return DB::transaction(fn () => Invoice::create([
+                  'customer' => $data->customer,
+                  'net_cents' => $data->net->cents,
+                  'tax_rate' => $data->taxRate,
+                  'gross_cents' => $gross->cents,
+              ]));
+          }
+      }
+      EOF
+
+  - id: schlanker-controller
+    title: Der Controller wird schlank und zieht ins Modul
+    description: |
+      Der dicke Controller hat jetzt nichts mehr zu tun, was nicht schon an anderer Stelle steht.
+      Ersetze ihn durch einen schlanken Controller **im Modul**.
+
+      1. Lege `app/Modules/Invoicing/Http/StoreInvoiceRequest.php` an – ein Form Request mit den drei
+         Regeln aus dem alten Controller.
+      2. Lege `app/Modules/Invoicing/Http/InvoiceController.php` an. `store` nimmt den Form Request und die
+         Action `CreateInvoice` entgegen, baut das DTO mit `CreateInvoiceData::fromArray($request->validated())`
+         und gibt `id` und `gross_cents` mit Status 201 zurück. Kein `DB::`, keine Berechnung.
+      3. Lass die Route `POST /invoices` auf den neuen Controller zeigen und lösche
+         `app/Http/Controllers/InvoiceController.php`.
+      4. `./vendor/bin/pest` muss grün bleiben – das ist der Beweis, dass dein Umbau nichts kaputt gemacht hat.
+    checklist:
+      - Validierung im Form Request
+      - Controller im Modul ohne `DB::` und ohne Berechnung
+      - Alter Controller gelöscht, Feature-Test weiter grün
+    hints:
+      - "Die Action bekommst du per Methoden-Injection: `public function store(StoreInvoiceRequest $request, CreateInvoice $createInvoice): JsonResponse`."
+      - "Denk an `authorize(): bool { return true; }` im Form Request."
+      - "In `routes/web.php` musst du das `use` auf `App\\Modules\\Invoicing\\Http\\InvoiceController` ändern."
+    checks:
+      - type: file_absent
+        path: app/Http/Controllers/InvoiceController.php
+        message: Der alte Controller app/Http/Controllers/InvoiceController.php existiert noch. Lösche ihn.
+      - type: file_exists
+        path: app/Modules/Invoicing/Http/InvoiceController.php
+        message: Der neue Controller app/Modules/Invoicing/Http/InvoiceController.php fehlt noch.
+      - type: file_exists
+        path: app/Modules/Invoicing/Http/StoreInvoiceRequest.php
+        message: Der Form Request app/Modules/Invoicing/Http/StoreInvoiceRequest.php fehlt noch.
+      - type: command
+        run: grep -cE "DB::|round\(|->validate\(" app/Modules/Invoicing/Http/InvoiceController.php
+        expect_exit: 1
+        message: Der neue Controller rechnet, validiert oder spricht selbst mit der Datenbank. Das gehört in Form Request und Action.
+      - type: file_contains
+        path: app/Modules/Invoicing/Http/InvoiceController.php
+        pattern: "CreateInvoice\\b"
+        message: Der Controller nutzt die Action CreateInvoice noch nicht.
+      - type: command
+        run: ./vendor/bin/pest
+        message: Die Testsuite ist rot. Prüfe Route, Form Request und Controller mit ./vendor/bin/pest.
+    solution: |
+      ```php title="app/Modules/Invoicing/Http/InvoiceController.php"
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Invoicing\Http;
+
+      use App\Modules\Invoicing\Actions\CreateInvoice;
+      use App\Modules\Invoicing\Data\CreateInvoiceData;
+      use Illuminate\Http\JsonResponse;
+
+      final class InvoiceController
+      {
+          public function store(StoreInvoiceRequest $request, CreateInvoice $createInvoice): JsonResponse
+          {
+              $invoice = $createInvoice->handle(CreateInvoiceData::fromArray($request->validated()));
+
+              return response()->json(['id' => $invoice->id, 'gross_cents' => $invoice->gross_cents], 201);
+          }
+      }
+      ```
+
+      ```bash
+      rm app/Http/Controllers/InvoiceController.php
+      ```
+
+      In `routes/web.php`: `use App\Modules\Invoicing\Http\InvoiceController;`
+    solve: |
+      mkdir -p app/Modules/Invoicing/Http
+      cat > app/Modules/Invoicing/Http/StoreInvoiceRequest.php <<'EOF'
+      <?php
+
+      namespace App\Modules\Invoicing\Http;
+
+      use Illuminate\Foundation\Http\FormRequest;
+
+      final class StoreInvoiceRequest extends FormRequest
+      {
+          public function authorize(): bool
+          {
+              return true;
+          }
+
+          public function rules(): array
+          {
+              return [
+                  'customer' => ['required', 'string', 'max:120'],
+                  'net_cents' => ['required', 'integer', 'min:0'],
+                  'tax_rate' => ['required', 'integer', 'in:0,7,19'],
+              ];
+          }
+      }
+      EOF
+      cat > app/Modules/Invoicing/Http/InvoiceController.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Invoicing\Http;
+
+      use App\Modules\Invoicing\Actions\CreateInvoice;
+      use App\Modules\Invoicing\Data\CreateInvoiceData;
+      use Illuminate\Http\JsonResponse;
+
+      final class InvoiceController
+      {
+          public function store(StoreInvoiceRequest $request, CreateInvoice $createInvoice): JsonResponse
+          {
+              $invoice = $createInvoice->handle(CreateInvoiceData::fromArray($request->validated()));
+
+              return response()->json(['id' => $invoice->id, 'gross_cents' => $invoice->gross_cents], 201);
+          }
+      }
+      EOF
+      rm -f app/Http/Controllers/InvoiceController.php
+      cat > routes/web.php <<'EOF'
+      <?php
+
+      use App\Modules\Invoicing\Http\InvoiceController;
+      use App\Support\Tenancy\IdentifyTenant;
+      use Illuminate\Support\Facades\Route;
+
+      Route::get('/', function () {
+          return view('welcome');
+      });
+
+      Route::post('/invoices', [InvoiceController::class, 'store'])->middleware(IdentifyTenant::class);
+      EOF
+
+  - id: domain-event
+    title: Ein Domain Event für andere Module
+    description: |
+      Das Modul **Reporting** soll erfahren, dass eine Rechnung angelegt wurde – ohne dass Invoicing das
+      Reporting kennt.
+
+      1. Lege `app/Modules/Invoicing/Events/InvoiceCreated.php` an. Das Event nutzt den Trait
+         `Illuminate\Foundation\Events\Dispatchable`, implementiert
+         `Illuminate\Contracts\Events\ShouldDispatchAfterCommit` und trägt nur **einfache Werte**:
+         `public int $invoiceId`, `public int $tenantId`, `public int $grossCents`.
+      2. Die Action `CreateInvoice` löst das Event **innerhalb** der Transaktion mit
+         `InvoiceCreated::dispatch(...)` aus. Dank `ShouldDispatchAfterCommit` kommt es erst nach dem Commit an.
+      3. Lege den Listener `app/Modules/Reporting/Listeners/RecordRevenue.php` an. Seine Methode
+         `handle(InvoiceCreated $event): void` schreibt eine Log-Zeile mit `Log::info(...)`.
+      4. Laravel sucht Listener standardmäßig nur in `app/Listeners`. Ergänze in `bootstrap/app.php` vor
+         `->withExceptions(` die Zeile `->withEvents(discover: [__DIR__.'/../app/Modules/*/Listeners'])`.
+      5. Prüfe mit `php artisan event:list`, dass `RecordRevenue` erscheint.
+    checklist:
+      - Event mit einfachen Werten und `ShouldDispatchAfterCommit`
+      - Action löst das Event aus
+      - Listener im Modul Reporting wird gefunden
+    hints:
+      - "Ein Event mit `use Dispatchable;` kannst du mit `InvoiceCreated::dispatch($invoice->id, $invoice->tenant_id, $invoice->gross_cents)` auslösen."
+      - "Pack das Anlegen und das Dispatchen in **eine** Closure: `return DB::transaction(function () use (...) { $invoice = Invoice::create([...]); InvoiceCreated::dispatch(...); return $invoice; });`"
+      - "Siehst du den Listener nicht, hilft `php artisan event:clear`."
+    checks:
+      - type: file_contains
+        path: app/Modules/Invoicing/Events/InvoiceCreated.php
+        pattern: "implements\\s+ShouldDispatchAfterCommit"
+        message: InvoiceCreated implementiert ShouldDispatchAfterCommit noch nicht.
+      - type: command
+        run: php artisan tinker --execute='Event::fake([App\Modules\Invoicing\Events\InvoiceCreated::class]); app(App\Support\Tenancy\TenantContext::class)->set(3); $i = app(App\Modules\Invoicing\Actions\CreateInvoice::class)->handle(App\Modules\Invoicing\Data\CreateInvoiceData::fromArray(["customer" => "X", "net_cents" => 100, "tax_rate" => 0])); $e = Event::dispatched(App\Modules\Invoicing\Events\InvoiceCreated::class)->first()[0] ?? null; echo $e?->tenantId ?? "kein Event"; $i->delete();'
+        stdout_matches: "^\\s*3\\s*$"
+        message: Die Action löst InvoiceCreated noch nicht aus – oder das Event trägt keine tenantId. Dispatche InvoiceCreated in der Action.
+      - type: command
+        run: php artisan event:list
+        stdout_matches: "RecordRevenue"
+        message: Laravel findet den Listener RecordRevenue noch nicht. Lege ihn in app/Modules/Reporting/Listeners an und ergänze withEvents(discover ...) in bootstrap/app.php.
+      - type: command
+        run: ./vendor/bin/pest
+        message: Die Testsuite ist rot. Führe ./vendor/bin/pest aus und lies die Fehlermeldung.
+    solution: |
+      ```php title="app/Modules/Invoicing/Events/InvoiceCreated.php"
+      <?php
+
+      namespace App\Modules\Invoicing\Events;
+
+      use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+      use Illuminate\Foundation\Events\Dispatchable;
+
+      final class InvoiceCreated implements ShouldDispatchAfterCommit
+      {
+          use Dispatchable;
+
+          public function __construct(
+              public int $invoiceId,
+              public int $tenantId,
+              public int $grossCents,
+          ) {}
+      }
+      ```
+
+      ```php title="app/Modules/Reporting/Listeners/RecordRevenue.php"
+      <?php
+
+      namespace App\Modules\Reporting\Listeners;
+
+      use App\Modules\Invoicing\Events\InvoiceCreated;
+      use Illuminate\Support\Facades\Log;
+
+      final class RecordRevenue
+      {
+          public function handle(InvoiceCreated $event): void
+          {
+              Log::info('Revenue recorded', ['tenant' => $event->tenantId, 'cents' => $event->grossCents]);
+          }
+      }
+      ```
+
+      ```php title="bootstrap/app.php (Ergänzung)"
+      ->withEvents(discover: [__DIR__.'/../app/Modules/*/Listeners'])
+      ```
+    solve: |
+      mkdir -p app/Modules/Invoicing/Events app/Modules/Reporting/Listeners
+      cat > app/Modules/Invoicing/Events/InvoiceCreated.php <<'EOF'
+      <?php
+
+      namespace App\Modules\Invoicing\Events;
+
+      use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+      use Illuminate\Foundation\Events\Dispatchable;
+
+      final class InvoiceCreated implements ShouldDispatchAfterCommit
+      {
+          use Dispatchable;
+
+          public function __construct(
+              public int $invoiceId,
+              public int $tenantId,
+              public int $grossCents,
+          ) {}
+      }
+      EOF
+      cat > app/Modules/Reporting/Listeners/RecordRevenue.php <<'EOF'
+      <?php
+
+      namespace App\Modules\Reporting\Listeners;
+
+      use App\Modules\Invoicing\Events\InvoiceCreated;
+      use Illuminate\Support\Facades\Log;
+
+      final class RecordRevenue
+      {
+          public function handle(InvoiceCreated $event): void
+          {
+              Log::info('Revenue recorded', ['tenant' => $event->tenantId, 'cents' => $event->grossCents]);
+          }
+      }
+      EOF
+      cat > app/Modules/Invoicing/Actions/CreateInvoice.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Invoicing\Actions;
+
+      use App\Modules\Invoicing\Data\CreateInvoiceData;
+      use App\Modules\Invoicing\Events\InvoiceCreated;
+      use App\Modules\Invoicing\Models\Invoice;
+      use Illuminate\Support\Facades\DB;
+
+      final class CreateInvoice
+      {
+          public function handle(CreateInvoiceData $data): Invoice
+          {
+              $gross = $data->net->add($data->net->percent($data->taxRate));
+
+              return DB::transaction(function () use ($data, $gross) {
+                  $invoice = Invoice::create([
+                      'customer' => $data->customer,
+                      'net_cents' => $data->net->cents,
+                      'tax_rate' => $data->taxRate,
+                      'gross_cents' => $gross->cents,
+                  ]);
+
+                  InvoiceCreated::dispatch($invoice->id, $invoice->tenant_id, $invoice->gross_cents);
+
+                  return $invoice;
+              });
+          }
+      }
+      EOF
+      grep -q "withEvents" bootstrap/app.php || sed -i "s#    ->withExceptions(#    ->withEvents(discover: [__DIR__.'/../app/Modules/*/Listeners'])\n    ->withExceptions(#" bootstrap/app.php
+      php artisan event:clear -q
+
+  - id: architekturtests
+    title: Grenzen mit Architekturtests sichern
+    description: |
+      Damit die neue Struktur nicht in drei Monaten wieder verwildert, schreibst du Regeln, die Pest bei
+      jedem Testlauf prüft.
+
+      Lege `tests/Unit/ArchitectureTest.php` mit vier `arch()`-Regeln an:
+
+      1. `App\Modules\Invoicing\Domain` benutzt nichts aus `Illuminate` (`->not->toUse('Illuminate')`).
+      2. Alle Klassen in `App\Modules\Invoicing\Data` sind readonly (`->classes()->toBeReadonly()`).
+      3. Das Model `App\Modules\Invoicing\Models` wird nur innerhalb von `App\Modules\Invoicing` benutzt
+         (`->toOnlyBeUsedIn(...)`).
+      4. `App\Modules\Invoicing\Http` benutzt die Fassade `Illuminate\Support\Facades\DB` nicht.
+
+      Führe `./vendor/bin/pest tests/Unit/ArchitectureTest.php` aus. Mach zur Probe kurz eine Regel kaputt
+      (z. B. `use Illuminate\Support\Str;` in `Money.php`) und schau, wie der Test rot wird – dann wieder
+      entfernen.
+    checklist:
+      - Vier `arch()`-Regeln in `tests/Unit/ArchitectureTest.php`
+      - Architekturtests grün
+    hints:
+      - "Eine Regel sieht so aus: `arch('domain is framework free')->expect('App\\Modules\\Invoicing\\Domain')->not->toUse('Illuminate');`"
+      - Architekturtests brauchen keine Datenbank und kein `TestCase` – deshalb liegen sie gut in `tests/Unit`.
+    checks:
+      - type: file_contains
+        path: tests/Unit/ArchitectureTest.php
+        pattern: "toOnlyBeUsedIn"
+        message: In tests/Unit/ArchitectureTest.php fehlt die Regel mit toOnlyBeUsedIn für das Invoice-Model.
+      - type: file_contains
+        path: tests/Unit/ArchitectureTest.php
+        pattern: "toBeReadonly"
+        message: In tests/Unit/ArchitectureTest.php fehlt die Regel, dass die DTOs readonly sind.
+      - type: command
+        run: grep -c "arch(" tests/Unit/ArchitectureTest.php
+        stdout_matches: "^\\s*([4-9]|[1-9][0-9])\\s*$"
+        message: Es sollen mindestens vier arch()-Regeln in der Datei stehen.
+      - type: command
+        run: ./vendor/bin/pest tests/Unit/ArchitectureTest.php
+        message: Die Architekturtests sind rot. Lies die Meldung – sie nennt die Klasse, die eine Regel bricht.
+    solution: |
+      ```php title="tests/Unit/ArchitectureTest.php"
+      <?php
+
+      arch('domain is framework free')
+          ->expect('App\Modules\Invoicing\Domain')
+          ->not->toUse('Illuminate');
+
+      arch('data objects are readonly')
+          ->expect('App\Modules\Invoicing\Data')
+          ->classes()->toBeReadonly();
+
+      arch('invoice model stays inside its module')
+          ->expect('App\Modules\Invoicing\Models')
+          ->toOnlyBeUsedIn('App\Modules\Invoicing');
+
+      arch('http layer does not query the database')
+          ->expect('App\Modules\Invoicing\Http')
+          ->not->toUse('Illuminate\Support\Facades\DB');
+      ```
+    solve: |
+      cat > tests/Unit/ArchitectureTest.php <<'EOF'
+      <?php
+
+      arch('domain is framework free')
+          ->expect('App\Modules\Invoicing\Domain')
+          ->not->toUse('Illuminate');
+
+      arch('data objects are readonly')
+          ->expect('App\Modules\Invoicing\Data')
+          ->classes()->toBeReadonly();
+
+      arch('invoice model stays inside its module')
+          ->expect('App\Modules\Invoicing\Models')
+          ->toOnlyBeUsedIn('App\Modules\Invoicing');
+
+      arch('http layer does not query the database')
+          ->expect('App\Modules\Invoicing\Http')
+          ->not->toUse('Illuminate\Support\Facades\DB');
+      EOF
+
+  - id: mandanten-test
+    title: Die Mandanten-Trennung beweisen
+    description: |
+      Zum Schluss schreibst du die Tests, die in einem echten SaaS-Projekt am meisten wert sind: Sie
+      beweisen, dass kein Mandant fremde Daten sieht.
+
+      Lege `tests/Feature/TenantIsolationTest.php` an (mit `uses(RefreshDatabase::class);`) und schreibe
+      drei Tests:
+
+      1. Mandant 1 legt eine Rechnung an, Mandant 2 zwei. Mit Mandant 2 im Kontext liefert
+         `Invoice::count()` 2, mit Mandant 1 liefert es 1.
+      2. Ohne gesetzten Mandanten liefert `Invoice::count()` 0, obwohl Rechnungen existieren.
+      3. `POST /invoices` **ohne** Header `X-Tenant-Id` antwortet mit Status 400.
+
+      Am Ende ist die ganze Suite grün: `./vendor/bin/pest`.
+    checklist:
+      - Test für zwei Mandanten
+      - Test ohne Mandant
+      - Test für die Middleware
+      - Ganze Suite grün
+    hints:
+      - "Für Test 2 brauchst du einen frischen Kontext: `app()->forgetScopedInstances();` setzt alle `scoped`-Objekte zurück."
+      - "Rechnungen ohne Kontext legst du mit expliziter `tenant_id` an: `Invoice::create(['tenant_id' => 1, ...])`."
+      - "`$this->postJson('/invoices', [...])->assertStatus(400);`"
+    checks:
+      - type: file_contains
+        path: tests/Feature/TenantIsolationTest.php
+        pattern: "TenantContext"
+        message: tests/Feature/TenantIsolationTest.php fehlt oder setzt den TenantContext nicht.
+      - type: command
+        run: grep -cE "^\s*(test|it)\(" tests/Feature/TenantIsolationTest.php
+        stdout_matches: "^\\s*([3-9]|[1-9][0-9])\\s*$"
+        message: In TenantIsolationTest.php sollen mindestens drei Tests stehen.
+      - type: file_contains
+        path: tests/Feature/TenantIsolationTest.php
+        pattern: "400"
+        message: Es fehlt der Test, dass POST /invoices ohne X-Tenant-Id mit Status 400 antwortet.
+      - type: command
+        run: ./vendor/bin/pest
+        message: Die Testsuite ist noch nicht grün. Führe ./vendor/bin/pest aus und lies die Fehlermeldung.
+    solution: |
+      ```php title="tests/Feature/TenantIsolationTest.php"
+      <?php
+
+      use App\Modules\Invoicing\Models\Invoice;
+      use App\Support\Tenancy\TenantContext;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+
+      uses(RefreshDatabase::class);
+
+      function invoiceFor(int $tenant): Invoice
+      {
+          return Invoice::create([
+              'tenant_id' => $tenant, 'customer' => 'Beispiel AG',
+              'net_cents' => 100, 'tax_rate' => 0, 'gross_cents' => 100,
+          ]);
+      }
+
+      test('a tenant only sees its own invoices', function () {
+          invoiceFor(1);
+          invoiceFor(2);
+          invoiceFor(2);
+
+          app(TenantContext::class)->set(2);
+          expect(Invoice::count())->toBe(2);
+
+          app(TenantContext::class)->set(1);
+          expect(Invoice::count())->toBe(1);
+      });
+
+      test('without a tenant nothing is visible', function () {
+          invoiceFor(1);
+          app()->forgetScopedInstances();
+
+          expect(Invoice::count())->toBe(0);
+      });
+
+      test('the api rejects requests without a tenant', function () {
+          $this->postJson('/invoices', ['customer' => 'Beispiel AG', 'net_cents' => 100, 'tax_rate' => 0])
+              ->assertStatus(400);
+      });
+      ```
+    solve: |
+      cat > tests/Feature/TenantIsolationTest.php <<'EOF'
+      <?php
+
+      use App\Modules\Invoicing\Models\Invoice;
+      use App\Support\Tenancy\TenantContext;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+
+      uses(RefreshDatabase::class);
+
+      function invoiceFor(int $tenant): Invoice
+      {
+          return Invoice::create([
+              'tenant_id' => $tenant, 'customer' => 'Beispiel AG',
+              'net_cents' => 100, 'tax_rate' => 0, 'gross_cents' => 100,
+          ]);
+      }
+
+      test('a tenant only sees its own invoices', function () {
+          invoiceFor(1);
+          invoiceFor(2);
+          invoiceFor(2);
+
+          app(TenantContext::class)->set(2);
+          expect(Invoice::count())->toBe(2);
+
+          app(TenantContext::class)->set(1);
+          expect(Invoice::count())->toBe(1);
+      });
+
+      test('without a tenant nothing is visible', function () {
+          invoiceFor(1);
+          app()->forgetScopedInstances();
+
+          expect(Invoice::count())->toBe(0);
+      });
+
+      test('the api rejects requests without a tenant', function () {
+          $this->postJson('/invoices', ['customer' => 'Beispiel AG', 'net_cents' => 100, 'tax_rate' => 0])
+              ->assertStatus(400);
+      });
+      EOF

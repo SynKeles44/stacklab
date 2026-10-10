@@ -1,0 +1,293 @@
+title: Daten und Konsistenz
+description: Wann sich ein Repository lohnt, wie Domain Events Module entkoppeln und wie Transaktionen, Sperren und After-Commit deine Daten konsistent halten.
+exercise:
+  id: modul-uebung-lager
+  type: code
+  language: php
+  title: Lager reservieren – mit Repository, Transaktion und Events
+  description: |
+    Baue eine Lager-Reservierung, die alle drei Bausteine dieses Moduls verbindet. Vorgegeben sind:
+
+    - `StockRepository` (Interface) und `InMemoryStockRepository` mit `available(string $sku): int`
+      und `reserve(string $sku, int $quantity): void`
+    - `Transaction` – `run(callable $work)` führt die Arbeit aus und stellt bei einer Exception den alten
+      Lagerstand wieder her (wie ein Rollback), danach wirft sie die Exception weiter
+    - `EventBuffer` – sammelt Events mit `record()`. Erst `release()` gibt sie frei (wie „nach dem
+      Commit“), `discard()` verwirft sie. `released()` liefert alle freigegebenen Events.
+
+    Deine Aufgabe:
+
+    1. Das Event `StockReserved` als `final readonly class` mit `string $sku` und `int $quantity`.
+    2. Die Action `ReserveStock` (Konstruktor: Repository, Transaction, EventBuffer) mit
+       `handle(array $lines): void`. `$lines` ist ein Array `sku => Menge`.
+       - Innerhalb von `$this->transaction->run(...)`: Für jede Zeile prüfen, ob genug verfügbar ist –
+         sonst `DomainException`. Dann reservieren und ein `StockReserved` aufzeichnen.
+       - Läuft alles durch: `release()`. Bei einer Exception: `discard()` und die Exception weiterwerfen.
+  starter: |
+    <?php
+
+    declare(strict_types=1);
+
+    interface StockRepository
+    {
+        public function available(string $sku): int;
+
+        public function reserve(string $sku, int $quantity): void;
+
+        public function snapshot(): array;
+
+        public function restore(array $snapshot): void;
+    }
+
+    final class InMemoryStockRepository implements StockRepository
+    {
+        public function __construct(private array $stock = []) {}
+
+        public function available(string $sku): int
+        {
+            return $this->stock[$sku] ?? 0;
+        }
+
+        public function reserve(string $sku, int $quantity): void
+        {
+            $this->stock[$sku] = $this->available($sku) - $quantity;
+        }
+
+        public function snapshot(): array
+        {
+            return $this->stock;
+        }
+
+        public function restore(array $snapshot): void
+        {
+            $this->stock = $snapshot;
+        }
+    }
+
+    final class Transaction
+    {
+        public function __construct(private StockRepository $repository) {}
+
+        public function run(callable $work): void
+        {
+            $before = $this->repository->snapshot();
+
+            try {
+                $work();
+            } catch (Throwable $e) {
+                $this->repository->restore($before);
+
+                throw $e;
+            }
+        }
+    }
+
+    final class EventBuffer
+    {
+        private array $pending = [];
+        private array $released = [];
+
+        public function record(object $event): void
+        {
+            $this->pending[] = $event;
+        }
+
+        public function release(): void
+        {
+            $this->released = [...$this->released, ...$this->pending];
+            $this->pending = [];
+        }
+
+        public function discard(): void
+        {
+            $this->pending = [];
+        }
+
+        public function released(): array
+        {
+            return $this->released;
+        }
+    }
+
+    final readonly class StockReserved
+    {
+        // sku und quantity
+    }
+
+    final class ReserveStock
+    {
+        public function __construct(
+            private StockRepository $stock,
+            private Transaction $transaction,
+            private EventBuffer $events,
+        ) {}
+
+        public function handle(array $lines): void
+        {
+            // in der Transaktion reservieren, Events aufzeichnen, danach release() oder discard()
+        }
+    }
+  tests:
+    - name: reserviert alle Zeilen und gibt die Events frei
+      code: |
+        $repo = new InMemoryStockRepository(['A' => 5, 'B' => 3]);
+        $events = new EventBuffer();
+        (new ReserveStock($repo, new Transaction($repo), $events))->handle(['A' => 2, 'B' => 3]);
+        assert_same(3, $repo->available('A'));
+        assert_same(0, $repo->available('B'));
+        assert_same(2, count($events->released()));
+        assert_same('A', $events->released()[0]->sku);
+        assert_same(3, $events->released()[1]->quantity);
+    - name: fehlt Ware, wird nichts reserviert und kein Event freigegeben
+      code: |
+        $repo = new InMemoryStockRepository(['A' => 5, 'B' => 1]);
+        $events = new EventBuffer();
+        $thrown = false;
+        try {
+            (new ReserveStock($repo, new Transaction($repo), $events))->handle(['A' => 2, 'B' => 4]);
+        } catch (DomainException $e) {
+            $thrown = true;
+        }
+        assert_true($thrown);
+        assert_same(5, $repo->available('A'));
+        assert_same([], $events->released());
+    - name: eine leere Bestellung erzeugt keine Events
+      code: |
+        $repo = new InMemoryStockRepository(['A' => 5]);
+        $events = new EventBuffer();
+        (new ReserveStock($repo, new Transaction($repo), $events))->handle([]);
+        assert_same([], $events->released());
+        assert_same(5, $repo->available('A'));
+    - name: verworfene Events tauchen auch später nicht auf
+      code: |
+        $repo = new InMemoryStockRepository(['A' => 1]);
+        $events = new EventBuffer();
+        $action = new ReserveStock($repo, new Transaction($repo), $events);
+        try { $action->handle(['A' => 2]); } catch (DomainException $e) {}
+        $action->handle(['A' => 1]);
+        assert_same(1, count($events->released()));
+        assert_true((new ReflectionClass(StockReserved::class))->isReadOnly());
+  solution: |
+    <?php
+
+    declare(strict_types=1);
+
+    interface StockRepository
+    {
+        public function available(string $sku): int;
+
+        public function reserve(string $sku, int $quantity): void;
+
+        public function snapshot(): array;
+
+        public function restore(array $snapshot): void;
+    }
+
+    final class InMemoryStockRepository implements StockRepository
+    {
+        public function __construct(private array $stock = []) {}
+
+        public function available(string $sku): int
+        {
+            return $this->stock[$sku] ?? 0;
+        }
+
+        public function reserve(string $sku, int $quantity): void
+        {
+            $this->stock[$sku] = $this->available($sku) - $quantity;
+        }
+
+        public function snapshot(): array
+        {
+            return $this->stock;
+        }
+
+        public function restore(array $snapshot): void
+        {
+            $this->stock = $snapshot;
+        }
+    }
+
+    final class Transaction
+    {
+        public function __construct(private StockRepository $repository) {}
+
+        public function run(callable $work): void
+        {
+            $before = $this->repository->snapshot();
+
+            try {
+                $work();
+            } catch (Throwable $e) {
+                $this->repository->restore($before);
+
+                throw $e;
+            }
+        }
+    }
+
+    final class EventBuffer
+    {
+        private array $pending = [];
+        private array $released = [];
+
+        public function record(object $event): void
+        {
+            $this->pending[] = $event;
+        }
+
+        public function release(): void
+        {
+            $this->released = [...$this->released, ...$this->pending];
+            $this->pending = [];
+        }
+
+        public function discard(): void
+        {
+            $this->pending = [];
+        }
+
+        public function released(): array
+        {
+            return $this->released;
+        }
+    }
+
+    final readonly class StockReserved
+    {
+        public function __construct(public string $sku, public int $quantity) {}
+    }
+
+    final class ReserveStock
+    {
+        public function __construct(
+            private StockRepository $stock,
+            private Transaction $transaction,
+            private EventBuffer $events,
+        ) {}
+
+        public function handle(array $lines): void
+        {
+            try {
+                $this->transaction->run(function () use ($lines): void {
+                    foreach ($lines as $sku => $quantity) {
+                        if ($this->stock->available($sku) < $quantity) {
+                            throw new DomainException("Not enough stock for {$sku}.");
+                        }
+
+                        $this->stock->reserve($sku, $quantity);
+                        $this->events->record(new StockReserved($sku, $quantity));
+                    }
+                });
+            } catch (Throwable $e) {
+                $this->events->discard();
+
+                throw $e;
+            }
+
+            $this->events->release();
+        }
+    }
+  hints:
+    - "Die Closure für `run` kann `$this` benutzen. Variablen holst du mit `use ($lines)` hinein."
+    - "Umschließe den `run`-Aufruf mit `try { ... } catch (Throwable $e) { $this->events->discard(); throw $e; }` und rufe danach `release()` auf."

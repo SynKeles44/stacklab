@@ -1,0 +1,556 @@
+title: Abschlussprüfung Laravel-Architektur
+description: |
+  Diese Prüfung deckt alle vier Module ab: Schichten, Daten und Konsistenz, den modularen Monolithen sowie
+  Mandanten und Betrieb. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben – eine im
+  echten Übungs-Terminal mit einer Laravel-App, zwei als Programmieraufgaben in PHP.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 75
+pass_percent: 70
+questions:
+  # --- Schichten ---
+  - module: schichten
+    type: multiple
+    question: Welche Symptome zeigen, dass eine Laravel-App über das einfache MVC-Schema hinausgewachsen ist?
+    options:
+      - Dieselbe Rabattregel steht im Controller, in einem Artisan-Befehl und in einem Job.
+      - Eine Geschäftsregel lässt sich nur über einen simulierten HTTP-Request testen.
+      - Die App benutzt Blade-Views.
+      - Ein Controller mischt Validierung, Berechnung, Datenbank und Mailversand in 500 Zeilen.
+    answers: [0, 1, 3]
+    explanation: Kopierte Logik, Tests nur über HTTP und riesige Controller sind die klassischen Warnsignale. Blade-Views sagen darüber nichts.
+  - module: schichten
+    type: find-bug
+    question: Die Action soll auch aus einem Queue-Job aufrufbar sein. Welche Zeile verhindert das?
+    language: php
+    code: |
+      final class CancelSubscription
+      {
+          public function handle(int $subscriptionId): void
+          {
+              $subscription = Subscription::findOrFail($subscriptionId);
+              $subscription->update(['cancelled_by' => auth()->id()]);
+              SubscriptionCancelled::dispatch($subscription->id);
+          }
+      }
+    bug_line: 6
+    explanation: Im Queue-Worker ist niemand eingeloggt, `auth()->id()` ist dort `null`. Die Benutzer-ID gehört als Parameter in `handle`.
+  - module: schichten
+    type: single
+    question: Welche Klasse ist ein Value Object?
+    options:
+      - "CreateInvoiceData mit customer, net und taxRate, ohne eigene Regeln"
+      - "Percentage, das im Konstruktor nur Werte von 0 bis 100 zulässt und applyTo(Money) anbietet"
+      - "Invoice extends Model"
+      - "InvoiceController"
+    answer: 1
+    explanation: Ein Value Object stellt einen fachlichen Wert dar und erzwingt seine Invariante selbst. CreateInvoiceData ist ein DTO.
+  - module: schichten
+    type: cloze
+    text: "Ein unveränderliches DTO deklarierst du in PHP als `final ___ class`. Geldbeträge speicherst du als `int` in ___ statt als float."
+    blanks:
+      - [readonly]
+      - [Cent, Cents, cent]
+    explanation: readonly schützt vor nachträglichen Änderungen, Cent-Beträge als int vermeiden Rundungsfehler von Fließkommazahlen.
+  - module: schichten
+    type: match
+    question: Ordne jeder Schicht ihre Aufgabe zu.
+    pairs:
+      - { left: "Controller", right: "HTTP übersetzen" }
+      - { left: "Form Request", right: "Eingabe prüfen und berechtigen" }
+      - { left: "Action", right: "Einen Anwendungsfall ausführen" }
+      - { left: "Value Object", right: "Einen fachlichen Wert samt Regeln abbilden" }
+    explanation: Jede Schicht hat genau eine Aufgabe; Abhängigkeiten zeigen nach innen.
+  # --- Daten und Konsistenz ---
+  - module: daten-und-konsistenz
+    type: single
+    question: Wann lohnt sich ein Repository in einer Laravel-App am ehesten?
+    options:
+      - Immer, für jedes Model.
+      - Wenn Daten aus mehreren Quellen kommen, z. B. eigene Datenbank und externes System.
+      - Wenn ein Model genau drei Spalten hat.
+      - Wenn man Eager Loading vermeiden möchte.
+    answer: 1
+    explanation: Eloquent ist schon eine Abstraktion. Ein Repository lohnt sich bei echtem Mehrwert wie mehreren Datenquellen.
+  - module: daten-und-konsistenz
+    type: multiple
+    question: Was gehört in ein Domain Event, das andere Module lesen?
+    options:
+      - Die ID des betroffenen Datensatzes
+      - Die Mandanten-ID
+      - Das Eloquent-Model eines anderen Moduls
+      - Fachlich wichtige Werte wie ein Betrag in Cent
+    answers: [0, 1, 3]
+    explanation: Ein Event ist ein schmaler Vertrag mit einfachen, stabilen Werten.
+  - module: daten-und-konsistenz
+    type: single
+    question: In einer Transaktion wird eine Bestellung angelegt und `SendConfirmation::dispatch($order->id)` ohne afterCommit aufgerufen. Danach wird zurückgerollt. Was passiert?
+    options:
+      - Der Job wird mit zurückgerollt.
+      - Der Job bleibt in der Queue und sucht eine Bestellung, die es nicht gibt.
+      - Laravel verhindert den Rollback.
+      - Die Bestellung wird trotzdem gespeichert.
+    answer: 1
+    explanation: Die Queue kennt die Datenbank-Transaktion nicht. Mit `->afterCommit()` oder `after_commit` wird der Job verworfen.
+  - module: daten-und-konsistenz
+    type: find-bug
+    question: Zwei gleichzeitige Anfragen sollen den Lagerbestand nicht unter null bringen. Welche Zeile muss geändert werden?
+    language: php
+    code: |
+      DB::transaction(function () use ($sku, $quantity) {
+          $item = StockItem::where('sku', $sku)->firstOrFail();
+
+          if ($item->available < $quantity) {
+              throw new DomainException('Out of stock.');
+          }
+
+          $item->decrement('available', $quantity);
+      }, attempts: 3);
+    bug_line: 2
+    explanation: Ohne `lockForUpdate()` lesen beide Anfragen denselben Bestand. Richtig ist `StockItem::where('sku', $sku)->lockForUpdate()->firstOrFail()`.
+  - module: daten-und-konsistenz
+    type: cloze
+    text: "Ein Event, das erst nach dem Commit ausgelöst werden soll, implementiert `___`."
+    blanks:
+      - [ShouldDispatchAfterCommit]
+    explanation: Bei einem Rollback verwirft Laravel solche Events.
+  # --- Modularer Monolith ---
+  - module: modularer-monolith
+    type: single
+    question: Was ist ein modularer Monolith?
+    options:
+      - Mehrere Laravel-Apps, die per HTTP kommunizieren.
+      - Eine App mit einem Deployment, die intern in fachliche Module mit klaren Grenzen geteilt ist.
+      - Eine App ohne Namespaces.
+      - Ein einziger Controller für alles.
+    answer: 1
+    explanation: Grenzen im Code statt im Netzwerk – einfacher Betrieb, trotzdem klare Zuständigkeiten.
+  - module: modularer-monolith
+    type: multiple
+    question: Was gehört zur öffentlichen Schnittstelle eines Moduls?
+    options:
+      - Interfaces in Contracts/
+      - DTOs, die das Modul herausgibt
+      - Domain Events des Moduls
+      - Die Eloquent-Models des Moduls
+    answers: [0, 1, 2]
+    explanation: Models, Actions und Tabellen bleiben intern, damit das Modul sie ändern kann, ohne andere zu brechen.
+  - module: modularer-monolith
+    type: match
+    question: Ordne jede Pest-Expectation ihrer Wirkung zu.
+    pairs:
+      - { left: "->not->toUse('Illuminate')", right: "Benutzt nichts aus Laravel" }
+      - { left: "->toOnlyBeUsedIn('App\\Modules\\Billing')", right: "Wird nur von Billing benutzt" }
+      - { left: "->classes()->toBeFinal()", right: "Alle Klassen sind final" }
+      - { left: "arch()->preset()->security()", right: "Verbietet unsichere Funktionen wie eval" }
+    explanation: Architekturtests prüfen Abhängigkeiten und Form von Klassen ohne Ausführung.
+  - module: modularer-monolith
+    type: find-bug
+    question: Welche Zeile verletzt die Grenze zwischen Reporting und Billing?
+    language: php
+    code: |
+      final class MonthlyRevenue
+      {
+          public function __construct(private InvoiceTotals $totals) {}
+
+          public function forMonth(string $month): int
+          {
+              return DB::table('invoices')->where('month', $month)->sum('gross_cents');
+          }
+      }
+    bug_line: 7
+    explanation: Reporting liest die Tabelle von Billing direkt. Die Daten gehören Billing; Reporting fragt über `InvoiceTotals` oder sammelt Werte aus Events.
+  # --- Mandanten und Betrieb ---
+  - module: mandanten-und-betrieb
+    type: single
+    question: Warum registrierst du den Mandanten-Kontext mit `scoped` statt mit `singleton`?
+    options:
+      - scoped ist schneller.
+      - Ein scoped-Objekt gilt nur für einen Request bzw. Job und wird danach zurückgesetzt; ein Singleton würde den Mandanten in den nächsten Job mitnehmen.
+      - singleton funktioniert nicht mit Middleware.
+      - Weil Pest sonst fehlschlägt.
+    answer: 1
+    explanation: Gerade im langlebigen Queue-Worker würde ein Singleton den Mandanten des vorherigen Jobs behalten.
+  - module: mandanten-und-betrieb
+    type: multiple
+    question: Wo brauchst du trotz Global Scope eine eigene Mandanten-Bedingung?
+    options:
+      - "DB::table('invoices')"
+      - "Cache-Schlüssel"
+      - "Rule::unique('projects', 'slug')"
+      - "Invoice::where('paid', false)"
+    answers: [0, 1, 2]
+    explanation: Der Scope wirkt nur auf Eloquent-Abfragen des Models. Query Builder, Cache und Validierung brauchen den Mandanten ausdrücklich.
+  - module: mandanten-und-betrieb
+    type: find-bug
+    question: Welche Zeile macht den Scope gefährlich?
+    language: php
+    code: |
+      public function apply(Builder $builder, Model $model): void
+      {
+          $tenant = app(TenantContext::class)->id();
+
+          if ($tenant !== null) {
+              $builder->where($model->qualifyColumn('tenant_id'), $tenant);
+          }
+      }
+    bug_line: 5
+    explanation: Ohne Mandant filtert der Scope gar nicht und liefert alle Daten. Fail closed wäre `whereRaw('1 = 0')` für den Fall ohne Mandant.
+  - module: mandanten-und-betrieb
+    type: single
+    question: Nach `php artisan config:cache` liefert `env('APP_REGION', 'eu')` in einer Action immer `eu`. Warum?
+    options:
+      - Weil config:cache die .env löscht.
+      - Weil mit gecachter Konfiguration die .env nicht mehr geladen wird; Werte kommen nur noch über config().
+      - Weil env() nur Zahlen liefert.
+      - Weil Actions keine Umgebungsvariablen lesen dürfen und Laravel das erzwingt.
+    answer: 1
+    explanation: env() gehört ausschließlich in config/-Dateien; der übrige Code liest config().
+  - module: mandanten-und-betrieb
+    type: multiple
+    question: Welche Aussagen über Over-Engineering stimmen?
+    options:
+      - Ein Interface mit genau einer Implementierung, die nie ersetzt wird, ist oft unnötig.
+      - Muster sollten auf einen konkreten Auslöser reagieren.
+      - Je mehr Schichten, desto besser ist eine App immer.
+      - Mit Tests als Sicherheitsnetz lässt sich Architektur später nachziehen.
+    answers: [0, 1, 3]
+    explanation: Jedes Muster hat einen Preis. Ohne Auslöser bleibt nur der Preis.
+tasks:
+  - module: daten-und-konsistenz
+    id: pruefung-event-nach-commit
+    type: terminal
+    title: Begrüßung erst nach dem Commit
+    description: |
+      Im Ordner `pruefung-mitglieder` liegt eine App mit zwei Modulen. `App\Modules\Membership\Actions\RegisterMember`
+      legt in einer Transaktion ein Mitglied an und ruft danach **direkt** das Model
+      `App\Modules\Onboarding\Models\Welcome` aus dem fremden Modul Onboarding auf.
+
+      Klicke zuerst auf **Aufgabe vorbereiten** und wechsle mit `cd pruefung-mitglieder` in die App.
+
+      1. Lege das Event `App\Modules\Membership\Events\MemberRegistered` an (Trait `Dispatchable`,
+         `public int $memberId`). Es implementiert `ShouldDispatchAfterCommit`.
+      2. `RegisterMember` löst das Event in der Transaktion aus und kennt Onboarding danach nicht mehr.
+      3. Der Listener `App\Modules\Onboarding\Listeners\CreateWelcome` legt mit
+         `Welcome::create(['member_id' => $event->memberId])` die Begrüßung an. Registriere ihn in
+         `AppServiceProvider::boot()` mit `Event::listen(...)`.
+      4. `./vendor/bin/pest` muss grün sein.
+    workdir: pruefung-mitglieder
+    setup: |
+      B="$HOME/.cache/stacklab/laravel13"
+      if [ ! -f "$B/.fertig" ]; then
+        T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+        timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+        cd "$T"
+        timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+        printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+        printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+        printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+        touch .fertig && cd - >/dev/null
+        rm -rf "$B" && mv "$T" "$B"
+      fi
+      cp -a "$B/." . && rm -f .fertig
+      mkdir -p app/Modules/Membership/Models app/Modules/Membership/Actions app/Modules/Onboarding/Models
+      cat > database/migrations/2026_01_01_000000_create_members_and_welcomes.php <<'EOF'
+      <?php
+
+      use Illuminate\Database\Migrations\Migration;
+      use Illuminate\Database\Schema\Blueprint;
+      use Illuminate\Support\Facades\Schema;
+
+      return new class extends Migration
+      {
+          public function up(): void
+          {
+              Schema::create('members', function (Blueprint $table) {
+                  $table->id();
+                  $table->string('email')->unique();
+                  $table->timestamps();
+              });
+
+              Schema::create('welcomes', function (Blueprint $table) {
+                  $table->id();
+                  $table->unsignedBigInteger('member_id')->index();
+                  $table->timestamps();
+              });
+          }
+
+          public function down(): void
+          {
+              Schema::dropIfExists('welcomes');
+              Schema::dropIfExists('members');
+          }
+      };
+      EOF
+      cat > app/Modules/Membership/Models/Member.php <<'EOF'
+      <?php
+
+      namespace App\Modules\Membership\Models;
+
+      use Illuminate\Database\Eloquent\Attributes\Fillable;
+      use Illuminate\Database\Eloquent\Model;
+
+      #[Fillable(['email'])]
+      class Member extends Model
+      {
+      }
+      EOF
+      cat > app/Modules/Onboarding/Models/Welcome.php <<'EOF'
+      <?php
+
+      namespace App\Modules\Onboarding\Models;
+
+      use Illuminate\Database\Eloquent\Attributes\Fillable;
+      use Illuminate\Database\Eloquent\Model;
+
+      #[Fillable(['member_id'])]
+      class Welcome extends Model
+      {
+      }
+      EOF
+      cat > app/Modules/Membership/Actions/RegisterMember.php <<'EOF'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Modules\Membership\Actions;
+
+      use App\Modules\Membership\Models\Member;
+      use App\Modules\Onboarding\Models\Welcome;
+      use Illuminate\Support\Facades\DB;
+
+      final class RegisterMember
+      {
+          public function handle(string $email): Member
+          {
+              $member = DB::transaction(fn () => Member::create(['email' => strtolower(trim($email))]));
+
+              Welcome::create(['member_id' => $member->id]);
+
+              return $member;
+          }
+      }
+      EOF
+      cat > tests/Feature/RegisterMemberTest.php <<'EOF'
+      <?php
+
+      use App\Modules\Membership\Actions\RegisterMember;
+      use App\Modules\Onboarding\Models\Welcome;
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+
+      uses(RefreshDatabase::class);
+
+      test('a new member gets a welcome', function () {
+          $member = app(RegisterMember::class)->handle(' Ada@Example.com ');
+
+          expect($member->email)->toBe('ada@example.com')
+              ->and(Welcome::where('member_id', $member->id)->count())->toBe(1);
+      });
+      EOF
+      php artisan migrate -q --force
+    checks:
+      - type: file_contains
+        path: app/Modules/Membership/Events/MemberRegistered.php
+        pattern: "implements\\s+ShouldDispatchAfterCommit"
+        message: MemberRegistered fehlt oder implementiert ShouldDispatchAfterCommit noch nicht.
+      - type: command
+        run: grep -rl "Onboarding" app/Modules/Membership
+        expect_exit: 1
+        message: Das Modul Membership kennt Onboarding noch. Nur das Event soll die beiden verbinden.
+      - type: command
+        run: php artisan tinker --execute='$m = app(App\Modules\Membership\Actions\RegisterMember::class)->handle("pruefung@example.com"); echo App\Modules\Onboarding\Models\Welcome::where("member_id", $m->id)->count(); App\Modules\Onboarding\Models\Welcome::query()->delete(); $m->delete();'
+        stdout_matches: "^\\s*1\\s*$"
+        message: Nach einer Registrierung entsteht noch keine Begrüßung. Prüfe Event, Listener und Event::listen.
+      - type: command
+        run: php artisan tinker --execute='DB::beginTransaction(); app(App\Modules\Membership\Actions\RegisterMember::class)->handle("offen@example.com"); echo App\Modules\Onboarding\Models\Welcome::count(); DB::rollBack();'
+        stdout_matches: "^\\s*0\\s*$"
+        message: Die Begrüßung entsteht schon, bevor die Transaktion committet ist. Das Event muss ShouldDispatchAfterCommit implementieren.
+      - type: command
+        run: ./vendor/bin/pest
+        message: Die Tests sind noch rot. Führe ./vendor/bin/pest aus und lies die Meldung.
+    hints:
+      - "Das Event dispatchst du innerhalb der Closure: `DB::transaction(function () use ($email) { $member = Member::create([...]); MemberRegistered::dispatch($member->id); return $member; });`"
+      - "Im AppServiceProvider: `Event::listen(MemberRegistered::class, CreateWelcome::class);`"
+    solution: |
+      ```php title="app/Modules/Membership/Events/MemberRegistered.php"
+      <?php
+
+      namespace App\Modules\Membership\Events;
+
+      use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+      use Illuminate\Foundation\Events\Dispatchable;
+
+      final class MemberRegistered implements ShouldDispatchAfterCommit
+      {
+          use Dispatchable;
+
+          public function __construct(public int $memberId) {}
+      }
+      ```
+
+      ```php title="app/Modules/Membership/Actions/RegisterMember.php (handle)"
+      return DB::transaction(function () use ($email) {
+          $member = Member::create(['email' => strtolower(trim($email))]);
+          MemberRegistered::dispatch($member->id);
+
+          return $member;
+      });
+      ```
+
+      ```php title="app/Modules/Onboarding/Listeners/CreateWelcome.php"
+      final class CreateWelcome
+      {
+          public function handle(MemberRegistered $event): void
+          {
+              Welcome::create(['member_id' => $event->memberId]);
+          }
+      }
+      ```
+
+      Dazu im `AppServiceProvider::boot()`: `Event::listen(MemberRegistered::class, CreateWelcome::class);`
+  - module: schichten
+    id: pruefung-zeitraum
+    type: code
+    language: php
+    title: Ein Value Object für Zeiträume
+    description: |
+      Schreibe `DateRange` als `final readonly class` mit `string $start` und `string $end` (Format
+      `YYYY-MM-DD`, Strings lassen sich direkt mit `<` und `>` vergleichen).
+
+      - Der Konstruktor wirft eine `InvalidArgumentException`, wenn `$end` vor `$start` liegt. Gleiche
+        Daten sind erlaubt.
+      - `overlaps(DateRange $other): bool` ist `true`, wenn sich die Zeiträume mindestens einen Tag
+        teilen (die Grenzen zählen mit).
+      - `equals(DateRange $other): bool` vergleicht nach Wert.
+    starter: |
+      <?php
+
+      declare(strict_types=1);
+
+      final readonly class DateRange
+      {
+      }
+    tests:
+      - name: überlappende Zeiträume
+        code: |
+          $a = new DateRange('2026-10-01', '2026-10-10');
+          assert_true($a->overlaps(new DateRange('2026-10-10', '2026-10-20')));
+          assert_same(false, $a->overlaps(new DateRange('2026-10-11', '2026-10-20')));
+          assert_true((new DateRange('2026-10-05', '2026-10-06'))->overlaps($a));
+      - name: ein Ende vor dem Start wird abgelehnt
+        code: |
+          $thrown = false;
+          try { new DateRange('2026-10-10', '2026-10-01'); } catch (InvalidArgumentException $e) { $thrown = true; }
+          assert_true($thrown);
+          assert_same('2026-10-01', (new DateRange('2026-10-01', '2026-10-01'))->end);
+      - name: Gleichheit nach Wert und Unveränderlichkeit
+        code: |
+          assert_true((new DateRange('2026-01-01', '2026-01-31'))->equals(new DateRange('2026-01-01', '2026-01-31')));
+          assert_same(false, (new DateRange('2026-01-01', '2026-01-31'))->equals(new DateRange('2026-01-01', '2026-01-30')));
+          assert_true((new ReflectionClass(DateRange::class))->isReadOnly());
+    solution: |
+      <?php
+
+      declare(strict_types=1);
+
+      final readonly class DateRange
+      {
+          public function __construct(public string $start, public string $end)
+          {
+              if ($end < $start) {
+                  throw new InvalidArgumentException('End must not be before start.');
+              }
+          }
+
+          public function overlaps(DateRange $other): bool
+          {
+              return $this->start <= $other->end && $other->start <= $this->end;
+          }
+
+          public function equals(DateRange $other): bool
+          {
+              return $this->start === $other->start && $this->end === $other->end;
+          }
+      }
+    hints:
+      - "Zwei Zeiträume überlappen, wenn jeder beginnt, bevor der andere endet: `$this->start <= $other->end && $other->start <= $this->end`."
+  - module: modularer-monolith
+    id: pruefung-grenzpruefer
+    type: code
+    language: php
+    title: Ein Mini-Architekturtest
+    description: |
+      Baue das Prinzip von `->not->toUse(...)` nach. Die Funktion
+      `violations(array $uses, array $forbidden): array` bekommt:
+
+      - `$uses`: Klassenname → Liste der Klassen, die sie benutzt
+      - `$forbidden`: Namespace-Präfix → Liste verbotener Namespace-Präfixe
+
+      Sie liefert eine Liste von Strings `"<Klasse> -> <benutzte Klasse>"` für jede Verletzung, in der
+      Reihenfolge von `$uses`. Ein Präfix passt, wenn der Klassenname damit **beginnt**
+      (`str_starts_with`).
+    starter: |
+      <?php
+
+      declare(strict_types=1);
+
+      function violations(array $uses, array $forbidden): array
+      {
+      }
+    tests:
+      - name: findet eine verbotene Abhängigkeit
+        code: |
+          $uses = [
+              'App\Modules\Ordering\AddToCart' => ['App\Modules\Catalog\Models\Product', 'App\Modules\Catalog\Contracts\CatalogApi'],
+              'App\Modules\Catalog\EloquentCatalog' => ['App\Modules\Catalog\Models\Product'],
+          ];
+          $rules = ['App\Modules\Ordering' => ['App\Modules\Catalog\Models']];
+          assert_same(['App\Modules\Ordering\AddToCart -> App\Modules\Catalog\Models\Product'], violations($uses, $rules));
+      - name: ohne Verletzungen ist die Liste leer
+        code: |
+          assert_same([], violations([], ['App\Modules\Ordering' => ['App\Modules\Catalog\Models']]));
+          assert_same([], violations(['App\Modules\Ordering\X' => ['App\Modules\Catalog\Contracts\Api']], ['App\Modules\Ordering' => ['App\Modules\Catalog\Models']]));
+      - name: mehrere Regeln und Verletzungen
+        code: |
+          $uses = [
+              'App\Modules\Billing\Domain\Money' => ['Illuminate\Support\Str'],
+              'App\Modules\Billing\Http\InvoiceController' => ['Illuminate\Support\Facades\DB', 'App\Modules\Billing\Actions\CreateInvoice'],
+          ];
+          $rules = [
+              'App\Modules\Billing\Domain' => ['Illuminate'],
+              'App\Modules\Billing\Http' => ['Illuminate\Support\Facades\DB'],
+          ];
+          assert_same([
+              'App\Modules\Billing\Domain\Money -> Illuminate\Support\Str',
+              'App\Modules\Billing\Http\InvoiceController -> Illuminate\Support\Facades\DB',
+          ], violations($uses, $rules));
+    solution: |
+      <?php
+
+      declare(strict_types=1);
+
+      function violations(array $uses, array $forbidden): array
+      {
+          $found = [];
+
+          foreach ($uses as $class => $dependencies) {
+              foreach ($forbidden as $scope => $blocked) {
+                  if (! str_starts_with($class, $scope)) {
+                      continue;
+                  }
+
+                  foreach ($dependencies as $dependency) {
+                      foreach ($blocked as $prefix) {
+                          if (str_starts_with($dependency, $prefix)) {
+                              $found[] = "{$class} -> {$dependency}";
+                          }
+                      }
+                  }
+              }
+          }
+
+          return $found;
+      }
+    hints:
+      - "Vier verschachtelte Schleifen reichen: Klassen, Regeln, Abhängigkeiten, verbotene Präfixe."
+      - "Prüfe zuerst, ob die Regel für die Klasse gilt (`str_starts_with($class, $scope)`), sonst `continue`."

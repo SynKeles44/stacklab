@@ -1,0 +1,34 @@
+title: Laravel-Architektur
+subtitle: Große Laravel-Anwendungen sauber schneiden – Actions, DTOs, Events, Module und Mandanten
+description: >
+  Kleine Laravel-Apps leben gut mit Route, Controller, Model und View. Wächst die Anwendung auf hunderte
+  Klassen und mehrere Teams, wird genau diese Einfachheit zum Problem: Controller mit 300 Zeilen,
+  Geschäftsregeln, die in fünf Dateien kopiert sind, und Abfragen, die plötzlich Daten des falschen
+  Kunden anzeigen.
+
+
+  In diesem Kurs lernst du die Muster, mit denen große Laravel-Projekte beherrschbar bleiben: schlanke
+  Controller mit **Actions**, typisierte **DTOs** und **Value Objects**, **Domain Events**, saubere
+  **Transaktionen**, einen **modularen Monolithen** mit Grenzen, die Pest-Architekturtests erzwingen,
+  und **Multi-Tenancy**, bei der kein Mandant die Daten eines anderen sieht. Ein ehrliches Kapitel
+  über Over-Engineering zeigt dir, wann du all das **nicht** brauchst.
+category: backend
+level: profi
+icon: blocks
+color: "#f97316"
+estimated_hours: 5
+workspace_dir: laravel-architektur
+prerequisites: [laravel, laravel-vertieft]
+learning_goals:
+  - Du erkennst, wann eine Laravel-Anwendung über das einfache MVC-Schema hinauswächst, und benennst die Symptome.
+  - Du schreibst schlanke Controller und verlagerst Geschäftslogik in Action- und Service-Klassen.
+  - Du modellierst Daten mit unveränderlichen DTOs und Value Objects statt mit losen Arrays.
+  - Du wägst das Repository-Muster gegen direktes Eloquent ab und entscheidest begründet.
+  - Du entkoppelst Module mit Domain Events und hältst Daten mit Transaktionen konsistent.
+  - Du schneidest einen modularen Monolithen und erzwingst seine Grenzen mit Pest-Architekturtests.
+  - Du setzt Multi-Tenancy mit tenant_id und Global Scopes um und vermeidest Datenlecks in Abfragen und Jobs.
+  - Du steuerst Verhalten über Konfiguration und Feature Flags und erkennst Over-Engineering.
+references:
+  - Modulare Monolithen mit fachlichen Modulen und öffentlichen Schnittstellen, wie sie in großen Laravel-Codebasen üblich sind
+  - Mandantenfähige SaaS-Anwendungen mit tenant_id-Spalte, Global Scopes und Mandanten-Kontext in Queue-Jobs
+  - Architekturtests in der CI, die Schichtgrenzen bei jedem Pull Request prüfen

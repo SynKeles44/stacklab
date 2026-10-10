@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="450" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Eine App, zwei Module mit Grenzen</text>
+
+  <rect x="40" y="56" width="300" height="400" rx="16" fill="#f8fafc" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="190" y="84" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Modul Ordering</text>
+  <rect x="540" y="56" width="300" height="400" rx="16" fill="#f8fafc" stroke="#1e1b3a" stroke-width="2"/>
+  <text x="690" y="84" text-anchor="middle" font-size="17" font-weight="700" fill="#1e1b3a">Modul Catalog</text>
+
+  <g font-size="15" fill="#1e1b3a" text-anchor="middle">
+    <rect x="60" y="114" width="260" height="56" rx="10" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+    <text x="190" y="140">Öffentliche Schnittstelle</text>
+    <text x="190" y="160" font-size="12">Contracts, Data, Events</text>
+    <rect x="60" y="234" width="260" height="56" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+    <text x="190" y="260">Interne Models und Actions</text>
+    <text x="190" y="280" font-size="12">AddToCart, Order</text>
+    <rect x="60" y="354" width="260" height="56" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+    <text x="190" y="380">Eigene Tabellen</text>
+    <text x="190" y="400" font-size="12">orders, order_lines</text>
+
+    <rect x="560" y="114" width="260" height="56" rx="10" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+    <rect x="560" y="234" width="260" height="56" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+    <rect x="560" y="354" width="260" height="56" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  </g>
+
+  <path d="M 322 255 C 430 255 450 142 556 142" stroke="#1e1b3a" stroke-width="2.5" fill="none" marker-end="url(#pfeil)"/>
+  <text x="450" y="168" text-anchor="middle" font-size="13" fill="#1e1b3a">Aufruf über Interface</text>
+  <path d="M 558 300 C 470 320 430 320 324 290" stroke="#1e1b3a" stroke-width="2.5" stroke-dasharray="7 5" fill="none" marker-end="url(#pfeil)"/>
+  <line x1="320" y1="420" x2="560" y2="420" stroke="#f87171" stroke-width="2.5"/>
+  <line x1="420" y1="410" x2="460" y2="430" stroke="#f87171" stroke-width="2.5"/>
+  <line x1="420" y1="430" x2="460" y2="410" stroke="#f87171" stroke-width="2.5"/>
+  <text x="440" y="450" text-anchor="middle" font-size="12" fill="#1e1b3a">kein Zugriff auf fremde Tabellen</text>
+</svg>

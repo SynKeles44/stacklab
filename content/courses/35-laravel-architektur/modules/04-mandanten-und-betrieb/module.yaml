@@ -1,0 +1,198 @@
+title: Mandanten und Betrieb
+description: Multi-Tenancy mit tenant_id und Global Scopes, typische Datenlecks in Abfragen, Cache und Jobs, saubere Konfiguration mit Feature Flags – und ein ehrlicher Blick auf Over-Engineering.
+exercise:
+  id: modul-uebung-mandanten-report
+  type: code
+  language: php
+  title: Ein mandantensicherer Report-Job
+  description: |
+    Baue zwei Bausteine, die in mandantenfähigen Apps gegen Lecks schützen. `TenantContext` ist
+    vorgegeben.
+
+    1. **`TenantCache`** (Konstruktor: `TenantContext`)
+       - `key(string $name): string` liefert `"tenant.{id}.{name}"`. Ohne Mandant wirft sie eine
+         `LogicException`.
+       - `remember(string $name, callable $compute): mixed` speichert das Ergebnis unter `key($name)` in
+         einem internen Array und ruft `$compute` pro Schlüssel nur **einmal** auf.
+    2. **`GenerateReport`** – ein Job
+       - Der Konstruktor bekommt den `TenantContext` und merkt sich dessen aktuelle ID in
+         `public ?int $tenantId`.
+       - `handle(TenantContext $context, TenantCache $cache, array $invoices): int` läuft später im
+         „Worker“. Er setzt den gemerkten Mandanten, zählt mit `$cache->remember('invoice-count', ...)`
+         die Rechnungen (Arrays mit `tenant_id`) des Mandanten und gibt die Zahl zurück.
+       - Danach stellt er den vorherigen Mandanten im Kontext wieder her – auch wenn ein Fehler
+         auftritt (`try`/`finally`).
+  starter: |
+    <?php
+
+    declare(strict_types=1);
+
+    final class TenantContext
+    {
+        private ?int $tenantId = null;
+
+        public function set(?int $tenantId): void
+        {
+            $this->tenantId = $tenantId;
+        }
+
+        public function id(): ?int
+        {
+            return $this->tenantId;
+        }
+    }
+
+    final class TenantCache
+    {
+        private array $store = [];
+
+        public function __construct(private TenantContext $context) {}
+
+        public function key(string $name): string
+        {
+        }
+
+        public function remember(string $name, callable $compute): mixed
+        {
+        }
+    }
+
+    final class GenerateReport
+    {
+        public ?int $tenantId;
+
+        public function __construct(TenantContext $context)
+        {
+        }
+
+        public function handle(TenantContext $context, TenantCache $cache, array $invoices): int
+        {
+        }
+    }
+  tests:
+    - name: der Job zählt im Worker für den richtigen Mandanten
+      code: |
+        $invoices = [['tenant_id' => 1], ['tenant_id' => 2], ['tenant_id' => 2]];
+        $ctx = new TenantContext();
+        $ctx->set(2);
+        $job = new GenerateReport($ctx);
+        $ctx->set(null);
+        assert_same(2, $job->handle($ctx, new TenantCache($ctx), $invoices));
+        assert_same(null, $ctx->id());
+    - name: der Cache-Schlüssel enthält den Mandanten
+      code: |
+        $ctx = new TenantContext();
+        $cache = new TenantCache($ctx);
+        $ctx->set(7);
+        assert_same('tenant.7.dashboard', $cache->key('dashboard'));
+        $ctx->set(null);
+        $thrown = false;
+        try { $cache->key('dashboard'); } catch (LogicException $e) { $thrown = true; }
+        assert_true($thrown);
+    - name: zwei Mandanten teilen sich keinen Cache-Eintrag
+      code: |
+        $invoices = [['tenant_id' => 1], ['tenant_id' => 2], ['tenant_id' => 2]];
+        $ctx = new TenantContext();
+        $cache = new TenantCache($ctx);
+        $ctx->set(1); $first = new GenerateReport($ctx);
+        $ctx->set(2); $second = new GenerateReport($ctx);
+        $ctx->set(null);
+        assert_same(1, $first->handle($ctx, $cache, $invoices));
+        assert_same(2, $second->handle($ctx, $cache, $invoices));
+    - name: remember rechnet pro Schlüssel nur einmal
+      code: |
+        $ctx = new TenantContext(); $ctx->set(3);
+        $cache = new TenantCache($ctx);
+        $calls = 0;
+        $fn = function () use (&$calls) { $calls++; return 42; };
+        assert_same(42, $cache->remember('x', $fn));
+        assert_same(42, $cache->remember('x', $fn));
+        assert_same(1, $calls);
+    - name: ohne Rechnungen ist der Report 0, der Kontext bleibt nach einem Fehler erhalten
+      code: |
+        $ctx = new TenantContext(); $ctx->set(5);
+        $job = new GenerateReport($ctx);
+        $ctx->set(9);
+        assert_same(0, $job->handle($ctx, new TenantCache($ctx), []));
+        assert_same(9, $ctx->id());
+        $ctx->set(null);
+        $broken = new GenerateReport($ctx);
+        $ctx->set(4);
+        try { $broken->handle($ctx, new TenantCache($ctx), []); } catch (LogicException $e) {}
+        assert_same(4, $ctx->id());
+  solution: |
+    <?php
+
+    declare(strict_types=1);
+
+    final class TenantContext
+    {
+        private ?int $tenantId = null;
+
+        public function set(?int $tenantId): void
+        {
+            $this->tenantId = $tenantId;
+        }
+
+        public function id(): ?int
+        {
+            return $this->tenantId;
+        }
+    }
+
+    final class TenantCache
+    {
+        private array $store = [];
+
+        public function __construct(private TenantContext $context) {}
+
+        public function key(string $name): string
+        {
+            $tenant = $this->context->id();
+
+            if ($tenant === null) {
+                throw new LogicException('No tenant in context.');
+            }
+
+            return "tenant.{$tenant}.{$name}";
+        }
+
+        public function remember(string $name, callable $compute): mixed
+        {
+            $key = $this->key($name);
+
+            if (! array_key_exists($key, $this->store)) {
+                $this->store[$key] = $compute();
+            }
+
+            return $this->store[$key];
+        }
+    }
+
+    final class GenerateReport
+    {
+        public ?int $tenantId;
+
+        public function __construct(TenantContext $context)
+        {
+            $this->tenantId = $context->id();
+        }
+
+        public function handle(TenantContext $context, TenantCache $cache, array $invoices): int
+        {
+            $previous = $context->id();
+            $context->set($this->tenantId);
+
+            try {
+                return $cache->remember('invoice-count', fn () => count(array_filter(
+                    $invoices,
+                    fn (array $invoice) => $invoice['tenant_id'] === $context->id(),
+                )));
+            } finally {
+                $context->set($previous);
+            }
+        }
+    }
+  hints:
+    - "Merke dir in `handle` zuerst `$previous = $context->id();`, setze dann `$this->tenantId` und stelle `$previous` im `finally`-Block wieder her."
+    - "Ein Job ohne Mandanten (`tenantId === null`) landet in `key()` und wirft dort die `LogicException` – genau das ist „fail closed“."
