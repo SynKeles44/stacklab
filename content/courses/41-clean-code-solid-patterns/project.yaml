@@ -1,0 +1,1219 @@
+title: Die Rechnungs-App aufräumen
+description: |
+  Du übernimmst eine kleine PHP-Anwendung, die aus einer Bestellung (JSON) eine Rechnung berechnet und den
+  Betrag „per Mail verschickt“ (sie schreibt ihn in eine Log-Datei). Sie funktioniert – aber der Code ist ein
+  Paradebeispiel für alles, was dieser Kurs anspricht: kryptische Namen, magische Zahlen, eine einzige lange
+  Funktion, ein Fehler als Rückgabe-String, ein verschachteltes `if` für Rabatte und ein fest eingebauter
+  Dateizugriff.
+
+  Du räumst die App **Schritt für Schritt** auf, genau wie im echten Projekt: Erst baust du ein
+  Sicherheitsnetz aus Golden-Master-Tests, dann refactorst du in kleinen Schritten. Nach **jedem** Schritt
+  laufen die Tests grün, und du committest. Am Ende hast du eine Git-Historie, die die Verwandlung erzählt.
+
+  Arbeite im Übungs-Terminal im Ordner `rechnungs-app`. Klicke zuerst auf **Projekt vorbereiten** – dann liegt
+  die App mit Tests und einem ersten Commit bereit. Die Tests startest du jederzeit mit `bash tests/run.sh`.
+goal: >
+  Eine Rechnungs-App mit sprechenden Namen, kleinen Funktionen, einer eigenen Exception, austauschbaren
+  Rabattregeln (Strategy + Factory), einem per Dependency Injection übergebenen Versender und einem Decorator
+  für den Testmodus – abgesichert durch Golden-Master-Tests und mit einem Commit pro Refactoring-Schritt.
+workdir: rechnungs-app
+setup: |
+  git init -q -b main
+  git config user.name "Stacklab"
+  git config user.email "stacklab@example.com"
+  mkdir -p bin src tests fixtures var
+  printf 'var/*.log\n' > .gitignore
+
+  cat > src/autoload.php <<'PHP'
+  <?php
+
+  declare(strict_types=1);
+
+  spl_autoload_register(function (string $klasse): void {
+      $datei = __DIR__ . '/' . $klasse . '.php';
+      if (is_file($datei)) {
+          require $datei;
+      }
+  });
+
+  require_once __DIR__ . '/rechnung.php';
+  PHP
+
+  cat > src/rechnung.php <<'PHP'
+  <?php
+
+  // Rechnung berechnen
+  function calc($d)
+  {
+      $s = 0;
+      // Positionen durchgehen
+      foreach ($d['pos'] as $p) {
+          if ($p['m'] <= 0) {
+              return "FEHLER\n";
+          }
+          $s = $s + $p['p'] * $p['m'];
+      }
+      // Rabatt
+      if ($d['typ'] == 'stamm') {
+          $s = $s - $s * 0.05;
+      } else {
+          if ($d['typ'] == 'firma') {
+              if ($s > 50000) {
+                  $s = $s - $s * 0.1;
+              } else {
+                  $s = $s - $s * 0.03;
+              }
+          }
+      }
+      $s = (int) round($s);
+      $t = (int) round($s * 0.19);
+      $out = "Netto:  " . number_format($s / 100, 2, ',', '.') . " EUR\n";
+      $out .= "MwSt:   " . number_format($t / 100, 2, ',', '.') . " EUR\n";
+      $out .= "Brutto: " . number_format(($s + $t) / 100, 2, ',', '.') . " EUR\n";
+      // Mail
+      $f = fopen(__DIR__ . '/../var/mails.log', 'a');
+      fwrite($f, $d['email'] . ': ' . ($s + $t) . "\n");
+      fclose($f);
+      return $out;
+  }
+  PHP
+
+  cat > bin/rechnung.php <<'PHP'
+  <?php
+
+  require __DIR__ . '/../src/autoload.php';
+
+  $d = json_decode(file_get_contents($argv[1]), true);
+  echo calc($d);
+  PHP
+
+  cat > tests/run.sh <<'SH'
+  #!/usr/bin/env bash
+  # Golden Master: Die Ausgabe jeder Bestellung in fixtures/ muss der freigegebenen .txt-Datei entsprechen.
+  set -u
+  cd "$(dirname "$0")/.."
+  fehler=0
+  for bestellung in fixtures/*.json; do
+    erwartet="${bestellung%.json}.txt"
+    if [ ! -f "$erwartet" ]; then
+      echo "FEHLT $erwartet (freigegebene Ausgabe fehlt)"
+      fehler=1
+      continue
+    fi
+    if diff -u "$erwartet" <(php bin/rechnung.php "$bestellung" 2>/dev/null) > /dev/null; then
+      echo "GRÜN  $bestellung"
+    else
+      echo "ROT   $bestellung"
+      diff -u "$erwartet" <(php bin/rechnung.php "$bestellung" 2>/dev/null)
+      fehler=1
+    fi
+  done
+  exit "$fehler"
+  SH
+
+  printf '%s\n' '{"typ": "normal", "email": "ada@example.com", "pos": [{"name": "Kaffee", "p": 350, "m": 2}, {"name": "Croissant", "p": 280, "m": 1}]}' > fixtures/normal.json
+  printf '%s\n' '{"typ": "stamm", "email": "grace@example.com", "pos": [{"name": "Tee", "p": 300, "m": 4}]}' > fixtures/stamm.json
+  printf '%s\n' '{"typ": "firma", "email": "einkauf@example.com", "pos": [{"name": "Druckerpapier", "p": 2000, "m": 10}]}' > fixtures/firma-klein.json
+  printf '%s\n' '{"typ": "normal", "email": "linus@example.com", "pos": [{"name": "Kaffee", "p": 350, "m": 0}]}' > fixtures/fehler.json
+
+  for bestellung in fixtures/*.json; do
+    php bin/rechnung.php "$bestellung" > "${bestellung%.json}.txt"
+  done
+  rm -f var/mails.log
+
+  git add -A
+  git commit -q -m "chore: import legacy invoice app"
+steps:
+  - id: sicherheitsnetz
+    title: Das Sicherheitsnetz spannen
+    description: |
+      Bevor du auch nur eine Zeile umbaust, brauchst du Tests. Die App hat schon einen **Golden Master**:
+      `tests/run.sh` schickt jede Bestellung aus `fixtures/` durch die App und vergleicht die Ausgabe mit der
+      freigegebenen Datei daneben (`normal.json` → `normal.txt`).
+
+      Schau dir den Code an (`cat src/rechnung.php`) und vergleiche ihn mit den Fixtures. Ein Zweig ist noch
+      **nicht** abgedeckt: der große Firmenrabatt (über 500 Euro netto gibt es 10 % statt 3 %).
+
+      1. Starte die Tests: `bash tests/run.sh` – alles muss grün sein.
+      2. Lege `fixtures/firma-gross.json` an: Kundentyp `firma`, Nettosumme **über 50000 Cent**.
+      3. Gib die aktuelle Ausgabe frei: `php bin/rechnung.php fixtures/firma-gross.json > fixtures/firma-gross.txt`.
+      4. Prüfe, dass die Tests grün sind, und committe (z. B. `test: cover large business discount`).
+    checklist:
+      - Tests laufen grün
+      - Neue Fixture für Firmen über 500 Euro
+      - Freigegebene Ausgabe daneben gespeichert
+      - Schritt committet
+    hints:
+      - "Kopiere eine vorhandene Fixture als Vorlage: `cat fixtures/firma-klein.json`."
+      - "Damit die Summe über 50000 Cent liegt, reichen z. B. 4 Positionen à 15000 Cent: `{\"name\": \"Monitor\", \"p\": 15000, \"m\": 4}`."
+      - "Am Ende: `bash tests/run.sh && git add -A && git commit -m \"test: cover large business discount\"`."
+    checks:
+      - type: command
+        run: bash tests/run.sh
+        message: Die Tests sind nicht grün. Starte `bash tests/run.sh` und lies die Ausgabe – fehlt eine .txt-Datei?
+      - type: command
+        run: |-
+          for f in fixtures/*.json; do jq -r 'select(.typ == "firma") | [.pos[] | .p * .m] | add' "$f"; done | awk '$1 > 50000' | wc -l
+        stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+        message: Es fehlt noch eine Fixture mit typ "firma" und einer Nettosumme über 50000 Cent.
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen. Committe deinen Schritt mit git add -A und git commit.
+    solution: |
+      ```bash
+      cd rechnungs-app
+      bash tests/run.sh
+      cat > fixtures/firma-gross.json <<'JSON'
+      {"typ": "firma", "email": "einkauf@example.com", "pos": [{"name": "Monitor", "p": 15000, "m": 4}]}
+      JSON
+      php bin/rechnung.php fixtures/firma-gross.json > fixtures/firma-gross.txt
+      cat fixtures/firma-gross.txt
+      bash tests/run.sh
+      git add -A
+      git commit -m "test: cover large business discount"
+      ```
+
+      Wichtig: Du gibst hier das **aktuelle** Verhalten frei, nicht das, was du für richtig hältst. Ein
+      Golden Master dokumentiert, was der Code heute tut.
+    solve: |
+      printf '%s\n' '{"typ": "firma", "email": "einkauf@example.com", "pos": [{"name": "Monitor", "p": 15000, "m": 4}]}' > fixtures/firma-gross.json
+      php bin/rechnung.php fixtures/firma-gross.json > fixtures/firma-gross.txt
+      rm -f var/mails.log
+      bash tests/run.sh
+      git add -A
+      git commit -q -m "test: cover large business discount"
+
+  - id: namen-und-konstanten
+    title: Sprechende Namen und benannte Konstanten
+    description: |
+      Jetzt der erste, risikoarme Umbau: Namen. Ändere **nur** Namen und Zahlen, nicht die Logik.
+
+      1. Benenne `calc` in `rechnungErstellen` um und passe den Aufruf in `bin/rechnung.php` an. Gib dem
+         Parameter einen Typ: `array $bestellung`.
+      2. Ersetze die Ein-Buchstaben-Variablen `$d`, `$s`, `$t`, `$p`, `$f` durch sprechende Namen wie
+         `$bestellung`, `$netto`, `$steuer`, `$position`.
+      3. Ersetze die magischen Zahlen durch Konstanten am Dateianfang, mindestens
+         `const MEHRWERTSTEUER_SATZ = 0.19;`. Für die Rabatte bieten sich `STAMMKUNDEN_RABATT`,
+         `FIRMEN_RABATT_GROSS`, `FIRMEN_RABATT_KLEIN` und `FIRMEN_SCHWELLE_CENT` an.
+      4. Lösche die Kommentare, die nur wiederholen, was der Code tut.
+      5. Tests grün? Dann committen (z. B. `refactor: rename invoice variables and extract constants`).
+    checklist:
+      - Funktion heißt rechnungErstellen
+      - Keine Ein-Buchstaben-Variablen mehr
+      - 0.19 steht nur noch in einer Konstante
+      - Tests grün und committet
+    hints:
+      - "Benenne immer **eine** Sache um, starte die Tests, dann die nächste. So weißt du bei Rot sofort, was es war."
+      - "Konstanten außerhalb einer Klasse schreibst du mit `const NAME = wert;` direkt unter `<?php`."
+      - "Das verschachtelte `if/else { if }` darf zu `if … elseif …` werden – das ändert keine Logik."
+    checks:
+      - type: command
+        run: bash tests/run.sh
+        message: Die Tests sind rot – ein Umbenennen hat das Verhalten verändert oder ein Aufruf zeigt noch auf calc.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; echo (function_exists("rechnungErstellen") && !function_exists("calc")) ? "ok" : "fehlt";'
+        stdout_equals: ok
+        message: Die Funktion soll rechnungErstellen heißen, und calc soll es nicht mehr geben.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; echo defined("MEHRWERTSTEUER_SATZ") ? var_export(MEHRWERTSTEUER_SATZ, true) : "fehlt";'
+        stdout_equals: "0.19"
+        message: Lege die Konstante MEHRWERTSTEUER_SATZ mit dem Wert 0.19 an.
+      - type: command
+        run: grep -cE '\$(s|t|d|p|f)\b' src/rechnung.php || true
+        stdout_equals: "0"
+        message: In src/rechnung.php stehen noch Ein-Buchstaben-Variablen wie $s, $t oder $d.
+      - type: command
+        run: grep -c '0\.19' src/rechnung.php || true
+        stdout_equals: "1"
+        message: Die Zahl 0.19 soll genau einmal vorkommen – in der Konstante MEHRWERTSTEUER_SATZ.
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen. Committe deinen Schritt.
+    solution: |
+      ```php title="src/rechnung.php"
+      <?php
+
+      declare(strict_types=1);
+
+      const MEHRWERTSTEUER_SATZ = 0.19;
+      const STAMMKUNDEN_RABATT = 0.05;
+      const FIRMEN_RABATT_GROSS = 0.10;
+      const FIRMEN_RABATT_KLEIN = 0.03;
+      const FIRMEN_SCHWELLE_CENT = 50000;
+
+      function rechnungErstellen(array $bestellung): string
+      {
+          $netto = 0;
+          foreach ($bestellung['pos'] as $position) {
+              if ($position['m'] <= 0) {
+                  return "FEHLER\n";
+              }
+              $netto += $position['p'] * $position['m'];
+          }
+
+          if ($bestellung['typ'] === 'stamm') {
+              $netto -= $netto * STAMMKUNDEN_RABATT;
+          } elseif ($bestellung['typ'] === 'firma') {
+              $netto -= $netto * ($netto > FIRMEN_SCHWELLE_CENT ? FIRMEN_RABATT_GROSS : FIRMEN_RABATT_KLEIN);
+          }
+
+          $netto = (int) round($netto);
+          $steuer = (int) round($netto * MEHRWERTSTEUER_SATZ);
+          $brutto = $netto + $steuer;
+
+          $ausgabe = 'Netto:  ' . number_format($netto / 100, 2, ',', '.') . " EUR\n";
+          $ausgabe .= 'MwSt:   ' . number_format($steuer / 100, 2, ',', '.') . " EUR\n";
+          $ausgabe .= 'Brutto: ' . number_format($brutto / 100, 2, ',', '.') . " EUR\n";
+
+          $protokoll = fopen(__DIR__ . '/../var/mails.log', 'a');
+          fwrite($protokoll, $bestellung['email'] . ': ' . $brutto . "\n");
+          fclose($protokoll);
+
+          return $ausgabe;
+      }
+      ```
+
+      In `bin/rechnung.php` wird aus `echo calc($d);` dann `echo rechnungErstellen($bestellung);`. Danach
+      `bash tests/run.sh`, `git add -A` und `git commit -m "refactor: rename invoice variables and extract constants"`.
+    solve: |
+      cat > src/rechnung.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      const MEHRWERTSTEUER_SATZ = 0.19;
+      const STAMMKUNDEN_RABATT = 0.05;
+      const FIRMEN_RABATT_GROSS = 0.10;
+      const FIRMEN_RABATT_KLEIN = 0.03;
+      const FIRMEN_SCHWELLE_CENT = 50000;
+
+      function rechnungErstellen(array $bestellung): string
+      {
+          $netto = 0;
+          foreach ($bestellung['pos'] as $position) {
+              if ($position['m'] <= 0) {
+                  return "FEHLER\n";
+              }
+              $netto += $position['p'] * $position['m'];
+          }
+
+          if ($bestellung['typ'] === 'stamm') {
+              $netto -= $netto * STAMMKUNDEN_RABATT;
+          } elseif ($bestellung['typ'] === 'firma') {
+              $netto -= $netto * ($netto > FIRMEN_SCHWELLE_CENT ? FIRMEN_RABATT_GROSS : FIRMEN_RABATT_KLEIN);
+          }
+
+          $netto = (int) round($netto);
+          $steuer = (int) round($netto * MEHRWERTSTEUER_SATZ);
+          $brutto = $netto + $steuer;
+
+          $ausgabe = 'Netto:  ' . number_format($netto / 100, 2, ',', '.') . " EUR\n";
+          $ausgabe .= 'MwSt:   ' . number_format($steuer / 100, 2, ',', '.') . " EUR\n";
+          $ausgabe .= 'Brutto: ' . number_format($brutto / 100, 2, ',', '.') . " EUR\n";
+
+          $protokoll = fopen(__DIR__ . '/../var/mails.log', 'a');
+          fwrite($protokoll, $bestellung['email'] . ': ' . $brutto . "\n");
+          fclose($protokoll);
+
+          return $ausgabe;
+      }
+      PHP
+      cat > bin/rechnung.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__ . '/../src/autoload.php';
+
+      $bestellung = json_decode((string) file_get_contents($argv[1]), true);
+      echo rechnungErstellen($bestellung);
+      PHP
+      bash tests/run.sh
+      git add -A
+      git commit -q -m "refactor: rename invoice variables and extract constants"
+
+  - id: funktionen-zerlegen
+    title: Die lange Funktion zerlegen
+    description: |
+      `rechnungErstellen` macht noch fünf Dinge auf einmal. Zieh jede Aufgabe in eine eigene, kleine Funktion
+      (Refactoring **Extract Function**). Die Signaturen sind vorgegeben, damit die Prüfung sie findet:
+
+      1. `nettoSumme(array $positionen): ?int` – Summe aus Preis × Menge; bei einer Menge ≤ 0 vorerst `null`.
+      2. `rabattAbziehen(string $kundentyp, int $netto): int` – Netto nach Rabatt, gerundet.
+      3. `formatiereBetrag(int $cent): string` – z. B. `123456` → `1.234,56 EUR`.
+      4. `versendeRechnung(string $empfaenger, int $bruttoCent): void` – schreibt die Log-Zeile.
+      5. `rechnungErstellen` ruft nur noch diese Funktionen auf und liest sich wie eine Inhaltsangabe.
+
+      Zieh eine Funktion nach der anderen heraus und starte nach jeder die Tests. Zum Schluss committen.
+    checklist:
+      - Vier neue, kleine Funktionen
+      - rechnungErstellen liest sich wie eine Inhaltsangabe
+      - Tests grün und committet
+    hints:
+      - "Beginne mit `formatiereBetrag` – die Zeile kommt dreimal vor, das ist die einfachste Extraktion."
+      - "Für den Rabatt passt ein `match (true) { … }`, das den Satz wählt; danach `return (int) round($netto - $netto * $satz);`."
+      - "In `rechnungErstellen`: `$summe = nettoSumme($bestellung['pos']); if ($summe === null) { return \"FEHLER\\n\"; }`."
+    checks:
+      - type: command
+        run: bash tests/run.sh
+        message: Die Tests sind rot – eine Extraktion hat das Verhalten verändert. Vergleiche die Ausgabe im Diff.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; echo nettoSumme([["p" => 350, "m" => 2], ["p" => 280, "m" => 1]]), "|", formatiereBetrag(123456), "|", formatiereBetrag(5);'
+        stdout_equals: "980|1.234,56 EUR|0,05 EUR"
+        message: nettoSumme oder formatiereBetrag fehlt oder liefert ein falsches Ergebnis (erwartet z. B. 1.234,56 EUR).
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; echo rabattAbziehen("stamm", 1200), "|", rabattAbziehen("firma", 60000), "|", rabattAbziehen("firma", 20000), "|", rabattAbziehen("normal", 980);'
+        stdout_equals: "1140|54000|19400|980"
+        message: rabattAbziehen(string $kundentyp, int $netto) fehlt oder rechnet anders als vorher.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; echo function_exists("versendeRechnung") ? "ok" : "fehlt";'
+        stdout_equals: ok
+        message: Es fehlt die Funktion versendeRechnung(string $empfaenger, int $bruttoCent).
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen. Committe deinen Schritt.
+    solution: |
+      ```php title="src/rechnung.php (Ausschnitt)"
+      function nettoSumme(array $positionen): ?int
+      {
+          $summe = 0;
+          foreach ($positionen as $position) {
+              if ($position['m'] <= 0) {
+                  return null;
+              }
+              $summe += $position['p'] * $position['m'];
+          }
+
+          return $summe;
+      }
+
+      function rabattAbziehen(string $kundentyp, int $netto): int
+      {
+          $satz = match (true) {
+              $kundentyp === 'stamm' => STAMMKUNDEN_RABATT,
+              $kundentyp === 'firma' && $netto > FIRMEN_SCHWELLE_CENT => FIRMEN_RABATT_GROSS,
+              $kundentyp === 'firma' => FIRMEN_RABATT_KLEIN,
+              default => 0.0,
+          };
+
+          return (int) round($netto - $netto * $satz);
+      }
+
+      function formatiereBetrag(int $cent): string
+      {
+          return number_format($cent / 100, 2, ',', '.') . ' EUR';
+      }
+
+      function versendeRechnung(string $empfaenger, int $bruttoCent): void
+      {
+          file_put_contents(__DIR__ . '/../var/mails.log', $empfaenger . ': ' . $bruttoCent . "\n", FILE_APPEND);
+      }
+
+      function rechnungErstellen(array $bestellung): string
+      {
+          $summe = nettoSumme($bestellung['pos']);
+          if ($summe === null) {
+              return "FEHLER\n";
+          }
+
+          $netto = rabattAbziehen($bestellung['typ'], $summe);
+          $steuer = (int) round($netto * MEHRWERTSTEUER_SATZ);
+          $brutto = $netto + $steuer;
+          versendeRechnung($bestellung['email'], $brutto);
+
+          return 'Netto:  ' . formatiereBetrag($netto) . "\n"
+              . 'MwSt:   ' . formatiereBetrag($steuer) . "\n"
+              . 'Brutto: ' . formatiereBetrag($brutto) . "\n";
+      }
+      ```
+
+      Dann `bash tests/run.sh` und `git commit -am "refactor: extract invoice helper functions"`.
+    solve: |
+      cat > src/rechnung.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      const MEHRWERTSTEUER_SATZ = 0.19;
+      const STAMMKUNDEN_RABATT = 0.05;
+      const FIRMEN_RABATT_GROSS = 0.10;
+      const FIRMEN_RABATT_KLEIN = 0.03;
+      const FIRMEN_SCHWELLE_CENT = 50000;
+
+      function nettoSumme(array $positionen): ?int
+      {
+          $summe = 0;
+          foreach ($positionen as $position) {
+              if ($position['m'] <= 0) {
+                  return null;
+              }
+              $summe += $position['p'] * $position['m'];
+          }
+
+          return $summe;
+      }
+
+      function rabattAbziehen(string $kundentyp, int $netto): int
+      {
+          $satz = match (true) {
+              $kundentyp === 'stamm' => STAMMKUNDEN_RABATT,
+              $kundentyp === 'firma' && $netto > FIRMEN_SCHWELLE_CENT => FIRMEN_RABATT_GROSS,
+              $kundentyp === 'firma' => FIRMEN_RABATT_KLEIN,
+              default => 0.0,
+          };
+
+          return (int) round($netto - $netto * $satz);
+      }
+
+      function formatiereBetrag(int $cent): string
+      {
+          return number_format($cent / 100, 2, ',', '.') . ' EUR';
+      }
+
+      function versendeRechnung(string $empfaenger, int $bruttoCent): void
+      {
+          file_put_contents(__DIR__ . '/../var/mails.log', $empfaenger . ': ' . $bruttoCent . "\n", FILE_APPEND);
+      }
+
+      function rechnungErstellen(array $bestellung): string
+      {
+          $summe = nettoSumme($bestellung['pos']);
+          if ($summe === null) {
+              return "FEHLER\n";
+          }
+
+          $netto = rabattAbziehen($bestellung['typ'], $summe);
+          $steuer = (int) round($netto * MEHRWERTSTEUER_SATZ);
+          $brutto = $netto + $steuer;
+          versendeRechnung($bestellung['email'], $brutto);
+
+          return 'Netto:  ' . formatiereBetrag($netto) . "\n"
+              . 'MwSt:   ' . formatiereBetrag($steuer) . "\n"
+              . 'Brutto: ' . formatiereBetrag($brutto) . "\n";
+      }
+      PHP
+      bash tests/run.sh
+      git add -A
+      git commit -q -m "refactor: extract invoice helper functions"
+
+  - id: fehlerbehandlung
+    title: Fehler als Exception statt als Rückgabewert
+    description: |
+      `nettoSumme` meldet eine ungültige Menge mit `null`, und `rechnungErstellen` übersetzt das in den
+      String `"FEHLER"`. Jeder Aufrufer muss daran denken, das zu prüfen. Ersetze das durch eine eigene
+      Exception:
+
+      1. Lege `src/UngueltigeMenge.php` an: `final class UngueltigeMenge extends InvalidArgumentException {}`.
+         Der Autoloader findet sie automatisch über den Dateinamen.
+      2. `nettoSumme(array $positionen): int` wirft bei einer Menge ≤ 0 eine `UngueltigeMenge` mit einer
+         hilfreichen Nachricht (welches Produkt, welche Menge).
+      3. `rechnungErstellen` enthält keine Fehlerprüfung mehr.
+      4. `bin/rechnung.php` fängt `UngueltigeMenge`, gibt `FEHLER` auf der Standardausgabe aus (damit der
+         Golden Master gleich bleibt), schreibt die Nachricht nach `STDERR` und beendet sich mit `exit(1)`.
+      5. Tests grün? Committen.
+    checklist:
+      - Eigene Exception-Klasse
+      - nettoSumme wirft statt null zurückzugeben
+      - Das CLI-Skript fängt die Exception an der Grenze
+      - Tests grün und committet
+    hints:
+      - "`throw new UngueltigeMenge(sprintf('Menge für \"%s\" muss größer als 0 sein, ist %d.', $position['name'], $position['m']));`"
+      - "Gefangen wird nur dort, wo du sinnvoll reagieren kannst – hier im CLI-Skript, nicht in der Rechenlogik."
+      - "`fwrite(STDERR, $fehler->getMessage() . \"\\n\");` schreibt auf die Standardfehlerausgabe."
+    checks:
+      - type: command
+        run: bash tests/run.sh
+        message: Die Tests sind rot. Für fehler.json muss die Standardausgabe weiterhin genau FEHLER lauten.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; try { nettoSumme([["name" => "Tee", "p" => 100, "m" => 0]]); echo "kein Fehler"; } catch (UngueltigeMenge $e) { echo $e instanceof InvalidArgumentException ? "ok" : "falsche Basisklasse"; }'
+        stdout_equals: ok
+        message: nettoSumme soll bei Menge 0 eine UngueltigeMenge werfen, die von InvalidArgumentException erbt.
+      - type: command
+        run: cat src/rechnung.php | grep -c 'FEHLER' || true
+        stdout_equals: "0"
+        message: In src/rechnung.php steht noch der Fehler-String "FEHLER". Die Ausgabe gehört ins CLI-Skript.
+      - type: command
+        run: php bin/rechnung.php fixtures/fehler.json 2>/dev/null
+        expect_exit: 1
+        message: Bei einer ungültigen Bestellung soll bin/rechnung.php mit exit(1) enden.
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen. Committe deinen Schritt.
+    solution: |
+      ```php title="src/UngueltigeMenge.php"
+      <?php
+
+      declare(strict_types=1);
+
+      final class UngueltigeMenge extends InvalidArgumentException
+      {
+      }
+      ```
+
+      ```php title="nettoSumme in src/rechnung.php"
+      function nettoSumme(array $positionen): int
+      {
+          $summe = 0;
+          foreach ($positionen as $position) {
+              if ($position['m'] <= 0) {
+                  throw new UngueltigeMenge(sprintf(
+                      'Menge für "%s" muss größer als 0 sein, ist %d.',
+                      $position['name'],
+                      $position['m'],
+                  ));
+              }
+              $summe += $position['p'] * $position['m'];
+          }
+
+          return $summe;
+      }
+      ```
+
+      ```php title="bin/rechnung.php"
+      try {
+          echo rechnungErstellen($bestellung);
+      } catch (UngueltigeMenge $fehler) {
+          echo "FEHLER\n";
+          fwrite(STDERR, $fehler->getMessage() . "\n");
+          exit(1);
+      }
+      ```
+    solve: |
+      cat > src/UngueltigeMenge.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      final class UngueltigeMenge extends InvalidArgumentException
+      {
+      }
+      PHP
+      cat > src/rechnung.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      const MEHRWERTSTEUER_SATZ = 0.19;
+      const STAMMKUNDEN_RABATT = 0.05;
+      const FIRMEN_RABATT_GROSS = 0.10;
+      const FIRMEN_RABATT_KLEIN = 0.03;
+      const FIRMEN_SCHWELLE_CENT = 50000;
+
+      function nettoSumme(array $positionen): int
+      {
+          $summe = 0;
+          foreach ($positionen as $position) {
+              if ($position['m'] <= 0) {
+                  throw new UngueltigeMenge(sprintf(
+                      'Menge für "%s" muss größer als 0 sein, ist %d.',
+                      $position['name'],
+                      $position['m'],
+                  ));
+              }
+              $summe += $position['p'] * $position['m'];
+          }
+
+          return $summe;
+      }
+
+      function rabattAbziehen(string $kundentyp, int $netto): int
+      {
+          $satz = match (true) {
+              $kundentyp === 'stamm' => STAMMKUNDEN_RABATT,
+              $kundentyp === 'firma' && $netto > FIRMEN_SCHWELLE_CENT => FIRMEN_RABATT_GROSS,
+              $kundentyp === 'firma' => FIRMEN_RABATT_KLEIN,
+              default => 0.0,
+          };
+
+          return (int) round($netto - $netto * $satz);
+      }
+
+      function formatiereBetrag(int $cent): string
+      {
+          return number_format($cent / 100, 2, ',', '.') . ' EUR';
+      }
+
+      function versendeRechnung(string $empfaenger, int $bruttoCent): void
+      {
+          file_put_contents(__DIR__ . '/../var/mails.log', $empfaenger . ': ' . $bruttoCent . "\n", FILE_APPEND);
+      }
+
+      function rechnungErstellen(array $bestellung): string
+      {
+          $netto = rabattAbziehen($bestellung['typ'], nettoSumme($bestellung['pos']));
+          $steuer = (int) round($netto * MEHRWERTSTEUER_SATZ);
+          $brutto = $netto + $steuer;
+          versendeRechnung($bestellung['email'], $brutto);
+
+          return 'Netto:  ' . formatiereBetrag($netto) . "\n"
+              . 'MwSt:   ' . formatiereBetrag($steuer) . "\n"
+              . 'Brutto: ' . formatiereBetrag($brutto) . "\n";
+      }
+      PHP
+      cat > bin/rechnung.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__ . '/../src/autoload.php';
+
+      $bestellung = json_decode((string) file_get_contents($argv[1]), true);
+
+      try {
+          echo rechnungErstellen($bestellung);
+      } catch (UngueltigeMenge $fehler) {
+          echo "FEHLER\n";
+          fwrite(STDERR, $fehler->getMessage() . "\n");
+          exit(1);
+      }
+      PHP
+      bash tests/run.sh
+      git add -A
+      git commit -q -m "refactor: signal invalid quantity with an exception"
+
+  - id: rabatt-strategien
+    title: Rabattregeln als Strategy mit Factory
+    description: |
+      Für jeden neuen Kundentyp müsstest du heute `rabattAbziehen` öffnen und ein weiteres `match`-Arm
+      einbauen. Mach die Rabattregeln austauschbar (**Strategy**) und erzeuge die passende Regel an genau einer
+      Stelle (**Factory**):
+
+      1. `src/RabattRegel.php`: `interface RabattRegel { public function abziehen(int $netto): int; }`
+      2. Drei Klassen in eigenen Dateien, alle `final` und `implements RabattRegel`:
+         `KeinRabatt` (gibt den Betrag unverändert zurück), `StammkundenRabatt` (5 %) und `FirmenRabatt`
+         (10 % über 50000 Cent, sonst 3 %). Die Sätze werden private Klassenkonstanten.
+      3. In `src/rechnung.php`: `function rabattRegelFuer(string $kundentyp): RabattRegel` mit einem `match`
+         über den Kundentyp. `rabattAbziehen` und die Rabatt-Konstanten fliegen raus.
+      4. `rechnungErstellen` nutzt `rabattRegelFuer($bestellung['typ'])->abziehen(…)`.
+      5. Tests grün? Committen.
+    checklist:
+      - Interface RabattRegel
+      - Drei Strategien in eigenen Dateien
+      - Factory-Funktion rabattRegelFuer
+      - Keine Vergleiche auf Kundentypen mehr außerhalb der Factory
+      - Tests grün und committet
+    hints:
+      - "Jede Klasse kommt in eine eigene Datei mit gleichem Namen, z. B. `src/FirmenRabatt.php` – so findet sie der Autoloader."
+      - "`final class StammkundenRabatt implements RabattRegel { private const SATZ = 0.05; public function abziehen(int $netto): int { return (int) round($netto - $netto * self::SATZ); } }`"
+      - "`return match ($kundentyp) { 'stamm' => new StammkundenRabatt(), 'firma' => new FirmenRabatt(), default => new KeinRabatt() };`"
+    checks:
+      - type: command
+        run: bash tests/run.sh
+        message: Die Tests sind rot – eine Rabattregel rechnet anders als vorher. Achte auf dieselbe Rundung.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; foreach (["KeinRabatt", "StammkundenRabatt", "FirmenRabatt"] as $k) { if (!class_exists($k) || !(new ReflectionClass($k))->implementsInterface("RabattRegel")) { echo "fehlt: $k"; exit; } } echo "ok";'
+        stdout_equals: ok
+        message: Es fehlt eine der Klassen KeinRabatt, StammkundenRabatt oder FirmenRabatt, oder sie implementiert RabattRegel nicht.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; echo (new StammkundenRabatt())->abziehen(1200), "|", (new FirmenRabatt())->abziehen(60000), "|", (new FirmenRabatt())->abziehen(20000), "|", (new KeinRabatt())->abziehen(980);'
+        stdout_equals: "1140|54000|19400|980"
+        message: Eine Rabattregel liefert ein falsches Ergebnis (erwartet 1140, 54000, 19400 und 980).
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; echo get_class(rabattRegelFuer("stamm")), "|", get_class(rabattRegelFuer("firma")), "|", get_class(rabattRegelFuer("normal"));'
+        stdout_equals: "StammkundenRabatt|FirmenRabatt|KeinRabatt"
+        message: rabattRegelFuer soll für stamm, firma und alles andere die passende Regel liefern.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; echo function_exists("rabattAbziehen") ? "noch da" : "weg";'
+        stdout_equals: weg
+        message: Die alte Funktion rabattAbziehen gibt es noch – lösche sie, die Strategien ersetzen sie.
+      - type: command
+        run: cat src/*.php | grep -cE "===? *'(stamm|firma)'" || true
+        stdout_equals: "0"
+        message: Es gibt noch Vergleiche wie === 'stamm'. Die Auswahl nach Kundentyp passiert nur noch im match der Factory.
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen. Committe deinen Schritt.
+    solution: |
+      ```php title="src/RabattRegel.php"
+      <?php
+
+      declare(strict_types=1);
+
+      interface RabattRegel
+      {
+          public function abziehen(int $netto): int;
+      }
+      ```
+
+      ```php title="src/FirmenRabatt.php"
+      <?php
+
+      declare(strict_types=1);
+
+      final class FirmenRabatt implements RabattRegel
+      {
+          private const SCHWELLE_CENT = 50000;
+          private const SATZ_GROSS = 0.10;
+          private const SATZ_KLEIN = 0.03;
+
+          public function abziehen(int $netto): int
+          {
+              $satz = $netto > self::SCHWELLE_CENT ? self::SATZ_GROSS : self::SATZ_KLEIN;
+
+              return (int) round($netto - $netto * $satz);
+          }
+      }
+      ```
+
+      `KeinRabatt` gibt `$netto` zurück, `StammkundenRabatt` rechnet mit `0.05`. Die Factory:
+
+      ```php title="src/rechnung.php (Ausschnitt)"
+      function rabattRegelFuer(string $kundentyp): RabattRegel
+      {
+          return match ($kundentyp) {
+              'stamm' => new StammkundenRabatt(),
+              'firma' => new FirmenRabatt(),
+              default => new KeinRabatt(),
+          };
+      }
+      ```
+    solve: |
+      cat > src/RabattRegel.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      interface RabattRegel
+      {
+          public function abziehen(int $netto): int;
+      }
+      PHP
+      cat > src/KeinRabatt.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      final class KeinRabatt implements RabattRegel
+      {
+          public function abziehen(int $netto): int
+          {
+              return $netto;
+          }
+      }
+      PHP
+      cat > src/StammkundenRabatt.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      final class StammkundenRabatt implements RabattRegel
+      {
+          private const SATZ = 0.05;
+
+          public function abziehen(int $netto): int
+          {
+              return (int) round($netto - $netto * self::SATZ);
+          }
+      }
+      PHP
+      cat > src/FirmenRabatt.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      final class FirmenRabatt implements RabattRegel
+      {
+          private const SCHWELLE_CENT = 50000;
+          private const SATZ_GROSS = 0.10;
+          private const SATZ_KLEIN = 0.03;
+
+          public function abziehen(int $netto): int
+          {
+              $satz = $netto > self::SCHWELLE_CENT ? self::SATZ_GROSS : self::SATZ_KLEIN;
+
+              return (int) round($netto - $netto * $satz);
+          }
+      }
+      PHP
+      cat > src/rechnung.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      const MEHRWERTSTEUER_SATZ = 0.19;
+
+      function nettoSumme(array $positionen): int
+      {
+          $summe = 0;
+          foreach ($positionen as $position) {
+              if ($position['m'] <= 0) {
+                  throw new UngueltigeMenge(sprintf(
+                      'Menge für "%s" muss größer als 0 sein, ist %d.',
+                      $position['name'],
+                      $position['m'],
+                  ));
+              }
+              $summe += $position['p'] * $position['m'];
+          }
+
+          return $summe;
+      }
+
+      function rabattRegelFuer(string $kundentyp): RabattRegel
+      {
+          return match ($kundentyp) {
+              'stamm' => new StammkundenRabatt(),
+              'firma' => new FirmenRabatt(),
+              default => new KeinRabatt(),
+          };
+      }
+
+      function formatiereBetrag(int $cent): string
+      {
+          return number_format($cent / 100, 2, ',', '.') . ' EUR';
+      }
+
+      function versendeRechnung(string $empfaenger, int $bruttoCent): void
+      {
+          file_put_contents(__DIR__ . '/../var/mails.log', $empfaenger . ': ' . $bruttoCent . "\n", FILE_APPEND);
+      }
+
+      function rechnungErstellen(array $bestellung): string
+      {
+          $netto = rabattRegelFuer($bestellung['typ'])->abziehen(nettoSumme($bestellung['pos']));
+          $steuer = (int) round($netto * MEHRWERTSTEUER_SATZ);
+          $brutto = $netto + $steuer;
+          versendeRechnung($bestellung['email'], $brutto);
+
+          return 'Netto:  ' . formatiereBetrag($netto) . "\n"
+              . 'MwSt:   ' . formatiereBetrag($steuer) . "\n"
+              . 'Brutto: ' . formatiereBetrag($brutto) . "\n";
+      }
+      PHP
+      bash tests/run.sh
+      git add -A
+      git commit -q -m "refactor: replace discount conditionals with strategies"
+
+  - id: versender-injizieren
+    title: Den Versand per Dependency Injection übergeben
+    description: |
+      `rechnungErstellen` schreibt direkt in eine Datei. Du kannst die Rechnung deshalb nicht berechnen, ohne
+      dass „eine Mail rausgeht“. Kehre die Abhängigkeit um:
+
+      1. `src/Versender.php`: `interface Versender { public function sende(string $empfaenger, int $bruttoCent): void; }`
+      2. `src/DateiVersender.php`: `final class DateiVersender implements Versender` bekommt den Dateipfad im
+         Konstruktor und hängt dort die Zeile `empfaenger: bruttoCent` an.
+      3. `src/RechnungsService.php`: `final class RechnungsService` bekommt einen `Versender` im Konstruktor
+         und hat die Methode `erstelle(array $bestellung): string` – sie übernimmt den Inhalt von
+         `rechnungErstellen`. `rechnungErstellen` und `versendeRechnung` werden gelöscht.
+      4. `bin/rechnung.php` setzt alles zusammen:
+         `new RechnungsService(new DateiVersender(__DIR__ . '/../var/mails.log'))`.
+      5. Tests grün? Committen.
+    checklist:
+      - Interface Versender und DateiVersender
+      - RechnungsService bekommt den Versender von außen
+      - Nur bin/rechnung.php kennt die konkrete Klasse
+      - Tests grün und committet
+    hints:
+      - "Konstruktor mit Property Promotion: `public function __construct(private Versender $versender) {}`."
+      - "In `erstelle` rufst du `$this->versender->sende($bestellung['email'], $brutto);` auf."
+      - "Die Prüfung übergibt einen eigenen Fake-Versender – deshalb darf `RechnungsService` kein `new DateiVersender` und kein `file_put_contents` enthalten."
+    checks:
+      - type: command
+        run: bash tests/run.sh
+        message: Die Tests sind rot. Prüfe, ob bin/rechnung.php den RechnungsService richtig zusammensetzt.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; $fake = new class implements Versender { public array $gesendet = []; public function sende(string $empfaenger, int $bruttoCent): void { $this->gesendet[] = $empfaenger . ":" . $bruttoCent; } }; $service = new RechnungsService($fake); $service->erstelle(["typ" => "normal", "email" => "ada@example.com", "pos" => [["name" => "Kaffee", "p" => 350, "m" => 2], ["name" => "Croissant", "p" => 280, "m" => 1]]]); echo implode(",", $fake->gesendet);'
+        stdout_equals: "ada@example.com:1166"
+        message: RechnungsService soll einen Versender im Konstruktor annehmen und in erstelle() genau einmal sende() aufrufen.
+      - type: command
+        run: cat src/RechnungsService.php | grep -cE 'new DateiVersender|file_put_contents|fopen' || true
+        stdout_equals: "0"
+        message: RechnungsService erzeugt seinen Versender noch selbst oder schreibt direkt in eine Datei.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; echo (function_exists("rechnungErstellen") || function_exists("versendeRechnung")) ? "noch da" : "weg";'
+        stdout_equals: weg
+        message: Lösche rechnungErstellen und versendeRechnung – ihre Arbeit machen jetzt RechnungsService und DateiVersender.
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen. Committe deinen Schritt.
+    solution: |
+      ```php title="src/RechnungsService.php"
+      <?php
+
+      declare(strict_types=1);
+
+      final class RechnungsService
+      {
+          public function __construct(private Versender $versender)
+          {
+          }
+
+          public function erstelle(array $bestellung): string
+          {
+              $netto = rabattRegelFuer($bestellung['typ'])->abziehen(nettoSumme($bestellung['pos']));
+              $steuer = (int) round($netto * MEHRWERTSTEUER_SATZ);
+              $brutto = $netto + $steuer;
+              $this->versender->sende($bestellung['email'], $brutto);
+
+              return 'Netto:  ' . formatiereBetrag($netto) . "\n"
+                  . 'MwSt:   ' . formatiereBetrag($steuer) . "\n"
+                  . 'Brutto: ' . formatiereBetrag($brutto) . "\n";
+          }
+      }
+      ```
+
+      ```php title="bin/rechnung.php (Ausschnitt)"
+      $service = new RechnungsService(new DateiVersender(__DIR__ . '/../var/mails.log'));
+
+      try {
+          echo $service->erstelle($bestellung);
+      } catch (UngueltigeMenge $fehler) {
+          // … wie bisher
+      }
+      ```
+    solve: |
+      cat > src/Versender.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      interface Versender
+      {
+          public function sende(string $empfaenger, int $bruttoCent): void;
+      }
+      PHP
+      cat > src/DateiVersender.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      final class DateiVersender implements Versender
+      {
+          public function __construct(private string $pfad)
+          {
+          }
+
+          public function sende(string $empfaenger, int $bruttoCent): void
+          {
+              file_put_contents($this->pfad, $empfaenger . ': ' . $bruttoCent . "\n", FILE_APPEND);
+          }
+      }
+      PHP
+      cat > src/RechnungsService.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      final class RechnungsService
+      {
+          public function __construct(private Versender $versender)
+          {
+          }
+
+          public function erstelle(array $bestellung): string
+          {
+              $netto = rabattRegelFuer($bestellung['typ'])->abziehen(nettoSumme($bestellung['pos']));
+              $steuer = (int) round($netto * MEHRWERTSTEUER_SATZ);
+              $brutto = $netto + $steuer;
+              $this->versender->sende($bestellung['email'], $brutto);
+
+              return 'Netto:  ' . formatiereBetrag($netto) . "\n"
+                  . 'MwSt:   ' . formatiereBetrag($steuer) . "\n"
+                  . 'Brutto: ' . formatiereBetrag($brutto) . "\n";
+          }
+      }
+      PHP
+      cat > src/rechnung.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      const MEHRWERTSTEUER_SATZ = 0.19;
+
+      function nettoSumme(array $positionen): int
+      {
+          $summe = 0;
+          foreach ($positionen as $position) {
+              if ($position['m'] <= 0) {
+                  throw new UngueltigeMenge(sprintf(
+                      'Menge für "%s" muss größer als 0 sein, ist %d.',
+                      $position['name'],
+                      $position['m'],
+                  ));
+              }
+              $summe += $position['p'] * $position['m'];
+          }
+
+          return $summe;
+      }
+
+      function rabattRegelFuer(string $kundentyp): RabattRegel
+      {
+          return match ($kundentyp) {
+              'stamm' => new StammkundenRabatt(),
+              'firma' => new FirmenRabatt(),
+              default => new KeinRabatt(),
+          };
+      }
+
+      function formatiereBetrag(int $cent): string
+      {
+          return number_format($cent / 100, 2, ',', '.') . ' EUR';
+      }
+      PHP
+      cat > bin/rechnung.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__ . '/../src/autoload.php';
+
+      $bestellung = json_decode((string) file_get_contents($argv[1]), true);
+      $service = new RechnungsService(new DateiVersender(__DIR__ . '/../var/mails.log'));
+
+      try {
+          echo $service->erstelle($bestellung);
+      } catch (UngueltigeMenge $fehler) {
+          echo "FEHLER\n";
+          fwrite(STDERR, $fehler->getMessage() . "\n");
+          exit(1);
+      }
+      PHP
+      bash tests/run.sh
+      git add -A
+      git commit -q -m "refactor: inject the invoice sender"
+
+  - id: testmodus-decorator
+    title: Ein Testmodus als Decorator
+    description: |
+      Auf dem Testsystem dürfen keine echten Kund:innen Rechnungen bekommen. Statt `DateiVersender` mit einem
+      `if` zu verunstalten, legst du einen **Decorator** darum:
+
+      1. `src/UmleitenderVersender.php`: `final class UmleitenderVersender implements Versender` bekommt im
+         Konstruktor einen anderen `Versender` und eine Test-Adresse. `sende()` ruft den inneren Versender
+         mit der **Test-Adresse** statt des echten Empfängers auf – der Betrag bleibt gleich.
+      2. `bin/rechnung.php`: Ist die Umgebungsvariable `RECHNUNG_TESTEMPFAENGER` gesetzt und nicht leer, wird
+         der `DateiVersender` in einen `UmleitenderVersender` gewickelt.
+      3. Probier es aus: `RECHNUNG_TESTEMPFAENGER=test@example.com php bin/rechnung.php fixtures/normal.json`
+         und dann `tail -1 var/mails.log`.
+      4. Tests grün? Committen. Schau dir zum Abschluss `git log --oneline` an – das ist die Geschichte deines
+         Refactorings.
+    checklist:
+      - Decorator UmleitenderVersender
+      - Testmodus über eine Umgebungsvariable
+      - DateiVersender unverändert
+      - Tests grün und committet
+    hints:
+      - "Der Decorator speichert den inneren Versender: `public function __construct(private Versender $innerer, private string $testEmpfaenger) {}`."
+      - "`sende()` ist ein Einzeiler: `$this->innerer->sende($this->testEmpfaenger, $bruttoCent);`"
+      - "Im CLI-Skript: `$test = getenv('RECHNUNG_TESTEMPFAENGER'); if (is_string($test) && $test !== '') { $versender = new UmleitenderVersender($versender, $test); }`"
+    checks:
+      - type: command
+        run: bash tests/run.sh
+        message: Die Tests sind rot. Ohne Umgebungsvariable soll sich nichts ändern.
+      - type: command
+        run: |-
+          php -r 'require "src/autoload.php"; $fake = new class implements Versender { public array $gesendet = []; public function sende(string $empfaenger, int $bruttoCent): void { $this->gesendet[] = $empfaenger . ":" . $bruttoCent; } }; $umleitung = new UmleitenderVersender($fake, "test@example.com"); echo $umleitung instanceof Versender ? "" : "kein Versender|"; $umleitung->sende("ada@example.com", 1166); echo implode(",", $fake->gesendet);'
+        stdout_equals: "test@example.com:1166"
+        message: UmleitenderVersender soll Versender implementieren und den inneren Versender mit der Test-Adresse aufrufen.
+      - type: command
+        run: |-
+          mkdir -p var && rm -f var/mails.log && RECHNUNG_TESTEMPFAENGER=test@example.com php bin/rechnung.php fixtures/normal.json > /dev/null && cat var/mails.log
+        stdout_equals: "test@example.com: 1166"
+        message: Mit RECHNUNG_TESTEMPFAENGER=test@example.com soll die Zeile in var/mails.log an die Test-Adresse gehen.
+      - type: command
+        run: git log --oneline | wc -l
+        stdout_matches: "^\\s*([8-9]|[1-9][0-9]+)\\s*$"
+        message: Es sollten mindestens 8 Commits sein – der Import plus ein Commit pro Projektschritt.
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen. Committe deinen Schritt.
+    solution: |
+      ```php title="src/UmleitenderVersender.php"
+      <?php
+
+      declare(strict_types=1);
+
+      final class UmleitenderVersender implements Versender
+      {
+          public function __construct(
+              private Versender $innerer,
+              private string $testEmpfaenger,
+          ) {
+          }
+
+          public function sende(string $empfaenger, int $bruttoCent): void
+          {
+              $this->innerer->sende($this->testEmpfaenger, $bruttoCent);
+          }
+      }
+      ```
+
+      ```php title="bin/rechnung.php (Ausschnitt)"
+      $versender = new DateiVersender(__DIR__ . '/../var/mails.log');
+      $testEmpfaenger = getenv('RECHNUNG_TESTEMPFAENGER');
+      if (is_string($testEmpfaenger) && $testEmpfaenger !== '') {
+          $versender = new UmleitenderVersender($versender, $testEmpfaenger);
+      }
+      $service = new RechnungsService($versender);
+      ```
+
+      Beachte: `RechnungsService` und `DateiVersender` hast du dafür **nicht** angefasst. Neues Verhalten kam
+      durch eine neue Klasse dazu – das ist das Open-Closed-Prinzip in Aktion.
+    solve: |
+      cat > src/UmleitenderVersender.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      final class UmleitenderVersender implements Versender
+      {
+          public function __construct(
+              private Versender $innerer,
+              private string $testEmpfaenger,
+          ) {
+          }
+
+          public function sende(string $empfaenger, int $bruttoCent): void
+          {
+              $this->innerer->sende($this->testEmpfaenger, $bruttoCent);
+          }
+      }
+      PHP
+      cat > bin/rechnung.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__ . '/../src/autoload.php';
+
+      $bestellung = json_decode((string) file_get_contents($argv[1]), true);
+
+      $versender = new DateiVersender(__DIR__ . '/../var/mails.log');
+      $testEmpfaenger = getenv('RECHNUNG_TESTEMPFAENGER');
+      if (is_string($testEmpfaenger) && $testEmpfaenger !== '') {
+          $versender = new UmleitenderVersender($versender, $testEmpfaenger);
+      }
+      $service = new RechnungsService($versender);
+
+      try {
+          echo $service->erstelle($bestellung);
+      } catch (UngueltigeMenge $fehler) {
+          echo "FEHLER\n";
+          fwrite(STDERR, $fehler->getMessage() . "\n");
+          exit(1);
+      }
+      PHP
+      bash tests/run.sh
+      git add -A
+      git commit -q -m "feat: redirect invoices to a test recipient"

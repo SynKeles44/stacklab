@@ -1,0 +1,181 @@
+title: SOLID und gute Abhängigkeiten
+description: Die fünf SOLID-Prinzipien mit Vorher-nachher-Beispielen in PHP und TypeScript, dazu Kopplung und Kohäsion, Dependency Injection und Komposition statt Vererbung.
+exercise:
+  id: modul-uebung-newsletter
+  type: terminal
+  title: Eine Newsletter-Anmeldung testbar machen
+  description: |
+    Im Ordner `newsletter-di` liegt eine kleine PHP-Anwendung. `src/Anmeldung.php` prüft eine E-Mail-Adresse,
+    schreibt sie direkt in `var/abonnenten.txt` und gibt eine Begrüßung mit `echo` aus. Testen kann man das
+    nur, indem man echte Dateien schreibt. Wende das Dependency-Inversion-Prinzip und Konstruktor-Injektion an:
+
+    1. Lege `src/AbonnentenSpeicher.php` an: ein Interface mit `enthaelt(string $email): bool` und
+       `speichere(string $email): void`.
+    2. Lege `src/Begruessung.php` an: ein Interface mit `begruesse(string $email): void`.
+    3. Verschiebe die Datei-Logik in `src/DateiSpeicher.php` (bekommt den Pfad im Konstruktor) und das `echo`
+       in `src/KonsolenBegruessung.php`. Beide implementieren das passende Interface.
+    4. `Anmeldung` bekommt beide Abhängigkeiten im Konstruktor. In `src/Anmeldung.php` stehen danach weder
+       `new` noch Dateifunktionen.
+    5. `bin/anmelden.php` ist die Composition Root: Nur dort werden die konkreten Klassen erzeugt.
+
+    Das Verhalten bleibt gleich: `php bin/anmelden.php ada@example.com` begrüßt beim ersten Mal und meldet beim
+    zweiten Mal „Schon angemeldet“. Jede Klasse und jedes Interface steht in einer eigenen Datei mit gleichem
+    Namen – der Autoloader in `src/autoload.php` findet sie dann automatisch. Klicke zuerst auf
+    **Aufgabe vorbereiten**.
+  workdir: newsletter-di
+  setup: |
+    mkdir -p bin src var
+    cat > src/autoload.php <<'PHP'
+    <?php
+
+    declare(strict_types=1);
+
+    spl_autoload_register(function (string $klasse): void {
+        $datei = __DIR__ . '/' . $klasse . '.php';
+        if (is_file($datei)) {
+            require $datei;
+        }
+    });
+    PHP
+    cat > src/Anmeldung.php <<'PHP'
+    <?php
+
+    declare(strict_types=1);
+
+    final class Anmeldung
+    {
+        public function anmelden(string $email): bool
+        {
+            if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                throw new InvalidArgumentException(sprintf('Ungültige E-Mail-Adresse: "%s"', $email));
+            }
+
+            $datei = __DIR__ . '/../var/abonnenten.txt';
+            $vorhanden = is_file($datei) ? file($datei, FILE_IGNORE_NEW_LINES) : [];
+            if (in_array($email, $vorhanden, true)) {
+                return false;
+            }
+
+            file_put_contents($datei, $email . "\n", FILE_APPEND);
+            echo "Willkommen, {$email}!\n";
+
+            return true;
+        }
+    }
+    PHP
+    cat > bin/anmelden.php <<'PHP'
+    <?php
+
+    declare(strict_types=1);
+
+    require __DIR__ . '/../src/autoload.php';
+
+    $anmeldung = new Anmeldung();
+
+    try {
+        if (!$anmeldung->anmelden($argv[1] ?? '')) {
+            echo "Schon angemeldet\n";
+        }
+    } catch (InvalidArgumentException $fehler) {
+        fwrite(STDERR, $fehler->getMessage() . "\n");
+        exit(1);
+    }
+    PHP
+  checks:
+    - type: command
+      run: |-
+        php -r 'require "src/autoload.php"; foreach (["AbonnentenSpeicher", "Begruessung"] as $i) { if (!interface_exists($i)) { echo "fehlt: $i"; exit; } } foreach (["DateiSpeicher" => "AbonnentenSpeicher", "KonsolenBegruessung" => "Begruessung"] as $k => $i) { if (!class_exists($k) || !in_array($i, class_implements($k), true)) { echo "fehlt: $k"; exit; } } echo "ok";'
+      stdout_equals: ok
+      message: Es fehlen die Interfaces AbonnentenSpeicher und Begruessung oder die Klassen DateiSpeicher und KonsolenBegruessung, die sie implementieren (jeweils eine Datei pro Typ in src/).
+    - type: command
+      run: |-
+        php -r 'require "src/autoload.php"; $speicher = new class implements AbonnentenSpeicher { public array $liste = []; public function enthaelt(string $email): bool { return in_array($email, $this->liste, true); } public function speichere(string $email): void { $this->liste[] = $email; } }; $gruss = new class implements Begruessung { public array $an = []; public function begruesse(string $email): void { $this->an[] = $email; } }; $a = new Anmeldung($speicher, $gruss); $erst = $a->anmelden("ada@example.com"); $zweit = $a->anmelden("ada@example.com"); try { $a->anmelden("keine-mail"); $ungueltig = "kein Fehler"; } catch (InvalidArgumentException) { $ungueltig = "wirft"; } echo json_encode([$erst, $zweit, $speicher->liste, $gruss->an, $ungueltig]);'
+      stdout_equals: '[true,false,["ada@example.com"],["ada@example.com"],"wirft"]'
+      message: Anmeldung soll AbonnentenSpeicher und Begruessung im Konstruktor bekommen, neue Adressen speichern und begrüßen, doppelte mit false ablehnen und ungültige mit InvalidArgumentException.
+    - type: command
+      run: grep -E '\bnew |file_put_contents|file\(|fopen|echo ' src/Anmeldung.php | grep -vc 'throw new' || true
+      stdout_equals: "0"
+      message: In src/Anmeldung.php steht noch new (außer für Exceptions), ein echo oder eine Dateifunktion. Diese Details gehören in DateiSpeicher, KonsolenBegruessung und bin/anmelden.php.
+    - type: command
+      run: |-
+        rm -f var/abonnenten.txt && php bin/anmelden.php grace@example.com && php bin/anmelden.php grace@example.com && cat var/abonnenten.txt && rm -f var/abonnenten.txt
+      stdout_equals: "Willkommen, grace@example.com!\nSchon angemeldet\ngrace@example.com"
+      message: bin/anmelden.php soll die Klassen zusammensetzen und sich wie vorher verhalten (Begrüßung, dann „Schon angemeldet“, Adresse in var/abonnenten.txt).
+  hints:
+    - "Der neue Konstruktor: `public function __construct(private AbonnentenSpeicher $speicher, private Begruessung $begruessung) {}`."
+    - "`DateiSpeicher` bekommt `private string $pfad` im Konstruktor und enthält genau die Zeilen mit `is_file`, `file()` und `file_put_contents`."
+    - "In `bin/anmelden.php`: `$anmeldung = new Anmeldung(new DateiSpeicher(__DIR__ . '/../var/abonnenten.txt'), new KonsolenBegruessung());`"
+  solution: |
+    ```php title="src/AbonnentenSpeicher.php"
+    <?php
+
+    declare(strict_types=1);
+
+    interface AbonnentenSpeicher
+    {
+        public function enthaelt(string $email): bool;
+
+        public function speichere(string $email): void;
+    }
+    ```
+
+    ```php title="src/DateiSpeicher.php"
+    <?php
+
+    declare(strict_types=1);
+
+    final class DateiSpeicher implements AbonnentenSpeicher
+    {
+        public function __construct(private string $pfad)
+        {
+        }
+
+        public function enthaelt(string $email): bool
+        {
+            $vorhanden = is_file($this->pfad) ? file($this->pfad, FILE_IGNORE_NEW_LINES) : [];
+
+            return in_array($email, $vorhanden, true);
+        }
+
+        public function speichere(string $email): void
+        {
+            file_put_contents($this->pfad, $email . "\n", FILE_APPEND);
+        }
+    }
+    ```
+
+    `Begruessung` und `KonsolenBegruessung` sind analog aufgebaut (`echo "Willkommen, {$email}!\n";`).
+
+    ```php title="src/Anmeldung.php"
+    <?php
+
+    declare(strict_types=1);
+
+    final class Anmeldung
+    {
+        public function __construct(
+            private AbonnentenSpeicher $speicher,
+            private Begruessung $begruessung,
+        ) {
+        }
+
+        public function anmelden(string $email): bool
+        {
+            if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                throw new InvalidArgumentException(sprintf('Ungültige E-Mail-Adresse: "%s"', $email));
+            }
+
+            if ($this->speicher->enthaelt($email)) {
+                return false;
+            }
+
+            $this->speicher->speichere($email);
+            $this->begruessung->begruesse($email);
+
+            return true;
+        }
+    }
+    ```
+
+    In `bin/anmelden.php` ersetzt du `new Anmeldung()` durch
+    `new Anmeldung(new DateiSpeicher(__DIR__ . '/../var/abonnenten.txt'), new KonsolenBegruessung());`.

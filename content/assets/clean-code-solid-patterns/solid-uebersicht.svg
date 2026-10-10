@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 270" role="img" aria-label="Die fünf SOLID-Prinzipien">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <rect x="20" y="20" width="160" height="230" rx="14" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="100" y="88" text-anchor="middle" font-size="56" font-weight="800" fill="#22d3ee" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">S</text>
+  <text x="100" y="128" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Single</text>
+  <text x="100" y="148" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Responsibility</text>
+  <line x1="45" y1="166" x2="155" y2="166" stroke="#22d3ee" stroke-width="2"/>
+  <text x="100" y="194" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Ein Grund</text>
+  <text x="100" y="214" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">zur Änderung</text>
+  <rect x="195" y="20" width="160" height="230" rx="14" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="275" y="88" text-anchor="middle" font-size="56" font-weight="800" fill="#a78bfa" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">O</text>
+  <text x="275" y="128" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Open-</text>
+  <text x="275" y="148" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Closed</text>
+  <line x1="220" y1="166" x2="330" y2="166" stroke="#a78bfa" stroke-width="2"/>
+  <text x="275" y="194" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Erweitern statt</text>
+  <text x="275" y="214" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">umschreiben</text>
+  <rect x="370" y="20" width="160" height="230" rx="14" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="450" y="88" text-anchor="middle" font-size="56" font-weight="800" fill="#34d399" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">L</text>
+  <text x="450" y="128" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Liskov</text>
+  <text x="450" y="148" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Substitution</text>
+  <line x1="395" y1="166" x2="505" y2="166" stroke="#34d399" stroke-width="2"/>
+  <text x="450" y="194" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Jede Umsetzung</text>
+  <text x="450" y="214" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">ist austauschbar</text>
+  <rect x="545" y="20" width="160" height="230" rx="14" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="625" y="88" text-anchor="middle" font-size="56" font-weight="800" fill="#f59e0b" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">I</text>
+  <text x="625" y="128" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Interface</text>
+  <text x="625" y="148" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Segregation</text>
+  <line x1="570" y1="166" x2="680" y2="166" stroke="#f59e0b" stroke-width="2"/>
+  <text x="625" y="194" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Kleine, passgenaue</text>
+  <text x="625" y="214" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Interfaces</text>
+  <rect x="720" y="20" width="160" height="230" rx="14" fill="#fef2f2" stroke="#f87171" stroke-width="2"/>
+  <text x="800" y="88" text-anchor="middle" font-size="56" font-weight="800" fill="#f87171" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">D</text>
+  <text x="800" y="128" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Dependency</text>
+  <text x="800" y="148" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Inversion</text>
+  <line x1="745" y1="166" x2="855" y2="166" stroke="#f87171" stroke-width="2"/>
+  <text x="800" y="194" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Von Abstraktionen</text>
+  <text x="800" y="214" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">abhängen</text>
+</svg>

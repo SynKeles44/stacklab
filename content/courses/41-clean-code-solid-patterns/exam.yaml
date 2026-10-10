@@ -1,0 +1,463 @@
+title: Abschlussprüfung Clean Code, SOLID & Design Patterns
+description: |
+  Die Prüfung deckt alle vier Module ab: lesbarer Code und Fehlerbehandlung, Code Smells und Refactoring,
+  SOLID mit Kopplung und Dependency Injection sowie Entwurfsmuster mit Augenmaß. Dazu kommen drei praktische
+  Aufgaben in PHP, TypeScript und im Übungs-Terminal. Du bestehst ab 70 Prozent.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  - module: lesbarer-code
+    type: single
+    question: Welcher Funktionsname beschreibt am besten, was die Funktion tut?
+    options:
+      - "handle($daten)"
+      - "verarbeite($x)"
+      - "berechneVersandkostenInCent($bestellung)"
+      - "doStuff($bestellung)"
+    answer: 2
+    explanation: Der Name sagt, was berechnet wird und in welcher Einheit. Die anderen Namen könnten alles bedeuten.
+  - module: lesbarer-code
+    type: find-bug
+    question: Welche Zeile enthält eine magische Zahl, die einen Namen verdient?
+    language: ts
+    code: |
+      function istAbgelaufen(erstelltAm: Date, jetzt: Date): boolean {
+        const alterInMs = jetzt.getTime() - erstelltAm.getTime();
+        return alterInMs > 1209600000;
+      }
+    bug_line: 3
+    explanation: "1209600000 sind 14 Tage in Millisekunden – das sieht man der Zahl nicht an. Besser: `const GUELTIGKEIT_IN_MS = 14 * 24 * 60 * 60 * 1000;`"
+  - module: lesbarer-code
+    type: multiple
+    question: Welche Kommentare erklären ein Warum und sollten bleiben?
+    options:
+      - "`// Variable initialisieren`"
+      - "`// Die Bank-API erwartet die IBAN ohne Leerzeichen.`"
+      - "`// Wir runden pro Position, weil die Kasse es auch so macht.`"
+      - "`// for-Schleife über die Liste`"
+    answers: [1, 2]
+    explanation: Gute Kommentare erklären Gründe und Einschränkungen, die der Code nicht zeigen kann. Die anderen wiederholen nur den Code.
+  - module: lesbarer-code
+    type: cloze
+    text: Ein besonderer Rückgabewert wie `false` oder `-1` heißt ___. Besser ist es, eine ___ zu werfen, die niemand aus Versehen übersehen kann.
+    blanks:
+      - [Fehlercode]
+      - [Exception, Ausnahme]
+    explanation: Fehlercodes lassen sich still ignorieren, Exceptions unterbrechen den Ablauf, bis jemand sie bewusst behandelt.
+  - module: lesbarer-code
+    type: single
+    question: Wo fängst du eine Exception typischerweise ab?
+    options:
+      - In jeder Funktion, sicherheitshalber.
+      - Dort, wo du sinnvoll reagieren kannst – meist an der Grenze wie Controller, CLI-Skript oder Job.
+      - Nirgends, das Programm soll abstürzen.
+      - Direkt in der Zeile, in der sie geworfen wird.
+    answer: 1
+    explanation: Fangen ohne sinnvolle Reaktion versteckt Fehler. An der Grenze kannst du loggen und eine verständliche Meldung geben.
+  - module: refactoring
+    type: single
+    question: Was gehört NICHT in einen Commit vom Typ `refactor:`?
+    options:
+      - Eine umbenannte Variable
+      - Eine herausgezogene Funktion
+      - Eine geänderte Rabattgrenze von 50 auf 40 Euro
+      - Ein aufgelöstes Duplikat
+    answer: 2
+    explanation: Eine neue Grenze ändert das Verhalten. Sie gehört in einen eigenen `feat:`- oder `fix:`-Commit.
+  - module: refactoring
+    type: match
+    question: Ordne jedem Code Smell das passende Gegenmittel zu.
+    pairs:
+      - { left: "Lange Parameterliste", right: "Parameter-Objekt einführen" }
+      - { left: "Feature Envy", right: "Methode in die Klasse verschieben, deren Daten sie benutzt" }
+      - { left: "Primitive Obsession", right: "Ein Value Object einführen" }
+      - { left: "Lange Funktion", right: "Extract Function" }
+    explanation: Zu jedem Smell gibt es im Refactoring-Katalog ein benanntes Gegenmittel.
+  - module: refactoring
+    type: multiple
+    question: Welche Aussagen über den Refactoring-Zyklus stimmen?
+    options:
+      - Vor dem ersten Schritt müssen die Tests grün sein.
+      - Bei roten Tests machst du den kleinen Schritt rückgängig und versuchst es kleiner.
+      - Nach jedem grünen Schritt ist ein Commit sinnvoll.
+      - Tests startest du erst ganz am Ende des Umbaus.
+    answers: [0, 1, 2]
+    explanation: Grün – kleiner Schritt – Tests – Commit. Wer erst am Ende testet, weiß bei Rot nicht, welcher Schritt schuld war.
+  - module: refactoring
+    type: single
+    question: Du sollst ein Skript ohne Tests umbauen, das viel Text ausgibt. Was ist der schnellste Weg zu einem Sicherheitsnetz?
+    options:
+      - Den Code komplett neu schreiben.
+      - Einen Golden Master - viele Eingaben ausführen, die Ausgaben freigeben und nach jedem Schritt vergleichen.
+      - Nur manuell im Browser testen.
+      - Den Code mit Kommentaren versehen.
+    answer: 1
+    explanation: Ein Golden Master braucht kein Verständnis des Codes, nur reproduzierbare Ausgaben, und deckt viele Fälle auf einmal ab.
+  - module: refactoring
+    type: find-bug
+    question: Dieser Charakterisierungstest ist jeden Tag rot. Welche Zeile im Code ist der Grund?
+    language: php
+    code: |
+      function quittung(int $betragCent): string
+      {
+          $kopf = 'Quittung';
+          $zeit = date('H:i:s');
+          return $kopf . ' ' . $zeit . ': ' . $betragCent;
+      }
+    bug_line: 4
+    explanation: Die Uhrzeit ändert sich bei jedem Aufruf. Eine Naht – etwa ein Parameter für den Zeitpunkt – macht die Ausgabe reproduzierbar.
+  - module: solid
+    type: match
+    question: Ordne jedem SOLID-Buchstaben das Prinzip zu.
+    pairs:
+      - { left: "S", right: "Eine Klasse hat genau einen Grund, sich zu ändern" }
+      - { left: "O", right: "Erweitern durch neuen Code statt durch Umschreiben" }
+      - { left: "L", right: "Jede Implementierung ist überall austauschbar" }
+      - { left: "I", right: "Kleine, passgenaue Interfaces" }
+      - { left: "D", right: "Fachlogik hängt von Abstraktionen ab, nicht von Details" }
+    explanation: Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation, Dependency Inversion.
+  - module: solid
+    type: find-bug
+    question: Welche Zeile verletzt das Liskovsche Substitutionsprinzip?
+    language: ts
+    code: |
+      interface Exporter {
+        exportiere(zeilen: string[]): string;
+      }
+      class PdfExporter implements Exporter {
+        exportiere(zeilen: string[]): string {
+          if (zeilen.length > 100) throw new Error('Zu viele Zeilen für PDF');
+          return erzeugePdf(zeilen);
+        }
+      }
+    bug_line: 6
+    explanation: Das Interface verspricht, beliebige Zeilen zu exportieren. Die PDF-Variante stellt eine strengere Vorbedingung auf – Aufrufer, die einen beliebigen Exporter bekommen, stürzen unerwartet ab.
+  - module: solid
+    type: single
+    question: Welche Kombination ist das Ziel?
+    options:
+      - Hohe Kopplung, niedrige Kohäsion
+      - Niedrige Kopplung, hohe Kohäsion
+      - Hohe Kopplung, hohe Kohäsion
+      - Niedrige Kopplung, niedrige Kohäsion
+    answer: 1
+    explanation: Module sollen wenig voneinander wissen und in sich eng zusammengehören.
+  - module: solid
+    type: multiple
+    question: Welche Vorteile bringt Konstruktor-Injektion?
+    options:
+      - Abhängigkeiten sind im Konstruktor sichtbar.
+      - Im Test kannst du Fakes übergeben.
+      - Die Klasse wird automatisch schneller.
+      - Implementierungen lassen sich tauschen, ohne die Klasse zu ändern.
+    answers: [0, 1, 3]
+    explanation: DI macht Abhängigkeiten sichtbar, testbar und austauschbar. Auf die Geschwindigkeit hat sie keinen Einfluss.
+  - module: solid
+    type: cloze
+    text: Statt Unterklassen zu stapeln, steckst du austauschbare Objekte zusammen. Dieses Prinzip heißt Komposition statt ___.
+    blanks:
+      - [Vererbung]
+    explanation: Komposition koppelt lockerer als Vererbung und erlaubt neue Kombinationen ohne neue Klassen.
+  - module: entwurfsmuster
+    type: match
+    question: Ordne jedem Problem das passende Muster zu.
+    pairs:
+      - { left: "Rabattregeln je Kundentyp austauschbar machen", right: "Strategy" }
+      - { left: "Ein fremdes SDK hinter dem eigenen Interface verstecken", right: "Adapter" }
+      - { left: "Jede Anfrage an eine Quelle zusätzlich cachen", right: "Decorator" }
+      - { left: "Mehrere Teile des Systems auf „Bestellung aufgegeben“ reagieren lassen", right: "Observer" }
+      - { left: "Die Wahl der passenden Klasse an einer Stelle bündeln", right: "Factory" }
+    explanation: Jedes Muster löst ein typisches, wiederkehrendes Problem.
+  - module: entwurfsmuster
+    type: multiple
+    question: Welche Eigenschaften hat ein Value Object?
+    options:
+      - Unveränderlich
+      - Gleichheit über seine Werte
+      - Eine eigene ID über die gesamte Lebenszeit
+      - Immer gültig, weil es beim Erzeugen geprüft wird
+    answers: [0, 1, 3]
+    explanation: Eine ID über die Lebenszeit hat eine Entität, kein Value Object.
+  - module: entwurfsmuster
+    type: single
+    question: Ein Teammitglied schlägt für eine einzige Exportfunktion ein Interface, eine Factory und drei leere Strategien „für später“ vor. Welches Prinzip spricht dagegen?
+    options:
+      - DRY
+      - YAGNI
+      - Liskov Substitution
+      - Fail Fast
+    answer: 1
+    explanation: You Aren't Gonna Need It - baue nur, was heute gebraucht wird. Gut getesteter, einfacher Code lässt sich später gezielt umbauen.
+  - module: entwurfsmuster
+    type: find-bug
+    question: "`Geld` soll ein Value Object sein. In welcher Zeile wird die Regel gebrochen?"
+    language: php
+    code: |
+      final class Geld
+      {
+          public function __construct(public int $cent) {}
+
+          public function setCent(int $cent): void
+          {
+              $this->cent = $cent;
+          }
+      }
+    bug_line: 7
+    explanation: Ein Value Object ist unveränderlich. Statt den Wert zu überschreiben, liefert eine Methode wie `mitCent()` ein neues Objekt.
+tasks:
+  - module: entwurfsmuster
+    id: pruefung-prozent
+    type: code
+    language: php
+    title: Ein Value Object für Prozente
+    description: |
+      Schreibe das Value Object `Prozent`:
+
+      1. `final readonly class Prozent` mit privatem Konstruktor und der Eigenschaft `int $wert`.
+      2. `Prozent::von(int $wert): self` akzeptiert nur Werte von 0 bis 100, sonst wirft es eine
+         `InvalidArgumentException`.
+      3. `anteilVon(int $cent): int` liefert den kaufmännisch gerundeten Anteil (`round`), z. B. 19 % von 999 → 190.
+      4. `istGleich(Prozent $anderes): bool` vergleicht die Werte.
+    starter: |
+      <?php
+
+      declare(strict_types=1);
+
+      final readonly class Prozent
+      {
+      }
+    tests:
+      - name: Anteil berechnen
+        code: "assert_same([190, 0, 1000], [Prozent::von(19)->anteilVon(999), Prozent::von(0)->anteilVon(5000), Prozent::von(100)->anteilVon(1000)]);"
+      - name: Werte außerhalb von 0 bis 100 werden abgelehnt
+        code: |
+          foreach ([-1, 101] as $falsch) {
+              try {
+                  Prozent::von($falsch);
+                  assert_true(false, "Prozent::von($falsch) hätte eine Exception werfen müssen.");
+              } catch (InvalidArgumentException) {
+              }
+          }
+          assert_true(true);
+      - name: Gleichheit über den Wert
+        code: "assert_true(Prozent::von(5)->istGleich(Prozent::von(5)) && !Prozent::von(5)->istGleich(Prozent::von(6)));"
+      - name: Konstruktor ist privat
+        code: "assert_true((new ReflectionClass('Prozent'))->getConstructor()->isPrivate());"
+    hints:
+      - "`private function __construct(public int $wert) {}` und ein benannter Konstruktor `public static function von(int $wert): self`."
+      - "`return (int) round($cent * $this->wert / 100);`"
+    solution: |
+      <?php
+
+      declare(strict_types=1);
+
+      final readonly class Prozent
+      {
+          private function __construct(public int $wert)
+          {
+          }
+
+          public static function von(int $wert): self
+          {
+              if ($wert < 0 || $wert > 100) {
+                  throw new InvalidArgumentException(sprintf('Prozent muss zwischen 0 und 100 liegen, ist %d.', $wert));
+              }
+
+              return new self($wert);
+          }
+
+          public function anteilVon(int $cent): int
+          {
+              return (int) round($cent * $this->wert / 100);
+          }
+
+          public function istGleich(Prozent $anderes): bool
+          {
+              return $this->wert === $anderes->wert;
+          }
+      }
+  - module: solid
+    id: pruefung-wiederholung
+    type: code
+    language: ts
+    title: Ein Decorator, der fehlgeschlagene Abrufe wiederholt
+    description: |
+      Eine `Wetterquelle` liefert die Temperatur für eine Stadt, scheitert aber manchmal mit einem Fehler.
+      Schreibe den Decorator `WiederholendeQuelle`:
+
+      1. Er implementiert `Wetterquelle` und bekommt die innere Quelle und die maximale Anzahl an Versuchen im
+         Konstruktor (Konstruktor-Injektion).
+      2. `temperatur(stadt)` ruft die innere Quelle auf. Wirft sie, versucht er es erneut – insgesamt höchstens
+         `maxVersuche`-mal.
+      3. Scheitert auch der letzte Versuch, wird der letzte Fehler weitergeworfen.
+    starter: |
+      interface Wetterquelle {
+        temperatur(stadt: string): number;
+      }
+
+      class WiederholendeQuelle implements Wetterquelle {
+        temperatur(stadt: string): number {
+          return 0;
+        }
+      }
+    tests:
+      - name: Erfolg im ersten Versuch
+        code: |
+          let aufrufe = 0;
+          const q = new WiederholendeQuelle({ temperatur() { aufrufe++; return 21; } }, 3);
+          assertEqual(q.temperatur('Beispielstadt'), 21);
+          assertEqual(aufrufe, 1);
+      - name: Zwei Fehler, dann Erfolg
+        code: |
+          let aufrufe = 0;
+          const q = new WiederholendeQuelle({ temperatur() { aufrufe++; if (aufrufe < 3) throw new Error('Zeitüberschreitung'); return 18; } }, 3);
+          assertEqual(q.temperatur('Beispielstadt'), 18);
+          assertEqual(aufrufe, 3);
+      - name: Nach maxVersuche wird der letzte Fehler geworfen
+        code: |
+          let aufrufe = 0;
+          const q = new WiederholendeQuelle({ temperatur() { aufrufe++; throw new Error('Versuch ' + aufrufe); } }, 2);
+          try { q.temperatur('Beispielstadt'); assertTrue(false); } catch (e) { assertEqual(e.message, 'Versuch 2'); }
+          assertEqual(aufrufe, 2);
+    hints:
+      - "`constructor(private readonly innere: Wetterquelle, private readonly maxVersuche: number) {}`"
+      - "Eine `for`-Schleife von 1 bis `maxVersuche` mit `try { return this.innere.temperatur(stadt); } catch (fehler) { letzterFehler = fehler; }` – nach der Schleife `throw letzterFehler;`."
+    solution: |
+      interface Wetterquelle {
+        temperatur(stadt: string): number;
+      }
+
+      class WiederholendeQuelle implements Wetterquelle {
+        constructor(private readonly innere: Wetterquelle, private readonly maxVersuche: number) {}
+
+        temperatur(stadt: string): number {
+          let letzterFehler: unknown = new Error('Keine Versuche erlaubt.');
+          for (let versuch = 1; versuch <= this.maxVersuche; versuch++) {
+            try {
+              return this.innere.temperatur(stadt);
+            } catch (fehler) {
+              letzterFehler = fehler;
+            }
+          }
+          throw letzterFehler;
+        }
+      }
+  - module: refactoring
+    id: pruefung-lieferzeit
+    type: terminal
+    title: Eine verschachtelte Funktion sicher umbauen
+    description: |
+      Im Ordner `pruefung-lieferzeit` liegt ein Git-Repository mit `src/lieferzeit.php` und grünen Tests in
+      `tests/test.php`. Die Funktion `lieferzeitInTagen()` ist ein Nest aus `if`/`else` mit magischen Zahlen.
+
+      1. Starte die Tests mit `php tests/test.php`.
+      2. Baue die Funktion um, **ohne ihr Verhalten zu ändern**: Guard Clauses statt `else`, und die Zahlen
+         1, 2 und 5 werden zu den Konstanten `EXPRESS_TAGE`, `INLAND_TAGE` und `AUSLAND_TAGE`.
+      3. Die Tests müssen danach grün sein. Committe mit einer Nachricht, die mit `refactor:` beginnt.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-lieferzeit
+    setup: |
+      git init -q -b main
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      mkdir -p src tests
+      cat > src/lieferzeit.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      function lieferzeitInTagen(string $land, bool $express): int
+      {
+          if ($land !== '') {
+              if ($express) {
+                  return 1;
+              } else {
+                  if ($land === 'DE') {
+                      return 2;
+                  } else {
+                      return 5;
+                  }
+              }
+          } else {
+              throw new InvalidArgumentException('Land fehlt');
+          }
+      }
+      PHP
+      cat > tests/test.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__ . '/../src/lieferzeit.php';
+
+      $rot = 0;
+      $pruefe = function (string $name, bool $ok) use (&$rot): void {
+          echo ($ok ? 'GRÜN  ' : 'ROT   ') . $name . "\n";
+          $rot += $ok ? 0 : 1;
+      };
+      $pruefe('Express ist immer 1 Tag', lieferzeitInTagen('AT', true) === 1 && lieferzeitInTagen('DE', true) === 1);
+      $pruefe('Inland dauert 2 Tage', lieferzeitInTagen('DE', false) === 2);
+      $pruefe('Ausland dauert 5 Tage', lieferzeitInTagen('FR', false) === 5);
+      try {
+          lieferzeitInTagen('', false);
+          $pruefe('Leeres Land wirft', false);
+      } catch (InvalidArgumentException) {
+          $pruefe('Leeres Land wirft', true);
+      }
+      exit($rot === 0 ? 0 : 1);
+      PHP
+      git add -A
+      git commit -q -m "feat: add delivery time"
+    checks:
+      - type: command
+        run: php tests/test.php
+        message: Die Tests sind rot – der Umbau hat das Verhalten verändert.
+      - type: command
+        run: grep -c 'else' src/lieferzeit.php || true
+        stdout_equals: "0"
+        message: In src/lieferzeit.php steht noch ein else. Nutze Guard Clauses.
+      - type: command
+        run: |-
+          php -r 'require "src/lieferzeit.php"; echo defined("EXPRESS_TAGE") && defined("INLAND_TAGE") && defined("AUSLAND_TAGE") ? EXPRESS_TAGE . INLAND_TAGE . AUSLAND_TAGE : "fehlt";'
+        stdout_equals: "125"
+        message: Es fehlen die Konstanten EXPRESS_TAGE (1), INLAND_TAGE (2) und AUSLAND_TAGE (5).
+      - type: command
+        run: git log -1 --format=%s
+        stdout_matches: "^refactor"
+        message: Der letzte Commit soll mit refactor beginnen.
+      - type: command
+        run: git status --porcelain
+        stdout_equals: ""
+        message: Es gibt noch nicht committete Änderungen.
+    hints:
+      - "Der Fehlerfall zuerst: `if ($land === '') { throw new InvalidArgumentException('Land fehlt'); }`"
+      - "Danach `if ($express) { return EXPRESS_TAGE; }` und am Ende `return $land === 'DE' ? INLAND_TAGE : AUSLAND_TAGE;`"
+    solution: |
+      ```php title="src/lieferzeit.php"
+      <?php
+
+      declare(strict_types=1);
+
+      const EXPRESS_TAGE = 1;
+      const INLAND_TAGE = 2;
+      const AUSLAND_TAGE = 5;
+
+      function lieferzeitInTagen(string $land, bool $express): int
+      {
+          if ($land === '') {
+              throw new InvalidArgumentException('Land fehlt');
+          }
+
+          if ($express) {
+              return EXPRESS_TAGE;
+          }
+
+          return $land === 'DE' ? INLAND_TAGE : AUSLAND_TAGE;
+      }
+      ```
+
+      ```bash
+      php tests/test.php
+      git commit -am "refactor: flatten delivery time with guard clauses"
+      ```

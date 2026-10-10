@@ -1,0 +1,35 @@
+title: Clean Code, SOLID & Design Patterns
+subtitle: Code, den andere gern lesen – lesbar benennen, sicher refactoren, sauber entwerfen
+description: >
+  Code wird viel öfter gelesen als geschrieben. Ob du in einem halben Jahr noch verstehst, was eine Funktion
+  tut, entscheidet sich nicht beim großen Architektur-Meeting, sondern bei jedem Namen, jeder Funktion und
+  jedem `if`. In diesem Kurs lernst du, Code so zu schreiben und umzubauen, dass er **lesbar, änderbar und
+  testbar** bleibt – in PHP und TypeScript.
+
+
+  Du beginnst bei den Grundlagen: gute Namen, kleine Funktionen, Kommentare, die das **Warum** erklären,
+  und eine Fehlerbehandlung, die Probleme sichtbar macht. Danach erkennst du typische **Code Smells** und
+  baust sie in **kleinen, sicheren Schritten** um, während die Tests grün bleiben – auch in Legacy-Code
+  ohne Tests. Im dritten Modul lernst du die fünf **SOLID**-Prinzipien mit Vorher-nachher-Beispielen,
+  Kopplung und Kohäsion, Dependency Injection und Komposition statt Vererbung. Zum Schluss setzt du eine
+  Auswahl bewährter **Entwurfsmuster** ein – und lernst genauso, wann du sie besser weglässt.
+category: backend
+level: fortgeschritten
+icon: sparkles
+color: "#14b8a6"
+estimated_hours: 5
+workspace_dir: clean-code
+prerequisites: [php, typescript]
+learning_goals:
+  - Du wählst Namen, die Absicht ausdrücken, und ersetzt magische Zahlen durch benannte Konstanten.
+  - Du schreibst kleine Funktionen mit Guard Clauses und Kommentare, die das Warum erklären.
+  - Du behandelst Fehler mit Exceptions und eigenen Fehlerklassen, statt sie zu verschlucken.
+  - Du erkennst typische Code Smells und refactorst in kleinen Schritten, während die Tests grün bleiben.
+  - Du sicherst Legacy-Code mit Charakterisierungstests ab, bevor du ihn änderst.
+  - Du erklärst und erkennst die fünf SOLID-Prinzipien und wendest sie in PHP und TypeScript an.
+  - Du senkst Kopplung, erhöhst Kohäsion und nutzt Dependency Injection und Komposition statt Vererbung.
+  - Du setzt Strategy, Factory, Adapter, Decorator, Observer und Value Objects gezielt ein – und weißt, wann nicht.
+references:
+  - Refactoring großer Laravel-Codebasen in kleinen Pull Requests, abgesichert durch Golden-Master-Tests
+  - Strategy- und Decorator-Muster für austauschbare Preis-, Versand- und Benachrichtigungslogik
+  - Code-Review-Checklisten, die Benennung, Funktionsgröße und Kopplung zum festen Prüfpunkt machen

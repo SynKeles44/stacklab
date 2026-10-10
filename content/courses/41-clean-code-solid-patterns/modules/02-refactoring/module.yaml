@@ -1,0 +1,147 @@
+title: Code Smells und Refactoring
+description: Warnzeichen im Code erkennen, in kleinen Schritten mit grünen Tests umbauen und Legacy-Code mit Charakterisierungstests und Golden Master absichern.
+exercise:
+  id: modul-uebung-tarife
+  type: terminal
+  title: Doppelte switch-Anweisungen auflösen – dann ein Feature
+  description: |
+    Im Ordner `tarife-ts` liegt ein kleines TypeScript-Projekt. `src/tarife.ts` enthält zwei Funktionen,
+    die beide mit einem `switch` über den Tarifnamen entscheiden – ein klassischer Smell: Für jeden neuen
+    Tarif musst du an zwei Stellen denken. Die Tests startest du mit `node tests/pruefe.ts` (Node.js 24
+    führt TypeScript direkt aus).
+
+    Die beiden Tests für den neuen Tarif `team` sind absichtlich rot. Geh in zwei getrennten Schritten vor:
+
+    1. **Refactoring:** Ersetze beide `switch`-Anweisungen durch **eine** Tabelle von Tarif-Objekten
+       (z. B. eine `Map<string, Tarif>`, in der jeder Tarif seinen Namen und seine Preisberechnung kennt).
+       Die exportierten Funktionen `monatspreisCent` und `anzeigename` behalten ihre Signatur. Alle alten
+       Tests bleiben grün. Committe mit einer Nachricht, die mit `refactor:` beginnt.
+    2. **Feature:** Ergänze den Tarif `team` (Anzeigename `Team`, immer 4900 Cent). Das ist jetzt **eine**
+       neue Zeile. Alle Tests sind grün. Committe mit `feat:`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: tarife-ts
+  setup: |
+    git init -q -b main
+    git config user.name "Stacklab"
+    git config user.email "stacklab@example.com"
+    mkdir -p src tests
+    printf '{\n  "name": "tarife-ts",\n  "private": true,\n  "type": "module"\n}\n' > package.json
+    cat > src/tarife.ts <<'TS'
+    export function monatspreisCent(tarif: string, nutzer: number): number {
+      switch (tarif) {
+        case 'basis':
+          return 900;
+        case 'pro':
+          return 1900 + Math.max(0, nutzer - 3) * 300;
+        case 'business':
+          return 9900;
+        default:
+          throw new Error(`Unbekannter Tarif: ${tarif}`);
+      }
+    }
+
+    export function anzeigename(tarif: string): string {
+      switch (tarif) {
+        case 'basis':
+          return 'Basis';
+        case 'pro':
+          return 'Pro';
+        case 'business':
+          return 'Business';
+        default:
+          throw new Error(`Unbekannter Tarif: ${tarif}`);
+      }
+    }
+    TS
+    cat > tests/pruefe.ts <<'TS'
+    import assert from 'node:assert/strict';
+    import { anzeigename, monatspreisCent } from '../src/tarife.ts';
+
+    const faelle: [string, () => void][] = [
+      ['basis kostet immer 900', () => assert.equal(monatspreisCent('basis', 50), 900)],
+      ['pro bis 3 Nutzer kostet 1900', () => assert.equal(monatspreisCent('pro', 3), 1900)],
+      ['pro ab dem 4. Nutzer + 300 je Nutzer', () => assert.equal(monatspreisCent('pro', 5), 2500)],
+      ['business kostet 9900', () => assert.equal(monatspreisCent('business', 1), 9900)],
+      ['Anzeigenamen', () => assert.deepEqual(['basis', 'pro', 'business'].map(anzeigename), ['Basis', 'Pro', 'Business'])],
+      ['unbekannter Tarif wirft', () => assert.throws(() => monatspreisCent('gold', 1), /Unbekannter Tarif: gold/)],
+      ['unbekannter Name wirft', () => assert.throws(() => anzeigename('toString'), /Unbekannter Tarif/)],
+      ['NEU: team kostet 4900', () => assert.equal(monatspreisCent('team', 12), 4900)],
+      ['NEU: team heißt Team', () => assert.equal(anzeigename('team'), 'Team')],
+    ];
+
+    let rot = 0;
+    for (const [name, test] of faelle) {
+      try {
+        test();
+        console.log(`GRÜN  ${name}`);
+      } catch (fehler) {
+        rot++;
+        console.log(`ROT   ${name}: ${(fehler as Error).message.split('\n')[0]}`);
+      }
+    }
+    process.exit(rot === 0 ? 0 : 1);
+    TS
+    git add -A
+    git commit -q -m "chore: import pricing module"
+  checks:
+    - type: command
+      run: node tests/pruefe.ts
+      message: Nicht alle Tests sind grün. Starte node tests/pruefe.ts und lies, welcher Test rot ist.
+    - type: command
+      run: grep -c 'switch' src/tarife.ts || true
+      stdout_equals: "0"
+      message: In src/tarife.ts steht noch ein switch. Ersetze beide durch eine gemeinsame Tabelle von Tarif-Objekten.
+    - type: command
+      run: git log --format=%s | grep -c '^refactor' || true
+      stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+      message: Es fehlt ein eigener Commit für das Refactoring, dessen Nachricht mit refactor beginnt.
+    - type: command
+      run: git log --format=%s | grep -c '^feat' || true
+      stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+      message: Es fehlt ein eigener Commit für den neuen Tarif team, dessen Nachricht mit feat beginnt.
+    - type: command
+      run: git status --porcelain
+      stdout_equals: ""
+      message: Es gibt noch nicht committete Änderungen. Committe deinen letzten Schritt.
+  hints:
+    - "Ein Tarif-Typ könnte so aussehen: `type Tarif = { name: string; preisCent: (nutzer: number) => number };`"
+    - "Mit `const TARIFE = new Map<string, Tarif>([['basis', { name: 'Basis', preisCent: () => 900 }], …]);` und einer Hilfsfunktion `tarif(id)`, die bei `undefined` wirft, schrumpfen beide Funktionen auf eine Zeile. Eine `Map` schützt dich auch vor Schlüsseln wie `toString`, die ein normales Objekt über seinen Prototyp kennt."
+    - "Erst nach dem `refactor:`-Commit fügst du die Zeile für `team` hinzu und committest mit `feat: add team plan`."
+  solution: |
+    ```ts title="src/tarife.ts"
+    type Tarif = {
+      name: string;
+      preisCent: (nutzer: number) => number;
+    };
+
+    const TARIFE = new Map<string, Tarif>([
+      ['basis', { name: 'Basis', preisCent: () => 900 }],
+      ['pro', { name: 'Pro', preisCent: (nutzer) => 1900 + Math.max(0, nutzer - 3) * 300 }],
+      ['business', { name: 'Business', preisCent: () => 9900 }],
+    ]);
+
+    function tarif(id: string): Tarif {
+      const gefunden = TARIFE.get(id);
+      if (gefunden === undefined) {
+        throw new Error(`Unbekannter Tarif: ${id}`);
+      }
+      return gefunden;
+    }
+
+    export function monatspreisCent(id: string, nutzer: number): number {
+      return tarif(id).preisCent(nutzer);
+    }
+
+    export function anzeigename(id: string): string {
+      return tarif(id).name;
+    }
+    ```
+
+    ```bash
+    node tests/pruefe.ts            # alt: grün, nur die zwei team-Tests rot
+    git commit -am "refactor: replace plan switches with a lookup table"
+    # Zeile ['team', { name: 'Team', preisCent: () => 4900 }] ergänzen
+    node tests/pruefe.ts            # alles grün
+    git commit -am "feat: add team plan"
+    ```

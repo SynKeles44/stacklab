@@ -1,0 +1,503 @@
+- slug: clean-code
+  term: Clean Code
+  short: Code, den andere Menschen ohne Erklärung verstehen und ohne Angst ändern können.
+  explanation: >
+    Clean Code beschreibt eine Haltung beim Programmieren: Code wird für Menschen geschrieben, nicht nur für
+    den Computer. Dazu gehören sprechende Namen, kleine Funktionen, eine klare Fehlerbehandlung und Tests.
+    Ziel ist, dass jede spätere Änderung schnell und sicher möglich ist.
+  example: "`$tageSeitLetzterAnmeldung` statt `$d` ist ein kleiner Schritt zu Clean Code."
+  category: clean-code
+  aliases: [sauberer Code, lesbarer Code]
+  related: [refactoring, technische-schulden, code-smell]
+  lesson: clean-code-solid-patterns/gute-namen
+
+- slug: magische-zahl
+  term: Magische Zahl
+  short: Ein Zahlenwert mitten im Code, dessen Bedeutung man erraten muss.
+  explanation: >
+    Werte wie `0.19` oder `86400` sagen nichts darüber, wofür sie stehen. Ändert sich der Wert, muss man jede
+    Stelle suchen, an der er vorkommt. Eine benannte Konstante macht die Bedeutung sichtbar und bündelt den
+    Wert an einer Stelle. Dasselbe gilt für magische Strings wie `'stamm'`.
+  example: "`const MEHRWERTSTEUER_SATZ = 0.19;` ersetzt die magische Zahl `0.19`."
+  category: clean-code
+  aliases: [magische Zahlen, Magic Number, magischer String]
+  related: [konstante, enum]
+  lesson: clean-code-solid-patterns/gute-namen
+
+- slug: abstraktionsebene
+  term: Abstraktionsebene
+  short: Die „Flughöhe“, auf der Code etwas beschreibt – vom fachlichen Was bis zum technischen Detail.
+  explanation: >
+    „Bestellung bestätigen“ ist eine hohe Abstraktionsebene, „Strings verketten“ eine niedrige. Gut lesbare
+    Funktionen bleiben auf einer Ebene und verschieben Details in eigene Funktionen. Wer Ebenen mischt,
+    zwingt Lesende, ständig zwischen Überblick und Detail zu springen.
+  example: "`pruefeLagerbestand($bestellung);` und `$text = 'Danke, ' . $name;` direkt untereinander mischen zwei Ebenen."
+  category: clean-code
+  aliases: [Abstraktionsebenen, Abstraktionsniveau]
+  related: [funktion, extract-function]
+  lesson: clean-code-solid-patterns/kleine-funktionen-und-kommentare
+
+- slug: guard-clause
+  term: Guard Clause
+  short: Eine Prüfung am Anfang einer Funktion, die Sonderfälle sofort mit return oder throw behandelt.
+  explanation: >
+    Statt den Normalfall tief in verschachtelte if-Blöcke zu packen, prüft eine Guard Clause die Ausnahmen
+    zuerst und verlässt die Funktion. Der eigentliche Ablauf steht danach ohne zusätzliche Einrückung. Nach
+    einem return oder throw braucht es kein else.
+  example: "`if ($kunde === null) { return 0.0; }` als erste Zeile einer Rabattfunktion."
+  category: clean-code
+  aliases: [Guard Clauses, Wächterbedingung, früher Rücksprung]
+  related: [verschachtelung, fail-fast]
+  lesson: clean-code-solid-patterns/kleine-funktionen-und-kommentare
+
+- slug: fehlercode
+  term: Fehlercode
+  short: Ein besonderer Rückgabewert wie -1, false oder "FEHLER", der einen Misserfolg anzeigen soll.
+  explanation: >
+    Fehlercodes vermischen Erfolg und Misserfolg in einem Rückgabetyp. Jeder Aufrufer muss daran denken, sie
+    zu prüfen – vergisst er es, rechnet das Programm still mit dem falschen Wert weiter. Exceptions machen
+    solche Fehler dagegen sofort sichtbar.
+  example: "`function nettoSumme(array $p): int|false` gibt bei ungültiger Menge `false` zurück."
+  category: clean-code
+  aliases: [Fehlercodes, Fehlerwert, Error Code]
+  related: [exception, fail-fast]
+  lesson: clean-code-solid-patterns/fehlerbehandlung
+
+- slug: fail-fast
+  term: Fail Fast
+  short: Das Prinzip, einen Fehler sofort dort zu melden, wo er entsteht, statt still weiterzurechnen.
+  explanation: >
+    Ungültige Eingaben werden am Anfang einer Funktion geprüft und lösen sofort eine Exception aus. So fällt
+    ein Problem mit klarer Meldung genau an seiner Quelle auf. Wer still weiterrechnet, findet den Fehler
+    später nur noch als merkwürdiges Ergebnis an ganz anderer Stelle.
+  example: "`if ($menge <= 0) { throw new InvalidArgumentException('Menge muss positiv sein.'); }`"
+  category: clean-code
+  aliases: [früh scheitern]
+  related: [exception, guard-clause, fehlercode]
+  lesson: clean-code-solid-patterns/fehlerbehandlung
+
+- slug: code-smell
+  term: Code Smell
+  short: Ein Warnzeichen im Code, das auf ein Entwurfsproblem hindeuten kann.
+  explanation: >
+    Ein Code Smell ist kein Fehler – der Code funktioniert. Er zeigt aber, dass Änderungen teurer werden
+    könnten, etwa durch eine sehr lange Funktion oder duplizierten Code. Zu jedem Smell gibt es typische
+    Refactorings, die ihn beseitigen.
+  example: "Eine Methode mit 240 Zeilen und sieben Parametern ist ein deutlicher Code Smell."
+  category: clean-code
+  aliases: [Code Smells, Codegeruch]
+  related: [refactoring, god-class, feature-envy, primitive-obsession]
+  lesson: clean-code-solid-patterns/code-smells
+
+- slug: parameter-objekt
+  term: Parameter-Objekt
+  short: Ein Objekt, das mehrere zusammengehörende Parameter einer Funktion bündelt.
+  explanation: >
+    Lange Parameterlisten sind schwer zu lesen, und beim Aufruf verwechselt man leicht die Reihenfolge. Ein
+    Parameter-Objekt fasst Werte zusammen, die gemeinsam auftreten, etwa die Teile einer Adresse. Das
+    Refactoring dazu heißt Introduce Parameter Object.
+  example: "`adresszeile(adresse: Adresse)` statt `adresszeile(strasse, hausnummer, plz, ort, zusatz)`."
+  category: clean-code
+  aliases: [Parameterobjekt, Introduce Parameter Object]
+  related: [code-smell, refactoring]
+  lesson: clean-code-solid-patterns/code-smells
+
+- slug: god-class
+  term: Gottklasse
+  short: Eine Klasse, die viel zu viele Aufgaben übernimmt und fast alles im System kennt.
+  explanation: >
+    Eine Gottklasse wie `ShopManager` kümmert sich um Datenbank, Mails, PDFs und Preise zugleich. Jede
+    Änderung landet in derselben Datei, und Tests werden schwierig. Die Lösung ist, sie nach Verantwortungen
+    in kleinere Klassen zu zerlegen.
+  example: "Eine Klasse `ShopManager` mit 70 Methoden von `login()` bis `erzeugePdf()`."
+  category: clean-code
+  aliases: [God Class, God Object, Gottobjekt]
+  related: [code-smell, single-responsibility-prinzip]
+  lesson: clean-code-solid-patterns/code-smells
+
+- slug: feature-envy
+  term: Feature Envy
+  short: Ein Code Smell, bei dem eine Methode fast nur Daten einer anderen Klasse benutzt.
+  explanation: >
+    Die Methode „beneidet“ eine andere Klasse um deren Daten. Meist gehört sie eigentlich in diese andere
+    Klasse. Verschiebst du sie dorthin, liegen Daten und Verhalten wieder zusammen, und die Kopplung sinkt.
+  example: "`versandkosten($korb)` ruft nur `$korb->gewicht()` und `$korb->istAbholung()` auf – besser `$korb->versandkosten()`."
+  category: clean-code
+  aliases: [Neid auf Features]
+  related: [code-smell, kopplung]
+  lesson: clean-code-solid-patterns/code-smells
+
+- slug: schrotflinten-chirurgie
+  term: Schrotflinten-Chirurgie
+  short: Ein Code Smell, bei dem eine fachliche Änderung viele kleine Änderungen an verstreuten Stellen erfordert.
+  explanation: >
+    Das Wissen über eine Regel ist über das ganze Projekt verteilt. Wer sie ändert, muss jede Stelle finden –
+    und vergisst leicht eine. Das Gegenmittel ist, das verstreute Wissen an einem Ort zu bündeln.
+  example: "Für einen neuen Steuersatz müssen elf Dateien angepasst werden."
+  category: clean-code
+  aliases: [Shotgun Surgery]
+  related: [code-smell, dry]
+  lesson: clean-code-solid-patterns/code-smells
+
+- slug: primitive-obsession
+  term: Primitive Obsession
+  short: Ein Code Smell, bei dem fachliche Werte mit Regeln als nackte Strings oder Zahlen herumgereicht werden.
+  explanation: >
+    Ein Geldbetrag als `int`, eine IBAN als `string` – jede Funktion muss erneut prüfen, ob der Wert gültig
+    ist und in welcher Einheit er vorliegt. Ein kleines eigenes Objekt, etwa ein Value Object, bündelt den
+    Wert mit seinen Regeln.
+  example: "`ueberweise(int $betrag, string $waehrung, string $iban)` statt `ueberweise(Geld $betrag, Iban $iban)`."
+  category: clean-code
+  aliases: [Besessenheit von primitiven Typen]
+  related: [code-smell, value-object, primitiver-datentyp]
+  lesson: clean-code-solid-patterns/code-smells
+
+- slug: extract-function
+  term: Extract Function
+  short: Ein Refactoring, das einen Codeblock in eine eigene, benannte Funktion verschiebt.
+  explanation: >
+    Der Block bekommt einen sprechenden Namen, und die ursprüngliche Funktion ruft ihn nur noch auf. So
+    werden lange Funktionen kürzer und lesen sich wie ein Inhaltsverzeichnis. Für Methoden heißt dasselbe
+    Refactoring oft Extract Method.
+  example: "Drei gleiche `number_format`-Zeilen werden zu `formatiereEuro(int $cent)`."
+  category: clean-code
+  aliases: [Extract Method, Funktion herausziehen, Methode extrahieren]
+  related: [refactoring, code-smell]
+  lesson: clean-code-solid-patterns/refactoring-in-kleinen-schritten
+
+- slug: charakterisierungstest
+  term: Charakterisierungstest
+  short: Ein Test, der festhält, was Code heute tatsächlich tut – auch wenn das vielleicht falsch ist.
+  explanation: >
+    Charakterisierungstests sichern Legacy-Code ab, bevor man ihn umbaut. Man ruft den Code auf und schreibt
+    das beobachtete Ergebnis in den Test, statt es nachzurechnen. Merkwürdiges Verhalten wird ebenfalls
+    festgehalten und später getrennt geklärt.
+  example: "`assertSame('Linus;gross;400000', berechneBonuszeile('Linus', 8000000, 1));` – Wert einmal ausgeführt und übernommen."
+  category: clean-code
+  aliases: [Charakterisierungstests, Characterization Test]
+  related: [golden-master, legacy-code, regressionstest]
+  lesson: clean-code-solid-patterns/legacy-code-absichern
+
+- slug: golden-master
+  term: Golden Master
+  short: Eine freigegebene Ausgabe eines Programms, mit der jede neue Ausgabe nach einem Umbau verglichen wird.
+  explanation: >
+    Man führt das Programm mit vielen Eingaben aus und speichert die Ergebnisse als Referenz. Nach jedem
+    Refactoring vergleicht ein Test, zum Beispiel mit diff, die neue Ausgabe mit der Referenz. Wechselnde
+    Werte wie Datum oder Zufallszahlen müssen vorher festgelegt oder herausgefiltert werden.
+  example: "`diff -u fixtures/team.txt <(php bin/bonus.php fixtures/team.csv)`"
+  category: clean-code
+  aliases: [Golden-Master-Test, Approval Test, Snapshot-Vergleich]
+  related: [charakterisierungstest, legacy-code, refactoring]
+  lesson: clean-code-solid-patterns/legacy-code-absichern
+
+- slug: naht
+  term: Naht (Seam)
+  short: Eine Stelle, an der du Verhalten austauschen kannst, ohne den Code dort zu ändern.
+  explanation: >
+    Legacy-Code nutzt oft Unberechenbares wie die Uhrzeit oder eine Datenbank direkt. Eine Naht macht diese
+    Abhängigkeit von außen steuerbar, etwa über einen optionalen Parameter oder ein Interface im Konstruktor.
+    Erst dadurch wird der Code testbar.
+  example: "`function bericht(array $umsaetze, ?DateTimeImmutable $stichtag = null)` – der Test übergibt ein festes Datum."
+  category: clean-code
+  aliases: [Seam, Nahtstelle, Nahtstellen]
+  related: [legacy-code, dependency-injection]
+  lesson: clean-code-solid-patterns/legacy-code-absichern
+
+- slug: sprout-methode
+  term: Sprout Method
+  short: Neue Logik entsteht als eigene, getestete Funktion und wird im Legacy-Code nur aufgerufen.
+  explanation: >
+    Statt neue Regeln mitten in eine riesige, ungetestete Methode zu schreiben, lässt man sie als sauberen
+    „Trieb“ daneben wachsen. Die alte Methode bekommt nur eine einzige neue Zeile mit dem Aufruf. So bleibt
+    das Risiko klein und der neue Code ist von Anfang an getestet.
+  example: "`$betrag = gutscheinAbziehen($betrag, $gutscheine);` als einzige neue Zeile in der alten Methode."
+  category: clean-code
+  aliases: [Sprout-Methode, Sprout Class]
+  related: [legacy-code, extract-function]
+  lesson: clean-code-solid-patterns/legacy-code-absichern
+
+- slug: strangler-fig
+  term: Strangler-Fig-Muster
+  short: Ein altes System wird Funktion für Funktion durch ein neues ersetzt, bis das alte abgeschaltet werden kann.
+  explanation: >
+    Benannt nach der Würgefeige, die einen Baum langsam umwächst. Statt eines riskanten Komplett-Neubaus
+    leitet man einzelne Funktionen nach und nach auf das neue System um. Beide Systeme laufen eine Zeit lang
+    parallel.
+  example: "Erst läuft nur der Rechnungsexport über den neuen Service, später auch Bestellungen und Kundenkonten."
+  category: clean-code
+  aliases: [Strangler Fig, Strangler Pattern, Würgefeigen-Muster]
+  related: [legacy-code, sprout-methode]
+  lesson: clean-code-solid-patterns/legacy-code-absichern
+
+- slug: solid
+  term: SOLID
+  short: Ein Merkwort für fünf Prinzipien objektorientierten Entwurfs, die Code änderbar halten.
+  explanation: >
+    Die Buchstaben stehen für Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation
+    und Dependency Inversion. Alle fünf zielen darauf, dass eine Änderung möglichst wenig anderen Code
+    berührt. Sie sind Leitlinien, keine starren Gesetze.
+  example: "Im Code-Review: „Diese Klasse verletzt das S aus SOLID – sie rechnet und verschickt Mails.“"
+  category: clean-code
+  aliases: [SOLID-Prinzipien]
+  related: [single-responsibility-prinzip, open-closed-prinzip, liskovsches-substitutionsprinzip, interface-segregation-prinzip, dependency-inversion-prinzip]
+  lesson: clean-code-solid-patterns/srp-und-ocp
+
+- slug: single-responsibility-prinzip
+  term: Single-Responsibility-Prinzip
+  short: Eine Klasse soll genau einen Grund haben, sich zu ändern.
+  explanation: >
+    Ein „Grund“ ist meist eine Personengruppe oder ein fachliches Anliegen, etwa Steuerregeln oder Layout.
+    Hat eine Klasse mehrere davon, treffen sich Änderungen aus verschiedenen Richtungen in derselben Datei.
+    Es geht nicht um die Anzahl der Methoden, sondern um die Änderungsgründe.
+  example: "`RechnungsRechner`, `RechnungsPdf` und `RechnungsVersand` statt einer Klasse `Rechnung`, die alles macht."
+  category: clean-code
+  aliases: [SRP, Prinzip der einzigen Verantwortung]
+  related: [solid, god-class, kohaesion]
+  lesson: clean-code-solid-patterns/srp-und-ocp
+
+- slug: open-closed-prinzip
+  term: Open-Closed-Prinzip
+  short: Code soll offen für Erweiterung und geschlossen für Änderung sein.
+  explanation: >
+    Neues Verhalten kommt durch neuen Code dazu, statt bestehenden und getesteten Code umzuschreiben. Das
+    typische Werkzeug sind Interfaces: Eine neue Variante ist eine neue Klasse, die das Interface erfüllt.
+    Es lohnt sich dort, wo Varianten wirklich dazukommen.
+  example: "Eine neue Zahlungsart ist die Klasse `Ratenkauf implements Zahlungsart` – kein neues `case` in einem `match`."
+  category: clean-code
+  aliases: [OCP, Offen-Geschlossen-Prinzip]
+  related: [solid, interface, polymorphie, strategy-muster]
+  lesson: clean-code-solid-patterns/srp-und-ocp
+
+- slug: liskovsches-substitutionsprinzip
+  term: Liskovsches Substitutionsprinzip
+  short: Jede Implementierung eines Typs muss überall dort funktionieren, wo der Typ erwartet wird.
+  explanation: >
+    Ein Interface ist ein Versprechen über Verhalten. Eine Implementierung darf nicht weniger halten, etwa
+    indem sie bei einer Pflichtmethode eine Exception wirft. Müssen Aufrufer mit instanceof den konkreten Typ
+    prüfen, ist die Austauschbarkeit gebrochen.
+  example: "Ein `NurLeseSpeicher`, dessen `schreibe()` „Nur lesbar!“ wirft, verletzt das Prinzip."
+  category: clean-code
+  aliases: [LSP, Liskov Substitution Principle, Liskov-Prinzip]
+  related: [solid, interface, vererbung]
+  lesson: clean-code-solid-patterns/lsp-isp-dip
+
+- slug: interface-segregation-prinzip
+  term: Interface-Segregation-Prinzip
+  short: Niemand soll von Methoden abhängen müssen, die er nicht benutzt – lieber kleine, passgenaue Interfaces.
+  explanation: >
+    Ein großes Interface zwingt Klassen, Methoden zu implementieren, die sie nicht brauchen – oft leer oder
+    mit einer Exception. Mehrere kleine Interfaces lassen sich dagegen frei kombinieren. Aufrufer verlangen
+    dann nur das, was sie wirklich nutzen.
+  example: "`LesbarerSpeicher` und `BeschreibbarerSpeicher` statt eines `Speicher` mit allen Methoden."
+  category: clean-code
+  aliases: [ISP]
+  related: [solid, interface, liskovsches-substitutionsprinzip]
+  lesson: clean-code-solid-patterns/lsp-isp-dip
+
+- slug: dependency-inversion-prinzip
+  term: Dependency-Inversion-Prinzip
+  short: Fachlogik hängt von Abstraktionen ab, und technische Details implementieren diese Abstraktionen.
+  explanation: >
+    Normalerweise ruft Fachlogik direkt technische Klassen wie einen SMTP-Client auf. Beim
+    Dependency-Inversion-Prinzip definiert die Fachlogik ein Interface für das, was sie braucht, und die
+    Technik implementiert es. Dadurch lässt sich die Fachlogik ohne echte Server testen.
+  example: "`RechnungsService` kennt nur `Versender`; `SmtpVersender` und `FakeVersender` implementieren es."
+  category: clean-code
+  aliases: [DIP, Abhängigkeitsumkehr]
+  related: [solid, dependency-injection, interface, adapter-muster]
+  lesson: clean-code-solid-patterns/lsp-isp-dip
+
+- slug: kopplung
+  term: Kopplung
+  short: Wie stark Module oder Klassen voneinander abhängen.
+  explanation: >
+    Je mehr eine Klasse über das Innenleben einer anderen weiß, desto enger sind sie gekoppelt – und desto
+    eher zieht eine Änderung weitere nach sich. Typische Ursachen sind new mitten in der Fachlogik, statische
+    Aufrufe und lange Aufrufketten. Angestrebt wird niedrige Kopplung.
+  example: "`$bestellung->kunde()->adresse()->land()->steuersatz()` koppelt an vier Klassen gleichzeitig."
+  category: clean-code
+  aliases: [Coupling, lose Kopplung, enge Kopplung]
+  related: [kohaesion, dependency-injection]
+  lesson: clean-code-solid-patterns/kopplung-di-komposition
+
+- slug: kohaesion
+  term: Kohäsion
+  short: Wie eng die Teile innerhalb eines Moduls oder einer Klasse zusammengehören.
+  explanation: >
+    Hohe Kohäsion heißt, dass alle Methoden und Daten einer Klasse demselben Zweck dienen. Eine Sammelklasse
+    mit Datumsformatierung, SMS-Versand und Steuerberechnung hat dagegen keine Kohäsion. Angestrebt wird
+    hohe Kohäsion bei niedriger Kopplung.
+  example: "Ein `Warenkorb` mit `hinzufuegen()`, `entfernen()` und `summe()` hat hohe Kohäsion."
+  category: clean-code
+  aliases: [Cohesion, Zusammenhalt]
+  related: [kopplung, single-responsibility-prinzip]
+  lesson: clean-code-solid-patterns/kopplung-di-komposition
+
+- slug: konstruktor-injektion
+  term: Konstruktor-Injektion
+  short: Eine Klasse bekommt ihre Abhängigkeiten als Parameter ihres Konstruktors übergeben.
+  explanation: >
+    Konstruktor-Injektion ist die üblichste Form der Dependency Injection. Alle Abhängigkeiten stehen sichtbar
+    im Konstruktor, und das Objekt ist nach dem Erzeugen vollständig einsatzbereit. Im Test übergibt man
+    einfach einen Fake.
+  example: "`public function __construct(private Zahlung $zahlung, private Lager $lager) {}`"
+  category: clean-code
+  aliases: [Constructor Injection, Konstruktorinjektion]
+  related: [dependency-injection, composition-root, konstruktor-promotion]
+  lesson: clean-code-solid-patterns/kopplung-di-komposition
+
+- slug: composition-root
+  term: Composition Root
+  short: Die eine Stelle im Programm, an der alle konkreten Objekte erzeugt und zusammengesetzt werden.
+  explanation: >
+    Wenn Klassen ihre Abhängigkeiten nicht mehr selbst erzeugen, muss das jemand anderes tun – meist beim
+    Programmstart. Nur dort stehen die konkreten Klassennamen. In Frameworks übernimmt oft ein
+    DI-Container diese Aufgabe.
+  example: "In `bin/anmelden.php`: `new Anmeldung(new DateiSpeicher($pfad), new KonsolenBegruessung())`."
+  category: clean-code
+  aliases: [Kompositionswurzel]
+  related: [dependency-injection, konstruktor-injektion, service-container]
+  lesson: clean-code-solid-patterns/kopplung-di-komposition
+
+- slug: komposition-statt-vererbung
+  term: Komposition statt Vererbung
+  short: Verhalten wiederverwenden, indem ein Objekt andere Objekte enthält und Arbeit an sie weitergibt, statt Unterklassen zu bilden.
+  explanation: >
+    Vererbung koppelt Unterklassen eng an die Interna der Oberklasse, und Varianten vervielfachen sich
+    schnell. Bei Komposition steckt man austauschbare Objekte zusammen, oft über ein Interface. Neue
+    Kombinationen brauchen keine neuen Klassen.
+  example: "`new Bericht(new CsvFormat())` statt einer Klasse `CsvBerichtMitKopfzeile extends CsvBericht`."
+  category: clean-code
+  aliases: [Composition over Inheritance, Objektkomposition]
+  related: [vererbung, interface, strategy-muster, decorator-muster]
+  lesson: clean-code-solid-patterns/kopplung-di-komposition
+
+- slug: factory-muster
+  term: Factory (Entwurfsmuster)
+  short: Ein Muster, das das Erzeugen von Objekten – und die Wahl der passenden Klasse – an einer Stelle bündelt.
+  explanation: >
+    Eine Factory-Funktion oder -Klasse entscheidet, welche konkrete Klasse für eine Situation erzeugt wird.
+    Die Fallunterscheidung steht dann nur noch an einer Stelle, und der restliche Code arbeitet mit dem
+    Interface. Für ein simples new ohne Auswahl braucht man keine Factory.
+  example: "`zahlungsartFuer('karte')` liefert ein `Kartenzahlung`-Objekt als `Zahlungsart`."
+  category: clean-code
+  aliases: [Factory, Fabrik, Factory-Methode, Fabrikmethode]
+  related: [entwurfsmuster, benannter-konstruktor, strategy-muster]
+  lesson: clean-code-solid-patterns/value-objects-und-factory
+
+- slug: benannter-konstruktor
+  term: Benannter Konstruktor
+  short: Eine statische Methode mit sprechendem Namen, die ein Objekt erzeugt und dabei prüfen kann.
+  explanation: >
+    Benannte Konstruktoren machen den Aufruf lesbar und erlauben mehrere Arten, dasselbe Objekt zu erzeugen.
+    Oft ist der eigentliche Konstruktor dann private, sodass jedes Objekt durch die Prüfung muss. Sie sind
+    die kleinste Form einer Factory.
+  example: "`Geld::ausCent(1250)` oder `Email::aus('ada@example.com')`."
+  category: clean-code
+  aliases: [Named Constructor, statischer Konstruktor]
+  related: [factory-muster, value-object, konstruktor]
+  lesson: clean-code-solid-patterns/value-objects-und-factory
+
+- slug: strategy-muster
+  term: Strategy (Entwurfsmuster)
+  short: Austauschbare Varianten eines Verhaltens stecken hinter einem gemeinsamen Interface.
+  explanation: >
+    Jede Variante, etwa eine Rabatt- oder Sortierregel, ist eine eigene Klasse oder Funktion. Wer das
+    Verhalten braucht, bekommt eine Strategie übergeben und muss nicht wissen, welche es ist. So ersetzt das
+    Muster wachsende Fallunterscheidungen.
+  example: "`StammkundenRabatt`, `FirmenRabatt` und `KeinRabatt` implementieren alle `RabattRegel`."
+  category: clean-code
+  aliases: [Strategy, Strategie-Muster, Strategiemuster]
+  related: [entwurfsmuster, open-closed-prinzip, factory-muster]
+  lesson: clean-code-solid-patterns/strategy-adapter-decorator
+
+- slug: adapter-muster
+  term: Adapter (Entwurfsmuster)
+  short: Ein Objekt, das eine fremde Schnittstelle in das Interface übersetzt, das dein Code erwartet.
+  explanation: >
+    Wie ein Reisestecker passt der Adapter etwas an, das man selbst nicht ändern kann, etwa das SDK eines
+    Anbieters. Er implementiert dein Interface und übersetzt jeden Aufruf. Wechselt der Anbieter, schreibt
+    man nur einen neuen Adapter.
+  example: "`BeispielPayAdapter implements Zahlung` ruft intern `$client->chargeAmount(…)` auf."
+  category: clean-code
+  aliases: [Adapter, Wrapper]
+  related: [entwurfsmuster, dependency-inversion-prinzip, interface]
+  lesson: clean-code-solid-patterns/strategy-adapter-decorator
+
+- slug: decorator-muster
+  term: Decorator (Entwurfsmuster)
+  short: Ein Objekt mit demselben Interface umhüllt ein anderes und ergänzt Verhalten davor oder danach.
+  explanation: >
+    Der Decorator gibt jeden Aufruf an das umhüllte Objekt weiter und fügt etwas hinzu, etwa Caching,
+    Protokollierung oder eine Umleitung. Weil er selbst das Interface erfüllt, lassen sich mehrere Decorators
+    stapeln. Das umhüllte Objekt bleibt unverändert.
+  example: "`new ProtokollierendeQuelle(new CachendeQuelle(new ApiKursquelle()), $log)`"
+  category: clean-code
+  aliases: [Decorator, Dekorierer]
+  related: [entwurfsmuster, komposition-statt-vererbung, open-closed-prinzip]
+  lesson: clean-code-solid-patterns/strategy-adapter-decorator
+
+- slug: observer-muster
+  term: Observer (Entwurfsmuster)
+  short: Ein Subjekt meldet Ereignisse, und beliebig viele angemeldete Beobachter reagieren darauf.
+  explanation: >
+    Das Subjekt kennt nur das Ereignis, nicht die Beobachter. Neue Reaktionen sind neue Beobachter, ohne dass
+    sich der auslösende Code ändert. Im Browser ist addEventListener ein Observer, in Laravel heißen die
+    Bausteine Events und Listener.
+  example: "`ereignisse.abonniere('bestellung-aufgegeben', (b) => mailer.bestaetige(b));`"
+  category: clean-code
+  aliases: [Observer, Beobachter-Muster, Publish-Subscribe]
+  related: [entwurfsmuster, event, event-listener]
+  lesson: clean-code-solid-patterns/observer-und-wann-nicht
+
+- slug: yagni
+  term: YAGNI
+  short: „You Aren't Gonna Need It“ – baue nichts, was heute noch niemand braucht.
+  explanation: >
+    Spekulative Erweiterungspunkte kosten sofort Lesbarkeit und Pflege, ihr Nutzen kommt oft nie. YAGNI
+    empfiehlt, die einfachste Lösung für den heutigen Bedarf zu bauen und gut zu testen. Kommt der neue Fall
+    wirklich, baut man dann gezielt um.
+  example: "Eine Factory für „spätere Zahlungsarten“, obwohl es nur eine gibt, verstößt gegen YAGNI."
+  category: clean-code
+  aliases: [You Aren't Gonna Need It]
+  related: [kiss, dry, ueberentwurf]
+  lesson: clean-code-solid-patterns/observer-und-wann-nicht
+
+- slug: kiss
+  term: KISS
+  short: „Keep It Simple, Stupid“ – wähle die einfachste Lösung, die das Problem vollständig löst.
+  explanation: >
+    Clevere, verschachtelte Konstruktionen sind schwer zu lesen und zu ändern. KISS bevorzugt die geradlinige
+    Lösung. Einfach heißt dabei nicht kurz oder strukturlos – eine 300-Zeilen-Funktion ist nicht einfach.
+  example: "Ein `match` mit drei Fällen statt einer Plugin-Architektur für drei feste Varianten."
+  category: clean-code
+  aliases: [Keep It Simple]
+  related: [yagni, dry, ueberentwurf]
+  lesson: clean-code-solid-patterns/observer-und-wann-nicht
+
+- slug: dry
+  term: DRY
+  short: „Don't Repeat Yourself“ – jedes Stück Wissen hat genau eine maßgebliche Stelle im Code.
+  explanation: >
+    Steht dieselbe Regel an mehreren Stellen, laufen die Kopien irgendwann auseinander. DRY bezieht sich auf
+    Wissen, nicht auf ähnlich aussehende Zeilen. Wer zufällig gleichen Code zusammenlegt, braucht bald Flags
+    und Sonderfälle.
+  example: "Der Mehrwertsteuersatz steht nur in `MEHRWERTSTEUER_SATZ`, nicht als `0.19` in zehn Dateien."
+  category: clean-code
+  aliases: [Don't Repeat Yourself, Duplizierter Code]
+  related: [yagni, kiss, schrotflinten-chirurgie]
+  lesson: clean-code-solid-patterns/observer-und-wann-nicht
+
+- slug: ueberentwurf
+  term: Überentwurf
+  short: Mehr Abstraktion, Muster und Flexibilität, als das heutige Problem erfordert.
+  explanation: >
+    Überentwurf entsteht, wenn Muster auf Vorrat eingesetzt werden – etwa eine Factory, die eine Strategy
+    für eine einzige Variante erzeugt. Der Code wird länger und schwerer zu verstehen, ohne dass ein
+    konkretes Problem gelöst wird. Die Frage „Welches Problem löst das heute?“ entlarvt ihn.
+  example: "Fünf neue Dateien und drei Interfaces für zehn Zeilen Logik, die sich nie ändert."
+  category: clean-code
+  aliases: [Overengineering, Over-Engineering]
+  related: [yagni, kiss, entwurfsmuster]
+  lesson: clean-code-solid-patterns/observer-und-wann-nicht

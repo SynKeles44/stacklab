@@ -1,0 +1,130 @@
+title: Lesbarer Code
+description: Gute Namen, keine magischen Zahlen, kleine Funktionen mit Guard Clauses, Kommentare mit Warum und eine Fehlerbehandlung, die Probleme sichtbar macht.
+exercise:
+  id: modul-uebung-preis
+  type: terminal
+  title: Eine Preisfunktion lesbar machen
+  description: |
+    Im Ordner `preis-aufraeumen` liegt `src/preis.php` mit der Funktion `p()`. Sie berechnet einen Endpreis
+    in Cent – funktioniert, ist aber kaum lesbar: kryptische Namen, magische Zahlen, verschachtelte `if`s
+    und `-1` als Fehlercode. Die Tests in `tests/pruefe.php` erwarten schon die aufgeräumte Version und sind
+    deshalb rot.
+
+    1. Benenne die Funktion in `endpreis(int $nettoCent, string $tarif): int` um. Die alte Funktion `p` soll
+       es danach nicht mehr geben.
+    2. Lege die Konstanten `MEHRWERTSTEUER_SATZ` (0.19) und `STUDENTEN_RABATT` (0.2) an und nutze sie.
+    3. Ersetze das verschachtelte `if/else` durch Guard Clauses – in der Datei soll kein `else` mehr stehen.
+    4. Statt `-1` wirft die Funktion bei negativem Nettopreis eine `InvalidArgumentException`.
+    5. Starte die Tests mit `php tests/pruefe.php`, bis alles grün ist.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit die Dateien angelegt werden.
+  workdir: preis-aufraeumen
+  setup: |
+    mkdir -p src tests
+    cat > src/preis.php <<'PHP'
+    <?php
+
+    // Preis
+    function p($n, $k)
+    {
+        if ($n >= 0) {
+            if ($k == 'student') {
+                $r = $n - $n * 0.2;
+            } else {
+                $r = $n;
+            }
+            // mal 1.19
+            return (int) round($r * 1.19);
+        } else {
+            return -1;
+        }
+    }
+    PHP
+    cat > tests/pruefe.php <<'PHP'
+    <?php
+
+    declare(strict_types=1);
+
+    require __DIR__ . '/../src/preis.php';
+
+    $fehler = 0;
+    function pruefe(string $name, callable $test): void
+    {
+        global $fehler;
+        try {
+            $test();
+            echo "GRÜN  $name\n";
+        } catch (Throwable $e) {
+            echo "ROT   $name: " . $e->getMessage() . "\n";
+            $fehler++;
+        }
+    }
+    function gleich(mixed $erwartet, mixed $ist): void
+    {
+        if ($erwartet !== $ist) {
+            throw new RuntimeException('erwartet ' . var_export($erwartet, true) . ', erhalten ' . var_export($ist, true));
+        }
+    }
+
+    pruefe('Normaltarif: 10,00 EUR netto werden 11,90 EUR', fn () => gleich(1190, endpreis(1000, 'normal')));
+    pruefe('Studierende bekommen 20 % Rabatt vor der Steuer', fn () => gleich(952, endpreis(1000, 'student')));
+    pruefe('0 Cent bleiben 0 Cent', fn () => gleich(0, endpreis(0, 'normal')));
+    pruefe('Negativer Preis wirft InvalidArgumentException', function (): void {
+        try {
+            endpreis(-5, 'normal');
+        } catch (InvalidArgumentException) {
+            return;
+        }
+        throw new RuntimeException('Es wurde keine InvalidArgumentException geworfen.');
+    });
+
+    exit($fehler === 0 ? 0 : 1);
+    PHP
+  checks:
+    - type: command
+      run: php tests/pruefe.php
+      message: Die Tests in tests/pruefe.php sind noch nicht alle grün. Starte php tests/pruefe.php und lies, welcher Test rot ist.
+    - type: command
+      run: |-
+        php -r 'require "src/preis.php"; echo function_exists("p") ? "noch da" : "weg";'
+      stdout_equals: weg
+      message: Die alte Funktion p() gibt es noch – benenne sie in endpreis() um, statt eine zweite Funktion anzulegen.
+    - type: command
+      run: |-
+        php -r 'require "src/preis.php"; echo defined("MEHRWERTSTEUER_SATZ") && defined("STUDENTEN_RABATT") ? var_export([MEHRWERTSTEUER_SATZ, STUDENTEN_RABATT], true) : "fehlt";' | tr -d ' \n'
+      stdout_equals: "array(0=>0.19,1=>0.2,)"
+      message: Lege die Konstanten MEHRWERTSTEUER_SATZ (0.19) und STUDENTEN_RABATT (0.2) an.
+    - type: command
+      run: grep -cE '0\.19|0\.2\b' src/preis.php || true
+      stdout_equals: "2"
+      message: Die Zahlen 0.19 und 0.2 sollen nur noch je einmal vorkommen – in den Konstanten. Lösche auch Kommentare wie „mal 1.19“.
+    - type: command
+      run: grep -c 'else' src/preis.php || true
+      stdout_equals: "0"
+      message: In src/preis.php steht noch ein else. Nutze Guard Clauses – nach einem return oder throw brauchst du kein else.
+  hints:
+    - "Beginne mit dem Fehlerfall: `if ($nettoCent < 0) { throw new InvalidArgumentException('…'); }`."
+    - "Der Rabatt passt in eine Zeile: `$rabattiert = $tarif === 'student' ? $nettoCent * (1 - STUDENTEN_RABATT) : $nettoCent;`"
+    - "Konstanten stehen direkt unter `<?php`: `const MEHRWERTSTEUER_SATZ = 0.19;`"
+  solution: |
+    ```php title="src/preis.php"
+    <?php
+
+    declare(strict_types=1);
+
+    const MEHRWERTSTEUER_SATZ = 0.19;
+    const STUDENTEN_RABATT = 0.2;
+
+    function endpreis(int $nettoCent, string $tarif): int
+    {
+        if ($nettoCent < 0) {
+            throw new InvalidArgumentException(sprintf('Nettopreis darf nicht negativ sein, ist %d.', $nettoCent));
+        }
+
+        $rabattiert = $tarif === 'student' ? $nettoCent * (1 - STUDENTEN_RABATT) : $nettoCent;
+
+        return (int) round($rabattiert * (1 + MEHRWERTSTEUER_SATZ));
+    }
+    ```
+
+    Danach `php tests/pruefe.php` – alle vier Tests sind grün.

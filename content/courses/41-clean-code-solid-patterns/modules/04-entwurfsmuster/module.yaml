@@ -1,0 +1,109 @@
+title: Entwurfsmuster mit Augenmaß
+description: Value Object, Factory, Strategy, Adapter, Decorator und Observer gezielt einsetzen, Repository einordnen – und mit YAGNI, KISS und DRY erkennen, wann ein Muster zu viel ist.
+exercise:
+  id: modul-uebung-preisrechner
+  type: code
+  language: ts
+  title: Ein Preisrechner aus drei Mustern
+  description: |
+    Baue einen kleinen Preisrechner, der drei Muster dieses Moduls kombiniert:
+
+    1. **Strategy als Funktion:** Der Typ `Rabatt` ist `(nettoCent: number) => number`.
+    2. **Factory:** `rabattFuer(kundentyp: string): Rabatt` liefert
+       - für `'stamm'`: 5 % weniger, kaufmännisch gerundet (`Math.round`),
+       - für `'neu'`: 500 Cent weniger, aber nie unter 0,
+       - für alles andere: den Betrag unverändert.
+    3. `class Basisrechner implements Preisrechner` berechnet in `preisCent(positionen, kundentyp)` die
+       Summe aus `preisCent * menge` und wendet den passenden Rabatt an.
+    4. **Decorator:** `class Kleinmengenzuschlag implements Preisrechner` umhüllt einen anderen
+       `Preisrechner`. Liegt dessen Ergebnis unter 1000 Cent, kommen 290 Cent Zuschlag dazu – außer bei
+       einem leeren Warenkorb (Ergebnis 0 bleibt 0).
+
+    Das Interface `Preisrechner` und der Typ `Position` sind vorgegeben.
+  starter: |
+    type Position = { preisCent: number; menge: number };
+
+    interface Preisrechner {
+      preisCent(positionen: Position[], kundentyp: string): number;
+    }
+
+    type Rabatt = (nettoCent: number) => number;
+
+    function rabattFuer(kundentyp: string): Rabatt {
+      return (nettoCent) => nettoCent;
+    }
+
+    class Basisrechner implements Preisrechner {
+      preisCent(positionen: Position[], kundentyp: string): number {
+        return 0;
+      }
+    }
+
+    class Kleinmengenzuschlag implements Preisrechner {
+      preisCent(positionen: Position[], kundentyp: string): number {
+        return 0;
+      }
+    }
+  tests:
+    - name: Rabatt-Factory liefert die richtigen Strategien
+      code: assertDeepEqual([rabattFuer('stamm')(1000), rabattFuer('stamm')(1010), rabattFuer('neu')(1200), rabattFuer('neu')(300), rabattFuer('gast')(777)], [950, 960, 700, 0, 777])
+    - name: Basisrechner summiert und rabattiert
+      code: "assertEqual(new Basisrechner().preisCent([{ preisCent: 450, menge: 2 }, { preisCent: 1100, menge: 1 }], 'stamm'), 1900)"
+    - name: Leerer Warenkorb kostet 0
+      code: "assertEqual(new Basisrechner().preisCent([], 'neu'), 0)"
+    - name: Zuschlag unter 10 Euro
+      code: "assertEqual(new Kleinmengenzuschlag(new Basisrechner()).preisCent([{ preisCent: 300, menge: 2 }], 'gast'), 890)"
+    - name: Kein Zuschlag ab 10 Euro und bei leerem Warenkorb
+      code: |
+        const rechner = new Kleinmengenzuschlag(new Basisrechner());
+        assertEqual(rechner.preisCent([{ preisCent: 1000, menge: 1 }], 'gast'), 1000);
+        assertEqual(rechner.preisCent([], 'gast'), 0);
+    - name: Der Decorator funktioniert mit jedem Preisrechner
+      code: "assertEqual(new Kleinmengenzuschlag({ preisCent: () => 999 }).preisCent([], 'gast'), 1289)"
+  hints:
+    - "Die Factory ist ein `switch` über den Kundentyp, der Funktionen zurückgibt, z. B. `case 'neu': return (netto) => Math.max(0, netto - 500);`."
+    - "Der Basisrechner: `const summe = positionen.reduce((s, p) => s + p.preisCent * p.menge, 0); return rabattFuer(kundentyp)(summe);`"
+    - "Der Decorator bekommt `constructor(private readonly innerer: Preisrechner) {}` und fragt zuerst `this.innerer.preisCent(…)`."
+  solution: |
+    type Position = { preisCent: number; menge: number };
+
+    interface Preisrechner {
+      preisCent(positionen: Position[], kundentyp: string): number;
+    }
+
+    type Rabatt = (nettoCent: number) => number;
+
+    const STAMMKUNDEN_RABATT = 0.05;
+    const NEUKUNDEN_GUTSCHRIFT_CENT = 500;
+    const KLEINMENGE_UNTER_CENT = 1000;
+    const KLEINMENGEN_ZUSCHLAG_CENT = 290;
+
+    function rabattFuer(kundentyp: string): Rabatt {
+      switch (kundentyp) {
+        case 'stamm':
+          return (netto) => Math.round(netto * (1 - STAMMKUNDEN_RABATT));
+        case 'neu':
+          return (netto) => Math.max(0, netto - NEUKUNDEN_GUTSCHRIFT_CENT);
+        default:
+          return (netto) => netto;
+      }
+    }
+
+    class Basisrechner implements Preisrechner {
+      preisCent(positionen: Position[], kundentyp: string): number {
+        const summe = positionen.reduce((s, p) => s + p.preisCent * p.menge, 0);
+        return rabattFuer(kundentyp)(summe);
+      }
+    }
+
+    class Kleinmengenzuschlag implements Preisrechner {
+      constructor(private readonly innerer: Preisrechner) {}
+
+      preisCent(positionen: Position[], kundentyp: string): number {
+        const preis = this.innerer.preisCent(positionen, kundentyp);
+        if (preis === 0 || preis >= KLEINMENGE_UNTER_CENT) {
+          return preis;
+        }
+        return preis + KLEINMENGEN_ZUSCHLAG_CENT;
+      }
+    }

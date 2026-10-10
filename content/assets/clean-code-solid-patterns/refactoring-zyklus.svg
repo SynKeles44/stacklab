@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 420" role="img" aria-label="Refactoring-Zyklus: Tests grün, kleiner Schritt, Tests starten, Commit">
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/></marker>
+    <marker id="pfeil-rot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f87171"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <path d="M 497 60 Q 640 60 640 178" fill="none" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M 640 240 Q 640 360 499 360" fill="none" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M 263 360 Q 120 360 120 242" fill="none" stroke="#34d399" stroke-width="3" marker-end="url(#pfeil)"/>
+  <path d="M 120 180 Q 120 60 261 60" fill="none" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <path d="M 380 330 L 380 92" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#pfeil-rot)"/>
+  <rect x="265" y="32" width="230" height="56" rx="12" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="380" y="56" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">1. Tests sind grün</text>
+  <text x="380" y="76" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">sicherer Ausgangspunkt</text>
+  <rect x="525" y="182" width="230" height="56" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="640" y="206" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">2. Ein kleiner Schritt</text>
+  <text x="640" y="226" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">z. B. Extract Function</text>
+  <rect x="265" y="332" width="230" height="56" rx="12" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="380" y="356" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">3. Tests starten</text>
+  <text x="380" y="376" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Verhalten noch gleich?</text>
+  <rect x="5" y="182" width="230" height="56" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="120" y="206" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">4. Commit</text>
+  <text x="120" y="226" text-anchor="middle" font-size="13" fill="#4b4870" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">refactor: …</text>
+  <text x="170" y="330" font-size="14" font-weight="700" fill="#059669" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">grün</text>
+  <text x="392" y="196" font-size="14" font-weight="700" fill="#dc2626" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">rot:</text>
+  <text x="392" y="216" font-size="13" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">Schritt verwerfen</text>
+  <text x="392" y="236" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">git restore .</text>
+  <text x="392" y="256" font-size="13" fill="#1e1b3a" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">und kleiner versuchen</text>
+</svg>
