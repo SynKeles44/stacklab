@@ -1,0 +1,80 @@
+title: Cloud und dein AWS-Konto
+description: Was Cloud Computing ist, wer wofür verantwortlich ist, wie Regionen und Verfügbarkeitszonen aufgebaut sind und wie du ein AWS-Konto von Anfang an absicherst.
+exercise:
+  id: modul-uebung-credential-report
+  type: terminal
+  title: Einen Credential Report auswerten
+  description: |
+    IAM kann einen **Credential Report** erstellen: eine CSV-Datei mit allen Identitäten eines Kontos und
+    dem Zustand ihrer Passwörter, MFA-Geräte und Access Keys. Im Ordner `credential-report` liegt eine
+    vereinfachte Version davon (`report.csv`) mit diesen Spalten:
+
+    `user,arn,password_enabled,mfa_active,access_key_1_active,access_key_1_last_rotated`
+
+    Die Zeile mit dem Benutzernamen `<root_account>` ist der Root-Benutzer.
+
+    Schreibe ein Skript `pruefe.sh`, das mit `bash pruefe.sh <datei.csv>` aufgerufen wird und für jede
+    Datenzeile (in der Reihenfolge der Datei) Befunde ausgibt:
+
+    1. Für den Root-Benutzer: `root-key: <root_account>`, wenn `access_key_1_active` `true` ist.
+       Weitere Regeln gelten für ihn nicht.
+    2. Für alle anderen: `ohne-mfa: <user>`, wenn `password_enabled` `true` und `mfa_active` `false` ist.
+    3. Danach für alle anderen: `alter-key: <user>`, wenn `access_key_1_active` `true` ist und
+       `access_key_1_last_rotated` vor dem `2026-01-01` liegt.
+
+    Für `report.csv` muss genau das herauskommen:
+
+    ```text
+    ohne-mfa: ben
+    alter-key: ben
+    ohne-mfa: lea
+    ```
+
+    Die Prüfung testet dein Skript zusätzlich mit einer zweiten, unbekannten CSV-Datei.
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit `report.csv` angelegt wird.
+  workdir: credential-report
+  setup: |
+    cat > report.csv <<'EOF'
+    user,arn,password_enabled,mfa_active,access_key_1_active,access_key_1_last_rotated
+    <root_account>,arn:aws:iam::123456789012:root,not_supported,true,false,N/A
+    anna,arn:aws:iam::123456789012:user/anna,true,true,false,N/A
+    ben,arn:aws:iam::123456789012:user/ben,true,false,true,2025-03-14T09:12:00+00:00
+    ci-deploy,arn:aws:iam::123456789012:user/ci-deploy,false,false,true,2026-08-02T10:00:00+00:00
+    lea,arn:aws:iam::123456789012:user/lea,true,false,false,N/A
+    EOF
+  checks:
+    - type: file_exists
+      path: pruefe.sh
+      message: Das Skript pruefe.sh fehlt noch.
+    - type: command
+      run: bash pruefe.sh report.csv
+      stdout_equals: "ohne-mfa: ben\nalter-key: ben\nohne-mfa: lea"
+      message: "Für report.csv stimmt die Ausgabe noch nicht. Erwartet: ohne-mfa: ben, alter-key: ben, ohne-mfa: lea – in dieser Reihenfolge."
+    - type: command
+      run: |
+        d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+        printf 'user,arn,password_enabled,mfa_active,access_key_1_active,access_key_1_last_rotated\n<root_account>,arn:aws:iam::123456789012:root,not_supported,false,true,2024-01-01T08:00:00+00:00\nmax,arn:aws:iam::123456789012:user/max,true,false,false,N/A\nops,arn:aws:iam::123456789012:user/ops,false,false,true,2025-12-31T23:59:00+00:00\nzoe,arn:aws:iam::123456789012:user/zoe,true,true,true,2026-02-01T12:00:00+00:00\n' > "$d/zwei.csv"
+        bash pruefe.sh "$d/zwei.csv"
+        rm -rf "$d"
+      stdout_equals: "root-key: <root_account>\nohne-mfa: max\nalter-key: ops"
+      message: Mit einer zweiten CSV-Datei stimmt die Ausgabe nicht. Liest dein Skript die Datei aus dem ersten Argument ($1)? Behandelst du den Root-Benutzer und alte Schlüssel richtig?
+  hints:
+    - "Mit `awk -F,` trennst du die Zeilen am Komma; `NR > 1` überspringt die Kopfzeile."
+    - "ISO-Datumswerte kannst du als Text vergleichen: `$6 < \"2026-01-01\"` ist für 2025er-Daten wahr."
+    - "Beim Root-Benutzer prüfst du nur den Schlüssel und springst dann mit `next` zur nächsten Zeile."
+  solution: |
+    ```bash
+    cd credential-report
+    cat > pruefe.sh <<'EOF'
+    #!/usr/bin/env bash
+    awk -F, 'NR > 1 {
+      if ($1 == "<root_account>") {
+        if ($5 == "true") print "root-key: " $1
+        next
+      }
+      if ($3 == "true" && $4 == "false") print "ohne-mfa: " $1
+      if ($5 == "true" && $6 < "2026-01-01") print "alter-key: " $1
+    }' "$1"
+    EOF
+    bash pruefe.sh report.csv
+    ```

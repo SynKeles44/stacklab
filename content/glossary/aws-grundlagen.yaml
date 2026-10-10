@@ -1,0 +1,664 @@
+- slug: cloud-computing
+  term: Cloud Computing
+  short: IT-Ressourcen wie Server, Speicher und Datenbanken über das Internet mieten statt selbst kaufen und betreiben.
+  explanation: >
+    Ein Anbieter betreibt große Rechenzentren und vermietet daraus kleine Stücke auf Abruf. Abgerechnet wird
+    nach Verbrauch, Ressourcen lassen sich in Minuten anlegen und wieder löschen.
+  example: "Statt einen Server zu kaufen, startest du für drei Stunden 20 virtuelle Maschinen und zahlst nur diese Zeit."
+  category: cloud
+  aliases: [Cloud, Cloud-Computing]
+  related: [aws, iaas, saas, pay-as-you-go]
+  lesson: aws-grundlagen/cloud-und-geteilte-verantwortung
+- slug: aws
+  term: AWS
+  short: Amazon Web Services – die Cloud-Plattform von Amazon mit über 200 Diensten.
+  explanation: >
+    AWS bietet Rechenleistung, Speicher, Datenbanken, Netzwerke und viele weitere Dienste in Regionen auf der
+    ganzen Welt an. Gesteuert wird alles über eine Web-Konsole, die AWS CLI, SDKs oder Infrastruktur als Code.
+  example: "Eine Laravel-App läuft auf EC2, speichert Uploads in S3 und nutzt eine Datenbank in RDS."
+  category: cloud
+  aliases: [Amazon Web Services]
+  related: [cloud-computing, region, iam]
+  lesson: aws-grundlagen/cloud-und-geteilte-verantwortung
+- slug: rechenzentrum
+  term: Rechenzentrum
+  short: Ein Gebäude voller Server mit eigener Stromversorgung, Kühlung und Netzanbindung.
+  explanation: >
+    Rechenzentren sind gegen Ausfälle abgesichert, etwa durch Notstrom und mehrere Internetleitungen. Cloud-Anbieter
+    betreiben viele davon und fassen sie zu Verfügbarkeitszonen und Regionen zusammen.
+  example: "Eine Verfügbarkeitszone von AWS besteht aus einem oder mehreren Rechenzentren."
+  category: cloud
+  aliases: [Rechenzentren, Datacenter, Data Center]
+  related: [availability-zone, region]
+  lesson: aws-grundlagen/cloud-und-geteilte-verantwortung
+- slug: pay-as-you-go
+  term: Pay-as-you-go
+  short: Abrechnung nach tatsächlichem Verbrauch – pro Sekunde, Stunde, Gigabyte oder Anfrage.
+  explanation: >
+    Es gibt keine festen Vorabkosten; du bezahlst, was du nutzt. Umgekehrt kostet eine Ressource, die läuft,
+    auch dann Geld, wenn niemand sie benutzt.
+  example: "Eine EC2-Instanz, die zwei Stunden läuft, wird für zwei Stunden berechnet."
+  category: cloud
+  aliases: [nutzungsbasierte Abrechnung]
+  related: [cloud-computing, aws-budgets]
+  lesson: aws-grundlagen/cloud-und-geteilte-verantwortung
+- slug: iaas
+  term: IaaS
+  short: Infrastructure as a Service – du mietest virtuelle Maschinen, Netze und Speicher und betreibst alles darüber selbst.
+  explanation: >
+    Der Anbieter kümmert sich um Hardware und Virtualisierung. Betriebssystem, Updates, Software und Daten sind
+    deine Aufgabe. IaaS gibt dir die meiste Kontrolle, aber auch die meiste Arbeit.
+  example: "EC2 ist ein IaaS-Dienst: Du bekommst einen virtuellen Server und installierst darauf, was du brauchst."
+  category: cloud
+  aliases: [Infrastructure as a Service]
+  related: [saas, ec2, cloud-computing]
+  lesson: aws-grundlagen/cloud-und-geteilte-verantwortung
+- slug: saas
+  term: SaaS
+  short: Software as a Service – fertige Programme, die du über das Internet nutzt, ohne sie zu betreiben.
+  explanation: >
+    Installation, Updates und Betrieb übernimmt der Anbieter komplett. Du kümmerst dich nur noch um deine Daten,
+    Benutzerkonten und Einstellungen.
+  example: "Ein Webmail-Dienst oder eine Office-Suite im Browser sind SaaS."
+  category: cloud
+  aliases: [Software as a Service]
+  related: [iaas, cloud-computing]
+  lesson: aws-grundlagen/cloud-und-geteilte-verantwortung
+- slug: shared-responsibility-modell
+  term: Modell der geteilten Verantwortung
+  short: Die Aufteilung der Sicherheit zwischen Cloud-Anbieter (Sicherheit der Cloud) und Kunde (Sicherheit in der Cloud).
+  explanation: >
+    AWS schützt Rechenzentren, Hardware, Netz und Virtualisierung. Du schützt, was du darauf baust – Zugriffsrechte,
+    Netzregeln, Software und Daten. Je verwalteter ein Dienst ist, desto mehr übernimmt AWS.
+  example: "Bei EC2 patchst du das Betriebssystem selbst, bei RDS macht das AWS – die Datenbank-Rechte vergibst du in beiden Fällen."
+  category: cloud
+  aliases: [Shared Responsibility Model, geteilte Verantwortung]
+  related: [aws, iam, iaas]
+  lesson: aws-grundlagen/cloud-und-geteilte-verantwortung
+- slug: aws-free-tier
+  term: AWS Free Tier
+  short: Startguthaben und kostenlose Kontingente, mit denen neue AWS-Konten Dienste ausprobieren können.
+  explanation: >
+    Neue Konten bekommen Guthaben und können zwischen einem kostenlosen und einem bezahlten Kontoplan wählen. Einige
+    Dienste haben zusätzlich dauerhaft kostenlose Monatskontingente. Die genauen Beträge ändern sich, deshalb gilt
+    die aktuelle Billing-Dokumentation.
+  example: "Ein Test mit einer kleinen EC2-Instanz wird mit dem Startguthaben des Free Tier verrechnet."
+  category: cloud
+  aliases: [Free Tier, kostenloses Kontingent]
+  related: [pay-as-you-go, aws-budgets]
+  lesson: aws-grundlagen/cloud-und-geteilte-verantwortung
+- slug: region
+  term: Region
+  short: Ein geografischer Standort, an dem AWS mehrere voneinander getrennte Rechenzentren betreibt.
+  explanation: >
+    Jede Region hat einen Code wie `eu-central-1` (Frankfurt) und mindestens drei Verfügbarkeitszonen. Regionen
+    sind unabhängig voneinander; Daten verlassen eine Region nur, wenn du sie ausdrücklich kopierst.
+  example: "`aws s3 ls --region eu-central-1` schickt den Befehl an die Region Frankfurt."
+  category: cloud
+  aliases: [Regionen, AWS-Region]
+  related: [availability-zone, arn]
+  lesson: aws-grundlagen/regionen-und-verfuegbarkeitszonen
+- slug: availability-zone
+  term: Verfügbarkeitszone
+  short: Ein oder mehrere Rechenzentren mit eigener Strom- und Netzversorgung innerhalb einer Region.
+  explanation: >
+    Die Zonen einer Region liegen räumlich getrennt, sind aber schnell miteinander verbunden. Wer eine Anwendung auf
+    mindestens zwei Zonen verteilt, übersteht den Ausfall eines ganzen Rechenzentrums.
+  example: "`eu-central-1a`, `eu-central-1b` und `eu-central-1c` sind Zonen der Region Frankfurt."
+  category: cloud
+  aliases: [Availability Zone, AZ, Verfügbarkeitszonen, Availability Zones]
+  related: [region, multi-az, subnetz]
+  lesson: aws-grundlagen/regionen-und-verfuegbarkeitszonen
+- slug: arn
+  term: ARN
+  short: Amazon Resource Name – die weltweit eindeutige Adresse einer AWS-Ressource.
+  explanation: >
+    Eine ARN hat die Form `arn:partition:dienst:region:konto-id:ressource`. Felder, die für einen Dienst keine Rolle
+    spielen, bleiben leer – bei IAM etwa die Region. ARNs stehen in Policies und Fehlermeldungen.
+  example: "`arn:aws:iam::123456789012:role/deploy` ist die ARN der Rolle deploy."
+  category: cloud
+  aliases: [ARNs, Amazon Resource Name]
+  related: [iam-policy, region]
+  lesson: aws-grundlagen/regionen-und-verfuegbarkeitszonen
+- slug: aws-konto
+  term: AWS-Konto
+  short: Ein abgeschlossener Container für AWS-Ressourcen, Rechte und Rechnungen mit einer zwölfstelligen ID.
+  explanation: >
+    Ressourcen eines Kontos sind für andere Konten unsichtbar, solange nichts freigegeben wird. Viele Teams nutzen
+    ein Konto pro Umgebung, damit Fehler in der Entwicklung die Produktion nicht treffen.
+  example: "Das Produktionskonto hat die ID `123456789012`, das Entwicklungskonto `210987654321`."
+  category: cloud
+  aliases: [AWS-Konten, AWS Account, Konto-ID]
+  related: [root-benutzer, aws-organizations]
+  lesson: aws-grundlagen/das-konto-absichern
+- slug: root-benutzer
+  term: Root-Benutzer
+  short: Die Identität mit der E-Mail-Adresse, mit der ein AWS-Konto angelegt wurde – mit uneingeschränkten Rechten.
+  explanation: >
+    Der Root-Benutzer darf alles, und seine Rechte lassen sich im eigenen Konto nicht beschränken. Deshalb bekommt er
+    ein starkes Passwort, MFA und keine Access Keys und wird nur für die wenigen Aufgaben genutzt, die ihn erfordern.
+  example: "Das Konto schließen oder die Root-E-Mail-Adresse ändern kann nur der Root-Benutzer."
+  category: sicherheit
+  aliases: [Root User, Root-Konto]
+  related: [aws-konto, iam-identity-center, access-key]
+  lesson: aws-grundlagen/das-konto-absichern
+- slug: aws-organizations
+  term: AWS Organizations
+  short: Ein Dienst, der mehrere AWS-Konten zentral verwaltet, gruppiert und gemeinsam abrechnet.
+  explanation: >
+    Konten werden in Organisationseinheiten (OUs) sortiert. Über das Verwaltungskonto laufen Abrechnung und
+    Richtlinien wie Service Control Policies, die für ganze Gruppen von Konten gelten.
+  example: "Die OU Entwicklung enthält die Konten dev und sandbox, die OU Produktion das Konto prod."
+  category: cloud
+  aliases: [Organizations, Organisationseinheit, OU]
+  related: [service-control-policy, aws-konto]
+  lesson: aws-grundlagen/das-konto-absichern
+- slug: service-control-policy
+  term: Service Control Policy
+  short: Eine Richtlinie in AWS Organizations, die festlegt, was in den Konten einer Organisation höchstens erlaubt ist.
+  explanation: >
+    Eine SCP vergibt selbst keine Rechte, sondern setzt eine Obergrenze für alle Identitäten eines Kontos. Ein
+    expliziter Deny in einer SCP lässt sich durch keine Policy im Konto aufheben.
+  example: "Eine SCP verbietet alle Aktionen außerhalb von `eu-central-1` und `eu-west-1`."
+  category: sicherheit
+  aliases: [SCP, SCPs, Service Control Policies]
+  related: [aws-organizations, permissions-boundary, expliziter-deny]
+  lesson: aws-grundlagen/das-konto-absichern
+- slug: iam-identity-center
+  term: IAM Identity Center
+  short: Der AWS-Dienst für die zentrale Anmeldung von Menschen an einem oder mehreren AWS-Konten.
+  explanation: >
+    Personen melden sich einmal an (auch per Single Sign-On mit dem Firmen-Login) und bekommen für die freigegebenen
+    Konten Berechtigungssätze. Dabei entstehen nur kurzlebige Zugangsdaten. Früher hieß der Dienst AWS SSO.
+  example: "`aws sso login --profile dev` meldet dich über IAM Identity Center an."
+  category: sicherheit
+  aliases: [Identity Center, AWS SSO]
+  related: [iam, kurzlebige-zugangsdaten, aws-profil]
+  lesson: aws-grundlagen/das-konto-absichern
+- slug: iam
+  term: IAM
+  short: Identity and Access Management – der AWS-Dienst, der bei jeder Anfrage entscheidet, wer was darf.
+  explanation: >
+    In IAM verwaltest du Identitäten (Benutzer, Gruppen, Rollen) und Policies. Jede Anfrage an AWS wird gegen diese
+    Regeln geprüft. IAM ist ein globaler Dienst und kostet nichts extra.
+  example: "Die Rolle deploy bekommt in IAM eine Policy, die nur das Hochladen in einen Bucket erlaubt."
+  category: sicherheit
+  aliases: [Identity and Access Management, AWS IAM]
+  related: [iam-policy, iam-rolle, principal]
+  lesson: aws-grundlagen/identitaeten-und-zugangsdaten
+- slug: principal
+  term: Principal
+  short: Die Identität, die eine Anfrage an AWS stellt – etwa ein Benutzer, eine Rolle oder ein AWS-Dienst.
+  explanation: >
+    IAM prüft für jede Anfrage, welcher Principal sie stellt, welche Aktion er ausführen will und auf welcher
+    Ressource. In ressourcenbasierten Policies steht der Principal ausdrücklich im Element `Principal`.
+  example: "`\"Principal\": { \"AWS\": \"arn:aws:iam::123456789012:role/app\" }` in einer Bucket-Policy."
+  category: sicherheit
+  aliases: [Principals]
+  related: [iam, ressourcenbasierte-policy]
+  lesson: aws-grundlagen/identitaeten-und-zugangsdaten
+- slug: iam-benutzer
+  term: IAM-Benutzer
+  short: Eine Identität in IAM mit dauerhaften Zugangsdaten wie Passwort und Access Keys.
+  explanation: >
+    IAM-Benutzer waren früher der Standard für Personen und Anwendungen. Weil ihre Zugangsdaten nicht ablaufen,
+    empfiehlt AWS heute IAM Identity Center für Menschen und Rollen für Anwendungen.
+  example: "Ein altes Skript nutzt noch den IAM-Benutzer `ci-deploy` mit einem Access Key."
+  category: sicherheit
+  aliases: [IAM User, IAM-Benutzerin]
+  related: [iam-gruppe, iam-rolle, access-key]
+  lesson: aws-grundlagen/identitaeten-und-zugangsdaten
+- slug: iam-gruppe
+  term: IAM-Gruppe
+  short: Eine Sammlung von IAM-Benutzern, die gemeinsam dieselben Policies bekommen.
+  explanation: >
+    Statt Rechte jedem Benutzer einzeln zu geben, hängst du die Policy an die Gruppe. Eine Gruppe kann sich nicht
+    selbst anmelden und ist kein Principal.
+  example: "Alle Admins sind in der Gruppe `admins`, an der die Policy AdministratorAccess hängt."
+  category: sicherheit
+  aliases: [IAM-Gruppen, IAM Group]
+  related: [iam-benutzer, iam-policy]
+  lesson: aws-grundlagen/identitaeten-und-zugangsdaten
+- slug: iam-rolle
+  term: IAM-Rolle
+  short: Eine IAM-Identität ohne dauerhafte Zugangsdaten, die man übernimmt und dafür temporäre Zugangsdaten bekommt.
+  explanation: >
+    Eine Rolle hat eine Vertrauensrichtlinie, die festlegt, wer sie übernehmen darf, und Berechtigungen, die während
+    der Übernahme gelten. Dienste wie EC2, Lambda oder CI-Pipelines arbeiten typischerweise mit Rollen.
+  example: "Die EC2-Instanz der App übernimmt über ein Instanzprofil die Rolle `app` und darf damit aus S3 lesen."
+  category: sicherheit
+  aliases: [IAM-Rollen, IAM Role, Rolle]
+  related: [aws-sts, kurzlebige-zugangsdaten, instanzprofil]
+  lesson: aws-grundlagen/identitaeten-und-zugangsdaten
+- slug: access-key
+  term: Access Key
+  short: Ein dauerhaftes Schlüsselpaar aus Key-ID und geheimem Schlüssel, mit dem Programme sich bei AWS anmelden.
+  explanation: >
+    Access Keys gehören zu einem IAM-Benutzer und gelten, bis jemand sie löscht. Gelangen sie in Git oder Logs, kann
+    jeder damit im Namen des Benutzers handeln. Deshalb ersetzt man sie, wo möglich, durch Rollen und kurzlebige
+    Zugangsdaten.
+  example: "Eine Key-ID für dauerhafte Schlüssel beginnt mit `AKIA`, das Secret wird nur einmal beim Anlegen angezeigt."
+  category: sicherheit
+  aliases: [Access Keys, Zugriffsschlüssel]
+  related: [iam-benutzer, kurzlebige-zugangsdaten, secret]
+  lesson: aws-grundlagen/identitaeten-und-zugangsdaten
+- slug: aws-sts
+  term: AWS STS
+  short: Security Token Service – der AWS-Dienst, der temporäre Zugangsdaten ausstellt.
+  explanation: >
+    Wer eine Rolle übernimmt oder sich über IAM Identity Center anmeldet, bekommt von STS zeitlich begrenzte
+    Zugangsdaten. Mit `aws sts get-caller-identity` prüfst du, als wer du gerade angemeldet bist.
+  example: "`aws sts assume-role --role-arn arn:aws:iam::123456789012:role/deploy --role-session-name test`"
+  category: sicherheit
+  aliases: [STS, Security Token Service]
+  related: [kurzlebige-zugangsdaten, iam-rolle]
+  lesson: aws-grundlagen/identitaeten-und-zugangsdaten
+- slug: aws-cli
+  term: AWS CLI
+  short: Das offizielle Kommandozeilenwerkzeug, mit dem du AWS-Dienste per Befehl steuerst.
+  explanation: >
+    Befehle folgen dem Muster `aws <dienst> <befehl> [optionen]`. Die CLI liest Profile aus `~/.aws/config`, kann sich
+    über IAM Identity Center anmelden und Ausgaben mit `--query` filtern.
+  example: "`aws s3 ls --profile dev` listet die Buckets im Konto des Profils dev."
+  category: cloud
+  aliases: [aws-Befehl, AWS-CLI]
+  related: [aws-profil, iam-identity-center]
+  lesson: aws-grundlagen/identitaeten-und-zugangsdaten
+- slug: aws-profil
+  term: AWS-Profil
+  short: Ein benannter Satz von Einstellungen in `~/.aws/config`, etwa für ein bestimmtes Konto und eine Rolle.
+  explanation: >
+    Mit Profilen wechselst du schnell zwischen Konten und Rollen, ohne Zugangsdaten zu kopieren. Ausgewählt wird ein
+    Profil mit `--profile` oder der Umgebungsvariable `AWS_PROFILE`.
+  example: "`[profile prod]` mit `sso_account_id = 210987654321` und `sso_role_name = ReadOnlyAccess`."
+  category: cloud
+  aliases: [Profil, AWS-Profile, Named Profile]
+  related: [aws-cli, iam-identity-center]
+  lesson: aws-grundlagen/identitaeten-und-zugangsdaten
+- slug: iam-policy
+  term: IAM-Policy
+  short: Ein JSON-Dokument, das festlegt, welche Aktionen auf welchen Ressourcen erlaubt oder verboten sind.
+  explanation: >
+    Eine Policy besteht aus Statements mit Effect, Action, Resource und optional Condition. Sie hängt an einer
+    Identität oder an einer Ressource und wird bei jeder Anfrage ausgewertet.
+  example: "`{ \"Effect\": \"Allow\", \"Action\": \"s3:GetObject\", \"Resource\": \"arn:aws:s3:::example-reports/*\" }`"
+  category: sicherheit
+  aliases: [Policy, Policies, IAM-Policies, Richtlinie]
+  related: [iam, arn, least-privilege]
+  lesson: aws-grundlagen/policies-als-json
+- slug: identitaetsbasierte-policy
+  term: Identitätsbasierte Policy
+  short: Eine Policy, die an einem IAM-Benutzer, einer Gruppe oder einer Rolle hängt.
+  explanation: >
+    Sie legt fest, was diese Identität tun darf. Ein `Principal`-Element braucht sie nicht, weil sich aus der
+    Zuordnung ergibt, für wen sie gilt.
+  example: "Die Rolle deploy hat eine identitätsbasierte Policy, die `s3:PutObject` auf einem Bucket erlaubt."
+  category: sicherheit
+  aliases: [identitätsbasierte Policies, Identity-based Policy]
+  related: [ressourcenbasierte-policy, iam-policy, managed-policy]
+  lesson: aws-grundlagen/policies-als-json
+- slug: ressourcenbasierte-policy
+  term: Ressourcenbasierte Policy
+  short: Eine Policy, die direkt an einer Ressource hängt und mit `Principal` angibt, wem sie etwas erlaubt.
+  explanation: >
+    Typische Beispiele sind Bucket-Policies in S3 oder Policies an KMS-Schlüsseln und SQS-Queues. Im selben Konto
+    reicht ein Allow aus einer identitäts- oder einer ressourcenbasierten Policy.
+  example: "Eine Bucket-Policy erlaubt der Rolle `app` das Lesen aller Objekte."
+  category: sicherheit
+  aliases: [ressourcenbasierte Policies, Resource-based Policy]
+  related: [identitaetsbasierte-policy, bucket-policy, principal]
+  lesson: aws-grundlagen/policies-als-json
+- slug: managed-policy
+  term: Managed Policy
+  short: Eine eigenständige IAM-Policy, die an mehrere Identitäten gehängt werden kann – von AWS vorgefertigt oder selbst verwaltet.
+  explanation: >
+    AWS-verwaltete Policies wie `ReadOnlyAccess` decken häufige Fälle ab, sind aber oft breit. Selbst verwaltete
+    Managed Policies schreibst du genau passend und kannst sie wiederverwenden und versionieren. Inline-Policies
+    gehören dagegen fest zu genau einer Identität.
+  example: "Die selbst verwaltete Policy `website-deploy` hängt an den Rollen für Staging und Produktion."
+  category: sicherheit
+  aliases: [Managed Policies, AWS-verwaltete Policy, Inline-Policy]
+  related: [iam-policy, identitaetsbasierte-policy]
+  lesson: aws-grundlagen/policies-als-json
+- slug: impliziter-deny
+  term: Impliziter Deny
+  short: Die Standardentscheidung von IAM – was nirgends ausdrücklich erlaubt ist, wird abgelehnt.
+  explanation: >
+    Jede Anfrage beginnt mit „abgelehnt“. Erst ein passendes Allow ändert das. Eine neue Rolle ohne Policies darf
+    deshalb nichts.
+  example: "Eine Rolle mit nur S3-Rechten ruft `ec2:RunInstances` auf und wird implizit abgelehnt."
+  category: sicherheit
+  aliases: [implicit deny, implizite Ablehnung]
+  related: [expliziter-deny, deny-by-default]
+  lesson: aws-grundlagen/policy-auswertung
+- slug: expliziter-deny
+  term: Expliziter Deny
+  short: 'Ein passendes Statement mit `"Effect": "Deny"` – es überstimmt jedes Allow.'
+  explanation: >
+    Egal in welcher Policy und in welcher Reihenfolge: Passt ein Deny zur Anfrage, wird sie abgelehnt. Deshalb eignen
+    sich Deny-Statements für harte Grenzen wie „nie außerhalb der EU“.
+  example: "`{ \"Effect\": \"Deny\", \"Action\": \"s3:DeleteObject\", \"Resource\": \"arn:aws:s3:::example-backups/*\" }`"
+  category: sicherheit
+  aliases: [explicit deny, explizite Ablehnung]
+  related: [impliziter-deny, service-control-policy]
+  lesson: aws-grundlagen/policy-auswertung
+- slug: permissions-boundary
+  term: Permissions Boundary
+  short: Eine Policy an einer Rolle oder einem Benutzer, die festlegt, was diese Identität höchstens dürfen kann.
+  explanation: >
+    Die Boundary vergibt keine Rechte. Erlaubt ist nur, was sowohl die Boundary als auch die normalen Policies
+    erlauben – die Schnittmenge. Damit können Teams Rollen anlegen lassen, ohne dass diese mehr Rechte bekommen
+    als vorgesehen.
+  example: "Alle Rollen, die das Entwicklerteam anlegt, haben eine Boundary, die IAM-Änderungen ausschließt."
+  category: sicherheit
+  aliases: [Permissions Boundaries, Berechtigungsgrenze]
+  related: [service-control-policy, iam-policy]
+  lesson: aws-grundlagen/policy-auswertung
+- slug: internet-gateway
+  term: Internet-Gateway
+  short: Der AWS-Baustein, der eine VPC in beide Richtungen mit dem Internet verbindet.
+  explanation: >
+    Ein Subnetz, dessen Routing-Tabelle `0.0.0.0/0` an ein Internet-Gateway schickt, ist öffentlich. Ressourcen darin
+    brauchen zusätzlich eine öffentliche IP-Adresse, um erreichbar zu sein.
+  example: "Die Route `0.0.0.0/0 → igw-0example` macht ein Subnetz öffentlich."
+  category: cloud
+  aliases: [Internet Gateway, IGW]
+  related: [vpc, nat-gateway, routing-tabelle]
+  lesson: aws-grundlagen/vpc-aufbauen
+- slug: network-acl
+  term: Network ACL
+  short: Eine stateless Firewall auf Subnetz-Ebene in einer VPC mit nummerierten Allow- und Deny-Regeln.
+  explanation: >
+    Regeln werden in aufsteigender Nummer geprüft, die erste passende entscheidet. Weil eine NACL sich keine
+    Verbindungen merkt, braucht sie auch Regeln für den Rückweg über flüchtige Ports.
+  example: "Regel 90 sperrt `203.0.113.0/24` komplett, Regel 100 erlaubt TCP 443 von überall."
+  category: netzwerk
+  aliases: [NACL, NACLs, Network Access Control List, Netzwerk-ACL]
+  related: [security-group, subnetz, ephemerer-port]
+  lesson: aws-grundlagen/security-groups-und-nacls
+- slug: ec2
+  term: EC2
+  short: Elastic Compute Cloud – der AWS-Dienst für virtuelle Server, genannt Instanzen.
+  explanation: >
+    Eine Instanz entsteht aus einem AMI, einem Instanztyp, einem EBS-Volume, einem Subnetz und einer Security Group.
+    Betriebssystem und Software verwaltest du selbst.
+  example: "`aws ec2 run-instances --image-id ami-0example1234567890 --instance-type t4g.micro …`"
+  category: cloud
+  aliases: [Amazon EC2, EC2-Instanz, Instanz, Instanzen]
+  related: [ami, instanztyp, ebs, iaas]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: ami
+  term: AMI
+  short: Amazon Machine Image – die Vorlage mit Betriebssystem und Software, aus der eine EC2-Instanz startet.
+  explanation: >
+    AWS und andere Anbieter stellen fertige AMIs bereit, etwa mit Ubuntu oder Amazon Linux. Du kannst auch eigene
+    AMIs mit vorinstallierter Software erstellen. AMI-IDs unterscheiden sich je Region.
+  example: "`--image-id ami-0example1234567890` wählt das AMI beim Start einer Instanz."
+  category: cloud
+  aliases: [AMIs, Amazon Machine Image]
+  related: [ec2, user-data]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: instanztyp
+  term: Instanztyp
+  short: Die Größe einer EC2-Instanz – Anzahl der CPUs, Arbeitsspeicher und Netzwerkleistung.
+  explanation: >
+    Der Name verrät die Familie, die Generation und die Größe: `t` für günstige Typen mit Leistungsreserve, `m` für
+    Allzweck, `c` für viel CPU, `r` für viel Arbeitsspeicher. Ein `g` steht für ARM-Prozessoren von AWS.
+  example: "`t4g.micro` ist ein kleiner ARM-Typ, `m7i.large` ein Allzweck-Typ mit Intel-Prozessor."
+  category: cloud
+  aliases: [Instanztypen, Instance Type]
+  related: [ec2]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: ebs
+  term: EBS
+  short: Elastic Block Store – Festplatten für EC2-Instanzen, die über das Netz angebunden sind.
+  explanation: >
+    Ein EBS-Volume liegt in einer Verfügbarkeitszone und kann gesichert werden (Snapshots). Es kostet, solange es
+    existiert – auch wenn die Instanz angehalten ist.
+  example: "Eine Instanz hat ein Root-Volume mit 20 GB vom Typ `gp3`."
+  category: cloud
+  aliases: [EBS-Volume, EBS-Volumes, Elastic Block Store]
+  related: [ec2, availability-zone]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: user-data
+  term: User Data
+  short: Ein Skript, das eine EC2-Instanz beim ersten Start automatisch ausführt.
+  explanation: >
+    Damit installierst du Pakete oder lädst Konfigurationen, ohne dich auf die Instanz einzuloggen. User Data ist für
+    die Instanz lesbar, deshalb gehören keine Passwörter hinein.
+  example: "Ein User-Data-Skript führt `apt-get install -y nginx` beim ersten Start aus."
+  category: cloud
+  aliases: [User-Data, Benutzerdaten]
+  related: [ec2, ami]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: instanzprofil
+  term: Instanzprofil
+  short: Der Behälter, über den eine IAM-Rolle an eine EC2-Instanz gehängt wird.
+  explanation: >
+    Die Instanz bekommt dadurch automatisch temporäre Zugangsdaten der Rolle über den Metadaten-Dienst. Anwendungen
+    und SDKs nutzen sie ohne jede Konfiguration – Access Keys auf dem Server sind überflüssig.
+  example: "`--iam-instance-profile Name=app-profile` beim Start einer Instanz."
+  category: sicherheit
+  aliases: [Instance Profile, Instanzprofile]
+  related: [iam-rolle, ec2, cloud-metadaten-dienst]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: ssm-session-manager
+  term: Session Manager
+  short: Ein Teil von AWS Systems Manager, der eine Shell auf einer Instanz öffnet – ohne offenen SSH-Port und ohne Schlüssel.
+  explanation: >
+    Die Verbindung läuft über die AWS-API und wird mit IAM-Rechten gesteuert und protokolliert. So können Server in
+    privaten Subnetzen ohne Bastion-Host und ohne Port 22 verwaltet werden.
+  example: "`aws ssm start-session --target i-0123456789abcdef0`"
+  category: cloud
+  aliases: [Systems Manager Session Manager, SSM]
+  related: [ec2, bastion-host, iam-rolle]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: rds
+  term: RDS
+  short: Relational Database Service – verwaltete relationale Datenbanken wie PostgreSQL oder MySQL bei AWS.
+  explanation: >
+    AWS übernimmt Installation, Updates, Backups und auf Wunsch das automatische Umschalten bei Ausfällen. Schema,
+    Daten und Zugriffsrechte bleiben deine Aufgabe.
+  example: "Eine PostgreSQL-Datenbank in RDS ist für die App unter einem Endpunkt auf Port 5432 erreichbar."
+  category: datenbanken
+  aliases: [Amazon RDS, RDS-Datenbank]
+  related: [multi-az, lesereplikat, postgresql]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: multi-az
+  term: Multi-AZ
+  short: Eine RDS-Einstellung, bei der eine synchrone Standby-Kopie der Datenbank in einer anderen Verfügbarkeitszone läuft.
+  explanation: >
+    Fällt die Hauptinstanz oder ihre Zone aus, schaltet RDS automatisch auf die Standby-Kopie um. Die App verbindet
+    sich weiter mit demselben Endpunkt.
+  example: "Eine produktive Datenbank läuft mit Multi-AZ in `eu-central-1a` und `eu-central-1b`."
+  category: datenbanken
+  aliases: [Multi-AZ-Bereitstellung, Multi AZ]
+  related: [rds, availability-zone]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: lesereplikat
+  term: Lesereplikat
+  short: Eine zusätzliche Kopie einer Datenbank, die nur Lesezugriffe bedient und so die Hauptinstanz entlastet.
+  explanation: >
+    Änderungen werden von der Hauptinstanz auf das Replikat übertragen, mit kurzer Verzögerung. Die App schickt
+    zum Beispiel Berichte und Suchen an das Replikat, Schreibzugriffe weiter an die Hauptinstanz.
+  example: "Das Reporting-Dashboard liest aus einem Lesereplikat der RDS-Datenbank."
+  category: datenbanken
+  aliases: [Lesereplikate, Read Replica, Read Replicas]
+  related: [rds, multi-az]
+  lesson: aws-grundlagen/ec2-und-rds
+- slug: s3
+  term: S3
+  short: Simple Storage Service – der AWS-Dienst, der Dateien als Objekte in Buckets speichert.
+  explanation: >
+    S3 ist ein verwalteter, praktisch unbegrenzter Speicher. Zugriffe steuerst du über IAM-Policies, Bucket-Policies
+    und Block Public Access. Neue Objekte werden automatisch verschlüsselt gespeichert.
+  example: "`aws s3 cp bericht.pdf s3://example-docs-123456789012/berichte/` lädt eine Datei hoch."
+  category: cloud
+  aliases: [Amazon S3, Simple Storage Service]
+  related: [bucket, s3-objekt, presigned-url]
+  lesson: aws-grundlagen/s3-buckets-und-objekte
+- slug: bucket
+  term: Bucket
+  short: Ein Behälter für Objekte in S3 mit einem weltweit eindeutigen Namen, der zu einer Region gehört.
+  explanation: >
+    Rechte, Versionierung und Block Public Access stellst du pro Bucket ein. Weil der Name über alle Konten hinweg
+    eindeutig sein muss, hängen viele Teams Projekt oder Konto-ID an.
+  example: "`example-docs-123456789012` ist ein Bucket in `eu-central-1`."
+  category: cloud
+  aliases: [Buckets, S3-Bucket, S3-Buckets]
+  related: [s3, bucket-policy, block-public-access]
+  lesson: aws-grundlagen/s3-buckets-und-objekte
+- slug: s3-objekt
+  term: S3-Objekt
+  short: Eine in S3 gespeicherte Datei samt Metadaten, adressiert über ihren Schlüssel.
+  explanation: >
+    Der Schlüssel ist der vollständige Name, etwa `berichte/2026/oktober.pdf`. Echte Ordner gibt es nicht – Teile
+    vor einem `/` sind nur Präfixe, die die Konsole wie Ordner anzeigt.
+  example: "Das Objekt mit dem Schlüssel `uploads/avatar-42.png` im Bucket `example-uploads-123456789012`."
+  category: cloud
+  aliases: [Objekt, Objekte, S3-Objekte, Objektschlüssel, Key]
+  related: [s3, bucket]
+  lesson: aws-grundlagen/s3-buckets-und-objekte
+- slug: block-public-access
+  term: Block Public Access
+  short: Vier S3-Einstellungen, die öffentlichen Zugriff über ACLs und Bucket-Policies verhindern – pro Bucket oder für das ganze Konto.
+  explanation: >
+    Die Einstellungen heißen BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy und RestrictPublicBuckets. Sie
+    überstimmen Policies und ACLs, die etwas öffentlich machen würden, und sind bei neuen Buckets eingeschaltet.
+  example: "`aws s3api put-public-access-block --bucket example-docs-123456789012 --public-access-block-configuration file://public-access-block.json`"
+  category: sicherheit
+  aliases: [S3 Block Public Access, öffentlichen Zugriff blockieren]
+  related: [bucket, bucket-policy]
+  lesson: aws-grundlagen/s3-buckets-und-objekte
+- slug: bucket-policy
+  term: Bucket-Policy
+  short: Eine ressourcenbasierte Policy direkt an einem S3-Bucket.
+  explanation: >
+    Sie legt mit `Principal` fest, wer auf den Bucket und seine Objekte zugreifen darf, und kann Bedingungen
+    erzwingen – etwa, dass nur verschlüsselte Verbindungen erlaubt sind.
+  example: "Ein Deny für `\"aws:SecureTransport\": \"false\"` verbietet alle Zugriffe ohne TLS."
+  category: sicherheit
+  aliases: [Bucket-Policies, Bucket Policy]
+  related: [ressourcenbasierte-policy, bucket, block-public-access]
+  lesson: aws-grundlagen/s3-buckets-und-objekte
+- slug: s3-versionierung
+  term: S3-Versionierung
+  short: Eine Bucket-Einstellung, bei der S3 beim Überschreiben oder Löschen alte Stände eines Objekts aufbewahrt.
+  explanation: >
+    So lassen sich versehentlich überschriebene oder gelöschte Dateien wiederherstellen. Alte Versionen kosten
+    Speicherplatz; Lebenszyklus-Regeln können sie nach einiger Zeit entfernen.
+  example: "`VersioningConfiguration: { Status: Enabled }` in einem CloudFormation-Template."
+  category: cloud
+  aliases: [Versionierung, Bucket-Versionierung]
+  related: [bucket, s3-objekt]
+  lesson: aws-grundlagen/s3-buckets-und-objekte
+- slug: presigned-url
+  term: Presigned URL
+  short: Ein signierter, zeitlich begrenzter Link, mit dem jemand ohne eigene AWS-Zugangsdaten genau ein S3-Objekt lesen oder hochladen kann.
+  explanation: >
+    Die URL enthält eine Signatur mit den Zugangsdaten der Person, die sie erzeugt hat. Sie gilt bis zum Ablauf –
+    höchstens 7 Tage und nie länger als die verwendeten Zugangsdaten. Wer den Link hat, kann ihn nutzen.
+  example: "`aws s3 presign s3://example-docs-123456789012/bericht.pdf --expires-in 3600`"
+  category: sicherheit
+  aliases: [Presigned URLs, vorsignierte URL, signierte URL]
+  related: [s3, s3-objekt, kurzlebige-zugangsdaten]
+  lesson: aws-grundlagen/s3-buckets-und-objekte
+- slug: cloudwatch
+  term: CloudWatch
+  short: Der Überwachungsdienst von AWS für Metriken, Logs und Alarme.
+  explanation: >
+    Viele AWS-Dienste schicken ihre Metriken automatisch an CloudWatch. Anwendungen schreiben Logs in Log-Gruppen,
+    und Alarme lösen bei Schwellwerten Aktionen wie E-Mails aus.
+  example: "Die Metrik `CPUUtilization` im Namespace `AWS/EC2` zeigt die CPU-Auslastung einer Instanz."
+  category: observability
+  aliases: [Amazon CloudWatch, CloudWatch Logs, Log-Gruppe]
+  related: [cloudwatch-alarm, amazon-sns]
+  lesson: aws-grundlagen/cloudwatch-und-kosten
+- slug: cloudwatch-alarm
+  term: CloudWatch-Alarm
+  short: Eine Regel, die eine CloudWatch-Metrik beobachtet und bei einem Schwellwert eine Aktion auslöst.
+  explanation: >
+    Ein Alarm hat die Zustände OK, ALARM und INSUFFICIENT_DATA. Zeitraum und Anzahl der Zeiträume legen fest, wie
+    lange der Schwellwert überschritten sein muss, bevor er auslöst.
+  example: "CPU zwei Mal fünf Minuten über 80 % → Nachricht an das SNS-Thema `ops-alarme`."
+  category: observability
+  aliases: [CloudWatch-Alarme, Alarm]
+  related: [cloudwatch, amazon-sns]
+  lesson: aws-grundlagen/cloudwatch-und-kosten
+- slug: amazon-sns
+  term: Amazon SNS
+  short: Simple Notification Service – ein AWS-Dienst, der Nachrichten an viele Empfänger wie E-Mail-Adressen oder andere Dienste verteilt.
+  explanation: >
+    Nachrichten werden an ein Thema (Topic) geschickt, und alle Abonnenten bekommen sie. CloudWatch-Alarme nutzen
+    SNS häufig, um Benachrichtigungen zu verschicken.
+  example: "Das Thema `arn:aws:sns:eu-central-1:123456789012:ops-alarme` verschickt Alarme per E-Mail an das Team."
+  category: cloud
+  aliases: [SNS, SNS-Thema, SNS Topic]
+  related: [cloudwatch-alarm]
+  lesson: aws-grundlagen/cloudwatch-und-kosten
+- slug: cost-explorer
+  term: Cost Explorer
+  short: Ein AWS-Werkzeug, das Kosten nach Dienst, Region, Konto oder Tag aufschlüsselt und Verläufe zeigt.
+  explanation: >
+    Damit findest du heraus, wofür das Geld ausgegeben wird, und erkennst Trends früh. Mit Tags wie `projekt` lassen
+    sich Kosten einzelnen Projekten zuordnen.
+  example: "Im Cost Explorer zeigt die Gruppierung nach Tag `projekt`, dass `shop` 120 USD im Monat kostet."
+  category: cloud
+  aliases: [AWS Cost Explorer]
+  related: [aws-budgets, pay-as-you-go]
+  lesson: aws-grundlagen/cloudwatch-und-kosten
+- slug: aws-budgets
+  term: AWS Budgets
+  short: Ein AWS-Dienst, der Kosten mit einem festgelegten Betrag vergleicht und bei Schwellwerten benachrichtigt.
+  explanation: >
+    Benachrichtigungen gibt es für tatsächliche (ACTUAL) und prognostizierte (FORECASTED) Kosten. Ein Budget stoppt
+    keine Ressourcen von selbst – es warnt nur.
+  example: "Budget `dev-monatlich` über 50 USD mit E-Mail bei 80 % tatsächlicher Kosten."
+  category: cloud
+  aliases: [Budget, Budgets, Kostenbudget]
+  related: [cost-explorer, pay-as-you-go]
+  lesson: aws-grundlagen/cloudwatch-und-kosten
+- slug: infrastructure-as-code
+  term: Infrastruktur als Code
+  short: Infrastruktur wie Netze, Server und Rechte in Textdateien beschreiben und von einem Werkzeug anlegen lassen.
+  explanation: >
+    Die Dateien liegen in Git, jede Änderung geht durch ein Review und lässt sich wiederholen. Werkzeuge wie
+    CloudFormation, Terraform oder OpenTofu gleichen die Beschreibung mit der Wirklichkeit ab.
+  example: "Ein Template beschreibt einen Bucket; dasselbe Template erzeugt ihn in Staging und Produktion."
+  category: deployment
+  aliases: [Infrastructure as Code, IaC]
+  related: [cloudformation, terraform]
+  lesson: aws-grundlagen/cli-und-infrastruktur-als-code
+- slug: cloudformation
+  term: CloudFormation
+  short: Der AWS-Dienst für Infrastruktur als Code, der Templates in YAML oder JSON als Stacks ausrollt.
+  explanation: >
+    Ein Template beschreibt Ressourcen mit logischer ID, Typ und Eigenschaften. CloudFormation legt sie in der
+    richtigen Reihenfolge an, zeigt Änderungen vorab als Change Set und erkennt Abweichungen (Drift).
+  example: "`aws cloudformation deploy --template-file bucket.yaml --stack-name docs-bucket`"
+  category: deployment
+  aliases: [AWS CloudFormation, CloudFormation-Template, Template]
+  related: [cloudformation-stack, infrastructure-as-code]
+  lesson: aws-grundlagen/cli-und-infrastruktur-als-code
+- slug: cloudformation-stack
+  term: Stack
+  short: Eine ausgerollte Instanz eines CloudFormation-Templates, deren Ressourcen gemeinsam verwaltet werden.
+  explanation: >
+    Ändert sich das Template, aktualisiert CloudFormation den Stack. Wird der Stack gelöscht, löscht CloudFormation
+    auch seine Ressourcen – außer denen mit `DeletionPolicy: Retain`.
+  example: "Der Stack `docs-bucket` enthält den Bucket `example-docs-123456789012`."
+  category: deployment
+  aliases: [Stacks, CloudFormation-Stack, Change Set]
+  related: [cloudformation]
+  lesson: aws-grundlagen/cli-und-infrastruktur-als-code
+- slug: terraform
+  term: Terraform
+  short: Ein verbreitetes Werkzeug für Infrastruktur als Code, das mit vielen Cloud-Anbietern funktioniert.
+  explanation: >
+    Ressourcen werden in der Sprache HCL beschrieben; `plan` zeigt geplante Änderungen, `apply` führt sie aus.
+    OpenTofu ist ein quelloffener Ableger mit nahezu gleicher Bedienung (`tofu plan`, `tofu apply`).
+  example: "`resource \"aws_s3_bucket\" \"docs\" { bucket = \"example-docs-123456789012\" }`"
+  category: deployment
+  aliases: [OpenTofu, HCL]
+  related: [infrastructure-as-code, cloudformation]
+  lesson: aws-grundlagen/cli-und-infrastruktur-als-code

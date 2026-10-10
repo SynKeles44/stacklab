@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 430" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="400" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Modell der geteilten Verantwortung</text>
+<rect x="30" y="55" width="740" height="190" rx="16" fill="#22d3ee" fill-opacity=".1" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="50" y="84" font-size="16" font-weight="700" fill="#0e7490">Du – Sicherheit IN der Cloud</text>
+<rect x="50" y="100" width="340" height="56" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="220" y="124" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Deine Daten</text>
+<text x="220" y="144" text-anchor="middle" font-size="12" fill="#475569">Verschlüsselung, Backups, Klassifizierung</text>
+<rect x="410" y="100" width="340" height="56" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="580" y="124" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Identitäten und Rechte</text>
+<text x="580" y="144" text-anchor="middle" font-size="12" fill="#475569">IAM-Rollen, Policies, MFA</text>
+<rect x="50" y="170" width="340" height="56" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="220" y="194" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Netz-Konfiguration</text>
+<text x="220" y="214" text-anchor="middle" font-size="12" fill="#475569">Security Groups, Network ACLs, Routing</text>
+<rect x="410" y="170" width="340" height="56" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+<text x="580" y="194" text-anchor="middle" font-size="14" font-weight="600" fill="#1e1b3a">Betriebssystem und Software</text>
+<text x="580" y="214" text-anchor="middle" font-size="12" fill="#475569">bei EC2: Updates, Pakete, deine App</text>
+<rect x="30" y="265" width="740" height="140" rx="16" fill="#f59e0b" fill-opacity=".1" stroke="#f59e0b" stroke-width="2.5"/>
+<text x="50" y="294" font-size="16" font-weight="700" fill="#b45309">AWS – Sicherheit DER Cloud</text>
+<rect x="50" y="310" width="165" height="76" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+<text x="132" y="343" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a">Rechenzentren</text>
+<text x="132" y="363" text-anchor="middle" font-size="12" fill="#475569">Zutritt, Strom, Kühlung</text>
+<rect x="228" y="310" width="165" height="76" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+<text x="310" y="343" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a">Hardware</text>
+<text x="310" y="363" text-anchor="middle" font-size="12" fill="#475569">Server, Festplatten</text>
+<rect x="406" y="310" width="165" height="76" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+<text x="488" y="343" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a">Globales Netz</text>
+<text x="488" y="363" text-anchor="middle" font-size="12" fill="#475569">Regionen, Zonen</text>
+<rect x="584" y="310" width="166" height="76" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+<text x="667" y="343" text-anchor="middle" font-size="13" font-weight="600" fill="#1e1b3a">Virtualisierung</text>
+<text x="667" y="363" text-anchor="middle" font-size="12" fill="#475569">Hypervisor, Isolation</text>
+</svg>

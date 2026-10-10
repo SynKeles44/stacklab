@@ -1,0 +1,39 @@
+title: AWS-Grundlagen
+subtitle: Konto, IAM, VPC, EC2, S3 und Kosten – die Cloud sicher verstehen, bevor du etwas startest
+description: >
+  Amazon Web Services (AWS) ist die größte Cloud-Plattform der Welt. Wer dort Anwendungen betreibt, muss
+  nicht nur wissen, wie man einen Server startet – sondern vor allem, wie man das Konto absichert, Rechte
+  sauber vergibt, ein Netz plant und die Kosten im Griff behält. Genau diese Grundlagen lernst du hier.
+
+
+  Du verstehst das Modell der geteilten Verantwortung, Regionen und Verfügbarkeitszonen, sicherst den
+  Root-Benutzer mit MFA ab und arbeitest mit kurzlebigen Zugangsdaten statt dauerhafter Access Keys.
+  IAM-Policies schreibst du selbst als JSON und lernst, wie AWS sie auswertet. Danach planst du eine VPC
+  mit öffentlichen und privaten Subnetzen, vergleichst Security Groups mit Network ACLs, lernst EC2,
+  RDS, S3 und CloudWatch kennen und richtest Budgets ein. Zum Schluss beschreibst du Infrastruktur als
+  Code mit CloudFormation.
+
+
+  Das Übungs-Terminal hat keinen Zugang zu AWS – und das ist Absicht: Du schreibst Policies, Netzpläne
+  und Budget-Dateien und prüfst sie mit `jq`. Befehle, die AWS selbst ändern würden, übst du im
+  simulierten Terminal. So lernst du alles, ohne dass ein einziger Cent Kosten entsteht.
+category: infrastruktur
+level: einsteiger
+icon: cloud
+color: "#ff9900"
+estimated_hours: 5
+workspace_dir: aws-grundlagen
+prerequisites: [netzwerk-grundlagen, terminal-shell]
+learning_goals:
+  - Du erklärst, was Cloud Computing ist und wer im Modell der geteilten Verantwortung wofür zuständig ist.
+  - Du wählst Regionen und Verfügbarkeitszonen bewusst und sicherst ein neues AWS-Konto mit MFA und Budgets ab.
+  - Du unterscheidest IAM-Benutzer, Gruppen und Rollen und nutzt kurzlebige Zugangsdaten über IAM Identity Center.
+  - Du schreibst IAM-Policies als JSON nach dem Prinzip der minimalen Rechte und sagst voraus, wie AWS sie auswertet.
+  - Du planst eine VPC mit öffentlichen und privaten Subnetzen, Routing-Tabellen, Internet- und NAT-Gateway.
+  - Du ordnest EC2, RDS, S3 und CloudWatch richtig ein und schützt S3-Buckets vor öffentlichem Zugriff.
+  - Du liest AWS-CLI-Befehle sicher und beschreibst Ressourcen als Code mit CloudFormation.
+references:
+  - Mehrere AWS-Konten pro Umgebung (Entwicklung, Staging, Produktion), verwaltet über AWS Organizations
+  - Anmeldung von Entwickler:innen über IAM Identity Center statt über dauerhafte Access Keys
+  - Deploy-Rollen mit minimalen Rechten, die nur genau einen Bucket oder Dienst ändern dürfen
+  - Budgets mit Benachrichtigungen ab 80 Prozent als Frühwarnsystem gegen Kostenexplosionen

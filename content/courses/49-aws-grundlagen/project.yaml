@@ -1,0 +1,616 @@
+title: Ein sicheres AWS-Setup als Dateien
+description: |
+  Ein kleines Team will seinen Webshop nach AWS bringen: Load Balancer, App-Server, eine PostgreSQL-Datenbank
+  und ein S3-Bucket für Uploads. Bevor irgendetwas angelegt wird – und Geld kostet –, entwirfst du das ganze
+  Setup als Dateien: Netzplan, Security Groups, IAM-Rechte nach dem Prinzip der minimalen Rechte, einen
+  abgesicherten Bucket, ein Budget und ein CloudFormation-Template.
+
+  Am Ende schreibst du ein kleines Prüfskript, das alle Dateien auf gültiges JSON testet. So ein Ordner ist
+  genau das, was ein Team im Pull Request reviewt, bevor die Pipeline etwas in einem echten Konto ausrollt.
+goal: |
+  Im Ordner `aws-setup` liegen eine README, Konto-Eckdaten, ein Netzplan über zwei Verfügbarkeitszonen,
+  Security Groups, eine App-Policy mit Vertrauensrichtlinie, Bucket-Schutz, ein Budget, ein CloudFormation-
+  Template und ein Prüfskript `pruefen.sh`, das alle JSON-Dateien validiert.
+workdir: aws-setup
+setup: |
+  mkdir -p netz iam s3 kosten infra
+steps:
+  - id: grundgeruest
+    title: README und Konto-Eckdaten
+    description: |
+      Klicke zuerst auf **Projekt vorbereiten** – dann gibt es die Unterordner `netz`, `iam`, `s3`, `kosten`
+      und `infra`.
+
+      1. Lege `README.md` mit der Überschrift `# AWS-Setup Webshop` und zwei, drei Sätzen zum Ziel an.
+      2. Lege `konto.json` an:
+
+      ```json title="konto.json"
+      {
+        "konto_id": "123456789012",
+        "region": "eu-central-1",
+        "zonen": ["eu-central-1a", "eu-central-1b"],
+        "projekt": "shop"
+      }
+      ```
+    checklist:
+      - README.md mit Überschrift angelegt
+      - konto.json mit Konto-ID, Region, zwei Zonen und Projekt
+    hints:
+      - Nutze nur Platzhalter wie `123456789012` – niemals echte Konto-IDs.
+      - "`jq . konto.json` zeigt dir, ob das JSON gültig ist."
+    checks:
+      - type: file_contains
+        path: README.md
+        pattern: "^#\\s+AWS-Setup Webshop"
+        message: README.md braucht die Überschrift „# AWS-Setup Webshop“.
+      - type: command
+        run: jq -r '"\(.konto_id) \(.region) \(.zonen | join(",")) \(.projekt)"' konto.json
+        stdout_equals: 123456789012 eu-central-1 eu-central-1a,eu-central-1b shop
+        message: konto.json fehlt oder enthält nicht konto_id 123456789012, region eu-central-1, die Zonen eu-central-1a und eu-central-1b und projekt shop.
+    solution: |
+      ```bash
+      cd aws-setup
+      printf '# AWS-Setup Webshop\n\nEntwurf für den Webshop in eu-central-1: Netz, Rechte, Speicher und Kosten als Dateien.\n' > README.md
+      cat > konto.json <<'EOF'
+      {
+        "konto_id": "123456789012",
+        "region": "eu-central-1",
+        "zonen": ["eu-central-1a", "eu-central-1b"],
+        "projekt": "shop"
+      }
+      EOF
+      ```
+    solve: |
+      mkdir -p netz iam s3 kosten infra
+      printf '# AWS-Setup Webshop\n\nEntwurf für den Webshop in eu-central-1: Netz, Rechte, Speicher und Kosten als Dateien.\n' > README.md
+      cat > konto.json <<'EOF'
+      {
+        "konto_id": "123456789012",
+        "region": "eu-central-1",
+        "zonen": ["eu-central-1a", "eu-central-1b"],
+        "projekt": "shop"
+      }
+      EOF
+  - id: vpc-plan
+    title: Den VPC-Plan schreiben
+    description: |
+      Schreibe `netz/vpc.json` für die VPC `10.20.0.0/16` mit vier `/24`-Subnetzen:
+
+      | Name | CIDR | Zone | Routing-Tabelle |
+      |---|---|---|---|
+      | `public-a` | `10.20.0.0/24` | eu-central-1a | `public` |
+      | `public-b` | `10.20.1.0/24` | eu-central-1b | `public` |
+      | `private-a` | `10.20.10.0/24` | eu-central-1a | `private-a` |
+      | `private-b` | `10.20.11.0/24` | eu-central-1b | `private-b` |
+
+      Dazu kommen drei Routing-Tabellen und zwei NAT-Gateways – je eins pro Zone:
+
+      ```json title="netz/vpc.json (Aufbau)"
+      {
+        "vpc": { "cidr": "10.20.0.0/16" },
+        "subnets": [
+          { "name": "public-a", "cidr": "10.20.0.0/24", "zone": "eu-central-1a", "route_table": "public" }
+        ],
+        "route_tables": {
+          "public": [ { "ziel": "0.0.0.0/0", "via": "igw" } ],
+          "private-a": [ { "ziel": "0.0.0.0/0", "via": "nat-a" } ]
+        },
+        "nat_gateways": [ { "name": "nat-a", "subnet": "public-a" } ]
+      }
+      ```
+
+      Jedes private Subnetz muss über das NAT-Gateway **seiner eigenen Zone** ins Internet gehen.
+    checklist:
+      - Vier Subnetze in zwei Zonen eingetragen
+      - Routing-Tabelle public führt zum Internet-Gateway
+      - Je ein NAT-Gateway pro Zone im öffentlichen Subnetz
+      - Private Subnetze nutzen das NAT-Gateway ihrer Zone
+    hints:
+      - "`route_tables` ist ein Objekt: Der Schlüssel ist der Name der Tabelle, der Wert eine Liste von Routen."
+      - nat-a steht in public-a, nat-b in public-b.
+      - private-b braucht die Tabelle private-b mit der Route über nat-b.
+    checks:
+      - type: command
+        run: jq -r '.vpc.cidr' netz/vpc.json
+        stdout_equals: 10.20.0.0/16
+        message: netz/vpc.json fehlt, ist kein gültiges JSON oder vpc.cidr ist nicht 10.20.0.0/16.
+      - type: command
+        run: jq -r '[.subnets[] | select(.cidr | startswith("10.20.") and endswith("/24"))] | length' netz/vpc.json
+        stdout_equals: "4"
+        message: Es sollen genau vier /24-Subnetze innerhalb von 10.20.0.0/16 eingetragen sein.
+      - type: command
+        run: jq -r '. as $r | [$r.subnets[] | select(any($r.route_tables[.route_table][]?; .via == "igw")) | .zone] | sort | join(",")' netz/vpc.json
+        stdout_equals: eu-central-1a,eu-central-1b
+        message: Es braucht genau ein öffentliches Subnetz (Routing-Tabelle mit via igw) pro Zone.
+      - type: command
+        run: jq -r '. as $r | [$r.nat_gateways[] | .subnet as $n | $r.subnets[] | select(.name == $n) | $r.route_tables[.route_table][] | select(.via == "igw")] | length' netz/vpc.json
+        stdout_equals: "2"
+        message: Es braucht zwei NAT-Gateways, und beide müssen in einem öffentlichen Subnetz stehen.
+      - type: command
+        run: jq -r '. as $r | [$r.subnets[] | . as $s | $r.route_tables[$s.route_table][] | select(.via | startswith("nat")) | .via as $v | ($r.nat_gateways[] | select(.name == $v) | .subnet) as $ns | ($r.subnets[] | select(.name == $ns) | .zone) == $s.zone] | "\(length) \(all)"' netz/vpc.json
+        stdout_equals: 2 true
+        message: Beide privaten Subnetze sollen über ein NAT-Gateway ins Internet gehen – und zwar über das NAT-Gateway ihrer eigenen Zone.
+    solution: |
+      ```bash
+      cat > netz/vpc.json <<'EOF'
+      {
+        "vpc": { "cidr": "10.20.0.0/16" },
+        "subnets": [
+          { "name": "public-a", "cidr": "10.20.0.0/24", "zone": "eu-central-1a", "route_table": "public" },
+          { "name": "public-b", "cidr": "10.20.1.0/24", "zone": "eu-central-1b", "route_table": "public" },
+          { "name": "private-a", "cidr": "10.20.10.0/24", "zone": "eu-central-1a", "route_table": "private-a" },
+          { "name": "private-b", "cidr": "10.20.11.0/24", "zone": "eu-central-1b", "route_table": "private-b" }
+        ],
+        "route_tables": {
+          "public": [ { "ziel": "0.0.0.0/0", "via": "igw" } ],
+          "private-a": [ { "ziel": "0.0.0.0/0", "via": "nat-a" } ],
+          "private-b": [ { "ziel": "0.0.0.0/0", "via": "nat-b" } ]
+        },
+        "nat_gateways": [
+          { "name": "nat-a", "subnet": "public-a" },
+          { "name": "nat-b", "subnet": "public-b" }
+        ]
+      }
+      EOF
+      ```
+    solve: |
+      cat > netz/vpc.json <<'EOF'
+      {
+        "vpc": { "cidr": "10.20.0.0/16" },
+        "subnets": [
+          { "name": "public-a", "cidr": "10.20.0.0/24", "zone": "eu-central-1a", "route_table": "public" },
+          { "name": "public-b", "cidr": "10.20.1.0/24", "zone": "eu-central-1b", "route_table": "public" },
+          { "name": "private-a", "cidr": "10.20.10.0/24", "zone": "eu-central-1a", "route_table": "private-a" },
+          { "name": "private-b", "cidr": "10.20.11.0/24", "zone": "eu-central-1b", "route_table": "private-b" }
+        ],
+        "route_tables": {
+          "public": [ { "ziel": "0.0.0.0/0", "via": "igw" } ],
+          "private-a": [ { "ziel": "0.0.0.0/0", "via": "nat-a" } ],
+          "private-b": [ { "ziel": "0.0.0.0/0", "via": "nat-b" } ]
+        },
+        "nat_gateways": [
+          { "name": "nat-a", "subnet": "public-a" },
+          { "name": "nat-b", "subnet": "public-b" }
+        ]
+      }
+      EOF
+  - id: security-groups
+    title: Security Groups als Kette
+    description: |
+      Schreibe `netz/security-groups.json`: eine Liste mit drei Security Groups, jede mit einer Liste
+      eingehender Regeln (`port` als Zahl, `source` als Text).
+
+      | Security Group | Eingehend erlaubt |
+      |---|---|
+      | `sg-alb` | 443 von `0.0.0.0/0` |
+      | `sg-app` | 8080 von `sg-alb` |
+      | `sg-db` | 5432 von `sg-app` |
+
+      ```json title="Aufbau"
+      [ { "name": "sg-alb", "ingress": [ { "port": 443, "source": "0.0.0.0/0" } ] } ]
+      ```
+    checklist:
+      - Nur der Load Balancer ist aus dem Internet erreichbar
+      - Jede Schicht erlaubt nur Verkehr von der Schicht davor
+    hints:
+      - Als Quelle für sg-app und sg-db gibst du den Namen der vorherigen Security Group an.
+      - "`0.0.0.0/0` darf nur ein einziges Mal vorkommen – bei Port 443."
+    checks:
+      - type: command
+        run: jq -r '[.[] | .ingress[] | select(.source == "0.0.0.0/0") | .port] | map(tostring) | join(",")' netz/security-groups.json
+        stdout_equals: "443"
+        message: netz/security-groups.json fehlt oder 0.0.0.0/0 kommt nicht genau einmal als Quelle für Port 443 vor.
+      - type: command
+        run: jq -r 'map("\(.name)=" + (.ingress | map("\(.port)/\(.source)") | join("+"))) | sort | join(" ")' netz/security-groups.json
+        stdout_equals: sg-alb=443/0.0.0.0/0 sg-app=8080/sg-alb sg-db=5432/sg-app
+        message: Die Regeln stimmen noch nicht. Erwartet sind genau sg-alb (443 von 0.0.0.0/0), sg-app (8080 von sg-alb) und sg-db (5432 von sg-app).
+    solution: |
+      ```bash
+      cat > netz/security-groups.json <<'EOF'
+      [
+        { "name": "sg-alb", "ingress": [ { "port": 443, "source": "0.0.0.0/0" } ] },
+        { "name": "sg-app", "ingress": [ { "port": 8080, "source": "sg-alb" } ] },
+        { "name": "sg-db", "ingress": [ { "port": 5432, "source": "sg-app" } ] }
+      ]
+      EOF
+      ```
+    solve: |
+      cat > netz/security-groups.json <<'EOF'
+      [
+        { "name": "sg-alb", "ingress": [ { "port": 443, "source": "0.0.0.0/0" } ] },
+        { "name": "sg-app", "ingress": [ { "port": 8080, "source": "sg-alb" } ] },
+        { "name": "sg-db", "ingress": [ { "port": 5432, "source": "sg-app" } ] }
+      ]
+      EOF
+  - id: iam-app-rolle
+    title: Die App-Rolle mit minimalen Rechten
+    description: |
+      Die App-Server bekommen eine IAM-Rolle `shop-app`. Schreibe zwei Dateien:
+
+      1. `iam/app-policy.json` – die Berechtigungen:
+         - `s3:GetObject` und `s3:PutObject` auf `arn:aws:s3:::example-shop-uploads-123456789012/uploads/*`
+         - `secretsmanager:GetSecretValue` auf
+           `arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/db-*`
+         - kein Platzhalter `*` in den Actions
+      2. `iam/app-trust-policy.json` – die Vertrauensrichtlinie: **Allow** `sts:AssumeRole` für den Principal
+         `{ "Service": "ec2.amazonaws.com" }`, damit EC2-Instanzen die Rolle über ein Instanzprofil übernehmen.
+
+      Beide Dateien beginnen mit `"Version": "2012-10-17"`.
+    checklist:
+      - App-Policy erlaubt nur Uploads lesen/schreiben und das Datenbank-Secret lesen
+      - Vertrauensrichtlinie erlaubt nur EC2 das Übernehmen der Rolle
+    hints:
+      - Der Stern am Ende der Secret-ARN steht in der Resource, nicht in der Action – das ist erlaubt.
+      - "Eine Trust Policy hat ein `Principal`-Element: `\"Principal\": { \"Service\": \"ec2.amazonaws.com\" }`."
+    checks:
+      - type: command
+        run: jq -r '[.Version, ([.Statement[] | [.Action] | flatten | .[] | select(test("\\*"))] | length | tostring)] | join(" ")' iam/app-policy.json
+        stdout_equals: 2012-10-17 0
+        message: iam/app-policy.json fehlt, hat nicht Version 2012-10-17 oder enthält einen Platzhalter (*) in den Actions.
+      - type: command
+        run: jq -r '[.Statement[] | select(.Effect == "Allow") | ([.Action] | flatten) as $a | [.Resource] | flatten | .[] as $r | $a[] | "\(.)@\($r)"] | sort | join(" ")' iam/app-policy.json
+        stdout_equals: "s3:GetObject@arn:aws:s3:::example-shop-uploads-123456789012/uploads/* s3:PutObject@arn:aws:s3:::example-shop-uploads-123456789012/uploads/* secretsmanager:GetSecretValue@arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/db-*"
+        message: Die Allow-Statements stimmen noch nicht. Erlaubt sein sollen genau s3:GetObject und s3:PutObject auf den Upload-Pfad und secretsmanager:GetSecretValue auf das Secret shop/db-*.
+      - type: command
+        run: jq -r '.Version as $v | .Statement[] | "\($v) \(.Effect) \(.Principal.Service) \([.Action] | flatten | join(","))"' iam/app-trust-policy.json
+        stdout_equals: 2012-10-17 Allow ec2.amazonaws.com sts:AssumeRole
+        message: iam/app-trust-policy.json soll genau ein Statement haben – Allow sts:AssumeRole für den Principal Service ec2.amazonaws.com – und Version 2012-10-17.
+    solution: |
+      ```bash
+      cat > iam/app-policy.json <<'EOF'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "UploadsLesenSchreiben",
+            "Effect": "Allow",
+            "Action": ["s3:GetObject", "s3:PutObject"],
+            "Resource": "arn:aws:s3:::example-shop-uploads-123456789012/uploads/*"
+          },
+          {
+            "Sid": "DatenbankSecretLesen",
+            "Effect": "Allow",
+            "Action": "secretsmanager:GetSecretValue",
+            "Resource": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/db-*"
+          }
+        ]
+      }
+      EOF
+      cat > iam/app-trust-policy.json <<'EOF'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": { "Service": "ec2.amazonaws.com" },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+      EOF
+      ```
+    solve: |
+      cat > iam/app-policy.json <<'EOF'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "UploadsLesenSchreiben",
+            "Effect": "Allow",
+            "Action": ["s3:GetObject", "s3:PutObject"],
+            "Resource": "arn:aws:s3:::example-shop-uploads-123456789012/uploads/*"
+          },
+          {
+            "Sid": "DatenbankSecretLesen",
+            "Effect": "Allow",
+            "Action": "secretsmanager:GetSecretValue",
+            "Resource": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:shop/db-*"
+          }
+        ]
+      }
+      EOF
+      cat > iam/app-trust-policy.json <<'EOF'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": { "Service": "ec2.amazonaws.com" },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+      EOF
+  - id: bucket-schutz
+    title: Den Upload-Bucket absichern
+    description: |
+      Für den Bucket `example-shop-uploads-123456789012` entstehen zwei Dateien im Ordner `s3`:
+
+      1. `s3/public-access-block.json` mit allen vier Block-Public-Access-Einstellungen auf `true`.
+      2. `s3/bucket-policy.json` mit einem Statement `NurTls`: **Deny** für `"Principal": "*"`,
+         `"Action": "s3:*"` auf den Bucket und alle Objekte, wenn `aws:SecureTransport` `"false"` ist.
+    checklist:
+      - Alle vier Block-Public-Access-Einstellungen eingeschaltet
+      - Bucket-Policy verbietet Zugriffe ohne TLS
+    hints:
+      - Die Einstellungen heißen BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy und RestrictPublicBuckets.
+      - Die Resource braucht zwei ARNs – den Bucket ohne und mit `/*`.
+    checks:
+      - type: command
+        run: jq -r '[.BlockPublicAcls, .IgnorePublicAcls, .BlockPublicPolicy, .RestrictPublicBuckets] | map(tostring) | join(",")' s3/public-access-block.json
+        stdout_equals: true,true,true,true
+        message: s3/public-access-block.json fehlt oder nicht alle vier Einstellungen stehen auf true.
+      - type: command
+        run: jq -r '.Statement[] | select(.Sid == "NurTls") | [.Effect, (.Principal | tostring), ([.Action] | flatten | join(",")), .Condition.Bool["aws:SecureTransport"], ([.Resource] | flatten | sort | join(","))] | join(" ")' s3/bucket-policy.json
+        stdout_equals: "Deny * s3:* false arn:aws:s3:::example-shop-uploads-123456789012,arn:aws:s3:::example-shop-uploads-123456789012/*"
+        message: Das Statement NurTls braucht Deny, Principal "*", Action s3:*, die Bedingung Bool aws:SecureTransport "false" und beide ARNs (Bucket und Bucket/*).
+    solution: |
+      ```bash
+      cat > s3/public-access-block.json <<'EOF'
+      { "BlockPublicAcls": true, "IgnorePublicAcls": true, "BlockPublicPolicy": true, "RestrictPublicBuckets": true }
+      EOF
+      cat > s3/bucket-policy.json <<'EOF'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "NurTls",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:*",
+            "Resource": [
+              "arn:aws:s3:::example-shop-uploads-123456789012",
+              "arn:aws:s3:::example-shop-uploads-123456789012/*"
+            ],
+            "Condition": { "Bool": { "aws:SecureTransport": "false" } }
+          }
+        ]
+      }
+      EOF
+      ```
+    solve: |
+      cat > s3/public-access-block.json <<'EOF'
+      { "BlockPublicAcls": true, "IgnorePublicAcls": true, "BlockPublicPolicy": true, "RestrictPublicBuckets": true }
+      EOF
+      cat > s3/bucket-policy.json <<'EOF'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "NurTls",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:*",
+            "Resource": [
+              "arn:aws:s3:::example-shop-uploads-123456789012",
+              "arn:aws:s3:::example-shop-uploads-123456789012/*"
+            ],
+            "Condition": { "Bool": { "aws:SecureTransport": "false" } }
+          }
+        ]
+      }
+      EOF
+  - id: budget
+    title: Ein Budget mit zwei Stufen
+    description: |
+      Lege im Ordner `kosten` die Dateien für `aws budgets create-budget` an:
+
+      1. `kosten/budget.json`: `BudgetName` `shop-monatlich`, Limit `"100"` `USD`, `TimeUnit` `MONTHLY`,
+         `BudgetType` `COST`.
+      2. `kosten/notifications.json`: zwei Benachrichtigungen an `team@example.com` (EMAIL) – `ACTUAL` bei 80 %
+         und `FORECASTED` bei 100 %, jeweils `GREATER_THAN` und `PERCENTAGE`.
+    checklist:
+      - Monatsbudget über 100 USD
+      - Warnung bei 80 % der tatsächlichen und 100 % der prognostizierten Kosten
+    hints:
+      - Amount ist ein String (`"100"`), Threshold eine Zahl (`80`).
+      - Das Format kennst du aus der Lektion „CloudWatch, Budgets und Kosten im Griff“.
+    checks:
+      - type: command
+        run: jq -r '[.BudgetName, .BudgetLimit.Amount, .BudgetLimit.Unit, .TimeUnit, .BudgetType] | join(" ")' kosten/budget.json
+        stdout_equals: shop-monatlich 100 USD MONTHLY COST
+        message: kosten/budget.json fehlt oder ist unvollständig (BudgetName shop-monatlich, Amount "100", Unit USD, MONTHLY, COST).
+      - type: command
+        run: jq -r 'map("\(.Notification.NotificationType) \(.Notification.Threshold) \(.Notification.ComparisonOperator) \(.Notification.ThresholdType) " + ([.Subscribers[] | "\(.SubscriptionType):\(.Address)"] | join(","))) | sort | join(";")' kosten/notifications.json
+        stdout_equals: ACTUAL 80 GREATER_THAN PERCENTAGE EMAIL:team@example.com;FORECASTED 100 GREATER_THAN PERCENTAGE EMAIL:team@example.com
+        message: kosten/notifications.json braucht genau zwei Benachrichtigungen – ACTUAL 80 und FORECASTED 100, jeweils GREATER_THAN, PERCENTAGE und EMAIL an team@example.com.
+    solution: |
+      ```bash
+      cat > kosten/budget.json <<'EOF'
+      {
+        "BudgetName": "shop-monatlich",
+        "BudgetLimit": { "Amount": "100", "Unit": "USD" },
+        "TimeUnit": "MONTHLY",
+        "BudgetType": "COST"
+      }
+      EOF
+      cat > kosten/notifications.json <<'EOF'
+      [
+        {
+          "Notification": { "NotificationType": "ACTUAL", "ComparisonOperator": "GREATER_THAN", "Threshold": 80, "ThresholdType": "PERCENTAGE" },
+          "Subscribers": [{ "SubscriptionType": "EMAIL", "Address": "team@example.com" }]
+        },
+        {
+          "Notification": { "NotificationType": "FORECASTED", "ComparisonOperator": "GREATER_THAN", "Threshold": 100, "ThresholdType": "PERCENTAGE" },
+          "Subscribers": [{ "SubscriptionType": "EMAIL", "Address": "team@example.com" }]
+        }
+      ]
+      EOF
+      ```
+    solve: |
+      cat > kosten/budget.json <<'EOF'
+      {
+        "BudgetName": "shop-monatlich",
+        "BudgetLimit": { "Amount": "100", "Unit": "USD" },
+        "TimeUnit": "MONTHLY",
+        "BudgetType": "COST"
+      }
+      EOF
+      cat > kosten/notifications.json <<'EOF'
+      [
+        {
+          "Notification": { "NotificationType": "ACTUAL", "ComparisonOperator": "GREATER_THAN", "Threshold": 80, "ThresholdType": "PERCENTAGE" },
+          "Subscribers": [{ "SubscriptionType": "EMAIL", "Address": "team@example.com" }]
+        },
+        {
+          "Notification": { "NotificationType": "FORECASTED", "ComparisonOperator": "GREATER_THAN", "Threshold": 100, "ThresholdType": "PERCENTAGE" },
+          "Subscribers": [{ "SubscriptionType": "EMAIL", "Address": "team@example.com" }]
+        }
+      ]
+      EOF
+  - id: cloudformation
+    title: Den Bucket als CloudFormation-Template
+    description: |
+      Beschreibe den Upload-Bucket als Code. Schreibe `infra/uploads-bucket.json` (CloudFormation in JSON-Form):
+
+      - `AWSTemplateFormatVersion` `2010-09-09`
+      - Ressource `UploadsBucket` vom Typ `AWS::S3::Bucket` mit `"DeletionPolicy": "Retain"`
+      - `Properties`: `BucketName` `example-shop-uploads-123456789012`, alle vier
+        `PublicAccessBlockConfiguration`-Einstellungen `true`, `VersioningConfiguration` mit `Status` `Enabled`
+      - `Outputs`: `BucketName` mit `{ "Ref": "UploadsBucket" }`
+    checklist:
+      - Template mit Bucket, Block Public Access und Versionierung
+      - DeletionPolicy Retain schützt die Uploads beim Löschen des Stacks
+      - Output liefert den Bucket-Namen
+    hints:
+      - "`Ref` auf einen Bucket liefert in CloudFormation seinen Namen, `Fn::GetAtt` mit `Arn` seine ARN."
+      - Orientiere dich am Template aus der Lektion „AWS CLI und Infrastruktur als Code“.
+    checks:
+      - type: command
+        run: jq -r '"\(.AWSTemplateFormatVersion) \(.Resources.UploadsBucket.Type) \(.Resources.UploadsBucket.DeletionPolicy) \(.Resources.UploadsBucket.Properties.BucketName)"' infra/uploads-bucket.json
+        stdout_equals: 2010-09-09 AWS::S3::Bucket Retain example-shop-uploads-123456789012
+        message: "infra/uploads-bucket.json braucht AWSTemplateFormatVersion 2010-09-09 und die Ressource UploadsBucket (AWS::S3::Bucket, DeletionPolicy Retain, BucketName example-shop-uploads-123456789012)."
+      - type: command
+        run: jq -r '.Resources.UploadsBucket.Properties | [.PublicAccessBlockConfiguration.BlockPublicAcls, .PublicAccessBlockConfiguration.IgnorePublicAcls, .PublicAccessBlockConfiguration.BlockPublicPolicy, .PublicAccessBlockConfiguration.RestrictPublicBuckets, .VersioningConfiguration.Status] | map(tostring) | join(",")' infra/uploads-bucket.json
+        stdout_equals: true,true,true,true,Enabled
+        message: Unter Properties fehlen die vier PublicAccessBlockConfiguration-Einstellungen (true) oder VersioningConfiguration mit Status Enabled.
+      - type: command
+        run: jq -c '.Outputs.BucketName.Value' infra/uploads-bucket.json
+        stdout_equals: '{"Ref":"UploadsBucket"}'
+        message: "Unter Outputs fehlt BucketName mit dem Wert { \"Ref\": \"UploadsBucket\" }."
+    solution: |
+      ```bash
+      cat > infra/uploads-bucket.json <<'EOF'
+      {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "Upload-Bucket des Webshops",
+        "Resources": {
+          "UploadsBucket": {
+            "Type": "AWS::S3::Bucket",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "BucketName": "example-shop-uploads-123456789012",
+              "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": true,
+                "IgnorePublicAcls": true,
+                "BlockPublicPolicy": true,
+                "RestrictPublicBuckets": true
+              },
+              "VersioningConfiguration": { "Status": "Enabled" }
+            }
+          }
+        },
+        "Outputs": {
+          "BucketName": { "Value": { "Ref": "UploadsBucket" } }
+        }
+      }
+      EOF
+      ```
+    solve: |
+      cat > infra/uploads-bucket.json <<'EOF'
+      {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "Upload-Bucket des Webshops",
+        "Resources": {
+          "UploadsBucket": {
+            "Type": "AWS::S3::Bucket",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "BucketName": "example-shop-uploads-123456789012",
+              "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": true,
+                "IgnorePublicAcls": true,
+                "BlockPublicPolicy": true,
+                "RestrictPublicBuckets": true
+              },
+              "VersioningConfiguration": { "Status": "Enabled" }
+            }
+          }
+        },
+        "Outputs": {
+          "BucketName": { "Value": { "Ref": "UploadsBucket" } }
+        }
+      }
+      EOF
+  - id: pruefskript
+    title: Ein Prüfskript für alle Dateien
+    description: |
+      Bevor jemand den Ordner reviewt, soll ein Skript zeigen, dass alle JSON-Dateien gültig sind. Schreibe
+      `pruefen.sh`:
+
+      1. Es findet alle Dateien mit der Endung `.json` im Ordner und allen Unterordnern.
+      2. Für jede ungültige Datei gibt es `FEHLER: <pfad>` aus.
+      3. Sind alle gültig, gibt es genau eine Zeile `OK: <anzahl> JSON-Dateien gültig` aus und endet mit
+         Exit-Code 0. Sonst endet es mit Exit-Code 1.
+
+      Mit allen Dateien aus den bisherigen Schritten ergibt `bash pruefen.sh` die Zeile
+      `OK: 10 JSON-Dateien gültig`.
+    checklist:
+      - pruefen.sh findet alle JSON-Dateien rekursiv
+      - Ungültige Dateien führen zu FEHLER-Zeilen und Exit-Code 1
+    hints:
+      - "`find . -name '*.json'` listet alle JSON-Dateien; `jq empty datei.json` endet bei ungültigem JSON mit einem Fehlercode."
+      - "Mit `while IFS= read -r f; do … done < <(find . -name '*.json')` gehst du alle Dateien durch."
+      - Zähle in einer Variablen mit und merke dir in einer zweiten, ob ein Fehler aufgetreten ist.
+    checks:
+      - type: command
+        run: bash pruefen.sh
+        stdout_equals: "OK: 10 JSON-Dateien gültig"
+        message: "bash pruefen.sh soll genau „OK: 10 JSON-Dateien gültig“ ausgeben. Fehlt eine Datei aus den vorigen Schritten oder zählt das Skript falsch?"
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          printf '{ "kaputt": ' > "$d/kaputt.json"
+          code=0
+          out=$(bash pruefen.sh 2>/dev/null) || code=$?
+          rm -rf "$d"
+          echo "$code $(printf '%s\n' "$out" | grep -c '^FEHLER: .*kaputt\.json$')"
+        stdout_equals: 1 1
+        message: 'Bei einer ungültigen JSON-Datei soll pruefen.sh eine Zeile „FEHLER: <pfad>“ ausgeben und mit Exit-Code 1 enden.'
+    solution: |
+      ```bash
+      cat > pruefen.sh <<'EOF'
+      #!/usr/bin/env bash
+      anzahl=0
+      fehler=0
+      while IFS= read -r datei; do
+        anzahl=$((anzahl + 1))
+        if ! jq empty "$datei" 2>/dev/null; then
+          echo "FEHLER: $datei"
+          fehler=1
+        fi
+      done < <(find . -name '*.json' | sort)
+      if [ "$fehler" -ne 0 ]; then
+        exit 1
+      fi
+      echo "OK: $anzahl JSON-Dateien gültig"
+      EOF
+      bash pruefen.sh
+      ```
+    solve: |
+      cat > pruefen.sh <<'EOF'
+      #!/usr/bin/env bash
+      anzahl=0
+      fehler=0
+      while IFS= read -r datei; do
+        anzahl=$((anzahl + 1))
+        if ! jq empty "$datei" 2>/dev/null; then
+          echo "FEHLER: $datei"
+          fehler=1
+        fi
+      done < <(find . -name '*.json' | sort)
+      if [ "$fehler" -ne 0 ]; then
+        exit 1
+      fi
+      echo "OK: $anzahl JSON-Dateien gültig"
+      EOF

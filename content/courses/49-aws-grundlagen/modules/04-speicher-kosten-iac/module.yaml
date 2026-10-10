@@ -1,0 +1,70 @@
+title: S3, Kosten und Infrastruktur als Code
+description: Dateien sicher in S3 speichern und teilen, Ressourcen mit CloudWatch überwachen, Kosten mit Budgets im Griff behalten und Infrastruktur mit der CLI und CloudFormation als Code beschreiben.
+exercise:
+  id: modul-uebung-konto-inventur
+  type: terminal
+  title: Eine Konto-Inventur auswerten
+  description: |
+    Einmal im Monat prüft dein Team alle Ressourcen eines Kontos. Im Ordner `inventur` liegt
+    `ressourcen.json` – ein vereinfachter Export mit ID, Typ, Region, geschätzten Monatskosten in USD, Tags
+    und bei S3-Buckets dem Zustand von Block Public Access.
+
+    Werte die Datei mit `jq` aus und lege vier Dateien an:
+
+    1. `ohne-projekt.txt` – die IDs aller Ressourcen **ohne** Tag `projekt`, sortiert, eine pro Zeile.
+    2. `fremde-regionen.txt` – für jede Ressource außerhalb von `eu-central-1` eine Zeile `<id> <region>`,
+       sortiert nach ID.
+    3. `offene-buckets.txt` – die IDs aller S3-Buckets mit `"public_access_block": false`, eine pro Zeile.
+    4. `kosten.txt` – die Summe der Kosten pro Projekt als `<projekt> <summe>`, alphabetisch nach Projekt.
+       Ressourcen ohne Tag zählen zum Projekt `ohne-projekt`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: inventur
+  setup: |
+    cat > ressourcen.json <<'EOF'
+    [
+      { "id": "i-0aaa111", "typ": "ec2", "region": "eu-central-1", "kosten_usd": 30,
+        "tags": { "projekt": "shop", "umgebung": "prod" } },
+      { "id": "i-0bbb222", "typ": "ec2", "region": "us-east-1", "kosten_usd": 69, "tags": {} },
+      { "id": "nat-0ccc333", "typ": "nat-gateway", "region": "eu-central-1", "kosten_usd": 38,
+        "tags": { "projekt": "shop" } },
+      { "id": "db-shop", "typ": "rds", "region": "eu-central-1", "kosten_usd": 52,
+        "tags": { "projekt": "shop", "umgebung": "prod" } },
+      { "id": "example-docs-123456789012", "typ": "s3", "region": "eu-central-1", "kosten_usd": 1,
+        "tags": { "projekt": "docs" }, "public_access_block": true },
+      { "id": "example-alt-export", "typ": "s3", "region": "eu-west-1", "kosten_usd": 5,
+        "tags": {}, "public_access_block": false },
+      { "id": "vol-0ddd444", "typ": "ebs", "region": "eu-central-1", "kosten_usd": 8,
+        "tags": { "projekt": "docs" } }
+    ]
+    EOF
+  checks:
+    - type: command
+      run: cat ohne-projekt.txt | tr '\n' ' '
+      stdout_matches: "^example-alt-export i-0bbb222 ?$"
+      message: ohne-projekt.txt soll die zwei Ressourcen ohne Tag projekt enthalten – sortiert, eine pro Zeile.
+    - type: command
+      run: cat fremde-regionen.txt | tr '\n' ';'
+      stdout_matches: "^example-alt-export eu-west-1;i-0bbb222 us-east-1;?$"
+      message: fremde-regionen.txt soll für jede Ressource außerhalb von eu-central-1 eine Zeile "<id> <region>" enthalten, sortiert nach ID.
+    - type: command
+      run: cat offene-buckets.txt | tr '\n' ' '
+      stdout_matches: "^example-alt-export ?$"
+      message: In offene-buckets.txt gehört nur der Bucket mit public_access_block false.
+    - type: command
+      run: cat kosten.txt | tr '\n' ';'
+      stdout_matches: "^docs 9;ohne-projekt 74;shop 120;?$"
+      message: "kosten.txt stimmt noch nicht. Erwartet sind drei Zeilen: docs 9, ohne-projekt 74 und shop 120 – alphabetisch sortiert."
+  hints:
+    - "Fehlende Tags fängst du mit `//` ab: `.tags.projekt // \"ohne-projekt\"`."
+    - "`group_by(.tags.projekt // \"ohne-projekt\")` gruppiert und sortiert gleichzeitig."
+    - "Eine Summe bildest du mit `map(.kosten_usd) | add`."
+  solution: |
+    ```bash
+    cd inventur
+    jq -r '.[] | select(.tags.projekt == null) | .id' ressourcen.json | sort > ohne-projekt.txt
+    jq -r '.[] | select(.region != "eu-central-1") | "\(.id) \(.region)"' ressourcen.json | sort > fremde-regionen.txt
+    jq -r '.[] | select(.typ == "s3" and .public_access_block == false) | .id' ressourcen.json > offene-buckets.txt
+    jq -r 'group_by(.tags.projekt // "ohne-projekt") | .[] | "\(.[0].tags.projekt // "ohne-projekt") \(map(.kosten_usd) | add)"' ressourcen.json > kosten.txt
+    cat kosten.txt
+    ```

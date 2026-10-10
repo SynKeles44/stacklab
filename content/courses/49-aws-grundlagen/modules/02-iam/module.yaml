@@ -1,0 +1,94 @@
+title: IAM – Identitäten und Berechtigungen
+description: Benutzer, Gruppen und Rollen, kurzlebige Zugangsdaten über IAM Identity Center, Policies als JSON und die Regeln, nach denen AWS über jede Anfrage entscheidet.
+exercise:
+  id: modul-uebung-deploy-policy
+  type: terminal
+  title: Eine zu breite Deploy-Policy verkleinern
+  description: |
+    Die Rolle, mit der eure Pipeline eine statische Website nach S3 hochlädt, hat aktuell diese Policy:
+    `"Action": "*"` auf `"Resource": "*"` – also volle Administratorrechte. Im Ordner `deploy-policy` liegt
+    sie als `deploy-policy.json`.
+
+    Schreibe `deploy-policy.json` so um, dass nur noch erlaubt ist, was der Deploy wirklich braucht:
+
+    1. **Allow** `s3:PutObject` und `s3:DeleteObject` auf `arn:aws:s3:::example-website-123456789012/*`.
+    2. **Allow** `s3:ListBucket` auf `arn:aws:s3:::example-website-123456789012`.
+    3. **Deny** für `"Action": "*"` und `"Resource": "*"`, wenn die Region nicht `eu-central-1` ist:
+       Bedingung `StringNotEquals` mit dem Schlüssel `aws:RequestedRegion` und dem Wert `eu-central-1`.
+    4. Kein Allow-Statement darf mehr einen Platzhalter `*` in den Actions enthalten.
+
+    Prüfe zwischendurch mit `jq . deploy-policy.json`, ob das JSON gültig ist.
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: deploy-policy
+  setup: |
+    cat > deploy-policy.json <<'EOF'
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AllesErlaubt",
+          "Effect": "Allow",
+          "Action": "*",
+          "Resource": "*"
+        }
+      ]
+    }
+    EOF
+  checks:
+    - type: command
+      run: jq -r '.Version' deploy-policy.json
+      stdout_equals: "2012-10-17"
+      message: deploy-policy.json ist kein gültiges JSON oder die Version 2012-10-17 fehlt.
+    - type: command
+      run: jq -r '[.Statement[] | select(.Effect == "Allow") | [.Action] | flatten | .[] | select(test("\\*"))] | length' deploy-policy.json
+      stdout_equals: "0"
+      message: Ein Allow-Statement enthält noch einen Platzhalter (*) in den Actions. Nenne nur die konkreten Aktionen.
+    - type: command
+      run: jq -r '[.Statement[] | select(.Effect == "Allow") | select([.Resource] | flatten | index("arn:aws:s3:::example-website-123456789012/*")) | [.Action] | flatten | .[]] | sort | join(",")' deploy-policy.json
+      stdout_equals: "s3:DeleteObject,s3:PutObject"
+      message: Für arn:aws:s3:::example-website-123456789012/* sollen genau s3:PutObject und s3:DeleteObject erlaubt sein.
+    - type: command
+      run: jq -r '[.Statement[] | select(.Effect == "Allow") | select([.Resource] | flatten | index("arn:aws:s3:::example-website-123456789012")) | [.Action] | flatten | .[]] | sort | join(",")' deploy-policy.json
+      stdout_equals: "s3:ListBucket"
+      message: Für den Bucket selbst (arn:aws:s3:::example-website-123456789012, ohne /*) soll genau s3:ListBucket erlaubt sein.
+    - type: command
+      run: jq -r '[.Statement[] | select(.Effect == "Deny") | .Condition.StringNotEquals["aws:RequestedRegion"]] | flatten | join(",")' deploy-policy.json
+      stdout_equals: "eu-central-1"
+      message: "Es fehlt ein Deny-Statement mit der Bedingung StringNotEquals { \"aws:RequestedRegion\": \"eu-central-1\" }."
+  hints:
+    - Schreibe drei Statements – zwei mit Allow, eins mit Deny.
+    - Objekt-Aktionen brauchen die ARN mit `/*`, ListBucket die ARN ohne.
+    - "Die Bedingung sieht so aus: `\"Condition\": { \"StringNotEquals\": { \"aws:RequestedRegion\": \"eu-central-1\" } }`."
+  solution: |
+    ```bash
+    cd deploy-policy
+    cat > deploy-policy.json <<'EOF'
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "WebsiteDateienSchreiben",
+          "Effect": "Allow",
+          "Action": ["s3:PutObject", "s3:DeleteObject"],
+          "Resource": "arn:aws:s3:::example-website-123456789012/*"
+        },
+        {
+          "Sid": "WebsiteAuflisten",
+          "Effect": "Allow",
+          "Action": "s3:ListBucket",
+          "Resource": "arn:aws:s3:::example-website-123456789012"
+        },
+        {
+          "Sid": "NurFrankfurt",
+          "Effect": "Deny",
+          "Action": "*",
+          "Resource": "*",
+          "Condition": {
+            "StringNotEquals": { "aws:RequestedRegion": "eu-central-1" }
+          }
+        }
+      ]
+    }
+    EOF
+    jq . deploy-policy.json
+    ```

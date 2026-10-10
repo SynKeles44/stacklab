@@ -1,0 +1,370 @@
+title: Abschlussprüfung AWS-Grundlagen
+description: |
+  Die Prüfung deckt alle vier Module ab: Cloud-Grundlagen und Kontosicherheit, IAM, VPC mit EC2 und RDS sowie
+  S3, Kosten und Infrastruktur als Code. Du brauchst 70 % zum Bestehen. Die Praxis-Aufgaben löst du im
+  Code-Editor und im Übungs-Terminal – ganz ohne echtes AWS-Konto.
+time_limit_minutes: 50
+pass_percent: 70
+questions:
+  - module: cloud-und-konto
+    type: single
+    question: Wer ist bei einer RDS-Datenbank dafür zuständig, wer sich mit der Datenbank verbinden darf (Security Group, Benutzer)?
+    options: [AWS, Du als Kunde, Beide gemeinsam per Vertrag]
+    answer: 1
+    explanation: Zugriffsrechte und Netzregeln bleiben im Modell der geteilten Verantwortung immer beim Kunden – auch bei verwalteten Diensten.
+  - module: cloud-und-konto
+    type: multiple
+    question: Welche Aussagen über Regionen und Verfügbarkeitszonen stimmen?
+    options:
+      - Eine Region besteht aus mehreren, räumlich getrennten Verfügbarkeitszonen.
+      - Ein Subnetz kann sich über zwei Verfügbarkeitszonen erstrecken.
+      - Ressourcen in eu-central-1 sind in eu-west-1 nicht automatisch vorhanden.
+      - Wer auf zwei Zonen verteilt, übersteht den Ausfall eines Rechenzentrums.
+    answers: [0, 2, 3]
+    explanation: Ein Subnetz liegt immer in genau einer Zone. Regionen sind voneinander unabhängig.
+  - module: cloud-und-konto
+    type: single
+    question: "Welche ARN gehört zu einer IAM-Rolle?"
+    options:
+      - "arn:aws:iam::123456789012:role/deploy"
+      - "arn:aws:iam:eu-central-1:123456789012:role/deploy"
+      - "arn:aws:s3:::deploy"
+    answer: 0
+    explanation: IAM ist global, deshalb bleibt das Feld für die Region leer.
+  - module: cloud-und-konto
+    type: find-bug
+    question: Welche Zeile dieser Konto-Checkliste ist ein Sicherheitsrisiko?
+    language: text
+    code: |
+      Root-Benutzer mit Passkey als MFA absichern
+      Budget mit E-Mail-Benachrichtigung anlegen
+      Root-Benutzer für die tägliche Arbeit im Team teilen
+      IAM Identity Center für alle Entwickler:innen einrichten
+    bug_line: 3
+    explanation: Der Root-Benutzer gehört in den Tresor. Für den Alltag hat jede Person eine eigene Identität über IAM Identity Center.
+  - module: iam
+    type: match
+    question: Ordne jeder Identität die passenden Zugangsdaten zu.
+    pairs:
+      - { left: "IAM-Benutzer", right: "Dauerhaftes Passwort und Access Keys" }
+      - { left: "IAM-Rolle", right: "Temporäre Zugangsdaten über STS" }
+      - { left: "IAM-Gruppe", right: "Keine – sie bündelt nur Rechte" }
+    explanation: Gruppen können sich nicht anmelden; Rollen liefern nur kurzlebige Zugangsdaten.
+  - module: iam
+    type: single
+    question: Wie meldet sich eine Entwicklerin am besten mit der AWS CLI an?
+    options:
+      - Mit einem Access Key in `~/.aws/credentials`
+      - Über IAM Identity Center mit `aws sso login --profile dev`
+      - Mit dem Passwort des Root-Benutzers
+    answer: 1
+    explanation: Die SSO-Anmeldung liefert kurzlebige Zugangsdaten, die sich selbst erneuern – ohne Geheimnisse auf der Festplatte.
+  - module: iam
+    type: single
+    question: Eine Rolle hat `AdministratorAccess`. Eine SCP der Organisation verbietet per Deny `ec2:RunInstances` außerhalb von eu-central-1. Was passiert bei RunInstances in us-east-1?
+    options:
+      - Erlaubt, weil AdministratorAccess alles erlaubt
+      - Abgelehnt, weil der explizite Deny in der SCP gewinnt
+      - Abgelehnt, weil kein Allow existiert
+    answer: 1
+    explanation: Ein expliziter Deny – hier aus der SCP – überstimmt jedes Allow.
+  - module: iam
+    type: cloze
+    text: "Für `s3:ListBucket` lautet die Resource `arn:aws:s3:::example-docs`, für `s3:GetObject` dagegen `arn:aws:s3:::example-docs___`."
+    blanks:
+      - ["/*"]
+    explanation: Objekt-Aktionen brauchen die ARN mit Pfad, Bucket-Aktionen die ARN des Buckets.
+  - module: iam
+    type: find-bug
+    question: Diese Policy soll nur das Lesen von Berichten erlauben. Welche Zeile verletzt das Prinzip der minimalen Rechte?
+    language: json
+    code: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [{
+          "Effect": "Allow",
+          "Action": "s3:*",
+          "Resource": "arn:aws:s3:::example-reports/*"
+        }]
+      }
+    bug_line: 5
+    explanation: "`s3:*` erlaubt auch Schreiben und Löschen. Gebraucht wird nur `s3:GetObject`."
+  - module: netz-und-rechenleistung
+    type: single
+    question: Wie viele Adressen kannst du in einem AWS-Subnetz `10.0.4.0/26` an Ressourcen vergeben?
+    options: ["64", "62", "59", "58"]
+    answer: 2
+    explanation: 64 Adressen minus fünf von AWS reservierte ergibt 59.
+  - module: netz-und-rechenleistung
+    type: multiple
+    question: Was gilt für ein privates Subnetz mit der Route `0.0.0.0/0 → nat-0zone-a`?
+    options:
+      - Ressourcen darin können ausgehend Verbindungen ins Internet aufbauen.
+      - Aus dem Internet kann niemand direkt eine Verbindung zu ihnen aufbauen.
+      - Das NAT-Gateway steht selbst in einem öffentlichen Subnetz.
+      - Ressourcen darin brauchen öffentliche IP-Adressen.
+    answers: [0, 1, 2]
+    explanation: Das NAT-Gateway im öffentlichen Subnetz gibt nur ausgehenden Zugang. Öffentliche Adressen sind dafür nicht nötig.
+  - module: netz-und-rechenleistung
+    type: match
+    question: Ordne jede Eigenschaft der richtigen Firewall zu.
+    pairs:
+      - { left: "Stateful, nur Allow-Regeln", right: "Security Group" }
+      - { left: "Regeln nach Nummer, erste passende entscheidet", right: "Network ACL" }
+      - { left: "Andere Security Group als Quelle möglich", right: "Security Group" }
+      - { left: "Braucht Regeln für flüchtige Ports auf dem Rückweg", right: "Network ACL" }
+    explanation: Security Groups merken sich Verbindungen, Network ACLs prüfen jedes Paket einzeln.
+  - module: netz-und-rechenleistung
+    type: single
+    question: Wie bekommt eine App auf EC2 Zugriff auf S3, ohne dass Schlüssel auf dem Server liegen?
+    options:
+      - Über ein Instanzprofil mit einer IAM-Rolle
+      - Über einen Access Key in User Data
+      - Über eine öffentliche IP-Adresse
+    answer: 0
+    explanation: Das Instanzprofil liefert der Instanz temporäre Zugangsdaten der Rolle über den Metadaten-Dienst.
+  - module: netz-und-rechenleistung
+    type: single
+    question: Was bringt die RDS-Option Multi-AZ?
+    options:
+      - Eine synchrone Standby-Kopie in einer anderen Zone mit automatischem Umschalten
+      - Doppelte Leseleistung durch zwei aktive Datenbanken
+      - Eine Kopie der Datenbank in einer anderen Region
+    answer: 0
+    explanation: Multi-AZ dient der Ausfallsicherheit. Für mehr Leseleistung gibt es Lesereplikate.
+  - module: speicher-kosten-iac
+    type: multiple
+    question: Wie teilst du eine einzelne Datei aus einem privaten Bucket sicher mit einem Kunden?
+    options:
+      - Mit einer Presigned URL, die nach kurzer Zeit abläuft
+      - Indem du Block Public Access ausschaltest
+      - Indem du den Link wie ein Passwort behandelst und nur an den Kunden schickst
+      - 'Mit einer Bucket-Policy mit `"Principal": "*"`'
+    answers: [0, 2]
+    explanation: Eine Presigned URL gibt zeitlich begrenzten Zugriff auf genau ein Objekt. Den Bucket öffentlich zu machen, ist dafür nie nötig.
+  - module: speicher-kosten-iac
+    type: single
+    question: Was passiert, wenn ein AWS-Budget seinen Schwellwert erreicht?
+    options:
+      - AWS stoppt alle Ressourcen im Konto.
+      - Die eingetragenen Empfänger bekommen eine Benachrichtigung – stoppen musst du selbst.
+      - Die Rechnung wird auf das Budget gedeckelt.
+    answer: 1
+    explanation: Budgets warnen, sie handeln nicht von selbst.
+  - module: speicher-kosten-iac
+    type: cloze
+    text: "In einem CloudFormation-Template schützt `DeletionPolicy: ___` einen Bucket davor, beim Löschen des Stacks mitgelöscht zu werden."
+    blanks:
+      - [Retain]
+    explanation: Mit Retain bleibt die Ressource bestehen, CloudFormation verwaltet sie nur nicht mehr.
+  - module: speicher-kosten-iac
+    type: match
+    question: Ordne jede CLI-Option ihrer Wirkung zu.
+    pairs:
+      - { left: "--profile prod", right: "Nutzt das Profil prod aus ~/.aws/config" }
+      - { left: "--query", right: "Filtert die JSON-Antwort" }
+      - { left: "--expires-in 3600", right: "Lässt eine Presigned URL nach einer Stunde ablaufen" }
+    explanation: Mit Profilen, Abfragen und Ablaufzeiten steuerst du die CLI genau.
+tasks:
+  - module: iam
+    id: pruefung-policy-linter
+    type: code
+    language: js
+    title: Ein kleiner Policy-Linter
+    description: |
+      Schreibe `lintPolicy(policy)`, die ein Policy-Objekt prüft und eine Liste von Befunden zurückgibt –
+      in dieser Reihenfolge und ohne Duplikate:
+
+      - `"missing-version"`, wenn `policy.Version` nicht `"2012-10-17"` ist
+      - `"wildcard-action"`, wenn ein **Allow**-Statement eine Action `"*"` oder `"<dienst>:*"` enthält
+      - `"wildcard-resource"`, wenn ein **Allow**-Statement die Resource `"*"` enthält
+
+      `Action` und `Resource` können ein String oder ein Array sein. Deny-Statements werden nicht bemängelt.
+      Eine einwandfreie Policy ergibt `[]`.
+    starter: |
+      function lintPolicy(policy) {
+        const findings = []
+        // Dein Code
+        return findings
+      }
+    tests:
+      - name: Eine saubere Policy hat keine Befunde
+        code: |
+          const p = { Version: '2012-10-17', Statement: [{ Effect: 'Allow', Action: ['s3:GetObject'], Resource: 'arn:aws:s3:::example/*' }] }
+          assertDeepEqual(lintPolicy(p), [])
+      - name: Alles erlaubt auf allem
+        code: |
+          const p = { Version: '2012-10-17', Statement: [{ Effect: 'Allow', Action: '*', Resource: '*' }] }
+          assertDeepEqual(lintPolicy(p), ['wildcard-action', 'wildcard-resource'])
+      - name: Dienst-Wildcard, fehlende Version, keine Duplikate
+        code: |
+          const p = { Statement: [
+            { Effect: 'Allow', Action: ['s3:*'], Resource: 'arn:aws:s3:::example/*' },
+            { Effect: 'Allow', Action: 'ec2:*', Resource: 'arn:aws:ec2:eu-central-1:123456789012:instance/*' }
+          ] }
+          assertDeepEqual(lintPolicy(p), ['missing-version', 'wildcard-action'])
+      - name: Deny-Statements und Präfix-Platzhalter
+        code: |
+          const p = { Version: '2012-10-17', Statement: [
+            { Effect: 'Deny', Action: '*', Resource: '*', Condition: { StringNotEquals: { 'aws:RequestedRegion': 'eu-central-1' } } },
+            { Effect: 'Allow', Action: 's3:Get*', Resource: ['arn:aws:s3:::example', 'arn:aws:s3:::example/*'] }
+          ] }
+          assertDeepEqual(lintPolicy(p), [])
+    hints:
+      - "Mach aus Action und Resource immer ein Array: `[].concat(statement.Action)`."
+      - "Eine Action ist ein voller Platzhalter, wenn sie `*` ist oder auf `:*` endet."
+    solution: |
+      ```js
+      function lintPolicy(policy) {
+        const findings = []
+        const allows = (policy.Statement || []).filter((s) => s.Effect === 'Allow')
+        if (policy.Version !== '2012-10-17') findings.push('missing-version')
+        if (allows.some((s) => [].concat(s.Action).some((a) => a === '*' || a.endsWith(':*')))) {
+          findings.push('wildcard-action')
+        }
+        if (allows.some((s) => [].concat(s.Resource).includes('*'))) {
+          findings.push('wildcard-resource')
+        }
+        return findings
+      }
+      ```
+  - module: netz-und-rechenleistung
+    id: pruefung-subnetz-groesse
+    type: code
+    language: js
+    title: Nutzbare Adressen in einem AWS-Subnetz
+    description: |
+      Schreibe `usableAwsAddresses(cidr)`. Sie liefert die Zahl der Adressen, die du in einem AWS-Subnetz an
+      Ressourcen vergeben kannst: 2^(32 − Präfix) − 5.
+
+      AWS erlaubt für IPv4-Subnetze nur Präfixe von `/16` bis `/28`. Bei jedem anderen Präfix wirf einen Fehler.
+    starter: |
+      function usableAwsAddresses(cidr) {
+      }
+    tests:
+      - name: Typische Größen
+        code: |
+          assertEqual(usableAwsAddresses('10.0.1.0/24'), 251)
+          assertEqual(usableAwsAddresses('10.0.10.0/23'), 507)
+      - name: Grenzen /16 und /28
+        code: |
+          assertEqual(usableAwsAddresses('10.0.0.0/16'), 65531)
+          assertEqual(usableAwsAddresses('10.0.0.16/28'), 11)
+      - name: Ungültige Präfixe werfen einen Fehler
+        code: |
+          assertThrows(() => usableAwsAddresses('10.0.0.0/29'))
+          assertThrows(() => usableAwsAddresses('10.0.0.0/8'))
+    hints:
+      - "Den Präfix bekommst du mit `Number(cidr.split('/')[1])`."
+      - "Prüfe zuerst den erlaubten Bereich und wirf mit `throw new Error(...)`."
+    solution: |
+      ```js
+      function usableAwsAddresses(cidr) {
+        const prefix = Number(cidr.split('/')[1])
+        if (!(prefix >= 16 && prefix <= 28)) {
+          throw new Error('AWS erlaubt nur /16 bis /28')
+        }
+        return 2 ** (32 - prefix) - 5
+      }
+      ```
+  - module: speicher-kosten-iac
+    id: pruefung-bucket-policy
+    type: terminal
+    title: Eine gefährliche Bucket-Policy reparieren
+    description: |
+      Im Ordner `pruefung-bucket` liegt `bucket-policy.json` für den Bucket `example-invoices-123456789012`.
+      Sie hat zwei Probleme:
+
+      - Das Statement `Oeffentlich` erlaubt **jedem** (`"Principal": "*"`) das Lesen aller Rechnungen.
+      - Das Statement `NurTls` soll Zugriffe ohne TLS verbieten, prüft aber den falschen Wert.
+
+      Repariere die Datei:
+
+      1. Entferne das Statement `Oeffentlich` vollständig.
+      2. Korrigiere `NurTls` so, dass es bei `aws:SecureTransport` `"false"` greift.
+      3. Füge ein Statement `BuchhaltungLiest` hinzu: **Allow** `s3:GetObject` für den Principal
+         `{ "AWS": "arn:aws:iam::123456789012:role/buchhaltung" }` auf
+         `arn:aws:s3:::example-invoices-123456789012/*`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-bucket
+    setup: |
+      cat > bucket-policy.json <<'EOF'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "Oeffentlich",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-invoices-123456789012/*"
+          },
+          {
+            "Sid": "NurTls",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:*",
+            "Resource": [
+              "arn:aws:s3:::example-invoices-123456789012",
+              "arn:aws:s3:::example-invoices-123456789012/*"
+            ],
+            "Condition": { "Bool": { "aws:SecureTransport": "true" } }
+          }
+        ]
+      }
+      EOF
+    checks:
+      - type: command
+        run: jq -r '.Version' bucket-policy.json
+        stdout_equals: "2012-10-17"
+        message: bucket-policy.json ist kein gültiges JSON mehr oder die Version fehlt.
+      - type: command
+        run: jq -r '[.Statement[] | select(.Effect == "Allow" and ((.Principal | tostring) == "*" or (.Principal.AWS? // "") == "*"))] | length' bucket-policy.json
+        stdout_equals: "0"
+        message: Es gibt noch ein Allow-Statement für jeden (Principal "*"). Entferne das Statement Oeffentlich.
+      - type: command
+        run: jq -r '.Statement[] | select(.Sid == "NurTls") | "\(.Effect) \(.Condition.Bool["aws:SecureTransport"])"' bucket-policy.json
+        stdout_equals: Deny false
+        message: NurTls soll ein Deny bleiben und bei aws:SecureTransport "false" greifen.
+      - type: command
+        run: jq -r '.Statement[] | select(.Sid == "BuchhaltungLiest") | [.Effect, .Principal.AWS, ([.Action] | flatten | join(",")), ([.Resource] | flatten | join(","))] | join(" ")' bucket-policy.json
+        stdout_equals: "Allow arn:aws:iam::123456789012:role/buchhaltung s3:GetObject arn:aws:s3:::example-invoices-123456789012/*"
+        message: Das Statement BuchhaltungLiest soll der Rolle buchhaltung genau s3:GetObject auf arn:aws:s3:::example-invoices-123456789012/* erlauben.
+      - type: command
+        run: jq -r '.Statement | length' bucket-policy.json
+        stdout_equals: "2"
+        message: Am Ende soll die Policy genau zwei Statements haben – NurTls und BuchhaltungLiest.
+    hints:
+      - Schreibe die Datei am einfachsten komplett neu mit `cat > bucket-policy.json <<'EOF'`.
+      - Der Principal einer Rolle steht als Objekt mit dem Schlüssel `AWS`.
+    solution: |
+      ```bash
+      cd pruefung-bucket
+      cat > bucket-policy.json <<'EOF'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "NurTls",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:*",
+            "Resource": [
+              "arn:aws:s3:::example-invoices-123456789012",
+              "arn:aws:s3:::example-invoices-123456789012/*"
+            ],
+            "Condition": { "Bool": { "aws:SecureTransport": "false" } }
+          },
+          {
+            "Sid": "BuchhaltungLiest",
+            "Effect": "Allow",
+            "Principal": { "AWS": "arn:aws:iam::123456789012:role/buchhaltung" },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-invoices-123456789012/*"
+          }
+        ]
+      }
+      EOF
+      jq . bucket-policy.json
+      ```

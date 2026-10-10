@@ -1,0 +1,101 @@
+title: VPC, EC2 und RDS
+description: Wie du ein privates Netz in AWS planst, Verkehr mit Security Groups und Network ACLs filterst und Server mit EC2 sowie Datenbanken mit RDS einordnest.
+exercise:
+  id: modul-uebung-netzplan
+  type: terminal
+  title: Einen dreischichtigen Netzplan schreiben
+  description: |
+    Plane im Ordner `drei-schichten` das Netz für eine Web-App mit Load Balancer, App-Servern und Datenbank –
+    ausfallsicher über zwei Verfügbarkeitszonen.
+
+    1. Schreibe `netzplan.json` mit diesem Aufbau:
+
+       ```json
+       {
+         "vpc": "10.30.0.0/16",
+         "subnets": [
+           { "name": "public-a", "cidr": "10.30.0.0/24", "zone": "eu-central-1a", "typ": "public" }
+         ]
+       }
+       ```
+
+       Lege **sechs** Subnetze an: je eins vom `typ` `public`, `app` und `db` in `eu-central-1a` **und**
+       in `eu-central-1b`. Alle Subnetze sind `/24`, liegen in `10.30.0.0/16` und überschneiden sich nicht.
+
+    2. Schreibe `security-groups.json` – eine Liste von Security Groups mit eingehenden Regeln:
+
+       ```json
+       [
+         { "name": "sg-alb", "ingress": [ { "port": 443, "source": "0.0.0.0/0" } ] }
+       ]
+       ```
+
+       Ergänze `sg-app` (Port `8080` nur von `sg-alb`) und `sg-db` (Port `5432` nur von `sg-app`).
+       `0.0.0.0/0` darf nur als Quelle für Port 443 vorkommen.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit der Ordner angelegt wird.
+  workdir: drei-schichten
+  setup: |
+    true
+  checks:
+    - type: command
+      run: jq -r '.vpc' netzplan.json
+      stdout_equals: 10.30.0.0/16
+      message: netzplan.json fehlt, ist kein gültiges JSON oder hat nicht "vpc" mit 10.30.0.0/16.
+    - type: command
+      run: jq -r '.subnets | length' netzplan.json
+      stdout_equals: "6"
+      message: In netzplan.json sollen genau sechs Subnetze stehen.
+    - type: command
+      run: jq -r '[.subnets[] | select((.cidr | startswith("10.30.")) and (.cidr | endswith("/24")))] | length' netzplan.json
+      stdout_equals: "6"
+      message: Alle Subnetze müssen /24-Netze innerhalb von 10.30.0.0/16 sein (sie beginnen mit 10.30. und enden auf /24).
+    - type: command
+      run: jq -r '[.subnets[].cidr] | unique | length' netzplan.json
+      stdout_equals: "6"
+      message: Zwei Subnetze haben denselben CIDR-Block. Jedes Subnetz braucht einen eigenen Bereich.
+    - type: command
+      run: jq -r '[ "public", "app", "db" ][] as $t | [ .subnets[] | select(.typ == $t) | .zone ] | sort | join(",")' netzplan.json | sort -u
+      stdout_equals: eu-central-1a,eu-central-1b
+      message: Jeder Typ (public, app, db) braucht genau ein Subnetz in eu-central-1a und eins in eu-central-1b.
+    - type: command
+      run: jq -r '[.[] | .ingress[] | select(.source == "0.0.0.0/0") | .port] | unique | map(tostring) | join(",")' security-groups.json
+      stdout_equals: "443"
+      message: security-groups.json fehlt oder 0.0.0.0/0 kommt nicht genau als Quelle für Port 443 (und nur dafür) vor.
+    - type: command
+      run: jq -r '.[] | select(.name == "sg-app") | .ingress | map("\(.port) \(.source)") | join(",")' security-groups.json
+      stdout_equals: 8080 sg-alb
+      message: sg-app soll genau eine Regel haben – Port 8080 mit der Quelle sg-alb.
+    - type: command
+      run: jq -r '.[] | select(.name == "sg-db") | .ingress | map("\(.port) \(.source)") | join(",")' security-groups.json
+      stdout_equals: 5432 sg-app
+      message: sg-db soll genau eine Regel haben – Port 5432 mit der Quelle sg-app.
+  hints:
+    - "Ein einfaches Schema: public in 10.30.0.0/24 und 10.30.1.0/24, app in 10.30.10.0/24 und 10.30.11.0/24, db in 10.30.20.0/24 und 10.30.21.0/24."
+    - "Ports schreibst du als Zahl (443), Quellen als Text (\"sg-alb\")."
+    - "Mit `jq . netzplan.json` und `jq . security-groups.json` prüfst du, ob das JSON gültig ist."
+  solution: |
+    ```bash
+    cd drei-schichten
+    cat > netzplan.json <<'EOF'
+    {
+      "vpc": "10.30.0.0/16",
+      "subnets": [
+        { "name": "public-a", "cidr": "10.30.0.0/24", "zone": "eu-central-1a", "typ": "public" },
+        { "name": "public-b", "cidr": "10.30.1.0/24", "zone": "eu-central-1b", "typ": "public" },
+        { "name": "app-a", "cidr": "10.30.10.0/24", "zone": "eu-central-1a", "typ": "app" },
+        { "name": "app-b", "cidr": "10.30.11.0/24", "zone": "eu-central-1b", "typ": "app" },
+        { "name": "db-a", "cidr": "10.30.20.0/24", "zone": "eu-central-1a", "typ": "db" },
+        { "name": "db-b", "cidr": "10.30.21.0/24", "zone": "eu-central-1b", "typ": "db" }
+      ]
+    }
+    EOF
+    cat > security-groups.json <<'EOF'
+    [
+      { "name": "sg-alb", "ingress": [ { "port": 443, "source": "0.0.0.0/0" } ] },
+      { "name": "sg-app", "ingress": [ { "port": 8080, "source": "sg-alb" } ] },
+      { "name": "sg-db", "ingress": [ { "port": 5432, "source": "sg-app" } ] }
+    ]
+    EOF
+    jq . netzplan.json security-groups.json
+    ```
