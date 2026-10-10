@@ -1,0 +1,366 @@
+title: Abschlussprüfung Monorepos & Workspaces
+description: |
+  Diese Prüfung deckt alle vier Module ab: Monorepos verstehen, Pakete und Versionen, TypeScript und Skripte
+  sowie Skalieren und Ausliefern. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben im echten
+  Übungs-Terminal.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast, und
+  kannst gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Grundlagen ---
+  - module: grundlagen
+    type: single
+    question: Welche Situation spricht am stärksten für ein Monorepo?
+    options:
+      - Zwei Projekte in verschiedenen Sprachen ohne gemeinsamen Code
+      - Web-App und API teilen Typen und Hilfsfunktionen und ändern sich oft gemeinsam
+      - Ein Projekt, dessen Quellcode nur wenige Personen sehen dürfen
+      - Ein Open-Source-Paket mit eigenem Release-Zyklus und externen Mitwirkenden
+    answer: 1
+    explanation: Geteilter Code und gemeinsame Änderungen sind der Kern des Monorepo-Vorteils. Die anderen Fälle sprechen eher für getrennte Repositorys.
+  - module: grundlagen
+    type: multiple
+    question: Was gehört in die Root-package.json eines Bun-Monorepos? (mehrere richtig)
+    options:
+      - Das Feld workspaces mit den Paketordnern
+      - '"private": true'
+      - react als dependency für alle Apps
+      - typescript als devDependency für das ganze Repository
+    answers: [0, 1, 3]
+    explanation: Laufzeit-Abhängigkeiten wie react gehören in die Pakete, die sie nutzen. Repo-weite Werkzeuge stehen als devDependencies im Root.
+  - module: grundlagen
+    type: match
+    question: Ordne jedem Paketmanager seine Workspace-Eigenheit zu.
+    pairs:
+      - { left: "npm", right: "Lokale Pakete mit normaler Version wie *, kein workspace:" }
+      - { left: "pnpm", right: "Paketordner in pnpm-workspace.yaml" }
+      - { left: "Bun", right: "workspaces in package.json, workspace: und Catalogs" }
+    explanation: Alle drei verwalten Workspaces, aber Konfiguration und Schreibweisen unterscheiden sich.
+  - module: grundlagen
+    type: cloze
+    text: 'Nach `bun install` in einem Monorepo gibt es genau eine Datei ___ – und zwar im ___-Ordner.'
+    blanks:
+      - [bun.lock]
+      - [Root, Wurzel, obersten]
+    explanation: Ein Install, ein Lockfile. Auch ein bun install in einem Unterordner schreibt ins Root-Lockfile.
+
+  # --- Pakete und Versionen ---
+  - module: pakete-und-versionen
+    type: single
+    question: '`@kiosk/ui` hat Version 3.2.0. Was steht nach `bun pm pack` in einem Paket, das `"@kiosk/ui": "workspace:^"` einträgt?'
+    options:
+      - 'workspace:^'
+      - '3.2.0'
+      - '^3.2.0'
+      - '*'
+    answer: 2
+    explanation: workspace:^ wird zu einem Caret-Bereich mit der aktuellen lokalen Version.
+  - module: pakete-und-versionen
+    type: find-bug
+    question: Das Paket soll vitest aus dem benannten Catalog testing beziehen, aber bun install bricht ab. In welcher Zeile liegt der Fehler?
+    language: json
+    code: |
+      {
+        "name": "@kiosk/ui",
+        "dependencies": {
+          "react": "catalog:"
+        },
+        "devDependencies": {
+          "vitest": "catalog-testing"
+        }
+      }
+    bug_line: 7
+    explanation: Benannte Catalogs werden mit Doppelpunkt angesprochen – "catalog:testing".
+  - module: pakete-und-versionen
+    type: multiple
+    question: Was passiert bei isolierten Installationen in Bun? (mehrere richtig)
+    options:
+      - Pakete liegen einmal in node_modules/.bun.
+      - Ein Paket kann nur importieren, was es selbst deklariert.
+      - Phantom-Abhängigkeiten fallen sofort als Fehler auf.
+      - Alle Pakete werden flach in das Root-node_modules gelegt.
+    answers: [0, 1, 2]
+    explanation: Flache Ablage ist der hoisted Modus – genau der, der Phantom-Abhängigkeiten verdeckt.
+  - module: pakete-und-versionen
+    type: single
+    question: Die React-Version im Standard-Catalog wurde geändert. Was ist der nächste Schritt?
+    options:
+      - In jedem Paket die Version ebenfalls ändern
+      - bun install ausführen, damit bun.lock und node_modules aktualisiert werden
+      - Die bun.lock löschen
+      - Nichts – Catalogs wirken erst beim Veröffentlichen
+    answer: 1
+    explanation: Der Catalog ist die einzige Stelle mit der Version. bun install löst sie neu auf und schreibt das Lockfile.
+
+  # --- TypeScript und Skripte ---
+  - module: typescript-und-skripte
+    type: single
+    question: 'Eine App-tsconfig enthält `"extends": "@kiosk/tsconfig/base.json"`, aber TypeScript findet die Datei nicht. Was fehlt am wahrscheinlichsten?'
+    options:
+      - '"composite": true in der App'
+      - 'Der Eintrag "@kiosk/tsconfig": "workspace:*" in der package.json der App (und danach bun install)'
+      - Eine zweite tsconfig im Root
+      - '"strict": false in der Basis'
+    answer: 1
+    explanation: TypeScript löst Paketnamen über node_modules auf. Ohne Abhängigkeit gibt es keinen Link auf das Paket.
+  - module: typescript-und-skripte
+    type: multiple
+    question: Was gilt für Projektreferenzen? (mehrere richtig)
+    options:
+      - Ein referenziertes Projekt braucht "composite" true.
+      - tsc -b baut Projekte in Abhängigkeitsreihenfolge.
+      - Eine .tsbuildinfo-Datei merkt sich den letzten Build-Stand.
+      - references ersetzt die dependencies in der package.json.
+    answers: [0, 1, 2]
+    explanation: references beschreibt Abhängigkeiten zwischen TypeScript-Projekten, dependencies die zwischen Paketen – beides wird gebraucht.
+  - module: typescript-und-skripte
+    type: match
+    question: Welcher Filter wählt welche Pakete aus?
+    pairs:
+      - { left: "--filter './packages/*'", right: "Alle Pakete im Ordner packages" }
+      - { left: "--filter '...@kiosk/preise'", right: "preise und alle Pakete, die es nutzen" }
+      - { left: "--filter '@kiosk/web...'", right: "web und alles, wovon es abhängt" }
+      - { left: "--filter '!@kiosk/docs'", right: "Schließt docs aus" }
+    explanation: Punkte hinter dem Namen nehmen Abhängigkeiten mit, Punkte davor die abhängigen Pakete.
+  - module: typescript-und-skripte
+    type: single
+    question: Warum ist `bun run --filter '*' --parallel build` für ein Monorepo mit kompilierten Bibliotheken riskant?
+    options:
+      - Weil --parallel nur ein Paket startet
+      - Weil alle Builds sofort starten – eine App kann bauen, bevor ihre Bibliothek fertig ist
+      - Weil --parallel das Lockfile ändert
+      - Weil --parallel keine Ausgaben anzeigt
+    answer: 1
+    explanation: Ohne --parallel beachtet Bun die Abhängigkeitsreihenfolge. --parallel ist für Dauerprozesse wie dev-Server gedacht.
+
+  # --- Skalieren und ausliefern ---
+  - module: skalieren-und-ausliefern
+    type: single
+    question: Turborepo meldet bei einem Treffer Erfolg, aber der Ordner dist fehlt danach. Was ist die Ursache?
+    options:
+      - In turbo.json fehlen die outputs der Aufgabe.
+      - Der Remote-Cache ist abgeschaltet.
+      - dependsOn enthält ^build.
+      - Das Lockfile ist eingefroren.
+    answer: 0
+    explanation: Nur Dateien unter outputs werden gecacht und bei einem Treffer wiederhergestellt.
+  - module: skalieren-und-ausliefern
+    type: match
+    question: Ordne jeden Changesets-Befehl seiner Wirkung zu.
+    pairs:
+      - { left: "changeset", right: "Beschreibt eine Änderung mit Paket und Sprungart" }
+      - { left: "changeset version", right: "Erhöht Versionen und schreibt Changelogs" }
+      - { left: "changeset publish", right: "Veröffentlicht neue Versionen und legt Tags an" }
+    explanation: Changesets entstehen bei jeder Änderung, version und publish nur beim Release.
+  - module: skalieren-und-ausliefern
+    type: cloze
+    text: 'In der CI installierst du mit `bun install --___`, damit ein veraltetes Lockfile den Lauf abbricht. Für `--affected` holt `actions/checkout` mit `fetch-depth: ___` die volle Historie.'
+    blanks:
+      - [frozen-lockfile]
+      - ["0"]
+    explanation: Reproduzierbare Installation und genug Git-Historie sind die Grundlage einer Monorepo-Pipeline.
+  - module: skalieren-und-ausliefern
+    type: multiple
+    question: 'Ein Changeset erhöht `@kiosk/preise` als major. `@kiosk/kasse` nutzt preise mit `workspace:*`, `@kiosk/docs` nutzt es nicht. Was passiert bei `changeset version`? (mehrere richtig)'
+    options:
+      - preise springt auf die nächste Major-Version.
+      - kasse bekommt automatisch einen patch-Sprung.
+      - docs bleibt unverändert.
+      - Alle Pakete springen auf major.
+    answers: [0, 1, 2]
+    explanation: Changesets erhöht abhängige Pakete mindestens als patch; unbeteiligte Pakete bleiben unverändert.
+tasks:
+  - module: pakete-und-versionen
+    id: pruefung-pakete
+    type: terminal
+    title: Bestellungen an die Bibliothek anschließen
+    description: |
+      Im Monorepo `pruefung-pakete` gibt es die Bibliothek `@kiosk/bestellung` in `packages/bestellung` und die App
+      `@kiosk/shop` in `apps/shop`. Beide nutzen `ms`, aber mit unterschiedlichen festen Versionen, und der Shop hat
+      die Bibliothek noch nicht eingetragen.
+
+      1. Lege in der Root-`package.json` einen Standard-Catalog mit `"ms": "^2.1.3"` an.
+      2. Beide Pakete beziehen `ms` mit `catalog:`.
+      3. `apps/shop` trägt `@kiosk/bestellung` mit `workspace:*` ein.
+      4. Installiere und starte `bun apps/shop/src/main.ts`. Erwartet: `Bestellung 42 – fertig in 15m`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-pakete
+    setup: |
+      mkdir -p apps/shop/src packages/bestellung/src
+      cat > package.json <<'EOF'
+      {
+        "name": "kiosk",
+        "private": true,
+        "workspaces": ["apps/*", "packages/*"]
+      }
+      EOF
+      cat > packages/bestellung/package.json <<'EOF'
+      {
+        "name": "@kiosk/bestellung",
+        "version": "1.0.0",
+        "type": "module",
+        "exports": "./src/index.ts",
+        "dependencies": { "ms": "2.1.3" }
+      }
+      EOF
+      printf 'import ms from "ms";\nexport const status = (id: number, minuten: number) => `Bestellung ${id} – fertig in ${ms(minuten * 60000)}`;\n' > packages/bestellung/src/index.ts
+      cat > apps/shop/package.json <<'EOF'
+      {
+        "name": "@kiosk/shop",
+        "version": "0.1.0",
+        "type": "module",
+        "dependencies": { "ms": "2.1.2" }
+      }
+      EOF
+      printf 'import { status } from "@kiosk/bestellung";\nconsole.log(status(42, 15));\n' > apps/shop/src/main.ts
+    checks:
+      - type: command
+        run: jq -r '.workspaces.catalog.ms // "fehlt"' package.json
+        stdout_equals: "^2.1.3"
+        message: 'Im Root fehlt workspaces.catalog mit "ms": "^2.1.3" (Objekt-Schreibweise mit "packages").'
+      - type: command
+        run: jq -r '.dependencies.ms' packages/bestellung/package.json apps/shop/package.json | sort -u
+        stdout_equals: "catalog:"
+        message: 'Beide Pakete sollen ms mit "catalog:" beziehen.'
+      - type: command
+        run: jq -r '.dependencies["@kiosk/bestellung"] // "fehlt"' apps/shop/package.json
+        stdout_equals: "workspace:*"
+        message: 'apps/shop braucht "@kiosk/bestellung": "workspace:*".'
+      - type: command
+        run: bun apps/shop/src/main.ts
+        stdout_equals: "Bestellung 42 – fertig in 15m"
+        message: Der Shop läuft noch nicht. Hast du nach den Änderungen `bun install` ausgeführt?
+    hints:
+      - Zuerst die Root-package.json auf die Objekt-Schreibweise mit packages und catalog umstellen.
+      - '`jq` hilft: `jq ''.dependencies.ms = "catalog:"'' datei > tmp.json && mv tmp.json datei`.'
+    solution: |
+      ```bash
+      cd pruefung-pakete
+      cat > package.json <<'EOF'
+      {
+        "name": "kiosk",
+        "private": true,
+        "workspaces": {
+          "packages": ["apps/*", "packages/*"],
+          "catalog": { "ms": "^2.1.3" }
+        }
+      }
+      EOF
+      jq '.dependencies.ms = "catalog:"' packages/bestellung/package.json > tmp.json && mv tmp.json packages/bestellung/package.json
+      jq '.dependencies = {"ms": "catalog:", "@kiosk/bestellung": "workspace:*"}' apps/shop/package.json > tmp.json && mv tmp.json apps/shop/package.json
+      bun install
+      bun apps/shop/src/main.ts
+      ```
+  - module: typescript-und-skripte
+    id: pruefung-skripte
+    type: terminal
+    title: Gezielt testen mit --filter
+    description: |
+      Im Monorepo `pruefung-skripte` haben `packages/format`, `packages/ui` (nutzt format), `apps/web` (nutzt ui)
+      und `apps/admin` (nutzt nichts) je ein `test`-Skript. Jedes schreibt seinen Namen in `test.log` im Root.
+
+      Lege in der Root-`package.json` das Skript `test:format` an. Es soll `test` in `@kiosk/format` **und in
+      allen Paketen, die format direkt oder indirekt nutzen**, starten – in Abhängigkeitsreihenfolge. `apps/admin`
+      darf dabei nicht laufen.
+
+      Probiere es aus: `rm -f test.log; bun run test:format; cat test.log`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**.
+    workdir: pruefung-skripte
+    setup: |
+      mkdir -p packages/format packages/ui apps/web apps/admin
+      cat > package.json <<'EOF'
+      {
+        "name": "kiosk",
+        "private": true,
+        "workspaces": ["apps/*", "packages/*"]
+      }
+      EOF
+      mk() {
+        printf '{\n  "name": "@kiosk/%s",\n  "version": "1.0.0",\n  "dependencies": %s,\n  "scripts": { "test": "echo %s >> ../../test.log" }\n}\n' "$2" "$3" "$2" > "$1/package.json"
+      }
+      mk packages/format format '{}'
+      mk packages/ui ui '{ "@kiosk/format": "workspace:*" }'
+      mk apps/web web '{ "@kiosk/ui": "workspace:*" }'
+      mk apps/admin admin '{}'
+      bun install > /dev/null 2>&1
+    checks:
+      - type: command
+        run: jq -r '.scripts["test:format"] // ""' package.json
+        stdout_matches: "--filter|-F"
+        message: Lege in der Root-package.json das Skript "test:format" mit `bun run --filter …` an.
+      - type: command
+        run: rm -f test.log; bun run test:format > /dev/null 2>&1; paste -sd ',' test.log
+        stdout_equals: "format,ui,web"
+        message: 'test:format soll genau format, ui und web in dieser Reihenfolge testen. Tipp: Punkte vor dem Paketnamen nehmen die abhängigen Pakete mit.'
+    hints:
+      - Gesucht sind format und alle Pakete, die format nutzen – also die **abhängigen** Pakete.
+      - '`"test:format": "bun run --filter ''...@kiosk/format'' test"`'
+    solution: |
+      ```bash
+      cd pruefung-skripte
+      jq '.scripts["test:format"] = "bun run --filter '"'"'...@kiosk/format'"'"' test"' package.json > tmp.json && mv tmp.json package.json
+      rm -f test.log; bun run test:format; cat test.log
+      ```
+  - module: skalieren-und-ausliefern
+    id: pruefung-release
+    type: terminal
+    title: Ein Fix-Release
+    description: |
+      Im Monorepo `pruefung-release` ist Changesets eingerichtet. In `@kiosk/steuer` (2.3.0) wurde ein
+      Rechenfehler behoben. `@kiosk/kasse` (1.0.0) nutzt steuer, `@kiosk/web` (1.4.0) nicht.
+
+      1. Lege ein passendes Changeset an.
+      2. Erzeuge die neuen Versionen.
+      3. Bringe die `bun.lock` auf den neuen Stand, sodass `bun install --frozen-lockfile` erfolgreich ist.
+
+      Klicke zuerst auf **Aufgabe vorbereiten** (das dauert ein paar Sekunden).
+    workdir: pruefung-release
+    setup: |
+      git init -q -b main
+      git config user.name "Stacklab"
+      git config user.email "stacklab@example.com"
+      mkdir -p packages/steuer apps/kasse apps/web .changeset
+      cat > package.json <<'EOF'
+      {
+        "name": "kiosk",
+        "private": true,
+        "workspaces": ["apps/*", "packages/*"],
+        "devDependencies": { "@changesets/cli": "^3.0.0" }
+      }
+      EOF
+      printf '{\n  "baseBranch": "main",\n  "access": "restricted"\n}\n' > .changeset/config.json
+      printf 'node_modules\n' > .gitignore
+      printf '{\n  "name": "@kiosk/steuer",\n  "version": "2.3.0"\n}\n' > packages/steuer/package.json
+      printf '{\n  "name": "@kiosk/kasse",\n  "version": "1.0.0",\n  "dependencies": { "@kiosk/steuer": "workspace:*" }\n}\n' > apps/kasse/package.json
+      printf '{\n  "name": "@kiosk/web",\n  "version": "1.4.0"\n}\n' > apps/web/package.json
+      bun install > /dev/null 2>&1
+      git add -A
+      git commit -q -m "chore: initial monorepo"
+    checks:
+      - type: command
+        run: jq -r '.version' packages/steuer/package.json apps/kasse/package.json apps/web/package.json | paste -sd ' ' -
+        stdout_equals: "2.3.1 1.0.1 1.4.0"
+        message: 'Erwartet: steuer 2.3.1 (patch), kasse 1.0.1 (automatisch) und web unverändert 1.4.0.'
+      - type: file_contains
+        path: packages/steuer/CHANGELOG.md
+        pattern: "## 2\\.3\\.1"
+        message: In packages/steuer fehlt eine CHANGELOG.md mit „## 2.3.1“.
+      - type: command
+        run: bun install --frozen-lockfile > /dev/null 2>&1 && echo ok
+        stdout_equals: ok
+        message: '`bun install --frozen-lockfile` schlägt fehl. Führe nach changeset version einmal `bun install` aus.'
+    hints:
+      - Ein behobener Fehler ist ein patch.
+      - '`bunx changeset --patch @kiosk/steuer -m "…"`, dann `bunx changeset version` und `bun install`.'
+    solution: |
+      ```bash
+      cd pruefung-release
+      bunx changeset --patch @kiosk/steuer -m "Rechenfehler bei der Mehrwertsteuer behoben"
+      bunx changeset version
+      bun install
+      bun install --frozen-lockfile
+      ```

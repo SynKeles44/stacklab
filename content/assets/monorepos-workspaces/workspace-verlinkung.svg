@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 340" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#a78bfa"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="430" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Ein internes Paket wird verlinkt, nicht kopiert</text>
+<rect x="30" y="70" width="360" height="230" rx="16" fill="#22d3ee" fill-opacity=".10" stroke="#22d3ee" stroke-width="3"/>
+<text x="50" y="100" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">apps/kasse/</text>
+<text x="70" y="132" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">package.json</text>
+<text x="90" y="156" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">"@kiosk/preise": "workspace:*"</text>
+<text x="70" y="190" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">src/main.ts</text>
+<text x="90" y="214" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">import … from "@kiosk/preise"</text>
+<rect x="60" y="235" width="300" height="44" rx="8" fill="#a78bfa" fill-opacity=".16" stroke="#a78bfa" stroke-width="2"/>
+<text x="210" y="262" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">node_modules/@kiosk/preise</text>
+<rect x="470" y="70" width="360" height="230" rx="16" fill="#34d399" fill-opacity=".10" stroke="#34d399" stroke-width="3"/>
+<text x="490" y="100" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">packages/preise/</text>
+<text x="510" y="132" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">package.json</text>
+<text x="530" y="156" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">"exports": "./src/index.ts"</text>
+<text x="510" y="190" font-size="13" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">src/index.ts</text>
+<text x="530" y="214" font-size="12" fill="#475569" font-family="ui-monospace, Menlo, monospace">export function formatPreis…</text>
+<path d="M362 257 C 420 257, 420 160, 466 160" fill="none" stroke="#a78bfa" stroke-width="3" marker-end="url(#a)"/>
+<text x="430" y="300" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">Symlink</text>
+<text x="430" y="322" text-anchor="middle" font-size="12" fill="#475569">Änderungen in packages/preise sind sofort in der Kasse sichtbar</text>
+</svg>

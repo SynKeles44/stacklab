@@ -1,0 +1,93 @@
+title: Pakete und Versionen
+description: Interne Pakete mit dem workspace:-Protokoll verbinden, Versionen mit Catalogs zentral festlegen und Phantom-Abhängigkeiten mit isolierten Installationen verhindern.
+exercise:
+  id: modul-uebung-pakete
+  type: terminal
+  title: Ordnung im Kiosk-Monorepo
+  description: |
+    Im Monorepo `pakete-uebung` ist einiges durcheinander: `packages/format` pinnt `ms` auf eine feste Version,
+    und die App `apps/laden` nutzt sowohl `@kiosk/format` als auch `ms` – ohne eines davon einzutragen.
+
+    1. Stelle die Root-`package.json` auf die Objekt-Schreibweise um und lege einen Standard-Catalog mit
+       `"ms": "^2.1.3"` an.
+    2. `packages/format` soll `ms` aus dem Catalog beziehen.
+    3. `apps/laden` soll `@kiosk/format` als Workspace-Paket (`workspace:*`) und `ms` aus dem Catalog eintragen.
+    4. Installiere alles und starte `bun apps/laden/src/main.ts`. Erwartete Ausgabe:
+       `Lieferung in 2h – Preis 3.99 EUR`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**.
+  workdir: pakete-uebung
+  setup: |
+    mkdir -p apps/laden/src packages/format/src
+    cat > package.json <<'JSON'
+    {
+      "name": "kiosk",
+      "private": true,
+      "workspaces": ["apps/*", "packages/*"]
+    }
+    JSON
+    cat > packages/format/package.json <<'JSON'
+    {
+      "name": "@kiosk/format",
+      "version": "1.0.0",
+      "type": "module",
+      "exports": "./src/index.ts",
+      "dependencies": { "ms": "2.1.3" }
+    }
+    JSON
+    cat > packages/format/src/index.ts <<'TS'
+    import ms from "ms";
+    export const euro = (cent: number) => (cent / 100).toFixed(2) + " EUR";
+    export const dauer = (millis: number) => ms(millis);
+    TS
+    cat > apps/laden/package.json <<'JSON'
+    {
+      "name": "@kiosk/laden",
+      "version": "0.1.0",
+      "type": "module"
+    }
+    JSON
+    cat > apps/laden/src/main.ts <<'TS'
+    import ms from "ms";
+    import { euro, dauer } from "@kiosk/format";
+    console.log(`Lieferung in ${dauer(ms("2 hours"))} – Preis ${euro(399)}`);
+    TS
+  checks:
+    - type: command
+      run: jq -r '.workspaces.catalog.ms // "fehlt"' package.json
+      stdout_equals: "^2.1.3"
+      message: 'Im Root fehlt workspaces.catalog mit "ms": "^2.1.3" (Objekt-Schreibweise mit "packages").'
+    - type: command
+      run: jq -r '.dependencies.ms // "fehlt"' packages/format/package.json
+      stdout_equals: "catalog:"
+      message: 'packages/format soll ms mit "catalog:" beziehen statt mit einer festen Version.'
+    - type: command
+      run: jq -r '[.dependencies["@kiosk/format"], .dependencies.ms] | map(. // "fehlt") | join(" ")' apps/laden/package.json
+      stdout_equals: "workspace:* catalog:"
+      message: 'apps/laden braucht "@kiosk/format": "workspace:*" und "ms": "catalog:" unter dependencies.'
+    - type: command
+      run: bun apps/laden/src/main.ts
+      stdout_equals: "Lieferung in 2h – Preis 3.99 EUR"
+      message: apps/laden läuft noch nicht. Hast du nach den Änderungen `bun install` im Root ausgeführt?
+  hints:
+    - Beginne mit der Root-package.json, denn `catalog:` funktioniert erst, wenn der Catalog existiert.
+    - 'Im Root: `bun add "@kiosk/format@workspace:*" --filter @kiosk/laden`; im Ordner apps/laden: `bun add --catalog ms`.'
+    - Prüfe mit `bun why ms`, wer ms jetzt verlangt.
+  solution: |
+    ```bash
+    cd pakete-uebung
+    cat > package.json <<'JSON'
+    {
+      "name": "kiosk",
+      "private": true,
+      "workspaces": {
+        "packages": ["apps/*", "packages/*"],
+        "catalog": { "ms": "^2.1.3" }
+      }
+    }
+    JSON
+    jq '.dependencies.ms = "catalog:"' packages/format/package.json > tmp.json && mv tmp.json packages/format/package.json
+    jq '.dependencies = {"@kiosk/format": "workspace:*", "ms": "catalog:"}' apps/laden/package.json > tmp.json && mv tmp.json apps/laden/package.json
+    bun install
+    bun apps/laden/src/main.ts
+    ```

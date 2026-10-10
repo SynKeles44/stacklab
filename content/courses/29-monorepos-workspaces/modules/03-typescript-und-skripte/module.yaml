@@ -1,0 +1,124 @@
+title: TypeScript und Skripte
+description: Eine gemeinsame tsconfig-Basis als internes Paket, kompilierte Pakete mit Projektreferenzen und tsc -b und Skripte über viele Pakete mit --filter.
+exercise:
+  id: modul-uebung-build
+  type: terminal
+  title: Ein Build für das ganze Monorepo
+  description: |
+    Im Monorepo `build-uebung` liegen die Bibliothek `packages/preise`, die App `apps/kasse` und das
+    Konfigurationspaket `packages/tsconfig` mit einer fertigen `base.json`. TypeScript 7 ist installiert.
+
+    1. Beide Paket-tsconfigs sollen von `@kiosk/tsconfig/base.json` erben (trage dafür `@kiosk/tsconfig` jeweils als
+       devDependency mit `workspace:*` ein und installiere neu). `rootDir`, `outDir` und `include` bleiben im Paket.
+    2. Beide Pakete werden referenzierbar (`composite`), und `apps/kasse` referenziert `packages/preise`.
+    3. Lege eine Root-`tsconfig.json` mit `"files": []` an, die beide Pakete referenziert.
+    4. Lege in der Root-`package.json` zwei Skripte an:
+       - `build` baut das ganze Monorepo mit `tsc -b`.
+       - `start` startet mit `--filter` das Skript `start` von `@kiosk/kasse`.
+    5. Teste: `bun run build && bun run start` gibt `Summe: 4.50 EUR` aus.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** (das dauert ein paar Sekunden).
+  workdir: build-uebung
+  setup: |
+    mkdir -p apps/kasse/src packages/preise/src packages/tsconfig
+    cat > package.json <<'JSON'
+    {
+      "name": "kiosk",
+      "private": true,
+      "workspaces": {
+        "packages": ["apps/*", "packages/*"],
+        "catalog": { "typescript": "^7.0.2" }
+      },
+      "devDependencies": { "typescript": "catalog:" }
+    }
+    JSON
+    printf '{\n  "name": "@kiosk/tsconfig",\n  "version": "1.0.0",\n  "private": true\n}\n' > packages/tsconfig/package.json
+    cat > packages/tsconfig/base.json <<'JSON'
+    {
+      "compilerOptions": {
+        "strict": true,
+        "target": "es2022",
+        "module": "nodenext",
+        "declaration": true,
+        "skipLibCheck": true
+      }
+    }
+    JSON
+    cat > packages/preise/package.json <<'JSON'
+    {
+      "name": "@kiosk/preise",
+      "version": "1.0.0",
+      "type": "module",
+      "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } }
+    }
+    JSON
+    printf 'export const formatPreis = (cent: number): string => (cent / 100).toFixed(2) + " EUR";\n' > packages/preise/src/index.ts
+    cat > apps/kasse/package.json <<'JSON'
+    {
+      "name": "@kiosk/kasse",
+      "version": "0.1.0",
+      "type": "module",
+      "dependencies": { "@kiosk/preise": "workspace:*" },
+      "scripts": { "start": "node dist/main.js" }
+    }
+    JSON
+    printf 'import { formatPreis } from "@kiosk/preise";\nconsole.log("Summe: " + formatPreis(450));\n' > apps/kasse/src/main.ts
+    for p in packages/preise apps/kasse; do
+      printf '{\n  "compilerOptions": { "strict": true, "target": "es2022", "module": "nodenext", "rootDir": "src", "outDir": "dist" },\n  "include": ["src"]\n}\n' > $p/tsconfig.json
+    done
+    bun install > /dev/null 2>&1
+  checks:
+    - type: command
+      run: jq -r '.extends // "fehlt"' packages/preise/tsconfig.json apps/kasse/tsconfig.json | sort -u
+      stdout_equals: "@kiosk/tsconfig/base.json"
+      message: 'Beide Paket-tsconfigs sollen mit "extends": "@kiosk/tsconfig/base.json" erben.'
+    - type: command
+      run: jq -r '.devDependencies["@kiosk/tsconfig"] // "fehlt"' packages/preise/package.json apps/kasse/package.json | sort -u
+      stdout_equals: "workspace:*"
+      message: 'Beide Pakete brauchen "@kiosk/tsconfig": "workspace:*" unter devDependencies (danach bun install).'
+    - type: command
+      run: jq -r '(.references // []) | length' apps/kasse/tsconfig.json
+      stdout_equals: "1"
+      message: apps/kasse/tsconfig.json soll genau eine Referenz auf ../../packages/preise haben.
+    - type: command
+      run: jq -r '(.files | length | tostring) + "/" + (.references | length | tostring)' tsconfig.json
+      stdout_equals: "0/2"
+      message: 'Die Root-tsconfig.json braucht "files": [] und zwei references.'
+    - type: command
+      run: jq -r '.scripts.build // "fehlt"' package.json
+      stdout_matches: "tsc -b|tsc --build"
+      message: Das Root-Skript build soll `tsc -b` ausführen.
+    - type: command
+      run: bun run build > /dev/null 2>&1 && bun run start 2>&1
+      stdout_matches: "Summe: 4\\.50 EUR"
+      message: '`bun run build && bun run start` gibt noch nicht "Summe 4.50 EUR" aus. Prüfe composite, references und das start-Skript mit --filter.'
+  hints:
+    - Fange mit den devDependencies an und führe `bun install` aus – sonst findet TypeScript die Basis nicht.
+    - 'Paket-tsconfig: `{ "extends": "@kiosk/tsconfig/base.json", "compilerOptions": { "composite": true, "rootDir": "src", "outDir": "dist" }, "include": ["src"] }` – bei der Kasse zusätzlich `"references"`.'
+    - 'Root-Skripte: `"build": "tsc -b"` und `"start": "bun run --filter @kiosk/kasse start"`.'
+  solution: |
+    ```bash
+    cd build-uebung
+    for p in packages/preise apps/kasse; do
+      jq '.devDependencies = {"@kiosk/tsconfig": "workspace:*"}' $p/package.json > tmp.json && mv tmp.json $p/package.json
+    done
+    bun install
+    cat > packages/preise/tsconfig.json <<'JSON'
+    {
+      "extends": "@kiosk/tsconfig/base.json",
+      "compilerOptions": { "composite": true, "rootDir": "src", "outDir": "dist" },
+      "include": ["src"]
+    }
+    JSON
+    cat > apps/kasse/tsconfig.json <<'JSON'
+    {
+      "extends": "@kiosk/tsconfig/base.json",
+      "compilerOptions": { "composite": true, "rootDir": "src", "outDir": "dist" },
+      "include": ["src"],
+      "references": [{ "path": "../../packages/preise" }]
+    }
+    JSON
+    printf '{\n  "files": [],\n  "references": [{ "path": "packages/preise" }, { "path": "apps/kasse" }]\n}\n' > tsconfig.json
+    jq '.scripts = {"build": "tsc -b", "start": "bun run --filter @kiosk/kasse start"}' package.json > tmp.json && mv tmp.json package.json
+    bun run build && bun run start
+    ```

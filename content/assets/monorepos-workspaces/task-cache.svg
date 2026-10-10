@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="500" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e1b3a">Eine Aufgabe im Task-Runner (z. B. @kiosk/web:build)</text>
+<rect x="55" y="165" width="190" height="70" rx="12" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee" stroke-width="3"/>
+<text x="150" y="207" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Hash berechnen</text>
+<text x="150" y="258" text-anchor="middle" font-size="12" fill="#475569">Dateien, Konfiguration,</text>
+<text x="150" y="275" text-anchor="middle" font-size="12" fill="#475569">Hashes der Abhängigkeiten</text>
+<rect x="305" y="165" width="190" height="70" rx="12" fill="#a78bfa" fill-opacity=".16" stroke="#a78bfa" stroke-width="3"/>
+<text x="400" y="207" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Cache prüfen</text>
+<line x1="247" y1="200" x2="301" y2="200" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="610" y="65" width="220" height="70" rx="12" fill="#34d399" fill-opacity=".18" stroke="#34d399" stroke-width="3"/>
+<text x="720" y="107" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Ausgaben wiederherstellen</text>
+<text x="720" y="158" text-anchor="middle" font-size="12" fill="#475569">dist/ und Logs aus dem Cache</text>
+<path d="M497 185 C 550 185, 560 100, 606 100" fill="none" stroke="#34d399" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="540" y="128" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">Treffer</text>
+<rect x="565" y="273" width="190" height="70" rx="12" fill="#f59e0b" fill-opacity=".16" stroke="#f59e0b" stroke-width="3"/>
+<text x="660" y="315" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Task ausführen</text>
+<path d="M497 215 C 530 215, 530 308, 561 308" fill="none" stroke="#f87171" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="510" y="292" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">kein Treffer</text>
+<rect x="795" y="273" width="190" height="70" rx="12" fill="#22d3ee" fill-opacity=".16" stroke="#22d3ee" stroke-width="3"/>
+<text x="890" y="315" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">Im Cache speichern</text>
+<line x1="757" y1="308" x2="791" y2="308" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="890" y="368" text-anchor="middle" font-size="12" fill="#475569">outputs + Logs unter dem Hash</text>
+</svg>

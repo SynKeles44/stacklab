@@ -1,0 +1,37 @@
+title: Monorepos & Workspaces
+subtitle: Mehrere Pakete in einem Repository – mit Bun Workspaces, Catalogs, Projektreferenzen und Changesets
+description: >
+  Sobald ein Projekt aus Web-App, API und gemeinsamen Bibliotheken besteht, stellt sich die Frage:
+  Ein Repository für alles oder eines pro Teil? Dieser Kurs zeigt dir, wie ein **Monorepo** funktioniert,
+  wann es sich lohnt und wie du es so aufbaust, dass es auch mit vielen Paketen schnell und übersichtlich bleibt.
+
+
+  Du richtest **Bun Workspaces** ein, verbindest interne Pakete über das `workspace:`-Protokoll, legst
+  Versionen zentral in **Catalogs** fest und verhinderst Phantom-Abhängigkeiten mit isolierten Installationen.
+  Danach teilst du TypeScript-Konfigurationen, baust Pakete mit **Projektreferenzen** in der richtigen
+  Reihenfolge und startest Skripte gezielt mit `--filter`. Zum Schluss bekommst du einen Überblick über
+  Turborepo und Nx, versionierst interne Pakete mit **Changesets** und richtest eine CI-Pipeline für Monorepos ein.
+
+
+  Alles passiert im echten Übungs-Terminal mit Bun 1.4 und TypeScript 7 – am Ende steht dein eigenes
+  kleines Monorepo mit App, Bibliothek, gemeinsamer Konfiguration und Release-Ablauf.
+category: web
+level: fortgeschritten
+icon: boxes
+color: "#8b5cf6"
+estimated_hours: 4.5
+workspace_dir: monorepos
+prerequisites: [node-runtimes-paketmanager, libraries-pakete-registries, projektaufbau]
+learning_goals:
+  - Du wägst Monorepo und Polyrepo begründet gegeneinander ab.
+  - Du richtest Bun Workspaces ein und kennst die Gegenstücke in npm und pnpm.
+  - Du verbindest interne Pakete mit dem workspace:-Protokoll und weißt, was beim Veröffentlichen damit passiert.
+  - Du legst Versionen mit Catalogs zentral fest und verhinderst Phantom-Abhängigkeiten.
+  - Du teilst eine TypeScript-Basiskonfiguration und baust Pakete mit Projektreferenzen und tsc -b.
+  - Du führst Skripte gezielt mit --filter und in Abhängigkeitsreihenfolge aus.
+  - Du erklärst, was Task-Runner wie Turborepo und Nx mit Caching und affected-Builds leisten.
+  - Du versionierst interne Pakete mit Changesets und richtest eine CI-Pipeline für ein Monorepo ein.
+references:
+  - Monorepos mit Bun-Workspaces und Catalogs, in denen Web-App, API und UI-Bibliothek gemeinsam leben
+  - Gemeinsame tsconfig-Basis und Lint-Konfiguration als eigene interne Pakete
+  - CI-Pipelines, die nur die von einem Pull Request betroffenen Pakete bauen und testen

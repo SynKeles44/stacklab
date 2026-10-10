@@ -1,0 +1,67 @@
+title: Monorepos verstehen
+description: Was ein Monorepo ist, wann es sich lohnt und wie Bun, npm und pnpm mehrere Pakete in einem Repository als Workspace verwalten.
+exercise:
+  id: modul-uebung-monorepo-anlegen
+  type: terminal
+  title: Ein Monorepo von null an
+  description: |
+    Baue im leeren Ordner `monorepo-start` ein Bun-Monorepo für einen kleinen Online-Kiosk.
+
+    1. Lege die Root-`package.json` an: Name `kiosk`, `"private": true` und ein Feld `workspaces`, das alle
+       Unterordner von `apps/` und `packages/` aufnimmt.
+    2. Lege drei Pakete an, jedes mit eigener `package.json` (Feld `name` und `version`):
+       - `apps/web` mit dem Namen `@kiosk/web`
+       - `apps/api` mit dem Namen `@kiosk/api`
+       - `packages/config` mit dem Namen `@kiosk/config`
+    3. Füge **nur** dem Paket `@kiosk/api` die Abhängigkeit `ms` hinzu – vom Root aus mit `bun add` und `--filter`.
+    4. Prüfe mit `bun pm ls`, dass alle drei Pakete erkannt werden.
+
+    Die Root-package.json darf am Ende **keine** `dependencies` haben.
+  workdir: monorepo-start
+  checks:
+    - type: command
+      run: jq -r '.name + " " + (.private|tostring)' package.json
+      stdout_equals: "kiosk true"
+      message: 'Die Root-package.json braucht "name": "kiosk" und "private": true.'
+    - type: command
+      run: jq -r '(.workspaces | if type == "object" then .packages else . end) | sort | join(",")' package.json
+      stdout_equals: "apps/*,packages/*"
+      message: 'Das Feld workspaces soll die Muster "apps/*" und "packages/*" enthalten.'
+    - type: command
+      run: jq -r '.name' apps/web/package.json apps/api/package.json packages/config/package.json | paste -sd ' ' -
+      stdout_equals: "@kiosk/web @kiosk/api @kiosk/config"
+      message: Es fehlen Pakete oder die Namen stimmen nicht. Erwartet sind @kiosk/web, @kiosk/api und @kiosk/config.
+    - type: command
+      run: jq -r '.dependencies.ms // "fehlt"' apps/api/package.json
+      stdout_matches: "^[\\^~]?2\\."
+      message: '@kiosk/api braucht die Abhängigkeit ms. Nutze `bun add ms --filter @kiosk/api` im Root.'
+    - type: command
+      run: jq -r '(.dependencies // {}) | length' package.json
+      stdout_equals: "0"
+      message: Die Root-package.json soll keine dependencies haben – ms gehört nur in apps/api.
+    - type: command
+      run: grep -c '"@kiosk/' bun.lock
+      stdout_matches: "^\\s*[3-9]\\s*$"
+      message: In der bun.lock fehlen Workspace-Pakete. Führe im Root `bun install` aus.
+  hints:
+    - "Ordner auf einmal anlegen: `mkdir -p apps/web apps/api packages/config`."
+    - 'Eine package.json schreibst du schnell mit `printf ''{"name":"@kiosk/web","version":"0.1.0"}\n'' > apps/web/package.json`.'
+    - "Erst `bun install`, dann `bun add ms --filter @kiosk/api` – beides im Root-Ordner."
+  solution: |
+    ```bash
+    mkdir -p monorepo-start && cd monorepo-start
+    mkdir -p apps/web apps/api packages/config
+    cat > package.json <<'JSON'
+    {
+      "name": "kiosk",
+      "private": true,
+      "workspaces": ["apps/*", "packages/*"]
+    }
+    JSON
+    printf '{"name":"@kiosk/web","version":"0.1.0"}\n' > apps/web/package.json
+    printf '{"name":"@kiosk/api","version":"0.1.0"}\n' > apps/api/package.json
+    printf '{"name":"@kiosk/config","version":"1.0.0"}\n' > packages/config/package.json
+    bun install
+    bun add ms --filter @kiosk/api
+    bun pm ls
+    ```

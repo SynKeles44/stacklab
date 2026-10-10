@@ -1,0 +1,297 @@
+- slug: polyrepo
+  term: Polyrepo
+  short: Ein Aufbau, bei dem jedes Projekt oder Paket ein eigenes Repository hat.
+  explanation: >
+    Das Gegenstück zum Monorepo. Jedes Repository hat eigene Werkzeuge, eigene Versionen und eigene Releases.
+    Gemeinsamer Code muss als Paket veröffentlicht und in jedem Repository einzeln aktualisiert werden.
+  example: "`kiosk-web`, `kiosk-api` und `kiosk-preise` als drei getrennte Repositorys."
+  category: projektaufbau
+  aliases: [Polyrepos, Multi-Repo, Multirepo]
+  related: [monorepo, repository]
+  lesson: monorepos-workspaces/monorepo-oder-polyrepo
+- slug: atomarer-commit
+  term: Atomarer Commit
+  short: Ein Commit, der eine zusammengehörige Änderung vollständig enthält – über alle betroffenen Dateien und Pakete hinweg.
+  explanation: >
+    Im Monorepo kann ein einziger Commit eine Bibliothek und alle ihre Nutzer gleichzeitig anpassen. Es gibt
+    dadurch keinen Zwischenzustand, in dem die Bibliothek schon geändert, ihre Nutzer aber noch kaputt sind.
+  example: Die Funktion `formatPreis` bekommt einen neuen Parameter, und im selben Commit werden Web-App und API angepasst.
+  category: projektaufbau
+  aliases: [atomare Commits, atomare Änderung]
+  related: [commit, monorepo]
+  lesson: monorepos-workspaces/monorepo-oder-polyrepo
+- slug: workspace-root
+  term: Workspace-Root
+  short: Der oberste Ordner eines Monorepos mit der Root-package.json, die alle Workspace-Pakete zusammenfasst.
+  explanation: >
+    Die Root-package.json listet im Feld workspaces die Paketordner und trägt meist `"private": true`. Dort liegen
+    auch das einzige Lockfile und repo-weite Werkzeuge als devDependencies. Paketmanager suchen von jedem
+    Unterordner aus nach oben bis zu diesem Ordner.
+  example: "`kiosk/package.json` mit `\"workspaces\": [\"apps/*\", \"packages/*\"]`."
+  category: pakete
+  aliases: [Root-package.json, Workspace-Wurzel, Monorepo-Root]
+  related: [workspace, package-json, monorepo]
+  lesson: monorepos-workspaces/bun-workspaces-einrichten
+- slug: packagemanager-feld
+  term: packageManager-Feld
+  short: Ein Feld in der Root-package.json, das festhält, welcher Paketmanager in welcher Version das Projekt verwaltet.
+  explanation: >
+    Werkzeuge wie Turborepo oder Corepack lesen das Feld aus, um den richtigen Paketmanager zu verwenden. Es
+    dokumentiert außerdem für das Team, dass zum Beispiel Bun und nicht npm gemeint ist.
+  example: "`\"packageManager\": \"bun@1.4.2\"`"
+  category: pakete
+  aliases: [packageManager]
+  related: [paketmanager, package-json, turborepo]
+  lesson: monorepos-workspaces/npm-und-pnpm-im-vergleich
+- slug: internes-paket
+  term: Internes Paket
+  short: Ein Paket in einem Monorepo, das vor allem von anderen Paketen desselben Repositorys genutzt wird.
+  explanation: >
+    Ein internes Paket hat wie jedes Paket einen Namen, eine Version und einen Einstiegspunkt in der package.json.
+    Es wird aber lokal per Symlink verlinkt statt aus einer Registry geladen. Wird es nie veröffentlicht, trägt
+    es `"private": true`.
+  example: "`packages/preise` mit dem Namen `@kiosk/preise`, genutzt von `apps/kasse`."
+  category: pakete
+  aliases: [interne Pakete, Workspace-Paket, Workspace-Pakete]
+  related: [workspace-protokoll, workspace, paket]
+  lesson: monorepos-workspaces/interne-pakete-und-workspace-protokoll
+- slug: npm-scope
+  term: Scope (Paketname)
+  short: Ein Präfix wie `@kiosk/` vor einem Paketnamen, das zusammengehörige Pakete gruppiert.
+  explanation: >
+    Pakete mit Scope heißen zum Beispiel `@kiosk/preise`. In Monorepos kennzeichnet der Scope interne Pakete
+    und verhindert Namenskonflikte mit Paketen aus der öffentlichen Registry. In der Registry gehört ein Scope
+    einem Benutzer oder einer Organisation.
+  example: "`@kiosk/web`, `@kiosk/api` und `@kiosk/preise` teilen den Scope `@kiosk`."
+  category: pakete
+  aliases: [Scoped Package, Paket-Scope, Scopes]
+  related: [paket, internes-paket, npm-registry]
+  lesson: monorepos-workspaces/interne-pakete-und-workspace-protokoll
+- slug: workspace-protokoll
+  term: workspace:-Protokoll
+  short: Eine Versionsangabe wie `workspace:*`, die eine Abhängigkeit ausschließlich aus dem eigenen Monorepo auflöst.
+  explanation: >
+    Bun, pnpm und Yarn verstehen `workspace:*`, `workspace:^` und `workspace:~`. Gibt es kein passendes Workspace-Paket,
+    bricht die Installation ab, statt still aus der Registry zu laden. Beim Packen und Veröffentlichen wird das
+    Protokoll durch eine echte Versionsangabe ersetzt. npm kennt es nicht.
+  example: "`\"@kiosk/preise\": \"workspace:*\"` wird beim Veröffentlichen zu `\"@kiosk/preise\": \"1.4.0\"`."
+  category: pakete
+  aliases: ["workspace:*", workspace-Protokoll, Workspace-Protokoll]
+  related: [internes-paket, workspace, versionsbereich]
+  lesson: monorepos-workspaces/interne-pakete-und-workspace-protokoll
+- slug: just-in-time-paket
+  term: Just-in-Time-Paket
+  short: Ein internes Paket, dessen exports direkt auf TypeScript-Quellcode zeigen, sodass es keinen eigenen Build braucht.
+  explanation: >
+    Der nutzende Code bzw. sein Werkzeug (Bun, ein Bundler wie Vite) übersetzt den Quellcode mit. Änderungen sind
+    dadurch sofort sichtbar. Für die Veröffentlichung an Node.js-Nutzer braucht man dagegen ein kompiliertes Paket.
+  example: "`\"exports\": \"./src/index.ts\"` in `packages/preise/package.json`."
+  category: pakete
+  aliases: [Just-in-Time-Pakete, JIT-Paket]
+  related: [internes-paket, exports-feld, projektreferenz]
+  lesson: monorepos-workspaces/interne-pakete-und-workspace-protokoll
+- slug: single-version-policy
+  term: Single-Version-Policy
+  short: Die Regel, dass jede externe Abhängigkeit in einem Monorepo nur in einer einzigen Version vorkommt.
+  explanation: >
+    So verhalten sich alle Pakete gleich, Updates passieren an einer Stelle, und Bibliotheken wie React werden
+    nicht doppelt geladen. In Bun und pnpm setzt man die Regel mit Catalogs um.
+  example: 'Alle Apps nutzen React über `"react": "catalog:"` mit derselben Version aus der Root-package.json.'
+  category: pakete
+  aliases: [Single Version Policy, One-Version-Rule]
+  related: [catalog, monorepo]
+  lesson: monorepos-workspaces/catalogs
+- slug: paket-hoisting
+  term: Hoisting (Pakete)
+  short: Das Hochziehen installierter Pakete in ein gemeinsames, flaches node_modules im Root.
+  explanation: >
+    Beim Hoisting liegen fast alle Pakete direkt in `node_modules` im Root, auch transitive. Dadurch findet jeder
+    Code jedes Paket – auch solche, die er gar nicht deklariert hat. npm und Yarn 1 arbeiten so, Bun nennt das den
+    Linker `hoisted`.
+  example: "`bun install --linker hoisted` erzeugt eine flache node_modules-Struktur."
+  category: pakete
+  aliases: [Hoisted, hoisted Linker, flaches node_modules]
+  related: [isolierte-installation, phantom-abhaengigkeit, node-modules]
+  lesson: monorepos-workspaces/isolierte-installationen
+- slug: isolierte-installation
+  term: Isolierte Installation
+  short: Eine Installationsart, bei der jedes Paket nur Links auf die Abhängigkeiten bekommt, die es selbst deklariert.
+  explanation: >
+    Die echten Pakete liegen einmal in einem zentralen Speicher, bei Bun unter `node_modules/.bun`, bei pnpm unter
+    `node_modules/.pnpm`. Phantom-Abhängigkeiten fallen dadurch sofort auf. Bun nutzt den isolierten Linker für
+    neue Projekte mit Workspaces standardmäßig.
+  example: "`apps/web/node_modules/ms` ist ein Symlink auf `node_modules/.bun/ms@2.1.3/node_modules/ms`."
+  category: pakete
+  aliases: [isolierte Installationen, isolated install, isolated linker, isolierter Linker]
+  related: [paket-hoisting, phantom-abhaengigkeit, symlink]
+  lesson: monorepos-workspaces/isolierte-installationen
+- slug: tsconfig-extends
+  term: extends (tsconfig)
+  short: Eine Option in der tsconfig.json, mit der eine Konfiguration alle Einstellungen einer anderen erbt.
+  explanation: >
+    Die erbende Datei übernimmt die compilerOptions der Basis und überschreibt nur, was sie selbst angibt. Pfade
+    wie include oder outDir gelten relativ zu der Datei, in der sie stehen. Die Basis kann eine Datei oder ein
+    Paket in node_modules sein.
+  example: "`{ \"extends\": \"@kiosk/tsconfig/base.json\", \"include\": [\"src\"] }`"
+  category: typescript
+  aliases: [extends, tsconfig-Vererbung, Basis-Konfiguration]
+  related: [tsconfig, typescript, internes-paket]
+  lesson: monorepos-workspaces/gemeinsame-tsconfig
+- slug: projektreferenz
+  term: Projektreferenz
+  short: Ein Eintrag unter references in der tsconfig.json, der sagt, dass ein TypeScript-Projekt von einem anderen abhängt.
+  explanation: >
+    TypeScript liest aus dem referenzierten Projekt nur dessen Deklarationsdateien und kann im Build-Modus beide in
+    der richtigen Reihenfolge bauen. Das referenzierte Projekt muss composite sein.
+  example: "`\"references\": [{ \"path\": \"../../packages/preise\" }]` in `apps/kasse/tsconfig.json`."
+  category: typescript
+  aliases: [Projektreferenzen, project references, references]
+  related: [composite-projekt, tsc-build-modus, tsconfig]
+  lesson: monorepos-workspaces/projektreferenzen
+- slug: composite-projekt
+  term: Composite-Projekt
+  short: 'Ein TypeScript-Projekt mit `"composite": true`, das von anderen Projekten referenziert werden kann.'
+  explanation: >
+    composite erzwingt Deklarationsdateien, verlangt, dass alle Dateien über include oder files erfasst sind, und
+    schreibt eine .tsbuildinfo-Datei. So kann TypeScript schnell prüfen, ob das Projekt neu gebaut werden muss.
+  example: "`\"compilerOptions\": { \"composite\": true, \"outDir\": \"dist\" }`"
+  category: typescript
+  aliases: [composite, Composite-Projekte]
+  related: [projektreferenz, tsbuildinfo, typdeklaration]
+  lesson: monorepos-workspaces/projektreferenzen
+- slug: tsc-build-modus
+  term: Build-Modus (tsc -b)
+  short: Der Modus des TypeScript-Compilers, der referenzierte Projekte findet, sortiert und nur veraltete neu baut.
+  explanation: >
+    `tsc -b` (lang `--build`) arbeitet wie ein kleiner Build-Orchestrator. Mit `--verbose` erklärt er seine
+    Entscheidungen, mit `--clean` löscht er Ausgaben, mit `--force` baut er alles neu. TypeScript 7 baut unabhängige
+    Projekte dabei parallel.
+  example: "`bunx tsc -b` im Root baut erst `packages/preise`, dann `apps/kasse`."
+  category: typescript
+  aliases: [tsc -b, tsc --build, Build Mode]
+  related: [projektreferenz, composite-projekt, tsbuildinfo]
+  lesson: monorepos-workspaces/projektreferenzen
+- slug: tsbuildinfo
+  term: .tsbuildinfo
+  short: Eine von TypeScript erzeugte Datei, die sich merkt, welcher Stand eines Projekts zuletzt gebaut wurde.
+  explanation: >
+    Inkrementelle und composite-Projekte schreiben sie neben ihre Ausgaben. Beim nächsten Build vergleicht
+    TypeScript sie mit den Quelldateien und überspringt Projekte, die schon aktuell sind. Sie ist ein
+    Build-Artefakt und gehört in die .gitignore.
+  example: "`packages/preise/tsconfig.tsbuildinfo` nach `tsc -b`."
+  category: typescript
+  aliases: [tsbuildinfo, Build-Info-Datei]
+  related: [tsc-build-modus, composite-projekt, build-artefakt]
+  lesson: monorepos-workspaces/projektreferenzen
+- slug: workspace-filter
+  term: Workspace-Filter
+  short: Ein Muster, mit dem man festlegt, in welchen Paketen eines Monorepos ein Befehl ausgeführt wird.
+  explanation: >
+    Bei Bun schreibt man `--filter` (kurz `-F`). Namensmuster vergleichen das Feld name, Pfadmuster beginnen mit
+    `./`, ein `!` schließt aus. Drei Punkte hinter einem Namen nehmen die Abhängigkeiten mit, davor die abhängigen Pakete.
+  example: "`bun run --filter '@kiosk/kasse...' build` baut die Kasse und alles, wovon sie abhängt."
+  category: pakete
+  aliases: [--filter, Filter (Workspace), Paketfilter]
+  related: [workspace, npm-script, topologische-reihenfolge]
+  lesson: monorepos-workspaces/skripte-und-filter
+- slug: topologische-reihenfolge
+  term: Topologische Reihenfolge
+  short: Eine Reihenfolge, in der jedes Element erst nach allen Elementen kommt, von denen es abhängt.
+  explanation: >
+    Werkzeuge im Monorepo sortieren Pakete so, bevor sie Skripte starten oder Projekte bauen. Pakete ohne
+    gegenseitige Abhängigkeit dürfen dabei gleichzeitig laufen. Ein Kreis von Abhängigkeiten macht so eine
+    Reihenfolge unmöglich.
+  example: preise vor kasse und web; kasse und web danach parallel.
+  category: programmierung
+  aliases: [topologische Sortierung, Abhängigkeitsreihenfolge]
+  related: [workspace-filter, task-graph, tsc-build-modus]
+  lesson: monorepos-workspaces/skripte-und-filter
+- slug: task-graph
+  term: Task-Graph
+  short: Ein Graph aller Aufgaben im Monorepo mit der Information, welche Aufgabe vor welcher fertig sein muss.
+  explanation: >
+    Task-Runner wie Turborepo und Nx bauen ihn aus den Paketabhängigkeiten und Regeln wie `"dependsOn": ["^build"]`.
+    Daraus ergibt sich, was nacheinander und was parallel laufen kann.
+  example: "`@kiosk/kasse#build` hängt von `@kiosk/preise#build` ab."
+  category: werkzeuge
+  aliases: [Aufgabengraph, Task Graph]
+  related: [task-runner, topologische-reihenfolge, turborepo]
+  lesson: monorepos-workspaces/task-runner-und-caching
+- slug: build-cache
+  term: Build-Cache
+  short: Ein Speicher, der Ergebnisse von Build- oder Test-Aufgaben unter einem Hash ihrer Eingaben aufbewahrt.
+  explanation: >
+    Sind die Eingaben einer Aufgabe unverändert, ist auch der Hash gleich, und das gespeicherte Ergebnis wird
+    wiederhergestellt, statt die Aufgabe erneut auszuführen. Turborepo legt ihn lokal unter `.turbo/cache` ab.
+  example: "Zweiter Lauf von `turbo run build`: `cache hit, replaying logs` und `>>> FULL TURBO`."
+  category: werkzeuge
+  aliases: [Task-Cache, Aufgaben-Cache, Cache-Treffer]
+  related: [cache, hash, remote-cache]
+  lesson: monorepos-workspaces/task-runner-und-caching
+- slug: remote-cache
+  term: Remote-Cache
+  short: Ein Build-Cache auf einem Server, den das ganze Team und die CI gemeinsam nutzen.
+  explanation: >
+    Hat irgendein Rechner eine Aufgabe mit denselben Eingaben schon ausgeführt, laden alle anderen das Ergebnis
+    herunter. Das spart vor allem in der CI viel Zeit. Der Zugang wird mit einem Token als Secret geschützt.
+  example: Die CI baut `@kiosk/preise`, dein Laptop bekommt danach beim Build einen Cache-Treffer.
+  category: werkzeuge
+  aliases: [Remote Cache, entfernter Cache]
+  related: [build-cache, turborepo, nx]
+  lesson: monorepos-workspaces/task-runner-und-caching
+- slug: betroffene-pakete
+  term: Affected (betroffene Pakete)
+  short: Die Pakete, die seit einem Vergleichsstand geändert wurden, plus alle Pakete, die von ihnen abhängen.
+  explanation: >
+    Task-Runner ermitteln sie per Git-Vergleich, meist gegen main, und führen Aufgaben nur dort aus. Damit der
+    Vergleich klappt, braucht die CI genug Git-Historie.
+  example: "`bunx turbo run test --affected` oder `nx affected -t test`."
+  category: werkzeuge
+  aliases: [affected, Affected-Builds, betroffene Projekte]
+  related: [task-graph, turborepo, nx, ci-pipeline]
+  lesson: monorepos-workspaces/task-runner-und-caching
+- slug: turborepo
+  term: Turborepo
+  short: Ein Task-Runner für JavaScript- und TypeScript-Monorepos mit Task-Graph, Cache und Remote-Cache.
+  explanation: >
+    Turborepo liest seine Aufgaben aus einer turbo.json und führt die gleichnamigen package.json-Skripte der Pakete
+    aus. Es arbeitet mit Bun, npm, pnpm und Yarn und wird mit `turbo run <aufgabe>` gestartet.
+  example: "`\"build\": { \"dependsOn\": [\"^build\"], \"outputs\": [\"dist/**\"] }` in turbo.json."
+  category: werkzeuge
+  aliases: [turbo, turbo.json]
+  related: [task-runner, build-cache, nx]
+  lesson: monorepos-workspaces/task-runner-und-caching
+- slug: nx
+  term: Nx
+  short: Ein Build-System für Monorepos mit Task-Caching, affected-Befehlen, Projekt-Graph und Code-Generatoren.
+  explanation: >
+    Nx wird über nx.json konfiguriert und bietet Befehle wie `nx run-many -t build`, `nx affected -t test` und
+    `nx graph`. Mit Nx Cloud gibt es einen Remote-Cache und verteilte CI-Läufe.
+  example: "`nx affected -t test` testet nur Projekte, die von einer Änderung betroffen sind."
+  category: werkzeuge
+  aliases: [Nx Cloud, nx.json]
+  related: [turborepo, task-runner, betroffene-pakete]
+  lesson: monorepos-workspaces/task-runner-und-caching
+- slug: changesets
+  term: Changesets
+  short: Ein Werkzeug, das in Monorepos Versionen und Changelogs aus kleinen Änderungsbeschreibungen erzeugt.
+  explanation: >
+    Zu jeder Änderung legt man ein Changeset an – eine Markdown-Datei in `.changeset/` mit Paket, Sprungart und
+    Beschreibung. `changeset version` erhöht daraus die Versionen, zieht abhängige Pakete mit und schreibt
+    CHANGELOG.md-Dateien; `changeset publish` veröffentlicht.
+  example: "`bunx changeset --minor @kiosk/preise -m \"Neue Funktion formatRabatt\"`"
+  category: werkzeuge
+  aliases: [Changeset, changeset, "@changesets/cli"]
+  related: [semantic-versioning, changelog, release]
+  lesson: monorepos-workspaces/versionieren-mit-changesets
+- slug: frozen-lockfile
+  term: Frozen Lockfile
+  short: Eine Installationsart, die abbricht, wenn das Lockfile nicht zur package.json passt, statt es zu ändern.
+  explanation: >
+    In der CI sorgt sie dafür, dass genau die festgehaltenen Versionen getestet werden. Bei Bun heißt der Schalter
+    `--frozen-lockfile`, `bun ci` ist die Kurzform. Bei npm erfüllt `npm ci` denselben Zweck.
+  example: "`bun install --frozen-lockfile` meldet: lockfile had changes, but lockfile is frozen."
+  category: pakete
+  aliases: [--frozen-lockfile, bun ci, eingefrorenes Lockfile]
+  related: [lockfile, bun-lock, ci-pipeline]
+  lesson: monorepos-workspaces/ci-fuer-monorepos

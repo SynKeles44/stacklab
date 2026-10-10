@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="225" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Hoisted (flach)</text>
+<rect x="25" y="55" width="400" height="300" rx="16" fill="#f59e0b" fill-opacity=".08" stroke="#f59e0b" stroke-width="3"/>
+<g font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a">
+<text x="45" y="90">node_modules/</text>
+<text x="70" y="116">ms/</text>
+<text x="70" y="142">@kiosk/zeit → packages/zeit</text>
+<text x="45" y="184">packages/zeit/</text>
+<text x="70" y="210" fill="#475569">deklariert: ms</text>
+<text x="45" y="252">apps/web/</text>
+<text x="70" y="278" fill="#475569">deklariert: –</text>
+<text x="70" y="304">import "ms"</text>
+</g>
+<rect x="210" y="288" width="190" height="26" rx="6" fill="#f87171" fill-opacity=".18"/>
+<text x="305" y="306" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">klappt zufällig (Phantom)</text>
+<text x="225" y="380" text-anchor="middle" font-size="13" fill="#475569">Jedes Paket findet alles im Root</text>
+<text x="675" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Isoliert</text>
+<rect x="475" y="55" width="400" height="300" rx="16" fill="#34d399" fill-opacity=".08" stroke="#34d399" stroke-width="3"/>
+<g font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#1e1b3a">
+<text x="495" y="90">node_modules/.bun/</text>
+<text x="520" y="116">ms@2.1.3/  (Speicher)</text>
+<text x="495" y="158">packages/zeit/node_modules/</text>
+<text x="520" y="184">ms → .bun/ms@2.1.3</text>
+<text x="495" y="226">apps/web/node_modules/</text>
+<text x="520" y="252" fill="#475569">(kein ms)</text>
+<text x="520" y="304">import "ms"</text>
+</g>
+<rect x="660" y="288" width="190" height="26" rx="6" fill="#34d399" fill-opacity=".25"/>
+<text x="755" y="306" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">Fehler sofort sichtbar</text>
+<text x="675" y="380" text-anchor="middle" font-size="13" fill="#475569">Jedes Paket sieht nur, was es deklariert</text>
+</svg>

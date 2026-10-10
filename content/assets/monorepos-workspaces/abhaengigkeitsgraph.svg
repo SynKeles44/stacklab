@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 380" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#64748b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="430" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">bun run --filter '*' build – Reihenfolge nach Abhängigkeiten</text>
+<text x="130" y="72" text-anchor="middle" font-size="14" font-weight="700" fill="#475569">Stufe 1</text>
+<text x="430" y="72" text-anchor="middle" font-size="14" font-weight="700" fill="#475569">Stufe 2 (parallel)</text>
+<text x="730" y="72" text-anchor="middle" font-size="14" font-weight="700" fill="#475569">unabhängig</text>
+<rect x="40" y="160" width="180" height="70" rx="12" fill="#34d399" fill-opacity=".18" stroke="#34d399" stroke-width="3"/>
+<text x="130" y="192" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">@kiosk/preise</text>
+<text x="130" y="215" text-anchor="middle" font-size="12" fill="#475569">baut zuerst</text>
+<rect x="340" y="95" width="180" height="70" rx="12" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee" stroke-width="3"/>
+<text x="430" y="127" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">@kiosk/kasse</text>
+<text x="430" y="150" text-anchor="middle" font-size="12" fill="#475569">wartet auf preise</text>
+<rect x="340" y="225" width="180" height="70" rx="12" fill="#22d3ee" fill-opacity=".18" stroke="#22d3ee" stroke-width="3"/>
+<text x="430" y="257" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">@kiosk/web</text>
+<text x="430" y="280" text-anchor="middle" font-size="12" fill="#475569">wartet auf preise</text>
+<rect x="640" y="160" width="180" height="70" rx="12" fill="#a78bfa" fill-opacity=".18" stroke="#a78bfa" stroke-width="3"/>
+<text x="730" y="192" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">@kiosk/docs</text>
+<text x="730" y="215" text-anchor="middle" font-size="12" fill="#475569">startet sofort</text>
+<line x1="222" y1="185" x2="336" y2="135" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<line x1="222" y1="205" x2="336" y2="255" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="430" y="340" text-anchor="middle" font-size="13" fill="#1e1b3a">Pfeil = „muss vorher fertig sein“ (kasse und web hängen mit workspace:* von preise ab)</text>
+</svg>

@@ -1,0 +1,622 @@
+title: Dein Kiosk-Monorepo
+description: |
+  In diesem Projekt baust du von Grund auf ein vollständiges Monorepo für einen kleinen Online-Kiosk – so,
+  wie es auch in einem echten Team aufgesetzt wird: Bun Workspaces mit Catalog, ein gemeinsames
+  tsconfig-Paket, eine kompilierte Bibliothek mit Tests, eine App, die sie nutzt, Root-Skripte für das ganze
+  Team, Versionierung mit Changesets und eine CI-Pipeline.
+
+  Alles passiert im Ordner `projekt` in deinem Monorepo-Workspace. Öffne das Übungs-Terminal und lege den
+  Ordner mit `mkdir -p projekt && cd projekt` an. Nach jedem Schritt prüft Stacklab den echten Zustand deines
+  Projekts.
+
+  Die Schritte bauen aufeinander auf. Lösche zwischendurch nichts, was ein früherer Schritt angelegt hat –
+  sonst schlagen frühere Prüfungen wieder fehl.
+goal: >
+  Ein Git-Repository `projekt` mit Bun Workspaces, einem Catalog für TypeScript, dem Konfigurationspaket
+  `@kiosk/tsconfig`, der getesteten Bibliothek `@kiosk/preise` (Version 1.1.0 nach dem Release), der App
+  `@kiosk/kasse`, die mit `tsc -b` gebaut wird, Root-Skripten für build, test und start, Changesets und
+  einem GitHub-Actions-Workflow.
+workdir: projekt
+steps:
+  - id: workspace-anlegen
+    title: Das Monorepo anlegen
+    description: |
+      Zuerst entsteht das Gerüst: ein Git-Repository mit einer Root-package.json, die alles zusammenhält.
+
+      1. Mache den Ordner zu einem Git-Repository (`git init -b main`) und setze lokal `user.name` und
+         `user.email` (Platzhalter wie `du@example.com` sind in Ordnung).
+      2. Lege die Root-`package.json` an:
+         - `"name": "kiosk"` und `"private": true`
+         - `workspaces` als **Objekt** mit `packages` (`apps/*` und `packages/*`) und einem Standard-Catalog,
+           der `"typescript": "^7.0.2"` festlegt
+         - `typescript` als `devDependency` mit dem Wert `catalog:`
+      3. Lege eine `.gitignore` an, die `node_modules`, `dist` und `*.tsbuildinfo` ausschließt.
+      4. Führe `bun install` aus.
+    checklist:
+      - Git-Repository mit lokaler Identität
+      - Root-package.json mit private, workspaces-Objekt und Catalog
+      - typescript als devDependency über catalog
+      - .gitignore für node_modules, dist und .tsbuildinfo
+      - bun.lock nach bun install
+    hints:
+      - 'Die Objekt-Schreibweise: `"workspaces": { "packages": ["apps/*", "packages/*"], "catalog": { "typescript": "^7.0.2" } }`.'
+      - '`"devDependencies": { "typescript": "catalog:" }` steht auf oberster Ebene, nicht im workspaces-Objekt.'
+      - "`printf 'node_modules\\ndist\\n*.tsbuildinfo\\n' > .gitignore` legt die .gitignore in einem Rutsch an."
+    checks:
+      - type: dir_exists
+        path: .git
+        message: Im Ordner projekt gibt es noch kein Git-Repository. Führe `git init -b main` aus.
+      - type: command
+        run: jq -r '.name + " " + (.private|tostring)' package.json
+        stdout_equals: "kiosk true"
+        message: 'Die Root-package.json braucht "name": "kiosk" und "private": true.'
+      - type: command
+        run: jq -r '.workspaces.packages | sort | join(",")' package.json
+        stdout_equals: "apps/*,packages/*"
+        message: 'workspaces soll ein Objekt sein mit "packages": ["apps/*", "packages/*"].'
+      - type: command
+        run: jq -r '.workspaces.catalog.typescript // "fehlt"' package.json
+        stdout_equals: "^7.0.2"
+        message: 'Im Catalog fehlt "typescript": "^7.0.2".'
+      - type: command
+        run: jq -r '.devDependencies.typescript // "fehlt"' package.json
+        stdout_equals: "catalog:"
+        message: 'typescript soll als devDependency mit "catalog:" eingetragen sein.'
+      - type: command
+        run: git check-ignore -q node_modules/x && git check-ignore -q packages/a/dist/x.js && git check-ignore -q a/tsconfig.tsbuildinfo && echo ok
+        stdout_equals: ok
+        message: Die .gitignore soll node_modules, dist und *.tsbuildinfo ausschließen.
+      - type: file_exists
+        path: bun.lock
+        message: Es gibt noch keine bun.lock. Führe `bun install` aus.
+    solution: |
+      ```bash
+      mkdir -p projekt && cd projekt
+      git init -b main
+      git config user.name "Ada Lovelace"
+      git config user.email "ada@example.com"
+      cat > package.json <<'EOF'
+      {
+        "name": "kiosk",
+        "private": true,
+        "workspaces": {
+          "packages": ["apps/*", "packages/*"],
+          "catalog": { "typescript": "^7.0.2" }
+        },
+        "devDependencies": { "typescript": "catalog:" }
+      }
+      EOF
+      printf 'node_modules\ndist\n*.tsbuildinfo\n' > .gitignore
+      bun install
+      ```
+    solve: |
+      git init -q -b main
+      git config user.name "Ada Lovelace"
+      git config user.email "ada@example.com"
+      cat > package.json <<'EOF'
+      {
+        "name": "kiosk",
+        "private": true,
+        "workspaces": {
+          "packages": ["apps/*", "packages/*"],
+          "catalog": { "typescript": "^7.0.2" }
+        },
+        "devDependencies": { "typescript": "catalog:" }
+      }
+      EOF
+      printf 'node_modules\ndist\n*.tsbuildinfo\n' > .gitignore
+      bun install > /dev/null 2>&1
+  - id: tsconfig-paket
+    title: Die gemeinsame TypeScript-Basis
+    description: |
+      Alle Pakete sollen nach denselben Regeln geprüft und gebaut werden. Dafür bekommt das Monorepo ein
+      eigenes Konfigurationspaket.
+
+      1. Lege `packages/tsconfig/package.json` an: Name `@kiosk/tsconfig`, Version `1.0.0`, `"private": true`.
+      2. Lege `packages/tsconfig/base.json` mit diesen `compilerOptions` an: `"strict": true`,
+         `"noUncheckedIndexedAccess": true`, `"target": "es2022"`, `"module": "nodenext"`,
+         `"declaration": true`, `"composite": true`, `"skipLibCheck": true`.
+    checklist:
+      - Paket @kiosk/tsconfig mit private true
+      - base.json mit strict, noUncheckedIndexedAccess, nodenext, declaration und composite
+    hints:
+      - Das Paket braucht keinen Code – nur package.json und base.json.
+      - Weil später alle Pakete kompiliert und referenziert werden, kommt `composite` direkt in die Basis.
+    checks:
+      - type: command
+        run: jq -r '.name + " " + (.private|tostring)' packages/tsconfig/package.json
+        stdout_equals: "@kiosk/tsconfig true"
+        message: 'packages/tsconfig/package.json braucht "name": "@kiosk/tsconfig" und "private": true.'
+      - type: command
+        run: jq -r '.compilerOptions | [.strict, .noUncheckedIndexedAccess, .declaration, .composite] | map(tostring) | join(" ")' packages/tsconfig/base.json
+        stdout_equals: "true true true true"
+        message: base.json braucht strict, noUncheckedIndexedAccess, declaration und composite – jeweils true.
+      - type: command
+        run: jq -r '.compilerOptions.module' packages/tsconfig/base.json
+        stdout_matches: "^[Nn]ode[Nn]ext$"
+        message: 'In base.json soll "module": "nodenext" stehen.'
+    solution: |
+      ```bash
+      mkdir -p packages/tsconfig
+      printf '{\n  "name": "@kiosk/tsconfig",\n  "version": "1.0.0",\n  "private": true\n}\n' > packages/tsconfig/package.json
+      cat > packages/tsconfig/base.json <<'EOF'
+      {
+        "compilerOptions": {
+          "strict": true,
+          "noUncheckedIndexedAccess": true,
+          "target": "es2022",
+          "module": "nodenext",
+          "declaration": true,
+          "composite": true,
+          "skipLibCheck": true
+        }
+      }
+      EOF
+      ```
+    solve: |
+      mkdir -p packages/tsconfig
+      printf '{\n  "name": "@kiosk/tsconfig",\n  "version": "1.0.0",\n  "private": true\n}\n' > packages/tsconfig/package.json
+      cat > packages/tsconfig/base.json <<'EOF'
+      {
+        "compilerOptions": {
+          "strict": true,
+          "noUncheckedIndexedAccess": true,
+          "target": "es2022",
+          "module": "nodenext",
+          "declaration": true,
+          "composite": true,
+          "skipLibCheck": true
+        }
+      }
+      EOF
+  - id: bibliothek
+    title: Die Bibliothek @kiosk/preise mit Tests
+    description: |
+      Jetzt entsteht das erste echte Paket – eine kompilierte Bibliothek, die Preise formatiert.
+
+      1. Lege `packages/preise/package.json` an: Name `@kiosk/preise`, Version `1.0.0`, `"type": "module"`,
+         `exports` mit `types` → `./dist/index.d.ts` und `default` → `./dist/index.js`,
+         `@kiosk/tsconfig` als devDependency mit `workspace:*` und die Skripte `build` (`tsc -b`) und
+         `test` (`bun test`).
+      2. Lege `packages/preise/tsconfig.json` an, die von `@kiosk/tsconfig/base.json` erbt, mit `rootDir` `src`,
+         `outDir` `dist` und `"include": ["src"]`.
+      3. Schreibe `packages/preise/src/index.ts` mit der exportierten Funktion
+         `formatPreis(cent: number): string`, die z. B. `450` zu `"4.50 EUR"` macht.
+      4. Schreibe in `packages/preise/test/preise.test.ts` mindestens **zwei** Tests mit `bun:test` (der Ordner
+         `test/` liegt bewusst außerhalb von `src/`, damit tsc die Tests nicht mitkompiliert).
+      5. Führe `bun install` aus und prüfe mit `bun run --filter @kiosk/preise test` und
+         `bun run --filter @kiosk/preise build`.
+    checklist:
+      - package.json mit exports auf dist, devDependency @kiosk/tsconfig und Skripten build und test
+      - tsconfig.json erbt von der Basis
+      - formatPreis implementiert
+      - mindestens zwei grüne Tests
+      - dist/index.js und dist/index.d.ts nach dem Build
+    hints:
+      - '`import { test, expect } from "bun:test";` und `import { formatPreis } from "../src/index.ts";` im Test.'
+      - '`(cent / 100).toFixed(2) + " EUR"` reicht für formatPreis.'
+      - Vergiss `bun install` nach dem Eintragen von `@kiosk/tsconfig` nicht – sonst findet tsc die Basis nicht.
+    checks:
+      - type: command
+        run: jq -r '[.name, .exports["."].types, .exports["."].default, .devDependencies["@kiosk/tsconfig"]] | join(" ")' packages/preise/package.json
+        stdout_equals: "@kiosk/preise ./dist/index.d.ts ./dist/index.js workspace:*"
+        message: 'packages/preise/package.json braucht den Namen @kiosk/preise, exports mit types/default auf dist und "@kiosk/tsconfig": "workspace:*" unter devDependencies.'
+      - type: command
+        run: jq -r '.extends // "fehlt"' packages/preise/tsconfig.json
+        stdout_equals: "@kiosk/tsconfig/base.json"
+        message: 'packages/preise/tsconfig.json soll mit "extends": "@kiosk/tsconfig/base.json" erben.'
+      - type: command
+        run: cd packages/preise && bun test 2>&1 | grep -Eo '^ *[0-9]+ pass' | grep -Eo '[0-9]+'
+        stdout_matches: "^\\s*([2-9]|[1-9][0-9]+)\\s*$"
+        message: In packages/preise sollen mindestens zwei Tests mit `bun test` grün sein.
+      - type: command
+        run: cd packages/preise && bun test > /dev/null 2>&1 && echo ok
+        stdout_equals: ok
+        message: Mindestens ein Test in packages/preise schlägt fehl.
+      - type: command
+        run: bun run --filter @kiosk/preise build > /dev/null 2>&1 && node -e 'import("./packages/preise/dist/index.js").then((m) => console.log(m.formatPreis(450)))'
+        stdout_equals: "4.50 EUR"
+        message: Der Build von @kiosk/preise klappt noch nicht oder formatPreis(450) liefert nicht "4.50 EUR".
+      - type: file_exists
+        path: packages/preise/dist/index.d.ts
+        message: In packages/preise/dist fehlt index.d.ts – starte `bun run --filter @kiosk/preise build`.
+    solution: |
+      ```bash
+      mkdir -p packages/preise/src packages/preise/test
+      cat > packages/preise/package.json <<'EOF'
+      {
+        "name": "@kiosk/preise",
+        "version": "1.0.0",
+        "type": "module",
+        "exports": {
+          ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+        },
+        "devDependencies": { "@kiosk/tsconfig": "workspace:*" },
+        "scripts": { "build": "tsc -b", "test": "bun test" }
+      }
+      EOF
+      cat > packages/preise/tsconfig.json <<'EOF'
+      {
+        "extends": "@kiosk/tsconfig/base.json",
+        "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+        "include": ["src"]
+      }
+      EOF
+      cat > packages/preise/src/index.ts <<'EOF'
+      export function formatPreis(cent: number): string {
+        return (cent / 100).toFixed(2) + " EUR";
+      }
+      EOF
+      cat > packages/preise/test/preise.test.ts <<'EOF'
+      import { test, expect } from "bun:test";
+      import { formatPreis } from "../src/index.ts";
+
+      test("formatiert Cent als Euro", () => {
+        expect(formatPreis(450)).toBe("4.50 EUR");
+      });
+
+      test("0 Cent ergibt 0.00 EUR", () => {
+        expect(formatPreis(0)).toBe("0.00 EUR");
+      });
+      EOF
+      bun install
+      bun run --filter @kiosk/preise test
+      bun run --filter @kiosk/preise build
+      ```
+    solve: |
+      mkdir -p packages/preise/src packages/preise/test
+      cat > packages/preise/package.json <<'EOF'
+      {
+        "name": "@kiosk/preise",
+        "version": "1.0.0",
+        "type": "module",
+        "exports": {
+          ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+        },
+        "devDependencies": { "@kiosk/tsconfig": "workspace:*" },
+        "scripts": { "build": "tsc -b", "test": "bun test" }
+      }
+      EOF
+      cat > packages/preise/tsconfig.json <<'EOF'
+      {
+        "extends": "@kiosk/tsconfig/base.json",
+        "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+        "include": ["src"]
+      }
+      EOF
+      cat > packages/preise/src/index.ts <<'EOF'
+      export function formatPreis(cent: number): string {
+        return (cent / 100).toFixed(2) + " EUR";
+      }
+      EOF
+      cat > packages/preise/test/preise.test.ts <<'EOF'
+      import { test, expect } from "bun:test";
+      import { formatPreis } from "../src/index.ts";
+
+      test("formatiert Cent als Euro", () => {
+        expect(formatPreis(450)).toBe("4.50 EUR");
+      });
+
+      test("0 Cent ergibt 0.00 EUR", () => {
+        expect(formatPreis(0)).toBe("0.00 EUR");
+      });
+      EOF
+      bun install > /dev/null 2>&1
+      bun run --filter @kiosk/preise build > /dev/null
+  - id: app-kasse
+    title: Die App @kiosk/kasse
+    description: |
+      Die Kasse nutzt die Bibliothek und wird ebenfalls kompiliert.
+
+      1. Lege `apps/kasse/package.json` an: Name `@kiosk/kasse`, Version `0.1.0`, `"type": "module"`,
+         `@kiosk/preise` als dependency mit `workspace:*`, `@kiosk/tsconfig` als devDependency mit `workspace:*`
+         und die Skripte `build` (`tsc -b`) und `start` (`node dist/main.js`).
+      2. Lege `apps/kasse/tsconfig.json` an: erbt von der Basis, `rootDir` `src`, `outDir` `dist`,
+         `"include": ["src"]` und eine Referenz auf `../../packages/preise`.
+      3. Schreibe `apps/kasse/src/main.ts`: Es summiert die Cent-Beträge `[150, 300]` und gibt
+         `Summe: 4.50 EUR` mit `formatPreis` aus.
+      4. `bun install`, dann `bun run --filter @kiosk/kasse build` und `bun run --filter @kiosk/kasse start`.
+    checklist:
+      - Abhängigkeit auf @kiosk/preise mit workspace:*
+      - tsconfig mit references auf packages/preise
+      - main.ts gibt die Summe aus
+      - Build und Start funktionieren
+    hints:
+      - 'Die Referenz steht auf oberster Ebene der tsconfig: `"references": [{ "path": "../../packages/preise" }]`.'
+      - '`tsc -b` in der Kasse baut dank der Referenz die Bibliothek automatisch mit, falls nötig.'
+      - '`console.log("Summe: " + formatPreis([150, 300].reduce((a, b) => a + b, 0)));`'
+    checks:
+      - type: command
+        run: jq -r '[.dependencies["@kiosk/preise"], .devDependencies["@kiosk/tsconfig"], .scripts.start] | map(. // "fehlt") | join(" | ")' apps/kasse/package.json
+        stdout_equals: "workspace:* | workspace:* | node dist/main.js"
+        message: 'apps/kasse/package.json braucht "@kiosk/preise": "workspace:*", "@kiosk/tsconfig": "workspace:*" (devDependencies) und das Skript start "node dist/main.js".'
+      - type: command
+        run: jq -r '(.references // []) | length' apps/kasse/tsconfig.json
+        stdout_equals: "1"
+        message: apps/kasse/tsconfig.json soll genau eine Referenz auf ../../packages/preise haben.
+      - type: command
+        run: test -L apps/kasse/node_modules/@kiosk/preise && echo link
+        stdout_equals: link
+        message: '@kiosk/preise ist in apps/kasse noch nicht verlinkt – führe `bun install` aus.'
+      - type: command
+        run: bun run --filter @kiosk/kasse build > /dev/null 2>&1 && node apps/kasse/dist/main.js
+        stdout_equals: "Summe: 4.50 EUR"
+        message: Die Kasse baut oder läuft noch nicht. Erwartet ist die Ausgabe „Summe 4.50 EUR“.
+    solution: |
+      ```bash
+      mkdir -p apps/kasse/src
+      cat > apps/kasse/package.json <<'EOF'
+      {
+        "name": "@kiosk/kasse",
+        "version": "0.1.0",
+        "type": "module",
+        "dependencies": { "@kiosk/preise": "workspace:*" },
+        "devDependencies": { "@kiosk/tsconfig": "workspace:*" },
+        "scripts": { "build": "tsc -b", "start": "node dist/main.js" }
+      }
+      EOF
+      cat > apps/kasse/tsconfig.json <<'EOF'
+      {
+        "extends": "@kiosk/tsconfig/base.json",
+        "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+        "include": ["src"],
+        "references": [{ "path": "../../packages/preise" }]
+      }
+      EOF
+      cat > apps/kasse/src/main.ts <<'EOF'
+      import { formatPreis } from "@kiosk/preise";
+
+      const summe = [150, 300].reduce((a, b) => a + b, 0);
+      console.log("Summe: " + formatPreis(summe));
+      EOF
+      bun install
+      bun run --filter @kiosk/kasse build
+      bun run --filter @kiosk/kasse start
+      ```
+    solve: |
+      mkdir -p apps/kasse/src
+      cat > apps/kasse/package.json <<'EOF'
+      {
+        "name": "@kiosk/kasse",
+        "version": "0.1.0",
+        "type": "module",
+        "dependencies": { "@kiosk/preise": "workspace:*" },
+        "devDependencies": { "@kiosk/tsconfig": "workspace:*" },
+        "scripts": { "build": "tsc -b", "start": "node dist/main.js" }
+      }
+      EOF
+      cat > apps/kasse/tsconfig.json <<'EOF'
+      {
+        "extends": "@kiosk/tsconfig/base.json",
+        "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+        "include": ["src"],
+        "references": [{ "path": "../../packages/preise" }]
+      }
+      EOF
+      cat > apps/kasse/src/main.ts <<'EOF'
+      import { formatPreis } from "@kiosk/preise";
+
+      const summe = [150, 300].reduce((a, b) => a + b, 0);
+      console.log("Summe: " + formatPreis(summe));
+      EOF
+      bun install > /dev/null 2>&1
+      bun run --filter @kiosk/kasse build > /dev/null
+  - id: root-skripte
+    title: Root-Skripte für das ganze Team
+    description: |
+      Niemand im Team soll sich merken müssen, welches Paket wie gebaut wird. Dafür gibt es eine
+      Solution-tsconfig und Root-Skripte.
+
+      1. Lege im Root eine `tsconfig.json` mit `"files": []` an, die `packages/preise` und `apps/kasse` referenziert.
+      2. Ergänze in der Root-`package.json` die Skripte:
+         - `build`: `tsc -b`
+         - `test`: `bun run --workspaces --if-present test`
+         - `start`: startet mit `--filter` das Skript `start` von `@kiosk/kasse`
+      3. Teste: `bun run build && bun run test && bun run start`.
+    checklist:
+      - Root-tsconfig.json mit files [] und zwei references
+      - Skripte build, test und start in der Root-package.json
+      - Alle drei laufen fehlerfrei
+    hints:
+      - 'Root-tsconfig: `{ "files": [], "references": [{ "path": "packages/preise" }, { "path": "apps/kasse" }] }`.'
+      - 'Mit jq: `jq ''.scripts = {"build": "tsc -b", …}'' package.json > tmp.json && mv tmp.json package.json`.'
+      - '`"start": "bun run --filter @kiosk/kasse start"`.'
+    checks:
+      - type: command
+        run: jq -r '(.files | length | tostring) + "/" + (.references | length | tostring)' tsconfig.json
+        stdout_equals: "0/2"
+        message: 'Die Root-tsconfig.json braucht "files": [] und genau zwei references.'
+      - type: command
+        run: jq -r '.scripts.build // "fehlt"' package.json
+        stdout_matches: "tsc (-b|--build)"
+        message: Das Root-Skript build soll `tsc -b` ausführen.
+      - type: command
+        run: jq -r '.scripts.test // "fehlt"' package.json
+        stdout_matches: "--workspaces|--filter"
+        message: Das Root-Skript test soll die Tests in den Workspaces starten, z. B. mit `bun run --workspaces --if-present test`.
+      - type: command
+        run: bun run build > /dev/null 2>&1 && bun run test > /dev/null 2>&1 && bun run start 2>&1
+        stdout_matches: "Summe: 4\\.50 EUR"
+        message: '`bun run build && bun run test && bun run start` läuft noch nicht durch oder gibt nicht „Summe 4.50 EUR“ aus.'
+    solution: |
+      ```bash
+      printf '{\n  "files": [],\n  "references": [{ "path": "packages/preise" }, { "path": "apps/kasse" }]\n}\n' > tsconfig.json
+      jq '.scripts = {
+        "build": "tsc -b",
+        "test": "bun run --workspaces --if-present test",
+        "start": "bun run --filter @kiosk/kasse start"
+      }' package.json > tmp.json && mv tmp.json package.json
+      bun run build && bun run test && bun run start
+      ```
+    solve: |
+      printf '{\n  "files": [],\n  "references": [{ "path": "packages/preise" }, { "path": "apps/kasse" }]\n}\n' > tsconfig.json
+      jq '.scripts = {"build": "tsc -b", "test": "bun run --workspaces --if-present test", "start": "bun run --filter @kiosk/kasse start"}' package.json > tmp.json
+      mv tmp.json package.json
+      bun run build > /dev/null
+  - id: changesets-release
+    title: Das erste Release mit Changesets
+    description: |
+      `@kiosk/preise` bekommt eine neue Funktion – das ist ein minor-Release. Changesets kümmert sich um die
+      Versionen.
+
+      1. Installiere `@changesets/cli` als devDependency im Root (`bun add -d @changesets/cli`).
+      2. Lege `.changeset/config.json` an mit `"baseBranch": "main"` und `"access": "restricted"`.
+      3. Committe den aktuellen Stand (`git add -A && git commit -m "feat: initial kiosk monorepo"`).
+      4. Ergänze in `packages/preise/src/index.ts` die Funktion `formatRabatt(prozent: number): string`
+         (z. B. `"-10 %"`).
+      5. Lege ein **minor**-Changeset für `@kiosk/preise` an und erzeuge mit `bunx changeset version` die neuen
+         Versionen.
+    checklist:
+      - "@changesets/cli installiert und .changeset/config.json angelegt"
+      - Erster Commit vorhanden
+      - formatRabatt ergänzt
+      - preise auf 1.1.0, kasse automatisch auf 0.1.1
+      - CHANGELOG.md in packages/preise
+    hints:
+      - "`printf '{\\n  \"baseBranch\": \"main\",\\n  \"access\": \"restricted\"\\n}\\n' > .changeset/config.json`"
+      - '`bunx changeset --minor @kiosk/preise -m "Neue Funktion formatRabatt"` legt das Changeset ohne Rückfragen an.'
+      - Danach `bunx changeset version` – und `bun install`, weil sich Versionen in package.json-Dateien geändert haben.
+    checks:
+      - type: command
+        run: jq -r '.devDependencies["@changesets/cli"] // "fehlt"' package.json
+        stdout_matches: "^[\\^~]?3\\."
+        message: '@changesets/cli fehlt als devDependency im Root. Nutze `bun add -d @changesets/cli`.'
+      - type: command
+        run: jq -r '.baseBranch' .changeset/config.json
+        stdout_equals: main
+        message: '.changeset/config.json fehlt oder enthält nicht "baseBranch": "main".'
+      - type: command
+        run: git log --oneline | wc -l
+        stdout_matches: "^\\s*[1-9][0-9]*\\s*$"
+        message: Es gibt noch keinen Commit. Committe den Stand, bevor du das Changeset anlegst.
+      - type: file_contains
+        path: packages/preise/src/index.ts
+        pattern: "export (function|const) formatRabatt"
+        message: In packages/preise/src/index.ts fehlt die exportierte Funktion formatRabatt.
+      - type: command
+        run: jq -r '.version' packages/preise/package.json apps/kasse/package.json | paste -sd ' ' -
+        stdout_equals: "1.1.0 0.1.1"
+        message: 'Erwartet: @kiosk/preise 1.1.0 und @kiosk/kasse 0.1.1. Lege ein minor-Changeset für preise an und führe `bunx changeset version` aus.'
+      - type: file_contains
+        path: packages/preise/CHANGELOG.md
+        pattern: "## 1\\.1\\.0"
+        message: packages/preise/CHANGELOG.md mit dem Abschnitt „## 1.1.0“ fehlt.
+    solution: |
+      ```bash
+      bun add -d @changesets/cli
+      mkdir -p .changeset
+      printf '{\n  "baseBranch": "main",\n  "access": "restricted"\n}\n' > .changeset/config.json
+      git add -A && git commit -m "feat: initial kiosk monorepo"
+      cat >> packages/preise/src/index.ts <<'EOF'
+
+      export function formatRabatt(prozent: number): string {
+        return "-" + prozent + " %";
+      }
+      EOF
+      bunx changeset --minor @kiosk/preise -m "Neue Funktion formatRabatt"
+      bunx changeset version
+      bun install
+      ```
+    solve: |
+      bun add -d @changesets/cli > /dev/null 2>&1
+      mkdir -p .changeset
+      printf '{\n  "baseBranch": "main",\n  "access": "restricted"\n}\n' > .changeset/config.json
+      git add -A
+      git commit -q -m "feat: initial kiosk monorepo"
+      cat >> packages/preise/src/index.ts <<'EOF'
+
+      export function formatRabatt(prozent: number): string {
+        return "-" + prozent + " %";
+      }
+      EOF
+      bunx changeset --minor @kiosk/preise -m "Neue Funktion formatRabatt" > /dev/null 2>&1
+      bunx changeset version > /dev/null 2>&1
+      bun install > /dev/null 2>&1
+  - id: ci-pipeline
+    title: Die CI-Pipeline
+    description: |
+      Zum Schluss sorgt eine Pipeline dafür, dass jeder Pull Request gebaut und getestet wird.
+
+      1. Lege `.github/workflows/ci.yml` an. Der Workflow startet bei `pull_request` und bei `push` auf `main` und hat
+         einen Job mit den Schritten:
+         - `actions/checkout@v4` mit `fetch-depth: 0`
+         - `oven-sh/setup-bun@v2`
+         - `bun install --frozen-lockfile`
+         - `bun run build`
+         - `bun run test`
+      2. Prüfe lokal, dass `bun install --frozen-lockfile` erfolgreich ist – sonst würde die CI sofort scheitern.
+      3. Committe alles mit einer Conventional-Commit-Message.
+    checklist:
+      - Workflow-Datei mit Checkout, setup-bun, eingefrorener Installation, build und test
+      - bun install --frozen-lockfile läuft lokal durch
+      - Alles committet
+    hints:
+      - Schau dir den Workflow aus der Lektion „CI für Monorepos“ an – er passt fast unverändert.
+      - Schlägt `--frozen-lockfile` fehl, führe einmal `bun install` aus und committe die bun.lock mit.
+      - '`git status --porcelain` soll am Ende nichts mehr ausgeben.'
+    checks:
+      - type: command
+        run: |-
+          bun -e 'const y = Bun.YAML.parse(await Bun.file(".github/workflows/ci.yml").text()); const s = Object.values(y.jobs ?? {}).flatMap((j) => j.steps ?? []); const u = s.map((x) => String(x.uses ?? "")); const r = s.map((x) => x.run ?? "").join("\n"); const c = s.find((x) => String(x.uses ?? "").startsWith("actions/checkout")); console.log([u.some((x) => x.startsWith("oven-sh/setup-bun")), String(c?.with?.["fetch-depth"]) === "0", /bun install --frozen-lockfile|bun ci/.test(r), /bun run build/.test(r), /bun run test/.test(r)].join(" "))'
+        stdout_equals: "true true true true true"
+        message: Im Workflow fehlt einer der Schritte checkout mit fetch-depth 0, setup-bun, bun install --frozen-lockfile, bun run build oder bun run test.
+      - type: command
+        run: bun install --frozen-lockfile > /dev/null 2>&1 && echo ok
+        stdout_equals: ok
+        message: '`bun install --frozen-lockfile` schlägt fehl – führe `bun install` aus und committe die bun.lock.'
+      - type: command
+        run: git status --porcelain | wc -l
+        stdout_matches: "^\\s*0\\s*$"
+        message: Es gibt noch uncommittete Änderungen. Committe alles, z. B. mit `git add -A` und `git commit`.
+      - type: command
+        run: git log -1 --format=%s
+        stdout_matches: "^(feat|fix|chore|ci|build|docs|refactor|test)(\\([^()\\s]+\\))?!?: \\S"
+        message: Die letzte Commit-Message soll dem Conventional-Commits-Format folgen, z. B. "ci add workflow" mit Doppelpunkt nach dem Typ.
+    solution: |
+      ```bash
+      mkdir -p .github/workflows
+      cat > .github/workflows/ci.yml <<'EOF'
+      name: CI
+      on:
+        pull_request:
+        push:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+            - uses: oven-sh/setup-bun@v2
+            - run: bun install --frozen-lockfile
+            - run: bun run build
+            - run: bun run test
+      EOF
+      bun install --frozen-lockfile
+      git add -A
+      git commit -m "ci: add workflow and release 1.1.0"
+      ```
+    solve: |
+      mkdir -p .github/workflows
+      cat > .github/workflows/ci.yml <<'EOF'
+      name: CI
+      on:
+        pull_request:
+        push:
+          branches: [main]
+      jobs:
+        check:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+            - uses: oven-sh/setup-bun@v2
+            - run: bun install --frozen-lockfile
+            - run: bun run build
+            - run: bun run test
+      EOF
+      bun install --frozen-lockfile > /dev/null 2>&1
+      git add -A
+      git commit -q -m "ci: add workflow and release 1.1.0"
