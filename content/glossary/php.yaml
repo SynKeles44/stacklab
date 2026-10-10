@@ -1,0 +1,349 @@
+# Begriffe aus dem Kurs "PHP".
+- slug: php-cli
+  term: PHP-CLI
+  short: Die Variante von PHP, die Skripte direkt im Terminal ausführt.
+  explanation: >
+    CLI steht für Command Line Interface. Mit dem Befehl `php` startest du ein Skript von Hand, etwa ein
+    Werkzeug, einen Cronjob oder einen Test. Das Skript läuft einmal von oben nach unten und endet mit einem
+    Exit-Code.
+  example: "`php preis.php 3 19.99` führt das Skript preis.php mit zwei Argumenten aus."
+  category: php
+  aliases: [PHP CLI, php-Befehl]
+  related: [php-fpm, kommandozeile, skript-argument]
+  lesson: php/wie-php-laeuft
+- slug: php-fpm
+  term: php-fpm
+  short: Ein Dienst, der einen Vorrat an PHP-Prozessen bereithält und Anfragen eines Webservers abarbeitet.
+  explanation: >
+    FPM heißt FastCGI Process Manager. Der Webserver, zum Beispiel nginx, reicht jede Anfrage an eine
+    `.php`-Datei über das FastCGI-Protokoll an php-fpm weiter. Ein freier PHP-Prozess führt das Skript aus und
+    gibt die Antwort zurück; danach ist er bereit für die nächste Anfrage.
+  example: "nginx leitet mit `fastcgi_pass php:9000;` alle PHP-Anfragen an php-fpm weiter."
+  category: php
+  aliases: [PHP-FPM, FastCGI Process Manager]
+  related: [php-cli, nginx, opcache]
+  lesson: php/wie-php-laeuft
+- slug: opcache
+  term: OPcache
+  short: Ein Zwischenspeicher, der übersetzten PHP-Code im Arbeitsspeicher aufhebt.
+  explanation: >
+    Bevor PHP ein Skript ausführt, übersetzt es den Quelltext in Bytecode (Opcodes). OPcache speichert diesen
+    Bytecode, damit nicht bei jeder Anfrage neu übersetzt werden muss. Das macht Webanwendungen deutlich
+    schneller und ist in Produktion immer eingeschaltet.
+  example: "`php -i | grep opcache.enable` zeigt, ob OPcache aktiv ist."
+  category: php
+  aliases: [Opcode-Cache, OPCache]
+  related: [php-fpm, interpreter]
+  lesson: php/wie-php-laeuft
+- slug: eingebauter-webserver
+  term: Eingebauter Webserver
+  short: Ein kleiner Entwicklungsserver, den PHP selbst mitbringt.
+  explanation: >
+    Mit `php -S` startest du ohne nginx oder Apache einen Webserver, der PHP-Dateien aus dem aktuellen Ordner
+    ausliefert. Er ist für Experimente und lokale Entwicklung gedacht und verarbeitet nur eine Anfrage nach der
+    anderen – für Produktion ist er nicht geeignet.
+  example: "`php -S 127.0.0.1:8000` und danach `http://127.0.0.1:8000/index.php` im Browser öffnen."
+  category: php
+  aliases: [php -S, PHP-Entwicklungsserver, Built-in Webserver]
+  related: [webserver, php-cli]
+  lesson: php/wie-php-laeuft
+- slug: superglobale
+  term: Superglobale
+  short: Vordefinierte PHP-Arrays wie $_GET oder $_POST, die überall im Code verfügbar sind.
+  explanation: >
+    PHP füllt bei jeder Web-Anfrage einige Arrays automatisch: `$_GET` mit den Query-Parametern, `$_POST` mit
+    Formulardaten, `$_SERVER` mit Infos zur Anfrage und `$_COOKIE` mit Cookies. Ihre Werte kommen vom Nutzer
+    und müssen deshalb immer geprüft und beim Ausgeben maskiert werden.
+  example: "`$name = $_GET['name'] ?? 'Welt';` liest den Parameter aus `/index.php?name=Ada`."
+  category: php
+  aliases: [Superglobals, superglobale Variable, $_GET, $_POST]
+  related: [http-request, variable]
+  lesson: php/wie-php-laeuft
+- slug: union-type
+  term: Union-Type
+  short: Eine Typangabe, die mehrere erlaubte Typen mit | verbindet.
+  explanation: >
+    Manchmal darf ein Wert verschiedene Typen haben, etwa eine Zahl oder einen Text. Mit `int|string` sagst du
+    PHP genau das. Übergibt jemand etwas anderes, wirft PHP einen TypeError.
+  example: "`function id(int|string $wert): string { return (string) $wert; }`"
+  category: php
+  aliases: [Union Types, Vereinigungstyp]
+  related: [nullable-typ, strict-types, typeerror]
+  lesson: php/syntax-und-typsystem
+- slug: nullable-typ
+  term: Nullable-Typ
+  short: Ein Typ, der zusätzlich null erlaubt, geschrieben mit einem Fragezeichen davor.
+  explanation: >
+    `?string` bedeutet „ein String oder null“ und ist eine Kurzform von `string|null`. So zeigst du ehrlich,
+    dass ein Wert fehlen kann. Wer den Wert benutzt, muss den Fall null dann bewusst behandeln.
+  example: "`function finde(int $id): ?Buch` liefert ein Buch oder null, wenn es keins gibt."
+  category: php
+  aliases: [nullable, "?string", nullbarer Typ]
+  related: [union-type, nullsafe-operator, nullish-coalescing]
+  lesson: php/syntax-und-typsystem
+- slug: string-interpolation
+  term: String-Interpolation
+  short: Das Einsetzen von Variablen direkt in einen Text in doppelten Anführungszeichen.
+  explanation: >
+    In doppelten Anführungszeichen und in Heredoc ersetzt PHP Variablen durch ihren Wert. Für Array-Zugriffe
+    und Methodenaufrufe nutzt du geschweifte Klammern. In einfachen Anführungszeichen passiert keine
+    Interpolation.
+  example: "`\"Hallo {$user['name']}, du hast {$anzahl} Nachrichten\"`"
+  category: php
+  aliases: [Interpolation, Variablenersetzung]
+  related: [string, heredoc, sprintf]
+  lesson: php/strings
+- slug: heredoc
+  term: Heredoc
+  short: Eine Schreibweise für mehrzeilige Strings, in denen Variablen ersetzt werden.
+  explanation: >
+    Heredoc beginnt mit `<<<` und einer Marke, zum Beispiel `<<<TXT`, und endet mit derselben Marke in einer
+    eigenen Zeile. Dazwischen steht beliebiger Text über mehrere Zeilen. Variablen werden wie in doppelten
+    Anführungszeichen eingesetzt.
+  example: "`$mail = <<<TXT` – dann `Hallo {$name},` – dann `TXT;`"
+  category: php
+  aliases: [Heredoc-Syntax]
+  related: [nowdoc, string-interpolation]
+  lesson: php/strings
+- slug: nowdoc
+  term: Nowdoc
+  short: Wie Heredoc, aber ohne Variablenersetzung – der Text bleibt exakt so stehen.
+  explanation: >
+    Nowdoc schreibst du mit einer Marke in einfachen Anführungszeichen: `<<<'TXT'`. Alles dazwischen wird
+    wörtlich übernommen, auch `$`-Zeichen. Das eignet sich für Code-Beispiele oder Vorlagen.
+  example: "`$vorlage = <<<'TXT'` – dann `Preis: $betrag` (bleibt wörtlich) – dann `TXT;`"
+  category: php
+  aliases: [Nowdoc-Syntax]
+  related: [heredoc, string]
+  lesson: php/strings
+- slug: sprintf
+  term: sprintf
+  short: Eine Funktion, die einen Text nach einer Vorlage mit Platzhaltern zusammenbaut.
+  explanation: >
+    Platzhalter wie `%s` (Text), `%d` (Ganzzahl) und `%.2f` (Kommazahl mit zwei Stellen) werden der Reihe nach
+    durch die weiteren Argumente ersetzt. Breiten und Füllzeichen erlauben sauber ausgerichtete Spalten.
+    `printf` gibt das Ergebnis direkt aus.
+  example: "`sprintf('%-10s %5.2f', 'Brot', 2.5)` ergibt `Brot        2.50`."
+  category: php
+  aliases: [printf, Formatstring]
+  related: [string, string-interpolation]
+  lesson: php/strings
+- slug: multibyte-funktion
+  term: Multibyte-Funktion
+  short: Eine mb_*-Funktion, die Texte zeichenweise statt byteweise verarbeitet.
+  explanation: >
+    In UTF-8 belegen Umlaute und Emojis mehrere Bytes. Klassische Funktionen wie `strlen` oder `substr` zählen
+    Bytes und zerschneiden solche Zeichen. Die Varianten mit `mb_` wie `mb_strlen`, `mb_substr` und
+    `mb_strtoupper` arbeiten mit echten Zeichen.
+  example: "`strlen('Größe')` ergibt 7, `mb_strlen('Größe')` ergibt 5."
+  category: php
+  aliases: [mb-Funktionen, mbstring, mb_strlen]
+  related: [unicode, byte, string]
+  lesson: php/strings
+- slug: benanntes-argument
+  term: Benanntes Argument
+  short: Ein Argument, das beim Aufruf mit dem Namen des Parameters übergeben wird.
+  explanation: >
+    Statt dich auf die Reihenfolge zu verlassen, schreibst du `name: wert`. Das macht Aufrufe lesbarer und
+    erlaubt, optionale Parameter zu überspringen. Seit PHP 8.0 ist das möglich.
+  example: "`json_decode($text, true, flags: JSON_THROW_ON_ERROR)` setzt nur flags, die Tiefe bleibt Standard."
+  category: php
+  aliases: [Named Arguments, benannte Argumente]
+  related: [argument, parameter]
+  lesson: php/funktionen-und-ausdruecke
+- slug: variadische-funktion
+  term: Variadische Funktion
+  short: Eine Funktion, die beliebig viele Argumente annimmt.
+  explanation: >
+    Mit drei Punkten vor dem letzten Parameter sammelt PHP alle übrigen Argumente in einem Array. Umgekehrt
+    entpackt `...$liste` beim Aufruf ein Array in einzelne Argumente (Spread-Operator).
+  example: "`function summe(int ...$zahlen): int { return array_sum($zahlen); }` – `summe(1, 2, 3)` ergibt 6."
+  category: php
+  aliases: [Variadics, variadisch, Spread-Operator]
+  related: [argument, array]
+  lesson: php/funktionen-und-ausdruecke
+- slug: first-class-callable
+  term: First-Class Callable
+  short: Eine Schreibweise, die aus einer Funktion oder Methode ein aufrufbares Objekt macht.
+  explanation: >
+    Schreibst du hinter einen Funktionsnamen `(...)`, ruft PHP die Funktion nicht auf, sondern liefert eine
+    Closure darauf. So übergibst du Funktionen sauber an `array_map` oder den Pipe-Operator. Das gibt es seit
+    PHP 8.1.
+  example: "`array_map(strtoupper(...), ['a', 'b'])` ergibt `['A', 'B']`."
+  category: php
+  aliases: [First-class callable syntax, "strlen(...)"]
+  related: [closure, pipe-operator]
+  lesson: php/funktionen-und-ausdruecke
+- slug: pipe-operator
+  term: Pipe-Operator
+  short: Der Operator |> aus PHP 8.5, der einen Wert von links nach rechts durch Funktionen reicht.
+  explanation: >
+    Statt Aufrufe ineinander zu verschachteln, schreibst du sie als Kette. Der Wert links wird als einziges
+    Argument an die Funktion rechts übergeben. Rechts steht ein Callable, etwa `trim(...)` oder eine
+    Pfeilfunktion.
+  example: "`$slug = '  Hallo Welt ' |> trim(...) |> strtolower(...);` ergibt `hallo welt`."
+  category: php
+  aliases: ["|>", Pipe Operator]
+  related: [first-class-callable, closure]
+  lesson: php/funktionen-und-ausdruecke
+- slug: match-ausdruck
+  term: match-Ausdruck
+  short: Ein Ausdruck, der einen Wert streng mit === mit mehreren Fällen vergleicht und ein Ergebnis liefert.
+  explanation: >
+    `match` ist die moderne Alternative zu `switch`: Es vergleicht strikt, braucht kein `break` und gibt direkt
+    einen Wert zurück. Passt kein Fall und gibt es kein `default`, wirft PHP einen UnhandledMatchError.
+  example: "`$text = match ($code) { 200 => 'OK', 404 => 'Nicht gefunden', default => 'Fehler' };`"
+  category: php
+  aliases: [match, match expression]
+  related: [strikte-gleichheit, enum]
+  lesson: php/funktionen-und-ausdruecke
+- slug: nullsafe-operator
+  term: Nullsafe-Operator
+  short: Der Operator ?->, der eine Kette abbricht und null liefert, sobald ein Glied null ist.
+  explanation: >
+    Bei `$a?->b()` ruft PHP `b()` nur auf, wenn `$a` nicht null ist. Sonst ist das Ergebnis der ganzen Kette
+    null – ohne Fehler. Das ersetzt viele verschachtelte if-Abfragen.
+  example: "`$stadt = $kunde?->adresse()?->stadt;` ist null, wenn der Kunde keine Adresse hat."
+  category: php
+  aliases: ["?->", Nullsafe Operator]
+  related: [nullable-typ, nullish-coalescing]
+  lesson: php/funktionen-und-ausdruecke
+- slug: datetimeimmutable
+  term: DateTimeImmutable
+  short: Die PHP-Klasse für Zeitpunkte, deren Objekte sich nie verändern.
+  explanation: >
+    Jede Rechnung wie `modify('+1 day')` liefert ein neues Objekt, das ursprüngliche bleibt gleich. Das verhindert
+    Fehler, bei denen ein Datum an anderer Stelle unbemerkt verändert wird. Mit `format()` gibst du den Zeitpunkt
+    in jedem gewünschten Format aus.
+  example: "`(new DateTimeImmutable('2026-10-10'))->modify('+14 days')->format('d.m.Y')` ergibt `24.10.2026`."
+  category: php
+  aliases: [Datumsobjekt]
+  related: [unveraenderlichkeit, objekt]
+  lesson: php/dateien-json-und-datum
+- slug: unveraenderlichkeit
+  term: Unveränderlichkeit
+  short: Die Eigenschaft eines Objekts, nach dem Erzeugen nicht mehr geändert werden zu können.
+  explanation: >
+    Ein unveränderliches (immutable) Objekt behält seine Werte für immer. Statt es zu ändern, erzeugst du ein
+    neues Objekt mit den neuen Werten. Das macht Code vorhersehbarer, weil niemand ein geteiltes Objekt
+    heimlich verändern kann. In PHP hilft dabei das Schlüsselwort `readonly`.
+  example: "`$spaeter = $termin->modify('+1 day');` – `$termin` bleibt bei DateTimeImmutable unverändert."
+  category: programmierung
+  aliases: [Immutability, immutable, unveränderlich, unveraenderlich]
+  related: [value-object, datetimeimmutable]
+  lesson: php/klassen-und-objekte
+- slug: value-object
+  term: Value Object
+  short: Ein kleines, unveränderliches Objekt, das einen fachlichen Wert wie Geld oder eine E-Mail-Adresse darstellt.
+  explanation: >
+    Ein Value Object prüft seine Daten schon im Konstruktor und ist danach garantiert gültig. Zwei Value
+    Objects mit gleichen Werten gelten als gleich. Statt loser Strings und Zahlen wandern so sprechende,
+    geprüfte Objekte durch den Code.
+  example: "`new Geld(1999, 'EUR')` statt der losen Zahl `19.99`."
+  category: programmierung
+  aliases: [Wertobjekt, Value Objects]
+  related: [unveraenderlichkeit, klasse, konstruktor]
+  lesson: php/klassen-und-objekte
+- slug: zugriffsmodifikator
+  term: Zugriffsmodifikator
+  short: Ein Schlüsselwort wie public, protected oder private, das festlegt, wer auf ein Element zugreifen darf.
+  explanation: >
+    `public` darf jeder benutzen, `protected` nur die Klasse und ihre Kindklassen, `private` nur die Klasse
+    selbst. So schützt eine Klasse ihren inneren Zustand und bietet nach außen nur die nötigen Methoden an.
+  example: "`private int $saldo;` – von außen ist `$konto->saldo` dann nicht erreichbar."
+  category: programmierung
+  aliases: [Sichtbarkeit, Visibility, public, private, protected]
+  related: [klasse, asymmetrische-sichtbarkeit]
+  lesson: php/klassen-und-objekte
+- slug: asymmetrische-sichtbarkeit
+  term: Asymmetrische Sichtbarkeit
+  short: Unterschiedliche Sichtbarkeit für Lesen und Schreiben einer Property, eingeführt in PHP 8.4.
+  explanation: >
+    Mit `public private(set)` darf jeder eine Property lesen, aber nur die Klasse selbst darf sie ändern. Das
+    erspart dir viele Getter-Methoden und schützt den Zustand trotzdem.
+  example: "`public private(set) int $saldo = 0;` – `echo $konto->saldo;` geht, `$konto->saldo = 5;` nicht."
+  category: php
+  aliases: [Asymmetric Visibility, "private(set)"]
+  related: [zugriffsmodifikator, property-hook]
+  lesson: php/klassen-und-objekte
+- slug: konstruktor-promotion
+  term: Konstruktor-Promotion
+  short: Eine Kurzschreibweise, bei der Konstruktor-Parameter direkt zu Properties werden.
+  explanation: >
+    Steht vor einem Konstruktor-Parameter ein Zugriffsmodifikator wie `private` oder `public`, legt PHP
+    automatisch eine gleichnamige Property an und weist den Wert zu. Das spart viele Zeilen Wiederholung.
+  example: "`public function __construct(private string $name, private int $alter) {}`"
+  category: php
+  aliases: [Constructor Promotion, Constructor Property Promotion]
+  related: [konstruktor, zugriffsmodifikator]
+  lesson: php/klassen-und-objekte
+- slug: statisches-element
+  term: Statisches Element
+  short: Eine Property oder Methode, die zur Klasse selbst gehört und nicht zu einem einzelnen Objekt.
+  explanation: >
+    Statische Elemente rufst du mit `Klasse::methode()` auf, ohne vorher ein Objekt zu erzeugen. Sie eignen sich
+    für Fabrikmethoden wie `Geld::euro(5)` oder Hilfsfunktionen. Statische Properties teilen sich alle Objekte –
+    deshalb setzt man sie sparsam ein.
+  example: "`Initialen::aus('Ada Lovelace')` ruft eine statische Methode auf."
+  category: programmierung
+  aliases: [static, statische Methode, statische Property]
+  related: [klasse, objekt]
+  lesson: php/klassen-und-objekte
+- slug: property-hook
+  term: Property Hook
+  short: Code, der beim Lesen oder Schreiben einer Property automatisch läuft – neu seit PHP 8.4.
+  explanation: >
+    Mit einem `get`- oder `set`-Hook direkt an der Property kannst du Werte prüfen, umformen oder berechnen.
+    Von außen sieht der Zugriff aus wie bei einer normalen Property. Klassische Getter und Setter werden dadurch
+    oft überflüssig.
+  example: "`public string $name { set(string $wert) { $this->name = trim($wert); } }`"
+  category: php
+  aliases: [Property Hooks, get-Hook, set-Hook]
+  related: [getter-und-setter, asymmetrische-sichtbarkeit]
+  lesson: php/klassen-und-objekte
+- slug: abstrakte-klasse
+  term: Abstrakte Klasse
+  short: Eine Klasse, von der man keine Objekte erzeugen kann und die als Vorlage für Kindklassen dient.
+  explanation: >
+    Eine abstrakte Klasse enthält gemeinsamen Code und kann abstrakte Methoden ohne Rumpf vorschreiben. Erst
+    eine Kindklasse, die alle abstrakten Methoden umsetzt, lässt sich mit `new` erzeugen.
+  example: "`abstract class Rabatt { abstract public function berechne(int $cent): int; }`"
+  category: programmierung
+  aliases: [abstract class, abstrakt]
+  related: [vererbung, interface, klasse]
+  lesson: php/interfaces-vererbung-traits
+- slug: trait
+  term: Trait
+  short: Ein Baustein mit Methoden, den PHP in mehrere Klassen hineinkopiert.
+  explanation: >
+    PHP-Klassen können nur von einer Klasse erben. Ein Trait erlaubt trotzdem, gemeinsame Methoden in viele
+    Klassen einzubauen: Mit `use TraitName;` innerhalb der Klasse fügt PHP den Code ein. Traits eignen sich für
+    kleine, querliegende Fähigkeiten wie Zeitstempel.
+  example: "`trait HatZeitstempel { public function erstelltAm(): string { /* … */ } }` und in der Klasse `use HatZeitstempel;`"
+  category: php
+  aliases: [Traits]
+  related: [vererbung, interface, abstrakte-klasse]
+  lesson: php/interfaces-vererbung-traits
+- slug: throwable
+  term: Throwable
+  short: Das gemeinsame Interface aller Fehlerobjekte in PHP – Wurzel von Error und Exception.
+  explanation: >
+    Alles, was man mit `throw` werfen kann, implementiert Throwable. Darunter gibt es zwei Äste: `Error` für
+    Programmierfehler, die PHP selbst meldet, und `Exception` für erwartbare Fehlersituationen.
+    `catch (Throwable $t)` fängt beides und wird meist nur ganz oben im Programm eingesetzt.
+  example: "`catch (Throwable $t) { fwrite(STDERR, $t->getMessage()); exit(1); }`"
+  category: php
+  aliases: [Throwable-Hierarchie]
+  related: [exception, try-catch, typeerror]
+  lesson: php/fehler-und-exceptions
+- slug: pest
+  term: Pest
+  short: Ein Test-Framework für PHP mit kurzer, gut lesbarer Schreibweise, das auf PHPUnit aufbaut.
+  explanation: >
+    Statt Testklassen schreibst du in Pest einzelne Funktionen wie `it('…', function () { … })` und prüfst mit
+    `expect($wert)->toBe(…)`. Unter der Haube nutzt Pest PHPUnit. Viele Laravel-Projekte setzen es als Standard ein.
+  example: "`it('rechnet', fn () => expect(1 + 1)->toBe(2));` – starten mit `vendor/bin/pest`."
+  category: werkzeuge
+  aliases: [Pest PHP, PestPHP]
+  related: [phpunit, unit-test, test-runner]
+  lesson: php/code-qualitaet-und-tests

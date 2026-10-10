@@ -1,0 +1,30 @@
+title: PHP
+subtitle: Modernes PHP 8.5 – vom ersten Skript bis zur Composer-App mit Enums und Exceptions
+description: >
+  PHP treibt einen großen Teil des Webs an – von kleinen Websites bis zu großen Laravel-Anwendungen.
+  In diesem Kurs lernst du **modernes PHP 8.5**: strikte Typen, Arrays in der Tiefe, Strings, Enums,
+  readonly-Objekte, Exceptions, Namespaces und Composer-Autoloading.
+
+
+  Die Grundlagen des Programmierens (Variablen, Schleifen, Funktionen) kennst du schon. Hier geht es um das,
+  was PHP besonders macht – und um die typischen Fallen. Du schreibst echten Code im Editor, führst Skripte im
+  Übungs-Terminal aus und baust am Ende eine kleine Bibliotheks-App für die Kommandozeile mit JSON-Speicher.
+category: backend
+level: einsteiger
+icon: code
+color: "#777bb4"
+estimated_hours: 5
+workspace_dir: php
+prerequisites: [programmieren-grundlagen]
+learning_goals:
+  - Du erklärst, wie PHP auf der Kommandozeile und im Web (php-fpm) ausgeführt wird.
+  - Du schreibst typsicheren Code mit strict_types, Union-Types, nullable Typen und never.
+  - Du arbeitest sicher mit Arrays, Strings, Dateien, JSON und DateTimeImmutable.
+  - Du nutzt moderne Sprachmittel wie match, named arguments, first-class callables und den Pipe-Operator.
+  - Du modellierst Daten mit Klassen, Interfaces, Traits, Enums und readonly-Value-Objects.
+  - Du behandelst Fehler mit eigenen Exceptions, try/catch und finally.
+  - Du richtest ein Composer-Projekt mit PSR-4-Autoloading ein und kennst Coding-Standards und Tests.
+references:
+  - Value Objects und Enums statt loser Strings, wie sie in großen PHP-Codebasen üblich sind
+  - Strikte Typisierung (strict_types) als Teamstandard in jeder Datei
+  - Code-Stil nach PER Coding Style, automatisch geprüft vor jedem Merge

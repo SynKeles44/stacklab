@@ -1,0 +1,152 @@
+title: Objektorientiertes PHP
+description: Klassen und Objekte in modernem PHP, Interfaces, Vererbung und Traits sowie Enums für feste Wertemengen.
+exercise:
+  id: modul-uebung-warenkorb
+  type: code
+  language: php
+  title: Ein Warenkorb aus Value Objects
+  description: |
+    Du modellierst einen kleinen Warenkorb – mit allem, was du in diesem Modul gelernt hast: einem Backed Enum,
+    einem Interface, einem readonly-Value-Object und einer Klasse mit privatem Zustand. Alle Beträge sind
+    **Cent-Beträge als `int`**, damit keine Rundungsfehler von Kommazahlen entstehen.
+
+    1. Backed Enum `Steuersatz: int` mit `Normal = 19` und `Ermaessigt = 7`.
+       Methode `steuerCent(int $nettoCent): int` liefert `(int) round($nettoCent * $this->value / 100)`.
+    2. Interface `Posten` mit `nettoCent(): int` und `steuerCent(): int`.
+    3. `final readonly class Artikel implements Posten` mit Constructor Promotion:
+       `string $name`, `int $preisCent`, `Steuersatz $satz`, `int $menge = 1`.
+       - Ist `$preisCent` negativ oder `$menge` kleiner als 1, wirft der Konstruktor eine `InvalidArgumentException`.
+       - `nettoCent()` ist Preis mal Menge, `steuerCent()` fragt den Steuersatz.
+    4. `final class Warenkorb` speichert die Posten in einer **privaten** Liste:
+       `hinzufuegen(Posten $posten): void`, `anzahl(): int`, `nettoCent(): int`, `steuerCent(): int`
+       und `bruttoCent(): int` (netto plus Steuer).
+  starter: |
+    <?php
+    declare(strict_types=1);
+
+    enum Steuersatz: int
+    {
+        case Normal = 19;
+        // …
+    }
+
+    interface Posten
+    {
+        // …
+    }
+
+    final readonly class Artikel implements Posten
+    {
+        // …
+    }
+
+    final class Warenkorb
+    {
+        /** @var list<Posten> */
+        private array $posten = [];
+
+        // …
+    }
+  tests:
+    - name: Steuersatz rechnet richtig
+      code: assert_same(190, Steuersatz::Normal->steuerCent(999)); assert_same(70, Steuersatz::Ermaessigt->steuerCent(1000)); assert_same(7, Steuersatz::from(7)->value);
+    - name: Artikel mit Menge
+      code: $a = new Artikel('Buch', 1000, Steuersatz::Ermaessigt, 2); assert_same(2000, $a->nettoCent()); assert_same(140, $a->steuerCent()); assert_true($a instanceof Posten);
+    - name: Warenkorb mit zwei Posten
+      code: |
+        $k = new Warenkorb();
+        $k->hinzufuegen(new Artikel('Buch', 1000, Steuersatz::Ermaessigt, 2));
+        $k->hinzufuegen(new Artikel('Kabel', 999, Steuersatz::Normal));
+        assert_same(2, $k->anzahl()); assert_same(2999, $k->nettoCent()); assert_same(330, $k->steuerCent()); assert_same(3329, $k->bruttoCent());
+    - name: leerer Warenkorb
+      code: $k = new Warenkorb(); assert_same(0, $k->anzahl()); assert_same(0, $k->bruttoCent());
+    - name: ungültige Artikel werfen eine InvalidArgumentException
+      code: |
+        foreach ([[-1, 1], [100, 0]] as [$preis, $menge]) {
+            try { new Artikel('X', $preis, Steuersatz::Normal, $menge); assert_true(false, "Artikel mit Preis $preis und Menge $menge wurde akzeptiert."); } catch (InvalidArgumentException $e) { assert_true(true); }
+        }
+    - name: Artikel ist unveränderlich und der Warenkorb kapselt seine Liste
+      code: |
+        $a = new Artikel('Buch', 1000, Steuersatz::Normal);
+        try { $a->preisCent = 1; assert_true(false, 'preisCent ließ sich überschreiben – fehlt readonly?'); } catch (Error $e) { assert_true(true); }
+        assert_true((new ReflectionProperty(Warenkorb::class, 'posten'))->isPrivate(), 'Die Liste im Warenkorb soll private sein.');
+  hints:
+    - "Im Enum: `public function steuerCent(int $nettoCent): int { return (int) round($nettoCent * $this->value / 100); }`"
+    - "Im Konstruktor von Artikel prüfst du: `if ($preisCent < 0 || $menge < 1) { throw new InvalidArgumentException('Ungültiger Artikel'); }` – die Properties stehen per Constructor Promotion in der Parameterliste."
+    - "Im Warenkorb summierst du mit `array_sum(array_map(fn(Posten $p): int => $p->nettoCent(), $this->posten))`."
+  solution: |
+    <?php
+    declare(strict_types=1);
+
+    enum Steuersatz: int
+    {
+        case Normal = 19;
+        case Ermaessigt = 7;
+
+        public function steuerCent(int $nettoCent): int
+        {
+            return (int) round($nettoCent * $this->value / 100);
+        }
+    }
+
+    interface Posten
+    {
+        public function nettoCent(): int;
+
+        public function steuerCent(): int;
+    }
+
+    final readonly class Artikel implements Posten
+    {
+        public function __construct(
+            public string $name,
+            public int $preisCent,
+            public Steuersatz $satz,
+            public int $menge = 1,
+        ) {
+            if ($preisCent < 0 || $menge < 1) {
+                throw new InvalidArgumentException("Ungültiger Artikel: {$name}");
+            }
+        }
+
+        public function nettoCent(): int
+        {
+            return $this->preisCent * $this->menge;
+        }
+
+        public function steuerCent(): int
+        {
+            return $this->satz->steuerCent($this->nettoCent());
+        }
+    }
+
+    final class Warenkorb
+    {
+        /** @var list<Posten> */
+        private array $posten = [];
+
+        public function hinzufuegen(Posten $posten): void
+        {
+            $this->posten[] = $posten;
+        }
+
+        public function anzahl(): int
+        {
+            return count($this->posten);
+        }
+
+        public function nettoCent(): int
+        {
+            return array_sum(array_map(fn(Posten $p): int => $p->nettoCent(), $this->posten));
+        }
+
+        public function steuerCent(): int
+        {
+            return array_sum(array_map(fn(Posten $p): int => $p->steuerCent(), $this->posten));
+        }
+
+        public function bruttoCent(): int
+        {
+            return $this->nettoCent() + $this->steuerCent();
+        }
+    }

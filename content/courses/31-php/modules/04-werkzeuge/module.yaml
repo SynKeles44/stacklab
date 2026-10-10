@@ -1,0 +1,125 @@
+title: Werkzeuge für echte Projekte
+description: Fehler mit Exceptions behandeln, Code mit Namespaces, Composer und PSR-4 organisieren und die Qualität mit Pint, PHPStan und Tests absichern.
+exercise:
+  id: modul-uebung-umrechner
+  type: terminal
+  title: Ein robuster Längen-Umrechner
+  description: |
+    Du baust ein kleines Composer-Projekt, das alles aus diesem Modul verbindet: Namespaces, PSR-4-Autoloading,
+    eine eigene Exception, saubere Fehlerausgabe und die Qualitätswerkzeuge.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – der Ordner `umrechner` ist danach leer.
+
+    1. `composer.json`: Der Namespace `Umrechner\` zeigt per PSR-4 auf `src/`. Erzeuge danach den Autoloader.
+    2. `src/UngueltigeEingabe.php`: Klasse `Umrechner\UngueltigeEingabe`, die von `InvalidArgumentException` erbt.
+    3. `src/Laenge.php`: Klasse `Umrechner\Laenge` mit `public static function inMeter(string $angabe): float`.
+       Erlaubt sind eine Zahl (mit Punkt als Dezimaltrenner) und direkt oder nach Leerzeichen eine Einheit
+       `km`, `m`, `cm` oder `mm` – z. B. `2.5km` oder `40 cm`. Alles andere wirft `UngueltigeEingabe`.
+    4. `bin/umrechnen.php`: lädt `vendor/autoload.php` (Pfad: `__DIR__ . '/../vendor/autoload.php'`) und gibt das
+       Ergebnis aus: `php bin/umrechnen.php 2.5km` → `2500 m`, `php bin/umrechnen.php 40cm` → `0.4 m`.
+       Bei ungültiger oder fehlender Eingabe schreibt es `Fehler: …` auf STDERR und endet mit Exit-Code 1.
+    5. `phpstan analyse --level=8 src bin` und `pint --test src bin` melden keine Fehler.
+  workdir: umrechner
+  setup: |
+    true
+  checks:
+    - type: command
+      run: jq -r '.autoload."psr-4" | to_entries[] | .key + "=" + .value' composer.json
+      stdout_matches: "^Umrechner\\\\=src/?$"
+      message: 'In composer.json soll unter autoload.psr-4 der Eintrag "Umrechner\\": "src/" stehen.'
+    - type: file_exists
+      path: vendor/autoload.php
+      message: Es gibt noch keinen Autoloader – führe composer dump-autoload aus.
+    - type: command
+      run: |-
+        php -r 'require "vendor/autoload.php"; echo is_subclass_of(Umrechner\UngueltigeEingabe::class, InvalidArgumentException::class) ? "ja" : "nein";'
+      stdout_equals: "ja"
+      message: Die Klasse Umrechner\UngueltigeEingabe soll in src/UngueltigeEingabe.php liegen und von InvalidArgumentException erben.
+    - type: command
+      run: php bin/umrechnen.php 2.5km
+      stdout_equals: "2500 m"
+      message: php bin/umrechnen.php 2.5km soll "2500 m" ausgeben.
+    - type: command
+      run: php bin/umrechnen.php 40cm && php bin/umrechnen.php "12 mm" && php bin/umrechnen.php 300m
+      stdout_matches: "^0\\.4 m\\n0\\.012 m\\n300 m$"
+      message: Prüfe die Faktoren und Leerzeichen – 40cm ergibt 0.4 m, "12 mm" ergibt 0.012 m, 300m ergibt 300 m.
+    - type: command
+      run: |-
+        php -r 'require "vendor/autoload.php"; try { Umrechner\Laenge::inMeter("3 meilen"); echo "keine Exception"; } catch (Umrechner\UngueltigeEingabe $e) { echo "ok"; }'
+      stdout_equals: "ok"
+      message: Laenge::inMeter("3 meilen") soll eine UngueltigeEingabe werfen.
+    - type: command
+      run: php bin/umrechnen.php 3meilen 2>&1 >/dev/null || true
+      stdout_matches: "^Fehler: "
+      message: Bei ungültiger Eingabe soll eine Meldung, die mit "Fehler:" beginnt, auf STDERR erscheinen.
+    - type: command
+      run: php bin/umrechnen.php 3meilen >/dev/null 2>&1; a=$?; php bin/umrechnen.php >/dev/null 2>&1; echo "exit=$a,$?"
+      stdout_equals: "exit=1,1"
+      message: Bei ungültiger und bei fehlender Eingabe soll das Skript mit exit(1) enden.
+    - type: command
+      run: phpstan analyse --level=8 src bin --no-progress --error-format=raw
+      message: PHPStan meldet auf Level 8 noch Fehler in src oder bin.
+    - type: command
+      run: pint --test src bin
+      message: Der Code-Stil passt noch nicht – führe pint src bin aus.
+  hints:
+    - "Starte mit `composer init --name=stacklab/umrechner -n`, trage `\"autoload\": {\"psr-4\": {\"Umrechner\\\\\": \"src/\"}}` ein und führe `composer dump-autoload` aus."
+    - "Zum Zerlegen: `preg_match('/^(\\d+(?:\\.\\d+)?)\\s*(km|m|cm|mm)$/', trim($angabe), $teile)`. Danach liefert `match ($teile[2]) { 'km' => 1000, 'm' => 1, 'cm' => 0.01, 'mm' => 0.001 }` den Faktor."
+    - "Im CLI-Skript: `try { echo Laenge::inMeter($argv[1] ?? '') . ' m' . PHP_EOL; } catch (UngueltigeEingabe $e) { fwrite(STDERR, 'Fehler: ' . $e->getMessage() . PHP_EOL); exit(1); }` – zum Schluss `pint src bin`."
+  solution: |
+    ```php
+    <?php
+    // src/UngueltigeEingabe.php
+    declare(strict_types=1);
+
+    namespace Umrechner;
+
+    final class UngueltigeEingabe extends \InvalidArgumentException {}
+    ```
+
+    ```php
+    <?php
+    // src/Laenge.php
+    declare(strict_types=1);
+
+    namespace Umrechner;
+
+    final class Laenge
+    {
+        public static function inMeter(string $angabe): float
+        {
+            if (preg_match('/^(\d+(?:\.\d+)?)\s*(km|m|cm|mm)$/', trim($angabe), $teile) !== 1) {
+                throw new UngueltigeEingabe("Unbekannte Angabe: {$angabe}");
+            }
+
+            $faktor = match ($teile[2]) {
+                'km' => 1000,
+                'm' => 1,
+                'cm' => 0.01,
+                'mm' => 0.001,
+            };
+
+            return round((float) $teile[1] * $faktor, 6);
+        }
+    }
+    ```
+
+    ```php
+    <?php
+    // bin/umrechnen.php
+    declare(strict_types=1);
+
+    require __DIR__ . '/../vendor/autoload.php';
+
+    use Umrechner\Laenge;
+    use Umrechner\UngueltigeEingabe;
+
+    try {
+        echo Laenge::inMeter($argv[1] ?? '') . ' m' . PHP_EOL;
+    } catch (UngueltigeEingabe $e) {
+        fwrite(STDERR, 'Fehler: ' . $e->getMessage() . PHP_EOL);
+        exit(1);
+    }
+    ```
+
+    Danach `composer dump-autoload`, `pint src bin` und `phpstan analyse --level=8 src bin`.

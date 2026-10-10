@@ -1,0 +1,961 @@
+title: Bibliotheks-App für die Kommandozeile
+description: |
+  Du baust Schritt für Schritt eine kleine, aber echte PHP-Anwendung: eine Bibliotheksverwaltung, die Bücher in
+  einer JSON-Datei speichert. Alles, was du im Kurs gelernt hast, kommt darin vor – Composer und PSR-4-Autoloading,
+  ein Backed Enum, ein readonly-Value-Object, eigene Exceptions, Dateien und JSON, ein CLI-Skript mit sauberer
+  Fehlerbehandlung und zum Schluss die Qualitätsprüfung mit Pint und PHPStan.
+
+  Arbeite im Übungs-Terminal im Ordner `bibliothek`. Jeder Schritt baut auf dem vorigen auf. Wenn du nicht
+  weiterkommst, zeigen dir die Tipps den Weg; „Für mich erledigen“ stellt den Stand des Schritts her.
+goal: >
+  Ein Composer-Projekt mit den Klassen Status, Buch, Katalog und drei eigenen Exceptions im Namespace Bibliothek,
+  einem CLI-Skript bin/bibliothek.php (add, list, leihen, zurueck) und einem Composer-Skript check, das Pint und
+  PHPStan auf Level 8 fehlerfrei durchlaufen.
+workdir: bibliothek
+steps:
+  - id: projekt-anlegen
+    title: Das Composer-Projekt anlegen
+    description: |
+      Lege im Ordner `bibliothek` das Fundament an:
+
+      1. Eine `composer.json` mit dem Paketnamen `stacklab/bibliothek`. Der Namespace `Bibliothek\` zeigt per
+         PSR-4 auf den Ordner `src/`.
+      2. Die Ordner `src/` und `bin/`.
+      3. Eine `.gitignore` mit der Zeile `/vendor/` – der Ordner gehört nicht ins Repository.
+      4. Den Autoloader mit `composer dump-autoload`.
+    checklist:
+      - composer.json mit Name und PSR-4-Eintrag angelegt
+      - Ordner src/ und bin/ angelegt
+      - .gitignore schließt vendor/ aus
+      - vendor/autoload.php erzeugt
+    hints:
+      - "`composer init --name=stacklab/bibliothek --type=project -n` legt eine composer.json an. Den Autoload-Abschnitt kannst du danach im Editor ergänzen."
+      - "In JSON schreibst du den Backslash doppelt: `\"autoload\": {\"psr-4\": {\"Bibliothek\\\\\": \"src/\"}}`."
+      - "Zum Schluss: `mkdir -p src bin`, `echo '/vendor/' > .gitignore` und `composer dump-autoload`."
+    checks:
+      - type: command
+        run: jq -r '.name' composer.json
+        stdout_equals: "stacklab/bibliothek"
+        message: 'In composer.json soll "name": "stacklab/bibliothek" stehen.'
+      - type: command
+        run: jq -r '.autoload."psr-4" | to_entries[] | .key + "=" + .value' composer.json
+        stdout_matches: "^Bibliothek\\\\=src/?$"
+        message: 'Unter autoload.psr-4 soll der Eintrag "Bibliothek\\": "src/" stehen.'
+      - type: dir_exists
+        path: bin
+        message: Lege den Ordner bin/ an – dort landet später das CLI-Skript.
+      - type: file_contains
+        path: .gitignore
+        pattern: "^/?vendor/?$"
+        message: In .gitignore fehlt die Zeile /vendor/.
+      - type: file_exists
+        path: vendor/autoload.php
+        message: Es gibt noch keinen Autoloader – führe composer dump-autoload aus.
+    solution: |
+      ```bash
+      cat > composer.json <<'JSON'
+      {
+          "name": "stacklab/bibliothek",
+          "description": "Eine kleine Bibliotheks-App für die Kommandozeile",
+          "type": "project",
+          "autoload": {
+              "psr-4": {
+                  "Bibliothek\\": "src/"
+              }
+          },
+          "require": {
+              "php": ">=8.5"
+          }
+      }
+      JSON
+      printf '/vendor/\n' > .gitignore
+      mkdir -p src bin
+      composer dump-autoload
+      ```
+    solve: |
+      cat > composer.json <<'JSON'
+      {
+          "name": "stacklab/bibliothek",
+          "description": "Eine kleine Bibliotheks-App für die Kommandozeile",
+          "type": "project",
+          "autoload": {
+              "psr-4": {
+                  "Bibliothek\\": "src/"
+              }
+          },
+          "require": {
+              "php": ">=8.5"
+          }
+      }
+      JSON
+      printf '/vendor/\n' > .gitignore
+      mkdir -p src bin
+      composer dump-autoload
+  - id: status-enum
+    title: Der Status eines Buchs als Enum
+    description: |
+      Ein Buch ist entweder verfügbar oder ausgeliehen – eine feste Wertemenge, also ein Enum.
+
+      Lege `src/Status.php` an: ein Backed Enum `Bibliothek\Status: string` mit den Fällen
+      `Verfuegbar = 'verfuegbar'` und `Ausgeliehen = 'ausgeliehen'`. Die Methode `label(): string` liefert den
+      Text für Menschen: `verfügbar` bzw. `ausgeliehen`. Nutze dafür `match`.
+    checklist:
+      - src/Status.php mit Namespace Bibliothek angelegt
+      - Zwei Fälle mit den Werten verfuegbar und ausgeliehen
+      - label() liefert die Anzeige mit Umlaut
+    hints:
+      - "Die Datei beginnt mit `<?php`, `declare(strict_types=1);` und `namespace Bibliothek;`."
+      - "`enum Status: string { case Verfuegbar = 'verfuegbar'; case Ausgeliehen = 'ausgeliehen'; … }`"
+      - "`return match ($this) { self::Verfuegbar => 'verfügbar', self::Ausgeliehen => 'ausgeliehen' };`"
+    checks:
+      - type: file_exists
+        path: src/Status.php
+        message: Die Datei src/Status.php fehlt noch.
+      - type: command
+        run: |-
+          php -r 'require "vendor/autoload.php"; echo Bibliothek\Status::from("ausgeliehen")->label(), "|", Bibliothek\Status::Verfuegbar->value, "|", Bibliothek\Status::Verfuegbar->label(), "|", count(Bibliothek\Status::cases());'
+        stdout_equals: "ausgeliehen|verfuegbar|verfügbar|2"
+        message: Prüfe die beiden Fälle, ihre Werte (verfuegbar, ausgeliehen) und label() mit "verfügbar".
+    solution: |
+      ```bash
+      mkdir -p src
+      cat > src/Status.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      enum Status: string
+      {
+          case Verfuegbar = 'verfuegbar';
+          case Ausgeliehen = 'ausgeliehen';
+
+          public function label(): string
+          {
+              return match ($this) {
+                  self::Verfuegbar => 'verfügbar',
+                  self::Ausgeliehen => 'ausgeliehen',
+              };
+          }
+      }
+      PHP
+      ```
+    solve: |
+      mkdir -p src
+      cat > src/Status.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      enum Status: string
+      {
+          case Verfuegbar = 'verfuegbar';
+          case Ausgeliehen = 'ausgeliehen';
+
+          public function label(): string
+          {
+              return match ($this) {
+                  self::Verfuegbar => 'verfügbar',
+                  self::Ausgeliehen => 'ausgeliehen',
+              };
+          }
+      }
+      PHP
+  - id: buch
+    title: Das Buch als readonly-Value-Object
+    description: |
+      Jetzt kommt das Herzstück: ein Buch, das nach dem Erzeugen garantiert gültig ist.
+
+      1. `src/UngueltigeEingabe.php`: Klasse `Bibliothek\UngueltigeEingabe`, die von `InvalidArgumentException` erbt.
+      2. `src/Buch.php`: `final readonly class Bibliothek\Buch` mit Constructor Promotion:
+         `string $isbn`, `string $titel`, `string $autor`, `Status $status = Status::Verfuegbar`.
+      3. Der Konstruktor wirft `UngueltigeEingabe`, wenn die ISBN nicht aus genau 13 Ziffern besteht oder Titel bzw.
+         Autor leer sind (Leerzeichen zählen als leer).
+      4. `toArray(): array` liefert `['isbn' => …, 'titel' => …, 'autor' => …, 'status' => 'verfuegbar']` – der
+         Status als Wert des Enums.
+      5. `static fromArray(array $daten): self` baut aus so einem Array wieder ein Buch.
+    checklist:
+      - UngueltigeEingabe erbt von InvalidArgumentException
+      - Buch ist readonly und prüft seine Daten im Konstruktor
+      - toArray() und fromArray() passen zusammen
+    hints:
+      - "Die ISBN prüfst du mit `preg_match('/^\\d{13}$/', $isbn) !== 1`, leere Texte mit `trim($titel) === ''`."
+      - "Constructor Promotion mit Prüfung: Die Properties stehen in der Parameterliste, die `if`-Abfragen im Rumpf des Konstruktors."
+      - "`fromArray` nutzt `Status::from($daten['status'])`, um aus dem String wieder einen Enum-Fall zu machen."
+    checks:
+      - type: command
+        run: |-
+          php -r 'require "vendor/autoload.php"; $b = new Bibliothek\Buch("9783161484100", "Titel", "Autorin"); echo $b->status->value, "|", json_encode($b->toArray(), JSON_UNESCAPED_UNICODE), "|", Bibliothek\Buch::fromArray(["isbn" => "9780306406157", "titel" => "Zwei", "autor" => "Bo", "status" => "ausgeliehen"])->status->name;'
+        stdout_equals: 'verfuegbar|{"isbn":"9783161484100","titel":"Titel","autor":"Autorin","status":"verfuegbar"}|Ausgeliehen'
+        message: Prüfe den Standardstatus, die Schlüssel von toArray() (isbn, titel, autor, status) und fromArray().
+      - type: command
+        run: |-
+          php -r 'require "vendor/autoload.php"; $n = 0; foreach ([["123", "T", "A"], ["97831614841001", "T", "A"], ["9783161484100", "", "A"], ["9783161484100", "T", "  "]] as [$i, $t, $a]) { try { new Bibliothek\Buch($i, $t, $a); } catch (Bibliothek\UngueltigeEingabe $e) { $n++; } } echo $n, "|", is_subclass_of(Bibliothek\UngueltigeEingabe::class, InvalidArgumentException::class) ? "ja" : "nein";'
+        stdout_equals: "4|ja"
+        message: Ungültige ISBN (nicht genau 13 Ziffern) sowie leerer Titel oder Autor sollen eine UngueltigeEingabe werfen, die von InvalidArgumentException erbt.
+      - type: command
+        run: |-
+          php -r 'require "vendor/autoload.php"; $b = new Bibliothek\Buch("9783161484100", "Titel", "Autorin"); try { $b->titel = "Neu"; echo "änderbar"; } catch (Error $e) { echo "readonly"; }'
+        stdout_equals: "readonly"
+        message: Buch soll unveränderlich sein – deklariere die Klasse als final readonly class.
+    solution: |
+      ```bash
+      cat > src/UngueltigeEingabe.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      use InvalidArgumentException;
+
+      final class UngueltigeEingabe extends InvalidArgumentException {}
+      PHP
+      cat > src/Buch.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      final readonly class Buch
+      {
+          public function __construct(
+              public string $isbn,
+              public string $titel,
+              public string $autor,
+              public Status $status = Status::Verfuegbar,
+          ) {
+              if (preg_match('/^\d{13}$/', $isbn) !== 1) {
+                  throw new UngueltigeEingabe("Die ISBN muss aus 13 Ziffern bestehen: {$isbn}");
+              }
+              if (trim($titel) === '' || trim($autor) === '') {
+                  throw new UngueltigeEingabe('Titel und Autor dürfen nicht leer sein.');
+              }
+          }
+
+          /** @return array{isbn: string, titel: string, autor: string, status: string} */
+          public function toArray(): array
+          {
+              return [
+                  'isbn' => $this->isbn,
+                  'titel' => $this->titel,
+                  'autor' => $this->autor,
+                  'status' => $this->status->value,
+              ];
+          }
+
+          /** @param array{isbn: string, titel: string, autor: string, status: string} $daten */
+          public static function fromArray(array $daten): self
+          {
+              return new self($daten['isbn'], $daten['titel'], $daten['autor'], Status::from($daten['status']));
+          }
+      }
+      PHP
+      ```
+    solve: |
+      cat > src/UngueltigeEingabe.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      use InvalidArgumentException;
+
+      final class UngueltigeEingabe extends InvalidArgumentException {}
+      PHP
+      cat > src/Buch.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      final readonly class Buch
+      {
+          public function __construct(
+              public string $isbn,
+              public string $titel,
+              public string $autor,
+              public Status $status = Status::Verfuegbar,
+          ) {
+              if (preg_match('/^\d{13}$/', $isbn) !== 1) {
+                  throw new UngueltigeEingabe("Die ISBN muss aus 13 Ziffern bestehen: {$isbn}");
+              }
+              if (trim($titel) === '' || trim($autor) === '') {
+                  throw new UngueltigeEingabe('Titel und Autor dürfen nicht leer sein.');
+              }
+          }
+
+          /** @return array{isbn: string, titel: string, autor: string, status: string} */
+          public function toArray(): array
+          {
+              return [
+                  'isbn' => $this->isbn,
+                  'titel' => $this->titel,
+                  'autor' => $this->autor,
+                  'status' => $this->status->value,
+              ];
+          }
+
+          /** @param array{isbn: string, titel: string, autor: string, status: string} $daten */
+          public static function fromArray(array $daten): self
+          {
+              return new self($daten['isbn'], $daten['titel'], $daten['autor'], Status::from($daten['status']));
+          }
+      }
+      PHP
+  - id: ausleihen
+    title: Ausleihen und Zurückgeben
+    description: |
+      Ein unveränderliches Buch ändert seinen Status nicht selbst – es liefert ein **neues** Buch mit neuem Status.
+
+      1. `src/BuchStatusFehler.php`: Klasse `Bibliothek\BuchStatusFehler`, die von `RuntimeException` erbt.
+      2. In `Buch` die Methode `ausleihen(): self`. Ist das Buch schon ausgeliehen, wirft sie `BuchStatusFehler`
+         (Nachricht z. B. `Das Buch … ist bereits ausgeliehen.`), sonst liefert sie ein neues Buch mit
+         `Status::Ausgeliehen`.
+      3. Genauso `zurueckgeben(): self`: Fehler, wenn das Buch gar nicht ausgeliehen ist, sonst ein neues Buch mit
+         `Status::Verfuegbar`.
+    checklist:
+      - BuchStatusFehler erbt von RuntimeException
+      - ausleihen() und zurueckgeben() liefern neue Objekte
+      - Ungültige Statuswechsel werfen BuchStatusFehler
+    hints:
+      - "Ein neues Buch mit anderem Status: `return new self($this->isbn, $this->titel, $this->autor, Status::Ausgeliehen);`"
+      - "Die Prüfung steht vorher: `if ($this->status === Status::Ausgeliehen) { throw new BuchStatusFehler(\"Das Buch {$this->titel} ist bereits ausgeliehen.\"); }`"
+      - "Warum eine RuntimeException? Der Code ist korrekt – aber zur Laufzeit kann jemand ein bereits verliehenes Buch anfragen."
+    checks:
+      - type: command
+        run: |-
+          php -r 'require "vendor/autoload.php"; $b = new Bibliothek\Buch("9783161484100", "Titel", "Autorin"); $a = $b->ausleihen(); echo $b->status->value, "|", $a->status->value, "|", $a->zurueckgeben()->status->value;'
+        stdout_equals: "verfuegbar|ausgeliehen|verfuegbar"
+        message: ausleihen() soll ein neues Buch mit Status Ausgeliehen liefern, das alte bleibt verfügbar; zurueckgeben() macht es wieder verfügbar.
+      - type: command
+        run: |-
+          php -r 'require "vendor/autoload.php"; $b = new Bibliothek\Buch("9783161484100", "Titel", "Autorin"); try { $b->ausleihen()->ausleihen(); } catch (Bibliothek\BuchStatusFehler $e) { echo $e instanceof RuntimeException ? "eins" : "kein RuntimeException"; } try { $b->zurueckgeben(); } catch (Bibliothek\BuchStatusFehler $e) { echo "|zwei"; }'
+        stdout_equals: "eins|zwei"
+        message: Doppeltes Ausleihen und Zurückgeben eines verfügbaren Buchs sollen einen BuchStatusFehler (eine RuntimeException) werfen.
+    solution: |
+      ```bash
+      cat > src/BuchStatusFehler.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      use RuntimeException;
+
+      final class BuchStatusFehler extends RuntimeException {}
+      PHP
+      cat > src/Buch.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      final readonly class Buch
+      {
+          public function __construct(
+              public string $isbn,
+              public string $titel,
+              public string $autor,
+              public Status $status = Status::Verfuegbar,
+          ) {
+              if (preg_match('/^\d{13}$/', $isbn) !== 1) {
+                  throw new UngueltigeEingabe("Die ISBN muss aus 13 Ziffern bestehen: {$isbn}");
+              }
+              if (trim($titel) === '' || trim($autor) === '') {
+                  throw new UngueltigeEingabe('Titel und Autor dürfen nicht leer sein.');
+              }
+          }
+
+          public function ausleihen(): self
+          {
+              if ($this->status === Status::Ausgeliehen) {
+                  throw new BuchStatusFehler("Das Buch {$this->titel} ist bereits ausgeliehen.");
+              }
+
+              return new self($this->isbn, $this->titel, $this->autor, Status::Ausgeliehen);
+          }
+
+          public function zurueckgeben(): self
+          {
+              if ($this->status === Status::Verfuegbar) {
+                  throw new BuchStatusFehler("Das Buch {$this->titel} ist nicht ausgeliehen.");
+              }
+
+              return new self($this->isbn, $this->titel, $this->autor, Status::Verfuegbar);
+          }
+
+          /** @return array{isbn: string, titel: string, autor: string, status: string} */
+          public function toArray(): array
+          {
+              return [
+                  'isbn' => $this->isbn,
+                  'titel' => $this->titel,
+                  'autor' => $this->autor,
+                  'status' => $this->status->value,
+              ];
+          }
+
+          /** @param array{isbn: string, titel: string, autor: string, status: string} $daten */
+          public static function fromArray(array $daten): self
+          {
+              return new self($daten['isbn'], $daten['titel'], $daten['autor'], Status::from($daten['status']));
+          }
+      }
+      PHP
+      ```
+    solve: |
+      cat > src/BuchStatusFehler.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      use RuntimeException;
+
+      final class BuchStatusFehler extends RuntimeException {}
+      PHP
+      cat > src/Buch.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      final readonly class Buch
+      {
+          public function __construct(
+              public string $isbn,
+              public string $titel,
+              public string $autor,
+              public Status $status = Status::Verfuegbar,
+          ) {
+              if (preg_match('/^\d{13}$/', $isbn) !== 1) {
+                  throw new UngueltigeEingabe("Die ISBN muss aus 13 Ziffern bestehen: {$isbn}");
+              }
+              if (trim($titel) === '' || trim($autor) === '') {
+                  throw new UngueltigeEingabe('Titel und Autor dürfen nicht leer sein.');
+              }
+          }
+
+          public function ausleihen(): self
+          {
+              if ($this->status === Status::Ausgeliehen) {
+                  throw new BuchStatusFehler("Das Buch {$this->titel} ist bereits ausgeliehen.");
+              }
+
+              return new self($this->isbn, $this->titel, $this->autor, Status::Ausgeliehen);
+          }
+
+          public function zurueckgeben(): self
+          {
+              if ($this->status === Status::Verfuegbar) {
+                  throw new BuchStatusFehler("Das Buch {$this->titel} ist nicht ausgeliehen.");
+              }
+
+              return new self($this->isbn, $this->titel, $this->autor, Status::Verfuegbar);
+          }
+
+          /** @return array{isbn: string, titel: string, autor: string, status: string} */
+          public function toArray(): array
+          {
+              return [
+                  'isbn' => $this->isbn,
+                  'titel' => $this->titel,
+                  'autor' => $this->autor,
+                  'status' => $this->status->value,
+              ];
+          }
+
+          /** @param array{isbn: string, titel: string, autor: string, status: string} $daten */
+          public static function fromArray(array $daten): self
+          {
+              return new self($daten['isbn'], $daten['titel'], $daten['autor'], Status::from($daten['status']));
+          }
+      }
+      PHP
+  - id: katalog
+    title: Der Katalog speichert in JSON
+    description: |
+      Damit Bücher den Programmlauf überleben, speichert ein Katalog sie in einer JSON-Datei.
+
+      1. `src/BuchNichtGefunden.php`: Klasse `Bibliothek\BuchNichtGefunden`, die von `RuntimeException` erbt.
+      2. `src/Katalog.php`: `final class Bibliothek\Katalog` mit dem Konstruktor `__construct(private string $datei)`.
+      3. `alle(): array` liefert alle Bücher als Liste von `Buch`-Objekten – eine leere Liste, wenn die Datei noch
+         nicht existiert.
+      4. `finde(string $isbn): Buch` sucht ein Buch oder wirft `BuchNichtGefunden`.
+      5. `speichere(Buch $buch): void` fügt ein neues Buch hinzu oder ersetzt das Buch mit gleicher ISBN und
+         schreibt die Datei: eine eingerückte JSON-Liste (`JSON_PRETTY_PRINT`), Umlaute lesbar
+         (`JSON_UNESCAPED_UNICODE`), Fehler als Exception (`JSON_THROW_ON_ERROR`).
+    checklist:
+      - BuchNichtGefunden erbt von RuntimeException
+      - alle() kommt mit einer fehlenden Datei klar
+      - speichere() ersetzt Bücher mit gleicher ISBN
+      - Die JSON-Datei ist eingerückt und enthält lesbare Umlaute
+    hints:
+      - "Lesen: `json_decode(file_get_contents($this->datei), true, flags: JSON_THROW_ON_ERROR)` und danach `array_map(Buch::fromArray(...), $daten)`."
+      - "Ersetzen gelingt leicht über ein Array mit der ISBN als Schlüssel: `$buecher[$buch->isbn] = $buch;` – zum Speichern `array_values()` nicht vergessen."
+      - "Schreiben: `file_put_contents($this->datei, json_encode($daten, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));`"
+    checks:
+      - type: command
+        run: |-
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); KATALOG="$d/k.json" php -r 'require "vendor/autoload.php"; use Bibliothek\Buch; $k = new Bibliothek\Katalog(getenv("KATALOG")); echo count($k->alle()), "|"; $k->speichere(new Buch("9783161484100", "Eins", "A")); $k->speichere(new Buch("9780306406157", "Zwei", "B")); $k->speichere((new Buch("9783161484100", "Eins", "A"))->ausleihen()); $k2 = new Bibliothek\Katalog(getenv("KATALOG")); echo count($k2->alle()), "|", $k2->finde("9783161484100")->status->value, "|", $k2->alle()[1]->titel; try { $k2->finde("0000000000000"); } catch (Bibliothek\BuchNichtGefunden $e) { echo "|nicht gefunden"; }'; s=$?; rm -rf "$d"; exit $s
+        stdout_equals: "0|2|ausgeliehen|Zwei|nicht gefunden"
+        message: Prüfe alle() bei fehlender Datei, das Ersetzen per ISBN in speichere() und die BuchNichtGefunden-Exception in finde().
+      - type: command
+        run: |-
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); KATALOG="$d/k.json" php -r 'require "vendor/autoload.php"; (new Bibliothek\Katalog(getenv("KATALOG")))->speichere(new Bibliothek\Buch("9783161484100", "Die Größe der Welt", "Ada"));'; jq -r '.[0].titel + "|" + .[0].status' "$d/k.json"; grep -c '^    ' "$d/k.json" | sed 's/^[1-9][0-9]*$/eingerückt/'; rm -rf "$d"
+        stdout_equals: |-
+          Die Größe der Welt|verfuegbar
+          eingerückt
+        message: Die Datei soll eine eingerückte JSON-Liste mit lesbaren Umlauten sein (JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE).
+    solution: |
+      ```bash
+      cat > src/BuchNichtGefunden.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      use RuntimeException;
+
+      final class BuchNichtGefunden extends RuntimeException {}
+      PHP
+      cat > src/Katalog.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      final class Katalog
+      {
+          public function __construct(private string $datei) {}
+
+          /** @return list<Buch> */
+          public function alle(): array
+          {
+              if (! is_file($this->datei)) {
+                  return [];
+              }
+
+              /** @var list<array{isbn: string, titel: string, autor: string, status: string}> $daten */
+              $daten = json_decode((string) file_get_contents($this->datei), true, flags: JSON_THROW_ON_ERROR);
+
+              return array_map(Buch::fromArray(...), $daten);
+          }
+
+          public function finde(string $isbn): Buch
+          {
+              foreach ($this->alle() as $buch) {
+                  if ($buch->isbn === $isbn) {
+                      return $buch;
+                  }
+              }
+
+              throw new BuchNichtGefunden("Kein Buch mit der ISBN {$isbn}.");
+          }
+
+          public function speichere(Buch $buch): void
+          {
+              $buecher = [];
+              foreach ($this->alle() as $vorhanden) {
+                  $buecher[$vorhanden->isbn] = $vorhanden;
+              }
+              $buecher[$buch->isbn] = $buch;
+
+              $daten = array_map(fn (Buch $b): array => $b->toArray(), array_values($buecher));
+
+              file_put_contents(
+                  $this->datei,
+                  json_encode($daten, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR).PHP_EOL,
+              );
+          }
+      }
+      PHP
+      ```
+    solve: |
+      cat > src/BuchNichtGefunden.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      use RuntimeException;
+
+      final class BuchNichtGefunden extends RuntimeException {}
+      PHP
+      cat > src/Katalog.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace Bibliothek;
+
+      final class Katalog
+      {
+          public function __construct(private string $datei) {}
+
+          /** @return list<Buch> */
+          public function alle(): array
+          {
+              if (! is_file($this->datei)) {
+                  return [];
+              }
+
+              /** @var list<array{isbn: string, titel: string, autor: string, status: string}> $daten */
+              $daten = json_decode((string) file_get_contents($this->datei), true, flags: JSON_THROW_ON_ERROR);
+
+              return array_map(Buch::fromArray(...), $daten);
+          }
+
+          public function finde(string $isbn): Buch
+          {
+              foreach ($this->alle() as $buch) {
+                  if ($buch->isbn === $isbn) {
+                      return $buch;
+                  }
+              }
+
+              throw new BuchNichtGefunden("Kein Buch mit der ISBN {$isbn}.");
+          }
+
+          public function speichere(Buch $buch): void
+          {
+              $buecher = [];
+              foreach ($this->alle() as $vorhanden) {
+                  $buecher[$vorhanden->isbn] = $vorhanden;
+              }
+              $buecher[$buch->isbn] = $buch;
+
+              $daten = array_map(fn (Buch $b): array => $b->toArray(), array_values($buecher));
+
+              file_put_contents(
+                  $this->datei,
+                  json_encode($daten, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR).PHP_EOL,
+              );
+          }
+      }
+      PHP
+  - id: cli
+    title: Das CLI-Skript
+    description: |
+      Jetzt bekommt die Bibliothek eine Bedienoberfläche für das Terminal: `bin/bibliothek.php`.
+
+      - Es lädt `__DIR__ . '/../vendor/autoload.php'`.
+      - Die Daten liegen in der Datei aus der Umgebungsvariable `BIBLIOTHEK_DATEI`, sonst in
+        `__DIR__ . '/../bibliothek.json'` (Tipp: `getenv('BIBLIOTHEK_DATEI') ?: …`). So können die Prüfungen eine
+        eigene Datei nutzen, ohne deine Daten anzufassen.
+
+      | Befehl | Ausgabe |
+      |---|---|
+      | `add <isbn> <titel> <autor>` | `Gespeichert: <titel>` |
+      | `list` | je Buch `<isbn> \| <titel> \| <autor> \| <label>`, ohne Bücher `Keine Bücher.` |
+      | `leihen <isbn>` | `Ausgeliehen: <titel>` |
+      | `zurueck <isbn>` | `Zurückgegeben: <titel>` |
+      | alles andere | Hilfe auf STDERR, Exit-Code 1 |
+
+      Probiere es aus: `php bin/bibliothek.php add 9783161484100 "Die Größe der Welt" "Ada Autorin"`.
+    checklist:
+      - bin/bibliothek.php lädt den Autoloader
+      - Die vier Befehle funktionieren
+      - Ein unbekannter Befehl endet mit Exit-Code 1
+    hints:
+      - "`$katalog = new Katalog(getenv('BIBLIOTHEK_DATEI') ?: __DIR__ . '/../bibliothek.json');` und danach `switch ($argv[1] ?? '')`."
+      - "Ausleihen in einer Zeile: `$buch = $katalog->finde($argv[2] ?? '')->ausleihen(); $katalog->speichere($buch);`"
+      - "Eine Listenzeile: `echo implode(' | ', [$buch->isbn, $buch->titel, $buch->autor, $buch->status->label()]) . PHP_EOL;`"
+    checks:
+      - type: command
+        run: |-
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); export BIBLIOTHEK_DATEI="$d/b.json"; php bin/bibliothek.php list && php bin/bibliothek.php add 9783161484100 "Die Größe der Welt" "Ada Autorin" && php bin/bibliothek.php add 9780306406157 "Zweites Buch" "Bo Beispiel" && php bin/bibliothek.php list; s=$?; rm -rf "$d"; exit $s
+        stdout_equals: |-
+          Keine Bücher.
+          Gespeichert: Die Größe der Welt
+          Gespeichert: Zweites Buch
+          9783161484100 | Die Größe der Welt | Ada Autorin | verfügbar
+          9780306406157 | Zweites Buch | Bo Beispiel | verfügbar
+        message: Prüfe list (auch ohne Bücher) und add – die Ausgaben sollen genau wie in der Tabelle aussehen.
+      - type: command
+        run: |-
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); export BIBLIOTHEK_DATEI="$d/b.json"; php bin/bibliothek.php add 9783161484100 "Die Größe der Welt" "Ada Autorin" >/dev/null && php bin/bibliothek.php leihen 9783161484100 && php bin/bibliothek.php list && php bin/bibliothek.php zurueck 9783161484100 && php bin/bibliothek.php list; s=$?; rm -rf "$d"; exit $s
+        stdout_equals: |-
+          Ausgeliehen: Die Größe der Welt
+          9783161484100 | Die Größe der Welt | Ada Autorin | ausgeliehen
+          Zurückgegeben: Die Größe der Welt
+          9783161484100 | Die Größe der Welt | Ada Autorin | verfügbar
+        message: leihen und zurueck sollen den Status ändern, speichern und "Ausgeliehen:" bzw. "Zurückgegeben:" ausgeben.
+      - type: command
+        run: |-
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); export BIBLIOTHEK_DATEI="$d/b.json"; php bin/bibliothek.php quatsch >/dev/null 2>&1; s=$?; rm -rf "$d"; echo "exit=$s"
+        stdout_equals: "exit=1"
+        message: Ein unbekannter Befehl soll eine Hilfe auf STDERR schreiben und mit exit(1) enden.
+    solution: |
+      ```bash
+      mkdir -p bin
+      cat > bin/bibliothek.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__.'/../vendor/autoload.php';
+
+      use Bibliothek\Buch;
+      use Bibliothek\Katalog;
+
+      $katalog = new Katalog(getenv('BIBLIOTHEK_DATEI') ?: __DIR__.'/../bibliothek.json');
+
+      switch ($argv[1] ?? '') {
+          case 'add':
+              $buch = new Buch($argv[2] ?? '', $argv[3] ?? '', $argv[4] ?? '');
+              $katalog->speichere($buch);
+              echo "Gespeichert: {$buch->titel}".PHP_EOL;
+              break;
+          case 'list':
+              $buecher = $katalog->alle();
+              if ($buecher === []) {
+                  echo 'Keine Bücher.'.PHP_EOL;
+              }
+              foreach ($buecher as $buch) {
+                  echo implode(' | ', [$buch->isbn, $buch->titel, $buch->autor, $buch->status->label()]).PHP_EOL;
+              }
+              break;
+          case 'leihen':
+              $buch = $katalog->finde($argv[2] ?? '')->ausleihen();
+              $katalog->speichere($buch);
+              echo "Ausgeliehen: {$buch->titel}".PHP_EOL;
+              break;
+          case 'zurueck':
+              $buch = $katalog->finde($argv[2] ?? '')->zurueckgeben();
+              $katalog->speichere($buch);
+              echo "Zurückgegeben: {$buch->titel}".PHP_EOL;
+              break;
+          default:
+              fwrite(STDERR, 'Befehle: add <isbn> <titel> <autor>, list, leihen <isbn>, zurueck <isbn>'.PHP_EOL);
+              exit(1);
+      }
+      PHP
+      ```
+    solve: |
+      mkdir -p bin
+      cat > bin/bibliothek.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__.'/../vendor/autoload.php';
+
+      use Bibliothek\Buch;
+      use Bibliothek\Katalog;
+
+      $katalog = new Katalog(getenv('BIBLIOTHEK_DATEI') ?: __DIR__.'/../bibliothek.json');
+
+      switch ($argv[1] ?? '') {
+          case 'add':
+              $buch = new Buch($argv[2] ?? '', $argv[3] ?? '', $argv[4] ?? '');
+              $katalog->speichere($buch);
+              echo "Gespeichert: {$buch->titel}".PHP_EOL;
+              break;
+          case 'list':
+              $buecher = $katalog->alle();
+              if ($buecher === []) {
+                  echo 'Keine Bücher.'.PHP_EOL;
+              }
+              foreach ($buecher as $buch) {
+                  echo implode(' | ', [$buch->isbn, $buch->titel, $buch->autor, $buch->status->label()]).PHP_EOL;
+              }
+              break;
+          case 'leihen':
+              $buch = $katalog->finde($argv[2] ?? '')->ausleihen();
+              $katalog->speichere($buch);
+              echo "Ausgeliehen: {$buch->titel}".PHP_EOL;
+              break;
+          case 'zurueck':
+              $buch = $katalog->finde($argv[2] ?? '')->zurueckgeben();
+              $katalog->speichere($buch);
+              echo "Zurückgegeben: {$buch->titel}".PHP_EOL;
+              break;
+          default:
+              fwrite(STDERR, 'Befehle: add <isbn> <titel> <autor>, list, leihen <isbn>, zurueck <isbn>'.PHP_EOL);
+              exit(1);
+      }
+      PHP
+  - id: fehlerbehandlung
+    title: Fehler freundlich melden
+    description: |
+      Probiere `php bin/bibliothek.php add 123 Titel Autor`: Das Skript endet mit `Fatal error: Uncaught …` und
+      einem Stack Trace. Für Nutzer ist das unverständlich.
+
+      Fange in `bin/bibliothek.php` die erwartbaren Fehler **ganz oben** ab: `RuntimeException` (dazu gehören
+      `BuchStatusFehler` und `BuchNichtGefunden`) und `InvalidArgumentException` (dazu gehört `UngueltigeEingabe`).
+      Gib dann `Fehler: ` plus die Nachricht auf STDERR aus und beende das Skript mit Exit-Code 1.
+    checklist:
+      - Ein try/catch umschließt die Befehle
+      - Fehlermeldungen beginnen mit "Fehler:" und stehen auf STDERR
+      - Exit-Code 1 statt Fatal Error
+    hints:
+      - "Lege `try { switch (…) { … } }` um den ganzen Befehlsblock."
+      - "Mehrere Klassen fängst du mit `catch (RuntimeException | InvalidArgumentException $e)`."
+      - "`fwrite(STDERR, 'Fehler: ' . $e->getMessage() . PHP_EOL); exit(1);`"
+    checks:
+      - type: command
+        run: |-
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); export BIBLIOTHEK_DATEI="$d/b.json"; php bin/bibliothek.php add 9783161484100 Titel Autorin >/dev/null; for args in "add 123 Titel Autorin" "leihen 9780306406157" "zurueck 9783161484100"; do out=$(php bin/bibliothek.php $args 2>&1 >/dev/null); echo "$?|$out"; done; rm -rf "$d"
+        stdout_matches: "^1\\|Fehler: .+\\n1\\|Fehler: .+\\n1\\|Fehler: .+$"
+        message: 'Ungültige ISBN, unbekanntes Buch und Zurückgeben eines verfügbaren Buchs sollen "Fehler: …" auf STDERR ausgeben und mit Exit-Code 1 enden.'
+      - type: command
+        run: |-
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX"); export BIBLIOTHEK_DATEI="$d/b.json"; php bin/bibliothek.php leihen 9780306406157 2>&1 | grep -c "Uncaught"; rm -rf "$d"
+        stdout_equals: "0"
+        message: Es erscheint noch ein "Uncaught" Fatal Error – fange die Exceptions in bin/bibliothek.php ab.
+    solution: |
+      ```bash
+      cat > bin/bibliothek.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__.'/../vendor/autoload.php';
+
+      use Bibliothek\Buch;
+      use Bibliothek\Katalog;
+
+      $katalog = new Katalog(getenv('BIBLIOTHEK_DATEI') ?: __DIR__.'/../bibliothek.json');
+
+      try {
+          switch ($argv[1] ?? '') {
+              case 'add':
+                  $buch = new Buch($argv[2] ?? '', $argv[3] ?? '', $argv[4] ?? '');
+                  $katalog->speichere($buch);
+                  echo "Gespeichert: {$buch->titel}".PHP_EOL;
+                  break;
+              case 'list':
+                  $buecher = $katalog->alle();
+                  if ($buecher === []) {
+                      echo 'Keine Bücher.'.PHP_EOL;
+                  }
+                  foreach ($buecher as $buch) {
+                      echo implode(' | ', [$buch->isbn, $buch->titel, $buch->autor, $buch->status->label()]).PHP_EOL;
+                  }
+                  break;
+              case 'leihen':
+                  $buch = $katalog->finde($argv[2] ?? '')->ausleihen();
+                  $katalog->speichere($buch);
+                  echo "Ausgeliehen: {$buch->titel}".PHP_EOL;
+                  break;
+              case 'zurueck':
+                  $buch = $katalog->finde($argv[2] ?? '')->zurueckgeben();
+                  $katalog->speichere($buch);
+                  echo "Zurückgegeben: {$buch->titel}".PHP_EOL;
+                  break;
+              default:
+                  fwrite(STDERR, 'Befehle: add <isbn> <titel> <autor>, list, leihen <isbn>, zurueck <isbn>'.PHP_EOL);
+                  exit(1);
+          }
+      } catch (RuntimeException|InvalidArgumentException $e) {
+          fwrite(STDERR, 'Fehler: '.$e->getMessage().PHP_EOL);
+          exit(1);
+      }
+      PHP
+      ```
+    solve: |
+      cat > bin/bibliothek.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      require __DIR__.'/../vendor/autoload.php';
+
+      use Bibliothek\Buch;
+      use Bibliothek\Katalog;
+
+      $katalog = new Katalog(getenv('BIBLIOTHEK_DATEI') ?: __DIR__.'/../bibliothek.json');
+
+      try {
+          switch ($argv[1] ?? '') {
+              case 'add':
+                  $buch = new Buch($argv[2] ?? '', $argv[3] ?? '', $argv[4] ?? '');
+                  $katalog->speichere($buch);
+                  echo "Gespeichert: {$buch->titel}".PHP_EOL;
+                  break;
+              case 'list':
+                  $buecher = $katalog->alle();
+                  if ($buecher === []) {
+                      echo 'Keine Bücher.'.PHP_EOL;
+                  }
+                  foreach ($buecher as $buch) {
+                      echo implode(' | ', [$buch->isbn, $buch->titel, $buch->autor, $buch->status->label()]).PHP_EOL;
+                  }
+                  break;
+              case 'leihen':
+                  $buch = $katalog->finde($argv[2] ?? '')->ausleihen();
+                  $katalog->speichere($buch);
+                  echo "Ausgeliehen: {$buch->titel}".PHP_EOL;
+                  break;
+              case 'zurueck':
+                  $buch = $katalog->finde($argv[2] ?? '')->zurueckgeben();
+                  $katalog->speichere($buch);
+                  echo "Zurückgegeben: {$buch->titel}".PHP_EOL;
+                  break;
+              default:
+                  fwrite(STDERR, 'Befehle: add <isbn> <titel> <autor>, list, leihen <isbn>, zurueck <isbn>'.PHP_EOL);
+                  exit(1);
+          }
+      } catch (RuntimeException|InvalidArgumentException $e) {
+          fwrite(STDERR, 'Fehler: '.$e->getMessage().PHP_EOL);
+          exit(1);
+      }
+      PHP
+  - id: qualitaet
+    title: Qualität absichern
+    description: |
+      Zum Schluss sorgst du dafür, dass das Projekt sauber bleibt.
+
+      1. Ergänze in `composer.json` ein Skript `check`, das nacheinander `pint --test src bin` und
+         `phpstan analyse --level=8 src bin --no-progress` ausführt.
+      2. Formatiere den Code mit `pint src bin`.
+      3. Führe `composer check` aus. Meldet PHPStan Fehler, behebe sie – oft fehlt eine PHPDoc-Angabe wie
+         `@return list<Buch>` oder `@param array{isbn: string, titel: string, autor: string, status: string} $daten`.
+    checklist:
+      - Composer-Skript check angelegt
+      - pint --test meldet keine Stilfehler
+      - PHPStan Level 8 meldet keine Fehler
+      - composer check läuft grün durch
+    hints:
+      - "In composer.json: `\"scripts\": {\"check\": [\"pint --test src bin\", \"phpstan analyse --level=8 src bin --no-progress\"]}`"
+      - "PHPStan will bei Arrays wissen, was drinsteht. Schreibe über `alle()` den Kommentar `/** @return list<Buch> */`."
+      - "Nach `json_decode` hilft ein `/** @var list<array{isbn: string, titel: string, autor: string, status: string}> $daten */` direkt über der Zuweisung."
+    checks:
+      - type: command
+        run: jq -r '.scripts.check | if type == "array" then join(" && ") else . end' composer.json
+        stdout_matches: "pint --test.*phpstan analyse|phpstan analyse.*pint --test"
+        message: In composer.json fehlt das Skript check mit pint --test und phpstan analyse.
+      - type: command
+        run: pint --test src bin
+        message: Der Code-Stil passt noch nicht – führe pint src bin aus.
+      - type: command
+        run: phpstan analyse --level=8 src bin --no-progress --error-format=raw
+        message: PHPStan meldet auf Level 8 noch Fehler in src oder bin.
+      - type: command
+        run: composer check
+        message: composer check schlägt noch fehl – lies die Ausgabe und behebe den ersten Fehler.
+    solution: |
+      ```bash
+      jq '.scripts = {"check": ["pint --test src bin", "phpstan analyse --level=8 src bin --no-progress"]}' composer.json > composer.tmp
+      mv composer.tmp composer.json
+      pint src bin
+      ```
+    solve: |
+      jq '.scripts = {"check": ["pint --test src bin", "phpstan analyse --level=8 src bin --no-progress"]}' composer.json > composer.tmp
+      mv composer.tmp composer.json
+      pint src bin

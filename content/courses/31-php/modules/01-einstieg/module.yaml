@@ -1,0 +1,83 @@
+title: Einstieg in PHP
+description: Wie PHP ausgeführt wird, welche Syntax-Regeln gelten, wie das Typsystem dich schützt und wie du mit Strings arbeitest.
+exercise:
+  id: modul-uebung-preisrechner
+  type: terminal
+  title: Ein Preisrechner für die Kommandozeile
+  description: |
+    Du baust ein kleines CLI-Skript, das alles aus diesem Modul verbindet: Argumente lesen, Eingaben prüfen,
+    strikte Typen und sauber formatierte Ausgabe.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** – der Ordner `preisrechner` ist danach leer.
+
+    Lege im Ordner `preisrechner` die Datei `preis.php` an:
+
+    1. Erste Anweisung: `declare(strict_types=1);`
+    2. Das Skript erwartet zwei Argumente: eine Menge (Ganzzahl) und einen Einzelpreis (Kommazahl mit Punkt).
+       `php preis.php 3 19.99` gibt genau diese Zeile aus:
+       `3 x 19,99 € = 59,97 €`
+    3. Beträge werden deutsch formatiert, also `php preis.php 1 1234.5` ergibt `1 x 1.234,50 € = 1.234,50 €`.
+    4. Fehlen Argumente, schreibt das Skript `Aufruf: php preis.php <menge> <preis>` auf die
+       Standardfehlerausgabe (STDERR) und endet mit Exit-Code 1.
+    5. Ist die Menge keine Ganzzahl oder der Preis keine Zahl (`php preis.php drei 2`), endet es ebenfalls mit
+       einer Fehlermeldung auf STDERR und Exit-Code 1.
+  workdir: preisrechner
+  setup: |
+    true
+  checks:
+    - type: file_exists
+      path: preis.php
+      message: Im Ordner preisrechner fehlt noch die Datei preis.php.
+    - type: file_contains
+      path: preis.php
+      pattern: "declare\\(strict_types=1\\);"
+      message: Schreib declare(strict_types=1); als erste Anweisung in preis.php.
+    - type: command
+      run: php preis.php 3 19.99
+      stdout_equals: "3 x 19,99 € = 59,97 €"
+      message: 'php preis.php 3 19.99 soll genau "3 x 19,99 € = 59,97 €" ausgeben (number_format mit Komma und Punkt).'
+    - type: command
+      run: php preis.php 1 1234.5
+      stdout_equals: "1 x 1.234,50 € = 1.234,50 €"
+      message: Tausender brauchen einen Punkt, Nachkommastellen ein Komma – prüfe php preis.php 1 1234.5.
+    - type: command
+      run: php preis.php > /dev/null 2>&1; echo "exit=$?"
+      stdout_equals: "exit=1"
+      message: Ohne Argumente soll das Skript mit exit(1) enden.
+    - type: command
+      run: php preis.php 2>&1 1>/dev/null || true
+      stdout_matches: "Aufruf: php preis\\.php"
+      message: 'Ohne Argumente soll "Aufruf: php preis.php <menge> <preis>" auf STDERR erscheinen – nutze fwrite(STDERR, …).'
+    - type: command
+      run: php preis.php drei 2 > /dev/null 2>&1; echo "exit=$?"
+      stdout_equals: "exit=1"
+      message: Bei einer ungültigen Menge wie "drei" soll das Skript mit Exit-Code 1 enden.
+  hints:
+    - "Prüfe zuerst `$argc < 3`. Fehlermeldungen schreibst du mit `fwrite(STDERR, \"…\" . PHP_EOL);` und beendest mit `exit(1);`."
+    - "`ctype_digit($argv[1])` prüft die Menge, `is_numeric($argv[2])` den Preis. Danach umwandeln: `(int)` und `(float)`."
+    - "Ein kleiner Helfer spart Wiederholung: `function euro(float $b): string { return number_format($b, 2, ',', '.') . ' €'; }`"
+  solution: |
+    ```php
+    <?php
+    declare(strict_types=1);
+
+    function euro(float $betrag): string
+    {
+        return number_format($betrag, 2, ',', '.') . ' €';
+    }
+
+    if ($argc < 3) {
+        fwrite(STDERR, 'Aufruf: php preis.php <menge> <preis>' . PHP_EOL);
+        exit(1);
+    }
+
+    if (!ctype_digit($argv[1]) || !is_numeric($argv[2])) {
+        fwrite(STDERR, 'Menge muss eine Ganzzahl, Preis eine Zahl sein.' . PHP_EOL);
+        exit(1);
+    }
+
+    $menge = (int) $argv[1];
+    $preis = (float) $argv[2];
+
+    echo sprintf('%d x %s = %s', $menge, euro($preis), euro($menge * $preis)) . PHP_EOL;
+    ```

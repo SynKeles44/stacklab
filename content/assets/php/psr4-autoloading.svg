@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="30" y="36" font-size="20" font-weight="700" fill="#1e1b3a">PSR-4: vom Klassennamen zur Datei</text>
+
+  <text x="30" y="106" font-size="15" font-weight="700" fill="#1e1b3a">Klassenname</text>
+  <rect x="200" y="80" width="160" height="60" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <rect x="380" y="80" width="220" height="60" rx="10" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="280" y="158" font-size="12" fill="#1e1b3a" text-anchor="middle">Namespace-Präfix</text>
+  <text x="490" y="158" font-size="12" fill="#1e1b3a" text-anchor="middle">Rest des Namens</text>
+
+  <rect x="620" y="170" width="160" height="56" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <text x="700" y="192" font-size="12" font-weight="700" fill="#1e1b3a" text-anchor="middle">composer.json</text>
+  <text x="700" y="213" font-size="13" font-family="ui-monospace, Menlo, monospace" fill="#1e1b3a" text-anchor="middle">"App\\": "src/"</text>
+
+  <line x1="280" y1="164" x2="280" y2="246" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <line x1="490" y1="164" x2="490" y2="246" stroke="#1e1b3a" stroke-width="2" marker-end="url(#pfeil)"/>
+  <text x="290" y="210" font-size="12" fill="#1e1b3a">wird ersetzt</text>
+  <text x="500" y="200" font-size="12" fill="#1e1b3a">\ wird zu /,</text>
+  <text x="500" y="216" font-size="12" fill="#1e1b3a">dazu .php</text>
+
+  <text x="30" y="286" font-size="15" font-weight="700" fill="#1e1b3a">Dateipfad</text>
+  <rect x="200" y="250" width="160" height="60" rx="10" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+  <rect x="380" y="250" width="220" height="60" rx="10" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="280" y="328" font-size="12" fill="#1e1b3a" text-anchor="middle">Basisordner</text>
+  <text x="490" y="328" font-size="12" fill="#1e1b3a" text-anchor="middle">Unterordner und Datei</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="18" fill="#1e1b3a" text-anchor="middle">
+    <text x="280" y="116">App\</text>
+    <text x="490" y="116">Text\Slug</text>
+    <text x="280" y="286">src/</text>
+    <text x="490" y="286">Text/Slug.php</text>
+  </g>
+</svg>

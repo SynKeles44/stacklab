@@ -1,0 +1,451 @@
+title: Abschlussprüfung PHP
+description: |
+  Diese Prüfung deckt alle vier Module ab: den Einstieg in PHP, Daten und Funktionen, objektorientiertes PHP und
+  die Werkzeuge für echte Projekte. Zuerst beantwortest du Fragen, danach löst du drei Praxis-Aufgaben – zwei im
+  Code-Editor und eine im echten Übungs-Terminal.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast, und kannst
+  gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Einstieg ---
+  - module: einstieg
+    type: multiple
+    question: Welche Vergleiche ergeben in PHP 8 `true`?
+    options:
+      - "`\"1\" == \"01\"`"
+      - "`0 == \"a\"`"
+      - "`\"10\" == \"1e1\"`"
+      - "`null == false`"
+    answers: [0, 2, 3]
+    explanation: >
+      Zwei numerische Strings vergleicht `==` als Zahlen, deshalb sind "1" und "01" sowie "10" und "1e1" gleich.
+      Seit PHP 8 ist `0 == "a"` dagegen false. Solche Überraschungen vermeidest du mit `===`.
+  - module: einstieg
+    type: single
+    question: "Eine Datei beginnt mit `declare(strict_types=1);`. Was passiert bei `function doppelt(int $x): int { return $x * 2; }` und dem Aufruf `doppelt(\"5\")`?"
+    options:
+      - PHP wirft einen TypeError.
+      - Das Ergebnis ist 10.
+      - Das Ergebnis ist "55".
+      - PHP gibt eine Warnung aus und rechnet mit 0.
+    answer: 0
+    explanation: >
+      Mit strict_types wandelt PHP Skalare beim Funktionsaufruf nicht mehr um. Der String "5" passt nicht zum
+      Typ int, also gibt es einen TypeError – der Fehler fällt sofort auf statt später.
+  - module: einstieg
+    type: cloze
+    text: "`strlen('Größe')` liefert ___, `mb_strlen('Größe')` liefert ___."
+    blanks:
+      - ["7"]
+      - ["5"]
+    explanation: >
+      ö und ß belegen in UTF-8 je zwei Bytes. strlen zählt Bytes, mb_strlen zählt Zeichen.
+  - module: einstieg
+    type: match
+    question: Ordne zu.
+    pairs:
+      - { left: "$argv", right: "Argumente eines CLI-Skripts" }
+      - { left: "$_GET", right: "Query-Parameter einer Web-Anfrage" }
+      - { left: "php -S 127.0.0.1:8000", right: "eingebauter Entwicklungsserver" }
+      - { left: "php-fpm", right: "Prozess-Pool, an den nginx PHP-Anfragen weiterreicht" }
+    explanation: >
+      Auf der Kommandozeile kommen Eingaben über $argv, im Web über Superglobale wie $_GET. In Produktion
+      übernimmt php-fpm die Ausführung, zum Ausprobieren reicht php -S.
+  - module: einstieg
+    type: find-bug
+    question: Ausgegeben wird wörtlich `Hallo $name!`. In welcher Zeile liegt der Fehler?
+    language: php
+    code: |
+      <?php
+      declare(strict_types=1);
+
+      $name = 'Ada';
+      echo 'Hallo $name!' . PHP_EOL;
+    bug_line: 5
+    explanation: >
+      In einfachen Anführungszeichen ersetzt PHP keine Variablen. Richtig ist `"Hallo $name!"` oder
+      `'Hallo ' . $name . '!'`.
+
+  # --- Daten und Funktionen ---
+  - module: daten-und-funktionen
+    type: single
+    question: "Was gibt `echo json_encode(array_filter([1, 0, 2]));` aus?"
+    options: ['[1,2]', '{"0":1,"2":2}', '[1,0,2]', '{"1":1,"2":2}']
+    answer: 1
+    explanation: >
+      array_filter behält die Schlüssel 0 und 2. Weil die Schlüssel keine lückenlose Liste mehr sind, wird daraus ein
+      JSON-Objekt. Mit `array_values()` davor erhältst du `[1,2]`.
+  - module: daten-und-funktionen
+    type: single
+    question: "Was passiert bei `match ($status) { 'offen' => 1, 'bezahlt' => 2 }`, wenn `$status` den Wert `'storniert'` hat?"
+    options:
+      - PHP wirft einen UnhandledMatchError.
+      - Das Ergebnis ist null.
+      - Das Ergebnis ist 1.
+      - PHP gibt eine Warnung aus und macht weiter.
+    answer: 0
+    explanation: >
+      match hat keinen stillen Ausweg. Fehlt ein passender Fall und ein default, wirft PHP einen UnhandledMatchError.
+  - module: daten-und-funktionen
+    type: cloze
+    text: "Seit PHP 8.5 reicht der Operator ___ einen Wert von links nach rechts weiter: `' Hallo ' ___ trim(...)`. Mit `trim(...)` erzeugst du ein First-Class ___."
+    blanks:
+      - ["|>"]
+      - ["|>"]
+      - [Callable, Callables]
+    explanation: >
+      Der Pipe-Operator `|>` übergibt den Wert links als Argument an das Callable rechts. `trim(...)` ruft trim nicht
+      auf, sondern liefert eine Closure darauf.
+  - module: daten-und-funktionen
+    type: multiple
+    question: Welche Aussagen über `DateTimeImmutable` stimmen?
+    options:
+      - "`modify('+1 day')` liefert ein neues Objekt, das alte bleibt unverändert."
+      - "`format('d.m.Y')` ergibt zum Beispiel 10.10.2026."
+      - Ein ungültiger Text im Konstruktor wirft eine Exception.
+      - "`DateTimeImmutable` kennt keine Zeitzonen."
+    answers: [0, 1, 2]
+    explanation: >
+      Unveränderliche Datumsobjekte verhindern versehentliche Änderungen. Zeitzonen gibst du mit einem
+      DateTimeZone-Objekt an; ungültige Eingaben werfen eine DateMalformedStringException.
+  - module: daten-und-funktionen
+    type: single
+    question: "Was liefert `$kunde?->adresse()?->stadt`, wenn `$kunde` null ist?"
+    options: ["null", "Einen Error", "Einen leeren String", "false"]
+    answer: 0
+    explanation: >
+      Der Nullsafe-Operator bricht die Kette beim ersten null ab und liefert null – ohne Fehler.
+
+  # --- Objektorientiertes PHP ---
+  - module: oop
+    type: single
+    question: "Was passiert bei `$geld->cent = 500;`, wenn `Geld` als `final readonly class` deklariert ist und das Objekt schon existiert?"
+    options:
+      - PHP wirft einen Error, weil readonly-Properties nur einmal gesetzt werden dürfen.
+      - Der Wert wird überschrieben.
+      - PHP legt eine Kopie mit dem neuen Wert an.
+      - Es passiert nichts, der alte Wert bleibt still erhalten.
+    answer: 0
+    explanation: >
+      readonly-Properties werden genau einmal gesetzt, meist im Konstruktor. Danach führt jede Zuweisung zu einem
+      Error. Für einen neuen Wert erzeugst du ein neues Objekt.
+  - module: oop
+    type: match
+    question: Ordne jedem Werkzeug seine Stärke zu.
+    pairs:
+      - { left: "Interface", right: "Vertrag: welche Methoden eine Klasse anbieten muss" }
+      - { left: "Abstrakte Klasse", right: "gemeinsamer Code plus Pflichtmethoden für Kindklassen" }
+      - { left: "Trait", right: "Methoden in mehrere, nicht verwandte Klassen einfügen" }
+      - { left: "Enum", right: "feste Menge erlaubter Werte" }
+    explanation: >
+      Interfaces beschreiben, was etwas kann. Abstrakte Klassen teilen Code in einer Hierarchie. Traits fügen
+      Code ohne Vererbung ein. Enums ersetzen lose Strings für feste Wertemengen.
+  - module: oop
+    type: single
+    question: "Ein Backed Enum `Status: string` kennt den Wert `'offen'`. Was liefert `Status::tryFrom('archiviert')`?"
+    options: ["null", "Einen ValueError", "Status::Offen", "false"]
+    answer: 0
+    explanation: >
+      tryFrom liefert null, wenn kein Fall passt. `from('archiviert')` würde dagegen einen ValueError werfen.
+  - module: oop
+    type: find-bug
+    question: Der Code soll ein Konto mit 100 Cent und eine unabhängige Kopie mit 150 Cent ergeben. Am Ende haben aber beide 150 Cent. In welcher Zeile liegt die Ursache?
+    language: php
+    code: |
+      <?php
+      final class Konto
+      {
+          public function __construct(public int $cent = 0) {}
+      }
+
+      $original = new Konto(100);
+      $kopie = $original;
+      $kopie->cent += 50;
+    bug_line: 8
+    explanation: >
+      Objekte werden nicht kopiert, sondern geteilt: Beide Variablen zeigen auf dasselbe Objekt. Eine echte Kopie
+      erzeugst du mit `clone $original`.
+  - module: oop
+    type: match
+    question: Wer darf die Property `$saldo` lesen und schreiben?
+    pairs:
+      - { left: "public int $saldo", right: "Alle dürfen lesen und schreiben" }
+      - { left: "private int $saldo", right: "Nur die Klasse selbst darf lesen und schreiben" }
+      - { left: "protected int $saldo", right: "Die Klasse und ihre Kindklassen" }
+      - { left: "public private(set) int $saldo", right: "Alle dürfen lesen, nur die Klasse darf schreiben" }
+    explanation: >
+      Asymmetrische Sichtbarkeit aus PHP 8.4 trennt Lesen und Schreiben – ideal für Werte, die jeder sehen, aber
+      nur die Klasse ändern soll.
+
+  # --- Werkzeuge ---
+  - module: werkzeuge
+    type: single
+    question: "`class NichtGefunden extends RuntimeException {}` – welche catch-Reihenfolge ist richtig, wenn `NichtGefunden` eine eigene Meldung bekommen soll?"
+    options:
+      - "Zuerst `catch (NichtGefunden $e)`, danach `catch (RuntimeException $e)`."
+      - "Zuerst `catch (RuntimeException $e)`, danach `catch (NichtGefunden $e)`."
+      - Die Reihenfolge ist egal, PHP sucht den passendsten Block.
+      - "Nur `catch (Throwable $t)` ist erlaubt."
+    answer: 0
+    explanation: >
+      PHP prüft die catch-Blöcke von oben nach unten und nimmt den ersten passenden. Der speziellere muss
+      deshalb vor dem allgemeineren stehen.
+  - module: werkzeuge
+    type: single
+    question: "In composer.json steht `\"Shop\\\\\": \"app/\"` unter `autoload.psr-4`. Wo sucht der Autoloader `Shop\\Bestellung\\Rechnung`?"
+    options:
+      - app/Bestellung/Rechnung.php
+      - app/Shop/Bestellung/Rechnung.php
+      - Shop/Bestellung/Rechnung.php
+      - vendor/shop/Bestellung/Rechnung.php
+    answer: 0
+    explanation: >
+      Das Präfix `Shop\` wird durch `app/` ersetzt, der Rest des Namens wird zum Pfad mit `.php` am Ende.
+  - module: werkzeuge
+    type: multiple
+    question: Welche Aussagen über Composer stimmen?
+    options:
+      - composer.lock gehört bei Anwendungen ins Git-Repository.
+      - "`composer install` installiert die Versionen aus composer.lock."
+      - Der Ordner vendor/ gehört ins Git-Repository, damit alle dieselben Pakete haben.
+      - "`^3.1` erlaubt Version 3.9, aber nicht 4.0."
+    answers: [0, 1, 3]
+    explanation: >
+      vendor/ wird aus composer.lock jederzeit neu erzeugt und steht in .gitignore. Das Caret erlaubt alle
+      Versionen bis zur nächsten Hauptversion.
+  - module: werkzeuge
+    type: cloze
+    text: "Nach einer Änderung im autoload-Abschnitt erzeugst du den Autoloader mit `composer ___` neu. Im Code bindest du nur die Datei `vendor/___` ein."
+    blanks:
+      - [dump-autoload, dumpautoload]
+      - [autoload.php]
+    explanation: >
+      `composer dump-autoload` schreibt den Autoloader neu. Danach reicht ein einziges
+      `require __DIR__ . '/vendor/autoload.php';`.
+  - module: werkzeuge
+    type: single
+    question: Welches Werkzeug meldet, dass eine Methode `int|null` übergibt, wo `int` erwartet wird – ohne den Code auszuführen?
+    options: ["PHPStan", "Pint", "Composer", "OPcache"]
+    answer: 0
+    explanation: >
+      PHPStan ist ein statischer Analysierer. Pint kümmert sich nur um den Code-Stil, Composer um Pakete und OPcache
+      um die Geschwindigkeit.
+tasks:
+  - module: daten-und-funktionen
+    id: pruefung-haeufigste-woerter
+    type: code
+    language: php
+    title: Die häufigsten Wörter
+    description: |
+      Schreibe `haeufigste(string $text, int $anzahl): array`.
+
+      1. Zerlege den Text in Wörter: Alles, was kein Buchstabe ist, trennt Wörter. Groß- und Kleinschreibung
+         spielt keine Rolle – die Wörter werden kleingeschrieben (auch Umlaute: `Äpfel` → `äpfel`).
+      2. Zähle, wie oft jedes Wort vorkommt.
+      3. Sortiere nach Häufigkeit absteigend, bei Gleichstand alphabetisch aufsteigend.
+      4. Gib die ersten `$anzahl` Einträge als Array `Wort => Anzahl` zurück.
+    starter: |
+      <?php
+      declare(strict_types=1);
+
+      function haeufigste(string $text, int $anzahl): array
+      {
+          return [];
+      }
+    tests:
+      - name: zählt ohne Rücksicht auf Groß- und Kleinschreibung
+        code: assert_same(['php' => 3, 'ist' => 2], haeufigste('PHP ist toll. php ist schnell, PHP!', 2));
+      - name: Gleichstand wird alphabetisch sortiert
+        code: assert_same(['a' => 2, 'b' => 2, 'c' => 1], haeufigste('b a c a b', 3));
+      - name: Umlaute werden richtig kleingeschrieben
+        code: assert_same(['äpfel' => 2], haeufigste('Äpfel, äpfel und Birnen', 1));
+      - name: leerer Text
+        code: assert_same([], haeufigste('', 3)); assert_same([], haeufigste('...', 3));
+    hints:
+      - "Zerlegen: `preg_split('/[^\\p{L}]+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY)`."
+      - "`array_count_values($woerter)` zählt die Wörter."
+      - "Sortieren nach zwei Kriterien: `uksort($zaehler, fn(string $a, string $b): int => [$zaehler[$b], $a] <=> [$zaehler[$a], $b]);` und danach `array_slice($zaehler, 0, $anzahl, true)`."
+    solution: |
+      <?php
+      declare(strict_types=1);
+
+      function haeufigste(string $text, int $anzahl): array
+      {
+          $woerter = preg_split('/[^\p{L}]+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY);
+          $zaehler = array_count_values($woerter);
+
+          uksort($zaehler, fn(string $a, string $b): int => [$zaehler[$b], $a] <=> [$zaehler[$a], $b]);
+
+          return array_slice($zaehler, 0, $anzahl, true);
+      }
+  - module: oop
+    id: pruefung-email
+    type: code
+    language: php
+    title: Ein E-Mail-Value-Object
+    description: |
+      Schreibe ein Value Object für E-Mail-Adressen.
+
+      1. `final class UngueltigeEmail extends InvalidArgumentException {}`
+      2. `final readonly class Email` mit der öffentlichen Property `string $adresse` und einem **privaten**
+         Konstruktor.
+      3. `public static function aus(string $eingabe): self` entfernt Leerzeichen am Rand, schreibt alles klein und
+         prüft mit `filter_var($wert, FILTER_VALIDATE_EMAIL)`. Ungültige Adressen werfen `UngueltigeEmail`.
+      4. `domain(): string` liefert den Teil nach dem `@`.
+      5. `istGleich(Email $andere): bool` vergleicht zwei Adressen.
+    starter: |
+      <?php
+      declare(strict_types=1);
+
+      final class UngueltigeEmail extends InvalidArgumentException {}
+
+      final readonly class Email
+      {
+          private function __construct(public string $adresse) {}
+
+          public static function aus(string $eingabe): self
+          {
+              return new self($eingabe);
+          }
+      }
+    tests:
+      - name: normalisiert die Adresse
+        code: assert_same('ada@example.com', Email::aus('  Ada@Example.COM ')->adresse);
+      - name: Domain und Vergleich
+        code: |
+          $a = Email::aus('ada@example.com');
+          assert_same('example.com', $a->domain());
+          assert_true($a->istGleich(Email::aus('ADA@example.com')));
+          assert_same(false, $a->istGleich(Email::aus('bo@example.com')));
+      - name: ungültige Adressen werfen UngueltigeEmail
+        code: |
+          foreach (['', 'kein-at', 'ada@', '@example.com'] as $falsch) {
+              try { Email::aus($falsch); assert_true(false, "'$falsch' wurde akzeptiert."); } catch (UngueltigeEmail $e) { assert_true($e instanceof InvalidArgumentException); }
+          }
+      - name: unveränderlich
+        code: |
+          $a = Email::aus('ada@example.com');
+          try { $a->adresse = 'x'; assert_true(false, 'adresse ließ sich ändern.'); } catch (Error $e) { assert_true(true); }
+    hints:
+      - "Normalisieren: `$wert = mb_strtolower(trim($eingabe));`"
+      - "`if (filter_var($wert, FILTER_VALIDATE_EMAIL) === false) { throw new UngueltigeEmail(\"Ungültige E-Mail-Adresse: {$eingabe}\"); }`"
+      - "Domain: `substr($this->adresse, strrpos($this->adresse, '@') + 1)`."
+    solution: |
+      <?php
+      declare(strict_types=1);
+
+      final class UngueltigeEmail extends InvalidArgumentException {}
+
+      final readonly class Email
+      {
+          private function __construct(public string $adresse) {}
+
+          public static function aus(string $eingabe): self
+          {
+              $wert = mb_strtolower(trim($eingabe));
+              if (filter_var($wert, FILTER_VALIDATE_EMAIL) === false) {
+                  throw new UngueltigeEmail("Ungültige E-Mail-Adresse: {$eingabe}");
+              }
+
+              return new self($wert);
+          }
+
+          public function domain(): string
+          {
+              return substr($this->adresse, strrpos($this->adresse, '@') + 1);
+          }
+
+          public function istGleich(Email $andere): bool
+          {
+              return $this->adresse === $andere->adresse;
+          }
+      }
+  - module: werkzeuge
+    id: pruefung-autoloading
+    type: terminal
+    title: Den Autoloader reparieren
+    description: |
+      Ein Kollege hat ein kleines Composer-Projekt angefangen, aber `php run.php` endet mit einem Fehler.
+
+      Klicke zuerst auf **Aufgabe vorbereiten**. Im Ordner `rechner` liegen dann `composer.json`, `run.php` und
+      `src/Rechner/Brutto.php`.
+
+      1. Finde heraus, warum die Klasse `App\Rechner\Brutto` nicht geladen wird. (Es sind zwei Ursachen.)
+      2. Behebe beide, **ohne** `run.php` zu ändern und ohne Dateien per `require` einzubinden.
+      3. Danach gibt `php run.php` die Zeile `11,90 €` aus.
+    workdir: rechner
+    setup: |
+      cat > composer.json <<'JSON'
+      {
+          "name": "stacklab/rechner",
+          "autoload": {
+              "psr-4": {
+                  "App\\": "src/"
+              }
+          },
+          "require": {}
+      }
+      JSON
+      cat > run.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      require __DIR__ . '/vendor/autoload.php';
+
+      use App\Rechner\Brutto;
+
+      echo Brutto::ausCent(1000) . PHP_EOL;
+      PHP
+      mkdir -p src/Rechner
+      cat > src/Rechner/Brutto.php <<'PHP'
+      <?php
+      declare(strict_types=1);
+
+      namespace App\Rechnung;
+
+      final class Brutto
+      {
+          public static function ausCent(int $nettoCent): string
+          {
+              $brutto = (int) round($nettoCent * 1.19);
+
+              return number_format($brutto / 100, 2, ',', '.') . ' €';
+          }
+      }
+      PHP
+    checks:
+      - type: file_contains
+        path: run.php
+        pattern: "^use App\\\\Rechner\\\\Brutto;$"
+        message: run.php soll unverändert bleiben – stelle die Datei mit „Aufgabe vorbereiten“ wieder her.
+      - type: command
+        run: grep -c "src/" run.php || true
+        stdout_equals: "0"
+        message: Binde keine Dateien aus src/ per require ein – der Autoloader soll die Klasse finden.
+      - type: file_contains
+        path: src/Rechner/Brutto.php
+        pattern: "^namespace App\\\\Rechner;$"
+        message: Der Namespace in src/Rechner/Brutto.php passt nicht zum Ordner – PSR-4 erwartet namespace App\Rechner;
+      - type: file_exists
+        path: vendor/autoload.php
+        message: Es gibt noch keinen Autoloader – führe composer dump-autoload aus.
+      - type: command
+        run: php run.php
+        stdout_equals: "11,90 €"
+        message: php run.php soll 11,90 € ausgeben.
+    hints:
+      - "Lies die Fehlermeldung von `php run.php` genau – welche Datei fehlt?"
+      - "Vergleiche den Namespace in `src/Rechner/Brutto.php` mit dem Ordnernamen und der use-Zeile in run.php."
+      - "Ändere die Zeile zu `namespace App\\Rechner;` und führe `composer dump-autoload` aus."
+    solution: |
+      1. Der Ordner `vendor/` fehlt – `composer dump-autoload` erzeugt den Autoloader.
+      2. Der Namespace passt nicht zum Ordner: In `src/Rechner/Brutto.php` muss `namespace App\Rechner;` stehen
+         (nicht `App\Rechnung`).
+
+      ```bash
+      sed -i 's/namespace App\\Rechnung;/namespace App\\Rechner;/' src/Rechner/Brutto.php
+      composer dump-autoload
+      php run.php
+      ```

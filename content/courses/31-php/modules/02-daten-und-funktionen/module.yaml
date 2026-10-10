@@ -1,0 +1,73 @@
+title: Daten und Funktionen
+description: Arrays in der Tiefe, moderne Funktionen und Ausdrücke (match, Pipe-Operator, Named Arguments) sowie Dateien, JSON und Datum.
+exercise:
+  id: modul-uebung-monatsbericht
+  type: code
+  language: php
+  title: Ein Monatsbericht aus JSON
+  description: |
+    Ein Shop exportiert seine Bestellungen als JSON-Liste, z. B.:
+
+    ```json
+    [
+      {"datum": "2026-09-03", "cent": 1999, "status": "bezahlt"},
+      {"datum": "2026-09-20", "cent": 500, "status": "storniert"},
+      {"datum": "2026-10-01", "cent": 2500, "status": "bezahlt"}
+    ]
+    ```
+
+    Schreibe `monatsbericht(string $json): string`. Sie liefert ein JSON-**Objekt** „Monat → Umsatz in Cent“:
+
+    1. JSON mit `JSON_THROW_ON_ERROR` dekodieren – kaputtes JSON soll eine `JsonException` auslösen.
+    2. Nur Bestellungen mit `status` `bezahlt` zählen.
+    3. Den Monat bildest du mit `DateTimeImmutable` als `JJJJ-MM`.
+    4. Monate aufsteigend sortieren und als kompaktes JSON zurückgeben, z. B. `{"2026-09":1999,"2026-10":2500}`.
+    5. Gibt es keine bezahlte Bestellung, ist das Ergebnis `{}` – nicht `[]`!
+  starter: |
+    <?php
+    declare(strict_types=1);
+
+    function monatsbericht(string $json): string
+    {
+        $bestellungen = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+        $summen = [];
+
+        // filtern, gruppieren, sortieren …
+
+        return json_encode($summen);
+    }
+  tests:
+    - name: Beispiel aus der Aufgabe
+      code: |
+        $json = '[{"datum":"2026-09-03","cent":1999,"status":"bezahlt"},{"datum":"2026-09-20","cent":500,"status":"storniert"},{"datum":"2026-10-01","cent":2500,"status":"bezahlt"}]';
+        assert_same('{"2026-09":1999,"2026-10":2500}', monatsbericht($json));
+    - name: Summen im selben Monat und aufsteigende Sortierung
+      code: |
+        $json = '[{"datum":"2026-11-30","cent":100,"status":"bezahlt"},{"datum":"2026-02-01","cent":50,"status":"bezahlt"},{"datum":"2026-11-02","cent":200,"status":"bezahlt"}]';
+        assert_same('{"2026-02":50,"2026-11":300}', monatsbericht($json));
+    - name: keine bezahlte Bestellung ergibt ein leeres Objekt
+      code: assert_same('{}', monatsbericht('[]')); assert_same('{}', monatsbericht('[{"datum":"2026-01-01","cent":9,"status":"offen"}]'));
+    - name: kaputtes JSON wirft eine JsonException
+      code: try { monatsbericht('[{kaputt'); assert_true(false, 'Es wurde keine JsonException geworfen.'); } catch (JsonException $e) { assert_true(true); }
+  hints:
+    - "Filtern: `array_filter($bestellungen, fn(array $b) => $b['status'] === 'bezahlt')`."
+    - "Monat: `(new DateTimeImmutable($b['datum']))->format('Y-m')`, Summe mit `$summen[$monat] = ($summen[$monat] ?? 0) + $b['cent'];`, sortieren mit `ksort($summen)`."
+    - "Ein leeres Array wird zu `[]`. `json_encode((object) $summen)` oder das Flag `JSON_FORCE_OBJECT` erzwingt `{}`."
+  solution: |
+    <?php
+    declare(strict_types=1);
+
+    function monatsbericht(string $json): string
+    {
+        $bestellungen = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+        $bezahlt = array_filter($bestellungen, fn(array $b): bool => $b['status'] === 'bezahlt');
+
+        $summen = [];
+        foreach ($bezahlt as ['datum' => $datum, 'cent' => $cent]) {
+            $monat = (new DateTimeImmutable($datum))->format('Y-m');
+            $summen[$monat] = ($summen[$monat] ?? 0) + $cent;
+        }
+        ksort($summen);
+
+        return json_encode((object) $summen, JSON_THROW_ON_ERROR);
+    }
