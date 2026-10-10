@@ -6,49 +6,41 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 ## Protokoll
 
 - **Zuletzt erledigt (2026-10-10):** Fundament komplett und getestet; Lektionen seitenweise (Blättern); zwei UI-Varianten (Standard + Apple, wählbar unter Einstellungen → Darstellung, gespeichert in users.ui_variant); Kursdauer wird aus Lektionsdauern berechnet; Kurs-Größenregel 10–12 Lektionen / 4–6 h (Laravel bis 10 h) in docs/AUTHORING.md.
-- **Kursstand:** siehe Abschnitt „Abbruchstand 2026-10-10“.
+- **Kursstand:** siehe Abschnitt „Abbruchstand 2026-10-10, zweite Welle“.
 - **Als Nächstes:** nach Abschluss der laufenden Autoren `make validate` + Import; restliche Kurse 13–52 mit der Größenregel schreiben (Brief: docs/AUTHORING.md + content/README.md); Lexikon-Dubletten prüfen; Testkonten test@example.com und ui-test@example.com löschen; MISSING_SCREENSHOTS.md (PhpStorm-Kurs); GitHub-Repo SynKeles44/stacklab anlegen und pushen (Commits als SynKeles44, Signierung nur in diesem Repo aus); Abschlusszusammenfassung.
 - **2026-10-10 (Nachtrag):** Tests leerten die Entwicklungs-DB (Docker-Env überschrieb phpunit.xml) – behoben, danach Neu-Import nötig (Konten waren weg). Neu: „Für mich erledigen“ bei Projektschritten (`solve:`-Skripte, Prüfwerkzeug `stacklab:solve-check --require-all`), Fortschritt zurücksetzen (Einstellungen), `make workspace` (Ordner-Dialog), Suche repariert, Module starten eingeklappt.
 - **Hinweise für Autoren:** Jeder Projektschritt braucht ein `solve`-Skript, `stacklab:solve-check <kurs> --require-all` muss grün sein. Sandbox /tmp ist noexec; kein man/sudo/zsh/python3/rsync; `nvm install` höchstens einmal mit `timeout 300` (Prozesslimit 512).
 
-## Abbruchstand 2026-10-10 (alle Autoren-Agenten gestoppt) – HIER WEITERMACHEN
+## Abbruchstand 2026-10-10, zweite Welle (alle Autoren-Agenten gestoppt) – HIER WEITERMACHEN
 
-**Wiederaufnahme 2026-10-10:** 7 Autoren-Agenten für 23, 24, 25, 26, 31, 32, 33 neu gestartet (je ein Agent, Brief `.wip/agent-brief.md`, vorhandene Dateien weiterführen).
+Wiederaufnahme: neue Sitzung im Ordner `stacklab`, dann „Mach mit der Roadmap weiter“. Nur EINE Sitzung darf an den Kursen
+arbeiten (am 2026-10-10 haben zwei Sitzungen parallel dieselben Dateien bearbeitet). Brief: `.wip/agent-brief.md`
+(lokal, nicht im Git). Hilfsskripte der Autoren: `.wip/scratchpad/<kurs>/`.
 
-Wiederaufnahme: neue Sitzung im Ordner `stacklab`, dann „Mach mit der Roadmap weiter“. Für neue Autoren-Agenten
-den Brief `.wip/agent-brief.md` verwenden (lokal, nicht im Git) – er ergänzt `docs/AUTHORING.md` um Sandbox-Regeln.
-Entwürfe/Hilfsskripte der gestoppten Autoren liegen unter `.wip/scratchpad/<kurs>/` (ohne vendor/node_modules).
-Unfertige Kurse liegen **unversioniert** im Arbeitsverzeichnis (`git status`), damit CI grün bleibt; der Import überspringt sie.
+**Ablauf für den Lead pro fertigem Kurs:**
+`.wip/isolated-validate.sh <dir>:<slug> [weitere abhängige Kurse]` (prüft committeten Stand + nur diesen Kurs) →
+`docker compose exec -T php php artisan stacklab:solve-check <slug> --require-all` → commit →
+`.wip/import-committed.sh` (importiert nur den committeten Stand; `--force` würde halbfertige Kurse sichtbar machen).
+Höchstens ca. 10 Autoren gleichzeitig.
 
-**Fertig und committet (23 Kurse):** 01–16 (alle), 17 phpstorm-datenbank-tools, 18 http-https, 19 apis-endpunkte,
-20 api-dokumentation, 21 dokumentation-schreiben, 22 html-css-tailwind.
-- Bei 17, 18, 20, 21, 22 sowie beim Projekt von 16 (neues `setup`, workdir `kiezladen-projekt`) fehlt nur der
-  **abschließende Sandbox-Testlauf** (Validator: 0 Fehler, 0 Warnungen). Nächster Schritt: Terminal-Aufgaben,
-  Projektschritte und Prüfungsaufgaben je Kurs einmal durchspielen (setup → Lösung → Checks).
+**Fertig und committet (37 Kurse):** 01–33 (alle), 36 authentifizierung, 37 websicherheit, 38 performance, 39 testing.
 
-**Unfertig (unversioniert):**
+**Unfertig (unversioniert, im Arbeitsverzeichnis):**
 
 | Kurs | Vorhanden | Fehlt / nächster Schritt |
 |---|---|---|
-| 23 javascript | course.yaml, 4 module.yaml, 12 Lektionen, project.yaml, exam.yaml | Lexikon `content/glossary/javascript.yaml` fehlt komplett (45 Validator-Fehler = unbekannte Begriffe); SVGs fehlen; Sandbox-Tests |
-| 24 typescript | course.yaml, 4 module.yaml, 11 Lektionen, Lexikon (43 Begriffe) | project.yaml, exam.yaml; Sandbox-Tests (tsc-Aufgaben) |
-| 25 react | course.yaml, 3 module.yaml, 11 Lektionen (Modul 04 hat nur 2 Lektionen, kein module.yaml) | modules/04-effekte-und-praxis/module.yaml, ggf. 1 Lektion, Lexikon `react.yaml`, project.yaml, exam.yaml, Tests der jsx-Aufgaben |
-| 26 react-komponenten-architektur | nur 3 Lektionen in modules/01-struktur | fast alles: course.yaml, module.yaml, Module 02–04, Lexikon, Projekt, Prüfung |
-| 31 php | course.yaml, 2 module.yaml, 9 Lektionen (Module 01–02 komplett, 03-oop hat 3 Lektionen ohne module.yaml) | module.yaml für 03-oop, Modul 04 (Fehler/Composer/PSR-4, Projekt-App), Lexikon `php.yaml`, project.yaml, exam.yaml |
-| 32 datenbanken-sql | course.yaml, 3 module.yaml, 10 Lektionen (04 hat 1 Lektion: transaktionen) | Modul 04 (indizes/explain, sql-injection), module.yaml 04, Lexikon `datenbanken-sql.yaml`, project.yaml, exam.yaml |
-| 33 laravel | **nichts im content-Ordner** | komplett. Vorarbeit in `.wip/scratchpad/laravel/` (Setup-Skripte `setup-basis.sh`, `snippet-*.sh`, Referenz-App `ref/`, Worker-Notizen w1–w3) |
+| 34 laravel-vertieft | course.yaml, 4 Module, 12 Lektionen, project.yaml, exam.yaml, Lexikon, 5 SVGs | 2 Fehler in exam.yaml (questions[1] match-Paare ohne left/right; questions[6] Typ „order“ gibt es bei Fragen nicht); Autor war beim Ergänzen der Lektionen 2, 6, 8, 11; solve-check + Sandbox-Tests prüfen |
+| 35 laravel-architektur | course.yaml, 4 Module, 4 Lektionen, project.yaml | 6–8 Lektionen, exam.yaml, Lexikon, SVGs, solve-check |
+| 40 code-qualitaet | course.yaml, 4 Module, 2 Lektionen, 4 SVGs | 8–10 Lektionen, project.yaml, exam.yaml, Lexikon |
+| 41 clean-code-solid-patterns | course.yaml, 4 Module, project.yaml (keine Lektionen) | alle Lektionen, exam.yaml, Lexikon, SVGs |
+| 42 datenstrukturen-algorithmen | course.yaml, 4 Module, 4 Lektionen | 6–8 Lektionen, project.yaml, exam.yaml, Lexikon, SVGs |
+| 44 docker | course.yaml, 4 Module, 4 Lektionen | 6–8 Lektionen, project.yaml, exam.yaml, Lexikon, SVGs; Sandbox hat keinen Docker-Daemon (bauen/starten nur simuliert) |
 
-**Noch nicht begonnen:** 27 moderner-react-stack, 28 server-state-tanstack, 29 monorepos-workspaces,
-30 internationalisierung, 34 laravel-vertieft, 35 laravel-architektur, 36 authentifizierung, 37 websicherheit,
-38 performance, 39 testing, 40 code-qualitaet, 41 clean-code-solid-patterns, 42 datenstrukturen-algorithmen,
-43 legacy-modernisieren, 44 docker, 45 nginx-webserver, 46 deployments-cicd, 47 projekt-live-stellen,
+**Noch nicht begonnen:** 43 legacy-modernisieren, 45 nginx-webserver, 46 deployments-cicd, 47 projekt-live-stellen,
 48 observability, 49 aws-grundlagen, 50 aws-fargate, 51 ki-assistenten, 52 capstone.
 
-**Betriebs-Hinweise für die Autoren-Phase:**
-- Höchstens ca. 8 Autoren gleichzeitig: Die Sandbox (Prozesslimit 512) lief zweimal voll. Bei
-  „fork: Resource temporarily unavailable“: `docker compose restart sandbox`.
-- Jeder Autor nutzt einen eigenen Hilfsordner; nie fremde Skripte ausführen.
-- Vor Abschluss: `grep -rh "^- slug:" content/glossary | sort | uniq -d` muss leer sein.
+**Plattform-Nacharbeit:** In der Sandbox scheitern `bunx`/`bun create`, weil /tmp noexec ist → `TMPDIR` im Sandbox-Profil
+auf einen Ordner im Workspace setzen (Sandbox-Neustart nötig, daher zwischen zwei Wellen).
 
 ## Entscheidungen
 
@@ -135,28 +127,28 @@ Legende Quelle: P = aus dem Prompt, A = aus der Analyse der eigenen Projekte abg
 | 20 | api-dokumentation | API-Dokumentation automatisieren (OpenAPI, swagger-php, Scramble, Redocly) | P+A | [x] |
 | 21 | dokumentation-schreiben | Dokumentation schreiben | P | [x] |
 | 22 | html-css-tailwind | HTML & CSS inkl. Tailwind | P | [x] |
-| 23 | javascript | JavaScript | P | [~] |
-| 24 | typescript | TypeScript | P | [~] |
-| 25 | react | React | P | [~] |
-| 26 | react-komponenten-architektur | React-Komponenten-Architektur (Atomic Design, Compound Components, Storybook) | P+A | [~] |
-| 27 | moderner-react-stack | Moderner React-Stack (Vite, Tailwind, shadcn/ui, Zod, React Router Data Mode, Bun) | P | [ ] |
-| 28 | server-state-tanstack | Server-State mit TanStack Query & Table | A | [ ] |
-| 29 | monorepos-workspaces | Monorepos & Workspaces (Bun Workspaces, Catalogs) | A | [ ] |
-| 30 | internationalisierung | Internationalisierung (i18n) | A | [ ] |
-| 31 | php | PHP | P | [~] |
-| 32 | datenbanken-sql | Datenbanken & SQL | P | [~] |
-| 33 | laravel | Laravel (Hauptkurs) | P | [~] |
-| 34 | laravel-vertieft | Laravel vertieft | P | [ ] |
-| 35 | laravel-architektur | Architektur großer Laravel-Apps (Services, DTOs, Repositories, Multi-Tenancy, modularer Monolith) | A | [ ] |
-| 36 | authentifizierung | Authentifizierung (Sessions, JWT, OAuth, Sanctum, 2FA) | P+A | [ ] |
-| 37 | websicherheit | Websicherheit | P | [ ] |
-| 38 | performance | Performance | P | [ ] |
-| 39 | testing | Testing (Pest, Architekturtests, Mutation Testing, Vitest, Playwright) | P+A | [ ] |
-| 40 | code-qualitaet | Code-Qualität automatisiert (PHPStan, Rector, ECS, Pint, Biome, Hooks) | P+A | [ ] |
-| 41 | clean-code-solid-patterns | Clean Code, SOLID & Design Patterns | P | [ ] |
-| 42 | datenstrukturen-algorithmen | Datenstrukturen & Algorithmen | P | [ ] |
+| 23 | javascript | JavaScript | P | [x] |
+| 24 | typescript | TypeScript | P | [x] |
+| 25 | react | React | P | [x] |
+| 26 | react-komponenten-architektur | React-Komponenten-Architektur (Atomic Design, Compound Components, Storybook) | P+A | [x] |
+| 27 | moderner-react-stack | Moderner React-Stack (Vite, Tailwind, shadcn/ui, Zod, React Router Data Mode, Bun) | P | [x] |
+| 28 | server-state-tanstack | Server-State mit TanStack Query & Table | A | [x] |
+| 29 | monorepos-workspaces | Monorepos & Workspaces (Bun Workspaces, Catalogs) | A | [x] |
+| 30 | internationalisierung | Internationalisierung (i18n) | A | [x] |
+| 31 | php | PHP | P | [x] |
+| 32 | datenbanken-sql | Datenbanken & SQL | P | [x] |
+| 33 | laravel | Laravel (Hauptkurs) | P | [x] |
+| 34 | laravel-vertieft | Laravel vertieft | P | [~] |
+| 35 | laravel-architektur | Architektur großer Laravel-Apps (Services, DTOs, Repositories, Multi-Tenancy, modularer Monolith) | A | [~] |
+| 36 | authentifizierung | Authentifizierung (Sessions, JWT, OAuth, Sanctum, 2FA) | P+A | [x] |
+| 37 | websicherheit | Websicherheit | P | [x] |
+| 38 | performance | Performance | P | [x] |
+| 39 | testing | Testing (Pest, Architekturtests, Mutation Testing, Vitest, Playwright) | P+A | [x] |
+| 40 | code-qualitaet | Code-Qualität automatisiert (PHPStan, Rector, ECS, Pint, Biome, Hooks) | P+A | [~] |
+| 41 | clean-code-solid-patterns | Clean Code, SOLID & Design Patterns | P | [~] |
+| 42 | datenstrukturen-algorithmen | Datenstrukturen & Algorithmen | P | [~] |
 | 43 | legacy-modernisieren | Legacy-Code modernisieren (Strangler-Pattern, Illuminate standalone) | A | [ ] |
-| 44 | docker | Docker & Container | P+A | [ ] |
+| 44 | docker | Docker & Container | P+A | [~] |
 | 45 | nginx-webserver | Nginx & Webserver | P | [ ] |
 | 46 | deployments-cicd | Deployments & CI/CD | P+A | [ ] |
 | 47 | projekt-live-stellen | Ein lokales Projekt live stellen | P | [ ] |
