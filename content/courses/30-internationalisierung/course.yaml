@@ -1,0 +1,33 @@
+title: Internationalisierung (i18n)
+subtitle: Software für alle Sprachen, Länder und Zeitzonen – mit Intl, ICU, React und Laravel
+description: >
+  Sobald deine Anwendung Menschen in mehr als einem Land erreicht, reichen fest eingebaute deutsche Texte,
+  `1.234,56 €` und „vor 3 Tagen“ nicht mehr. In diesem Kurs lernst du, Software so zu bauen, dass sie ohne
+  Codeänderung in jeder Sprache und Region funktioniert.
+
+
+  Du verstehst die Grundlagen, auf denen alles aufbaut – Locales nach BCP 47, Unicode und UTF-8 –, lagerst
+  Texte in Übersetzungskataloge aus, meisterst Pluralformen mit ICU MessageFormat und formatierst Zahlen,
+  Währungen und Datumswerte mit `Intl` und der PHP-Erweiterung intl. Danach setzt du alles in **React**
+  (react-i18next) und **Laravel** um und sicherst es mit Tests und Pseudo-Lokalisierung ab. Im Projekt
+  machst du eine Laravel-App zweisprachig – mit Middleware, Pluralisierung und automatischen Tests.
+category: web
+level: fortgeschritten
+icon: languages
+color: "#0ea5e9"
+estimated_hours: 5
+workspace_dir: internationalisierung
+prerequisites: [react, php]
+learning_goals:
+  - Du unterscheidest Internationalisierung und Lokalisierung und erkennst fest eingebaute Annahmen im Code.
+  - Du liest und baust BCP-47-Sprach-Tags und handelst die passende Sprache mit Fallbacks aus.
+  - Du verstehst Unicode, Codepoints, Grapheme und UTF-8 und vermeidest kaputte Umlaute und abgeschnittene Emojis.
+  - Du lagerst Texte in Kataloge aus, nutzt Platzhalter statt Verkettung und schreibst Pluralformen in ICU MessageFormat.
+  - Du formatierst Zahlen, Währungen, Datum und relative Zeiten korrekt – in JavaScript mit Intl und in PHP mit intl.
+  - Du speicherst Zeitpunkte in UTC, zeigst sie in der richtigen Zeitzone an und baust Layouts, die auch von rechts nach links funktionieren.
+  - Du internationalisierst React-Apps mit react-i18next und Laravel-Apps mit Sprachdateien, __() und trans_choice.
+  - Du findest fehlende Übersetzungen automatisch und testest Oberflächen mit Pseudo-Lokalisierung.
+references:
+  - Mehrsprachige Web-Anwendungen mit getrennten Übersetzungskatalogen für Frontend und Backend
+  - Prüfungen in der CI-Pipeline, die fehlende Übersetzungsschlüssel vor dem Merge finden
+  - Zeitpunkte in UTC speichern und erst im Browser in der Zeitzone der Nutzer:innen anzeigen

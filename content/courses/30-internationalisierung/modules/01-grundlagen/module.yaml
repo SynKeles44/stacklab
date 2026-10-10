@@ -1,0 +1,72 @@
+title: Grundlagen
+description: Was Internationalisierung bedeutet, wie Locales nach BCP 47 aufgebaut sind und wie Unicode und UTF-8 Text speichern.
+exercise:
+  id: modul-uebung-locale-info
+  type: code
+  language: ts
+  title: Ein Locale-Steckbrief
+  description: |
+    Für die Sprachauswahl deiner App brauchst du zu jedem Sprach-Tag ein paar Eckdaten. Schreibe
+    `localeInfo(tag)`, das ein Objekt mit genau diesen Feldern zurückgibt:
+
+    | Feld | Inhalt | Beispiel für `"de-ch"` |
+    |---|---|---|
+    | `tag` | der Tag in kanonischer Schreibweise | `"de-CH"` |
+    | `language` | die Sprache | `"de"` |
+    | `script` | die Schrift – auch wenn sie im Tag fehlt (Tipp: `maximize()`) | `"Latn"` |
+    | `region` | die Region **aus dem Tag** oder `null`, wenn keine angegeben ist | `"CH"` |
+    | `dir` | `"rtl"`, wenn die Schrift `Arab`, `Hebr`, `Thaa` oder `Syrc` ist, sonst `"ltr"` | `"ltr"` |
+
+    Ungültige Tags sollen einen Fehler werfen – das erledigt `Intl.Locale` schon für dich.
+  starter: |
+    const RTL_SCRIPTS = ["Arab", "Hebr", "Thaa", "Syrc"];
+
+    type LocaleInfo = {
+      tag: string;
+      language: string;
+      script: string;
+      region: string | null;
+      dir: "ltr" | "rtl";
+    };
+
+    function localeInfo(tag: string): LocaleInfo {
+      // new Intl.Locale(tag) zerlegt den Tag
+      throw new Error("Noch nicht umgesetzt");
+    }
+  tests:
+    - name: Schweizer Deutsch
+      code: 'assertDeepEqual(localeInfo("de-ch"), { tag: "de-CH", language: "de", script: "Latn", region: "CH", dir: "ltr" })'
+    - name: Arabisch in Ägypten läuft von rechts nach links
+      code: 'assertDeepEqual(localeInfo("ar-EG"), { tag: "ar-EG", language: "ar", script: "Arab", region: "EG", dir: "rtl" })'
+    - name: Hebräisch ohne Region
+      code: 'assertDeepEqual(localeInfo("he"), { tag: "he", language: "he", script: "Hebr", region: null, dir: "rtl" })'
+    - name: Taiwan nutzt traditionelle Zeichen
+      code: assertEqual(localeInfo("zh-TW").script, "Hant")
+    - name: ungültiger Tag wirft einen Fehler
+      code: assertThrows(() => localeInfo("x"))
+  solution: |
+    const RTL_SCRIPTS = ["Arab", "Hebr", "Thaa", "Syrc"];
+
+    type LocaleInfo = {
+      tag: string;
+      language: string;
+      script: string;
+      region: string | null;
+      dir: "ltr" | "rtl";
+    };
+
+    function localeInfo(tag: string): LocaleInfo {
+      const locale = new Intl.Locale(tag);
+      const script = locale.maximize().script ?? "Latn";
+      return {
+        tag: locale.toString(),
+        language: locale.language,
+        script,
+        region: locale.region ?? null,
+        dir: RTL_SCRIPTS.includes(script) ? "rtl" : "ltr",
+      };
+    }
+  hints:
+    - "`new Intl.Locale(tag)` hat die Eigenschaften `language`, `script` und `region` und die Methode `toString()`."
+    - "`locale.maximize().script` ergänzt die wahrscheinliche Schrift, z. B. `Hebr` für `he`."
+    - "Fehlt die Region, ist `locale.region` `undefined` – mit `?? null` wird daraus `null`."

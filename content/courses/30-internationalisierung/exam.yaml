@@ -1,0 +1,382 @@
+title: Abschlussprüfung Internationalisierung
+description: |
+  Diese Prüfung deckt alle vier Module ab: die Grundlagen (Locales, Unicode), Texte übersetzen (Kataloge,
+  Pluralformen, Workflow), Formatieren (Zahlen, Datum, Zeitzonen, RTL) und i18n in React und Laravel. Zuerst
+  beantwortest du Fragen, danach löst du drei Praxis-Aufgaben – zwei im Code-Editor und eine im echten
+  Übungs-Terminal.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast, und kannst
+  gezielt die passenden Lektionen wiederholen.
+time_limit_minutes: 60
+pass_percent: 70
+questions:
+  # --- Grundlagen ---
+  - module: grundlagen
+    type: single
+    question: Ein Team ersetzt alle fest eingebauten Texte durch Übersetzungsschlüssel. Was ist das?
+    options:
+      - Internationalisierung – der Code wird für viele Sprachen vorbereitet.
+      - Lokalisierung – die App wird für einen Markt angepasst.
+      - Übersetzung – die Texte werden in eine andere Sprache übertragen.
+      - Pseudo-Lokalisierung – die Texte werden verfremdet.
+    answer: 0
+    explanation: >
+      Texte auszulagern hilft allen Sprachen gleichzeitig und ist deshalb Internationalisierung. Die eigentliche
+      Übersetzung danach ist Lokalisierung.
+  - module: grundlagen
+    type: cloze
+    text: "Im Tag `pt-BR` steht `pt` für die ___ und `BR` für die ___."
+    blanks:
+      - [Sprache, Sprache Portugiesisch, Portugiesisch]
+      - [Region, Brasilien, Land]
+    explanation: >
+      `pt-BR` ist brasilianisches Portugiesisch. Die Sprache kommt immer zuerst, die Region in Großbuchstaben
+      danach.
+  - module: grundlagen
+    type: multiple
+    question: Welche Aussagen über Unicode und UTF-8 stimmen?
+    options:
+      - UTF-8 speichert einen Codepoint in 1 bis 4 Bytes.
+      - "`strlen('Müller')` liefert in PHP 7, weil „ü“ zwei Bytes belegt."
+      - Ein Graphem kann aus mehreren Codepoints bestehen.
+      - In JavaScript liefert `"😀".length` immer 1.
+    answers: [0, 1, 2]
+    explanation: >
+      JavaScript zählt bei `.length` UTF-16-Einheiten, deshalb ist `"😀".length` gleich 2. Alles andere stimmt.
+  - module: grundlagen
+    type: single
+    question: "Eine Person schickt `Accept-Language: fr-CH, fr;q=0.9, de;q=0.5`. Deine App unterstützt `de` und `fr`. Welche Sprache wählst du?"
+    options:
+      - "`de`, weil es in der Schweiz gesprochen wird"
+      - "`fr`, weil `fr-CH` auf `fr` zurückfällt und die höchste Priorität hat"
+      - Die Standardsprache, weil `fr-CH` nicht unterstützt wird
+      - Die Sprache, die zur IP-Adresse passt
+    answer: 1
+    explanation: >
+      Beim Aushandeln wird `fr-CH` zu `fr` gekürzt – das passt und hat das höchste Gewicht. Die IP-Adresse ist
+      kein Hinweis auf die Sprache.
+  # --- Texte ---
+  - module: texte
+    type: find-bug
+    question: Nach dem Hinzufügen des Status „storniert“ zeigt die App den Schlüssel statt eines Textes, und das Extraktions-Werkzeug hat nichts gemeldet. Welche Zeile ist das Problem?
+    language: tsx
+    code: |
+      function StatusBadge({ status }: { status: "open" | "paid" | "cancelled" }) {
+        const { t } = useTranslation();
+        return <span className="badge">{t("order.status." + status)}</span>;
+      }
+    bug_line: 3
+    explanation: >
+      Dynamisch zusammengesetzte Schlüssel erkennt kein Extraktions-Werkzeug. Schreibe jede Variante aus, etwa
+      in einem Objekt `{ open: t("order.status.open"), … }`.
+  - module: texte
+    type: cloze
+    text: "In ICU MessageFormat ist die Kategorie ___ in jeder `plural`-Nachricht Pflicht, und das Zeichen ___ steht für die formatierte Zahl."
+    blanks:
+      - [other]
+      - ["#"]
+    explanation: >
+      `other` fängt alle übrigen Fälle auf. `#` wird durch die Zahl ersetzt, passend zur Locale formatiert.
+  - module: texte
+    type: multiple
+    question: Welche Aussagen über Pluralformen stimmen?
+    options:
+      - Polnisch braucht für Zählwörter die Kategorien one, few, many und other.
+      - "`n === 1 ? \"Datei\" : \"Dateien\"` funktioniert für alle Sprachen."
+      - "`Intl.PluralRules` und ICU kennen die Regeln aus dem CLDR."
+      - i18next wählt Pluralformen über Schlüssel-Suffixe wie `_one` und `_other`.
+    answers: [0, 2, 3]
+    explanation: >
+      Die Zahl der Formen reicht von einer bis sechs. Deshalb gehören Pluralregeln in die Übersetzung, nicht in
+      `if`-Abfragen im Code.
+  - module: texte
+    type: single
+    question: Warum gehört der ganze Satz „Willkommen zurück, {name}!“ in den Katalog statt „Willkommen zurück“ plus Name im Code?
+    options:
+      - Weil Übersetzer:innen nur so die Wortstellung an ihre Sprache anpassen können.
+      - Weil JSON keine kurzen Texte erlaubt.
+      - Weil Platzhalter schneller sind als Verkettung.
+      - Es ist egal, beides funktioniert gleich gut.
+    answer: 0
+    explanation: >
+      In vielen Sprachen steht der Name an einer anderen Stelle oder bekommt eine Endung. Nur ein ganzer Satz mit
+      Platzhalter lässt sich frei umstellen.
+  - module: texte
+    type: match
+    question: Ordne jedem Werkzeug seine Aufgabe zu.
+    pairs:
+      - { left: "i18next-cli extract", right: "Neue Schlüssel aus dem Code in die Kataloge schreiben" }
+      - { left: "jq 'paths(scalars)'", right: "Alle Schlüssel eines JSON-Katalogs auflisten" }
+      - { left: "Translation-Management-System", right: "Übersetzer:innen mit Kontext arbeiten lassen" }
+      - { left: "MessageFormatter", right: "ICU-Nachrichten in PHP formatieren" }
+    explanation: >
+      Extraktion, Prüfung, Übersetzung und Formatierung sind getrennte Schritte mit eigenen Werkzeugen.
+  # --- Formatieren ---
+  - module: formatieren
+    type: single
+    question: "Ein Hotel in Rom kostet 120 €. Eine Person aus den USA mit Locale `en-US` sieht sich das Angebot an. Was ist richtig?"
+    options:
+      - "`$120.00` – die Locale bestimmt die Währung."
+      - "`€120.00` – die Währung kommt vom Angebot, die Schreibweise von der Locale."
+      - "`120,00 €` – Preise werden immer im Format des Anbieters gezeigt."
+      - "`120 EUR` – Währungen darf man nicht formatieren."
+    answer: 1
+    explanation: >
+      Der Preis ist in Euro, egal wer ihn ansieht. `Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" })`
+      schreibt ihn in US-Schreibweise: „€120.00“.
+  - module: formatieren
+    type: multiple
+    question: Welche Aussagen über Datum und Zeitzonen stimmen?
+    options:
+      - Zeitpunkte speicherst du in UTC, z. B. `2026-03-29T01:30:00Z`.
+      - "`Europe/Berlin` kennt die Sommerzeit, `+01:00` nicht."
+      - "Ohne Option `timeZone` nutzt `Intl.DateTimeFormat` immer UTC."
+      - Ein wöchentlicher Termin um 9:00 Uhr Ortszeit wird mit Ortszeit und Zeitzonen-Namen gespeichert.
+    answers: [0, 1, 3]
+    explanation: >
+      Ohne `timeZone` nutzt Intl die Zeitzone der Umgebung – im Browser die der Person, auf dem Server die des
+      Servers. Das ist eine häufige Fehlerquelle.
+  - module: formatieren
+    type: find-bug
+    question: Welche Zeile führt zu falschen Preisen für Kund:innen außerhalb Deutschlands?
+    language: js
+    code: |
+      function formatPrice(cents, currency, locale) {
+        const amount = cents / 100;
+        return amount.toFixed(2).replace(".", ",") + " €";
+      }
+    bug_line: 3
+    explanation: >
+      Die Zeile baut deutsches Format und das Euro-Zeichen fest ein – Locale und Währung werden ignoriert.
+      Richtig: `new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount)`.
+  - module: formatieren
+    type: match
+    question: Ordne jeder Anforderung die passende Lösung zu.
+    pairs:
+      - { left: "Abstand vor dem Text, egal ob LTR oder RTL", right: "margin-inline-start" }
+      - { left: "Seite für Arabisch spiegeln", right: "<html dir=\"rtl\">" }
+      - { left: "Benutzername unbekannter Richtung einbetten", right: "<bdi>" }
+      - { left: "„vor 3 Tagen“ in jeder Sprache", right: "Intl.RelativeTimeFormat" }
+    explanation: >
+      Logische Eigenschaften und `dir` sorgen für gespiegelte Layouts, `<bdi>` isoliert eingebetteten Text, und
+      relative Zeitangaben formuliert `Intl.RelativeTimeFormat`.
+  # --- Frameworks ---
+  - module: frameworks
+    type: single
+    question: Warum setzt man in React-Projekten bei i18next `interpolation.escapeValue` auf `false`?
+    options:
+      - Weil React Ausgaben bereits selbst maskiert und sonst doppelt maskiert würde.
+      - Weil i18next sonst keine Platzhalter unterstützt.
+      - Weil es die App schneller macht und keine Nachteile hat – auch ohne React.
+      - Weil Übersetzungen sonst nicht geladen werden.
+    answer: 0
+    explanation: >
+      React schützt beim Rendern vor XSS. Zusätzliches Maskieren durch i18next führt zu Ausgaben wie „&amp;“.
+  - module: frameworks
+    type: cloze
+    text: "In Laravel liefert `___('shop.cart', 3)` die passende Pluralform, und der eingebaute Platzhalter ___ setzt die Zahl ein."
+    blanks:
+      - [trans_choice]
+      - [":count", count]
+    explanation: >
+      `trans_choice()` wählt anhand der Zahl die Form aus `{0} …|{1} …|[2,*] …`, `:count` setzt die Zahl ein.
+  - module: frameworks
+    type: multiple
+    question: Du baust eine Middleware, die die Locale pro Request setzt. Was gehört dazu?
+    options:
+      - Eine Liste erlaubter Sprachen, gegen die jeder Wert geprüft wird
+      - "`App::setLocale()` mit der gewählten Sprache"
+      - Den Wert aus `?lang=` ungeprüft übernehmen
+      - Eine ausdrückliche Wahl der Person vor `Accept-Language` berücksichtigen
+    answers: [0, 1, 3]
+    explanation: >
+      Ungeprüfte Werte können in Dateipfaden oder Caches landen. Prüfe gegen eine Liste und beachte die
+      Reihenfolge: ausdrückliche Wahl, dann Browser-Wunsch, dann Standard.
+  - module: frameworks
+    type: single
+    question: Auf welche Probleme macht Pseudo-Lokalisierung aufmerksam?
+    options:
+      - Fest eingebaute Texte, abgeschnittene Texte und Kodierungsfehler
+      - Schlechte Übersetzungen ins Französische
+      - Langsame Datenbankabfragen
+      - Fehlende Tests
+    answer: 0
+    explanation: >
+      Unveränderter Text ist fest eingebaut, fehlende Klammern zeigen abgeschnittene Texte, Akzente decken
+      Kodierungsprobleme auf. Die Qualität echter Übersetzungen prüft sie nicht.
+  - module: frameworks
+    type: find-bug
+    question: Der Pest-Test soll prüfen, dass die App ohne besondere Angabe Deutsch spricht, schlägt aber mit `en` fehl. Welche Zeile ist die Ursache?
+    language: php
+    code: |
+      <?php
+      test('nutzt standardmäßig Deutsch', function () {
+          $this->getJson('/veranstaltung')
+              ->assertJsonPath('locale', 'de');
+      });
+    bug_line: 3
+    explanation: >
+      Laravel-Tests schicken ohne eigene Angabe `Accept-Language: en-us` mit. Setze den Header ausdrücklich:
+      `$this->getJson('/veranstaltung', ['Accept-Language' => 'de-DE'])`.
+tasks:
+  - module: formatieren
+    id: pruefung-relative-zeit
+    type: code
+    language: ts
+    title: Relative Zeitangaben mit passender Einheit
+    description: |
+      Schreibe `relativeLabel(fromIso, nowIso, locale)`. Sie beschreibt, wann `fromIso` im Verhältnis zu `nowIso`
+      war oder sein wird – mit `Intl.RelativeTimeFormat(locale, { numeric: "auto" })` und der passenden Einheit:
+
+      | Abstand (Betrag) | Einheit |
+      |---|---|
+      | unter 60 Sekunden | `second` |
+      | unter 60 Minuten | `minute` |
+      | unter 24 Stunden | `hour` |
+      | sonst | `day` |
+
+      Der Wert ist der gerundete Abstand in dieser Einheit (`Math.round`), negativ für die Vergangenheit.
+    starter: |
+      function relativeLabel(fromIso: string, nowIso: string, locale: string): string {
+        const diffMs = new Date(fromIso).getTime() - new Date(nowIso).getTime();
+        return Math.round(diffMs / 1000) + " s";
+      }
+    tests:
+      - name: vor 30 Sekunden
+        code: |
+          assertEqual(relativeLabel("2026-03-29T11:59:30Z", "2026-03-29T12:00:00Z", "de"), new Intl.RelativeTimeFormat("de", { numeric: "auto" }).format(-30, "second"))
+      - name: vor 2 Stunden
+        code: assertEqual(relativeLabel("2026-03-29T10:00:00Z", "2026-03-29T12:00:00Z", "de"), "vor 2 Stunden")
+      - name: gestern
+        code: assertEqual(relativeLabel("2026-03-28T12:00:00Z", "2026-03-29T12:00:00Z", "de"), "gestern")
+      - name: in 3 Tagen auf Englisch
+        code: assertEqual(relativeLabel("2026-04-01T12:00:00Z", "2026-03-29T12:00:00Z", "en"), "in 3 days")
+      - name: in 45 Minuten
+        code: assertEqual(relativeLabel("2026-03-29T12:45:00Z", "2026-03-29T12:00:00Z", "de"), "in 45 Minuten")
+    solution: |
+      function relativeLabel(fromIso: string, nowIso: string, locale: string): string {
+        const seconds = (new Date(fromIso).getTime() - new Date(nowIso).getTime()) / 1000;
+        const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+        const abs = Math.abs(seconds);
+        if (abs < 60) return rtf.format(Math.round(seconds), "second");
+        if (abs < 3600) return rtf.format(Math.round(seconds / 60), "minute");
+        if (abs < 86400) return rtf.format(Math.round(seconds / 3600), "hour");
+        return rtf.format(Math.round(seconds / 86400), "day");
+      }
+    hints:
+      - Rechne den Abstand zuerst in Sekunden um und entscheide dann anhand des Betrags.
+      - "`rtf.format(-2, \"hour\")` liefert „vor 2 Stunden“, `rtf.format(-1, \"day\")` mit `numeric: \"auto\"` „gestern“."
+  - module: texte
+    id: pruefung-icu-select
+    type: code
+    language: php
+    title: Eine Nachricht mit select und plural
+    description: |
+      Eine Benachrichtigung soll je nach Person und Anzahl der Fotos stimmen. Ergänze in `MUSTER` die deutsche
+      ICU-Nachricht und schreibe `uploadText()`:
+
+      - `gender` ist `female`, `male` oder etwas anderes → „Sie“, „Er“ oder „Die Person“.
+      - `n` Fotos: 0 → „keine Fotos“, 1 → „ein Foto“, sonst → „# Fotos“.
+      - Gesamtsatz: `Sie hat ein Foto hochgeladen.`
+
+      Gibt es kein Muster für die Locale, nimm `en`.
+    starter: |
+      <?php
+      declare(strict_types=1);
+
+      const MUSTER = [
+          'en' => '{gender, select, female {She} male {He} other {They}} uploaded {n, plural, =0 {no photos} one {one photo} other {# photos}}.',
+          'de' => '',
+      ];
+
+      function uploadText(string $locale, string $gender, int $n): string
+      {
+          return '';
+      }
+    tests:
+      - name: Sie, ein Foto
+        code: assert_same('Sie hat ein Foto hochgeladen.', uploadText('de', 'female', 1))
+      - name: Er, keine Fotos
+        code: assert_same('Er hat keine Fotos hochgeladen.', uploadText('de', 'male', 0))
+      - name: andere, große Zahl mit Tausenderpunkt
+        code: assert_same('Die Person hat 1.234 Fotos hochgeladen.', uploadText('de', 'other', 1234))
+      - name: Fallback auf Englisch
+        code: assert_same('They uploaded 2 photos.', uploadText('fr', 'other', 2))
+    solution: |
+      <?php
+      declare(strict_types=1);
+
+      const MUSTER = [
+          'en' => '{gender, select, female {She} male {He} other {They}} uploaded {n, plural, =0 {no photos} one {one photo} other {# photos}}.',
+          'de' => '{gender, select, female {Sie} male {Er} other {Die Person}} hat {n, plural, =0 {keine Fotos} one {ein Foto} other {# Fotos}} hochgeladen.',
+      ];
+
+      function uploadText(string $locale, string $gender, int $n): string
+      {
+          $sprache = isset(MUSTER[$locale]) && MUSTER[$locale] !== '' ? $locale : 'en';
+          return MessageFormatter::formatMessage($sprache, MUSTER[$sprache], ['gender' => $gender, 'n' => $n]);
+      }
+    hints:
+      - "Aufbau: `{gender, select, female {…} male {…} other {…}} hat {n, plural, =0 {…} one {…} other {# …}} hochgeladen.`"
+      - "`MessageFormatter::formatMessage($locale, $muster, ['gender' => $gender, 'n' => $n])`"
+  - module: grundlagen
+    id: pruefung-namen-bereinigen
+    type: terminal
+    title: Kundennamen normalisieren und richtig sortieren
+    description: |
+      Im Ordner `namen-bereinigen` liegt `kunden.txt` aus zwei zusammengeführten Systemen. Manche Namen stehen
+      doppelt drin – einmal als NFC, einmal zerlegt (NFD). Klicke zuerst auf **Aufgabe vorbereiten**.
+
+      Schreibe `bereinige.php`, das `kunden.txt` liest und `kunden-sauber.txt` schreibt:
+
+      1. Jede Zeile in **NFC** normalisieren (leere Zeilen weglassen).
+      2. Doppelte Namen entfernen.
+      3. Nach **deutschen** Regeln sortieren (`Collator` mit `de_DE` – „Ö“ steht bei „O“, nicht hinter „Z“).
+      4. Ein Name pro Zeile, mit Zeilenumbruch nach dem letzten Namen.
+
+      Führe es mit `php bereinige.php` aus.
+    workdir: namen-bereinigen
+    setup: |
+      printf 'Zo\xc3\xab\nMu\xcc\x88ller\n\xc3\x96zdemir\nOber\nM\xc3\xbcller\nAndersen\nO\xcc\x88zdemir\n' > kunden.txt
+    checks:
+      - type: file_exists
+        path: bereinige.php
+        message: Das Skript bereinige.php fehlt noch.
+      - type: file_exists
+        path: kunden-sauber.txt
+        message: kunden-sauber.txt fehlt noch. Führe php bereinige.php aus.
+      - type: command
+        run: wc -l < kunden-sauber.txt
+        stdout_matches: "^\\s*5\\s*$"
+        message: kunden-sauber.txt soll genau 5 Namen enthalten. Hast du nach dem Normalisieren die Dubletten entfernt?
+      - type: command
+        run: printf 'Andersen\nM\xc3\xbcller\nOber\n\xc3\x96zdemir\nZo\xc3\xab\n' | cmp -s - kunden-sauber.txt && echo gleich
+        stdout_equals: "gleich"
+        message: Inhalt oder Reihenfolge stimmen noch nicht. Erwartet sind Andersen, Müller, Ober, Özdemir, Zoë – in NFC und nach deutschen Regeln sortiert.
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cp bereinige.php "$d"/
+          printf 'A\xcc\x88pfel\nZebra\n\xc3\x84pfel\napfel\n' > "$d/kunden.txt"
+          cd "$d" && php bereinige.php >/dev/null && cat kunden-sauber.txt
+          cd .. && rm -rf "$d"
+        stdout_matches: "^apfel\\n\u00c4pfel\\nZebra$"
+        message: Mit anderen Daten stimmt das Ergebnis nicht. Liest dein Skript wirklich kunden.txt und sortiert mit Collator('de_DE')?
+    hints:
+      - "`file('kunden.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)` liest die Zeilen als Array."
+      - "`array_map(fn ($n) => Normalizer::normalize($n, Normalizer::FORM_C), $zeilen)` und danach `array_unique()`."
+      - "`$c = new Collator('de_DE'); $c->sort($namen);` und `file_put_contents('kunden-sauber.txt', implode(\"\\n\", $namen) . \"\\n\");`"
+    solution: |
+      ```php title="bereinige.php"
+      <?php
+      declare(strict_types=1);
+
+      $zeilen = file('kunden.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+      $namen = array_map(fn (string $n): string => Normalizer::normalize($n, Normalizer::FORM_C), $zeilen);
+      $namen = array_values(array_unique($namen));
+
+      $collator = new Collator('de_DE');
+      $collator->sort($namen);
+
+      file_put_contents('kunden-sauber.txt', implode("\n", $namen) . "\n");
+      ```

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="400" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Aufbau eines BCP-47-Sprach-Tags</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="44" font-weight="700" text-anchor="middle">
+    <rect x="130" y="80" width="140" height="80" rx="12" fill="#e0f7fb" stroke="#22d3ee" stroke-width="3"/>
+    <text x="200" y="136" fill="#1e1b3a">sr</text>
+    <text x="300" y="136" fill="#1e1b3a">-</text>
+    <rect x="330" y="80" width="180" height="80" rx="12" fill="#efe9fe" stroke="#a78bfa" stroke-width="3"/>
+    <text x="420" y="136" fill="#1e1b3a">Latn</text>
+    <text x="540" y="136" fill="#1e1b3a">-</text>
+    <rect x="570" y="80" width="140" height="80" rx="12" fill="#e3f9ef" stroke="#34d399" stroke-width="3"/>
+    <text x="640" y="136" fill="#1e1b3a">RS</text>
+  </g>
+  <g stroke="#1e1b3a" stroke-width="2">
+    <line x1="200" y1="160" x2="200" y2="200"/>
+    <line x1="420" y1="160" x2="420" y2="200"/>
+    <line x1="640" y1="160" x2="640" y2="200"/>
+  </g>
+  <g text-anchor="middle" fill="#1e1b3a">
+    <rect x="110" y="200" width="180" height="56" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+    <text x="200" y="235" font-size="20" font-weight="700">Sprache</text>
+    <rect x="330" y="200" width="180" height="56" rx="10" fill="#ffffff" stroke="#a78bfa" stroke-width="2"/>
+    <text x="420" y="235" font-size="20" font-weight="700">Schrift</text>
+    <rect x="550" y="200" width="180" height="56" rx="10" fill="#ffffff" stroke="#34d399" stroke-width="2"/>
+    <text x="640" y="235" font-size="20" font-weight="700">Region</text>
+    <text x="200" y="285" font-size="15">ISO 639, klein: sr = Serbisch</text>
+    <text x="420" y="285" font-size="15">ISO 15924, 4 Buchstaben:</text>
+    <text x="420" y="305" font-size="15">Latn = lateinische Schrift</text>
+    <text x="640" y="285" font-size="15">ISO 3166, groß:</text>
+    <text x="640" y="305" font-size="15">RS = Serbien</text>
+  </g>
+  <text x="400" y="340" text-anchor="middle" font-size="15" fill="#1e1b3a">Nur die Sprache ist Pflicht – Schrift und Region sind optional (z. B. „de“, „de-AT“).</text>
+</svg>

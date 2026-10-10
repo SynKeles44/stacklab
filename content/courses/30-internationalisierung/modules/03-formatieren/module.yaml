@@ -1,0 +1,103 @@
+title: Formatieren
+description: Zahlen, Währungen, Datum und Zeitzonen korrekt darstellen – und Layouts bauen, die auch von rechts nach links funktionieren.
+exercise:
+  id: modul-uebung-bestellung
+  type: code
+  language: php
+  title: Eine lokalisierte Bestellbestätigung
+  description: |
+    Baue die Zeile einer Bestellbestätigung, die alles aus diesem Modul kombiniert. Schreibe
+    `bestaetigung(string $locale, string $zeitzone, int $cents, int $positionen, string $isoUtc): string`.
+
+    In `TEXTE` stehen pro Locale eine ICU-Nachricht und ein Datumsmuster. Deine Funktion soll:
+
+    1. Für eine Locale ohne Eintrag in `TEXTE` eine `InvalidArgumentException` werfen.
+    2. Den Betrag (in Cent, immer Euro) mit `NumberFormatter::CURRENCY` in der Locale formatieren.
+    3. Den UTC-Zeitpunkt mit `IntlDateFormatter` in der **angegebenen Zeitzone** und mit dem Muster aus
+       `TEXTE` formatieren.
+    4. Alles mit `MessageFormatter::formatMessage()` in die Nachricht einsetzen (Argumente `n`, `summe`,
+       `datum`).
+
+    Für `de_DE` in Berlin ergibt sich z. B.: `3 Positionen für 1.314,99 € – bestellt am 29.03.2026 um 03:30.`
+  starter: |
+    <?php
+    declare(strict_types=1);
+
+    const TEXTE = [
+        'de_DE' => [
+            'nachricht' => '{n, plural, one {# Position} other {# Positionen}} für {summe} – bestellt am {datum}.',
+            'datum' => "dd.MM.yyyy 'um' HH:mm",
+        ],
+        'en_GB' => [
+            'nachricht' => '{n, plural, one {# item} other {# items}} for {summe} – ordered on {datum}.',
+            'datum' => "dd/MM/yyyy 'at' HH:mm",
+        ],
+    ];
+
+    function bestaetigung(string $locale, string $zeitzone, int $cents, int $positionen, string $isoUtc): string
+    {
+        $summe = number_format($cents / 100, 2, ',', '.') . ' €';
+        $datum = date('d.m.Y H:i', strtotime($isoUtc));
+        return "$positionen Positionen für $summe – bestellt am $datum.";
+    }
+  tests:
+    - name: Deutsch in Berlin
+      code: assert_same("3 Positionen für 1.314,99\u{a0}€ – bestellt am 29.03.2026 um 03:30.", bestaetigung('de_DE', 'Europe/Berlin', 131499, 3, '2026-03-29T01:30:00Z'))
+    - name: Englisch in New York – Singular und anderer Tag
+      code: assert_same('1 item for €19.99 – ordered on 28/03/2026 at 21:30.', bestaetigung('en_GB', 'America/New_York', 1999, 1, '2026-03-29T01:30:00Z'))
+    - name: null Cent und eine Position
+      code: assert_same("1 Position für 0,00\u{a0}€ – bestellt am 01.01.2027 um 00:30.", bestaetigung('de_DE', 'Europe/Berlin', 0, 1, '2026-12-31T23:30:00Z'))
+    - name: unbekannte Locale wirft eine Exception
+      code: |
+        $geworfen = false;
+        try {
+            bestaetigung('fr_FR', 'Europe/Paris', 100, 1, '2026-03-29T01:30:00Z');
+        } catch (InvalidArgumentException $e) {
+            $geworfen = true;
+        }
+        assert_true($geworfen);
+  solution: |
+    <?php
+    declare(strict_types=1);
+
+    const TEXTE = [
+        'de_DE' => [
+            'nachricht' => '{n, plural, one {# Position} other {# Positionen}} für {summe} – bestellt am {datum}.',
+            'datum' => "dd.MM.yyyy 'um' HH:mm",
+        ],
+        'en_GB' => [
+            'nachricht' => '{n, plural, one {# item} other {# items}} for {summe} – ordered on {datum}.',
+            'datum' => "dd/MM/yyyy 'at' HH:mm",
+        ],
+    ];
+
+    function bestaetigung(string $locale, string $zeitzone, int $cents, int $positionen, string $isoUtc): string
+    {
+        if (!isset(TEXTE[$locale])) {
+            throw new InvalidArgumentException("Keine Texte für $locale");
+        }
+        $texte = TEXTE[$locale];
+
+        $geld = new NumberFormatter($locale, NumberFormatter::CURRENCY);
+        $summe = $geld->formatCurrency($cents / 100, 'EUR');
+
+        $datumFormat = new IntlDateFormatter(
+            $locale,
+            IntlDateFormatter::NONE,
+            IntlDateFormatter::NONE,
+            $zeitzone,
+            null,
+            $texte['datum'],
+        );
+        $datum = $datumFormat->format(new DateTimeImmutable($isoUtc));
+
+        return MessageFormatter::formatMessage($locale, $texte['nachricht'], [
+            'n' => $positionen,
+            'summe' => $summe,
+            'datum' => $datum,
+        ]);
+    }
+  hints:
+    - "`new IntlDateFormatter($locale, IntlDateFormatter::NONE, IntlDateFormatter::NONE, $zeitzone, null, $muster)` formatiert mit eigenem Muster."
+    - "`(new NumberFormatter($locale, NumberFormatter::CURRENCY))->formatCurrency($cents / 100, 'EUR')`"
+    - "`MessageFormatter::formatMessage($locale, $nachricht, ['n' => …, 'summe' => …, 'datum' => …])` setzt alles zusammen."

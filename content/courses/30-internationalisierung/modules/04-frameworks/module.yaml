@@ -1,0 +1,159 @@
+title: i18n in React und Laravel
+description: Internationalisierung in echten Frameworks – react-i18next im Frontend, Sprachdateien und trans_choice in Laravel – und alles mit Tests und Pseudo-Lokalisierung abgesichert.
+exercise:
+  id: modul-uebung-produktkarte
+  type: code
+  language: tsx
+  title: Eine Produktkarte für drei Sprachen
+  description: |
+    Die Produktkarte eines Shops soll auf Deutsch, Englisch und Arabisch funktionieren. Daten und Buttons sind
+    da, aber die Komponente ist noch voller deutscher Annahmen. Baue sie um – alles, was du im Kurs gelernt
+    hast, kommt hier zusammen:
+
+    1. `#price` zeigt `PRICE_CENTS` als Euro-Betrag mit `Intl.NumberFormat` in der aktuellen Locale.
+    2. `#stock` wählt die Nachricht über `new Intl.PluralRules(locale).select(stock)` (Schlüssel
+       `stock_one`, `stock_other`, im Arabischen auch `stock_zero`, `stock_two`, `stock_few`, `stock_many`;
+       fehlt eine Form, nimm `stock_other`) und ersetzt `{count}` durch die **in der Locale formatierte** Zahl.
+    3. `#updated` zeigt „vor 3 Tagen“ mit `Intl.RelativeTimeFormat(locale, { numeric: "auto" })`.
+    4. `<article id="card">` bekommt `lang` und `dir` (`"rtl"` für Arabisch).
+  starter: |
+    const PRICE_CENTS = 2499;
+    const MESSAGES: Record<string, Record<string, string>> = {
+      "de-DE": {
+        title: "Kaffeemühle",
+        stock_one: "Nur noch {count} Stück auf Lager",
+        stock_other: "Noch {count} Stück auf Lager",
+      },
+      "en-US": {
+        title: "Coffee grinder",
+        stock_one: "Only {count} left in stock",
+        stock_other: "{count} left in stock",
+      },
+      "ar-EG": {
+        title: "مطحنة قهوة",
+        stock_zero: "لا توجد قطع في المخزون",
+        stock_one: "قطعة واحدة في المخزون",
+        stock_two: "قطعتان في المخزون",
+        stock_few: "{count} قطع في المخزون",
+        stock_many: "{count} قطعة في المخزون",
+        stock_other: "{count} قطعة في المخزون",
+      },
+    };
+
+    function App() {
+      const [locale, setLocale] = React.useState("de-DE");
+      const [stock, setStock] = React.useState(3);
+      const m = MESSAGES[locale];
+      const stockText = (stock === 1 ? m.stock_one : m.stock_other).replace("{count}", String(stock));
+      return (
+        <article id="card">
+          <nav>
+            <button id="de" onClick={() => setLocale("de-DE")}>Deutsch</button>
+            <button id="en" onClick={() => setLocale("en-US")}>English</button>
+            <button id="ar" onClick={() => setLocale("ar-EG")}>العربية</button>
+          </nav>
+          <h2 id="title">{m.title}</h2>
+          <p id="price">{(PRICE_CENTS / 100).toFixed(2).replace(".", ",")} €</p>
+          <p id="stock">{stockText}</p>
+          <p id="updated">vor 3 Tagen</p>
+          <button id="sell" onClick={() => setStock((s) => Math.max(0, s - 1))}>Verkaufen</button>
+        </article>
+      );
+    }
+  tests:
+    - name: Deutsch mit Preis, Plural und relativer Zeit
+      code: |
+        assertEqual(query("#price").textContent, new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(24.99));
+        assertEqual(query("#stock").textContent, "Noch 3 Stück auf Lager");
+        assertEqual(query("#updated").textContent, new Intl.RelativeTimeFormat("de-DE", { numeric: "auto" }).format(-3, "day"));
+        assertEqual(query("#card").getAttribute("dir"), "ltr");
+        assertEqual(query("#card").getAttribute("lang"), "de-DE");
+    - name: Singular nach zwei Verkäufen
+      code: |
+        await click("#sell");
+        await click("#sell");
+        assertEqual(query("#stock").textContent, "Nur noch 1 Stück auf Lager");
+    - name: Englisch formatiert Preis und Zeit anders
+      code: |
+        await click("#en");
+        assertEqual(query("#title").textContent, "Coffee grinder");
+        assertEqual(query("#stock").textContent, "Only 1 left in stock");
+        assertEqual(query("#price").textContent, new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" }).format(24.99));
+        assertEqual(query("#updated").textContent, new Intl.RelativeTimeFormat("en-US", { numeric: "auto" }).format(-3, "day"));
+    - name: Arabisch von rechts nach links mit eigenen Pluralformen
+      code: |
+        await click("#ar");
+        assertEqual(query("#card").getAttribute("dir"), "rtl");
+        assertEqual(query("#card").getAttribute("lang"), "ar-EG");
+        assertEqual(query("#stock").textContent, "قطعة واحدة في المخزون");
+        await click("#sell");
+        assertEqual(query("#stock").textContent, "لا توجد قطع في المخزون");
+    - name: Zahl im Platzhalter wird in der Locale formatiert
+      code: |
+        await click("#de");
+        assertEqual(query("#stock").textContent, "Noch 0 Stück auf Lager");
+        assertEqual(query("#card").getAttribute("dir"), "ltr");
+  solution: |
+    const PRICE_CENTS = 2499;
+    const MESSAGES: Record<string, Record<string, string>> = {
+      "de-DE": {
+        title: "Kaffeemühle",
+        stock_one: "Nur noch {count} Stück auf Lager",
+        stock_other: "Noch {count} Stück auf Lager",
+      },
+      "en-US": {
+        title: "Coffee grinder",
+        stock_one: "Only {count} left in stock",
+        stock_other: "{count} left in stock",
+      },
+      "ar-EG": {
+        title: "مطحنة قهوة",
+        stock_zero: "لا توجد قطع في المخزون",
+        stock_one: "قطعة واحدة في المخزون",
+        stock_two: "قطعتان في المخزون",
+        stock_few: "{count} قطع في المخزون",
+        stock_many: "{count} قطعة في المخزون",
+        stock_other: "{count} قطعة في المخزون",
+      },
+    };
+
+    const RTL_LANGUAGES = ["ar", "he", "fa", "ur"];
+
+    function App() {
+      const [locale, setLocale] = React.useState("de-DE");
+      const [stock, setStock] = React.useState(3);
+      const m = MESSAGES[locale];
+
+      const formatters = React.useMemo(
+        () => ({
+          price: new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }),
+          number: new Intl.NumberFormat(locale),
+          plural: new Intl.PluralRules(locale),
+          relative: new Intl.RelativeTimeFormat(locale, { numeric: "auto" }),
+        }),
+        [locale],
+      );
+
+      const message = m[`stock_${formatters.plural.select(stock)}`] ?? m.stock_other;
+      const stockText = message.replace("{count}", formatters.number.format(stock));
+      const dir = RTL_LANGUAGES.includes(new Intl.Locale(locale).language) ? "rtl" : "ltr";
+
+      return (
+        <article id="card" lang={locale} dir={dir}>
+          <nav>
+            <button id="de" onClick={() => setLocale("de-DE")}>Deutsch</button>
+            <button id="en" onClick={() => setLocale("en-US")}>English</button>
+            <button id="ar" onClick={() => setLocale("ar-EG")}>العربية</button>
+          </nav>
+          <h2 id="title">{m.title}</h2>
+          <p id="price">{formatters.price.format(PRICE_CENTS / 100)}</p>
+          <p id="stock">{stockText}</p>
+          <p id="updated">{formatters.relative.format(-3, "day")}</p>
+          <button id="sell" onClick={() => setStock((s) => Math.max(0, s - 1))}>Verkaufen</button>
+        </article>
+      );
+    }
+  hints:
+    - "Lege alle Formatierer mit `React.useMemo(() => ({ … }), [locale])` an – sie hängen nur von der Locale ab."
+    - "`` m[`stock_${new Intl.PluralRules(locale).select(stock)}`] ?? m.stock_other `` wählt die Nachricht."
+    - "Die Richtung: `[\"ar\", \"he\", \"fa\", \"ur\"].includes(new Intl.Locale(locale).language) ? \"rtl\" : \"ltr\"`."

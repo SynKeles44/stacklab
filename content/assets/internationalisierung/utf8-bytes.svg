@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="400" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Vom Zeichen über den Codepoint zu UTF-8-Bytes</text>
+  <g font-size="16" font-weight="700" fill="#1e1b3a">
+    <text x="60" y="80">Zeichen</text>
+    <text x="200" y="80">Codepoint</text>
+    <text x="380" y="80">UTF-8-Bytes (hexadezimal)</text>
+  </g>
+  <line x1="50" y1="92" x2="750" y2="92" stroke="#1e1b3a" stroke-width="1.5"/>
+  <g font-size="34" fill="#1e1b3a">
+    <text x="78" y="140">A</text>
+    <text x="78" y="210">ä</text>
+    <text x="78" y="280">€</text>
+    <text x="72" y="350">😀</text>
+  </g>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="20" fill="#1e1b3a">
+    <text x="200" y="132">U+0041</text>
+    <text x="200" y="202">U+00E4</text>
+    <text x="200" y="272">U+20AC</text>
+    <text x="200" y="342">U+1F600</text>
+  </g>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="20" text-anchor="middle" fill="#1e1b3a">
+    <rect x="380" y="108" width="70" height="40" rx="6" fill="#e0f7fb" stroke="#22d3ee" stroke-width="2"/><text x="415" y="135">41</text>
+    <rect x="380" y="178" width="70" height="40" rx="6" fill="#efe9fe" stroke="#a78bfa" stroke-width="2"/><text x="415" y="205">C3</text>
+    <rect x="460" y="178" width="70" height="40" rx="6" fill="#efe9fe" stroke="#a78bfa" stroke-width="2"/><text x="495" y="205">A4</text>
+    <rect x="380" y="248" width="70" height="40" rx="6" fill="#e3f9ef" stroke="#34d399" stroke-width="2"/><text x="415" y="275">E2</text>
+    <rect x="460" y="248" width="70" height="40" rx="6" fill="#e3f9ef" stroke="#34d399" stroke-width="2"/><text x="495" y="275">82</text>
+    <rect x="540" y="248" width="70" height="40" rx="6" fill="#e3f9ef" stroke="#34d399" stroke-width="2"/><text x="575" y="275">AC</text>
+    <rect x="380" y="318" width="70" height="40" rx="6" fill="#fef3e0" stroke="#f59e0b" stroke-width="2"/><text x="415" y="345">F0</text>
+    <rect x="460" y="318" width="70" height="40" rx="6" fill="#fef3e0" stroke="#f59e0b" stroke-width="2"/><text x="495" y="345">9F</text>
+    <rect x="540" y="318" width="70" height="40" rx="6" fill="#fef3e0" stroke="#f59e0b" stroke-width="2"/><text x="575" y="345">98</text>
+    <rect x="620" y="318" width="70" height="40" rx="6" fill="#fef3e0" stroke="#f59e0b" stroke-width="2"/><text x="655" y="345">80</text>
+  </g>
+  <g font-size="15" fill="#1e1b3a">
+    <text x="470" y="135">1 Byte – wie ASCII</text>
+    <text x="550" y="205">2 Bytes</text>
+    <text x="630" y="275">3 Bytes</text>
+    <text x="705" y="345">4 Bytes</text>
+  </g>
+  <text x="400" y="388" text-anchor="middle" font-size="15" fill="#1e1b3a">UTF-8 braucht 1 bis 4 Bytes pro Codepoint – „Länge in Bytes“ ist nicht „Anzahl Zeichen“.</text>
+</svg>

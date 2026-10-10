@@ -1,0 +1,98 @@
+title: Texte übersetzen
+description: Texte in Kataloge auslagern, Pluralformen mit ICU MessageFormat ausdrücken und einen Übersetzungs-Workflow mit automatischen Prüfungen aufbauen.
+exercise:
+  id: modul-uebung-icu
+  type: terminal
+  title: ICU-Nachrichten mit intl-messageformat
+  description: |
+    Im Ordner `icu-nachrichten` liegt ein kleines Node-Projekt mit zwei Katalogen: `messages/en.json` ist
+    vollständig, in `messages/de.json` fehlt die Nachricht `inbox`. Du baust ein Kommandozeilen-Werkzeug, das
+    ICU-Nachrichten formatiert. Klicke zuerst auf **Aufgabe vorbereiten**.
+
+    1. Installiere die Bibliothek: `npm install intl-messageformat`.
+    2. Ergänze in `messages/de.json` den Schlüssel `inbox` als ICU-Nachricht mit dem Argument `count`:
+       - 0 → `Keine neuen Nachrichten.`
+       - 1 → `Du hast eine neue Nachricht.`
+       - sonst → `Du hast # neue Nachrichten.`
+    3. Schreibe `zeige.mjs`. Aufruf: `node zeige.mjs LOCALE SCHLÜSSEL 'JSON-WERTE'`, z. B.
+       `node zeige.mjs de inbox '{"count":3}'`. Das Skript
+       - liest `messages/LOCALE.json`,
+       - nimmt die Nachricht aus `messages/en.json`, wenn der Schlüssel in der Locale fehlt,
+       - formatiert sie mit `new IntlMessageFormat(nachricht, locale).format(werte)` und gibt das Ergebnis aus.
+  workdir: icu-nachrichten
+  setup: |
+    npm init -y >/dev/null
+    npm pkg set type=module
+    mkdir -p messages
+    cat > messages/en.json <<'JSON'
+    {
+      "greeting": "Hello, {name}!",
+      "logout": "Log out",
+      "inbox": "{count, plural, =0 {No new messages.} one {You have one new message.} other {You have # new messages.}}"
+    }
+    JSON
+    cat > messages/de.json <<'JSON'
+    {
+      "greeting": "Hallo, {name}!"
+    }
+    JSON
+  checks:
+    - type: dir_exists
+      path: node_modules/intl-messageformat
+      message: intl-messageformat ist noch nicht installiert. Führe npm install intl-messageformat aus.
+    - type: command
+      run: jq -e '.dependencies["intl-messageformat"]' package.json
+      message: intl-messageformat fehlt in den dependencies von package.json.
+    - type: file_exists
+      path: zeige.mjs
+      message: Das Skript zeige.mjs fehlt noch.
+    - type: command
+      run: node zeige.mjs de greeting '{"name":"Ada"}'
+      stdout_equals: "Hallo, Ada!"
+      message: "node zeige.mjs de greeting '{\"name\":\"Ada\"}' soll „Hallo, Ada!“ ausgeben. Liest dein Skript die Argumente aus process.argv?"
+    - type: command
+      run: node zeige.mjs de inbox '{"count":0}'
+      stdout_equals: "Keine neuen Nachrichten."
+      message: Für count 0 erwartet die Prüfung „Keine neuen Nachrichten.“ – nutze =0 in der deutschen Nachricht.
+    - type: command
+      run: node zeige.mjs de inbox '{"count":1}'
+      stdout_equals: "Du hast eine neue Nachricht."
+      message: Für count 1 erwartet die Prüfung „Du hast eine neue Nachricht.“ (Kategorie one).
+    - type: command
+      run: node zeige.mjs de inbox '{"count":1234}'
+      stdout_equals: "Du hast 1.234 neue Nachrichten."
+      message: Für count 1234 erwartet die Prüfung „Du hast 1.234 neue Nachrichten.“ – nutze # in der Kategorie other und die Locale de.
+    - type: command
+      run: node zeige.mjs de logout '{}'
+      stdout_equals: "Log out"
+      message: Fehlt ein Schlüssel in der deutschen Datei, soll das Skript die englische Nachricht nutzen.
+    - type: command
+      run: node zeige.mjs en inbox '{"count":1}'
+      stdout_equals: "You have one new message."
+      message: Auch die englische Nachricht muss funktionieren.
+  hints:
+    - "Die Argumente stehen in `process.argv.slice(2)`, die Werte bekommst du mit `JSON.parse(...)`."
+    - "Kataloge liest du mit `JSON.parse(readFileSync(\"messages/de.json\", \"utf8\"))` aus `node:fs`."
+    - "Die deutsche Nachricht: `{count, plural, =0 {Keine neuen Nachrichten.} one {Du hast eine neue Nachricht.} other {Du hast # neue Nachrichten.}}`"
+  solution: |
+    ```bash
+    cd icu-nachrichten
+    npm install intl-messageformat
+    jq '.inbox = "{count, plural, =0 {Keine neuen Nachrichten.} one {Du hast eine neue Nachricht.} other {Du hast # neue Nachrichten.}}"' \
+      messages/de.json > messages/de.tmp && mv messages/de.tmp messages/de.json
+    ```
+
+    ```js title="zeige.mjs"
+    import { readFileSync } from "node:fs";
+    import { IntlMessageFormat } from "intl-messageformat";
+
+    const [locale, key, json = "{}"] = process.argv.slice(2);
+    const load = (lng) => JSON.parse(readFileSync(`messages/${lng}.json`, "utf8"));
+
+    const message = load(locale)[key] ?? load("en")[key];
+    if (message === undefined) {
+      console.error(`Unbekannter Schlüssel: ${key}`);
+      process.exit(1);
+    }
+    console.log(new IntlMessageFormat(message, locale).format(JSON.parse(json)));
+    ```

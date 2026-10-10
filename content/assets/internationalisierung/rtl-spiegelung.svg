@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 380" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <defs>
+    <marker id="ps" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1b3a"/>
+    </marker>
+  </defs>
+  <text x="420" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#1e1b3a">Dieselbe Karte in LTR und RTL – „start“ wandert mit</text>
+  <text x="210" y="78" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">dir="ltr" (Deutsch)</text>
+  <text x="630" y="78" text-anchor="middle" font-size="16" font-weight="700" fill="#1e1b3a">dir="rtl" (Arabisch)</text>
+  <rect x="30" y="95" width="360" height="150" rx="14" fill="#f8fafc" stroke="#1e1b3a" stroke-width="2"/>
+  <circle cx="90" cy="170" r="34" fill="#a78bfa"/>
+  <rect x="140" y="140" width="200" height="16" rx="6" fill="#22d3ee"/>
+  <rect x="140" y="170" width="160" height="12" rx="6" fill="#cbd5e1"/>
+  <rect x="140" y="192" width="180" height="12" rx="6" fill="#cbd5e1"/>
+  <rect x="450" y="95" width="360" height="150" rx="14" fill="#f8fafc" stroke="#1e1b3a" stroke-width="2"/>
+  <circle cx="750" cy="170" r="34" fill="#a78bfa"/>
+  <rect x="500" y="140" width="200" height="16" rx="6" fill="#22d3ee"/>
+  <rect x="540" y="170" width="160" height="12" rx="6" fill="#cbd5e1"/>
+  <rect x="520" y="192" width="180" height="12" rx="6" fill="#cbd5e1"/>
+  <g stroke="#1e1b3a" stroke-width="2" marker-end="url(#ps)">
+    <line x1="40" y1="270" x2="380" y2="270"/>
+    <line x1="800" y1="270" x2="460" y2="270"/>
+  </g>
+  <g font-size="14" fill="#1e1b3a">
+    <text x="40" y="295">inline-start (links)</text>
+    <text x="380" y="295" text-anchor="end">inline-end (rechts)</text>
+    <text x="800" y="295" text-anchor="end">inline-start (rechts)</text>
+    <text x="460" y="295">inline-end (links)</text>
+  </g>
+  <text x="420" y="340" text-anchor="middle" font-size="15" fill="#1e1b3a">Mit margin-inline-start statt margin-left spiegelt sich das Layout automatisch.</text>
+  <text x="420" y="362" text-anchor="middle" font-size="15" fill="#1e1b3a">Das Bild sitzt immer am Anfang der Zeile – links in LTR, rechts in RTL.</text>
+</svg>

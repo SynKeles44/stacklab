@@ -1,0 +1,350 @@
+- slug: lokalisierung
+  term: Lokalisierung
+  short: Die Anpassung einer Software an eine bestimmte Sprache und Region – vor allem durch Übersetzung.
+  explanation: >
+    Lokalisierung (kurz l10n) baut auf der Internationalisierung auf: Der Code ist vorbereitet, jetzt werden
+    Texte übersetzt, Bilder, Beispiele und rechtliche Texte an einen Markt angepasst. Sie wird für jede neue
+    Sprache wiederholt, meist von Übersetzer:innen statt von Entwickler:innen.
+  example: "Die Startseite ins Polnische übersetzen und für Polen andere Zahlungsarten anzeigen."
+  category: internationalisierung
+  aliases: [l10n, Localization, Lokalisieren]
+  related: [internationalisierung, locale, uebersetzungskatalog]
+  lesson: internationalisierung/i18n-und-l10n
+
+- slug: uebersetzungskatalog
+  term: Übersetzungskatalog
+  short: Eine Datei pro Sprache, die Übersetzungsschlüssel auf die Texte dieser Sprache abbildet.
+  explanation: >
+    Statt Texte im Code zu verteilen, stehen sie gesammelt in Katalogen wie `locales/de.json` oder
+    `lang/de/shop.php`. Der Code fragt nur nach einem Schlüssel; welcher Text dahintersteht, entscheidet der
+    Katalog der aktuellen Sprache.
+  example: "`{ \"cart\": { \"title\": \"Warenkorb\" } }` in `locales/de.json`"
+  category: internationalisierung
+  aliases: [Katalog, Kataloge, Sprachdatei, Message Catalog, Übersetzungsdatei]
+  related: [uebersetzungsschluessel, lokalisierung, platzhalter]
+  lesson: internationalisierung/schluessel-und-kataloge
+
+- slug: rtl
+  term: RTL (Rechts nach links)
+  short: Schreibrichtung von rechts nach links, wie in Arabisch, Hebräisch, Persisch und Urdu.
+  explanation: >
+    In RTL-Sprachen beginnt jede Zeile rechts, und das ganze Layout spiegelt sich: Navigation, Abstände und
+    Pfeile tauschen die Seiten. Im HTML setzt du die Richtung mit `dir="rtl"`. Das Gegenteil heißt LTR (links
+    nach rechts).
+  example: "`<html lang=\"ar\" dir=\"rtl\">`"
+  category: internationalisierung
+  aliases: [Right-to-left, Rechts-nach-links, LTR]
+  related: [logische-css-eigenschaft, bidi-text, locale]
+  lesson: internationalisierung/rechts-nach-links
+
+- slug: bcp-47
+  term: BCP 47
+  short: Der Standard für Sprach-Tags wie `de-DE`, `fr-CA` oder `sr-Latn-RS`.
+  explanation: >
+    BCP 47 legt fest, wie Sprach-Tags aufgebaut sind: Sprache (Pflicht), optional Schrift und Region, getrennt
+    durch Bindestriche. HTML, HTTP (`Accept-Language`) und die Intl-API nutzen diese Tags. Groß- und
+    Kleinschreibung ist nur Konvention.
+  example: "`zh-Hant-TW` = Chinesisch in traditioneller Schrift, wie in Taiwan geschrieben."
+  category: internationalisierung
+  aliases: [Sprach-Tag, Sprachtag, Language Tag, IETF-Sprach-Tag]
+  related: [locale, accept-language, cldr]
+  lesson: internationalisierung/locales-und-bcp-47
+
+- slug: cldr
+  term: CLDR
+  short: Die Datensammlung des Unicode-Konsortiums mit Formaten, Pluralregeln und Namen für alle Locales.
+  explanation: >
+    Das Common Locale Data Repository enthält, wie man in jeder Region Zahlen, Datum und Währungen schreibt,
+    welche Pluralformen eine Sprache hat und wie Länder und Sprachen heißen. Intl in JavaScript und die
+    ICU-Bibliothek in PHP nutzen diese Daten.
+  example: "Dass `new Intl.PluralRules(\"pl\")` die Kategorie `few` kennt, steht im CLDR."
+  category: internationalisierung
+  aliases: [Common Locale Data Repository, Unicode CLDR]
+  related: [icu, pluralkategorie, intl]
+  lesson: internationalisierung/locales-und-bcp-47
+
+- slug: fallback-sprache
+  term: Fallback-Sprache
+  short: Die Sprache, auf die eine App zurückgreift, wenn ein Text oder eine Locale fehlt.
+  explanation: >
+    Fehlt ein Schlüssel in der gewünschten Sprache, zeigt die App den Text aus der Fallback-Sprache statt einer
+    Lücke. Oft gibt es eine ganze Kette: von `de-CH` über `de` bis zur Standardsprache der App.
+  example: "Laravel: `APP_FALLBACK_LOCALE=en`; i18next: `fallbackLng: \"en\"`."
+  category: internationalisierung
+  aliases: [Rückfallsprache, Fallback-Kette, Fallback-Locale, Fallback]
+  related: [locale, uebersetzungskatalog, bcp-47]
+  lesson: internationalisierung/locales-und-bcp-47
+
+- slug: accept-language
+  term: Accept-Language
+  short: Der HTTP-Header, mit dem der Browser die bevorzugten Sprachen der Person mitschickt.
+  explanation: >
+    Der Header listet Sprach-Tags, optional mit Gewichten `q` zwischen 0 und 1. Der Server wählt daraus die
+    beste unterstützte Sprache. Eine ausdrückliche Wahl der Person (Profil, URL) hat aber Vorrang.
+  example: "`Accept-Language: de-CH, de;q=0.9, en;q=0.8`"
+  category: internationalisierung
+  aliases: [Accept-Language-Header]
+  related: [content-negotiation, bcp-47, http-header]
+  lesson: internationalisierung/locales-und-bcp-47
+
+- slug: codepoint
+  term: Codepoint
+  short: Die eindeutige Nummer, die Unicode einem Zeichen gibt, geschrieben als `U+` und Hexadezimalzahl.
+  explanation: >
+    „A“ hat den Codepoint `U+0041`, „€“ `U+20AC`. Wie viele Bytes ein Codepoint belegt, hängt von der Kodierung
+    ab – in UTF-8 sind es 1 bis 4. Manche sichtbaren Zeichen bestehen aus mehreren Codepoints.
+  example: "`\"ä\".codePointAt(0).toString(16)` liefert `e4`, also `U+00E4`."
+  category: internationalisierung
+  aliases: [Codepoints, Code Point, Codepunkt]
+  related: [unicode, zeichenkodierung, graphem]
+  lesson: internationalisierung/unicode-und-utf-8
+
+- slug: graphem
+  term: Graphem
+  short: Das, was Menschen als ein einzelnes Zeichen wahrnehmen – auch wenn es aus mehreren Codepoints besteht.
+  explanation: >
+    Ein Emoji mit Hautfarbe oder ein „é“ aus „e“ plus Akzent sind je ein Graphem (genauer Graphem-Cluster),
+    aber zwei Codepoints. Zum Zählen und Kürzen von Text für Menschen nutzt du Grapheme, z. B. mit
+    `Intl.Segmenter` oder `grapheme_strlen()`.
+  example: "`grapheme_strlen(\"👍🏽\")` ist 1, `mb_strlen(\"👍🏽\")` ist 2."
+  category: internationalisierung
+  aliases: [Grapheme, Graphem-Cluster, Grapheme Cluster]
+  related: [codepoint, unicode, multibyte-funktion]
+  lesson: internationalisierung/unicode-und-utf-8
+
+- slug: unicode-normalisierung
+  term: Unicode-Normalisierung
+  short: Das Umwandeln von Text in eine einheitliche Form, damit gleich aussehende Zeichen auch gleich gespeichert sind.
+  explanation: >
+    Manche Zeichen lassen sich auf mehrere Arten kodieren, etwa „é“ als ein Codepoint oder als „e“ plus Akzent.
+    NFC setzt Zeichen zusammen, NFD zerlegt sie. Ohne Normalisierung schlagen Vergleiche und Suchen fehl.
+  example: "`\"e\\u0301\".normalize(\"NFC\") === \"\\u00e9\"` ist `true`."
+  category: internationalisierung
+  aliases: [Normalisierung, NFC, NFD, Normalform]
+  related: [unicode, codepoint, graphem]
+  lesson: internationalisierung/unicode-und-utf-8
+
+- slug: mojibake
+  term: Mojibake
+  short: Zeichensalat, der entsteht, wenn Text mit einer anderen Kodierung gelesen wird, als er geschrieben wurde.
+  explanation: >
+    Aus „Müller“ wird „MÃ¼ller“, weil UTF-8-Bytes als Latin-1 gelesen werden. Das Wort kommt aus dem
+    Japanischen. Abhilfe: jede Station – Datei, Datenbank, HTTP-Header, HTML – auf UTF-8 einstellen.
+  example: "`GrÃ¶ÃŸe` statt `Größe`"
+  category: internationalisierung
+  aliases: [Zeichensalat, Kodierungsfehler]
+  related: [zeichenkodierung, unicode, bom]
+  lesson: internationalisierung/unicode-und-utf-8
+
+- slug: uebersetzungsschluessel
+  term: Übersetzungsschlüssel
+  short: Ein eindeutiger Name für einen Text, über den der Code die Übersetzung aus dem Katalog holt.
+  explanation: >
+    Statt eines festen Textes steht im Code ein Schlüssel wie `cart.title`. Gute Schlüssel beschreiben Ort und
+    Zweck im Produkt. Manche Systeme nutzen statt eines Schlüssels den Originaltext selbst (z. B. gettext oder
+    Laravels JSON-Dateien).
+  example: "`t(\"checkout.submit\")` oder `__('shop.welcome')`"
+  category: internationalisierung
+  aliases: [Schlüssel, Translation Key, Übersetzungsschlüsseln]
+  related: [uebersetzungskatalog, platzhalter, string-extraktion]
+  lesson: internationalisierung/schluessel-und-kataloge
+
+- slug: platzhalter
+  term: Platzhalter
+  short: Eine Markierung in einem Übersetzungstext, an der zur Laufzeit ein Wert eingesetzt wird.
+  explanation: >
+    Platzhalter erlauben ganze Sätze mit variablen Teilen, die Übersetzer:innen frei umstellen können. Die
+    Schreibweise hängt von der Bibliothek ab: `{name}` (ICU), `{{name}}` (i18next) oder `:name` (Laravel).
+  example: "`\"Willkommen zurück, {name}!\"` mit `{ name: \"Ada\" }`"
+  category: internationalisierung
+  aliases: [Platzhaltern, Placeholder, Interpolation]
+  related: [uebersetzungsschluessel, icu-messageformat, string-interpolation]
+  lesson: internationalisierung/schluessel-und-kataloge
+
+- slug: pluralkategorie
+  term: Pluralkategorie
+  short: Eine der sechs CLDR-Gruppen (zero, one, two, few, many, other), nach denen Sprachen Zahlen grammatisch behandeln.
+  explanation: >
+    Jede Sprache nutzt eine Teilmenge der Kategorien: Deutsch `one` und `other`, Polnisch zusätzlich `few` und
+    `many`, Arabisch alle sechs. `other` gibt es immer. Welche Zahl in welche Kategorie fällt, berechnet
+    `Intl.PluralRules`.
+  example: "`new Intl.PluralRules(\"pl\").select(22)` liefert `\"few\"`."
+  category: internationalisierung
+  aliases: [Pluralkategorien, Pluralform, Pluralformen, Pluralregel]
+  related: [cldr, icu-messageformat, internationalisierung]
+  lesson: internationalisierung/plural-und-icu
+
+- slug: icu-messageformat
+  term: ICU MessageFormat
+  short: Ein Format für Übersetzungstexte mit Platzhaltern, Pluralformen und Auswahl in einer einzigen Nachricht.
+  explanation: >
+    Mit `plural` und `select` beschreibt eine Nachricht alle grammatischen Varianten selbst, statt dass der Code
+    sie mit `if` auswählt. PHP formatiert solche Nachrichten mit `MessageFormatter`, JavaScript z. B. mit der
+    Bibliothek `intl-messageformat`.
+  example: "`{count, plural, =0 {Keine Dateien} one {# Datei} other {# Dateien}}`"
+  category: internationalisierung
+  aliases: [MessageFormat, ICU-Nachricht, ICU-Nachrichten, ICU Message Syntax]
+  related: [icu, pluralkategorie, platzhalter]
+  lesson: internationalisierung/plural-und-icu
+
+- slug: icu
+  term: ICU
+  short: Eine weit verbreitete Bibliothek für Unicode und Internationalisierung, die u. a. PHP intl und Browser nutzen.
+  explanation: >
+    ICU (International Components for Unicode) formatiert Zahlen, Datum und Nachrichten, sortiert Text und
+    kennt Zeitzonen – auf Basis der CLDR-Daten. Die PHP-Erweiterung intl ist eine Schnittstelle zu ICU.
+  example: "`php -r 'echo INTL_ICU_VERSION;'` zeigt die ICU-Version deiner PHP-Installation."
+  category: internationalisierung
+  aliases: [International Components for Unicode, ICU-Bibliothek]
+  related: [cldr, icu-messageformat, intl]
+  lesson: internationalisierung/plural-und-icu
+
+- slug: formatjs
+  term: FormatJS
+  short: Eine Sammlung von JavaScript-Bibliotheken für Internationalisierung auf Basis von ICU MessageFormat.
+  explanation: >
+    Zu FormatJS gehören `intl-messageformat` (ICU-Nachrichten formatieren), `react-intl` (Anbindung an React)
+    und ein Kommandozeilen-Werkzeug zum Extrahieren von Nachrichten. Es ist die Hauptalternative zu i18next.
+  example: "`new IntlMessageFormat(\"{n, plural, one {# Datei} other {# Dateien}}\", \"de\").format({ n: 3 })`"
+  category: internationalisierung
+  aliases: [react-intl, intl-messageformat]
+  related: [icu-messageformat, i18next, react-i18next]
+  lesson: internationalisierung/plural-und-icu
+
+- slug: string-extraktion
+  term: String-Extraktion
+  short: Das automatische Auslesen aller Übersetzungsschlüssel aus dem Quellcode in die Kataloge.
+  explanation: >
+    Ein Werkzeug durchsucht den Code nach Aufrufen wie `t("…")`, ohne ihn auszuführen, trägt neue Schlüssel in
+    den Katalog der Ausgangssprache ein und meldet ungenutzte. Dynamisch zusammengesetzte Schlüssel findet es
+    nicht.
+  example: "`npx i18next-cli extract` oder `npx @formatjs/cli extract`"
+  category: internationalisierung
+  aliases: [Extraktion, Extraktions-Werkzeug, Extraktions-Werkzeuge, Message Extraction]
+  related: [uebersetzungsschluessel, uebersetzungskatalog, tms]
+  lesson: internationalisierung/uebersetzungs-workflow
+
+- slug: tms
+  term: Translation-Management-System
+  short: Eine Plattform, in der Übersetzer:innen Kataloge mit Kontext, Pluralformen und Übersetzungsspeicher bearbeiten.
+  explanation: >
+    Ein TMS liest neue Schlüssel aus dem Repository, zeigt sie Übersetzer:innen mit Beschreibung und Screenshot
+    und schreibt fertige Übersetzungen zurück, oft als Pull Request. Ein Übersetzungsspeicher schlägt bereits
+    übersetzte, ähnliche Sätze vor.
+  example: "Neue Schlüssel aus `de.json` erscheinen im TMS, die polnische Übersetzung kommt als PR zurück."
+  category: internationalisierung
+  aliases: [TMS, Übersetzungs-Werkzeug, Übersetzungsplattform]
+  related: [string-extraktion, uebersetzungskatalog, lokalisierung]
+  lesson: internationalisierung/uebersetzungs-workflow
+
+- slug: waehrungscode
+  term: Währungscode
+  short: Der dreibuchstabige ISO-4217-Code einer Währung, z. B. EUR, USD oder JPY.
+  explanation: >
+    Der Code legt eindeutig fest, um welches Geld es geht – unabhängig davon, wo die Person wohnt. Er gehört zu
+    jedem gespeicherten Betrag. Die Locale bestimmt nur, wie der Betrag geschrieben wird.
+  example: "`new Intl.NumberFormat(\"en-US\", { style: \"currency\", currency: \"EUR\" })`"
+  category: internationalisierung
+  aliases: [ISO 4217, Währungscodes, Currency Code]
+  related: [kleinste-waehrungseinheit, intl, locale]
+  lesson: internationalisierung/zahlen-und-waehrungen
+
+- slug: kleinste-waehrungseinheit
+  term: Kleinste Währungseinheit
+  short: Die kleinste Stückelung einer Währung, z. B. Cent – Geldbeträge werden darin als ganze Zahl gespeichert.
+  explanation: >
+    Gleitkommazahlen rechnen mit Dezimalbrüchen ungenau. Deshalb speichert man 19,99 € als `1999` Cent. Nicht
+    jede Währung hat zwei Nachkommastellen: Der Yen hat keine, der kuwaitische Dinar drei.
+  example: "`price_cents = 1999` statt `price = 19.99`"
+  category: internationalisierung
+  aliases: [Minor Units, Cent-Betrag, kleinsten Einheit]
+  related: [waehrungscode, gleitkommazahl]
+  lesson: internationalisierung/zahlen-und-waehrungen
+
+- slug: iana-zeitzone
+  term: IANA-Zeitzone
+  short: Ein benanntes Zeitzonen-Gebiet wie `Europe/Berlin` aus der Zeitzonen-Datenbank der IANA.
+  explanation: >
+    Anders als ein fester Offset wie `+01:00` kennt eine IANA-Zeitzone alle Regeln eines Gebiets: Sommerzeit,
+    historische und künftige Änderungen. Betriebssysteme, Browser und PHP nutzen dieselbe Datenbank (tz database).
+  example: "`new Intl.DateTimeFormat(\"de-DE\", { timeZone: \"America/New_York\" })`"
+  category: internationalisierung
+  aliases: [tz database, Zeitzonen-Datenbank, Zeitzonen-Name, Olson-Zeitzone]
+  related: [zeitzone, utc, sommerzeit]
+  lesson: internationalisierung/datum-und-zeitzonen
+
+- slug: sommerzeit
+  term: Sommerzeit
+  short: Die jährliche Umstellung der Uhren um meist eine Stunde, die den Abstand einer Zeitzone zu UTC ändert.
+  explanation: >
+    Durch die Umstellung gibt es Ortszeiten, die nicht existieren (im Frühjahr), und solche, die doppelt
+    vorkommen (im Herbst). Wer mit festen Offsets rechnet, liegt nach der Umstellung eine Stunde daneben.
+  example: "In Berlin springt die Uhr am 29. März 2026 von 02:00 auf 03:00."
+  category: internationalisierung
+  aliases: [Daylight Saving Time, DST, Zeitumstellung]
+  related: [iana-zeitzone, zeitzone, utc]
+  lesson: internationalisierung/datum-und-zeitzonen
+
+- slug: logische-css-eigenschaft
+  term: Logische CSS-Eigenschaft
+  short: Eine CSS-Eigenschaft mit start/end statt left/right, die sich der Schreibrichtung anpasst.
+  explanation: >
+    `margin-inline-start` liegt in LTR links und in RTL rechts. Mit logischen Eigenschaften spiegelt sich ein
+    Layout automatisch, sobald `dir="rtl"` gesetzt ist. Tailwind bietet sie als `ms-`, `me-`, `ps-`, `pe-` an.
+  example: "`margin-inline-start: 1rem` statt `margin-left: 1rem`"
+  category: internationalisierung
+  aliases: [logische Eigenschaften, Logical Properties, logische CSS-Eigenschaften]
+  related: [rtl, css, bidi-text]
+  lesson: internationalisierung/rechts-nach-links
+
+- slug: bidi-text
+  term: Bidirektionaler Text
+  short: Text, in dem Abschnitte von links nach rechts und von rechts nach links gemischt sind.
+  explanation: >
+    Ein arabischer Satz mit einem lateinischen Produktnamen oder ein deutscher Satz mit hebräischem
+    Benutzernamen ist bidirektional. Der Browser ordnet ihn mit dem Unicode-Bidi-Algorithmus; eingesetzte Werte
+    isolierst du mit `<bdi>` oder `dir="auto"`.
+  example: "`<p>Kommentar von <bdi>{username}</bdi></p>`"
+  category: internationalisierung
+  aliases: [Bidi, Bidi-Text, bidirektionaler Text]
+  related: [rtl, unicode, logische-css-eigenschaft]
+  lesson: internationalisierung/rechts-nach-links
+
+- slug: i18next
+  term: i18next
+  short: Eine verbreitete JavaScript-Bibliothek für Übersetzungen mit Katalogen, Plural, Fallback und Plugins.
+  explanation: >
+    i18next lädt Kataloge, übersetzt Schlüssel mit `t()`, setzt Platzhalter `{{name}}` ein, wählt Pluralformen
+    über Schlüssel-Suffixe wie `_one` und `_other` und fällt auf eine Fallback-Sprache zurück. Es läuft im
+    Browser, in Node und – mit Anbindungen – in React, Vue und anderen Frameworks.
+  example: "`await i18next.init({ lng: \"de\", fallbackLng: \"en\", resources })`"
+  category: internationalisierung
+  aliases: [i18next-Bibliothek]
+  related: [react-i18next, uebersetzungskatalog, fallback-sprache]
+  lesson: internationalisierung/react-i18next
+
+- slug: react-i18next
+  term: react-i18next
+  short: Die React-Anbindung von i18next mit dem Hook useTranslation und der Komponente Trans.
+  explanation: >
+    react-i18next stellt die i18next-Instanz in allen Komponenten bereit und rendert sie neu, wenn sich die
+    Sprache ändert. `useTranslation()` liefert die Funktion `t` und die Instanz `i18n`, `Trans` setzt Markup
+    wie Links in Übersetzungen ein.
+  example: "`const { t, i18n } = useTranslation(); i18n.changeLanguage(\"en\");`"
+  category: internationalisierung
+  aliases: [useTranslation, Trans-Komponente]
+  related: [i18next, react-hook, formatjs]
+  lesson: internationalisierung/react-i18next
+
+- slug: pseudo-lokalisierung
+  term: Pseudo-Lokalisierung
+  short: Eine künstliche „Übersetzung“, die Texte verfremdet und verlängert, um i18n-Fehler sichtbar zu machen.
+  explanation: >
+    Aus „Save“ wird z. B. „[Sávé~~]“. Fest eingebaute Texte bleiben unverändert und fallen auf, fehlende Klammern
+    zeigen abgeschnittene Texte, Akzente decken Kodierungsfehler auf. Das funktioniert lange vor der ersten
+    echten Übersetzung.
+  example: "Eine Pseudo-Locale `en-XA` in der Entwicklungsumgebung einschalten."
+  category: internationalisierung
+  aliases: [Pseudo-Locale, Pseudolokalisierung, Pseudo-Localization]
+  related: [lokalisierung, uebersetzungskatalog, automatisierter-test]
+  lesson: internationalisierung/testen-und-pseudo-lokalisierung

@@ -1,0 +1,723 @@
+title: Eine zweisprachige Veranstaltungs-App mit Laravel
+description: |
+  In diesem Projekt machst du eine Laravel-Anwendung für Veranstaltungen **zweisprachig** – Deutsch als
+  Standard, Englisch als zweite Sprache. Du gehst dabei genau die Schritte, die du auch in einem echten
+  Projekt gehst: Sprachen konfigurieren, Sprachdateien anlegen, Pluralformen und JSON-Übersetzungen nutzen,
+  die Sprache pro Request per Middleware wählen, Preise und Datum lokalisiert ausgeben, alles mit Tests
+  absichern und fehlende Übersetzungen ins Log schreiben.
+
+  Klicke zuerst auf **Projekt vorbereiten**. Dann liegt im Ordner `projekt` deines Workspaces eine frische
+  Laravel-13-Anwendung (beim allerersten Mal dauert das etwas länger). Öffne das Übungs-Terminal und wechsle
+  mit `cd projekt` hinein. Nach jedem Schritt prüft Stacklab den echten Zustand deiner Anwendung – meist mit
+  `php artisan tinker`.
+
+  Die Schritte bauen aufeinander auf. Lösche zwischendurch nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Eine Laravel-App mit `APP_LOCALE=de` und Rückfallsprache `en`, Sprachdateien `lang/de/events.php` und
+  `lang/en/events.php` (mit Platzhaltern und Pluralformen), einer JSON-Übersetzung, einer Middleware
+  `SetLocale`, einer Route `/veranstaltung`, die Texte, Preis und Datum lokalisiert als JSON liefert, fünf
+  grünen Pest-Tests und einem Log-Eintrag für jede fehlende Übersetzung.
+workdir: projekt
+setup: |
+  # Laravel-13-Basis (mit Pest) einmal bauen und zwischenspeichern, dann hierher kopieren
+  B="$HOME/.cache/stacklab/laravel13"
+  if [ ! -f "$B/.fertig" ]; then
+    T="$B.bau.$$"; rm -rf "$T"; mkdir -p "$(dirname "$B")"
+    timeout 170 composer create-project laravel/laravel "$T" "^13.0" -n -q --prefer-dist </dev/null
+    cd "$T"
+    timeout 170 composer require pestphp/pest pestphp/pest-plugin-laravel --dev -W -n -q </dev/null
+    printf '%s\n' '<?php' '' "pest()->extend(Tests\\TestCase::class)->in('Feature');" > tests/Pest.php
+    printf '%s\n' '<?php' '' "test('the application returns a successful response', function () {" "    \$this->get('/')->assertStatus(200);" '});' > tests/Feature/ExampleTest.php
+    printf '%s\n' '<?php' '' "test('that true is true', function () {" '    expect(true)->toBeTrue();' '});' > tests/Unit/ExampleTest.php
+    touch .fertig && cd - >/dev/null
+    rm -rf "$B" && mv "$T" "$B"
+  fi
+  cp -a "$B/." . && rm -f .fertig
+steps:
+  - id: sprachen-konfigurieren
+    title: Sprachen konfigurieren
+    description: |
+      Zuerst legst du fest, welche Sprachen die App spricht. Deutsch ist die Standardsprache, Englisch die
+      Rückfallsprache für alles, was auf Deutsch fehlt.
+
+      1. Lege den `lang`-Ordner mit Laravels Standardtexten an: `php artisan lang:publish`.
+      2. Setze in `.env` `APP_LOCALE=de` und `APP_FALLBACK_LOCALE=en`.
+      3. Prüfe mit `php artisan tinker --execute="echo app()->getLocale();"` – es sollte `de` erscheinen.
+    checklist:
+      - "`lang/en/` mit Laravels Standardtexten angelegt"
+      - "`APP_LOCALE=de` und `APP_FALLBACK_LOCALE=en` in `.env`"
+    hints:
+      - "`sed -i 's/^APP_LOCALE=.*/APP_LOCALE=de/' .env` ändert die Zeile in einem Rutsch."
+      - Siehst du einen alten Wert, hilft `php artisan config:clear`.
+    checks:
+      - type: file_exists
+        path: lang/en/validation.php
+        message: Der lang-Ordner fehlt noch. Führe php artisan lang:publish aus.
+      - type: command
+        run: |
+          php artisan tinker --execute="echo config('app.locale') . '/' . config('app.fallback_locale');"
+        stdout_matches: "^de/en\\s*$"
+        message: Standard- und Rückfallsprache stimmen noch nicht. Setze APP_LOCALE=de und APP_FALLBACK_LOCALE=en in .env.
+    solution: |
+      ```bash
+      cd projekt
+      php artisan lang:publish
+      sed -i 's/^APP_LOCALE=.*/APP_LOCALE=de/' .env
+      sed -i 's/^APP_FALLBACK_LOCALE=.*/APP_FALLBACK_LOCALE=en/' .env
+      php artisan config:clear
+      ```
+    solve: |
+      php artisan lang:publish -q
+      sed -i 's/^APP_LOCALE=.*/APP_LOCALE=de/' .env
+      sed -i 's/^APP_FALLBACK_LOCALE=.*/APP_FALLBACK_LOCALE=en/' .env
+      php artisan config:clear -q
+
+  - id: sprachdateien
+    title: Sprachdateien mit Platzhaltern
+    description: |
+      Die Texte der App kommen in Sprachdateien mit sprechenden Schlüsseln.
+
+      1. Lege `lang/de/events.php` an. Sie gibt ein Array zurück mit
+         - `title` → `Veranstaltungen`
+         - `welcome` → `Hallo, :name!`
+      2. Lege `lang/en/events.php` mit denselben Schlüsseln an: `Events` und `Hello, :name!`.
+      3. Probiere es aus: `php artisan tinker --execute="echo __('events.welcome', ['name' => 'Ada']);"`
+    checklist:
+      - "`lang/de/events.php` mit `title` und `welcome`"
+      - "`lang/en/events.php` mit denselben Schlüsseln"
+      - "Der Platzhalter `:name` wird ersetzt"
+    hints:
+      - "Eine Sprachdatei ist eine PHP-Datei mit `<?php return ['title' => '…'];`"
+      - "Den englischen Text testest du mit `App::setLocale('en');` vor dem `echo` im tinker-Befehl."
+    checks:
+      - type: command
+        run: |
+          php artisan tinker --execute="echo __('events.title') . '|' . __('events.welcome', ['name' => 'Ada']);"
+        stdout_matches: "^Veranstaltungen\\|Hallo, Ada!\\s*$"
+        message: "Die deutschen Texte fehlen oder stimmen nicht. Erwartet: title = „Veranstaltungen“, welcome = „Hallo, :name!“ in lang/de/events.php."
+      - type: command
+        run: |
+          php artisan tinker --execute="App::setLocale('en'); echo __('events.title') . '|' . __('events.welcome', ['name' => 'Ada']);"
+        stdout_matches: "^Events\\|Hello, Ada!\\s*$"
+        message: "Die englischen Texte fehlen oder stimmen nicht. Erwartet: „Events“ und „Hello, :name!“ in lang/en/events.php."
+    solution: |
+      ```php title="lang/de/events.php"
+      <?php
+
+      return [
+          'title' => 'Veranstaltungen',
+          'welcome' => 'Hallo, :name!',
+      ];
+      ```
+
+      ```php title="lang/en/events.php"
+      <?php
+
+      return [
+          'title' => 'Events',
+          'welcome' => 'Hello, :name!',
+      ];
+      ```
+    solve: |
+      mkdir -p lang/de lang/en
+      cat > lang/de/events.php <<'PHP'
+      <?php
+
+      return [
+          'title' => 'Veranstaltungen',
+          'welcome' => 'Hallo, :name!',
+      ];
+      PHP
+      cat > lang/en/events.php <<'PHP'
+      <?php
+
+      return [
+          'title' => 'Events',
+          'welcome' => 'Hello, :name!',
+      ];
+      PHP
+
+  - id: pluralformen
+    title: Freie Plätze mit trans_choice
+    description: |
+      Die App zeigt an, wie viele Tickets noch frei sind – mit der richtigen Form für 0, 1 und viele.
+
+      1. Ergänze in `lang/de/events.php` den Schlüssel `tickets` mit
+         `{0} Ausverkauft|{1} Nur noch ein Ticket|[2,*] Noch :count Tickets`.
+      2. Ergänze in `lang/en/events.php` `tickets` mit
+         `{0} Sold out|{1} Only one ticket left|[2,*] :count tickets left`.
+      3. Probiere es aus: `php artisan tinker --execute="echo trans_choice('events.tickets', 3);"`
+    checklist:
+      - "`tickets` in beiden Sprachdateien mit drei Formen"
+      - "`:count` setzt die Anzahl ein"
+    hints:
+      - "`{0}` und `{1}` treffen genaue Zahlen, `[2,*]` alle ab 2."
+      - "`:count` ist ein eingebauter Platzhalter für die Zahl, die du `trans_choice` übergibst."
+    checks:
+      - type: command
+        run: |
+          php artisan tinker --execute="echo trans_choice('events.tickets', 0) . '|' . trans_choice('events.tickets', 1) . '|' . trans_choice('events.tickets', 3);"
+        stdout_matches: "^Ausverkauft\\|Nur noch ein Ticket\\|Noch 3 Tickets\\s*$"
+        message: trans_choice('events.tickets', …) liefert für 0, 1 und 3 noch nicht „Ausverkauft“, „Nur noch ein Ticket“ und „Noch 3 Tickets“.
+      - type: command
+        run: |
+          php artisan tinker --execute="App::setLocale('en'); echo trans_choice('events.tickets', 0) . '|' . trans_choice('events.tickets', 3);"
+        stdout_matches: "^Sold out\\|3 tickets left\\s*$"
+        message: Die englischen Pluralformen für tickets fehlen oder stimmen nicht.
+      - type: command
+        run: |
+          php artisan tinker --execute="echo __('events.title');"
+        stdout_matches: "^Veranstaltungen\\s*$"
+        message: Der Schlüssel title aus dem vorigen Schritt fehlt in lang/de/events.php – ergänze tickets, statt die Datei zu ersetzen.
+    solution: |
+      ```php title="lang/de/events.php"
+      <?php
+
+      return [
+          'title' => 'Veranstaltungen',
+          'welcome' => 'Hallo, :name!',
+          'tickets' => '{0} Ausverkauft|{1} Nur noch ein Ticket|[2,*] Noch :count Tickets',
+      ];
+      ```
+
+      ```php title="lang/en/events.php"
+      <?php
+
+      return [
+          'title' => 'Events',
+          'welcome' => 'Hello, :name!',
+          'tickets' => '{0} Sold out|{1} Only one ticket left|[2,*] :count tickets left',
+      ];
+      ```
+    solve: |
+      cat > lang/de/events.php <<'PHP'
+      <?php
+
+      return [
+          'title' => 'Veranstaltungen',
+          'welcome' => 'Hallo, :name!',
+          'tickets' => '{0} Ausverkauft|{1} Nur noch ein Ticket|[2,*] Noch :count Tickets',
+      ];
+      PHP
+      cat > lang/en/events.php <<'PHP'
+      <?php
+
+      return [
+          'title' => 'Events',
+          'welcome' => 'Hello, :name!',
+          'tickets' => '{0} Sold out|{1} Only one ticket left|[2,*] :count tickets left',
+      ];
+      PHP
+
+  - id: json-uebersetzung
+    title: Eine JSON-Übersetzung
+    description: |
+      Für kurze Button-Texte nutzt das Team den zweiten Stil: Der englische Text ist selbst der Schlüssel.
+
+      1. Lege `lang/de.json` an und übersetze `Buy ticket` mit `Ticket kaufen`.
+      2. Prüfe: `php artisan tinker --execute="echo __('Buy ticket');"` zeigt `Ticket kaufen`. Auf Englisch
+         erscheint ohne `en.json` einfach der Schlüssel selbst – genau richtig.
+    checklist:
+      - "`lang/de.json` übersetzt `Buy ticket`"
+    hints:
+      - "Die Datei ist ein JSON-Objekt: `{ \"Buy ticket\": \"Ticket kaufen\" }`"
+    checks:
+      - type: command
+        run: jq -e '."Buy ticket"' lang/de.json
+        message: lang/de.json fehlt oder enthält den Schlüssel „Buy ticket“ noch nicht (oder ist kein gültiges JSON).
+      - type: command
+        run: |
+          php artisan tinker --execute="echo __('Buy ticket') . '|'; App::setLocale('en'); echo __('Buy ticket');"
+        stdout_matches: "^Ticket kaufen\\|Buy ticket\\s*$"
+        message: __('Buy ticket') soll auf Deutsch „Ticket kaufen“ und auf Englisch „Buy ticket“ liefern.
+    solution: |
+      ```json title="lang/de.json"
+      {
+          "Buy ticket": "Ticket kaufen"
+      }
+      ```
+    solve: |
+      cat > lang/de.json <<'JSON'
+      {
+          "Buy ticket": "Ticket kaufen"
+      }
+      JSON
+
+  - id: locale-middleware
+    title: Die Sprache pro Request wählen
+    description: |
+      Jetzt soll jede Anfrage in der passenden Sprache beantwortet werden. Reihenfolge: ein gültiger
+      Query-Parameter `?lang=…` gewinnt, sonst entscheidet `Accept-Language`, sonst Deutsch.
+
+      1. Lege `app/Http/Middleware/SetLocale.php` an. Die Middleware
+         - erlaubt nur `de` und `en` (in dieser Reihenfolge),
+         - nimmt `?lang=` nur, wenn der Wert erlaubt ist,
+         - nutzt sonst `$request->getPreferredLanguage(['de', 'en'])`,
+         - und ruft `App::setLocale(...)` auf.
+      2. Registriere sie in `bootstrap/app.php` mit `$middleware->web(append: [SetLocale::class]);`.
+      3. Lege in `routes/web.php` die Route `GET /veranstaltung` an. Sie antwortet mit JSON:
+         `locale` (aktuelle Sprache), `title`, `tickets` (für 3 Tickets) und `button` (`__('Buy ticket')`).
+
+      Gut zu wissen: `getPreferredLanguage()` liefert die **erste** erlaubte Sprache, wenn nichts passt –
+      deshalb steht `de` vorne.
+    checklist:
+      - "Middleware `SetLocale` mit Liste erlaubter Sprachen"
+      - "In `bootstrap/app.php` für die Web-Routen registriert"
+      - "Route `/veranstaltung` liefert JSON mit locale, title, tickets und button"
+    hints:
+      - "`php artisan make:middleware SetLocale` legt das Gerüst an."
+      - "`$requested = $request->query('lang');` und `in_array($requested, ['de', 'en'], true)` prüfen den Parameter."
+      - "Die Route: `Route::get('/veranstaltung', fn () => response()->json(['locale' => app()->getLocale(), …]));`"
+    checks:
+      - type: file_exists
+        path: app/Http/Middleware/SetLocale.php
+        message: Die Middleware app/Http/Middleware/SetLocale.php fehlt noch.
+      - type: file_contains
+        path: bootstrap/app.php
+        pattern: "SetLocale"
+        message: "Registriere die Middleware in bootstrap/app.php, z. B. mit $middleware->web(append: [SetLocale::class])."
+      - type: command
+        run: |
+          php artisan tinker --execute="echo app()->handle(Illuminate\Http\Request::create('/veranstaltung', 'GET', ['lang' => 'en']))->getContent();"
+        stdout_matches: "\"locale\":\"en\".*\"title\":\"Events\".*\"tickets\":\"3 tickets left\".*\"button\":\"Buy ticket\""
+        message: "/veranstaltung?lang=en soll JSON mit locale \"en\", title \"Events\", tickets \"3 tickets left\" und button \"Buy ticket\" liefern."
+      - type: command
+        run: |
+          php artisan tinker --execute="echo app()->handle(Illuminate\Http\Request::create('/veranstaltung', 'GET', [], [], [], ['HTTP_ACCEPT_LANGUAGE' => 'de-CH,de;q=0.9']))->getContent();"
+        stdout_matches: "\"locale\":\"de\".*\"title\":\"Veranstaltungen\".*\"tickets\":\"Noch 3 Tickets\".*\"button\":\"Ticket kaufen\""
+        message: Mit Accept-Language de-CH soll die Route deutsche Texte liefern. Wertest du getPreferredLanguage(['de', 'en']) aus?
+      - type: command
+        run: |
+          php artisan tinker --execute="echo json_decode(app()->handle(Illuminate\Http\Request::create('/veranstaltung', 'GET', ['lang' => 'xx'], [], [], ['HTTP_ACCEPT_LANGUAGE' => 'en-US']))->getContent())->locale;"
+        stdout_matches: "^en\\s*$"
+        message: Ein ungültiger Wert wie ?lang=xx darf nicht übernommen werden – dann entscheidet Accept-Language (hier en).
+    solution: |
+      ```php title="app/Http/Middleware/SetLocale.php"
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Http\Middleware;
+
+      use Closure;
+      use Illuminate\Http\Request;
+      use Illuminate\Support\Facades\App;
+      use Symfony\Component\HttpFoundation\Response;
+
+      final class SetLocale
+      {
+          private const SUPPORTED = ['de', 'en'];
+
+          public function handle(Request $request, Closure $next): Response
+          {
+              $requested = $request->query('lang');
+
+              $locale = is_string($requested) && in_array($requested, self::SUPPORTED, true)
+                  ? $requested
+                  : ($request->getPreferredLanguage(self::SUPPORTED) ?? config('app.locale'));
+
+              App::setLocale($locale);
+
+              return $next($request);
+          }
+      }
+      ```
+
+      ```php title="bootstrap/app.php (Ausschnitt)"
+      use App\Http\Middleware\SetLocale;
+
+      ->withMiddleware(function (Middleware $middleware): void {
+          $middleware->web(append: [SetLocale::class]);
+      })
+      ```
+
+      ```php title="routes/web.php (ergänzt)"
+      Route::get('/veranstaltung', function () {
+          return response()->json([
+              'locale' => app()->getLocale(),
+              'title' => __('events.title'),
+              'tickets' => trans_choice('events.tickets', 3),
+              'button' => __('Buy ticket'),
+          ]);
+      });
+      ```
+    solve: |
+      mkdir -p app/Http/Middleware
+      cat > app/Http/Middleware/SetLocale.php <<'PHP'
+      <?php
+
+      declare(strict_types=1);
+
+      namespace App\Http\Middleware;
+
+      use Closure;
+      use Illuminate\Http\Request;
+      use Illuminate\Support\Facades\App;
+      use Symfony\Component\HttpFoundation\Response;
+
+      final class SetLocale
+      {
+          private const SUPPORTED = ['de', 'en'];
+
+          public function handle(Request $request, Closure $next): Response
+          {
+              $requested = $request->query('lang');
+
+              $locale = is_string($requested) && in_array($requested, self::SUPPORTED, true)
+                  ? $requested
+                  : ($request->getPreferredLanguage(self::SUPPORTED) ?? config('app.locale'));
+
+              App::setLocale($locale);
+
+              return $next($request);
+          }
+      }
+      PHP
+      cat > bootstrap/app.php <<'PHP'
+      <?php
+
+      use App\Http\Middleware\SetLocale;
+      use Illuminate\Foundation\Application;
+      use Illuminate\Foundation\Configuration\Exceptions;
+      use Illuminate\Foundation\Configuration\Middleware;
+      use Illuminate\Http\Request;
+
+      return Application::configure(basePath: dirname(__DIR__))
+          ->withRouting(
+              web: __DIR__.'/../routes/web.php',
+              commands: __DIR__.'/../routes/console.php',
+              health: '/up',
+          )
+          ->withMiddleware(function (Middleware $middleware): void {
+              $middleware->web(append: [SetLocale::class]);
+          })
+          ->withExceptions(function (Exceptions $exceptions): void {
+              $exceptions->shouldRenderJsonWhen(
+                  fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+              );
+          })->create();
+      PHP
+      cat > routes/web.php <<'PHP'
+      <?php
+
+      use Illuminate\Support\Facades\Route;
+
+      Route::get('/', function () {
+          return view('welcome');
+      });
+
+      Route::get('/veranstaltung', function () {
+          return response()->json([
+              'locale' => app()->getLocale(),
+              'title' => __('events.title'),
+              'tickets' => trans_choice('events.tickets', 3),
+              'button' => __('Buy ticket'),
+          ]);
+      });
+      PHP
+
+  - id: preis-und-datum
+    title: Preis und Datum lokalisiert ausgeben
+    description: |
+      Die Veranstaltung kostet 49,90 € und beginnt am `2026-11-14T18:00:00Z` (UTC). Beides soll in der Sprache
+      der Anfrage erscheinen – das Datum in der Zeitzone `Europe/Berlin`, wo die Veranstaltung stattfindet.
+
+      Ergänze die JSON-Antwort von `/veranstaltung` um zwei Felder:
+
+      1. `price`: `Number::currency(49.9, in: 'EUR', locale: app()->getLocale())`
+      2. `date`: `Carbon::parse('2026-11-14T18:00:00Z')->setTimezone('Europe/Berlin')->locale(app()->getLocale())->isoFormat('LLL')`
+
+      Auf Deutsch ergibt das `49,90 €` und `14. November 2026 19:00`, auf Englisch `€49.90` und
+      `November 14, 2026 7:00 PM`.
+    checklist:
+      - "`price` mit `Number::currency` in der aktuellen Locale"
+      - "`date` in der Zeitzone Europe/Berlin, lokalisiert mit Carbon"
+    hints:
+      - "Importiere `Illuminate\\Support\\Number` und `Illuminate\\Support\\Carbon` oben in `routes/web.php`."
+      - "Speichere `app()->getLocale()` in einer Variablen `$locale`, dann wird die Route übersichtlicher."
+    checks:
+      - type: command
+        run: |
+          php artisan tinker --execute="echo json_decode(app()->handle(Illuminate\Http\Request::create('/veranstaltung', 'GET', ['lang' => 'de']))->getContent())->price;" | sed 's/\xc2\xa0/ /g'
+        stdout_matches: "^49,90 €\\s*$"
+        message: "Auf Deutsch soll price „49,90 €“ sein. Nutzt du Number::currency mit in: 'EUR' und locale: app()->getLocale()?"
+      - type: command
+        run: |
+          php artisan tinker --execute="echo json_decode(app()->handle(Illuminate\Http\Request::create('/veranstaltung', 'GET', ['lang' => 'en']))->getContent())->price;"
+        stdout_matches: "^€49\\.90\\s*$"
+        message: Auf Englisch soll price „€49.90“ sein.
+      - type: command
+        run: |
+          php artisan tinker --execute="echo json_decode(app()->handle(Illuminate\Http\Request::create('/veranstaltung', 'GET', ['lang' => 'de']))->getContent())->date;"
+        stdout_matches: "^14\\. November 2026 19:00\\s*$"
+        message: Auf Deutsch soll date „14. November 2026 19:00“ sein – in der Zeitzone Europe/Berlin und mit isoFormat('LLL').
+      - type: command
+        run: |
+          php artisan tinker --execute="echo json_decode(app()->handle(Illuminate\Http\Request::create('/veranstaltung', 'GET', ['lang' => 'en']))->getContent())->date;" | sed 's/\xe2\x80\xaf/ /g'
+        stdout_matches: "^November 14, 2026 7:00 PM\\s*$"
+        message: Auf Englisch soll date „November 14, 2026 7:00 PM“ sein. Setzt du die Locale mit ->locale(app()->getLocale())?
+    solution: |
+      ```php title="routes/web.php"
+      <?php
+
+      use Illuminate\Support\Carbon;
+      use Illuminate\Support\Facades\Route;
+      use Illuminate\Support\Number;
+
+      Route::get('/', function () {
+          return view('welcome');
+      });
+
+      Route::get('/veranstaltung', function () {
+          $locale = app()->getLocale();
+
+          return response()->json([
+              'locale' => $locale,
+              'title' => __('events.title'),
+              'tickets' => trans_choice('events.tickets', 3),
+              'button' => __('Buy ticket'),
+              'price' => Number::currency(49.9, in: 'EUR', locale: $locale),
+              'date' => Carbon::parse('2026-11-14T18:00:00Z')
+                  ->setTimezone('Europe/Berlin')
+                  ->locale($locale)
+                  ->isoFormat('LLL'),
+          ]);
+      });
+      ```
+    solve: |
+      cat > routes/web.php <<'PHP'
+      <?php
+
+      use Illuminate\Support\Carbon;
+      use Illuminate\Support\Facades\Route;
+      use Illuminate\Support\Number;
+
+      Route::get('/', function () {
+          return view('welcome');
+      });
+
+      Route::get('/veranstaltung', function () {
+          $locale = app()->getLocale();
+
+          return response()->json([
+              'locale' => $locale,
+              'title' => __('events.title'),
+              'tickets' => trans_choice('events.tickets', 3),
+              'button' => __('Buy ticket'),
+              'price' => Number::currency(49.9, in: 'EUR', locale: $locale),
+              'date' => Carbon::parse('2026-11-14T18:00:00Z')
+                  ->setTimezone('Europe/Berlin')
+                  ->locale($locale)
+                  ->isoFormat('LLL'),
+          ]);
+      });
+      PHP
+
+  - id: tests
+    title: Alles mit Pest-Tests absichern
+    description: |
+      Damit niemand die Mehrsprachigkeit aus Versehen kaputt macht, schreibst du Feature-Tests in
+      `tests/Feature/LocalizationTest.php`. Mindestens diese fünf Fälle:
+
+      1. Mit `Accept-Language: de-DE` antwortet `/veranstaltung` auf Deutsch (`locale` = `de`, `title` = `Veranstaltungen`).
+      2. Mit `?lang=en` antwortet sie auf Englisch (`tickets` = `3 tickets left`).
+      3. Mit `Accept-Language: en-US,en;q=0.9` antwortet sie auf Englisch.
+      4. `?lang=xx` zusammen mit `Accept-Language: fr-FR` ergibt Deutsch – unbekannte Sprachen werden ignoriert.
+      5. `lang/de/events.php` und `lang/en/events.php` haben dieselben Schlüssel.
+
+      Führe die Tests mit `php artisan test --filter=LocalizationTest` aus.
+
+      Achtung, Falle: Laravel-Tests schicken ohne eigene Angabe den Header `Accept-Language: en-us` mit.
+      Setze den Header deshalb in jedem Test ausdrücklich, z. B. mit
+      `$this->getJson('/veranstaltung', ['Accept-Language' => 'de-DE'])`.
+    checklist:
+      - "`tests/Feature/LocalizationTest.php` mit mindestens fünf Tests"
+      - Tests für Standardsprache, ?lang, Accept-Language, ungültige Sprache und Schlüssel-Parität
+      - "`php artisan test --filter=LocalizationTest` ist grün"
+    hints:
+      - "`$this->getJson('/veranstaltung?lang=en')->assertJsonPath('tickets', '3 tickets left');`"
+      - "Für die Parität: `array_keys(require lang_path('de/events.php'))` liefert die Schlüssel, `sort()` macht sie vergleichbar."
+      - "Pest-Erwartung: `expect($en)->toBe($de);`"
+    checks:
+      - type: file_exists
+        path: tests/Feature/LocalizationTest.php
+        message: Die Testdatei tests/Feature/LocalizationTest.php fehlt noch.
+      - type: command
+        run: grep -cE "^\s*(test|it)\(" tests/Feature/LocalizationTest.php
+        stdout_matches: "^([5-9]|[1-9][0-9])$"
+        message: Schreibe mindestens fünf Tests in tests/Feature/LocalizationTest.php.
+      - type: command
+        run: php artisan test --filter=LocalizationTest
+        message: php artisan test --filter=LocalizationTest ist noch rot. Lies die Fehlermeldung – setzt du den Accept-Language-Header ausdrücklich?
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cp lang/en/events.php "$d/events.php"
+          printf '%s\n' '<?php' 'return [];' > lang/en/events.php
+          php artisan test --filter=LocalizationTest >/dev/null 2>&1
+          echo "exit=$?"
+          cp "$d/events.php" lang/en/events.php
+          rm -rf "$d"
+        stdout_equals: "exit=1"
+        message: Deine Tests merken nicht, wenn die englischen Übersetzungen fehlen. Die Prüfung leert lang/en/events.php kurz – dann muss mindestens ein Test fehlschlagen.
+    solution: |
+      ```php title="tests/Feature/LocalizationTest.php"
+      <?php
+
+      test('nutzt Deutsch, wenn der Browser Deutsch möchte', function () {
+          $this->getJson('/veranstaltung', ['Accept-Language' => 'de-DE'])
+              ->assertOk()
+              ->assertJsonPath('locale', 'de')
+              ->assertJsonPath('title', 'Veranstaltungen');
+      });
+
+      test('wechselt mit ?lang=en auf Englisch', function () {
+          $this->getJson('/veranstaltung?lang=en', ['Accept-Language' => 'de-DE'])
+              ->assertJsonPath('locale', 'en')
+              ->assertJsonPath('tickets', '3 tickets left');
+      });
+
+      test('wertet Accept-Language aus', function () {
+          $this->getJson('/veranstaltung', ['Accept-Language' => 'en-US,en;q=0.9'])
+              ->assertJsonPath('locale', 'en');
+      });
+
+      test('ignoriert unbekannte Sprachen', function () {
+          $this->getJson('/veranstaltung?lang=xx', ['Accept-Language' => 'fr-FR'])
+              ->assertJsonPath('locale', 'de');
+      });
+
+      test('deutsche und englische Sprachdatei haben dieselben Schlüssel', function () {
+          $de = array_keys(require lang_path('de/events.php'));
+          $en = array_keys(require lang_path('en/events.php'));
+          sort($de);
+          sort($en);
+
+          expect($en)->toBe($de);
+      });
+      ```
+    solve: |
+      cat > tests/Feature/LocalizationTest.php <<'PHP'
+      <?php
+
+      test('nutzt Deutsch, wenn der Browser Deutsch möchte', function () {
+          $this->getJson('/veranstaltung', ['Accept-Language' => 'de-DE'])
+              ->assertOk()
+              ->assertJsonPath('locale', 'de')
+              ->assertJsonPath('title', 'Veranstaltungen');
+      });
+
+      test('wechselt mit ?lang=en auf Englisch', function () {
+          $this->getJson('/veranstaltung?lang=en', ['Accept-Language' => 'de-DE'])
+              ->assertJsonPath('locale', 'en')
+              ->assertJsonPath('tickets', '3 tickets left');
+      });
+
+      test('wertet Accept-Language aus', function () {
+          $this->getJson('/veranstaltung', ['Accept-Language' => 'en-US,en;q=0.9'])
+              ->assertJsonPath('locale', 'en');
+      });
+
+      test('ignoriert unbekannte Sprachen', function () {
+          $this->getJson('/veranstaltung?lang=xx', ['Accept-Language' => 'fr-FR'])
+              ->assertJsonPath('locale', 'de');
+      });
+
+      test('deutsche und englische Sprachdatei haben dieselben Schlüssel', function () {
+          $de = array_keys(require lang_path('de/events.php'));
+          $en = array_keys(require lang_path('en/events.php'));
+          sort($de);
+          sort($en);
+
+          expect($en)->toBe($de);
+      });
+      PHP
+
+  - id: fehlende-schluessel-loggen
+    title: Fehlende Übersetzungen ins Log schreiben
+    description: |
+      Was durch alle Tests rutscht, soll wenigstens im Log auffallen. Laravel ruft dafür einen eigenen
+      Callback auf, sobald ein Schlüssel in keiner Sprache gefunden wird.
+
+      1. Registriere in `app/Providers/AppServiceProvider.php` in der Methode `boot()` einen Callback mit
+         `Lang::handleMissingKeysUsing(...)`.
+      2. Er schreibt eine Warnung mit der Nachricht `Fehlende Übersetzung` und dem Kontext `key` und `locale`
+         ins Log (`Log::warning(...)`) und gibt den Schlüssel zurück.
+      3. Probiere es aus: `php artisan tinker --execute="echo __('events.gibts_nicht');"` und dann
+         `tail -n 1 storage/logs/laravel.log`.
+    checklist:
+      - "`Lang::handleMissingKeysUsing` in `AppServiceProvider::boot()`"
+      - "Warnung „Fehlende Übersetzung“ mit Schlüssel und Locale im Log"
+    hints:
+      - "Importiere `Illuminate\\Support\\Facades\\Lang` und `Illuminate\\Support\\Facades\\Log`."
+      - "Signatur des Callbacks: `function (string $key, array $replace, ?string $locale) { … return $key; }`"
+    checks:
+      - type: file_contains
+        path: app/Providers/AppServiceProvider.php
+        pattern: "handleMissingKeysUsing"
+        message: In app/Providers/AppServiceProvider.php fehlt noch Lang::handleMissingKeysUsing(...).
+      - type: command
+        run: |
+          php artisan tinker --execute="echo __('events.pruefung_fehlt_' . getmypid());" > /dev/null
+          tail -n 5 storage/logs/laravel.log
+        stdout_matches: "Fehlende Übersetzung.*events\\.pruefung_fehlt_"
+        message: Für einen fehlenden Schlüssel erscheint noch keine Warnung „Fehlende Übersetzung“ mit dem Schlüssel in storage/logs/laravel.log.
+      - type: command
+        run: |
+          php artisan tinker --execute="echo __('events.title');"
+        stdout_matches: "^Veranstaltungen\\s*$"
+        message: Vorhandene Übersetzungen müssen weiter funktionieren – gibt dein Callback nur für fehlende Schlüssel etwas zurück?
+    solution: |
+      ```php title="app/Providers/AppServiceProvider.php"
+      <?php
+
+      namespace App\Providers;
+
+      use Illuminate\Support\Facades\Lang;
+      use Illuminate\Support\Facades\Log;
+      use Illuminate\Support\ServiceProvider;
+
+      class AppServiceProvider extends ServiceProvider
+      {
+          public function register(): void
+          {
+              //
+          }
+
+          public function boot(): void
+          {
+              Lang::handleMissingKeysUsing(function (string $key, array $replace, ?string $locale) {
+                  Log::warning('Fehlende Übersetzung', ['key' => $key, 'locale' => $locale]);
+
+                  return $key;
+              });
+          }
+      }
+      ```
+    solve: |
+      cat > app/Providers/AppServiceProvider.php <<'PHP'
+      <?php
+
+      namespace App\Providers;
+
+      use Illuminate\Support\Facades\Lang;
+      use Illuminate\Support\Facades\Log;
+      use Illuminate\Support\ServiceProvider;
+
+      class AppServiceProvider extends ServiceProvider
+      {
+          public function register(): void
+          {
+              //
+          }
+
+          public function boot(): void
+          {
+              Lang::handleMissingKeysUsing(function (string $key, array $replace, ?string $locale) {
+                  Log::warning('Fehlende Übersetzung', ['key' => $key, 'locale' => $locale]);
+
+                  return $key;
+              });
+          }
+      }
+      PHP
