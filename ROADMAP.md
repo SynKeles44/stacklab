@@ -13,6 +13,8 @@ Status-Legende: `[ ]` offen · `[~]` in Arbeit · `[x]` fertig · `[-]` zurückg
 
 ## Abbruchstand 2026-10-10 (alle Autoren-Agenten gestoppt) – HIER WEITERMACHEN
 
+**Wiederaufnahme 2026-10-10:** 7 Autoren-Agenten für 23, 24, 25, 26, 31, 32, 33 neu gestartet (je ein Agent, Brief `.wip/agent-brief.md`, vorhandene Dateien weiterführen).
+
 Wiederaufnahme: neue Sitzung im Ordner `stacklab`, dann „Mach mit der Roadmap weiter“. Für neue Autoren-Agenten
 den Brief `.wip/agent-brief.md` verwenden (lokal, nicht im Git) – er ergänzt `docs/AUTHORING.md` um Sandbox-Regeln.
 Entwürfe/Hilfsskripte der gestoppten Autoren liegen unter `.wip/scratchpad/<kurs>/` (ohne vendor/node_modules).
@@ -172,9 +174,10 @@ Stichproben-Review.
 - [x] project.yaml: optionales `setup` + Button „Projekt zurücksetzen“ (Fremden-Code-Kurs legt das Projekt aktuell über eine Modulübung an)
 - [x] Projektschritte: `solve`-Skript + Button „Für mich erledigen“ + `stacklab:solve-check` (D20)
 - [x] Git-Projekt: alle 7 `solve`-Skripte grün
-- [~] `solve`-Skripte für die übrigen committeten Projekte (01–05, 07–22) – 5 Agenten laufen
+- [x] `solve`-Skripte für die übrigen committeten Projekte (01–05, 07–22) – `solve-check --require-all` für alle 22 Kurse grün (2026-10-10)
 - [ ] `solve`-Skripte für die Kurse 23 ff. (Teil des Autoren-Briefs)
 - [x] Fortschritt zurücksetzen (Einstellungen), `make workspace` mit nativem Ordner-Dialog
+- [x] `stacklab:solve-check` läuft in einem Wegwerf-Ordner `/workspace/solve-check-<kurs>` und räumt ihn danach weg; vorher setzte es die echten Projektordner der Lernenden zurück (2026-10-10)
 - [x] Tests dürfen die Entwicklungs-DB nicht mehr leeren (`<server force>` in phpunit.xml)
 
 ## Phase 7 – Tests & Qualität
