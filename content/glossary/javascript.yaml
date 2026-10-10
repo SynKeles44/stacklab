@@ -517,3 +517,26 @@
   aliases: [Custom Error, Fehlerklasse]
   related: [exception, instanceof, vererbung]
   lesson: javascript/async-await-und-fehler
+- slug: fabrikfunktion
+  term: Fabrikfunktion
+  short: Eine Funktion, die eine neue, vorkonfigurierte Funktion oder ein Objekt erzeugt und zurückgibt.
+  explanation: >
+    Die erzeugte Funktion merkt sich über eine Closure die Werte, mit denen die Fabrik aufgerufen wurde. So
+    entstehen aus einer allgemeinen Funktion mehrere spezialisierte, ohne Code zu wiederholen.
+  example: "`const info = mitPrefix('[INFO]')` erzeugt eine Funktion, die jede Meldung mit `[INFO]` beginnt."
+  category: javascript
+  aliases: [Factory-Funktion, Fabrikfunktionen]
+  related: [closure, factory-muster]
+  lesson: javascript/closures-und-this
+- slug: innerhtml
+  term: innerHTML
+  short: Eine DOM-Eigenschaft, die den Inhalt eines Elements als HTML-Text liest oder setzt.
+  explanation: >
+    Beim Setzen wertet der Browser den Text als HTML aus und baut daraus neue Elemente. Mit Eingaben von
+    Nutzerinnen und Nutzern ist das gefährlich, weil eingeschleuster Code ausgeführt werden kann; für reinen
+    Text ist `textContent` die sichere Wahl.
+  example: "`liste.innerHTML = '<li>Neu</li>'` ersetzt den Inhalt der Liste durch ein neues Element."
+  category: javascript
+  aliases: [innerHTML-Eigenschaft]
+  related: [dom, xss]
+  lesson: javascript/den-dom-veraendern
