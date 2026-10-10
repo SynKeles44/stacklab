@@ -1,0 +1,130 @@
+title: Das Projekt aufsetzen
+description: Welche Aufgabe jedes Werkzeug im Stack hat, wie du mit Bun und Vite ein Projekt anlegst und Tailwind CSS 4 samt Pfad-Alias einrichtest.
+exercise:
+  id: modul-uebung-starter
+  type: terminal
+  title: Ein Starter-Projekt für das Team
+  description: |
+    Dein Team startet ein neues Frontend. Du legst das Grundgerüst an, auf dem alle weiterarbeiten.
+    Arbeite im Ordner `starter`:
+
+    1. Lenke den temporären Ordner um (`mkdir -p .tmp && export TMPDIR="$PWD/.tmp"`) und erzeuge mit
+       `bun create vite team-app --template react-ts --no-interactive` das Projekt. Wechsle hinein und führe
+       `bun install` aus.
+    2. Richte Tailwind CSS 4 über das Vite-Plugin ein und lege den Alias `@` → `./src` in `vite.config.ts`
+       sowie in `tsconfig.json` und `tsconfig.app.json` an.
+    3. `src/index.css` enthält nur noch `@import "tailwindcss";` und einen `@theme`-Block mit
+       `--color-brand` und `--color-brand-foreground`.
+    4. Lege `src/lib/format.ts` mit einer exportierten Funktion `formatTitle(title: string): string` an, die den Text
+       in Großbuchstaben zurückgibt.
+    5. `src/App.tsx` importiert `formatTitle` über `@/lib/format` und zeigt `formatTitle('Team-App')` in einer
+       Überschrift mit den Klassen `bg-brand text-brand-foreground`.
+    6. Ergänze in `package.json` ein Skript `typecheck` mit dem Befehl `tsc -b` (z. B. mit
+       `npm pkg set scripts.typecheck="tsc -b"`).
+    7. Prüfe mit `bun run typecheck` und baue mit `bun run build`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten**, damit der leere Ordner angelegt wird.
+  workdir: starter
+  setup: |
+    true
+  checks:
+    - type: file_exists
+      path: team-app/bun.lock
+      message: Im Ordner team-app fehlt bun.lock. Erzeuge das Projekt mit bun create vite und führe darin bun install aus.
+    - type: command
+      run: jq -r '.dependencies + .devDependencies | has("tailwindcss") and has("@tailwindcss/vite")' team-app/package.json
+      stdout_equals: "true"
+      message: In team-app/package.json fehlen tailwindcss und @tailwindcss/vite.
+    - type: file_contains
+      path: team-app/vite.config.ts
+      pattern: "tailwindcss\\(\\)"
+      message: In vite.config.ts fehlt das Plugin tailwindcss().
+    - type: file_contains
+      path: team-app/vite.config.ts
+      pattern: "['\"]@['\"]\\s*:"
+      message: In vite.config.ts fehlt der Alias '@' unter resolve.alias.
+    - type: file_contains
+      path: team-app/tsconfig.json
+      pattern: "\"@/\\*\"\\s*:\\s*\\[\\s*\"(\\./)?src/\\*\""
+      message: In tsconfig.json fehlt unter compilerOptions der Eintrag "paths" mit "@/*" → ["./src/*"].
+    - type: file_contains
+      path: team-app/tsconfig.app.json
+      pattern: "\"@/\\*\"\\s*:\\s*\\[\\s*\"(\\./)?src/\\*\""
+      message: In tsconfig.app.json fehlt unter compilerOptions der Eintrag "paths" mit "@/*" → ["./src/*"].
+    - type: file_contains
+      path: team-app/src/index.css
+      pattern: "--color-brand-foreground\\s*:"
+      message: Im @theme-Block von src/index.css fehlt --color-brand-foreground.
+    - type: file_contains
+      path: team-app/src/lib/format.ts
+      pattern: "export\\s+(function\\s+formatTitle|const\\s+formatTitle)"
+      message: src/lib/format.ts soll die Funktion formatTitle exportieren.
+    - type: file_contains
+      path: team-app/src/App.tsx
+      pattern: "from\\s+['\"]@/lib/format['\"]"
+      message: App.tsx soll formatTitle über '@/lib/format' importieren.
+    - type: command
+      run: jq -r '.scripts.typecheck // empty' team-app/package.json
+      stdout_matches: "^tsc -b"
+      message: In team-app/package.json fehlt das Skript typecheck mit dem Befehl tsc -b.
+    - type: command
+      run: cd team-app && bun run build >/dev/null 2>&1
+      message: bun run build schlägt im Ordner team-app fehl. Starte ihn selbst und lies die Fehlermeldung.
+    - type: command
+      run: grep -l "TEAM-APP\|toUpperCase" team-app/dist/assets/*.js >/dev/null && grep -h -o "\.text-brand-foreground" team-app/dist/assets/*.css | head -1
+      stdout_equals: ".text-brand-foreground"
+      message: Im Build fehlt die Klasse text-brand-foreground oder der Aufruf von formatTitle. Benutze beides in App.tsx und baue neu.
+  hints:
+    - "Arbeite der Reihe nach und baue zwischendurch mit `bun run build` – so findest du Fehler früh."
+    - "tsconfig.json ist reines JSON – dort hilft `jq '.compilerOptions.paths = {\"@/*\": [\"./src/*\"]}' tsconfig.json > t.json && mv t.json tsconfig.json`. tsconfig.app.json enthält Kommentare, die jq nicht versteht: Öffne sie mit `nano` und füge die paths-Zeile direkt nach `\"compilerOptions\": {` ein."
+    - "`export function formatTitle(title: string): string { return title.toUpperCase() }`"
+  solution: |
+    ```bash
+    cd starter
+    mkdir -p .tmp && export TMPDIR="$PWD/.tmp"
+    bun create vite team-app --template react-ts --no-interactive
+    cd team-app
+    bun install
+    bun add tailwindcss @tailwindcss/vite
+    cat > vite.config.ts <<'EOF'
+    import path from 'node:path'
+    import tailwindcss from '@tailwindcss/vite'
+    import react from '@vitejs/plugin-react'
+    import { defineConfig } from 'vite'
+
+    export default defineConfig({
+      plugins: [react(), tailwindcss()],
+      resolve: {
+        alias: {
+          '@': path.resolve(import.meta.dirname, './src'),
+        },
+      },
+    })
+    EOF
+    jq '.compilerOptions.paths = {"@/*": ["./src/*"]}' tsconfig.json > t.json && mv t.json tsconfig.json
+    sed -i 's#"compilerOptions": {#"compilerOptions": {\n    "paths": { "@/*": ["./src/*"] },#' tsconfig.app.json
+    cat > src/index.css <<'EOF'
+    @import "tailwindcss";
+
+    @theme {
+      --color-brand: oklch(0.55 0.2 265);
+      --color-brand-foreground: oklch(0.98 0 0);
+    }
+    EOF
+    mkdir -p src/lib
+    cat > src/lib/format.ts <<'EOF'
+    export function formatTitle(title: string): string {
+      return title.toUpperCase()
+    }
+    EOF
+    cat > src/App.tsx <<'EOF'
+    import { formatTitle } from '@/lib/format'
+
+    export default function App() {
+      return <h1 className="bg-brand text-brand-foreground p-6">{formatTitle('Team-App')}</h1>
+    }
+    EOF
+    npm pkg set scripts.typecheck="tsc -b"
+    bun run typecheck
+    bun run build
+    ```

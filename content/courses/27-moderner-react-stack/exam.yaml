@@ -1,0 +1,902 @@
+title: Abschlussprüfung Moderner React-Stack
+description: |
+  Diese Prüfung deckt alle vier Module ab: Projekt aufsetzen mit Bun, Vite und Tailwind, shadcn/ui und Theming,
+  Daten und Routing mit Zod und React Router im Data Mode sowie Struktur und Auslieferung. Zuerst beantwortest du
+  Fragen, danach löst du drei Praxis-Aufgaben – zwei im echten Übungs-Terminal, eine als Programmieraufgabe.
+
+  Du bestehst mit 70 Prozent. Nach der Auswertung siehst du, in welchen Modulen du noch Lücken hast.
+time_limit_minutes: 75
+pass_percent: 70
+questions:
+  # --- Projekt aufsetzen ---
+  - module: projekt-aufsetzen
+    type: single
+    question: Was ist der Einstiegspunkt eines Vite-Projekts, den der Dev-Server zuerst ausliefert?
+    options:
+      - src/main.tsx
+      - index.html
+      - vite.config.ts
+      - package.json
+    answer: 1
+    explanation: Vite startet bei index.html. Darin lädt `<script type="module" src="/src/main.tsx">` den App-Code, und Vite folgt allen Importen.
+  - module: projekt-aufsetzen
+    type: multiple
+    question: Welche Aussagen über `bun run build` im Vite-Template stimmen?
+    options:
+      - Zuerst prüft `tsc -b` die Typen, danach baut `vite build`.
+      - Ein Typfehler bricht den Build ab, bevor dist entsteht.
+      - Das Ergebnis landet im Ordner dist.
+      - Der Befehl startet einen Server auf Port 5173.
+    answers: [0, 1, 2]
+    explanation: Port 5173 gehört zum Dev-Server (`bun run dev`). Der Build erzeugt nur Dateien.
+  - module: projekt-aufsetzen
+    type: match
+    question: Ordne jede Einstellung der Datei zu, in die sie gehört.
+    pairs:
+      - { left: "plugins: [react(), tailwindcss()]", right: "vite.config.ts" }
+      - { left: "\"paths\": { \"@/*\": [\"./src/*\"] }", right: "tsconfig.json und tsconfig.app.json" }
+      - { left: "@import \"tailwindcss\";", right: "src/index.css" }
+      - { left: "exakte Paketversionen", right: "bun.lock" }
+    explanation: Vite, TypeScript, Tailwind und Bun haben jeweils ihre eigene Konfiguration.
+  - module: projekt-aufsetzen
+    type: cloze
+    text: "In Tailwind CSS 4 legst du eigene Farben im Block `@___` an. Aus `--color-brand` entsteht unter anderem die Klasse `___-brand` für den Hintergrund."
+    blanks:
+      - [theme]
+      - [bg]
+    explanation: Der Namensraum `--color-*` erzeugt Farb-Utilities wie `bg-brand`, `text-brand` oder `border-brand`.
+
+  # --- shadcn/ui ---
+  - module: shadcn-ui
+    type: single
+    question: Was unterscheidet shadcn/ui von einer klassischen Komponentenbibliothek?
+    options:
+      - Es ist schneller, weil es in WebAssembly geschrieben ist.
+      - Die CLI kopiert den Quellcode der Komponenten in dein Projekt – du besitzt und änderst ihn selbst.
+      - Es funktioniert nur ohne Tailwind.
+      - Komponenten werden zur Laufzeit von einem CDN geladen.
+    answer: 1
+    explanation: Nach `shadcn add` liegt die Komponente in `src/components/ui`. Sie ist normaler Projektcode.
+  - module: shadcn-ui
+    type: multiple
+    question: Welche Stellen brauchst du für eine neue Theme-Farbe `info`, die im Dark Mode anders aussieht?
+    options:
+      - "`--info` und `--info-foreground` in `:root`"
+      - "`--info` und `--info-foreground` in `.dark`"
+      - "`--color-info: var(--info);` (und foreground) in `@theme inline`"
+      - Eine neue Datei tailwind.config.js
+    answers: [0, 1, 2]
+    explanation: Werte in `:root` und `.dark`, Verbindung zu Tailwind in `@theme inline`. Eine Config-Datei brauchst du in Tailwind 4 nicht.
+  - module: shadcn-ui
+    type: find-bug
+    question: Ein `className="px-8"` am Button hat keine sichere Wirkung, weil px-4 ebenfalls im HTML steht. Welche Zeile ist schuld?
+    language: tsx
+    code: |
+      function Button({ className, variant, size, ...props }: ButtonProps) {
+        return (
+          <button
+            data-slot="button"
+            className={`${buttonVariants({ variant, size })} ${className}`}
+            {...props}
+          />
+        )
+      }
+    bug_line: 5
+    explanation: Ein Template-String lässt widersprüchliche Klassen stehen. `cn(buttonVariants({ variant, size, className }))` lässt tailwind-merge die spätere Klasse gewinnen.
+  - module: shadcn-ui
+    type: single
+    question: Wozu dient `@custom-variant dark (&:is(.dark *));` in src/index.css?
+    options:
+      - Es schaltet den Dark Mode dauerhaft ein.
+      - Es sorgt dafür, dass `dark:`-Klassen auf die Klasse `.dark` am Wurzelelement reagieren statt auf die Systemeinstellung.
+      - Es löscht alle hellen Farben.
+      - Es ist nur ein Kommentar.
+    answer: 1
+    explanation: So steuert ein Schalter in der App den Dark Mode, indem er die Klasse `dark` am `<html>`-Element setzt.
+
+  # --- Daten und Routing ---
+  - module: daten-und-routing
+    type: single
+    question: Was bewirkt `type Book = z.infer<typeof BookSchema>`?
+    options:
+      - Es prüft zur Laufzeit, ob Daten ein Buch sind.
+      - Es leitet den TypeScript-Typ aus dem Schema ab, sodass Felder nur einmal beschrieben werden.
+      - Es lädt Bücher von der API.
+      - Es erzeugt ein zweites Schema.
+    answer: 1
+    explanation: Geprüft wird erst mit parse oder safeParse. z.infer ist reine Typ-Ebene.
+  - module: daten-und-routing
+    type: multiple
+    question: Welche Aussagen über Loader im Data Mode stimmen?
+    options:
+      - Ein Loader läuft, bevor die Komponente der Route gerendert wird.
+      - Die Komponente liest das Ergebnis mit useLoaderData().
+      - Ein Loader bekommt params und request.
+      - Ein Loader läuft nur einmal beim Start der App.
+    answers: [0, 1, 2]
+    explanation: Loader laufen bei jeder Navigation zur Route und nach Actions erneut (Revalidierung).
+  - module: daten-und-routing
+    type: match
+    question: Ordne jede Rückgabe einer action ihrer Wirkung zu.
+    pairs:
+      - { left: "redirect('/danke')", right: "Navigation zur Danke-Seite" }
+      - { left: "data({ errors }, { status: 400 })", right: "Formular bleibt, useActionData liefert die Fehler" }
+      - { left: "throw new Error('kaputt')", right: "ErrorBoundary wird angezeigt" }
+    explanation: Zurückgegebene Daten sind kein Fehler. Nur geworfene Fehler landen in der ErrorBoundary.
+  - module: daten-und-routing
+    type: find-bug
+    question: Die Statistikseite soll ein eigener Chunk werden. Welche Zeile verhindert das?
+    language: tsx
+    code: |
+      import { createBrowserRouter } from 'react-router'
+      import { RootLayout } from '@/routes/root'
+      import { statsLoader } from '@/routes/stats'
+
+      export const router = createBrowserRouter([
+        {
+          path: '/',
+          Component: RootLayout,
+          children: [
+            {
+              path: 'statistik',
+              lazy: async () => {
+                const { StatsPage } = await import('@/routes/stats')
+                return { loader: statsLoader, Component: StatsPage }
+              },
+            },
+          ],
+        },
+      ])
+    bug_line: 3
+    explanation: Der statische Import von statsLoader zieht das ganze Modul ins Haupt-Bundle. Auch der Loader muss aus dem dynamischen Import kommen.
+  - module: daten-und-routing
+    type: cloze
+    text: "Für Formulareingaben benutzt du `Schema.___(werte)`, weil ungültige Eingaben erwartbar sind. Die Fehler pro Feld liefert `z.___(result.error).fieldErrors`."
+    blanks:
+      - [safeParse]
+      - [flattenError]
+    explanation: safeParse wirft nicht, und flattenError liefert pro Feld ein Array von Meldungen.
+  - module: daten-und-routing
+    type: single
+    question: Woher importierst du in React Router 8 `RouterProvider`?
+    options:
+      - react-router-dom
+      - react-router/dom
+      - react-dom/client
+      - "@react-router/dev"
+    answer: 1
+    explanation: react-router-dom gibt es in Version 8 nicht mehr. Nur DOM-spezifische Teile wie RouterProvider kommen aus `react-router/dom`.
+
+  # --- Auslieferung ---
+  - module: auslieferung
+    type: single
+    question: Welche Variable aus `.env` steht im Browser-Code über `import.meta.env` zur Verfügung?
+    options:
+      - DATABASE_URL
+      - API_SECRET
+      - VITE_API_URL
+      - Alle drei
+    answer: 2
+    explanation: Nur Variablen mit dem Präfix VITE_ gibt Vite an den Client-Code weiter – und die sind dann öffentlich.
+  - module: auslieferung
+    type: multiple
+    question: Ein direkt aufgerufener Link `/buecher/momo` liefert auf dem Server 404. Was hilft?
+    options:
+      - Ein SPA-Fallback, der für unbekannte Pfade index.html ausliefert
+      - Bei nginx `try_files $uri $uri/ /index.html;`
+      - Den Dev-Server auf dem Server starten
+      - Für jede Route eine eigene HTML-Datei von Hand anlegen
+    answers: [0, 1]
+    explanation: Der Router im Browser entscheidet über den Pfad. Der Server muss nur zuerst index.html schicken.
+  - module: auslieferung
+    type: match
+    question: Ordne jede Datei der passenden Cache-Regel oder Aufgabe zu.
+    pairs:
+      - { left: "assets/index-C7VKbhah.js", right: "sehr lange cachen – neuer Inhalt bekommt neuen Namen" }
+      - { left: "index.html", right: "nicht lange cachen – verweist auf die aktuellen Assets" }
+      - { left: ".env.production", right: "Werte für den Build im Modus production" }
+      - { left: ".env.example", right: "Liste aller Variablen ohne echte Werte, im Repository" }
+    explanation: Content-Hashes machen langes Caching sicher; index.html muss immer frisch sein.
+  - module: auslieferung
+    type: cloze
+    text: "Läuft die App unter `https://example.com/app/`, setzt du in vite.config.ts `___: '/app/'`. Den fertigen Build testest du lokal mit `bun run ___`."
+    blanks:
+      - [base]
+      - [preview]
+    explanation: base passt alle Asset-Pfade an; preview liefert dist/ wie ein einfacher Webserver aus.
+tasks:
+  - module: shadcn-ui
+    id: pruefung-card
+    type: terminal
+    title: Eine Card-Komponente mit eigenem Token
+    description: |
+      Im Ordner `pruefung-card` liegt ein Projekt mit Tailwind, Alias `@`, `cn()` und Theme-Variablen (ohne Card-Farben).
+
+      1. Ergänze die Tokens `--card` und `--card-foreground` in `:root` und `.dark` und mache sie in `@theme inline`
+         als `--color-card` und `--color-card-foreground` verfügbar.
+      2. Lege `src/components/ui/card.tsx` an und exportiere `Card`, `CardHeader`, `CardTitle` und `CardContent`.
+         Jede Komponente nimmt `className` und weitere Props (`ComponentProps<'div'>`), setzt ein passendes
+         `data-slot` (z. B. `data-slot="card"`) und führt Klassen mit `cn()` zusammen. `Card` benutzt
+         `bg-card text-card-foreground rounded-xl border border-border`.
+      3. Zeige in `src/App.tsx` eine Card mit Titel und Inhalt an.
+      4. Baue mit `bun run build`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten** (das dauert einige Sekunden).
+    workdir: pruefung-card
+    setup: |
+      cat > package.json <<'EOF'
+      {
+        "name": "app",
+        "private": true,
+        "version": "0.0.0",
+        "type": "module",
+        "scripts": {
+          "dev": "vite",
+          "build": "tsc -b && vite build",
+          "preview": "vite preview"
+        },
+        "dependencies": {
+          "react": "^19.2.8",
+          "react-dom": "^19.2.8"
+        },
+        "devDependencies": {
+          "@types/node": "^24.13.3",
+          "@types/react": "^19.2.18",
+          "@types/react-dom": "^19.2.7",
+          "@vitejs/plugin-react": "^6.1.1",
+          "typescript": "^7.0.2",
+          "vite": "^8.3.0"
+        }
+      }
+      EOF
+      cat > tsconfig.json <<'EOF'
+      {
+        "files": [],
+        "references": [
+          { "path": "./tsconfig.app.json" },
+          { "path": "./tsconfig.node.json" }
+        ]
+      }
+      EOF
+      cat > tsconfig.app.json <<'EOF'
+      {
+        "compilerOptions": {
+          "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+          "target": "es2023",
+          "lib": ["ES2023", "DOM"],
+          "module": "esnext",
+          "types": ["vite/client"],
+          "skipLibCheck": true,
+          "moduleResolution": "bundler",
+          "allowImportingTsExtensions": true,
+          "verbatimModuleSyntax": true,
+          "moduleDetection": "force",
+          "noEmit": true,
+          "jsx": "react-jsx",
+          "strict": true,
+          "noUnusedLocals": true,
+          "noUnusedParameters": true
+        },
+        "include": ["src"]
+      }
+      EOF
+      cat > tsconfig.node.json <<'EOF'
+      {
+        "compilerOptions": {
+          "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+          "target": "es2023",
+          "lib": ["ES2023"],
+          "types": ["node"],
+          "skipLibCheck": true,
+          "module": "nodenext",
+          "allowImportingTsExtensions": true,
+          "verbatimModuleSyntax": true,
+          "moduleDetection": "force",
+          "noEmit": true,
+          "strict": true
+        },
+        "include": ["vite.config.ts"]
+      }
+      EOF
+      cat > vite.config.ts <<'EOF'
+      import react from '@vitejs/plugin-react'
+      import { defineConfig } from 'vite'
+
+      export default defineConfig({
+        plugins: [react()],
+      })
+      EOF
+      cat > index.html <<'EOF'
+      <!doctype html>
+      <html lang="de">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Stacklab App</title>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="module" src="/src/main.tsx"></script>
+        </body>
+      </html>
+      EOF
+      printf 'node_modules\ndist\n*.local\n' > .gitignore
+      mkdir -p src
+      cat > src/main.tsx <<'EOF'
+      import { StrictMode } from 'react'
+      import { createRoot } from 'react-dom/client'
+      import './index.css'
+      import App from './App.tsx'
+
+      createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+          <App />
+        </StrictMode>,
+      )
+      EOF
+      cat > src/App.tsx <<'EOF'
+      export default function App() {
+        return <h1>Hallo Stack</h1>
+      }
+      EOF
+      printf 'body {\n  font-family: system-ui, sans-serif;\n}\n' > src/index.css
+      bun install >/dev/null 2>&1
+      bun add tailwindcss @tailwindcss/vite >/dev/null 2>&1
+      cat > vite.config.ts <<'EOF'
+      import path from 'node:path'
+      import tailwindcss from '@tailwindcss/vite'
+      import react from '@vitejs/plugin-react'
+      import { defineConfig } from 'vite'
+
+      export default defineConfig({
+        plugins: [react(), tailwindcss()],
+        resolve: {
+          alias: {
+            '@': path.resolve(import.meta.dirname, './src'),
+          },
+        },
+      })
+      EOF
+      cat > tsconfig.json <<'EOF'
+      {
+        "files": [],
+        "references": [
+          { "path": "./tsconfig.app.json" },
+          { "path": "./tsconfig.node.json" }
+        ],
+        "compilerOptions": {
+          "paths": {
+            "@/*": ["./src/*"]
+          }
+        }
+      }
+      EOF
+      jq '.compilerOptions.paths = {"@/*": ["./src/*"]}' tsconfig.app.json > tsconfig.app.tmp && mv tsconfig.app.tmp tsconfig.app.json
+      printf '@import "tailwindcss";\n' > src/index.css
+      cat > src/App.tsx <<'EOF'
+      export default function App() {
+        return <h1 className="p-8 text-3xl font-bold">Hallo Stack</h1>
+      }
+      EOF
+      bun add clsx tailwind-merge class-variance-authority >/dev/null 2>&1
+      mkdir -p src/lib src/components/ui
+      cat > src/lib/utils.ts <<'EOF'
+      import { clsx, type ClassValue } from 'clsx'
+      import { twMerge } from 'tailwind-merge'
+
+      export function cn(...inputs: ClassValue[]) {
+        return twMerge(clsx(inputs))
+      }
+      EOF
+      cat > components.json <<'EOF'
+      {
+        "$schema": "https://ui.shadcn.com/schema.json",
+        "style": "new-york",
+        "rsc": false,
+        "tsx": true,
+        "tailwind": {
+          "config": "",
+          "css": "src/index.css",
+          "baseColor": "neutral",
+          "cssVariables": true,
+          "prefix": ""
+        },
+        "aliases": {
+          "components": "@/components",
+          "utils": "@/lib/utils",
+          "ui": "@/components/ui",
+          "lib": "@/lib",
+          "hooks": "@/hooks"
+        }
+      }
+      EOF
+      cat > src/components/ui/button.tsx <<'EOF'
+      import type { ComponentProps } from 'react'
+      import { cva, type VariantProps } from 'class-variance-authority'
+      import { cn } from '@/lib/utils'
+
+      const buttonVariants = cva(
+        'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
+        {
+          variants: {
+            variant: {
+              default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+              outline: 'border border-border bg-background hover:bg-muted',
+              ghost: 'hover:bg-muted',
+            },
+            size: {
+              default: 'h-9 px-4 py-2',
+              sm: 'h-8 px-3',
+              lg: 'h-10 px-6',
+            },
+          },
+          defaultVariants: {
+            variant: 'default',
+            size: 'default',
+          },
+        },
+      )
+
+      function Button({
+        className,
+        variant,
+        size,
+        ...props
+      }: ComponentProps<'button'> & VariantProps<typeof buttonVariants>) {
+        return (
+          <button
+            data-slot="button"
+            className={cn(buttonVariants({ variant, size, className }))}
+            {...props}
+          />
+        )
+      }
+
+      export { Button, buttonVariants }
+      EOF
+      cat > src/index.css <<'EOF'
+      @import "tailwindcss";
+
+      @custom-variant dark (&:is(.dark *));
+
+      :root {
+        --radius: 0.625rem;
+        --background: oklch(1 0 0);
+        --foreground: oklch(0.145 0 0);
+        --primary: oklch(0.205 0 0);
+        --primary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.97 0 0);
+        --muted-foreground: oklch(0.556 0 0);
+        --destructive: oklch(0.577 0.245 27.325);
+        --border: oklch(0.922 0 0);
+      }
+
+      .dark {
+        --background: oklch(0.145 0 0);
+        --foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+      }
+
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-destructive: var(--destructive);
+        --color-border: var(--border);
+        --radius-md: calc(var(--radius) - 2px);
+      }
+
+      body {
+        @apply bg-background text-foreground;
+      }
+      EOF
+      cat > src/App.tsx <<'EOF'
+      import { Button } from '@/components/ui/button'
+
+      export default function App() {
+        return (
+          <main className="p-8">
+            <Button variant="outline">Hallo Stack</Button>
+          </main>
+        )
+      }
+      EOF
+    checks:
+      - type: file_contains
+        path: src/index.css
+        pattern: ":root\\s*\\{[^}]*--card\\s*:[^}]*--card-foreground\\s*:"
+        message: In :root fehlen --card und --card-foreground.
+      - type: file_contains
+        path: src/index.css
+        pattern: "\\.dark\\s*\\{[^}]*--card\\s*:"
+        message: In .dark fehlt --card.
+      - type: file_contains
+        path: src/index.css
+        pattern: "--color-card\\s*:\\s*var\\(--card\\)"
+        message: In @theme inline fehlt --color-card - var(--card).
+      - type: command
+        run: for n in Card CardHeader CardTitle CardContent; do grep -Eq "(function\s+$n\b|const\s+$n\b)" src/components/ui/card.tsx || echo "$n"; done
+        stdout_equals: ""
+        message: In card.tsx fehlen Komponenten. Nötig sind Card, CardHeader, CardTitle und CardContent.
+      - type: file_contains
+        path: src/components/ui/card.tsx
+        pattern: "data-slot=[\"']card[\"']"
+        message: Card soll data-slot="card" setzen.
+      - type: file_contains
+        path: src/components/ui/card.tsx
+        pattern: "cn\\("
+        message: Die Card-Komponenten sollen Klassen mit cn() zusammenführen.
+      - type: file_contains
+        path: src/App.tsx
+        pattern: "<Card[\\s>]"
+        message: App.tsx soll eine Card anzeigen.
+      - type: command
+        run: bun run build >/dev/null 2>&1
+        message: bun run build schlägt fehl. Führe ihn aus und lies die Fehlermeldung.
+      - type: command
+        run: grep -h -o "\.bg-card{[^}]*}" dist/assets/*.css | head -1
+        stdout_matches: "var\\(--card\\)"
+        message: Im gebauten CSS fehlt .bg-card mit var(--card).
+    hints:
+      - "Eine Komponente genügt als Vorlage: `function Card({ className, ...props }: ComponentProps<'div'>) { return <div data-slot=\"card\" className={cn('bg-card …', className)} {...props} /> }`."
+      - "Am Ende: `export { Card, CardHeader, CardTitle, CardContent }`."
+    solution: |
+      ```bash
+      cd pruefung-card
+      sed -i 's#  --border: oklch(0.922 0 0);#  --border: oklch(0.922 0 0);\n  --card: oklch(1 0 0);\n  --card-foreground: oklch(0.145 0 0);#' src/index.css
+      sed -i 's#  --border: oklch(1 0 0 / 10%);#  --border: oklch(1 0 0 / 10%);\n  --card: oklch(0.205 0 0);\n  --card-foreground: oklch(0.985 0 0);#' src/index.css
+      sed -i 's#  --color-border: var(--border);#  --color-border: var(--border);\n  --color-card: var(--card);\n  --color-card-foreground: var(--card-foreground);#' src/index.css
+      cat > src/components/ui/card.tsx <<'EOF'
+      import type { ComponentProps } from 'react'
+      import { cn } from '@/lib/utils'
+
+      function Card({ className, ...props }: ComponentProps<'div'>) {
+        return <div data-slot="card" className={cn('bg-card text-card-foreground rounded-xl border border-border', className)} {...props} />
+      }
+
+      function CardHeader({ className, ...props }: ComponentProps<'div'>) {
+        return <div data-slot="card-header" className={cn('p-6 pb-2', className)} {...props} />
+      }
+
+      function CardTitle({ className, ...props }: ComponentProps<'div'>) {
+        return <div data-slot="card-title" className={cn('text-lg font-semibold', className)} {...props} />
+      }
+
+      function CardContent({ className, ...props }: ComponentProps<'div'>) {
+        return <div data-slot="card-content" className={cn('p-6 pt-0', className)} {...props} />
+      }
+
+      export { Card, CardHeader, CardTitle, CardContent }
+      EOF
+      cat > src/App.tsx <<'EOF'
+      import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+      export default function App() {
+        return (
+          <main className="p-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Momo</CardTitle>
+              </CardHeader>
+              <CardContent>Michael Ende, 1973</CardContent>
+            </Card>
+          </main>
+        )
+      }
+      EOF
+      bun run build
+      ```
+  - module: daten-und-routing
+    id: pruefung-suche
+    type: terminal
+    title: Ein Such-Loader mit geprüften Suchparametern
+    description: |
+      Im Ordner `pruefung-suche` liegt ein Projekt mit `react-router`, `zod` und Büchern in `src/data/books.ts`.
+      Schreibe einen Loader, der die Bücherliste über die URL filtert, z. B. `/?q=mo&limit=2`.
+
+      1. Lege `src/routes/search.tsx` an und exportiere `SearchSchema` mit
+         `q: z.string().trim().default('')` und `limit: z.coerce.number().int().min(1).max(20).default(10)`.
+      2. Exportiere `searchLoader({ request }: LoaderFunctionArgs)`:
+         - Lies `q` und `limit` aus `new URL(request.url).searchParams` (fehlende Parameter als `undefined`, z. B. mit `?? undefined`).
+         - Prüfe sie mit `SearchSchema.safeParse`. Bei Fehlern: `throw data('Ungültige Suche', { status: 400 })`.
+         - Gib `{ books }` zurück: alle Bücher, deren Titel `q` enthält (Groß-/Kleinschreibung egal), höchstens `limit` Stück.
+      3. Exportiere eine Komponente `SearchPage`, die die Titel mit `useLoaderData<typeof searchLoader>()` auflistet.
+      4. Baue mit `bun run build`.
+
+      Klicke zuerst auf **Aufgabe vorbereiten** (das dauert einige Sekunden).
+    workdir: pruefung-suche
+    setup: |
+      cat > package.json <<'EOF'
+      {
+        "name": "app",
+        "private": true,
+        "version": "0.0.0",
+        "type": "module",
+        "scripts": {
+          "dev": "vite",
+          "build": "tsc -b && vite build",
+          "preview": "vite preview"
+        },
+        "dependencies": {
+          "react": "^19.2.8",
+          "react-dom": "^19.2.8"
+        },
+        "devDependencies": {
+          "@types/node": "^24.13.3",
+          "@types/react": "^19.2.18",
+          "@types/react-dom": "^19.2.7",
+          "@vitejs/plugin-react": "^6.1.1",
+          "typescript": "^7.0.2",
+          "vite": "^8.3.0"
+        }
+      }
+      EOF
+      cat > tsconfig.json <<'EOF'
+      {
+        "files": [],
+        "references": [
+          { "path": "./tsconfig.app.json" },
+          { "path": "./tsconfig.node.json" }
+        ]
+      }
+      EOF
+      cat > tsconfig.app.json <<'EOF'
+      {
+        "compilerOptions": {
+          "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+          "target": "es2023",
+          "lib": ["ES2023", "DOM"],
+          "module": "esnext",
+          "types": ["vite/client"],
+          "skipLibCheck": true,
+          "moduleResolution": "bundler",
+          "allowImportingTsExtensions": true,
+          "verbatimModuleSyntax": true,
+          "moduleDetection": "force",
+          "noEmit": true,
+          "jsx": "react-jsx",
+          "strict": true,
+          "noUnusedLocals": true,
+          "noUnusedParameters": true
+        },
+        "include": ["src"]
+      }
+      EOF
+      cat > tsconfig.node.json <<'EOF'
+      {
+        "compilerOptions": {
+          "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+          "target": "es2023",
+          "lib": ["ES2023"],
+          "types": ["node"],
+          "skipLibCheck": true,
+          "module": "nodenext",
+          "allowImportingTsExtensions": true,
+          "verbatimModuleSyntax": true,
+          "moduleDetection": "force",
+          "noEmit": true,
+          "strict": true
+        },
+        "include": ["vite.config.ts"]
+      }
+      EOF
+      cat > vite.config.ts <<'EOF'
+      import react from '@vitejs/plugin-react'
+      import { defineConfig } from 'vite'
+
+      export default defineConfig({
+        plugins: [react()],
+      })
+      EOF
+      cat > index.html <<'EOF'
+      <!doctype html>
+      <html lang="de">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Stacklab App</title>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="module" src="/src/main.tsx"></script>
+        </body>
+      </html>
+      EOF
+      printf 'node_modules\ndist\n*.local\n' > .gitignore
+      mkdir -p src
+      cat > src/main.tsx <<'EOF'
+      import { StrictMode } from 'react'
+      import { createRoot } from 'react-dom/client'
+      import './index.css'
+      import App from './App.tsx'
+
+      createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+          <App />
+        </StrictMode>,
+      )
+      EOF
+      cat > src/App.tsx <<'EOF'
+      export default function App() {
+        return <h1>Hallo Stack</h1>
+      }
+      EOF
+      printf 'body {\n  font-family: system-ui, sans-serif;\n}\n' > src/index.css
+      bun install >/dev/null 2>&1
+      bun add tailwindcss @tailwindcss/vite >/dev/null 2>&1
+      cat > vite.config.ts <<'EOF'
+      import path from 'node:path'
+      import tailwindcss from '@tailwindcss/vite'
+      import react from '@vitejs/plugin-react'
+      import { defineConfig } from 'vite'
+
+      export default defineConfig({
+        plugins: [react(), tailwindcss()],
+        resolve: {
+          alias: {
+            '@': path.resolve(import.meta.dirname, './src'),
+          },
+        },
+      })
+      EOF
+      cat > tsconfig.json <<'EOF'
+      {
+        "files": [],
+        "references": [
+          { "path": "./tsconfig.app.json" },
+          { "path": "./tsconfig.node.json" }
+        ],
+        "compilerOptions": {
+          "paths": {
+            "@/*": ["./src/*"]
+          }
+        }
+      }
+      EOF
+      jq '.compilerOptions.paths = {"@/*": ["./src/*"]}' tsconfig.app.json > tsconfig.app.tmp && mv tsconfig.app.tmp tsconfig.app.json
+      printf '@import "tailwindcss";\n' > src/index.css
+      cat > src/App.tsx <<'EOF'
+      export default function App() {
+        return <h1 className="p-8 text-3xl font-bold">Hallo Stack</h1>
+      }
+      EOF
+      bun add react-router zod >/dev/null 2>&1
+      mkdir -p src/data src/routes
+      cat > src/data/books.ts <<'EOF'
+      export const books = [
+        { id: 'momo', title: 'Momo' },
+        { id: 'monster', title: 'Das Monster von Loch Ness' },
+        { id: 'tschick', title: 'Tschick' },
+        { id: 'krabat', title: 'Krabat' },
+        { id: 'moby', title: 'Moby Dick' },
+      ]
+      EOF
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cat > "$d/t.ts" <<'EOF'
+          import { searchLoader } from '../src/routes/search'
+          const run = async (query: string) => {
+            try {
+              const result = (await searchLoader({ request: new Request(`http://localhost/${query}`), params: {}, context: {} } as never)) as any
+              return result.books.map((book: { id: string }) => book.id).join('+') || 'leer'
+            } catch (error: any) {
+              return `fehler${error?.init?.status ?? ''}`
+            }
+          }
+          console.log([await run(''), await run('?q=MO'), await run('?q=mo&limit=2'), await run('?limit=abc'), await run('?limit=99')].join(' '))
+          EOF
+          bun "$d/t.ts"; status=$?; rm -rf "$d"; exit $status
+        stdout_equals: "momo+monster+tschick+krabat+moby momo+monster+moby momo+monster fehler400 fehler400"
+        message: searchLoader liefert noch nicht die erwarteten Ergebnisse. Ohne Parameter alle Bücher, q filtert ohne Rücksicht auf Groß-/Kleinschreibung, limit begrenzt, ungültige limit-Werte werfen data(…, { status 400 }).
+      - type: file_contains
+        path: src/routes/search.tsx
+        pattern: "z\\.coerce\\.number\\(\\)"
+        message: limit kommt als Text aus der URL – nutze z.coerce.number().
+      - type: file_contains
+        path: src/routes/search.tsx
+        pattern: "useLoaderData"
+        message: SearchPage soll die Ergebnisse mit useLoaderData lesen.
+      - type: command
+        run: bun run build >/dev/null 2>&1
+        message: bun run build schlägt fehl. Führe ihn aus und lies die Fehlermeldung.
+    hints:
+      - "`const url = new URL(request.url)` und `url.searchParams.get('q') ?? undefined` – null würde das Schema ablehnen, undefined greift auf den Standardwert zurück."
+      - "Filtern: `books.filter((book) => book.title.toLowerCase().includes(q.toLowerCase())).slice(0, limit)`."
+    solution: |
+      ```bash
+      cd pruefung-suche
+      cat > src/routes/search.tsx <<'EOF'
+      import { z } from 'zod'
+      import { data, useLoaderData, type LoaderFunctionArgs } from 'react-router'
+      import { books } from '@/data/books'
+
+      export const SearchSchema = z.object({
+        q: z.string().trim().default(''),
+        limit: z.coerce.number().int().min(1).max(20).default(10),
+      })
+
+      export async function searchLoader({ request }: LoaderFunctionArgs) {
+        const url = new URL(request.url)
+        const result = SearchSchema.safeParse({
+          q: url.searchParams.get('q') ?? undefined,
+          limit: url.searchParams.get('limit') ?? undefined,
+        })
+        if (!result.success) {
+          throw data('Ungültige Suche', { status: 400 })
+        }
+        const { q, limit } = result.data
+        const found = books.filter((book) => book.title.toLowerCase().includes(q.toLowerCase())).slice(0, limit)
+        return { books: found }
+      }
+
+      export function SearchPage() {
+        const { books: found } = useLoaderData<typeof searchLoader>()
+        return (
+          <ul>
+            {found.map((book) => (
+              <li key={book.id}>{book.title}</li>
+            ))}
+          </ul>
+        )
+      }
+      EOF
+      bun run build
+      ```
+  - module: auslieferung
+    id: pruefung-client-env
+    type: code
+    language: ts
+    title: Was landet im Browser?
+    description: |
+      Baue im Kleinen nach, welche Umgebungsvariablen Vite an den Browser-Code weitergibt. Schreibe
+      `clientEnv(env, mode)`:
+
+      - Nur Schlüssel, die mit `VITE_` beginnen, werden übernommen. Werte, die `undefined` sind, fallen weg.
+      - Zusätzlich enthält das Ergebnis immer `MODE` (der übergebene Modus), `DEV` (`true`, wenn der Modus nicht
+        `production` ist) und `PROD` (das Gegenteil von `DEV`).
+    starter: |
+      type ClientEnv = Record<string, string | boolean>
+
+      function clientEnv(env: Record<string, string | undefined>, mode: string): ClientEnv {
+        // dein Code
+        return {}
+      }
+    tests:
+      - name: nur VITE_-Variablen werden übernommen
+        code: |
+          assertDeepEqual(clientEnv({ VITE_API_URL: 'https://api.example.com', DB_PASSWORD: 'geheim' }, 'production'), { VITE_API_URL: 'https://api.example.com', MODE: 'production', DEV: false, PROD: true })
+      - name: leere Umgebung im Entwicklungsmodus
+        code: |
+          assertDeepEqual(clientEnv({}, 'development'), { MODE: 'development', DEV: true, PROD: false })
+      - name: undefined-Werte und ähnliche Namen fallen weg
+        code: |
+          assertDeepEqual(clientEnv({ VITE_TITLE: 'Buchclub', VITE_EMPTY: undefined, VITEX: 'x', vite_lower: 'y' }, 'staging'), { VITE_TITLE: 'Buchclub', MODE: 'staging', DEV: true, PROD: false })
+    hints:
+      - "`Object.entries(env)` liefert Paare aus Schlüssel und Wert. Prüfe mit `key.startsWith('VITE_')` und `value !== undefined`."
+      - "`const prod = mode === 'production'`"
+    solution: |
+      ```ts
+      function clientEnv(env: Record<string, string | undefined>, mode: string): ClientEnv {
+        const result: ClientEnv = {}
+        for (const [key, value] of Object.entries(env)) {
+          if (key.startsWith('VITE_') && value !== undefined) {
+            result[key] = value
+          }
+        }
+        const prod = mode === 'production'
+        result.MODE = mode
+        result.DEV = !prod
+        result.PROD = prod
+        return result
+      }
+      ```

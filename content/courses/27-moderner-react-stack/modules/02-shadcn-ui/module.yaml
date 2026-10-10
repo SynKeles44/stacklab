@@ -1,0 +1,412 @@
+title: "shadcn/ui: Komponenten, die dir gehören"
+description: Was shadcn/ui von klassischen Bibliotheken unterscheidet, wie du Komponenten liest und erweiterst und wie du das Design über CSS-Variablen steuerst.
+exercise:
+  id: modul-uebung-badge
+  type: terminal
+  title: Ein Badge im shadcn-Stil
+  description: |
+    Im Ordner `badge-uebung` liegt ein Projekt mit Tailwind, Alias `@`, `cn()` in `src/lib/utils.ts`, einem
+    shadcn-Button und Theme-Variablen. Für den Buchclub brauchst du eine kleine Status-Plakette (Badge).
+
+    1. Lege die Theme-Farbe `success` an: `--success` und `--success-foreground` in `:root` **und** `.dark`,
+       dazu `--color-success` und `--color-success-foreground` in `@theme inline`.
+    2. Schreibe `src/components/ui/badge.tsx` im Stil des Buttons:
+       - `badgeVariants` mit `cva`, Basis-Klassen z. B. `inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium`,
+       - Varianten `default` (`bg-primary text-primary-foreground`), `secondary` (`bg-muted text-muted-foreground`),
+         `destructive` (`bg-destructive text-white`) und `success` (`bg-success text-success-foreground`),
+       - Standardvariante `default`,
+       - Komponente `Badge`, die ein `<span data-slot="badge">` rendert und `className` mit `cn()` zusammenführt,
+       - exportiere `Badge` und `badgeVariants`.
+    3. Schreibe `src/components/BookStatus.tsx` mit `BookStatus({ available }: { available: boolean })`: Sie zeigt
+       ein `Badge` mit Variante `success` und Text „Verfügbar“ oder mit Variante `destructive` und Text „Ausgeliehen“.
+    4. Zeige in `src/App.tsx` zweimal `BookStatus` an – einmal verfügbar, einmal ausgeliehen.
+    5. Baue mit `bun run build`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** (das dauert einige Sekunden).
+  workdir: badge-uebung
+  setup: |
+    cat > package.json <<'EOF'
+    {
+      "name": "app",
+      "private": true,
+      "version": "0.0.0",
+      "type": "module",
+      "scripts": {
+        "dev": "vite",
+        "build": "tsc -b && vite build",
+        "preview": "vite preview"
+      },
+      "dependencies": {
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8"
+      },
+      "devDependencies": {
+        "@types/node": "^24.13.3",
+        "@types/react": "^19.2.18",
+        "@types/react-dom": "^19.2.7",
+        "@vitejs/plugin-react": "^6.1.1",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.0"
+      }
+    }
+    EOF
+    cat > tsconfig.json <<'EOF'
+    {
+      "files": [],
+      "references": [
+        { "path": "./tsconfig.app.json" },
+        { "path": "./tsconfig.node.json" }
+      ]
+    }
+    EOF
+    cat > tsconfig.app.json <<'EOF'
+    {
+      "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+        "target": "es2023",
+        "lib": ["ES2023", "DOM"],
+        "module": "esnext",
+        "types": ["vite/client"],
+        "skipLibCheck": true,
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "moduleDetection": "force",
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
+      },
+      "include": ["src"]
+    }
+    EOF
+    cat > tsconfig.node.json <<'EOF'
+    {
+      "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+        "target": "es2023",
+        "lib": ["ES2023"],
+        "types": ["node"],
+        "skipLibCheck": true,
+        "module": "nodenext",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "moduleDetection": "force",
+        "noEmit": true,
+        "strict": true
+      },
+      "include": ["vite.config.ts"]
+    }
+    EOF
+    cat > vite.config.ts <<'EOF'
+    import react from '@vitejs/plugin-react'
+    import { defineConfig } from 'vite'
+
+    export default defineConfig({
+      plugins: [react()],
+    })
+    EOF
+    cat > index.html <<'EOF'
+    <!doctype html>
+    <html lang="de">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Stacklab App</title>
+      </head>
+      <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.tsx"></script>
+      </body>
+    </html>
+    EOF
+    printf 'node_modules\ndist\n*.local\n' > .gitignore
+    mkdir -p src
+    cat > src/main.tsx <<'EOF'
+    import { StrictMode } from 'react'
+    import { createRoot } from 'react-dom/client'
+    import './index.css'
+    import App from './App.tsx'
+
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    )
+    EOF
+    cat > src/App.tsx <<'EOF'
+    export default function App() {
+      return <h1>Hallo Stack</h1>
+    }
+    EOF
+    printf 'body {\n  font-family: system-ui, sans-serif;\n}\n' > src/index.css
+    bun install >/dev/null 2>&1
+    bun add tailwindcss @tailwindcss/vite >/dev/null 2>&1
+    cat > vite.config.ts <<'EOF'
+    import path from 'node:path'
+    import tailwindcss from '@tailwindcss/vite'
+    import react from '@vitejs/plugin-react'
+    import { defineConfig } from 'vite'
+
+    export default defineConfig({
+      plugins: [react(), tailwindcss()],
+      resolve: {
+        alias: {
+          '@': path.resolve(import.meta.dirname, './src'),
+        },
+      },
+    })
+    EOF
+    cat > tsconfig.json <<'EOF'
+    {
+      "files": [],
+      "references": [
+        { "path": "./tsconfig.app.json" },
+        { "path": "./tsconfig.node.json" }
+      ],
+      "compilerOptions": {
+        "paths": {
+          "@/*": ["./src/*"]
+        }
+      }
+    }
+    EOF
+    jq '.compilerOptions.paths = {"@/*": ["./src/*"]}' tsconfig.app.json > tsconfig.app.tmp && mv tsconfig.app.tmp tsconfig.app.json
+    printf '@import "tailwindcss";\n' > src/index.css
+    cat > src/App.tsx <<'EOF'
+    export default function App() {
+      return <h1 className="p-8 text-3xl font-bold">Hallo Stack</h1>
+    }
+    EOF
+    bun add clsx tailwind-merge class-variance-authority >/dev/null 2>&1
+    mkdir -p src/lib src/components/ui
+    cat > src/lib/utils.ts <<'EOF'
+    import { clsx, type ClassValue } from 'clsx'
+    import { twMerge } from 'tailwind-merge'
+
+    export function cn(...inputs: ClassValue[]) {
+      return twMerge(clsx(inputs))
+    }
+    EOF
+    cat > components.json <<'EOF'
+    {
+      "$schema": "https://ui.shadcn.com/schema.json",
+      "style": "new-york",
+      "rsc": false,
+      "tsx": true,
+      "tailwind": {
+        "config": "",
+        "css": "src/index.css",
+        "baseColor": "neutral",
+        "cssVariables": true,
+        "prefix": ""
+      },
+      "aliases": {
+        "components": "@/components",
+        "utils": "@/lib/utils",
+        "ui": "@/components/ui",
+        "lib": "@/lib",
+        "hooks": "@/hooks"
+      }
+    }
+    EOF
+    cat > src/components/ui/button.tsx <<'EOF'
+    import type { ComponentProps } from 'react'
+    import { cva, type VariantProps } from 'class-variance-authority'
+    import { cn } from '@/lib/utils'
+
+    const buttonVariants = cva(
+      'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
+      {
+        variants: {
+          variant: {
+            default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+            outline: 'border border-border bg-background hover:bg-muted',
+            ghost: 'hover:bg-muted',
+          },
+          size: {
+            default: 'h-9 px-4 py-2',
+            sm: 'h-8 px-3',
+            lg: 'h-10 px-6',
+          },
+        },
+        defaultVariants: {
+          variant: 'default',
+          size: 'default',
+        },
+      },
+    )
+
+    function Button({
+      className,
+      variant,
+      size,
+      ...props
+    }: ComponentProps<'button'> & VariantProps<typeof buttonVariants>) {
+      return (
+        <button
+          data-slot="button"
+          className={cn(buttonVariants({ variant, size, className }))}
+          {...props}
+        />
+      )
+    }
+
+    export { Button, buttonVariants }
+    EOF
+    cat > src/index.css <<'EOF'
+    @import "tailwindcss";
+
+    @custom-variant dark (&:is(.dark *));
+
+    :root {
+      --radius: 0.625rem;
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+    }
+
+    .dark {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%);
+    }
+
+    @theme inline {
+      --color-background: var(--background);
+      --color-foreground: var(--foreground);
+      --color-primary: var(--primary);
+      --color-primary-foreground: var(--primary-foreground);
+      --color-muted: var(--muted);
+      --color-muted-foreground: var(--muted-foreground);
+      --color-destructive: var(--destructive);
+      --color-border: var(--border);
+      --radius-md: calc(var(--radius) - 2px);
+    }
+
+    body {
+      @apply bg-background text-foreground;
+    }
+    EOF
+    cat > src/App.tsx <<'EOF'
+    import { Button } from '@/components/ui/button'
+
+    export default function App() {
+      return (
+        <main className="p-8">
+          <Button variant="outline">Hallo Stack</Button>
+        </main>
+      )
+    }
+    EOF
+  checks:
+    - type: file_contains
+      path: src/index.css
+      pattern: ":root\\s*\\{[^}]*--success\\s*:"
+      message: In :root fehlt --success.
+    - type: file_contains
+      path: src/index.css
+      pattern: "\\.dark\\s*\\{[^}]*--success\\s*:"
+      message: In .dark fehlt --success.
+    - type: file_contains
+      path: src/index.css
+      pattern: "--color-success-foreground\\s*:\\s*var\\(--success-foreground\\)"
+      message: Im Block @theme inline fehlen --color-success und --color-success-foreground.
+    - type: file_contains
+      path: src/components/ui/badge.tsx
+      pattern: "const\\s+badgeVariants\\s*=\\s*cva\\("
+      message: In badge.tsx fehlt const badgeVariants = cva(…).
+    - type: command
+      run: for v in default secondary destructive success; do grep -Eq "^\s*$v\s*:" src/components/ui/badge.tsx || echo "$v"; done
+      stdout_equals: ""
+      message: In badgeVariants fehlen Varianten. Nötig sind default, secondary, destructive und success.
+    - type: file_contains
+      path: src/components/ui/badge.tsx
+      pattern: "data-slot=[\"']badge[\"']"
+      message: Der span in Badge braucht data-slot="badge".
+    - type: file_contains
+      path: src/components/ui/badge.tsx
+      pattern: "export\\s*\\{[^}]*\\bBadge\\b[^}]*badgeVariants|export\\s*\\{[^}]*badgeVariants[^}]*\\bBadge\\b"
+      message: badge.tsx soll am Ende export { Badge, badgeVariants } enthalten.
+    - type: file_contains
+      path: src/components/BookStatus.tsx
+      pattern: "from\\s+['\"]@/components/ui/badge['\"]"
+      message: BookStatus soll Badge aus '@/components/ui/badge' importieren.
+    - type: file_contains
+      path: src/App.tsx
+      pattern: "<BookStatus"
+      message: App.tsx soll BookStatus anzeigen.
+    - type: command
+      run: bun run build >/dev/null 2>&1
+      message: bun run build schlägt fehl. Führe ihn aus und lies die Fehlermeldung.
+    - type: command
+      run: grep -h -o "\.bg-success{[^}]*}" dist/assets/*.css | head -1
+      stdout_matches: "var\\(--success\\)"
+      message: Im gebauten CSS fehlt .bg-success mit var(--success). Prüfe @theme inline und ob BookStatus die Variante success benutzt.
+  hints:
+    - "Kopiere den Aufbau von `src/components/ui/button.tsx` und ersetze `button` durch `span`."
+    - "Typ der Props: `ComponentProps<'span'> & VariantProps<typeof badgeVariants>`."
+    - "BookStatus: `return available ? <Badge variant=\"success\">Verfügbar</Badge> : <Badge variant=\"destructive\">Ausgeliehen</Badge>`"
+  solution: |
+    ```bash
+    cd badge-uebung
+    sed -i 's#  --border: oklch(0.922 0 0);#  --border: oklch(0.922 0 0);\n  --success: oklch(0.6 0.15 150);\n  --success-foreground: oklch(0.98 0 0);#' src/index.css
+    sed -i 's#  --border: oklch(1 0 0 / 10%);#  --border: oklch(1 0 0 / 10%);\n  --success: oklch(0.45 0.12 150);\n  --success-foreground: oklch(0.98 0 0);#' src/index.css
+    sed -i 's#  --color-border: var(--border);#  --color-border: var(--border);\n  --color-success: var(--success);\n  --color-success-foreground: var(--success-foreground);#' src/index.css
+    cat > src/components/ui/badge.tsx <<'EOF'
+    import type { ComponentProps } from 'react'
+    import { cva, type VariantProps } from 'class-variance-authority'
+    import { cn } from '@/lib/utils'
+
+    const badgeVariants = cva('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium', {
+      variants: {
+        variant: {
+          default: 'bg-primary text-primary-foreground',
+          secondary: 'bg-muted text-muted-foreground',
+          destructive: 'bg-destructive text-white',
+          success: 'bg-success text-success-foreground',
+        },
+      },
+      defaultVariants: {
+        variant: 'default',
+      },
+    })
+
+    function Badge({ className, variant, ...props }: ComponentProps<'span'> & VariantProps<typeof badgeVariants>) {
+      return <span data-slot="badge" className={cn(badgeVariants({ variant, className }))} {...props} />
+    }
+
+    export { Badge, badgeVariants }
+    EOF
+    cat > src/components/BookStatus.tsx <<'EOF'
+    import { Badge } from '@/components/ui/badge'
+
+    export function BookStatus({ available }: { available: boolean }) {
+      return available ? <Badge variant="success">Verfügbar</Badge> : <Badge variant="destructive">Ausgeliehen</Badge>
+    }
+    EOF
+    cat > src/App.tsx <<'EOF'
+    import { BookStatus } from '@/components/BookStatus'
+
+    export default function App() {
+      return (
+        <main className="flex gap-2 p-8">
+          <BookStatus available />
+          <BookStatus available={false} />
+        </main>
+      )
+    }
+    EOF
+    bun run build
+    ```

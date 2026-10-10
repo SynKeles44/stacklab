@@ -1,0 +1,1123 @@
+title: Die Buchclub-App
+description: |
+  In diesem Projekt baust du eine kleine, aber vollständige App für einen Buchclub – mit genau dem Stack aus diesem
+  Kurs. Die App zeigt eine Bücherliste aus einer (simulierten) API, hat Detailseiten mit sauberer 404-Behandlung,
+  ein Formular für Buchvorschläge mit Zod-Validierung, eine lazy geladene Statistikseite und eine Konfiguration
+  über Umgebungsvariablen. Am Ende steht ein Produktions-Build, den jeder Webserver ausliefern kann.
+
+  Klicke zuerst auf **Projekt vorbereiten**: Dann liegt im Ordner `buchclub` ein frisches Vite-React-Projekt mit
+  TypeScript, dessen Abhängigkeiten bereits installiert sind. Öffne das Übungs-Terminal und wechsle mit
+  `cd buchclub` hinein. Nach jedem Schritt prüft `bun run build`, ob Typen und Build noch stimmen – nutze das
+  oft. Die Schritte bauen aufeinander auf; lösche nichts, was ein früherer Schritt angelegt hat.
+goal: >
+  Ein Projekt `buchclub` mit Tailwind CSS 4, Alias `@`, shadcn-Button und Theme-Variablen, Zod-Schemas für Bücher und
+  Vorschläge, einem Router im Data Mode mit Liste, Detailseite, Vorschlagsformular (action), ErrorBoundary und lazy
+  Statistikseite, geprüften Umgebungsvariablen und einem fertigen `dist/`-Ordner.
+workdir: buchclub
+setup: |
+  cat > package.json <<'EOF'
+  {
+    "name": "app",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+      "dev": "vite",
+      "build": "tsc -b && vite build",
+      "preview": "vite preview"
+    },
+    "dependencies": {
+      "react": "^19.2.8",
+      "react-dom": "^19.2.8"
+    },
+    "devDependencies": {
+      "@types/node": "^24.13.3",
+      "@types/react": "^19.2.18",
+      "@types/react-dom": "^19.2.7",
+      "@vitejs/plugin-react": "^6.1.1",
+      "typescript": "^7.0.2",
+      "vite": "^8.3.0"
+    }
+  }
+  EOF
+  cat > tsconfig.json <<'EOF'
+  {
+    "files": [],
+    "references": [
+      { "path": "./tsconfig.app.json" },
+      { "path": "./tsconfig.node.json" }
+    ]
+  }
+  EOF
+  cat > tsconfig.app.json <<'EOF'
+  {
+    "compilerOptions": {
+      "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+      "target": "es2023",
+      "lib": ["ES2023", "DOM"],
+      "module": "esnext",
+      "types": ["vite/client"],
+      "skipLibCheck": true,
+      "moduleResolution": "bundler",
+      "allowImportingTsExtensions": true,
+      "verbatimModuleSyntax": true,
+      "moduleDetection": "force",
+      "noEmit": true,
+      "jsx": "react-jsx",
+      "strict": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true
+    },
+    "include": ["src"]
+  }
+  EOF
+  cat > tsconfig.node.json <<'EOF'
+  {
+    "compilerOptions": {
+      "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+      "target": "es2023",
+      "lib": ["ES2023"],
+      "types": ["node"],
+      "skipLibCheck": true,
+      "module": "nodenext",
+      "allowImportingTsExtensions": true,
+      "verbatimModuleSyntax": true,
+      "moduleDetection": "force",
+      "noEmit": true,
+      "strict": true
+    },
+    "include": ["vite.config.ts"]
+  }
+  EOF
+  cat > vite.config.ts <<'EOF'
+  import react from '@vitejs/plugin-react'
+  import { defineConfig } from 'vite'
+
+  export default defineConfig({
+    plugins: [react()],
+  })
+  EOF
+  cat > index.html <<'EOF'
+  <!doctype html>
+  <html lang="de">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Stacklab App</title>
+    </head>
+    <body>
+      <div id="root"></div>
+      <script type="module" src="/src/main.tsx"></script>
+    </body>
+  </html>
+  EOF
+  printf 'node_modules\ndist\n*.local\n' > .gitignore
+  mkdir -p src
+  cat > src/main.tsx <<'EOF'
+  import { StrictMode } from 'react'
+  import { createRoot } from 'react-dom/client'
+  import './index.css'
+  import App from './App.tsx'
+
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+  EOF
+  cat > src/App.tsx <<'EOF'
+  export default function App() {
+    return <h1>Hallo Stack</h1>
+  }
+  EOF
+  printf 'body {\n  font-family: system-ui, sans-serif;\n}\n' > src/index.css
+  bun install >/dev/null 2>&1
+steps:
+  - id: tailwind-und-alias
+    title: Tailwind CSS 4 und den Alias @ einrichten
+    description: |
+      Das Fundament: Tailwind über das Vite-Plugin und der Alias `@` für `src`, den shadcn/ui und alle weiteren
+      Schritte voraussetzen.
+
+      1. Installiere `tailwindcss` und `@tailwindcss/vite` mit `bun add`.
+      2. Ergänze `vite.config.ts` um das Plugin `tailwindcss()` und `resolve.alias` mit
+         `'@': path.resolve(import.meta.dirname, './src')`.
+      3. Trage `"paths": { "@/*": ["./src/*"] }` unter `compilerOptions` in `tsconfig.json` **und** `tsconfig.app.json` ein.
+      4. Ersetze `src/index.css` durch `@import "tailwindcss";` und gib der Überschrift in `src/App.tsx` ein paar
+         Tailwind-Klassen.
+      5. Prüfe mit `bun run build`.
+    checklist:
+      - tailwindcss und @tailwindcss/vite installiert
+      - Plugin und Alias in vite.config.ts
+      - paths in beiden tsconfig-Dateien
+      - "@import \"tailwindcss\"; in src/index.css"
+      - bun run build läuft durch
+    hints:
+      - "Die Vorlage für vite.config.ts findest du in der Lektion „Tailwind CSS 4 und der Pfad-Alias @“."
+      - "`jq '.compilerOptions.paths = {\"@/*\": [\"./src/*\"]}' tsconfig.json > t.json && mv t.json tsconfig.json` – und dasselbe für tsconfig.app.json."
+    checks:
+      - type: command
+        run: jq -r '.dependencies + .devDependencies | has("tailwindcss") and has("@tailwindcss/vite")' package.json
+        stdout_equals: "true"
+        message: In der package.json fehlen tailwindcss und @tailwindcss/vite.
+      - type: file_contains
+        path: vite.config.ts
+        pattern: "tailwindcss\\(\\)"
+        message: In vite.config.ts fehlt das Plugin tailwindcss().
+      - type: file_contains
+        path: vite.config.ts
+        pattern: "['\"]@['\"]\\s*:\\s*path\\.resolve\\("
+        message: In vite.config.ts fehlt der Alias '@' mit path.resolve(…).
+      - type: command
+        run: for f in tsconfig.json tsconfig.app.json; do jq -e '.compilerOptions.paths["@/*"]' "$f" >/dev/null 2>&1 || echo "$f"; done
+        stdout_equals: ""
+        message: In tsconfig.json oder tsconfig.app.json fehlt "paths" mit "@/*" (oder die Datei ist kein gültiges JSON mehr).
+      - type: file_contains
+        path: src/index.css
+        pattern: "@import\\s+[\"']tailwindcss[\"']"
+        message: src/index.css soll Tailwind mit @import "tailwindcss"; laden.
+      - type: command
+        run: bun run build >/dev/null 2>&1
+        message: bun run build schlägt fehl. Führe ihn aus und lies die Fehlermeldung.
+    solution: |
+      ```bash
+      bun add tailwindcss @tailwindcss/vite
+      # vite.config.ts mit tailwindcss() und resolve.alias '@' → path.resolve(import.meta.dirname, './src')
+      # tsconfig.json und tsconfig.app.json: "paths": { "@/*": ["./src/*"] }
+      printf '@import "tailwindcss";\n' > src/index.css
+      bun run build
+      ```
+    solve: |
+      bun add tailwindcss @tailwindcss/vite >/dev/null 2>&1
+      cat > vite.config.ts <<'EOF'
+      import path from 'node:path'
+      import tailwindcss from '@tailwindcss/vite'
+      import react from '@vitejs/plugin-react'
+      import { defineConfig } from 'vite'
+
+      export default defineConfig({
+        plugins: [react(), tailwindcss()],
+        resolve: {
+          alias: {
+            '@': path.resolve(import.meta.dirname, './src'),
+          },
+        },
+      })
+      EOF
+      cat > tsconfig.json <<'EOF'
+      {
+        "files": [],
+        "references": [
+          { "path": "./tsconfig.app.json" },
+          { "path": "./tsconfig.node.json" }
+        ],
+        "compilerOptions": {
+          "paths": {
+            "@/*": ["./src/*"]
+          }
+        }
+      }
+      EOF
+      jq '.compilerOptions.paths = {"@/*": ["./src/*"]}' tsconfig.app.json > tsconfig.app.tmp && mv tsconfig.app.tmp tsconfig.app.json
+      printf '@import "tailwindcss";\n' > src/index.css
+      cat > src/App.tsx <<'EOF'
+      export default function App() {
+        return <h1 className="p-8 text-3xl font-bold">Hallo Stack</h1>
+      }
+      EOF
+  - id: shadcn-basis
+    title: Die shadcn-Grundlage legen
+    description: |
+      Im echten Projekt würdest du jetzt `bunx --bun shadcn@latest init` und `bunx --bun shadcn@latest add button`
+      ausführen. Das Übungs-Terminal erreicht die Registry von shadcn/ui nicht – deshalb legst du die Dateien
+      selbst an, die die CLI erzeugen würde. So siehst du genau, was sie tut.
+
+      1. Installiere `clsx`, `tailwind-merge` und `class-variance-authority`.
+      2. Lege `src/lib/utils.ts` mit der Funktion `cn(...inputs: ClassValue[])` an (`twMerge(clsx(inputs))`).
+      3. Lege `components.json` an (Stil `new-york`, `tsx: true`, CSS `src/index.css`, `cssVariables: true`,
+         Aliase `@/components`, `@/lib/utils`, `@/components/ui`, `@/lib`, `@/hooks`).
+      4. Lege `src/components/ui/button.tsx` mit `buttonVariants` (cva, Varianten `default`, `outline`, `ghost`,
+         Größen `default`, `sm`, `lg`) und `Button` an.
+      5. Ergänze `src/index.css` um `@custom-variant dark (&:is(.dark *));`, Theme-Variablen in `:root` und `.dark`
+         (mindestens `background`, `foreground`, `primary`, `primary-foreground`, `muted`, `muted-foreground`,
+         `destructive`, `border`) und den Block `@theme inline`, der sie als `--color-*` verfügbar macht.
+      6. Benutze den Button in `src/App.tsx` und baue.
+    checklist:
+      - cn() in src/lib/utils.ts
+      - components.json mit den Aliasen
+      - button.tsx mit cva-Varianten
+      - Theme-Variablen in :root, .dark und @theme inline
+    hints:
+      - Den kompletten Button-Code findest du in der Lektion „Komponenten lesen und anpassen“.
+      - "Die Token-Kette aus „Theming mit CSS-Variablen“: Wert in `:root`/`.dark`, dann `--color-primary: var(--primary);` in `@theme inline`."
+    checks:
+      - type: file_contains
+        path: src/lib/utils.ts
+        pattern: "twMerge\\(\\s*clsx\\("
+        message: src/lib/utils.ts soll cn() mit twMerge(clsx(inputs)) exportieren.
+      - type: command
+        run: jq -r '.aliases.ui + " " + .tailwind.css + " " + (.tailwind.cssVariables|tostring)' components.json
+        stdout_equals: "@/components/ui src/index.css true"
+        message: components.json fehlt oder ist unvollständig (aliases.ui, tailwind.css, tailwind.cssVariables).
+      - type: file_contains
+        path: src/components/ui/button.tsx
+        pattern: "const\\s+buttonVariants\\s*=\\s*cva\\("
+        message: In src/components/ui/button.tsx fehlt const buttonVariants = cva(…).
+      - type: file_contains
+        path: src/index.css
+        pattern: "\\.dark\\s*\\{[^}]*--primary\\s*:"
+        message: In src/index.css fehlt der Block .dark mit --primary.
+      - type: file_contains
+        path: src/index.css
+        pattern: "@theme\\s+inline\\s*\\{[^}]*--color-primary\\s*:\\s*var\\(--primary\\)"
+        message: In @theme inline fehlt --color-primary - var(--primary).
+      - type: command
+        run: bun run build >/dev/null 2>&1
+        message: bun run build schlägt fehl. Führe ihn aus und lies die Fehlermeldung.
+    solution: |
+      ```bash
+      bun add clsx tailwind-merge class-variance-authority
+      mkdir -p src/lib src/components/ui
+      # src/lib/utils.ts: export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)) }
+      # components.json, src/components/ui/button.tsx und die Theme-Variablen wie in Modul 2
+      bun run build
+      ```
+    solve: |
+      bun add clsx tailwind-merge class-variance-authority >/dev/null 2>&1
+      mkdir -p src/lib src/components/ui
+      cat > src/lib/utils.ts <<'EOF'
+      import { clsx, type ClassValue } from 'clsx'
+      import { twMerge } from 'tailwind-merge'
+
+      export function cn(...inputs: ClassValue[]) {
+        return twMerge(clsx(inputs))
+      }
+      EOF
+      cat > components.json <<'EOF'
+      {
+        "$schema": "https://ui.shadcn.com/schema.json",
+        "style": "new-york",
+        "rsc": false,
+        "tsx": true,
+        "tailwind": {
+          "config": "",
+          "css": "src/index.css",
+          "baseColor": "neutral",
+          "cssVariables": true,
+          "prefix": ""
+        },
+        "aliases": {
+          "components": "@/components",
+          "utils": "@/lib/utils",
+          "ui": "@/components/ui",
+          "lib": "@/lib",
+          "hooks": "@/hooks"
+        }
+      }
+      EOF
+      cat > src/components/ui/button.tsx <<'EOF'
+      import type { ComponentProps } from 'react'
+      import { cva, type VariantProps } from 'class-variance-authority'
+      import { cn } from '@/lib/utils'
+
+      const buttonVariants = cva(
+        'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
+        {
+          variants: {
+            variant: {
+              default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+              outline: 'border border-border bg-background hover:bg-muted',
+              ghost: 'hover:bg-muted',
+            },
+            size: {
+              default: 'h-9 px-4 py-2',
+              sm: 'h-8 px-3',
+              lg: 'h-10 px-6',
+            },
+          },
+          defaultVariants: {
+            variant: 'default',
+            size: 'default',
+          },
+        },
+      )
+
+      function Button({
+        className,
+        variant,
+        size,
+        ...props
+      }: ComponentProps<'button'> & VariantProps<typeof buttonVariants>) {
+        return (
+          <button
+            data-slot="button"
+            className={cn(buttonVariants({ variant, size, className }))}
+            {...props}
+          />
+        )
+      }
+
+      export { Button, buttonVariants }
+      EOF
+      cat > src/index.css <<'EOF'
+      @import "tailwindcss";
+
+      @custom-variant dark (&:is(.dark *));
+
+      :root {
+        --radius: 0.625rem;
+        --background: oklch(1 0 0);
+        --foreground: oklch(0.145 0 0);
+        --primary: oklch(0.205 0 0);
+        --primary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.97 0 0);
+        --muted-foreground: oklch(0.556 0 0);
+        --destructive: oklch(0.577 0.245 27.325);
+        --border: oklch(0.922 0 0);
+      }
+
+      .dark {
+        --background: oklch(0.145 0 0);
+        --foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+      }
+
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-destructive: var(--destructive);
+        --color-border: var(--border);
+        --radius-md: calc(var(--radius) - 2px);
+      }
+
+      body {
+        @apply bg-background text-foreground;
+      }
+      EOF
+      cat > src/App.tsx <<'EOF'
+      import { Button } from '@/components/ui/button'
+
+      export default function App() {
+        return (
+          <main className="p-8">
+            <Button variant="outline">Hallo Stack</Button>
+          </main>
+        )
+      }
+      EOF
+  - id: schemas
+    title: Schemas für Bücher und Vorschläge
+    description: |
+      Die App bekommt ihre Daten aus einer „API“ – im Projekt eine statische Datei unter `public/api/books.json`,
+      die Vite unverändert ausliefert. Bevor irgendeine Komponente die Daten sieht, prüft Zod sie.
+
+      1. Installiere `zod`.
+      2. Lege `public/api/books.json` mit mindestens drei Büchern an (`id`, `title`, `author`, `year`, optional `tags`).
+         Mindestens ein Buch hat **keine** `tags`, und eines hat die `id` `momo`.
+      3. Exportiere in `src/lib/schemas.ts`:
+         - `BookSchema` (`id`, `title`, `author` nicht leer, `year` ganze Zahl zwischen 1450 und 2100, `tags` als Text-Array mit Standardwert `[]`),
+         - `BookListSchema` und den Typ `Book`,
+         - `SuggestionSchema` (`title` und `author` nach `.trim()` mindestens 2 Zeichen, `email` als `z.email()`, jeweils mit deutscher Meldung) und den Typ `Suggestion`.
+    checklist:
+      - zod installiert
+      - public/api/books.json mit drei Büchern
+      - BookSchema, BookListSchema, SuggestionSchema und Typen exportiert
+    hints:
+      - "`tags: z.array(z.string()).default([])` ergänzt fehlende Tags automatisch."
+      - "Meldungen in Zod 4: `z.string().trim().min(2, { error: 'Der Titel braucht mindestens 2 Zeichen.' })`."
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cat > "$d/t.ts" <<'EOF'
+          import { BookListSchema, BookSchema, SuggestionSchema } from '../src/lib/schemas'
+          const books = BookListSchema.parse(await Bun.file('public/api/books.json').json())
+          const withoutTags = books.filter((book) => book.tags.length === 0).length
+          const hasMomo = books.some((book) => book.id === 'momo')
+          const badYear = BookSchema.safeParse({ id: 'x', title: 'T', author: 'A', year: 3000 }).success
+          const badSuggestion = SuggestionSchema.safeParse({ title: ' X ', author: 'Ada', email: 'nope' })
+          const keys = badSuggestion.success ? 'akzeptiert' : badSuggestion.error.issues.map((issue) => issue.path.join('.')).sort().join(',')
+          console.log(books.length >= 3, withoutTags >= 1, hasMomo, badYear, keys)
+          EOF
+          bun "$d/t.ts"; status=$?; rm -rf "$d"; exit $status
+        stdout_equals: "true true true false email,title"
+        message: Schemas oder books.json passen noch nicht. Nötig sind mindestens drei gültige Bücher (eines mit id momo, eines ohne tags), year zwischen 1450 und 2100 und ein SuggestionSchema, das zu kurze Titel und ungültige E-Mails ablehnt.
+      - type: file_contains
+        path: src/lib/schemas.ts
+        pattern: "export\\s+type\\s+Book\\s*=\\s*z\\.infer<"
+        message: Exportiere den Typ Book mit z.infer<typeof BookSchema>.
+    solution: |
+      ```bash
+      bun add zod
+      mkdir -p public/api
+      # public/api/books.json mit drei Büchern, src/lib/schemas.ts mit BookSchema, BookListSchema, SuggestionSchema
+      ```
+    solve: |
+      bun add zod >/dev/null 2>&1
+      mkdir -p src/lib public/api
+      cat > public/api/books.json <<'EOF'
+      [
+        { "id": "momo", "title": "Momo", "author": "Michael Ende", "year": 1973, "tags": ["Klassiker"] },
+        { "id": "tschick", "title": "Tschick", "author": "Wolfgang Herrndorf", "year": 2010, "tags": ["Roadtrip"] },
+        { "id": "krabat", "title": "Krabat", "author": "Otfried Preußler", "year": 1971 }
+      ]
+      EOF
+      cat > src/lib/schemas.ts <<'EOF'
+      import { z } from 'zod'
+
+      export const BookSchema = z.object({
+        id: z.string().min(1),
+        title: z.string().min(1),
+        author: z.string().min(1),
+        year: z.int().min(1450).max(2100),
+        tags: z.array(z.string()).default([]),
+      })
+
+      export const BookListSchema = z.array(BookSchema)
+
+      export type Book = z.infer<typeof BookSchema>
+
+      export const SuggestionSchema = z.object({
+        title: z.string().trim().min(2, { error: 'Der Titel braucht mindestens 2 Zeichen.' }),
+        author: z.string().trim().min(2, { error: 'Bitte gib an, wer das Buch geschrieben hat.' }),
+        email: z.email({ error: 'Bitte gib eine gültige E-Mail-Adresse an.' }),
+      })
+
+      export type Suggestion = z.infer<typeof SuggestionSchema>
+      EOF
+  - id: router
+    title: Router im Data Mode mit Bücherliste
+    description: |
+      Jetzt wird aus der Einzelseite eine App mit Routen.
+
+      1. Installiere `react-router`.
+      2. `src/lib/api.ts`: `fetchBooks()` holt `/api/books.json`, wirft bei `!response.ok` einen Fehler und gibt
+         `BookListSchema.parse(...)` zurück.
+      3. `src/routes/root.tsx`: `RootLayout` mit Header, `NavLink` zu `/` und `<Outlet />`.
+      4. `src/routes/books.tsx`: `booksLoader` (liefert `{ books }`) und `BooksPage` mit `useLoaderData<typeof booksLoader>()`.
+      5. `src/router.tsx` mit `createBrowserRouter`, `src/main.tsx` mit `RouterProvider` aus `react-router/dom`.
+         `src/App.tsx` brauchst du nicht mehr.
+    checklist:
+      - fetchBooks prüft die Antwort mit Zod
+      - RootLayout mit Outlet
+      - Index-Route mit booksLoader
+      - RouterProvider in main.tsx
+    hints:
+      - Die Lektionen „React Router im Data Mode“ und „Daten laden mit loader“ enthalten alle Bausteine.
+      - "Fehler `Cannot find module './App.tsx'`? Dann importiert main.tsx noch App – ersetze es durch RouterProvider."
+    checks:
+      - type: file_contains
+        path: src/lib/api.ts
+        pattern: "BookListSchema\\.parse\\("
+        message: fetchBooks in src/lib/api.ts soll die Antwort mit BookListSchema.parse prüfen.
+      - type: file_contains
+        path: src/routes/root.tsx
+        pattern: "<Outlet\\s*/>"
+        message: RootLayout braucht ein <Outlet />.
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "index\\s*:\\s*true[^}]*loader\\s*:\\s*booksLoader"
+        message: In src/router.tsx fehlt die Index-Route mit loader booksLoader.
+      - type: file_contains
+        path: src/main.tsx
+        pattern: "from\\s*['\"]react-router/dom['\"]"
+        message: main.tsx soll RouterProvider aus 'react-router/dom' importieren.
+      - type: command
+        run: bun run build >/dev/null 2>&1
+        message: bun run build schlägt fehl. Führe ihn aus und lies die Fehlermeldung.
+    solution: |
+      ```bash
+      bun add react-router
+      mkdir -p src/routes
+      # src/lib/api.ts, src/routes/root.tsx, src/routes/books.tsx, src/router.tsx, src/main.tsx
+      rm -f src/App.tsx
+      bun run build
+      ```
+    solve: |
+      bun add react-router >/dev/null 2>&1
+      mkdir -p src/routes src/lib
+      cat > src/lib/api.ts <<'EOF'
+      import { BookListSchema, type Book } from './schemas'
+
+      export async function fetchBooks(): Promise<Book[]> {
+        const response = await fetch('/api/books.json')
+        if (!response.ok) {
+          throw new Error(`Die API antwortet mit Status ${response.status}.`)
+        }
+        return BookListSchema.parse(await response.json())
+      }
+      EOF
+      cat > src/routes/root.tsx <<'EOF'
+      import { NavLink, Outlet } from 'react-router'
+
+      const linkClass = ({ isActive }: { isActive: boolean }) =>
+        isActive ? 'font-semibold underline' : 'text-muted-foreground'
+
+      export function RootLayout() {
+        return (
+          <div className="mx-auto max-w-3xl p-6">
+            <header className="mb-6 flex items-center justify-between">
+              <span className="text-xl font-bold">Buchclub</span>
+              <nav className="flex gap-4">
+                <NavLink to="/" end className={linkClass}>Bücher</NavLink>
+              </nav>
+            </header>
+            <Outlet />
+          </div>
+        )
+      }
+      EOF
+      cat > src/routes/books.tsx <<'EOF'
+      import { Link, useLoaderData } from 'react-router'
+      import { fetchBooks } from '@/lib/api'
+
+      export async function booksLoader() {
+        const books = await fetchBooks()
+        return { books }
+      }
+
+      export function BooksPage() {
+        const { books } = useLoaderData<typeof booksLoader>()
+        return (
+          <ul className="space-y-2">
+            {books.map((book) => (
+              <li key={book.id} className="rounded-md border border-border p-4">
+                <Link to={`/buecher/${book.id}`} className="font-semibold">{book.title}</Link>
+                <p className="text-sm text-muted-foreground">{book.author}, {book.year}</p>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+      EOF
+      cat > src/router.tsx <<'EOF'
+      import { createBrowserRouter } from 'react-router'
+      import { RootLayout } from '@/routes/root'
+      import { BooksPage, booksLoader } from '@/routes/books'
+
+      export const router = createBrowserRouter([
+        {
+          path: '/',
+          Component: RootLayout,
+          children: [
+            { index: true, loader: booksLoader, Component: BooksPage },
+          ],
+        },
+      ])
+      EOF
+      cat > src/main.tsx <<'EOF'
+      import { StrictMode } from 'react'
+      import { createRoot } from 'react-dom/client'
+      import { RouterProvider } from 'react-router/dom'
+      import { router } from '@/router'
+      import './index.css'
+
+      createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+          <RouterProvider router={router} />
+        </StrictMode>,
+      )
+      EOF
+      rm -f src/App.tsx
+  - id: detail-und-fehler
+    title: Detailseite mit 404 und ErrorBoundary
+    description: |
+      1. `src/routes/book-detail.tsx`: `bookLoader({ params })` sucht das Buch zu `params.bookId` (über `fetchBooks`)
+         und wirft `data('Dieses Buch gibt es nicht.', { status: 404 })`, wenn es keines gibt. `BookDetailPage` zeigt
+         Titel, Autor:in, Jahr und Tags.
+      2. `src/routes/error-page.tsx`: `RootErrorBoundary` mit `useRouteError` und `isRouteErrorResponse`.
+      3. Ergänze in `src/router.tsx` die Route `buecher/:bookId` und `ErrorBoundary: RootErrorBoundary` an der Root-Route.
+      4. In `BooksPage` wird jeder Titel ein `Link` auf `/buecher/<id>`.
+    checklist:
+      - bookLoader mit 404
+      - RootErrorBoundary an der Root-Route
+      - Links von der Liste zur Detailseite
+    hints:
+      - "`import { data, useLoaderData, type LoaderFunctionArgs } from 'react-router'`"
+      - Siehe Lektion „Fehlerseiten und Lazy Routes“.
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cat > "$d/t.ts" <<'EOF'
+          const json = await Bun.file('public/api/books.json').text()
+          globalThis.fetch = (async () => new Response(json, { status: 200, headers: { 'Content-Type': 'application/json' } })) as any
+          const { bookLoader } = await import('../src/routes/book-detail')
+          const args = (bookId: string) => ({ params: { bookId }, request: new Request(`http://localhost/buecher/${bookId}`), context: {} }) as never
+          const found = (await bookLoader(args('momo'))) as any
+          let status = 'kein Fehler'
+          try { await bookLoader(args('gibtsnicht')) } catch (error: any) { status = String(error?.init?.status ?? error?.status) }
+          console.log(found?.book?.id, status)
+          EOF
+          bun "$d/t.ts"; status=$?; rm -rf "$d"; exit $status
+        stdout_equals: "momo 404"
+        message: bookLoader soll für momo { book } liefern und für unbekannte IDs data(…, { status 404 }) werfen.
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "ErrorBoundary\\s*:\\s*RootErrorBoundary"
+        message: Die Root-Route braucht ErrorBoundary RootErrorBoundary.
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "path\\s*:\\s*['\"]buecher/:bookId['\"]"
+        message: In src/router.tsx fehlt die Route buecher/:bookId.
+      - type: file_contains
+        path: src/routes/books.tsx
+        pattern: "<Link[^>]*to="
+        message: BooksPage soll jedes Buch mit einem Link zur Detailseite anzeigen.
+      - type: command
+        run: bun run build >/dev/null 2>&1
+        message: bun run build schlägt fehl. Führe ihn aus und lies die Fehlermeldung.
+    solution: |
+      ```bash
+      # src/routes/book-detail.tsx mit bookLoader (throw data(…, { status: 404 })) und BookDetailPage
+      # src/routes/error-page.tsx mit RootErrorBoundary
+      # src/router.tsx: ErrorBoundary und Route buecher/:bookId ergänzen
+      bun run build
+      ```
+    solve: |
+      cat > src/routes/book-detail.tsx <<'EOF'
+      import { data, Link, useLoaderData, type LoaderFunctionArgs } from 'react-router'
+      import { fetchBooks } from '@/lib/api'
+
+      export async function bookLoader({ params }: LoaderFunctionArgs) {
+        const books = await fetchBooks()
+        const book = books.find((entry) => entry.id === params.bookId)
+        if (!book) {
+          throw data('Dieses Buch gibt es nicht.', { status: 404 })
+        }
+        return { book }
+      }
+
+      export function BookDetailPage() {
+        const { book } = useLoaderData<typeof bookLoader>()
+        return (
+          <article className="space-y-2">
+            <h1 className="text-2xl font-bold">{book.title}</h1>
+            <p>{book.author}, {book.year}</p>
+            <p className="text-sm text-muted-foreground">{book.tags.join(', ') || 'Keine Schlagwörter'}</p>
+            <Link to="/" className="underline">Zurück zur Liste</Link>
+          </article>
+        )
+      }
+      EOF
+      cat > src/routes/error-page.tsx <<'EOF'
+      import { isRouteErrorResponse, Link, useRouteError } from 'react-router'
+
+      export function RootErrorBoundary() {
+        const error = useRouteError()
+        let title = 'Unerwarteter Fehler'
+        let message = 'Bitte lade die Seite neu.'
+        if (isRouteErrorResponse(error)) {
+          title = `${error.status} ${error.statusText}`
+          message = typeof error.data === 'string' ? error.data : message
+        } else if (error instanceof Error) {
+          message = error.message
+        }
+        return (
+          <main className="mx-auto max-w-3xl space-y-2 p-6">
+            <h1 className="text-2xl font-bold text-destructive">{title}</h1>
+            <p>{message}</p>
+            <Link to="/" className="underline">Zur Startseite</Link>
+          </main>
+        )
+      }
+      EOF
+      cat > src/router.tsx <<'EOF'
+      import { createBrowserRouter } from 'react-router'
+      import { RootLayout } from '@/routes/root'
+      import { RootErrorBoundary } from '@/routes/error-page'
+      import { BooksPage, booksLoader } from '@/routes/books'
+      import { BookDetailPage, bookLoader } from '@/routes/book-detail'
+
+      export const router = createBrowserRouter([
+        {
+          path: '/',
+          Component: RootLayout,
+          ErrorBoundary: RootErrorBoundary,
+          children: [
+            { index: true, loader: booksLoader, Component: BooksPage },
+            { path: 'buecher/:bookId', loader: bookLoader, Component: BookDetailPage },
+          ],
+        },
+      ])
+      EOF
+  - id: vorschlag-action
+    title: Buchvorschläge mit action und Zod
+    description: |
+      1. `src/lib/suggestions.ts`: ein Modul mit `addSuggestion(suggestion: Suggestion)` und `listSuggestions()`, das
+         Vorschläge in einem Array im Speicher hält.
+      2. `src/routes/suggest.tsx`: `suggestAction` prüft die Formulardaten mit `SuggestionSchema.safeParse`, gibt bei
+         Fehlern `data({ errors: z.flattenError(result.error).fieldErrors }, { status: 400 })` zurück, speichert sonst
+         den Vorschlag und leitet mit `redirect('/')` weiter.
+      3. `SuggestPage` mit `<Form method="post">`, Feldern `title`, `author`, `email`, Fehlern aus `useActionData` und
+         einem shadcn-`Button`, der beim Senden deaktiviert ist.
+      4. Route `vorschlagen` in `src/router.tsx` und ein `NavLink` dorthin im Header.
+    checklist:
+      - suggestAction mit safeParse, 400 und redirect
+      - Formular mit Fehlermeldungen
+      - Route und Navigation
+    hints:
+      - Die Lektion „Daten laden mit loader, Formulare mit action“ zeigt das komplette Muster.
+    checks:
+      - type: command
+        run: |
+          d=$(mktemp -d "$PWD/.pruefung-XXXXXX")
+          cat > "$d/t.ts" <<'EOF'
+          import { suggestAction } from '../src/routes/suggest'
+          const call = (fields: Record<string, string>) => {
+            const body = new FormData()
+            for (const [key, value] of Object.entries(fields)) body.set(key, value)
+            return suggestAction({ request: new Request('http://localhost/vorschlagen', { method: 'POST', body }), params: {}, context: {} } as never) as Promise<any>
+          }
+          const bad = await call({ title: 'X', author: '', email: 'nope' })
+          const good = await call({ title: 'Momo', author: 'Michael Ende', email: 'ada@example.com' })
+          console.log(bad?.init?.status, Object.keys(bad?.data?.errors ?? {}).sort().join(','), good?.status, good?.headers?.get('Location'))
+          EOF
+          bun "$d/t.ts"; status=$?; rm -rf "$d"; exit $status
+        stdout_equals: "400 author,email,title 302 /"
+        message: suggestAction soll ungültige Eingaben mit Status 400 und Fehlern für title, author und email beantworten und gültige mit redirect('/') weiterleiten.
+      - type: file_contains
+        path: src/routes/suggest.tsx
+        pattern: "<Form[^>]*method=[\"']post[\"']"
+        message: SuggestPage braucht ein <Form method="post">.
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "path\\s*:\\s*['\"]vorschlagen['\"][^}]*action\\s*:\\s*suggestAction"
+        message: In src/router.tsx fehlt die Route vorschlagen mit action suggestAction.
+      - type: command
+        run: bun run build >/dev/null 2>&1
+        message: bun run build schlägt fehl. Führe ihn aus und lies die Fehlermeldung.
+    solution: |
+      ```bash
+      # src/lib/suggestions.ts, src/routes/suggest.tsx (suggestAction + SuggestPage)
+      # src/router.tsx: { path: 'vorschlagen', action: suggestAction, Component: SuggestPage }
+      # NavLink zu /vorschlagen in src/routes/root.tsx
+      bun run build
+      ```
+    solve: |
+      mkdir -p src/lib src/routes
+      cat > src/lib/suggestions.ts <<'EOF'
+      import type { Suggestion } from './schemas'
+
+      const suggestions: Suggestion[] = []
+
+      export function addSuggestion(suggestion: Suggestion) {
+        suggestions.push(suggestion)
+      }
+
+      export function listSuggestions(): Suggestion[] {
+        return [...suggestions]
+      }
+      EOF
+      cat > src/routes/suggest.tsx <<'EOF'
+      import { z } from 'zod'
+      import { data, Form, redirect, useActionData, useNavigation, type ActionFunctionArgs } from 'react-router'
+      import { Button } from '@/components/ui/button'
+      import { SuggestionSchema } from '@/lib/schemas'
+      import { addSuggestion } from '@/lib/suggestions'
+
+      export async function suggestAction({ request }: ActionFunctionArgs) {
+        const formData = await request.formData()
+        const result = SuggestionSchema.safeParse(Object.fromEntries(formData))
+        if (!result.success) {
+          return data({ errors: z.flattenError(result.error).fieldErrors }, { status: 400 })
+        }
+        addSuggestion(result.data)
+        return redirect('/')
+      }
+
+      export function SuggestPage() {
+        const actionData = useActionData<typeof suggestAction>()
+        const navigation = useNavigation()
+        const errors = actionData?.errors
+        const busy = navigation.state === 'submitting'
+
+        return (
+          <Form method="post" className="space-y-4">
+            <label className="block">
+              Titel
+              <input name="title" className="mt-1 block w-full rounded-md border border-border p-2" />
+              {errors?.title && <span className="text-sm text-destructive">{errors.title[0]}</span>}
+            </label>
+            <label className="block">
+              Autor:in
+              <input name="author" className="mt-1 block w-full rounded-md border border-border p-2" />
+              {errors?.author && <span className="text-sm text-destructive">{errors.author[0]}</span>}
+            </label>
+            <label className="block">
+              Deine E-Mail
+              <input name="email" type="email" className="mt-1 block w-full rounded-md border border-border p-2" />
+              {errors?.email && <span className="text-sm text-destructive">{errors.email[0]}</span>}
+            </label>
+            <Button type="submit" disabled={busy}>{busy ? 'Wird gesendet …' : 'Vorschlagen'}</Button>
+          </Form>
+        )
+      }
+      EOF
+      cat > src/router.tsx <<'EOF'
+      import { createBrowserRouter } from 'react-router'
+      import { RootLayout } from '@/routes/root'
+      import { RootErrorBoundary } from '@/routes/error-page'
+      import { BooksPage, booksLoader } from '@/routes/books'
+      import { BookDetailPage, bookLoader } from '@/routes/book-detail'
+      import { SuggestPage, suggestAction } from '@/routes/suggest'
+
+      export const router = createBrowserRouter([
+        {
+          path: '/',
+          Component: RootLayout,
+          ErrorBoundary: RootErrorBoundary,
+          children: [
+            { index: true, loader: booksLoader, Component: BooksPage },
+            { path: 'buecher/:bookId', loader: bookLoader, Component: BookDetailPage },
+            { path: 'vorschlagen', action: suggestAction, Component: SuggestPage },
+          ],
+        },
+      ])
+      EOF
+      cat > src/routes/root.tsx <<'EOF'
+      import { NavLink, Outlet } from 'react-router'
+
+      const linkClass = ({ isActive }: { isActive: boolean }) =>
+        isActive ? 'font-semibold underline' : 'text-muted-foreground'
+
+      export function RootLayout() {
+        return (
+          <div className="mx-auto max-w-3xl p-6">
+            <header className="mb-6 flex items-center justify-between">
+              <span className="text-xl font-bold">Buchclub</span>
+              <nav className="flex gap-4">
+                <NavLink to="/" end className={linkClass}>Bücher</NavLink>
+                <NavLink to="/vorschlagen" className={linkClass}>Vorschlagen</NavLink>
+              </nav>
+            </header>
+            <Outlet />
+          </div>
+        )
+      }
+      EOF
+  - id: lazy-und-env
+    title: Lazy Statistikseite und geprüfte Konfiguration
+    description: |
+      1. `src/routes/stats.tsx`: `statsLoader` (Anzahl Bücher, ältestes Erscheinungsjahr) und `StatsPage`.
+      2. Hänge die Route `statistik` **lazy** ein (`lazy: async () => { … await import('@/routes/stats') … }`) – ohne
+         statischen Import in `src/router.tsx`.
+      3. Lege `.env` mit `VITE_APP_TITLE=Buchclub` an, typisiere die Variable in `src/vite-env.d.ts` und prüfe sie in
+         `src/lib/env.ts` mit Zod (`export const env = EnvSchema.parse(import.meta.env)`).
+      4. Der Header in `RootLayout` zeigt `env.VITE_APP_TITLE` und einen `NavLink` zu `/statistik`.
+      5. Baue und prüfe mit `ls dist/assets`, dass ein eigener Chunk für `stats` entstanden ist.
+    checklist:
+      - Statistikseite als lazy Route
+      - .env mit VITE_APP_TITLE
+      - env.ts mit Zod
+      - eigener stats-Chunk im Build
+    hints:
+      - "Landet stats nicht in einem eigenen Chunk, importiert noch irgendeine Datei `@/routes/stats` statisch."
+    checks:
+      - type: command
+        run: grep -Ec "^\s*import[^(]*from\s+['\"]@/routes/stats['\"]" src/router.tsx || true
+        stdout_equals: "0"
+        message: src/router.tsx importiert @/routes/stats noch statisch.
+      - type: file_contains
+        path: src/router.tsx
+        pattern: "lazy\\s*:[\\s\\S]*import\\(\\s*['\"]@/routes/stats['\"]\\s*\\)"
+        message: Die Route statistik soll lazy über import('@/routes/stats') geladen werden.
+      - type: file_contains
+        path: .env
+        pattern: "^VITE_APP_TITLE=\\S"
+        message: In .env fehlt VITE_APP_TITLE mit einem Wert.
+      - type: file_contains
+        path: src/lib/env.ts
+        pattern: "\\.parse\\(\\s*import\\.meta\\.env\\s*\\)"
+        message: src/lib/env.ts soll import.meta.env mit einem Zod-Schema parsen.
+      - type: file_contains
+        path: src/routes/root.tsx
+        pattern: "env\\.VITE_APP_TITLE"
+        message: Der Header in RootLayout soll env.VITE_APP_TITLE anzeigen.
+      - type: command
+        run: bun run build >/dev/null 2>&1 && ls dist/assets | grep -c "^stats-.*\.js$"
+        stdout_equals: "1"
+        message: Der Build schlägt fehl oder erzeugt keinen eigenen Chunk stats-….js.
+    solution: |
+      ```bash
+      # src/routes/stats.tsx, lazy-Route in src/router.tsx
+      printf 'VITE_APP_TITLE=Buchclub\n' > .env
+      # src/vite-env.d.ts, src/lib/env.ts, Header in src/routes/root.tsx
+      bun run build
+      ls dist/assets
+      ```
+    solve: |
+      mkdir -p src/lib src/routes
+      cat > src/routes/stats.tsx <<'EOF'
+      import { useLoaderData } from 'react-router'
+      import { fetchBooks } from '@/lib/api'
+
+      export async function statsLoader() {
+        const books = await fetchBooks()
+        const oldest = Math.min(...books.map((book) => book.year))
+        return { count: books.length, oldest }
+      }
+
+      export function StatsPage() {
+        const { count, oldest } = useLoaderData<typeof statsLoader>()
+        return (
+          <section className="space-y-1">
+            <h1 className="text-2xl font-bold">Statistik</h1>
+            <p>{count} Bücher im Regal, das älteste von {oldest}.</p>
+          </section>
+        )
+      }
+      EOF
+      cat > .env <<'EOF'
+      VITE_APP_TITLE=Buchclub
+      EOF
+      cat > src/vite-env.d.ts <<'EOF'
+      interface ImportMetaEnv {
+        readonly VITE_APP_TITLE: string
+      }
+
+      interface ImportMeta {
+        readonly env: ImportMetaEnv
+      }
+      EOF
+      cat > src/lib/env.ts <<'EOF'
+      import { z } from 'zod'
+
+      const EnvSchema = z.object({
+        VITE_APP_TITLE: z.string().min(1),
+      })
+
+      export const env = EnvSchema.parse(import.meta.env)
+      EOF
+      cat > src/router.tsx <<'EOF'
+      import { createBrowserRouter } from 'react-router'
+      import { RootLayout } from '@/routes/root'
+      import { RootErrorBoundary } from '@/routes/error-page'
+      import { BooksPage, booksLoader } from '@/routes/books'
+      import { BookDetailPage, bookLoader } from '@/routes/book-detail'
+      import { SuggestPage, suggestAction } from '@/routes/suggest'
+
+      export const router = createBrowserRouter([
+        {
+          path: '/',
+          Component: RootLayout,
+          ErrorBoundary: RootErrorBoundary,
+          children: [
+            { index: true, loader: booksLoader, Component: BooksPage },
+            { path: 'buecher/:bookId', loader: bookLoader, Component: BookDetailPage },
+            { path: 'vorschlagen', action: suggestAction, Component: SuggestPage },
+            {
+              path: 'statistik',
+              lazy: async () => {
+                const { StatsPage, statsLoader } = await import('@/routes/stats')
+                return { loader: statsLoader, Component: StatsPage }
+              },
+            },
+          ],
+        },
+      ])
+      EOF
+      cat > src/routes/root.tsx <<'EOF'
+      import { NavLink, Outlet } from 'react-router'
+      import { env } from '@/lib/env'
+
+      const linkClass = ({ isActive }: { isActive: boolean }) =>
+        isActive ? 'font-semibold underline' : 'text-muted-foreground'
+
+      export function RootLayout() {
+        return (
+          <div className="mx-auto max-w-3xl p-6">
+            <header className="mb-6 flex items-center justify-between">
+              <span className="text-xl font-bold">{env.VITE_APP_TITLE}</span>
+              <nav className="flex gap-4">
+                <NavLink to="/" end className={linkClass}>Bücher</NavLink>
+                <NavLink to="/vorschlagen" className={linkClass}>Vorschlagen</NavLink>
+                <NavLink to="/statistik" className={linkClass}>Statistik</NavLink>
+              </nav>
+            </header>
+            <Outlet />
+          </div>
+        )
+      }
+      EOF
+  - id: release-build
+    title: Der Release-Build
+    description: |
+      Zum Abschluss machst du die App auslieferbar.
+
+      1. Lege `.env.production` mit `VITE_APP_TITLE=Buchclub Live` an – so erkennst du sofort, dass ein Build die
+         Produktionswerte benutzt.
+      2. Lege `.env.example` an, die `VITE_APP_TITLE=` ohne Wert enthält.
+      3. Schreibe eine `README.md`, die erklärt, wie man das Projekt installiert (`bun install`), entwickelt
+         (`bun run dev`) und baut (`bun run build`).
+      4. Stelle sicher, dass `dist` in der `.gitignore` steht, und baue mit `bun run build`.
+      5. Optional: Starte `bun run preview` und öffne die App – im Übungs-Terminal beendest du den Server mit Strg+C.
+    checklist:
+      - .env.production und .env.example
+      - README.md mit den wichtigsten Befehlen
+      - dist in der .gitignore
+      - Produktions-Build mit „Buchclub Live“
+    hints:
+      - "Steht im Build noch „Buchclub“ statt „Buchclub Live“? Vite lädt .env.production nur bei `bun run build`."
+    checks:
+      - type: file_contains
+        path: .env.example
+        pattern: "^VITE_APP_TITLE=\\s*$"
+        message: .env.example soll die Zeile VITE_APP_TITLE= ohne Wert enthalten.
+      - type: file_contains
+        path: README.md
+        pattern: "bun run build"
+        message: Die README.md soll erklären, wie man mit bun run build baut.
+      - type: file_contains
+        path: README.md
+        pattern: "bun install"
+        message: Die README.md soll den Befehl bun install nennen.
+      - type: file_contains
+        path: .gitignore
+        pattern: "^/?dist/?\\s*$"
+        message: Die .gitignore soll dist enthalten.
+      - type: command
+        run: bun run build >/dev/null 2>&1 && cat dist/assets/*.js | grep -c "Buchclub Live"
+        stdout_matches: "^[1-9]"
+        message: Der Build schlägt fehl oder enthält nicht den Titel „Buchclub Live“ aus .env.production.
+      - type: file_exists
+        path: dist/index.html
+        message: dist/index.html fehlt. Baue mit bun run build.
+    solution: |
+      ```bash
+      printf 'VITE_APP_TITLE=Buchclub Live\n' > .env.production
+      printf 'VITE_APP_TITLE=\n' > .env.example
+      # README.md mit bun install, bun run dev, bun run build
+      grep -q '^dist$' .gitignore || echo "dist" >> .gitignore
+      bun run build
+      ```
+    solve: |
+      printf 'VITE_APP_TITLE=Buchclub Live\n' > .env.production
+      printf 'VITE_APP_TITLE=\n' > .env.example
+      cat > README.md <<'EOF'
+      # Buchclub
+
+      Eine kleine React-App mit Vite, Tailwind CSS 4, shadcn/ui, Zod und React Router (Data Mode).
+
+      ## Entwicklung
+
+          bun install
+          bun run dev
+
+      ## Produktions-Build
+
+          bun run build
+          bun run preview
+
+      Der Inhalt von `dist/` wird von einem Webserver mit SPA-Fallback auf `index.html` ausgeliefert.
+      EOF
+      bun run build >/dev/null 2>&1

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="410" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">React Router im Data Mode: lesen und schreiben</text>
+
+  <!-- Lesen -->
+  <text x="30" y="72" font-size="15" font-weight="700" fill="#1e1b3a">Lesen – Navigation zu /buecher/momo</text>
+  <rect x="30" y="86" width="170" height="70" rx="10" fill="#22d3ee" fill-opacity="0.15" stroke="#22d3ee" stroke-width="2"/>
+  <text x="115" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Klick auf Link</text>
+  <text x="115" y="138" text-anchor="middle" font-size="12" fill="#1e1b3a">URL ändert sich</text>
+
+  <rect x="230" y="86" width="170" height="70" rx="10" fill="#a78bfa" fill-opacity="0.15" stroke="#a78bfa" stroke-width="2"/>
+  <text x="315" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">loader</text>
+  <text x="315" y="138" text-anchor="middle" font-size="12" fill="#1e1b3a">holt Daten (fetch)</text>
+
+  <rect x="430" y="86" width="170" height="70" rx="10" fill="#34d399" fill-opacity="0.15" stroke="#34d399" stroke-width="2"/>
+  <text x="515" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Zod prüft</text>
+  <text x="515" y="138" text-anchor="middle" font-size="12" fill="#1e1b3a">Schema.parse(json)</text>
+
+  <rect x="630" y="86" width="170" height="70" rx="10" fill="#22d3ee" fill-opacity="0.15" stroke="#22d3ee" stroke-width="2"/>
+  <text x="715" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Komponente</text>
+  <text x="715" y="138" text-anchor="middle" font-size="12" fill="#1e1b3a">useLoaderData()</text>
+
+  <g stroke="#1e1b3a" stroke-width="2" fill="#1e1b3a">
+    <line x1="200" y1="121" x2="222" y2="121"/><polygon points="222,116 230,121 222,126"/>
+    <line x1="400" y1="121" x2="422" y2="121"/><polygon points="422,116 430,121 422,126"/>
+    <line x1="600" y1="121" x2="622" y2="121"/><polygon points="622,116 630,121 622,126"/>
+  </g>
+
+  <!-- Fehlerpfad -->
+  <rect x="330" y="186" width="370" height="50" rx="10" fill="#f87171" fill-opacity="0.15" stroke="#f87171" stroke-width="2"/>
+  <text x="515" y="216" text-anchor="middle" font-size="13" fill="#1e1b3a">Fehler oder throw data(…, { status: 404 }) → ErrorBoundary</text>
+  <line x1="315" y1="156" x2="380" y2="183" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4"/>
+  <line x1="515" y1="156" x2="515" y2="183" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <!-- Schreiben -->
+  <text x="30" y="282" font-size="15" font-weight="700" fill="#1e1b3a">Schreiben – Formular abschicken</text>
+  <rect x="30" y="296" width="170" height="70" rx="10" fill="#22d3ee" fill-opacity="0.15" stroke="#22d3ee" stroke-width="2"/>
+  <text x="115" y="326" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">&lt;Form method="post"&gt;</text>
+  <text x="115" y="348" text-anchor="middle" font-size="12" fill="#1e1b3a">Absenden</text>
+
+  <rect x="230" y="296" width="170" height="70" rx="10" fill="#f59e0b" fill-opacity="0.15" stroke="#f59e0b" stroke-width="2"/>
+  <text x="315" y="326" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">action</text>
+  <text x="315" y="348" text-anchor="middle" font-size="12" fill="#1e1b3a">request.formData()</text>
+
+  <rect x="430" y="296" width="170" height="70" rx="10" fill="#34d399" fill-opacity="0.15" stroke="#34d399" stroke-width="2"/>
+  <text x="515" y="326" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Zod safeParse</text>
+  <text x="515" y="348" text-anchor="middle" font-size="12" fill="#1e1b3a">gültig oder Fehlerliste</text>
+
+  <rect x="630" y="296" width="170" height="70" rx="10" fill="#a78bfa" fill-opacity="0.15" stroke="#a78bfa" stroke-width="2"/>
+  <text x="715" y="324" text-anchor="middle" font-size="13" font-weight="700" fill="#1e1b3a">redirect + loader</text>
+  <text x="715" y="346" text-anchor="middle" font-size="12" fill="#1e1b3a">laufen neu (Revalidierung)</text>
+
+  <g stroke="#1e1b3a" stroke-width="2" fill="#1e1b3a">
+    <line x1="200" y1="331" x2="222" y2="331"/><polygon points="222,326 230,331 222,336"/>
+    <line x1="400" y1="331" x2="422" y2="331"/><polygon points="422,326 430,331 422,336"/>
+    <line x1="600" y1="331" x2="622" y2="331"/><polygon points="622,326 630,331 622,336"/>
+  </g>
+  <path d="M515 366 L515 400 L115 400 L115 372" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4"/>
+  <polygon points="110,374 115,366 120,374" fill="#f87171"/>
+  <text x="315" y="422" text-anchor="middle" font-size="12" fill="#1e1b3a">ungültig: data({ errors }, { status: 400 }) → useActionData() zeigt Fehler am Formular</text>
+</svg>

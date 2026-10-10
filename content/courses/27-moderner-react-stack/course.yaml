@@ -1,0 +1,30 @@
+title: Moderner React-Stack
+subtitle: Vite, Tailwind, shadcn/ui, Zod, React Router (Data Mode) und Bun – wie die Teile zu einer echten App werden
+description: >
+  React allein ist nur eine Bibliothek für Oberflächen. Eine echte Anwendung braucht mehr: ein Werkzeug, das
+  das Projekt startet und baut, ein Styling-System, fertige Bausteine für Buttons und Formulare, einen Router,
+  der Seiten und Daten lädt, und eine Prüfung der Daten, die von außen kommen.
+
+
+  In diesem Kurs setzt du genau diesen Stack Schritt für Schritt zusammen: **Bun** installiert und startet,
+  **Vite** liefert Dev-Server und Build, **Tailwind CSS 4** und **shadcn/ui** gestalten die Oberfläche,
+  **Zod** bewacht API-Antworten, Formulare und Umgebungsvariablen, und **React Router im Data Mode** lädt Daten
+  mit `loader` und verarbeitet Formulare mit `action`. Am Ende baust du eine kleine Buchclub-App bis zum
+  fertigen Produktions-Build – im echten Übungs-Terminal.
+category: frontend
+level: fortgeschritten
+icon: layers
+color: "#646cff"
+estimated_hours: 5
+workspace_dir: react-stack
+prerequisites: [react, typescript, html-css-tailwind]
+learning_goals:
+  - Du erklärst, welche Aufgabe Bun, Vite, Tailwind, shadcn/ui, Zod und React Router in einer App übernehmen.
+  - Du legst ein Vite-Projekt mit Bun an und richtest Tailwind CSS 4 und den Pfad-Alias `@` ein.
+  - Du nutzt shadcn/ui so, wie es gedacht ist – als Code, der dir gehört – und gestaltest es über CSS-Variablen.
+  - Du prüfst API-Antworten, Formulare und Umgebungsvariablen mit Zod und leitest daraus TypeScript-Typen ab.
+  - Du baust Routen im Data Mode mit loader, action, ErrorBoundary und lazy-geladenen Seiten.
+  - Du strukturierst das Projekt sinnvoll und erzeugst einen Produktions-Build, den ein Webserver ausliefern kann.
+references:
+  - Frontend-Setups aus realen Teams mit Vite, Bun, Tailwind 4, shadcn/ui als einziger Komponentenbibliothek und Zod-Schemas für jede API-Antwort
+  - React Router im Data Mode mit createBrowserRouter statt verstreuter useEffect-Datenabrufe

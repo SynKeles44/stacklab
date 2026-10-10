@@ -1,0 +1,281 @@
+title: Struktur und Auslieferung
+description: Eine Ordnerstruktur, die mitwächst, Konfiguration über Umgebungsvariablen mit Zod-Prüfung und ein Produktions-Build, den ein Webserver ausliefern kann.
+exercise:
+  id: modul-uebung-release
+  type: terminal
+  title: Fertig für den ersten Release
+  description: |
+    Im Ordner `release` liegt eine kleine App, die vor dem ersten Release aufgeräumt werden muss. Die API-Adresse
+    ist fest im Code verdrahtet, und die Datei `src/api.ts` liegt nicht dort, wo das Team Hilfsmodule erwartet.
+
+    1. Verschiebe `src/api.ts` nach `src/lib/api.ts` und passe den Import in `src/App.tsx` auf `@/lib/api` an.
+    2. Lege `.env` mit `VITE_API_URL=http://localhost:3000/api` und `.env.production` mit
+       `VITE_API_URL=https://api.example.com` an.
+    3. Lege `.env.example` an, die alle benötigten Variablen **ohne** echte Werte auflistet (mindestens die Zeile `VITE_API_URL=`).
+    4. Lege `src/lib/env.ts` an, die `import.meta.env` mit Zod prüft (`VITE_API_URL` als `z.url()`) und `env` exportiert.
+       Ergänze passend `src/vite-env.d.ts`.
+    5. `src/lib/api.ts` benutzt `env.VITE_API_URL` statt der festen Adresse.
+    6. Ergänze die `.gitignore` um `dist` und baue mit `bun run build`.
+
+    Klicke zuerst auf **Aufgabe vorbereiten** (das dauert einige Sekunden).
+  workdir: release
+  setup: |
+    cat > package.json <<'EOF'
+    {
+      "name": "app",
+      "private": true,
+      "version": "0.0.0",
+      "type": "module",
+      "scripts": {
+        "dev": "vite",
+        "build": "tsc -b && vite build",
+        "preview": "vite preview"
+      },
+      "dependencies": {
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8"
+      },
+      "devDependencies": {
+        "@types/node": "^24.13.3",
+        "@types/react": "^19.2.18",
+        "@types/react-dom": "^19.2.7",
+        "@vitejs/plugin-react": "^6.1.1",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.0"
+      }
+    }
+    EOF
+    cat > tsconfig.json <<'EOF'
+    {
+      "files": [],
+      "references": [
+        { "path": "./tsconfig.app.json" },
+        { "path": "./tsconfig.node.json" }
+      ]
+    }
+    EOF
+    cat > tsconfig.app.json <<'EOF'
+    {
+      "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+        "target": "es2023",
+        "lib": ["ES2023", "DOM"],
+        "module": "esnext",
+        "types": ["vite/client"],
+        "skipLibCheck": true,
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "moduleDetection": "force",
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
+      },
+      "include": ["src"]
+    }
+    EOF
+    cat > tsconfig.node.json <<'EOF'
+    {
+      "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+        "target": "es2023",
+        "lib": ["ES2023"],
+        "types": ["node"],
+        "skipLibCheck": true,
+        "module": "nodenext",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "moduleDetection": "force",
+        "noEmit": true,
+        "strict": true
+      },
+      "include": ["vite.config.ts"]
+    }
+    EOF
+    cat > vite.config.ts <<'EOF'
+    import react from '@vitejs/plugin-react'
+    import { defineConfig } from 'vite'
+
+    export default defineConfig({
+      plugins: [react()],
+    })
+    EOF
+    cat > index.html <<'EOF'
+    <!doctype html>
+    <html lang="de">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Stacklab App</title>
+      </head>
+      <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.tsx"></script>
+      </body>
+    </html>
+    EOF
+    printf 'node_modules\ndist\n*.local\n' > .gitignore
+    mkdir -p src
+    cat > src/main.tsx <<'EOF'
+    import { StrictMode } from 'react'
+    import { createRoot } from 'react-dom/client'
+    import './index.css'
+    import App from './App.tsx'
+
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    )
+    EOF
+    cat > src/App.tsx <<'EOF'
+    export default function App() {
+      return <h1>Hallo Stack</h1>
+    }
+    EOF
+    printf 'body {\n  font-family: system-ui, sans-serif;\n}\n' > src/index.css
+    bun install >/dev/null 2>&1
+    bun add tailwindcss @tailwindcss/vite >/dev/null 2>&1
+    cat > vite.config.ts <<'EOF'
+    import path from 'node:path'
+    import tailwindcss from '@tailwindcss/vite'
+    import react from '@vitejs/plugin-react'
+    import { defineConfig } from 'vite'
+
+    export default defineConfig({
+      plugins: [react(), tailwindcss()],
+      resolve: {
+        alias: {
+          '@': path.resolve(import.meta.dirname, './src'),
+        },
+      },
+    })
+    EOF
+    cat > tsconfig.json <<'EOF'
+    {
+      "files": [],
+      "references": [
+        { "path": "./tsconfig.app.json" },
+        { "path": "./tsconfig.node.json" }
+      ],
+      "compilerOptions": {
+        "paths": {
+          "@/*": ["./src/*"]
+        }
+      }
+    }
+    EOF
+    jq '.compilerOptions.paths = {"@/*": ["./src/*"]}' tsconfig.app.json > tsconfig.app.tmp && mv tsconfig.app.tmp tsconfig.app.json
+    printf '@import "tailwindcss";\n' > src/index.css
+    cat > src/App.tsx <<'EOF'
+    export default function App() {
+      return <h1 className="p-8 text-3xl font-bold">Hallo Stack</h1>
+    }
+    EOF
+    bun add zod >/dev/null 2>&1
+    printf 'node_modules\n*.local\n' > .gitignore
+    cat > src/api.ts <<'EOF'
+    const API_URL = 'http://localhost:3000/api'
+
+    export function booksUrl(): string {
+      return `${API_URL}/books`
+    }
+    EOF
+    cat > src/App.tsx <<'EOF'
+    import { booksUrl } from './api'
+
+    export default function App() {
+      return (
+        <main className="p-8">
+          <h1 className="text-2xl font-bold">Buchclub</h1>
+          <p>Daten von: {booksUrl()}</p>
+        </main>
+      )
+    }
+    EOF
+  checks:
+    - type: file_absent
+      path: src/api.ts
+      message: src/api.ts liegt noch im alten Ordner. Verschiebe sie mit mv src/api.ts src/lib/api.ts.
+    - type: file_contains
+      path: src/App.tsx
+      pattern: "from\\s+['\"]@/lib/api['\"]"
+      message: App.tsx soll booksUrl aus '@/lib/api' importieren.
+    - type: file_contains
+      path: src/lib/api.ts
+      pattern: "env\\.VITE_API_URL"
+      message: src/lib/api.ts soll env.VITE_API_URL statt einer festen Adresse benutzen.
+    - type: command
+      run: grep -c "localhost" src/lib/api.ts || true
+      stdout_equals: "0"
+      message: In src/lib/api.ts steht noch localhost. Die Adresse gehört in die .env-Dateien.
+    - type: file_contains
+      path: .env.example
+      pattern: "^VITE_API_URL=\\s*$"
+      message: .env.example soll die Zeile VITE_API_URL= ohne Wert enthalten.
+    - type: file_contains
+      path: .env.production
+      pattern: "^VITE_API_URL=https://api\\.example\\.com"
+      message: .env.production soll VITE_API_URL=https://api.example.com setzen.
+    - type: file_contains
+      path: src/lib/env.ts
+      pattern: "\\.parse\\(\\s*import\\.meta\\.env\\s*\\)"
+      message: src/lib/env.ts soll import.meta.env mit einem Zod-Schema parsen und env exportieren.
+    - type: file_contains
+      path: .gitignore
+      pattern: "^/?dist/?\\s*$"
+      message: Die .gitignore soll eine Zeile dist enthalten.
+    - type: command
+      run: bun run build >/dev/null 2>&1
+      message: bun run build schlägt fehl. Führe ihn aus und lies die Fehlermeldung.
+    - type: command
+      run: cat dist/assets/*.js | grep -c "https://api.example.com"
+      stdout_matches: "^[1-9]"
+      message: Im Build fehlt https://api.example.com. Prüfe .env.production und ob api.ts env.VITE_API_URL benutzt.
+    - type: command
+      run: cat dist/assets/*.js | grep -c "localhost:3000" || true
+      stdout_equals: "0"
+      message: Im Produktions-Build steht noch localhost:3000.
+  hints:
+    - "Verschieben: `mkdir -p src/lib && mv src/api.ts src/lib/api.ts`."
+    - "In api.ts: `import { env } from '@/lib/env'` und dann `` return `${env.VITE_API_URL}/books` ``."
+    - "vite-env.d.ts braucht `interface ImportMetaEnv { readonly VITE_API_URL: string }` und `interface ImportMeta { readonly env: ImportMetaEnv }`."
+  solution: |
+    ```bash
+    cd release
+    mkdir -p src/lib
+    mv src/api.ts src/lib/api.ts
+    sed -i "s#from './api'#from '@/lib/api'#" src/App.tsx
+    printf 'VITE_API_URL=http://localhost:3000/api\n' > .env
+    printf 'VITE_API_URL=https://api.example.com\n' > .env.production
+    printf 'VITE_API_URL=\n' > .env.example
+    cat > src/vite-env.d.ts <<'EOF'
+    interface ImportMetaEnv {
+      readonly VITE_API_URL: string
+    }
+
+    interface ImportMeta {
+      readonly env: ImportMetaEnv
+    }
+    EOF
+    cat > src/lib/env.ts <<'EOF'
+    import { z } from 'zod'
+
+    const EnvSchema = z.object({
+      VITE_API_URL: z.url(),
+    })
+
+    export const env = EnvSchema.parse(import.meta.env)
+    EOF
+    cat > src/lib/api.ts <<'EOF'
+    import { env } from '@/lib/env'
+
+    export function booksUrl(): string {
+      return `${env.VITE_API_URL}/books`
+    }
+    EOF
+    echo "dist" >> .gitignore
+    bun run build
+    ```

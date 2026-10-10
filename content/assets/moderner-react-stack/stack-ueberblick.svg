@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 470" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="400" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">Der moderne React-Stack – wer macht was?</text>
+
+  <!-- Laufzeit / Werkzeuge -->
+  <rect x="40" y="380" width="720" height="60" rx="10" fill="#f59e0b" fill-opacity="0.18" stroke="#f59e0b" stroke-width="2"/>
+  <text x="60" y="406" font-size="16" font-weight="700" fill="#1e1b3a">Bun</text>
+  <text x="60" y="428" font-size="13" fill="#1e1b3a">Laufzeit und Paketmanager: bun install, bun run dev, bunx – installiert alles und startet die Skripte</text>
+
+  <rect x="40" y="300" width="720" height="64" rx="10" fill="#a78bfa" fill-opacity="0.18" stroke="#a78bfa" stroke-width="2"/>
+  <text x="60" y="326" font-size="16" font-weight="700" fill="#1e1b3a">Vite</text>
+  <text x="60" y="348" font-size="13" fill="#1e1b3a">Dev-Server mit sofortigem Neuladen und Build für die Auslieferung (TSX → JavaScript, CSS → eine Datei)</text>
+
+  <!-- App-Ebene -->
+  <rect x="40" y="70" width="720" height="214" rx="12" fill="#22d3ee" fill-opacity="0.08" stroke="#22d3ee" stroke-width="2"/>
+  <text x="60" y="96" font-size="15" font-weight="700" fill="#1e1b3a">Deine App im Browser (React 19 + TypeScript)</text>
+
+  <rect x="60" y="112" width="210" height="156" rx="10" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="165" y="140" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">React Router</text>
+  <text x="165" y="164" text-anchor="middle" font-size="12" fill="#1e1b3a">Data Mode</text>
+  <text x="165" y="190" text-anchor="middle" font-size="12" fill="#1e1b3a">URL → Seite</text>
+  <text x="165" y="210" text-anchor="middle" font-size="12" fill="#1e1b3a">loader lädt Daten</text>
+  <text x="165" y="230" text-anchor="middle" font-size="12" fill="#1e1b3a">action verarbeitet</text>
+  <text x="165" y="248" text-anchor="middle" font-size="12" fill="#1e1b3a">Formulare</text>
+
+  <rect x="295" y="112" width="210" height="156" rx="10" fill="#ffffff" stroke="#34d399" stroke-width="2"/>
+  <text x="400" y="140" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">Zod</text>
+  <text x="400" y="164" text-anchor="middle" font-size="12" fill="#1e1b3a">Wächter an der Datengrenze</text>
+  <text x="400" y="190" text-anchor="middle" font-size="12" fill="#1e1b3a">prüft API-Antworten,</text>
+  <text x="400" y="210" text-anchor="middle" font-size="12" fill="#1e1b3a">Formulare und .env-Werte</text>
+  <text x="400" y="230" text-anchor="middle" font-size="12" fill="#1e1b3a">und liefert den</text>
+  <text x="400" y="248" text-anchor="middle" font-size="12" fill="#1e1b3a">TypeScript-Typ dazu</text>
+
+  <rect x="530" y="112" width="210" height="156" rx="10" fill="#ffffff" stroke="#f87171" stroke-width="2"/>
+  <text x="635" y="140" text-anchor="middle" font-size="15" font-weight="700" fill="#1e1b3a">shadcn/ui</text>
+  <text x="635" y="164" text-anchor="middle" font-size="12" fill="#1e1b3a">+ Tailwind CSS 4</text>
+  <text x="635" y="190" text-anchor="middle" font-size="12" fill="#1e1b3a">Komponenten-Code</text>
+  <text x="635" y="210" text-anchor="middle" font-size="12" fill="#1e1b3a">in deinem Projekt,</text>
+  <text x="635" y="230" text-anchor="middle" font-size="12" fill="#1e1b3a">Theme über</text>
+  <text x="635" y="248" text-anchor="middle" font-size="12" fill="#1e1b3a">CSS-Variablen</text>
+
+  <!-- Pfeile -->
+  <line x1="270" y1="190" x2="291" y2="190" stroke="#1e1b3a" stroke-width="2"/>
+  <polygon points="291,185 299,190 291,195" fill="#1e1b3a"/>
+  <line x1="505" y1="190" x2="526" y2="190" stroke="#1e1b3a" stroke-width="2"/>
+  <polygon points="526,185 534,190 526,195" fill="#1e1b3a"/>
+  <line x1="400" y1="300" x2="400" y2="290" stroke="#1e1b3a" stroke-width="2"/>
+  <polygon points="395,290 400,282 405,290" fill="#1e1b3a"/>
+  <line x1="400" y1="380" x2="400" y2="370" stroke="#1e1b3a" stroke-width="2"/>
+  <polygon points="395,370 400,362 405,370" fill="#1e1b3a"/>
+</svg>

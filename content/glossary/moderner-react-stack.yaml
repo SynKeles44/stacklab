@@ -1,0 +1,385 @@
+# Begriffe aus dem Kurs "Moderner React-Stack".
+- slug: tech-stack
+  term: Tech-Stack
+  short: Die Auswahl an Werkzeugen, Bibliotheken und Frameworks, mit denen ein Projekt gebaut wird.
+  explanation: >
+    Ein Stack beschreibt, welche Bausteine ein Projekt zusammen benutzt, etwa Bun, Vite, React, Tailwind, Zod und
+    React Router. Ein guter Stack ordnet jedem Werkzeug eine klare Aufgabe zu, damit sich die Teile nicht
+    überschneiden. Teams halten ihren Stack meist in der README oder einer Architektur-Entscheidung fest.
+  example: "Unser Frontend-Stack: Bun als Paketmanager, Vite für Dev-Server und Build, React mit shadcn/ui und Zod."
+  category: werkzeuge
+  aliases: [Stack, Technologie-Stack, React-Stack, Frontend-Stack]
+  related: [vite, bun, react, zod]
+  lesson: moderner-react-stack/der-stack-im-ueberblick
+- slug: scaffolding
+  term: Scaffolding
+  short: Das automatische Anlegen eines Projektgerüsts mit allen Grunddateien durch einen Generator.
+  explanation: >
+    Statt package.json, Konfigurationen und Startdateien von Hand zu schreiben, erzeugt ein Generator ein fertiges
+    Gerüst nach den Empfehlungen der Werkzeug-Autor:innen. Danach installierst du die Abhängigkeiten und kannst
+    sofort loslegen. Der Generator schreibt nur Dateien – installiert wird erst mit dem Paketmanager.
+  example: "`bun create vite app --template react-ts` erzeugt ein React-TypeScript-Projekt im Ordner app."
+  category: werkzeuge
+  aliases: [Projektgerüst, Gerüst-Generator, Scaffold]
+  related: [vite, bunx, package-json]
+  lesson: moderner-react-stack/projekt-mit-bun-und-vite
+- slug: hot-module-replacement
+  term: Hot Module Replacement (HMR)
+  short: Der Dev-Server tauscht nach dem Speichern nur das geänderte Modul im Browser aus, ohne die Seite neu zu laden.
+  explanation: >
+    Vite schickt dem Browser über eine WebSocket-Verbindung eine Nachricht, welches Modul sich geändert hat. Der
+    Browser lädt nur dieses Modul neu, und React rendert die betroffenen Komponenten. Der State der übrigen App
+    bleibt dabei erhalten, sodass du nach jeder Änderung nicht von vorn klicken musst.
+  example: "Du änderst die Farbe eines Buttons in App.tsx, speicherst – und der Button ist sofort anders, das ausgefüllte Formular bleibt stehen."
+  category: werkzeuge
+  aliases: [HMR, Hot Reload]
+  related: [dev-server, vite]
+  lesson: moderner-react-stack/projekt-mit-bun-und-vite
+- slug: vite-plugin
+  term: Vite-Plugin
+  short: Eine Erweiterung, die sich in Vite einklinkt und Dateien beim Ausliefern oder Bauen verarbeitet.
+  explanation: >
+    Plugins trägst du in vite.config.ts in die Liste `plugins` ein. Das React-Plugin übersetzt JSX und ermöglicht
+    schnelles Neuladen von Komponenten, das Tailwind-Plugin erzeugt das CSS aus den benutzten Klassen. Weil Plugins
+    sowohl im Dev-Server als auch im Build laufen, verhalten sich beide gleich.
+  example: "`plugins: [react(), tailwindcss()]` in vite.config.ts aktiviert React und Tailwind CSS."
+  category: werkzeuge
+  aliases: [Vite-Plugins, Plugin (Vite)]
+  related: [vite, tailwind-css]
+  lesson: moderner-react-stack/tailwind-und-pfad-alias
+- slug: oklch
+  term: OKLCH
+  short: Ein Farbformat aus Helligkeit, Sättigung und Farbton, das sich an der menschlichen Wahrnehmung orientiert.
+  explanation: >
+    OKLCH beschreibt eine Farbe mit L (Helligkeit von 0 bis 1), C (Buntheit) und H (Farbton als Winkel). Gleiche
+    L-Werte wirken auch für das Auge gleich hell, was Farbpaletten und Dark-Mode-Varianten leichter macht. Tailwind
+    CSS 4 und shadcn/ui geben ihre Farben in diesem Format an.
+  example: "`--color-brand: oklch(0.55 0.2 265);` ist ein mittelhelles, kräftiges Blau-Violett."
+  category: web
+  aliases: [oklch(), OKLCH-Farben]
+  related: [theme-variable, custom-property]
+  lesson: moderner-react-stack/tailwind-und-pfad-alias
+- slug: import-alias
+  term: Import-Alias
+  short: Ein Kürzel wie @, das in Importen für einen festen Ordner steht, etwa src.
+  explanation: >
+    Ein Alias ersetzt lange relative Pfade wie `../../../lib/utils` durch `@/lib/utils`. Damit er funktioniert,
+    müssen ihn sowohl der Bundler (in Vite `resolve.alias`) als auch TypeScript (`paths` in der tsconfig) kennen.
+    shadcn/ui setzt den Alias @ voraus.
+  example: "`import { cn } from '@/lib/utils'` funktioniert in jeder Datei unter src, egal wie tief sie liegt."
+  category: werkzeuge
+  aliases: [Pfad-Alias, Alias @, path alias]
+  related: [tsconfig, vite, shadcn-ui]
+  lesson: moderner-react-stack/tailwind-und-pfad-alias
+- slug: shadcn-ui
+  term: shadcn/ui
+  short: Eine Sammlung von React-Komponenten, deren Quellcode eine CLI in dein Projekt kopiert, statt sie als Paket zu installieren.
+  explanation: >
+    Mit `shadcn init` richtest du ein Projekt ein, mit `shadcn add button` holst du einzelne Komponenten nach
+    src/components/ui. Die Komponenten bestehen aus Tailwind-Klassen, cva-Varianten, cn() und headless Primitiven wie
+    Radix UI. Weil der Code dir gehört, passt du ihn direkt an; gestaltet wird er über CSS-Variablen.
+  example: "`bunx --bun shadcn@latest add button card` legt button.tsx und card.tsx in src/components/ui an."
+  category: react
+  aliases: [shadcn, shadcn-ui, shadcn CLI]
+  related: [komponentenbibliothek, cva, cn-funktion, radix-ui, components-json]
+  lesson: moderner-react-stack/was-shadcn-anders-macht
+- slug: components-json
+  term: components.json
+  short: Die Konfigurationsdatei der shadcn-CLI mit Stil, CSS-Datei, Basisfarbe und Import-Aliasen.
+  explanation: >
+    `shadcn init` legt die Datei an, und jeder spätere `add`-Befehl liest daraus, wohin Dateien geschrieben werden
+    und wie Importe aussehen. Sie landet nicht im Bundle der App. Einige Felder wie style, baseColor und cssVariables
+    lassen sich nach der Einrichtung nicht einfach ändern.
+  example: "`\"aliases\": { \"ui\": \"@/components/ui\", \"utils\": \"@/lib/utils\" }` legt fest, wohin die CLI Komponenten schreibt."
+  category: react
+  aliases: [components.json-Datei]
+  related: [shadcn-ui, import-alias]
+  lesson: moderner-react-stack/was-shadcn-anders-macht
+- slug: radix-ui
+  term: Radix UI
+  short: Eine Bibliothek aus headless React-Primitiven, die Verhalten und Barrierefreiheit liefern, aber kein Aussehen.
+  explanation: >
+    Radix-Komponenten wie Dialog, Dropdown-Menü oder Tabs kümmern sich um Fokus, Tastaturbedienung und
+    ARIA-Attribute. shadcn/ui baut darauf auf und ergänzt das Aussehen mit Tailwind-Klassen. Alternativ kann
+    shadcn/ui heute auch Base UI als Grundlage verwenden.
+  example: "Ein shadcn-Dialog fängt dank Radix den Fokus ein und schließt sich mit der Escape-Taste."
+  category: react
+  aliases: [Radix, Radix-Primitive]
+  related: [headless-komponente, shadcn-ui]
+  lesson: moderner-react-stack/was-shadcn-anders-macht
+- slug: theme-inline
+  term: "@theme inline"
+  short: Ein Tailwind-Block, der vorhandene CSS-Variablen als Theme-Werte verfügbar macht und dabei direkt auf sie verweist.
+  explanation: >
+    shadcn/ui schreibt die Farbwerte in `:root` und `.dark` und verbindet sie in `@theme inline` mit Tailwind, etwa
+    `--color-primary: var(--primary);`. Das Wort inline sorgt dafür, dass die erzeugte Klasse direkt `var(--primary)`
+    benutzt. Dadurch wirkt ein Wechsel in den Dark Mode sofort auf jede Klasse.
+  example: "Nach `--color-warning: var(--warning);` in `@theme inline` funktioniert die Klasse `bg-warning`."
+  category: web
+  aliases: [theme inline, "@theme-inline-Block"]
+  related: [theme-variable, custom-property, design-token, dark-mode]
+  lesson: moderner-react-stack/theming-mit-css-variablen
+- slug: react-router
+  term: React Router
+  short: Die verbreitete Routing-Bibliothek für React, die URLs Seiten zuordnet und im Data Mode auch Daten lädt.
+  explanation: >
+    React Router kennt drei Modi: Declarative, Data und Framework. Im Data Mode beschreibst du Routen als Objekte mit
+    createBrowserRouter und kannst an jeder Route loader, action, ErrorBoundary und lazy angeben. Seit Version 8
+    importierst du alles aus `react-router`, nur RouterProvider aus `react-router/dom`.
+  example: "`createBrowserRouter([{ path: '/', Component: RootLayout, children: [...] }])`"
+  category: react
+  aliases: [react-router, React Router 8]
+  related: [data-mode, route-objekt, route-loader, route-action, spa]
+  lesson: moderner-react-stack/router-im-data-mode
+- slug: data-mode
+  term: Data Mode (React Router)
+  short: Die Art, React Router zu nutzen, bei der Routen als Objekte mit eigenen Loadern und Actions beschrieben werden.
+  explanation: >
+    Im Data Mode erzeugst du den Router einmal mit createBrowserRouter und übergibst ihn an RouterProvider. Der Router
+    lädt Daten vor dem Rendern, verarbeitet Formulare und zeigt Fehlerseiten an. Er braucht keinen eigenen Server und
+    erzeugt eine normale Single-Page-Application.
+  example: "`<RouterProvider router={createBrowserRouter(routes)} />` aktiviert den Data Mode."
+  category: react
+  aliases: [Data-Mode, Datenmodus]
+  related: [react-router, route-loader, route-action]
+  lesson: moderner-react-stack/router-im-data-mode
+- slug: route-objekt
+  term: Route-Objekt
+  short: Ein JavaScript-Objekt, das eine Route mit Pfad, Komponente, Kind-Routen und Datenfunktionen beschreibt.
+  explanation: >
+    Typische Eigenschaften sind path, index, Component (oder element), children, loader, action, ErrorBoundary und
+    lazy. Aus einer Liste solcher Objekte erzeugt createBrowserRouter den Router. Weil es normale Objekte sind, lassen
+    sie sich in Teilbäume aufteilen und zusammensetzen.
+  example: "`{ path: 'buecher/:bookId', loader: bookLoader, Component: BookDetailPage }`"
+  category: react
+  aliases: [Route-Objekte, Route Object, Route (React Router)]
+  related: [react-router, verschachtelte-route, outlet]
+  lesson: moderner-react-stack/router-im-data-mode
+- slug: verschachtelte-route
+  term: Verschachtelte Route
+  short: Eine Kind-Route, die innerhalb des Layouts ihrer Eltern-Route angezeigt wird.
+  explanation: >
+    Eltern-Routen zeichnen gemeinsame Teile wie Header und Navigation und rendern an der Stelle von Outlet die
+    passende Kind-Route. Eine Kind-Route mit `index: true` erscheint, wenn genau der Pfad der Eltern-Route aufgerufen
+    wird. So bleibt das Layout beim Navigieren stehen, und nur der Inhalt wechselt.
+  example: "`/` zeigt RootLayout mit HomePage, `/ueber` dasselbe Layout mit AboutPage."
+  category: react
+  aliases: [Verschachtelte Routen, Kind-Route, Nested Routes, Index-Route]
+  related: [outlet, route-objekt]
+  lesson: moderner-react-stack/router-im-data-mode
+- slug: outlet
+  term: Outlet
+  short: Die React-Router-Komponente, die in einem Layout die Stelle markiert, an der die passende Kind-Route erscheint.
+  explanation: >
+    Ein Layout ohne Outlet zeigt nur sich selbst – die Kind-Routen haben dann keinen Platz. Mit `<Outlet />` sagt das
+    Layout dem Router, wo der Inhalt der aktuellen Unterseite gerendert werden soll. Jede Ebene verschachtelter
+    Routen braucht ihr eigenes Outlet.
+  example: "`<header>…</header><Outlet />` – unter dem Header erscheint die jeweils aktive Seite."
+  category: react
+  aliases: ["<Outlet />"]
+  related: [verschachtelte-route, react-router]
+  lesson: moderner-react-stack/router-im-data-mode
+- slug: route-loader
+  term: Loader (React Router)
+  short: Eine Funktion an einer Route, die Daten lädt, bevor die Komponente der Route gerendert wird.
+  explanation: >
+    Der Router ruft den Loader bei jeder Navigation zur Route auf und übergibt params und request. Die Komponente
+    liest das Ergebnis mit useLoaderData(). Nach einer Action laufen die Loader der sichtbaren Routen automatisch
+    erneut, damit die Seite aktuelle Daten zeigt.
+  example: "`export async function booksLoader() { return { books: await fetchBooks() } }`"
+  category: react
+  aliases: [Loader, loader, useLoaderData]
+  related: [route-action, data-mode, revalidierung]
+  lesson: moderner-react-stack/loader-und-actions
+- slug: route-action
+  term: Action (React Router)
+  short: Eine Funktion an einer Route, die abgeschickte Formulare und andere schreibende Vorgänge verarbeitet.
+  explanation: >
+    Schickt ein `<Form method="post">` Daten an die Route, ruft der Router die Action mit einem Request auf. Sie
+    liest die Daten mit request.formData(), prüft sie und gibt entweder Daten (z. B. Fehler für useActionData) oder
+    einen Redirect zurück. Danach laufen die Loader der Seite automatisch neu.
+  example: "`return redirect('/danke')` leitet nach erfolgreichem Speichern weiter."
+  category: react
+  aliases: [action, Route-Action, useActionData]
+  related: [route-loader, formdata, safe-parse, pending-ui]
+  lesson: moderner-react-stack/loader-und-actions
+- slug: revalidierung
+  term: Revalidierung
+  short: Das automatische erneute Ausführen der Loader, nachdem eine Action Daten verändert hat.
+  explanation: >
+    Nach jeder Action geht React Router davon aus, dass sich Daten geändert haben könnten, und ruft die Loader der
+    sichtbaren Routen erneut auf. Dadurch zeigt etwa eine Liste nach dem Speichern sofort den neuen Eintrag, ohne dass
+    du von Hand neu laden musst. Mit shouldRevalidate lässt sich das pro Route steuern.
+  example: "Nach dem Absenden eines neuen Vorschlags lädt der booksLoader die Liste neu."
+  category: react
+  aliases: [Revalidation, revalidieren]
+  related: [route-loader, route-action]
+  lesson: moderner-react-stack/loader-und-actions
+- slug: pending-ui
+  term: Pending UI
+  short: Oberflächen-Hinweise, die zeigen, dass gerade geladen oder gesendet wird.
+  explanation: >
+    Im Data Mode liefert useNavigation().state die Werte idle, loading oder submitting. Daraus entstehen etwa ein
+    gesperrter Button mit „Wird gesendet …“ oder ein Ladebalken beim Seitenwechsel. So weiß die Person, dass ihr Klick
+    angekommen ist.
+  example: "`const busy = useNavigation().state === 'submitting'` und `<Button disabled={busy}>`"
+  category: react
+  aliases: [Ladezustand, useNavigation, Pending-State]
+  related: [route-action, route-loader]
+  lesson: moderner-react-stack/loader-und-actions
+- slug: safe-parse
+  term: safeParse (Zod)
+  short: Die Zod-Methode, die Daten prüft, ohne zu werfen, und ein Ergebnis mit success und data oder error liefert.
+  explanation: >
+    Im Gegensatz zu parse wirft safeParse bei ungültigen Daten keinen Fehler. Du prüfst `result.success` und
+    bekommst entweder die geprüften Daten oder eine Liste aller Probleme. Das passt, wenn ungültige Eingaben normal
+    sind, etwa bei Formularen.
+  example: "`const result = ContactSchema.safeParse(werte); if (!result.success) return data({ errors: … }, { status: 400 })`"
+  category: programmierung
+  aliases: [safeParse, parse (Zod)]
+  related: [zod, schema-validierung, laufzeitvalidierung]
+  lesson: moderner-react-stack/zod-an-der-datengrenze
+- slug: z-infer
+  term: z.infer
+  short: Ein Zod-Hilfstyp, der aus einem Schema den passenden TypeScript-Typ ableitet.
+  explanation: >
+    Mit `type User = z.infer<typeof UserSchema>` beschreibst du die Felder nur einmal – im Schema. Ändert sich das
+    Schema, ändert sich der Typ automatisch mit. z.infer existiert nur zur Compile-Zeit; geprüft wird erst mit parse
+    oder safeParse.
+  example: "`export type Book = z.infer<typeof BookSchema>`"
+  category: programmierung
+  aliases: [infer, z.input, z.output]
+  related: [zod, typinferenz]
+  lesson: moderner-react-stack/zod-an-der-datengrenze
+- slug: error-boundary
+  term: ErrorBoundary (React Router)
+  short: Die Fehleranzeige einer Route, die erscheint, wenn Loader, Action oder Rendern einen Fehler werfen.
+  explanation: >
+    Du gibst sie als `ErrorBoundary: Komponente` oder `errorElement: <Element />` an einer Route an. Die Komponente
+    liest den Fehler mit useRouteError() und unterscheidet mit isRouteErrorResponse geworfene Antworten wie 404 von
+    Programmfehlern. Fehler wandern nach oben bis zur nächsten Route mit Fehleranzeige.
+  example: "`{ path: '/', Component: RootLayout, ErrorBoundary: RootErrorBoundary }`"
+  category: react
+  aliases: [Error Boundary, errorElement, useRouteError, Fehlerseite]
+  related: [route-loader, react-router]
+  lesson: moderner-react-stack/fehler-und-lazy-routes
+- slug: lazy-route
+  term: Lazy Route
+  short: Eine Route, deren Code erst geladen wird, wenn sie zum ersten Mal gebraucht wird.
+  explanation: >
+    Über die Route-Eigenschaft lazy lädt React Router Komponente und Loader per dynamischem Import nach. Vite legt
+    dafür einen eigenen Chunk an, sodass der Start der App weniger JavaScript laden muss. Das lohnt sich vor allem für
+    selten besuchte oder große Seiten.
+  example: "`lazy: async () => { const { StatsPage } = await import('@/routes/stats'); return { Component: StatsPage } }`"
+  category: react
+  aliases: [lazy, Lazy Routes, lazy loading]
+  related: [code-splitting, chunk, dynamischer-import]
+  lesson: moderner-react-stack/fehler-und-lazy-routes
+- slug: code-splitting
+  term: Code-Splitting
+  short: Das Aufteilen des JavaScript-Bundles in mehrere Dateien, die erst bei Bedarf geladen werden.
+  explanation: >
+    Ohne Code-Splitting lädt jede Person den Code der ganzen App, auch von Seiten, die sie nie öffnet. Ein
+    dynamischer Import ist das Signal für den Bundler, an dieser Stelle eine eigene Datei zu erzeugen. Statische
+    Importe desselben Moduls heben die Aufteilung wieder auf.
+  example: "`import('@/routes/stats')` führt im Build zu einer eigenen Datei stats-….js."
+  category: werkzeuge
+  aliases: [Code Splitting]
+  related: [chunk, lazy-route, bundler]
+  lesson: moderner-react-stack/fehler-und-lazy-routes
+- slug: chunk
+  term: Chunk
+  short: Eine einzelne JavaScript-Datei, in die der Bundler einen Teil der App packt.
+  explanation: >
+    Beim Build fasst Vite den Code in Chunks zusammen: einen Haupt-Chunk für den Start und weitere für dynamisch
+    importierte Module. Die Dateinamen enthalten einen Content-Hash. Welche Chunks entstanden sind, zeigt die Ausgabe
+    von `bun run build` samt Größen.
+  example: "`dist/assets/stats-CQ1EG2bq.js` ist der Chunk der lazy geladenen Statistikseite."
+  category: werkzeuge
+  aliases: [Chunks, Bundle-Teil]
+  related: [code-splitting, content-hash, bundler]
+  lesson: moderner-react-stack/fehler-und-lazy-routes
+- slug: feature-ordner
+  term: Feature-Ordner
+  short: Eine Projektstruktur, die Dateien nach Fachbereichen gruppiert statt nach technischer Art.
+  explanation: >
+    Statt alle Komponenten, alle Routen und alle Schemas in je einen großen Ordner zu legen, bekommt jeder
+    Fachbereich einen eigenen Ordner mit allem, was dazugehört. Das lohnt sich, wenn eine App groß wird und Teams an
+    getrennten Bereichen arbeiten. Gemeinsame Bausteine wie components/ui bleiben zentral.
+  example: "`src/features/books/` enthält Routen, Komponenten und Schemas rund um Bücher."
+  category: werkzeuge
+  aliases: [Feature-Ordner-Struktur, feature folders, Features-Ordner]
+  related: [projektstruktur]
+  lesson: moderner-react-stack/projektstruktur-und-umgebungsvariablen
+- slug: import-meta-env
+  term: import.meta.env
+  short: Das Objekt, über das Vite Umgebungsvariablen und eingebaute Werte wie MODE im Browser-Code bereitstellt.
+  explanation: >
+    Vite übernimmt nur Variablen mit dem Präfix VITE_ aus den .env-Dateien und schreibt sie beim Build als feste Werte
+    ins JavaScript. Dazu kommen eingebaute Werte wie MODE, DEV, PROD und BASE_URL. Eigene Variablen typisierst du über
+    das Interface ImportMetaEnv und prüfst sie am besten mit Zod.
+  example: "`import.meta.env.VITE_API_URL` liefert im Produktions-Build den Wert aus .env.production."
+  category: werkzeuge
+  aliases: [VITE_-Präfix, ImportMetaEnv, VITE_]
+  related: [env-datei, umgebungsvariable, build-modus]
+  lesson: moderner-react-stack/projektstruktur-und-umgebungsvariablen
+- slug: build-modus
+  term: Modus (Vite)
+  short: Der Name der Umgebung, für die Vite gerade läuft – bestimmt, welche .env-Dateien geladen werden.
+  explanation: >
+    Der Dev-Server läuft standardmäßig im Modus development, vite build im Modus production. Mit `--mode staging`
+    wählst du einen eigenen Modus, dann lädt Vite zusätzlich .env.staging. Im Code steht der Modus in
+    import.meta.env.MODE.
+  example: "`vite build --mode staging` baut mit den Werten aus .env.staging."
+  category: werkzeuge
+  aliases: [Mode, Vite-Modus, --mode]
+  related: [import-meta-env, env-datei]
+  lesson: moderner-react-stack/projektstruktur-und-umgebungsvariablen
+- slug: produktions-build
+  term: Produktions-Build
+  short: Die optimierte Fassung einer App, die für die Auslieferung an echte Nutzer:innen erzeugt wird.
+  explanation: >
+    Im Vite-Projekt entsteht er mit `bun run build`: erst prüft tsc die Typen, dann bündelt und minifiziert Vite den
+    Code, entfernt ungenutzte Teile und setzt Umgebungswerte ein. Das Ergebnis liegt im Ordner dist und wird von einem
+    Webserver ausgeliefert.
+  example: "`bun run build` erzeugt dist/index.html und dist/assets/… für den Server."
+  category: werkzeuge
+  aliases: [Production Build, Build für Produktion, dist]
+  related: [build-artefakt, minifizierung, tree-shaking, vite-preview]
+  lesson: moderner-react-stack/der-produktions-build
+- slug: content-hash
+  term: Content-Hash
+  short: Eine aus dem Dateiinhalt berechnete Zeichenfolge im Dateinamen, die sich bei jeder Änderung ändert.
+  explanation: >
+    Vite hängt sie an gebaute Dateien an, etwa index-C7VKbhah.js. Gleicher Inhalt ergibt denselben Namen, neuer
+    Inhalt einen neuen. Deshalb dürfen Browser solche Dateien sehr lange cachen, während index.html immer frisch
+    geladen wird und auf die aktuellen Namen verweist.
+  example: "Nach einer Änderung heißt der App-Code nicht mehr index-C7VKbhah.js, sondern z. B. index-D81kq2Lm.js."
+  category: werkzeuge
+  aliases: [Hash im Dateinamen, Cache-Busting, Dateinamen-Hash]
+  related: [chunk, produktions-build]
+  lesson: moderner-react-stack/der-produktions-build
+- slug: vite-preview
+  term: vite preview
+  short: Ein Vite-Befehl, der den fertigen Ordner dist lokal wie ein einfacher Webserver ausliefert.
+  explanation: >
+    Mit `bun run preview` prüfst du den echten Produktions-Build, bevor du ihn auslieferst: Umgebungswerte, lazy
+    Routen und Reloads auf Unterseiten. Der Server läuft standardmäßig auf Port 4173. Für den Betrieb im Internet ist
+    er nicht gedacht.
+  example: "`bun run build && bun run preview` und dann http://localhost:4173 öffnen."
+  category: werkzeuge
+  aliases: [preview, bun run preview]
+  related: [produktions-build, dev-server]
+  lesson: moderner-react-stack/der-produktions-build
+- slug: spa-fallback
+  term: SPA-Fallback
+  short: Eine Webserver-Regel, die für unbekannte Pfade die index.html einer Single-Page-Application ausliefert.
+  explanation: >
+    Bei einer SPA gibt es auf dem Server keine Datei für /buecher/momo – die Seite entsteht erst im Browser durch den
+    Router. Ohne Fallback antwortet der Server bei direkt aufgerufenen Links mit 404. Mit Fallback schickt er
+    index.html, und der Router übernimmt.
+  example: "nginx: `try_files $uri $uri/ /index.html;`"
+  category: web
+  aliases: [History-API-Fallback, SPA-Rewrite]
+  related: [spa, react-router, produktions-build]
+  lesson: moderner-react-stack/der-produktions-build

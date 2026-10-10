@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="410" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#1e1b3a">bun run dev und bun run build</text>
+
+  <!-- Dev -->
+  <text x="30" y="70" font-size="15" font-weight="700" fill="#1e1b3a">Entwicklung: bun run dev</text>
+  <rect x="30" y="84" width="200" height="90" rx="10" fill="#22d3ee" fill-opacity="0.15" stroke="#22d3ee" stroke-width="2"/>
+  <text x="130" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">src/*.tsx, *.css</text>
+  <text x="130" y="140" text-anchor="middle" font-size="12" fill="#1e1b3a">du speicherst eine Datei</text>
+  <rect x="310" y="84" width="200" height="90" rx="10" fill="#a78bfa" fill-opacity="0.15" stroke="#a78bfa" stroke-width="2"/>
+  <text x="410" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Vite-Dev-Server</text>
+  <text x="410" y="140" text-anchor="middle" font-size="12" fill="#1e1b3a">übersetzt nur das</text>
+  <text x="410" y="158" text-anchor="middle" font-size="12" fill="#1e1b3a">geänderte Modul</text>
+  <rect x="590" y="84" width="200" height="90" rx="10" fill="#34d399" fill-opacity="0.15" stroke="#34d399" stroke-width="2"/>
+  <text x="690" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">Browser</text>
+  <text x="690" y="140" text-anchor="middle" font-size="12" fill="#1e1b3a">HMR tauscht das Modul,</text>
+  <text x="690" y="158" text-anchor="middle" font-size="12" fill="#1e1b3a">State bleibt erhalten</text>
+  <g stroke="#1e1b3a" stroke-width="2" fill="#1e1b3a">
+    <line x1="230" y1="129" x2="302" y2="129"/><polygon points="302,124 310,129 302,134"/>
+    <line x1="510" y1="129" x2="582" y2="129"/><polygon points="582,124 590,129 582,134"/>
+  </g>
+  <text x="270" y="120" text-anchor="middle" font-size="11" fill="#1e1b3a">Änderung</text>
+  <text x="550" y="120" text-anchor="middle" font-size="11" fill="#1e1b3a">WebSocket</text>
+
+  <!-- Build -->
+  <text x="30" y="226" font-size="15" font-weight="700" fill="#1e1b3a">Auslieferung: bun run build = tsc -b &amp;&amp; vite build</text>
+  <rect x="30" y="240" width="200" height="120" rx="10" fill="#22d3ee" fill-opacity="0.15" stroke="#22d3ee" stroke-width="2"/>
+  <text x="130" y="272" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">ganzes Projekt</text>
+  <text x="130" y="296" text-anchor="middle" font-size="12" fill="#1e1b3a">index.html, src/,</text>
+  <text x="130" y="314" text-anchor="middle" font-size="12" fill="#1e1b3a">public/, .env.production</text>
+  <rect x="310" y="240" width="200" height="120" rx="10" fill="#f59e0b" fill-opacity="0.15" stroke="#f59e0b" stroke-width="2"/>
+  <text x="410" y="272" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">1. tsc -b</text>
+  <text x="410" y="292" text-anchor="middle" font-size="12" fill="#1e1b3a">prüft alle Typen</text>
+  <text x="410" y="322" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">2. vite build</text>
+  <text x="410" y="342" text-anchor="middle" font-size="12" fill="#1e1b3a">bündelt und minifiziert</text>
+  <rect x="590" y="240" width="200" height="120" rx="10" fill="#34d399" fill-opacity="0.15" stroke="#34d399" stroke-width="2"/>
+  <text x="690" y="268" text-anchor="middle" font-size="14" font-weight="700" fill="#1e1b3a">dist/</text>
+  <text x="690" y="292" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">index.html</text>
+  <text x="690" y="312" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">assets/index-a1b2.js</text>
+  <text x="690" y="332" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">assets/index-c3d4.css</text>
+  <text x="690" y="352" text-anchor="middle" font-size="12" fill="#1e1b3a" font-family="ui-monospace, Menlo, monospace">assets/stats-e5f6.js</text>
+  <g stroke="#1e1b3a" stroke-width="2" fill="#1e1b3a">
+    <line x1="230" y1="300" x2="302" y2="300"/><polygon points="302,295 310,300 302,305"/>
+    <line x1="510" y1="300" x2="582" y2="300"/><polygon points="582,295 590,300 582,305"/>
+  </g>
+  <text x="410" y="386" text-anchor="middle" font-size="12" fill="#1e1b3a">Ein Typfehler stoppt den Build schon im ersten Schritt – dist/ entsteht dann gar nicht.</text>
+</svg>
