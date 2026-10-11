@@ -11,7 +11,6 @@ import { LessonQuiz } from '@/components/quiz/lesson-quiz'
 import { TaskRenderer } from '@/components/tasks/task-renderer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Kbd } from '@/components/ui/kbd'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -22,7 +21,6 @@ import { Api, type CourseDetail, type LessonResponse } from '@/lib/api'
 import { useSession } from '@/lib/auth'
 import { celebrateBig } from '@/lib/celebrate'
 import { buildPages, type LessonPage as Page } from '@/lib/lesson-pages'
-import { useUiVariant } from '@/lib/ui-variant'
 import { isKnownTerm, markKnown } from '@/lib/unlocks'
 import { cn } from '@/lib/utils'
 
@@ -36,7 +34,6 @@ export function LessonPage() {
 function LessonView({ data }: { data: LessonData }) {
   const { lesson, state } = data
   const user = useSession()
-  const apple = useUiVariant() === 'apple'
   const [params, setParams] = useSearchParams()
   const [completed, setCompleted] = useState(state?.completed ?? false)
   const [completedTasks, setCompletedTasks] = useState<string[]>(state?.completed_tasks ?? [])
@@ -114,7 +111,7 @@ function LessonView({ data }: { data: LessonData }) {
       <header className="flex items-start gap-3">
         <CourseIcon icon={lesson.course.icon} color={lesson.course.color} size="sm" className="mt-1" />
         <div className="min-w-0 flex-1">
-          <h1 className={cn('text-balance', apple ? 'font-bold tracking-tight' : 'font-semibold tracking-[-0.025em]', index === 0 ? (apple ? 'text-2xl sm:text-3xl' : 'text-[1.75rem] leading-tight sm:text-[2.125rem]') : 'text-lg sm:text-xl')}>{lesson.title}</h1>
+          <h1 className={cn('text-balance font-semibold tracking-[-0.025em]', index === 0 ? 'text-[1.75rem] leading-tight sm:text-[2.125rem]' : 'text-lg sm:text-xl')}>{lesson.title}</h1>
           {index === 0 && (
             <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span>Lektion {lesson.position} von {lesson.total}</span>
@@ -156,10 +153,7 @@ function LessonView({ data }: { data: LessonData }) {
       </div>
 
       <nav
-        className={cn(
-          'sticky z-20 -mx-4 mt-8 flex items-center gap-2 px-4 py-3 sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:shadow-none sm:backdrop-blur-none',
-          apple ? 'material bottom-[calc(3.5rem+env(safe-area-inset-bottom))] shadow-[0_-0.5px_0_var(--border)] md:bottom-0' : 'bottom-0 border-t bg-background/90 backdrop-blur sm:border-0',
-        )}
+        className="sticky bottom-0 z-20 -mx-4 mt-8 flex items-center gap-2 border-t bg-background/90 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:shadow-none sm:backdrop-blur-none"
         aria-label="Blättern"
       >
         <Button variant="outline" onClick={() => goTo(index - 1)} disabled={index === 0} aria-label="Vorherige Seite">
@@ -225,9 +219,7 @@ function PageBar({ pages, index, onSelect, isDone }: { pages: Page[]; index: num
 function FinishPage({ data, completed, completedTasks, onCompleted }: { data: LessonData; completed: boolean; completedTasks: number; onCompleted: () => void }) {
   const { lesson, state } = data
   const user = useSession()
-  const apple = useUiVariant() === 'apple'
   const [busy, setBusy] = useState(false)
-  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const complete = async () => {
     if (!user) {
@@ -251,29 +243,7 @@ function FinishPage({ data, completed, completedTasks, onCompleted }: { data: Le
 
   return (
     <div className="space-y-6">
-      {apple ? (
-        <Card className={cn(completed && 'border-success/40 bg-success/5')}>
-          <CardContent className="flex flex-col items-center gap-3 py-6 text-center sm:flex-row sm:text-left">
-            <div className="flex-1">
-              <p className="font-semibold">{completed ? 'Diese Lektion hast du abgeschlossen.' : 'Alles verstanden?'}</p>
-              <p className="text-sm text-muted-foreground">
-                {completed
-                  ? 'Du kannst sie jederzeit wieder als Nachschlagewerk nutzen.'
-                  : completedTasks < lesson.tasks.length
-                    ? `Du hast ${completedTasks} von ${lesson.tasks.length} Aufgaben gelöst. Erst durch Tun bleibt Wissen hängen.`
-                    : 'Super, alle Aufgaben gelöst. Schließe die Lektion ab.'}
-              </p>
-            </div>
-            {!completed && (
-              <Button ref={buttonRef} size="lg" onClick={complete} disabled={busy}>
-                {busy ? <Spinner /> : <CheckCircle2 />} Lektion abschließen
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <FinishSummary data={data} completed={completed} completedTasks={completedTasks} busy={busy} onComplete={complete} />
-      )}
+      <FinishSummary data={data} completed={completed} completedTasks={completedTasks} busy={busy} onComplete={complete} />
 
       {lesson.terms.length > 0 && (
         <section>
@@ -283,12 +253,9 @@ function FinishPage({ data, completed, completedTasks, onCompleted }: { data: Le
               <Link
                 key={term.slug}
                 to={`/lexikon/${term.slug}`}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors',
-                  apple ? 'bg-[var(--fill)] text-primary hover:bg-[var(--fill-strong)]' : 'bg-card shadow-card hover:bg-accent hover:text-accent-foreground',
-                )}
+                className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1 text-sm shadow-card transition-colors hover:bg-accent hover:text-accent-foreground"
               >
-                {!apple && user && (isKnownTerm(term.slug) ? <Sparkles className="size-3 text-spark" /> : <Lock className="size-3 text-muted-foreground" />)}
+                {user && (isKnownTerm(term.slug) ? <Sparkles className="size-3 text-spark" /> : <Lock className="size-3 text-muted-foreground" />)}
                 {term.term}
               </Link>
             ))}

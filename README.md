@@ -62,7 +62,7 @@ Minuten http://localhost:8080 öffnen.
 - **Ein Lexikon mit über 2.000 Begriffen.** Jedes Fachwort ist anklickbar; beim Lesen schaltest du Begriffe frei.
 - **Quizze, Projekte und Prüfungen** mit Schwächenanalyse und Zertifikat.
 - **Hängst du fest?** Projektschritte erledigt Stacklab auf Wunsch für dich – mit dem Knopf „Für mich erledigen“.
-- Volltextsuche, Lesezeichen, Notizen, Fortschritt, Dark Mode und zwei Designs (Standard und Apple-Stil).
+- Volltextsuche, Lesezeichen, Notizen, Fortschritt und Dark Mode.
 
 ## Dein Workspace
 

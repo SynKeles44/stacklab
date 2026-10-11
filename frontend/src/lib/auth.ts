@@ -1,8 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-import { applyUiVariant, type UiVariant } from '@/lib/ui-variant'
-
-export type SessionUser = { id: number; name: string; email: string; ui_variant?: UiVariant }
+export type SessionUser = { id: number; name: string; email: string }
 
 const TOKEN_KEY = 'stacklab.token'
 const USER_KEY = 'stacklab.user'
@@ -31,20 +29,17 @@ export function getToken(): string | null {
 export function setSession(token: string, user: SessionUser): void {
   localStorage.setItem(TOKEN_KEY, token)
   localStorage.setItem(USER_KEY, JSON.stringify(user))
-  if (user.ui_variant) applyUiVariant(user.ui_variant)
   emit()
 }
 
 export function updateSessionUser(user: SessionUser): void {
   localStorage.setItem(USER_KEY, JSON.stringify(user))
-  if (user.ui_variant) applyUiVariant(user.ui_variant)
   emit()
 }
 
 export function clearSession(): void {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
-  applyUiVariant('standard')
   emit()
 }
 

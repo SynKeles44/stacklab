@@ -1,8 +1,7 @@
-import { Check, CheckCircle2, Copy, FolderCog, FolderSearch, Palette, RotateCcw, Save, TerminalSquare, UserRound, XCircle } from 'lucide-react'
+import { Check, CheckCircle2, Copy, FolderCog, FolderSearch, RotateCcw, Save, TerminalSquare, UserRound, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLoaderData, useRevalidator } from 'react-router'
 import { toast } from 'sonner'
-import { AppearancePicker } from '@/components/common/appearance-picker'
 import { FolderPicker } from '@/components/common/folder-picker'
 import { PageHeader } from '@/components/common/page-header'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -28,7 +27,6 @@ import { Spinner } from '@/components/ui/spinner'
 import { Api, type SandboxStatus } from '@/lib/api'
 import { updateSessionUser, useSession } from '@/lib/auth'
 import { loadBookmarks } from '@/lib/bookmarks'
-import { useUiVariant } from '@/lib/ui-variant'
 
 type WorkspaceInfo = { path: string; writable: boolean; browse?: boolean; sandbox: SandboxStatus }
 
@@ -71,17 +69,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-12">
-      {useUiVariant() === 'apple' ? <h1 className="large-title">Einstellungen</h1> : <PageHeader eyebrow="Konto" title="Einstellungen" className="pb-2" />}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Palette className="size-5 text-primary" /> Darstellung</CardTitle>
-          <CardDescription>Wähle das Design der Oberfläche. Deine Wahl wird in deinem Konto gespeichert.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AppearancePicker />
-        </CardContent>
-      </Card>
+      <PageHeader eyebrow="Konto" title="Einstellungen" className="pb-2" />
 
       <Card>
         <CardHeader>

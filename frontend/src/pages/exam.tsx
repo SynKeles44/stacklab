@@ -17,7 +17,6 @@ import { useSession } from '@/lib/auth'
 import type { Task } from '@/lib/content-schemas'
 import { formatDateTime } from '@/lib/format'
 import { emptyAnswer, isAnswered, type Answer } from '@/lib/quiz'
-import { useUiVariant } from '@/lib/ui-variant'
 import { cn } from '@/lib/utils'
 
 export function ExamPage() {
@@ -25,7 +24,6 @@ export function ExamPage() {
   const user = useSession()
   const [session, setSession] = useState<ExamStart | null>(null)
   const [starting, setStarting] = useState(false)
-  const apple = useUiVariant() === 'apple'
 
   useEffect(() => {
     document.title = `${info.exam.title} · Stacklab`
@@ -52,8 +50,8 @@ export function ExamPage() {
       <header className="mt-4 flex items-start gap-4">
         <CourseIcon icon={info.exam.course.icon} color={info.exam.course.color} size="lg" />
         <div>
-          <p className={cn(apple ? 'text-sm font-medium text-warning' : 'eyebrow')}>Abschlussprüfung</p>
-          <h1 className={cn(apple ? 'text-3xl font-bold tracking-tight' : 'page-title mt-2')}>{info.exam.title}</h1>
+          <p className="eyebrow">Abschlussprüfung</p>
+          <h1 className="page-title mt-2">{info.exam.title}</h1>
         </div>
       </header>
       {info.exam.description && <SmallMarkdown text={info.exam.description} className="mt-6" />}
@@ -87,7 +85,7 @@ export function ExamPage() {
           <ul className="space-y-2">
             {info.attempts.map((attempt) => (
               <li key={attempt.id}>
-                <Link to={`/pruefungen/${attempt.id}`} className={cn('flex items-center gap-3 rounded-xl p-3 text-sm', apple ? 'border hover:border-brand/50' : 'pressable bg-card shadow-card transition-shadow hover:shadow-raised')}>
+                <Link to={`/pruefungen/${attempt.id}`} className="pressable flex items-center gap-3 rounded-xl bg-card p-3 text-sm shadow-card transition-shadow hover:shadow-raised">
                   {attempt.passed ? <CheckCircle2 className="size-5 text-success" /> : <XCircle className="size-5 text-destructive" />}
                   <span className="flex-1">{formatDateTime(attempt.finished_at)}</span>
                   <span className="tabular-nums">{attempt.score} / {attempt.max_score}</span>

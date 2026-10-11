@@ -1,13 +1,11 @@
-import { BookA, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Link } from 'react-router'
-import { useUiVariant } from '@/lib/ui-variant'
 import { unlockEvents, type UnlockEvent } from '@/lib/unlocks'
 
 export function UnlockOverlay() {
   const events = unlockEvents.use()
   const reduceMotion = useReducedMotion()
-  const apple = useUiVariant() === 'apple'
   return (
     <div
       role="status"
@@ -25,7 +23,7 @@ export function UnlockOverlay() {
             transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
             className="pointer-events-auto w-full max-w-sm rounded-xl bg-popover p-3.5 shadow-raised"
           >
-            {apple ? <AppleContent event={event} /> : <Content event={event} reduceMotion={reduceMotion === true} />}
+            <Content event={event} reduceMotion={reduceMotion === true} />
           </motion.div>
         ))}
       </AnimatePresence>
@@ -65,30 +63,6 @@ function Content({ event, reduceMotion }: { event: UnlockEvent; reduceMotion: bo
             {event.count} / {event.total}
           </span>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function AppleContent({ event }: { event: UnlockEvent }) {
-  return (
-    <div className="flex items-start gap-3">
-      <BookA className="mt-0.5 size-4 shrink-0 text-primary" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{event.terms.length === 1 ? 'Neuer Begriff im Lexikon' : `${event.terms.length} neue Begriffe im Lexikon`}</p>
-        <ul className="mt-1 space-y-0.5">
-          {event.terms.slice(0, 3).map((term) => (
-            <li key={term.slug} className="truncate text-sm text-muted-foreground">
-              <Link to={`/lexikon/${term.slug}`} className="text-foreground hover:underline">
-                {term.term}
-              </Link>{' '}
-              – {term.short}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
-          {event.count} von {event.total} Begriffen
-        </p>
       </div>
     </div>
   )

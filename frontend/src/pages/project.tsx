@@ -17,7 +17,6 @@ import { Spinner } from '@/components/ui/spinner'
 import { Api, type CheckResult, type Project } from '@/lib/api'
 import { useSession } from '@/lib/auth'
 import { celebrateBig } from '@/lib/celebrate'
-import { useUiVariant } from '@/lib/ui-variant'
 import { cn } from '@/lib/utils'
 
 type ProjectData = { project: Project; completed_steps: string[] }
@@ -28,7 +27,6 @@ export function ProjectPage() {
   const user = useSession()
   const [completed, setCompleted] = useState<string[]>(data.completed_steps)
   const [terminalOpen, setTerminalOpen] = useState(false)
-  const apple = useUiVariant() === 'apple'
   const activeIndex = project.steps.findIndex((step) => !completed.includes(step.id))
   const workdir = project.workdir ?? project.steps[0]?.workdir ?? 'projekt'
   const [resetting, setResetting] = useState(false)
@@ -73,15 +71,15 @@ export function ProjectPage() {
       <header className="mt-4 flex items-start gap-4">
         <CourseIcon icon={project.course.icon} color={project.course.color} size="lg" />
         <div>
-          <p className={cn(apple ? 'text-sm font-medium text-brand' : 'eyebrow')}>Begleitetes Projekt</p>
-          <h1 className={cn(apple ? 'text-3xl font-bold tracking-tight sm:text-4xl' : 'page-title mt-2')}>{project.title}</h1>
+          <p className="eyebrow">Begleitetes Projekt</p>
+          <h1 className="page-title mt-2">{project.title}</h1>
         </div>
       </header>
 
       <div className="mt-6 space-y-4">
         <SmallMarkdown text={project.description} />
         {project.goal && (
-          <div className={cn('rounded-xl p-4 text-sm', apple ? 'border bg-muted/40' : 'bg-card shadow-card')}>
+          <div className="rounded-xl bg-card p-4 text-sm shadow-card">
             <p className="font-semibold">Das hast du am Ende</p>
             <SmallMarkdown text={project.goal} className="text-sm" />
           </div>

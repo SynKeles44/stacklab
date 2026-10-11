@@ -1,4 +1,4 @@
-import { Check, ChevronRight } from 'lucide-react'
+import { Check } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router'
 import { Progress } from '@/components/ui/progress'
@@ -65,20 +65,5 @@ export function LevelDots({ level, className }: { level: string; className?: str
         <span key={index} className={cn('w-[3px] rounded-[1px]', index < rank ? 'bg-foreground/60' : 'bg-foreground/15')} style={{ height: `${5 + index * 2.5}px` }} />
       ))}
     </span>
-  )
-}
-
-export function CourseRow({ course }: { course: CourseSummary }) {
-  const started = Boolean(course.progress && course.progress.completed > 0)
-  return (
-    <Link to={`/kurse/${course.slug}`} className="cell py-2.5">
-      <CourseIcon icon={course.icon} color={course.color} size="sm" solid className="rounded-[0.5rem]" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[1.0625rem] leading-snug">{course.title}</p>
-        <p className="truncate text-[0.8125rem] text-muted-foreground">{course.subtitle ?? `${course.lessons_count} Lektionen`}</p>
-      </div>
-      {started && <span className="text-[0.9375rem] text-muted-foreground tabular-nums">{course.progress!.percent} %</span>}
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground/45" strokeWidth={2.5} />
-    </Link>
   )
 }

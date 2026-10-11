@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Api, ApiError } from '@/lib/api'
 import { setSession } from '@/lib/auth'
-import { useUiVariant } from '@/lib/ui-variant'
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, 'Bitte gib mindestens 2 Zeichen ein.').max(100),
@@ -63,23 +62,6 @@ const AUTH_POINTS = [
 ]
 
 function AuthLayout({ title, description, children, footer }: { title: string; description: string; children: React.ReactNode; footer: React.ReactNode }) {
-  const apple = useUiVariant() === 'apple'
-  const card = (
-    <Card className="w-full max-w-sm">
-      <CardHeader className="items-center text-center">
-        <LogoMark className="mx-auto h-8" />
-        <CardTitle className="mt-3 text-xl">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {children}
-        <p className="mt-6 text-center text-sm text-muted-foreground">{footer}</p>
-      </CardContent>
-    </Card>
-  )
-
-  if (apple) return <div className="flex min-h-[calc(100svh-3.5rem)] items-center justify-center px-4 py-12">{card}</div>
-
   return (
     <div className="mx-auto grid min-h-[calc(100svh-3.5rem)] max-w-6xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:gap-20">
       <aside className="hidden lg:block">

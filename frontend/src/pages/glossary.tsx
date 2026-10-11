@@ -1,15 +1,13 @@
-import { ChevronRight, Lock, Search, Sparkles } from 'lucide-react'
+import { Lock, Search, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLoaderData } from 'react-router'
 import { PageHeader } from '@/components/common/page-header'
 import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { Term } from '@/lib/api'
 import { useSession } from '@/lib/auth'
 import { formatCount } from '@/lib/glossary-cache'
-import { useUiVariant } from '@/lib/ui-variant'
 import { cn } from '@/lib/utils'
 
 type GlossaryData = { terms: Term[]; unlocked_count: number; total: number }
@@ -17,7 +15,6 @@ type GlossaryData = { terms: Term[]; unlocked_count: number; total: number }
 export function GlossaryPage() {
   const { terms, unlocked_count, total } = useLoaderData() as GlossaryData
   const user = useSession()
-  const apple = useUiVariant() === 'apple'
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'alle' | 'meine' | 'offen'>('alle')
   const [category, setCategory] = useState('alle')
@@ -43,76 +40,6 @@ export function GlossaryPage() {
     }
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, 'de'))
   }, [filtered])
-
-  if (apple) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <header>
-          <h1 className="large-title">Lexikon</h1>
-          <p className="mt-2 text-[1.0625rem] text-muted-foreground">
-            Jedes Fachwort, kurz und verständlich erklärt. Begriffe, die dir beim Lesen begegnen, landen automatisch in deinem persönlichen Lexikon.
-          </p>
-        </header>
-
-        {user && (
-          <div className="grouped mt-6">
-            <div className="cell py-3">
-              <span className="icon-tile bg-primary"><Sparkles /></span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[1.0625rem]">Dein Lexikon</p>
-                <Progress value={total ? (unlocked_count / total) * 100 : 0} className="mt-1.5 h-1" />
-              </div>
-              <p className="text-[0.9375rem] text-muted-foreground tabular-nums">{unlocked_count} von {total}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="sticky top-14 z-30 -mx-4 mt-5 bg-background/80 backdrop-blur-xl backdrop-saturate-150 flex flex-col gap-2.5 px-4 pt-2 pb-2.5 shadow-[0_0.5px_0_var(--border)] sm:-mx-6 sm:px-6">
-          <div className="search-field">
-            <Search />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Begriff suchen" type="search" aria-label="Begriffe filtern" />
-          </div>
-          {user && (
-            <ToggleGroup type="single" value={filter} onValueChange={(value) => value && setFilter(value as typeof filter)} spacing={0} className="segmented">
-              <ToggleGroupItem value="alle">Alle</ToggleGroupItem>
-              <ToggleGroupItem value="meine">Freigeschaltet</ToggleGroupItem>
-              <ToggleGroupItem value="offen">Noch offen</ToggleGroupItem>
-            </ToggleGroup>
-          )}
-          <div className="chip-scroller">
-            <ToggleGroup type="single" value={category} onValueChange={(value) => value && setCategory(value)} size="sm" className="w-max" aria-label="Kategorie">
-              <ToggleGroupItem value="alle">Alle Kategorien</ToggleGroupItem>
-              {categories.map((value) => <ToggleGroupItem key={value} value={value}>{value}</ToggleGroupItem>)}
-            </ToggleGroup>
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-7">
-          {letters.map(([letter, items]) => (
-            <section key={letter}>
-              <h2 className="section-header">{letter}</h2>
-              <div className="grouped">
-                {items.map((term) => {
-                  const locked = Boolean(user) && !term.unlocked_at
-                  return (
-                    <Link key={term.slug} to={`/lexikon/${term.slug}`} className="cell">
-                      <div className="min-w-0 flex-1">
-                        <p className={cn('truncate text-[1.0625rem]', locked && 'text-muted-foreground')}>{term.term}</p>
-                        <p className="line-clamp-1 text-[0.8125rem] text-muted-foreground">{term.short}</p>
-                      </div>
-                      {locked ? <Lock className="size-3.5 shrink-0 text-muted-foreground" /> : user ? <Sparkles className="size-3.5 shrink-0 text-primary" /> : null}
-                      <ChevronRight className="size-4 shrink-0 text-muted-foreground/45" strokeWidth={2.5} />
-                    </Link>
-                  )
-                })}
-              </div>
-            </section>
-          ))}
-          {letters.length === 0 && <p className="py-16 text-center text-muted-foreground">Keine Begriffe gefunden.</p>}
-        </div>
-      </div>
-    )
-  }
 
   const percent = total ? (unlocked_count / total) * 100 : 0
 
