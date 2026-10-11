@@ -69,7 +69,6 @@ final class AuthController extends Controller
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'ui_variant' => $user->ui_variant ?? 'standard',
             'created_at' => $user->created_at?->toIso8601String(),
         ];
     }

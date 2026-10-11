@@ -14,7 +14,6 @@ final class UpdateProfileRequest extends FormRequest
         return [
             'name' => ['sometimes', 'string', 'max:100'],
             'password' => ['sometimes', 'string', 'min:8', 'max:200'],
-            'ui_variant' => ['sometimes', 'in:standard,apple'],
         ];
     }
 }
