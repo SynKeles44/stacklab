@@ -31,7 +31,7 @@ for _ in $(seq 1 180); do
     echo
     docker compose exec -T php php artisan stacklab:import --force --no-interaction >/dev/null 2>&1 || echo "Hinweis: Kurse konnten nicht neu importiert werden (docker compose logs php)."
     bold "Fertig! Stacklab läuft unter ${url}"
-    echo "Lege dort ein Konto an und leg los. Beenden mit: docker compose down"
+    echo "Lege dort ein Konto an und leg los. Beenden mit: make stop (ohne make: docker compose down)"
     if [ "${STACKLAB_NO_BROWSER:-0}" = "1" ]; then :
     elif command -v open >/dev/null 2>&1; then open "$url"
     elif command -v wslview >/dev/null 2>&1; then wslview "$url"

@@ -26,14 +26,20 @@ cd stacklab
 ```
 
 Beim ersten Mal dauert das ein paar Minuten. Das Skript wartet, bis alles bereit ist, und öffnet dann den Browser.
+Hast du `make` installiert (macOS und die meisten Linux-Systeme haben es), geht statt `./bin/start.sh` auch `make start`.
 
 **3. Loslegen**
 
 Stacklab läuft unter **http://localhost:8080**. Lege ein Konto an – es bleibt auf deinem Rechner – und wähle deinen ersten Kurs.
 
 > [!TIP]
-> Danach startest du Stacklab jederzeit wieder mit `./bin/start.sh` und beendest es mit `docker compose down`.
-> Dein Fortschritt bleibt dabei erhalten.
+> | Befehl | Wirkung |
+> |---|---|
+> | `make start` | Stacklab starten und warten, bis es bereit ist |
+> | `make stop` | Stacklab beenden |
+> | `make restart` | Stacklab neu starten, z. B. nach einem Wechsel des Workspace-Ordners |
+>
+> Ohne `make`: `./bin/start.sh` zum Starten, `docker compose down` zum Beenden. Dein Fortschritt bleibt dabei immer erhalten.
 
 <details>
 <summary><strong>Windows: so geht's</strong></summary>
@@ -70,8 +76,8 @@ Ordner auswählen**; danach einmal `make restart`.
 |---|---|
 | „Docker läuft nicht“ | Docker Desktop starten, kurz warten, Befehl wiederholen. |
 | Seite lädt nicht | `docker compose logs php` zeigt, ob noch Kurse importiert werden. Beim ersten Start ein paar Minuten warten. |
-| Stacklab auf dem Handy öffnen | In `.env` `STACKLAB_BIND=0.0.0.0` setzen und `./bin/start.sh` ausführen. Achtung: Dann kann jeder in deinem Netzwerk Stacklab und das Übungs-Terminal nutzen. |
-| Port 8080 ist belegt | In der Datei `.env` `STACKLAB_PORT=8090` setzen und `./bin/start.sh` erneut ausführen. |
+| Stacklab auf dem Handy öffnen | In `.env` `STACKLAB_BIND=0.0.0.0` setzen und `make restart` ausführen. Achtung: Dann kann jeder in deinem Netzwerk Stacklab und das Übungs-Terminal nutzen. |
+| Port 8080 ist belegt | In der Datei `.env` `STACKLAB_PORT=8090` setzen und `make restart` ausführen. |
 | Terminal zeigt „getrennt“ | `docker compose restart sandbox` |
 | Seite zeigt eine alte Version | `docker compose run --rm frontend` |
 | Nur den Lernfortschritt löschen | In der App: *Einstellungen → Fortschritt zurücksetzen*. |
@@ -81,8 +87,8 @@ Ordner auswählen**; danach einmal `make restart`.
 ## Aktualisieren und entfernen
 
 ```bash
-git pull && ./bin/start.sh   # neueste Version holen, neue Kurse werden automatisch importiert
-docker compose down          # beenden
+git pull && make restart     # neueste Version holen, neue Kurse werden automatisch importiert
+make stop                    # beenden
 docker compose down -v       # beenden und Datenbank löschen (vor dem Entfernen)
 ```
 

@@ -4,20 +4,24 @@ COMPOSE := docker compose
 help: ## Show all commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Build and start everything and wait until Stacklab is ready
+start: ## Start Stacklab and wait until it is ready (first start builds everything)
 	@./bin/start.sh
 
-up: ## Start all services
-	$(COMPOSE) up -d
-
-down: ## Stop all services
+stop: ## Stop Stacklab (progress and workspace stay)
 	$(COMPOSE) down
+
+restart: ## Restart Stacklab (e.g. after changing the workspace folder)
+	$(COMPOSE) down
+	@./bin/start.sh
+
+setup: start ## Alias for start
+
+up: start ## Alias for start
+
+down: stop ## Alias for stop
 
 workspace: ## Choose the workspace folder with the Finder / folder dialog
 	@./bin/choose-workspace.sh
-
-restart: ## Restart (e.g. after changing the workspace path)
-	$(COMPOSE) up -d --force-recreate sandbox nginx php
 
 logs: ## Follow logs
 	$(COMPOSE) logs -f --tail=100
@@ -50,4 +54,4 @@ reset-db: ## Delete all progress and re-import (asks for confirmation)
 	$(COMPOSE) exec php php artisan migrate:fresh --force
 	$(COMPOSE) exec php php artisan stacklab:import
 
-.PHONY: help setup up down workspace restart logs dev build-frontend import validate test shell artisan reset-db
+.PHONY: help start stop restart setup up down workspace logs dev build-frontend import validate test shell artisan reset-db

@@ -31,7 +31,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [content/README.md](content/README.md
 
 ## Commands
 
-- `make setup` / `docker compose up` – everything (build, migrate, import content, build frontend)
+- `make start` / `make stop` / `make restart` – start (build, migrate, import content, build frontend, wait until ready), stop, restart; `./bin/start.sh` without make
 - `make dev` – Vite dev server with HMR on :5173
 - `make test` – backend + frontend tests
 - `make validate` – content validation
