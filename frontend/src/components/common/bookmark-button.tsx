@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 
 type Props = { type: 'course' | 'module' | 'lesson' | 'term' | 'task' | 'project'; refKey: string; label: string; url: string; className?: string; size?: 'icon' | 'icon-sm' | 'icon-lg' }
 
+const LARGER = { 'icon-sm': 'icon', icon: 'icon-lg', 'icon-lg': 'icon-lg' } as const
+
 export function BookmarkButton({ type, refKey, label, url, className, size = 'icon' }: Props) {
   const active = useIsBookmarked(type, refKey)
   const [busy, setBusy] = useState(false)
@@ -15,7 +17,7 @@ export function BookmarkButton({ type, refKey, label, url, className, size = 'ic
       <TooltipTrigger asChild>
         <Button
           variant="ghost"
-          size={size}
+          size={LARGER[size]}
           className={cn(active && 'text-brand', className)}
           aria-pressed={active}
           aria-label={active ? 'Lesezeichen entfernen' : 'Als Lesezeichen markieren'}
@@ -31,7 +33,7 @@ export function BookmarkButton({ type, refKey, label, url, className, size = 'ic
             }
           }}
         >
-          {active ? <BookmarkCheck className="fill-current/20" /> : <Bookmark />}
+          {active ? <BookmarkCheck className={cn('fill-current/20', size === 'icon-sm' ? 'size-[18px]' : 'size-5')} /> : <Bookmark className={size === 'icon-sm' ? 'size-[18px]' : 'size-5'} />}
         </Button>
       </TooltipTrigger>
       <TooltipContent>{active ? 'Lesezeichen entfernen' : 'Lesezeichen setzen'}</TooltipContent>

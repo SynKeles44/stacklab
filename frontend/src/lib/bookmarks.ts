@@ -20,6 +20,10 @@ export function loadBookmarks(force = false): Promise<void> {
   return loading
 }
 
+export function useBookmarkKeys(): Set<string> | null {
+  return store.use()
+}
+
 export function useIsBookmarked(type: string, ref: string): boolean {
   const set = store.use()
   return set?.has(key(type, ref)) ?? false

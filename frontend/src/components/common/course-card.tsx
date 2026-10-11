@@ -21,7 +21,7 @@ export function CourseCard({ course }: { course: CourseSummary }) {
       <span aria-hidden className="course-wash absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       <div className="flex items-start justify-between gap-3">
         <CourseIcon icon={course.icon} color={course.color} />
-        <BookmarkButton type="course" refKey={course.slug} label={course.title} url={`/kurse/${course.slug}`} size="icon-sm" className="-mt-1 -mr-2 opacity-50 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" />
+        <BookmarkButton type="course" refKey={course.slug} label={course.title} url={`/kurse/${course.slug}`} size="icon-sm" className="-mt-1.5 -mr-2 opacity-70 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" />
       </div>
       <h3 className="mt-4 text-[1.0625rem] leading-snug font-semibold tracking-[-0.01em]">{course.title}</h3>
       {course.subtitle && <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{course.subtitle}</p>}
